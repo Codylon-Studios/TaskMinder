@@ -1,18 +1,29 @@
-//app.js
-
+// Import necessary modules: express, http server, socket.io
 const express = require('express');
+const { createServer } = require('http');
 
 const app = express();
-const PORT = 3000;
-
-app.get('/', (req, res)=>{
-    res.sendFile(__dirname + '/public/main.html');
+const server = createServer(app);
+const io = require('socket.io')(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+    transports: ['websocket', 'polling'],
+    allowedHeaders: ['Access-Control-Allow-Origin'],
+    credentials: true
+  },
 });
 
-app.listen(PORT, (error) =>{
-    if(!error)
-        console.log("Server is successfully running on "+ PORT)
-    else 
-        console.log("Error occurred, server can't start", error);
-    }
-);
+server.listen(3000, () => {
+  console.log('server running at http://localhost:3000');
+});
+
+
+// Middleware to parse request bodies
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
+
+// Serve index.html when root URL is accessed
+app.get('/', function(req, res) {
+  res.sendFile(__dirname + '/public/main.html');
+});
