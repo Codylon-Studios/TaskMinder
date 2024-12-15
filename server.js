@@ -23,6 +23,39 @@ server.listen(3000, () => {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+// When a user connects
+io.on('connection', (socket) => {
+  console.log('A user connected');
+  //Send current notes list
+  socket.emit('current-notes', /*data*/);
+
+
+  // ADD ITEM
+  socket.on('add-note', (/*data*/) => {
+    // Add new note to database
+    // Broadcast new note to all clients
+    io.emit('current-notes', /*data*/);
+  });
+
+  // EDIT ITEM
+  socket.on('edit-note', (/*data*/) => {
+    // Update note in database
+    // Broadcast updated note-list to all clients
+    io.emit('current-notes', /*data*/);
+  });
+
+  // DELETE ITEM
+  socket.on('delete-note', (itemValue) => {
+    //remove note from database
+    // Broadcast updated note-list to all clients
+    io.emit('current-notes', /*data*/); 
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
+  });
+});
+
 // Serve index.html when root URL is accessed
 app.get('/', function(req, res) {
   res.sendFile(__dirname + '/public/main.html');
