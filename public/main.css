@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
+
+:root {
+    --lighter-hover: #e9ecef;
+    --lighter-active: #d3d6da;
+    --event-blue: #5599ff;
+    --event-orange: #ff9955;
+    --event-pink: #ff5599;
+    --event-violet: #9955ff;
+}
+
+body {
+    font-family: "Quicksand", Arial, Helvetica, sans-serif;
+    padding-top: 70px;
+    font-weight: 500;
+}
+
+span.event-blue {
+    color: var(--event-blue);
+}
+
+span.event-orange {
+    color: var(--event-orange);
+}
+
+.btn-lighter {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-lighter:hover {
+    background-color: var(--lighter-hover);
+}
+
+.btn-lighter:active {
+    background-color: var(--lighter-active) !important;
+}
+
+.days-overview-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0.1rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.3s;
+}
+
+.days-overview-day-selected {
+    color: #dc3545;
+}
+
+.days-overview-day > div:first-child {
+    font-size: 0.75rem;
+}
+
+.days-overview-day > div:nth-child(3) {
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-top: 0.3rem;
+    border-radius: 50%;
+}
+
+.days-overview-day > .event-blue {
+    background-color: var(--event-blue);
+}
+
+.days-overview-day > .event-orange {
+    background-color: var(--event-orange);
+}
+
+.event-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.event-list li {
+    position: relative;
+}
+
+.event-list li::before {
+    content: '';
+    position: absolute;
+    left: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+}
+
+.event-list li.event-blue::before {
+    background-color: var(--event-blue);
+}
+
+.event-list li.event-orange::before {
+    background-color: var(--event-orange);
+}
+
+.author-badge {
+    background-color: var(--lighter-hover);
+    font-weight: normal;
+}
+
+.card {
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.wide {
+    flex-grow: 2; /* Doppelte Breite im Vergleich zu normalen Elementen */
+}
