@@ -10,9 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "bootstrap": "^5.3.3",
     "express": "^4.21.2",
+    "express-session": "^1.18.1",
     "nodemon": "^3.1.9",
+    "pg": "^8.13.1",
     "socket.io": "^4.8.1"
   }
 }

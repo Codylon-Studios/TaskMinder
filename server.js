@@ -1,6 +1,8 @@
 // Import necessary modules: express, http server, socket.io
 const express = require('express');
 const { createServer } = require('http');
+const auth = require('./routes/auth');
+const session = require('express-session');
 
 const app = express();
 const server = createServer(app);
@@ -22,6 +24,19 @@ server.listen(3000, () => {
 // Middleware to parse request bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+
+//configure session
+app.use(session({
+  secret: "notsecret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }, //10 days
+  name: 'UserLogin',
+}));
+
+
+app.use('/auth', auth);
+
 
 // When a user connects
 io.on('connection', (socket) => {
@@ -48,7 +63,7 @@ io.on('connection', (socket) => {
   socket.on('delete-note', (itemValue) => {
     //remove note from database
     // Broadcast updated note-list to all clients
-    io.emit('current-notes', /*data*/); 
+    io.emit('current-notes', /*data*/);
   });
 
   socket.on('disconnect', () => {
@@ -57,6 +72,6 @@ io.on('connection', (socket) => {
 });
 
 // Serve index.html when root URL is accessed
-app.get('/', function(req, res) {
+app.get('/', function (req, res) {
   res.sendFile(__dirname + '/public/main.html');
 });
