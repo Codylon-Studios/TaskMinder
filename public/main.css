@@ -1,40 +1,76 @@
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
 
 :root {
-    --lighter-hover: #e9ecef;
-    --lighter-active: #d3d6da;
-    --event-blue: #5599ff;
-    --event-orange: #ff9955;
-    --event-pink: #ff5599;
-    --event-violet: #9955ff;
+    --event-blue: 85, 153, 255;
+    --event-orange: 255, 153, 85;
 }
 
 body {
     font-family: "Quicksand", Arial, Helvetica, sans-serif;
     padding-top: 70px;
     font-weight: 500;
+
+    --semivisible-hover: #e9ecef;
+    --semivisible-active: #d3d6da;
+    --tertiary-hover: #d3d4d5;
+    --tertiary-active: #c6c7c8;
 }
 
-span.event-blue {
-    color: var(--event-blue);
+body[data-bs-theme="dark"] {
+    --semivisible-hover: #353738;
+    --semivisible-active: #434547;
+    --tertiary-hover: #424649;
+    --tertiary-active: #4d5154;
 }
 
-span.event-orange {
-    color: var(--event-orange);
+.w-fit-content {
+    width: fit-content;
 }
 
-.btn-lighter {
+.btn-semivisible {
     background-color: transparent;
     border: none;
     cursor: pointer;
 }
 
-.btn-lighter:hover {
-    background-color: var(--lighter-hover);
+.btn-semivisible:hover {
+    background-color: var(--semivisible-hover);
 }
 
-.btn-lighter:active {
-    background-color: var(--lighter-active) !important;
+.btn-semivisible:active {
+    background-color: var(--semivisible-active) !important;
+}
+
+.btn-tertiary {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-tertiary:hover {
+    background-color: var(--tertiary-hover);
+}
+
+.btn-tertiary:active {
+    background-color: var(--tertiary-active) !important;
+}
+
+.card.event-blue {
+    border-color: rgb(var(--event-blue));
+    background-color: rgba(var(--event-blue), 0.4);
+}
+
+.card.event-orange {
+    border-color: rgb(var(--event-orange));
+    background-color: rgba(var(--event-orange), 0.4);
+}
+
+span.event-blue {
+    color: rgb(var(--event-blue));
+}
+
+span.event-orange {
+    color: rgb(var(--event-orange));
 }
 
 .days-overview-day {
@@ -64,11 +100,11 @@ span.event-orange {
 }
 
 .days-overview-day > .event-blue {
-    background-color: var(--event-blue);
+    background-color: rgb(var(--event-blue));
 }
 
 .days-overview-day > .event-orange {
-    background-color: var(--event-orange);
+    background-color: rgb(var(--event-orange));
 }
 
 .event-list {
@@ -92,15 +128,15 @@ span.event-orange {
 }
 
 .event-list li.event-blue::before {
-    background-color: var(--event-blue);
+    background-color: rgb(var(--event-blue));
 }
 
 .event-list li.event-orange::before {
-    background-color: var(--event-orange);
+    background-color: rgb(var(--event-orange));
 }
 
 .author-badge {
-    background-color: var(--lighter-hover);
+    background-color: var(--semivisible-hover);
     font-weight: normal;
 }
 
@@ -110,5 +146,5 @@ span.event-orange {
 }
 
 .wide {
-    flex-grow: 2; /* Doppelte Breite im Vergleich zu normalen Elementen */
+    flex-grow: 2;
 }
