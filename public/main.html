@@ -1,18 +1,286 @@
-
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Zippedäus</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  </head>
-  <body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hausaufgabenplaner</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="main.css" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/0ca04b82ef.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <nav class="navbar bg-body-tertiary fixed-top">
+    <div class="container-fluid">
+      <button class="btn btn-tertiary me-auto d-sm-none" data-bs-toggle="dropdown">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="dropdown-menu m-1">
+        <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#settings-modal">
+          Einstellungen
+        </button>
+      </div>
+
+      <div class="navbar-text fs-5 me-sm-4">Hausaufgabenplaner</div>
+      
+      <ul class="navbar-nav d-none d-sm-flex flex-row me-auto">
+        <li class="nav-item me-3">
+          <button class="nav-link" data-bs-toggle="modal" data-bs-target="#settings-modal">Einstellungen</button>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">...</a>
+        </li>
+      </ul>
+
+      <button class="btn btn-tertiary ms-auto">
+        <i class="fas fa-rotate"></i>
+      </button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
+      <button class="btn btn-semivisible">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <div class="mx-2">
+        Dezember 2024
+      </div>
+      <button class="btn btn-semivisible btn-custom">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+  
+    <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
+      <button class="btn btn-semivisible">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <div class="mx-2 d-flex">
+        <div class="days-overview-day btn-semivisible">
+          <div>Mo</div><div>23</div><div class="event-blue"></div>
+        </div>
+        <div class="days-overview-day btn-semivisible">
+          <div>Di</div><div>24</div><div></div>
+        </div>
+        <div class="days-overview-day btn-semivisible">
+          <div>Mi</div><div>25</div><div></div>
+        </div>
+        <div class="days-overview-day btn-semivisible days-overview-day-selected">
+          <div>Do</div><div>26</div><div class="event-orange"></div>
+        </div>
+        <div class="days-overview-day btn-semivisible">
+          <div>Fr</div><div>27</div><div class="event-blue"></div>
+        </div>
+        <div class="days-overview-day btn-semivisible">
+          <div>Sa</div><div>28</div><div></div>
+        </div>
+        <div class="days-overview-day btn-semivisible">
+          <div>So</div><div>29</div><div></div>
+        </div>
+      </div>
+      <button class="btn btn-semivisible btn-custom">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+  
+    <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
+      <label class="mb-0 me-3 text-nowrap" for="timetable-mode">Anzeige des Stundenplans</label>
+      <div class="btn-group" id="timetable-mode">
+        <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-less" checked>
+        <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-less">Weniger</label>
+      
+        <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-more">
+        <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-more">Mehr</label>
+      </div>
+    </div>
+
+    <div class="container-fluid mb-3 d-flex flex-wrap flex-row gap-2" id="timetable-less">
+      <div class="card wide">
+        <div class="card-body d-flex align-items-center justify-content-center">
+          Mat
+        </div>
+      </div>
+      <div class="card wide">
+        <div class="card-body d-flex align-items-center justify-content-center">
+          WuR
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body d-flex align-items-center justify-content-center">
+          Phy
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body d-flex align-items-center justify-content-center">
+          Deu
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body d-flex align-items-center justify-content-center">
+          Lat
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xxl-row gap-3" id="timetable-more">
+      <div class="card wide">
+        <div class="card-body pt-4">
+          <div class="position-absolute start-0 top-0 mx-2 my-1">8:00</div>
+          <div class="position-absolute end-0 top-0 mx-2 my-1">9:30</div>
+          <div class="d-flex align-items-center justify-content-center flex-column">
+            <span class="fw-semibold text-center">Mathe</span>
+            <span class="text-center">411, Herr Todi</span>
+          </div>
+        </div>
+      </div>
+      <div class="card wide">
+        <div class="card-body pt-4">
+          <div class="position-absolute start-0 top-0 mx-2 my-1">9:35</div>
+          <div class="position-absolute end-0 top-0 mx-2 my-1">11:25</div>
+          <div class="d-flex align-items-center justify-content-center flex-column">
+            <span class="fw-semibold text-center">Wirtschaft & Recht</span>
+            <span class="text-center">411, Frau Tausend</span>
+            <span class="text-center event-orange fw-bold mt-2">Ausfrage</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body pt-4">
+          <div class="position-absolute start-0 top-0 mx-2 my-1">11:25</div>
+          <div class="position-absolute end-0 top-0 mx-2 my-1">12:10</div>
+          <div class="d-flex align-items-center justify-content-center flex-column">
+            <span class="fw-semibold text-center">Physik</span>
+            <span class="text-center">012, Herr Kopp</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body pt-4">
+          <div class="position-absolute start-0 top-0 mx-2 my-1">12:30</div>
+          <div class="position-absolute end-0 top-0 mx-2 my-1">13:15</div>
+          <div class="d-flex align-items-center justify-content-center flex-column">
+            <span class="fw-semibold text-center">Deutsch</span>
+            <span class="text-center">411, Herr Strunz</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body pt-4">
+          <div class="position-absolute start-0 top-0 mx-2 my-1">13:15</div>
+          <div class="position-absolute end-0 top-0 mx-2 my-1">14:00</div>
+          <div class="d-flex align-items-center justify-content-center flex-column mb-2">
+            <span class="fw-semibold text-center">Latein</span>
+            <span class="text-center">411, Herr Waschbüsch</span>
+            <span class="text-center event-blue fw-bold mt-2">Schulaufgabe</span>
+          </div>
+        </div>
+      </div>
+    </div>
     
-    <h2>Editable List</h2>
-    
+    <div class="container-fluid mb-3">
+      <div class="mb-2 text-decoration-underline">
+        Ereignisse
+      </div>
+      <ul class="ms-0 ps-4">
+        <li class="card event-blue w-fit-content mb-1">
+          <div class="card-body p-2">
+            Schulaufgabe Latein
+            <span class="badge text-body author-badge">Von abc123</span>
+          </div>
+        </li>
+        <li class="card event-orange w-fit-content">
+          <div class="card-body p-2">
+            Ausfrage Chemie
+            <span class="badge text-body author-badge">Von abc123</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+  
+    <div class="container-fluid mb-3">
+      <div class="mb-2 text-decoration-underline d-flex align-items-center">
+        Hausaufgaben
+        <select class="form-select form-select-sm d-inline-block w-auto ms-2" style="padding: .2rem 2rem .2rem .5rem;">
+          <option value="auf-heute">auf heute</option>
+          <option value="von-heute">von heute</option>
+          <option value="von-heute">alle</option>
+        </select>        
+      </div>
+      <div class="ms-3">
+        <div class="mb-1 form-check">
+          <label class="form-check-label">
+            <input type="checkbox" class="form-check-input">
+            Deutsch Buch Seite 167/3
+          </label>
+          <span class="badge text-body author-badge">Von abc123</span>
+        </div>
+        <div class="mb-1 form-check">
+          <label class="form-check-label">
+            <input type="checkbox" class="form-check-input">
+            Mathe Arbeitsblatt Aufgabe 2 und 3
+          </label>
+          <span class="badge text-body author-badge">Von abc123</span>
+        </div>
+        <div class="form-check">
+          <label class="form-check-label">
+            <input type="checkbox" class="form-check-input">
+            Englisch Mediation schreiben
+          </label>
+          <span class="badge text-body author-badge">Von abc123</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid">
+      <div class="mb-2 text-decoration-underline">
+        Anmerkungen
+      </div>
+      <div class="ms-3">
+        <div class="mb-1 form-check">
+          <label class="form-check-label">
+            <input type="checkbox" class="form-check-input">
+            Mathe Schulaufgabe mitnehmen
+          </label>
+          <span class="badge text-body author-badge">Von abc123</span>
+        </div>
+        <div class="mb-1 form-check">
+          <label class="form-check-label">
+            <input type="checkbox" class="form-check-input">
+            Weihnachtsstunde
+          </label>
+          <span class="badge text-body author-badge">Von abc123</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="settings-modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5">Einstellungen</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label class="mb-0 me-3 text-nowrap" for="color-theme">Farbthema</label>
+          <div class="btn-group" id="color-theme">
+            <input type="radio" class="btn-check" name="color-theme" id="color-theme-light" checked>
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-light">Hell</label>
+          
+            <input type="radio" class="btn-check" name="color-theme" id="color-theme-dark">
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-dark">Dunkel</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fertig</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+
   <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="main.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-  </body>
+</body>
 </html> 
