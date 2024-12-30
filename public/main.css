@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
+
+:root {
+    --event-blue: 85, 153, 255;
+    --event-orange: 255, 153, 85;
+}
+
+body {
+    font-family: "Quicksand", Arial, Helvetica, sans-serif;
+    padding-top: 70px;
+    font-weight: 500;
+
+    --semivisible-hover: #e9ecef;
+    --semivisible-active: #d3d6da;
+    --tertiary-hover: #d3d4d5;
+    --tertiary-active: #c6c7c8;
+}
+
+body[data-bs-theme="dark"] {
+    --semivisible-hover: #353738;
+    --semivisible-active: #434547;
+    --tertiary-hover: #424649;
+    --tertiary-active: #4d5154;
+}
+
+.w-fit-content {
+    width: fit-content;
+}
+
+.btn-semivisible {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-semivisible:hover {
+    background-color: var(--semivisible-hover);
+}
+
+.btn-semivisible:active {
+    background-color: var(--semivisible-active) !important;
+}
+
+.btn-tertiary {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-tertiary:hover {
+    background-color: var(--tertiary-hover);
+}
+
+.btn-tertiary:active {
+    background-color: var(--tertiary-active) !important;
+}
+
+.card.event-blue {
+    border-color: rgb(var(--event-blue));
+    background-color: rgba(var(--event-blue), 0.4);
+}
+
+.card.event-orange {
+    border-color: rgb(var(--event-orange));
+    background-color: rgba(var(--event-orange), 0.4);
+}
+
+span.event-blue {
+    color: rgb(var(--event-blue));
+}
+
+span.event-orange {
+    color: rgb(var(--event-orange));
+}
+
+.days-overview-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0.1rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.3s;
+}
+
+.days-overview-day-selected {
+    color: #dc3545;
+}
+
+.days-overview-day > div:first-child {
+    font-size: 0.75rem;
+}
+
+.days-overview-day > div:nth-child(3) {
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-top: 0.3rem;
+    border-radius: 50%;
+}
+
+.days-overview-day > .event-blue {
+    background-color: rgb(var(--event-blue));
+}
+
+.days-overview-day > .event-orange {
+    background-color: rgb(var(--event-orange));
+}
+
+.event-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.event-list li {
+    position: relative;
+}
+
+.event-list li::before {
+    content: '';
+    position: absolute;
+    left: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+}
+
+.event-list li.event-blue::before {
+    background-color: rgb(var(--event-blue));
+}
+
+.event-list li.event-orange::before {
+    background-color: rgb(var(--event-orange));
+}
+
+.author-badge {
+    background-color: var(--semivisible-hover);
+    font-weight: normal;
+}
+
+.card {
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.wide {
+    flex-grow: 2;
+}
