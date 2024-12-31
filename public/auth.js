@@ -63,6 +63,7 @@ function logoutAccount(){
             // Handle result
             if (result == "0") {
                 console.log("logged out");
+                $("#logout-success-toast").toast("show");
             }
             else if (result == "1") {
                 console.log("internal server error");

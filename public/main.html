@@ -35,18 +35,19 @@
       </ul>
 
       <div class="dropdown">
-        <button class="btn btn-tertiary" data-bs-toggle="dropdown">
+        <button class="btn btn-tertiary" data-bs-toggle="dropdown" id="user-dropdown">
           <i class="fas fa-user"></i>
         </button>
-        <div class="dropdown-menu dropdown-menu-end">
+        <div class="dropdown-menu dropdown-menu-end" id="dropdown-menu">
           <button class="dropdown-item" id="login-register-button" data-bs-toggle="modal" data-bs-target="#login-register-modal">
             Einloggen oder Registrieren
           </button>
-          <button class="dropdown-item" id="logout-button">
+          <button class="dropdown-item d-none" id="logout-button">
             Logout
           </button>
         </div>
       </div>
+      
 
       <button class="btn btn-tertiary">
         <i class="fas fa-rotate"></i>
@@ -390,6 +391,15 @@
       </div>
       <div class="toast-body">
           Willkommen <b class="username">User</b>!
+      </div>
+    </div>
+    <div id="logout-success-toast" class="toast">
+      <div class="toast-header bg-info text-white">
+          <b class="me-auto">Erfolgreich ausgeloggt</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+          Auf Wiedersehen!
       </div>
     </div>
   </div>
