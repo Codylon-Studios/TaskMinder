@@ -46,17 +46,12 @@ router.post('/logout', async (req, res) => {
 
 // Register route
 router.post('/register', async (req, res) => {
-  const { username, password, passwordRepeat, classname } = req.body;
-
-  if (password !== passwordRepeat) return res.status(200).send(['2']);
-
+  const { username, password } = req.body;
+  const classname = "10d";
   try {
     await withDB(async (client) => {
-      const userExists = await client.query('SELECT 1 FROM users WHERE username = $1', [username]);
-      if (userExists.rows.length > 0) return res.status(200).send(['3']);  // Username already used
-
       const hashedPassword = await bcrypt.hash(password, saltRounds);
-      await client.query('INSERT INTO accounts (username, password, class) VALUES ($1, $2, $3)', [username, hashedPassword, classname]);
+      await client.query('INSERT INTO users (username, password, class) VALUES ($1, $2, $3)', [username, hashedPassword, classname]);
 
       req.session.user = { username };
       res.status(200).send('0');  // Registration successful
@@ -115,6 +110,23 @@ router.post('/delete', async (req, res) => {
   } catch (error) {
     console.error('Error deleting account:', error);
     res.status(500).send('1');  // Internal server error
+  }
+});
+
+// checkusername route
+router.post('/checkusername', async (req, res) => {
+  const { username} = req.body;
+
+  try {
+    await withDB(async (client) => {
+      const userExists = await client.query('SELECT 1 FROM users WHERE username = $1', [username]);
+      if (userExists.rows.length > 0) return res.status(200).send(['1']);  // Username already used -- LOGIN
+
+      res.status(200).send('0');
+      console.log("register-server");  // Username not being used -- REGISTER
+    });
+  } catch (error) {
+    console.error('Error while storing user data:', error);
   }
 });
 
