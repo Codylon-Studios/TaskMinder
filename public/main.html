@@ -12,15 +12,17 @@
 <body>
   <nav class="navbar bg-body-tertiary fixed-top">
     <div class="container-fluid">
-      <button class="btn btn-tertiary me-auto d-sm-none" data-bs-toggle="dropdown">
-        <i class="fas fa-bars"></i>
-      </button>
-      <div class="dropdown-menu m-1">
-        <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#settings-modal">
-          Einstellungen
+      <div class="dropdown">
+        <button class="btn btn-tertiary me-auto d-sm-none" data-bs-toggle="dropdown">
+          <i class="fas fa-bars"></i>
         </button>
+        <div class="dropdown-menu">
+          <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#settings-modal">
+            Einstellungen
+          </button>
+        </div>
       </div>
-
+      
       <div class="navbar-text fs-5 me-sm-4">Hausaufgabenplaner</div>
       
       <ul class="navbar-nav d-none d-sm-flex flex-row me-auto">
@@ -32,7 +34,21 @@
         </li>
       </ul>
 
-      <button class="btn btn-tertiary ms-auto">
+      <div class="dropdown">
+        <button class="btn btn-tertiary" data-bs-toggle="dropdown">
+          <i class="fas fa-user"></i>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end">
+          <button class="dropdown-item" id="login-register-button" data-bs-toggle="modal" data-bs-target="#login-register-modal">
+            Einloggen oder Registrieren
+          </button>
+          <button class="dropdown-item" id="logout-button">
+            Logout
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-tertiary">
         <i class="fas fa-rotate"></i>
       </button>
     </div>
@@ -277,7 +293,52 @@
       </div>
     </div>
   </div>
-  
+
+  <div class="modal fade" id="login-register-modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="login-register-title">Einloggen oder Registrieren</h1>
+          <h1 class="modal-title fs-5 d-none" id="login-title">Willkommen zurück!</h1>
+          <h1 class="modal-title fs-5 d-none" id="register-title">Registriere dich!</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="login-register-content">
+            <label for="login-register-username" class="form-label">
+              Gib deinen Benutzernamen ein
+            </label>
+            <input type="text" class="form-control" id="login-register-username">
+            <div class="form-text">Gib zum Registrieren deinen Wunschnamen ein</div>
+          </div>
+          <div id="login-content" class="d-none">
+            <label for="login-password" class="form-label">
+              Gib dein Passwort ein
+            </label>
+            <input type="password" class="form-control" id="login-password">
+          </div>
+          <div id="register-content" class="d-none">
+            <div class="mb-3">
+              <label for="register-password" class="form-label">
+                Gib dein Passwort ein
+              </label>
+              <input type="password" class="form-control" id="register-password">
+              <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
+            </div>
+            <input type="password" class="form-control" id="register-password-repeat">
+            <div class="form-text">Gib es noch mal ein, falls du dich vertippt hast</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary d-none" id="login-register-back-button">Zurück</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary disabled" id="login-register-next-button">Weiter</button>
+          <button type="button" class="btn btn-primary d-none" id="login-button">Einloggen</button>
+          <button type="button" class="btn btn-primary d-none" id="register-button">Registrieren</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
