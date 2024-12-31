@@ -305,6 +305,12 @@
         </div>
         <div class="modal-body">
           <div id="login-register-content">
+            <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="login-register-error-invalid-username">
+              <i class="fa-solid fa-circle-exclamation mx-1"></i>
+              <span class="d-block">
+                Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.
+              </span>
+            </div>
             <label for="login-register-username" class="form-label">
               Gib deinen Benutzernamen ein
             </label>
@@ -312,12 +318,30 @@
             <div class="form-text">Gib zum Registrieren deinen Wunschnamen ein</div>
           </div>
           <div id="login-content" class="d-none">
+            <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="login-error-invalid-password">
+              <i class="fa-solid fa-circle-exclamation mx-1"></i>
+              <span class="d-block">
+                Das Passwort ist falsch!
+              </span>
+            </div>
             <label for="login-password" class="form-label">
               Gib dein Passwort ein
             </label>
             <input type="password" class="form-control" id="login-password">
           </div>
           <div id="register-content" class="d-none">
+            <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-no-matching-passwords">
+              <i class="fa-solid fa-circle-exclamation mx-1"></i>
+              <span class="d-block">
+                Die Passwörter stimmen nicht überein!
+              </span>
+            </div>
+            <div class="alert alert-warning p-2 d-none align-items-center gap-2" id="register-error-insecure-password">
+              <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+              <span class="d-block">
+                Das Passwort ist nicht sehr sicher!
+              </span>
+            </div>
             <div class="mb-3">
               <label for="register-password" class="form-label">
                 Gib dein Passwort ein
@@ -326,7 +350,7 @@
               <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
             </div>
             <input type="password" class="form-control" id="register-password-repeat">
-            <div class="form-text">Gib es noch mal ein, falls du dich vertippt hast</div>
+            <div class="form-text">Gib es noch mal ein</div>
           </div>
         </div>
         <div class="modal-footer">
@@ -336,6 +360,36 @@
           <button type="button" class="btn btn-primary d-none" id="login-button">Einloggen</button>
           <button type="button" class="btn btn-primary d-none" id="register-button">Registrieren</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="error-server-toast" class="toast">
+      <div class="toast-header bg-danger text-white">
+          <b class="me-auto">Serverproblem</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+          Unser Server hat gerade Probleme. Bitte versuche es später erneut.
+      </div>
+    </div>
+    <div id="login-success-toast" class="toast">
+      <div class="toast-header bg-success text-white">
+          <b class="me-auto">Erfolgreich eingeloggt</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+          Willkommen zurück <b class="username">User</b>!
+      </div>
+    </div>
+    <div id="register-success-toast" class="toast">
+      <div class="toast-header bg-success text-white">
+          <b class="me-auto">Erfolgreich registriert</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+          Willkommen <b class="username">User</b>!
       </div>
     </div>
   </div>
