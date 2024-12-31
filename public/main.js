@@ -1,3 +1,4 @@
+const socket = io();
 // EMIT FUNCTIONS TO SERVER
 function addNote(/*parameters*/) {
   socket.emit('add-note', /*parameters*/);
@@ -67,7 +68,8 @@ function checkSecurePassword(password) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"'<>,.?/-]).{8,}$/.test(password);
 }
 
-const socket = io();
+
+
 
 // Listen for the current list from the server
 socket.on('current-notes', (/*parameters*/) => {
@@ -87,10 +89,6 @@ $("#color-theme input").each(() => {
   $(this).on("click", () => {
     updateColorTheme();
   });
-});
-
-$("#logout-button").on("click", () => {
-  console.log("Logout")
 });
 
 $("#login-register-username").val("");
@@ -156,84 +154,57 @@ $("#register-password-repeat").on("change", () => {
   }
 });
 
-$("#login-register-next-button").on("click", () => {
-
+$("#login-register-next-button").on("click", async () => {
   $("#login-register-back-button").removeClass("d-none");
 
   $("#login-register-title").addClass("d-none");
   $("#login-register-content").addClass("d-none");
   $("#login-register-next-button").addClass("d-none");
 
-  if ($("#login-register-username").val() == "existing") {
-    $("#login-title").removeClass("d-none");
-    $("#login-content").removeClass("d-none");
-    $("#login-button").removeClass("d-none");
-  }
-  else {
-    $("#register-title").removeClass("d-none");
-    $("#register-content").removeClass("d-none");
-    $("#register-button").removeClass("d-none");
+  try {
+    const exists = await userNameExists($("#login-register-username").val());
+
+    if (exists) {
+      console.log("login");
+      $("#login-title").removeClass("d-none");
+      $("#login-content").removeClass("d-none");
+      $("#login-button").removeClass("d-none");
+    } else {
+      console.log("register");
+      $("#register-title").removeClass("d-none");
+      $("#register-content").removeClass("d-none");
+      $("#register-button").removeClass("d-none");
+    }
+  } catch (error) {
+    console.error("Error checking username:", error);
+    $("#error-server-toast").toast("show");
   }
 });
 
+
 $("#login-register-back-button").on("click", resetLoginRegisterModal);
 
+
+
+//
+//LOGIN -- LOGOUT -- REGISTER
+//
 $("#login-button").on("click", () => {
   let username = $("#login-register-username").val();
   let password = $("#login-password").val()
-  console.log("Login", username, password)
+  console.log("Login: ", username, password)
+  LoginAccount(username, password);
 
-  let url = "/account/login";
-  let data = {
-      username: username,
-      password: password
-  };
-  let hasResponded = false;
-  $.post(url, data, function (result, status) {
-    hasResponded = true;
-    if (result == "0") {
-      $("#login-success-toast .username").html(username);
-      $("#login-success-toast").toast("show");
-    }
-    else if (result == "1") {
-      $("#error-server-toast").toast("show");
-    }
-    else if (result == "2") {
-      $("#login-error-invalid-password").removeClass("d-none");
-      $("#login-error-invalid-password").addClass("d-flex");
-    }
-  });
-  setTimeout(() => {
-    if (!hasResponded) {
-      $("#error-server-toast").toast("show");
-    }
-  }, 1000);
 });
 
 $("#register-button").on("click", () => {
   let username = $("#login-register-username").val();
   let password = $("#register-password").val()
-  console.log("Register", username, password)
+  console.log("Register: ", username, password)
+  registerAccount(username, password);
+});
 
-  let url = "/account/register";
-  let data = {
-      username: username,
-      password: password
-  };
-  let hasResponded = false;
-  $.post(url, data, function (result, status) {
-    hasResponded = true;
-    if (result == "0") {
-      $("#register-success-toast .username").html(username);
-      $("#register-success-toast").toast("show");
-    }
-    else if (result == "1") {
-      $("#error-server-toast").toast("show");
-    }
-  });
-  setTimeout(() => {
-    if (!hasResponded) {
-      $("#error-server-toast").toast("show");
-    }
-  }, 1000);
+$("#logout-button").on("click", () => {
+  console.log("Logout");
+  logoutAccount();
 });
