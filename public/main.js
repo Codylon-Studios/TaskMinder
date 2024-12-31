@@ -68,8 +68,22 @@ function checkSecurePassword(password) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"'<>,.?/-]).{8,}$/.test(password);
 }
 
-
-
+$(document).ready(() => {
+  $('#user-dropdown').on('show.bs.dropdown', () => {
+    //check authentication
+    $.get('auth/auth', (response) => {
+      if (response.authenticated) {
+        // User is logged in
+        $('#login-register-button').addClass('d-none');
+        $('#logout-button').removeClass('d-none');
+      } else {
+        // User is not logged in
+        $('#login-register-button').removeClass('d-none');
+        $('#logout-button').addClass('d-none');
+      }
+    });
+  });
+});
 
 // Listen for the current list from the server
 socket.on('current-notes', (/*parameters*/) => {
@@ -194,7 +208,7 @@ $("#login-button").on("click", () => {
   let password = $("#login-password").val()
   console.log("Login: ", username, password)
   LoginAccount(username, password);
-
+  $("#login-register-modal").modal("hide");
 });
 
 $("#register-button").on("click", () => {
@@ -202,6 +216,7 @@ $("#register-button").on("click", () => {
   let password = $("#register-password").val()
   console.log("Register: ", username, password)
   registerAccount(username, password);
+  $("#login-register-modal").modal("hide");
 });
 
 $("#logout-button").on("click", () => {
