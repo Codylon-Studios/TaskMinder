@@ -73,5 +73,10 @@ io.on('connection', (socket) => {
 
 // Serve index.html when root URL is accessed
 app.get('/', function (req, res) {
-  res.sendFile(__dirname + '/public/main.html');
+  res.sendFile(__dirname + '/public/main/main.html');
+});
+
+// Serve index.html when root URL is accessed
+app.get('/allhomework', function (req, res) {
+  res.sendFile(__dirname + '/public/allhomework/allhomework.html');
 });
