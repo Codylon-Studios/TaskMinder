@@ -1,4 +1,3 @@
-const socket = io();
 // EMIT FUNCTIONS TO SERVER
 function addNote(/*parameters*/) {
   socket.emit('add-note', /*parameters*/);

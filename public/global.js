@@ -21,6 +21,8 @@ function loadTemplateContent() {
   });
 }
 
+// Declare socket as a global variable
+let socket;
 // Load jQuery without jQuery
 let jQueryScript = document.createElement('script');
 jQueryScript.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
@@ -28,7 +30,7 @@ jQueryScript.defer = true;
 jQueryScript.onload = () => {
   let $head = $("head");
   let resources = [];
-  // Load Bootstrao
+  // Load Bootstrap
   resources.push(`<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">`);
   resources.push(`<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>`);
 
@@ -40,9 +42,13 @@ jQueryScript.onload = () => {
 
   $head.append(resources.join(""));
 
-  // Load Socket
+  // Load Socket.io
   let socketScript = document.createElement("script");
   socketScript.src = "/socket.io/socket.io.js";
+  socketScript.onload = () => {
+    socket = io(); // Initialize Socket.io globally
+    console.log("Socket.io connection established.");
+  };
   document.head.appendChild(socketScript);
 
   // Add possibility to include divs with class "load-content" to load e.g. the navbar
