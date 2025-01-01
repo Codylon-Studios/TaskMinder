@@ -19,6 +19,10 @@ const withDB = async (callback) => {
   }
 };
 
+function checkUsername(username) {
+  return /^\w{4,20}$/.test(username);
+}
+
 // Authentication check
 router.get('/auth', (req, res) => {
   if (req.session.user) {
@@ -49,6 +53,11 @@ router.post('/register', async (req, res) => {
   const { username, password } = req.body;
   const classname = "10d";
   try {
+    if (! checkUsername(username)) {
+      res.status(200).send('0');  // Invalid username (But sending 0 to scam scammers)
+      console.warn("Tried to use invalid username: ", username);
+      return;
+    }
     await withDB(async (client) => {
       const hashedPassword = await bcrypt.hash(password, saltRounds);
       await client.query('INSERT INTO users (username, password, class) VALUES ($1, $2, $3)', [username, hashedPassword, classname]);
@@ -67,6 +76,11 @@ router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
+    if (! checkUsername(username)) {
+      res.status(200).send('0');  // Invalid username (But sending 0 to scam scammers)
+      console.warn("Tried to use invalid username: ", username);
+      return;
+    }
     await withDB(async (client) => {
       const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);
       if (result.rows.length === 0) return res.status(200).send('2');  // Username or password incorrect
@@ -92,6 +106,11 @@ router.post('/delete', async (req, res) => {
   const { password } = req.body;
 
   try {
+    if (! checkUsername(username)) {
+      res.status(200).send('0');  // Invalid username (But sending 0 to scam scammers)
+      console.warn("Tried to use invalid username: ", username);
+      return;
+    }
     await withDB(async (client) => {
       const result = await client.query('SELECT * FROM users WHERE username = $1', [username]);
       if (result.rows.length === 0) return res.status(200).send('2');  // Incorrect username or password
