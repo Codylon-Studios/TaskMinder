@@ -71,7 +71,7 @@ function checkSecurePassword(password) {
 $(document).ready(() => {
   $('#user-dropdown').on('show.bs.dropdown', () => {
     //check authentication
-    $.get('auth/auth', (response) => {
+    $.get('account/auth', (response) => {
       if (response.authenticated) {
         // User is logged in
         $('#login-register-button').addClass('d-none');
@@ -176,7 +176,7 @@ $("#login-register-next-button").on("click", async () => {
   $("#login-register-next-button").addClass("d-none");
 
   try {
-    const exists = await userNameExists($("#login-register-username").val());
+    const exists = await checkExistingUsername($("#login-register-username").val());
 
     if (exists) {
       console.log("login");
@@ -195,9 +195,7 @@ $("#login-register-next-button").on("click", async () => {
   }
 });
 
-
 $("#login-register-back-button").on("click", resetLoginRegisterModal);
-
 
 
 //
@@ -207,8 +205,7 @@ $("#login-button").on("click", () => {
   let username = $("#login-register-username").val();
   let password = $("#login-password").val()
   console.log("Login: ", username, password)
-  LoginAccount(username, password);
-  $("#login-register-modal").modal("hide");
+  loginAccount(username, password);
 });
 
 $("#register-button").on("click", () => {
@@ -216,7 +213,6 @@ $("#register-button").on("click", () => {
   let password = $("#register-password").val()
   console.log("Register: ", username, password)
   registerAccount(username, password);
-  $("#login-register-modal").modal("hide");
 });
 
 $("#logout-button").on("click", () => {

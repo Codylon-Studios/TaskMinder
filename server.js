@@ -35,7 +35,7 @@ app.use(session({
 }));
 
 
-app.use('/auth', auth);
+app.use('/account', auth);
 
 
 // When a user connects

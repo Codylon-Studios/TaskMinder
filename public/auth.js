@@ -1,6 +1,6 @@
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 function registerAccount(username, password) {
-    let url = "/auth/register";
+    let url = "/account/register";
     let data = {
         username: username,
         password: password
@@ -12,6 +12,7 @@ function registerAccount(username, password) {
             //success
             $("#register-success-toast .username").html(username);
             $("#register-success-toast").toast("show");
+            $("#login-register-modal").modal("hide");
         }
         else if (result == "1") {
             //Unknown error on server side
@@ -26,8 +27,8 @@ function registerAccount(username, password) {
 }
 
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
-function LoginAccount(username, password) {
-    let url = "/auth/login";
+function loginAccount(username, password) {
+    let url = "/account/login";
     let data = {
         username: username,
         password: password
@@ -38,6 +39,7 @@ function LoginAccount(username, password) {
         if (result == "0") {
             $("#login-success-toast .username").html(username);
             $("#login-success-toast").toast("show");
+            $("#login-register-modal").modal("hide");
         }
         else if (result == "1") {
             $("#error-server-toast").toast("show");
@@ -55,7 +57,7 @@ function LoginAccount(username, password) {
 };
 
 function logoutAccount(){
-    let url = "/auth/logout";
+    let url = "/account/logout";
         let data = {};
         let hasResponded = false;
         $.post(url, data, function (result) {
@@ -79,8 +81,8 @@ function logoutAccount(){
         }, 5000);
 }
 
-function userNameExists(username) {
-    let url = "/auth/checkusername";
+function checkExistingUsername(username) {
+    let url = "/account/checkusername";
     let data = { username: username };
   
     return new Promise((resolve, reject) => {
@@ -94,7 +96,7 @@ function userNameExists(username) {
         }
       }).fail(() => {
         reject(new Error("Server error"));
+        $("#error-server-toast").toast("show");
       });
     });
   }
-           
