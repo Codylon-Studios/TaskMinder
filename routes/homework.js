@@ -1,9 +1,8 @@
-const { withDB, connectRedis, redisClient, disconnectRedis } = require('./constant');
+const { withDB, connectRedis, redisClient, cacheKey} = require('./constant');
 const express = require('express');
 const router = express.Router();
 
 connectRedis();
-const cacheKey = 'homework_data';
 
 // addHA route
 router.post('/addhomework', async (req, res) => {
@@ -60,6 +59,5 @@ router.get('/fetchhomework', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
 module.exports = router;
 
