@@ -3,6 +3,7 @@ const { Pool } = require('pg');
 const redis = require('redis');
 
 const saltRounds = 10;
+const cacheKey = 'homework_data';
 
 //Create Redis Client
 const redisClient = redis.createClient({
@@ -50,4 +51,4 @@ const disconnectRedis = async () => {
   }
 };
 
-module.exports = {withDB, saltRounds, redisClient, connectRedis, disconnectRedis };
+module.exports = {withDB, saltRounds, redisClient, connectRedis, disconnectRedis, cacheKey};
