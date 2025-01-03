@@ -1,3 +1,6 @@
+# Ignore redis binary dump (dump.rdb) files
+*.rdb
+# Ignore Database .json file
 db_config.json
 # Logs
 logs

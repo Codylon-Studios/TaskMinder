@@ -1,8 +1,9 @@
 const express = require('express');
 const { createServer } = require('http');
 const auth = require('./routes/auth');
+const ha = require('./routes/homework')
 const session = require('express-session');
-const initializeSocket = require('./socket');
+const initializeSocket = require('./routes/socket');
 
 const app = express();
 const server = createServer(app);
@@ -28,6 +29,7 @@ app.use(session({
 }));
 
 app.use('/account', auth);
+app.use('/homework', ha);
 
 // Serve index.html when root URL is accessed
 app.get('/', function (req, res) {
