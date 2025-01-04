@@ -21,8 +21,7 @@ function loadTemplateContent() {
   });
 }
 
-// Declare socket as a global variable
-let socket;
+
 // Load jQuery without jQuery
 let jQueryScript = document.createElement('script');
 jQueryScript.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
