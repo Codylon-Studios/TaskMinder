@@ -56,6 +56,7 @@ function loginAccount(username, password) {
   }, 1000);
 };
 
+//LOGOUT -- LOGOUT -- LOGOUT
 function logoutAccount(){
   let url = "/account/logout";
       let data = {};
