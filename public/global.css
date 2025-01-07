@@ -27,6 +27,10 @@ body[data-bs-theme="dark"] {
     width: fit-content;
 }
 
+.d-contents {
+    display: contents;
+}
+
 .btn-semivisible {
     background-color: transparent;
     border: none;
