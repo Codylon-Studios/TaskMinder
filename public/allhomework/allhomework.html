@@ -9,13 +9,14 @@
 <body data-url="allhomework">
   <div class="load-content" data-url="navbar" data-html data-js></div>
   <div class="container">
-    <div class="dropdown mb-3" id="filter-dropdown">
-      <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-        Hausaufgaben filtern
+    <div class="d-flex align-items-center mb-3 flex-column flex-md-row gap-2 gap-md-3">
+      <button class="btn btn-outline-secondary" id="filter-toggle">
+        <i class="fa-solid fa-filter"></i>
+        Filtern
       </button>
-      <div class="dropdown-menu" >
-        <div class="dropdown dropend">
-          <button class="dropdown-item dropdown-toggle" data-bs-toggle="dropdown">
+      <div id="filter-content" class="d-contents d-none">
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
             Fach
           </button>
           <div class="dropdown-menu" id="filter-subject-dropwdown">
@@ -46,8 +47,8 @@
             </div>
           </div>
         </div>
-        <div class="dropdown dropend">
-          <button class="dropdown-item dropdown-toggle" data-bs-toggle="dropdown">
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
             Aufgegeben (Datum)
           </button>
           <div class="dropdown-menu" id="filter-given-date-dropwdown">
@@ -62,8 +63,9 @@
               </div>
             </div>
           </div>
-        </div><div class="dropdown dropend">
-          <button class="dropdown-item dropdown-toggle" data-bs-toggle="dropdown">
+        </div>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
             Abgabe (Datum)
           </button>
           <div class="dropdown-menu" id="filter-submission-date-dropwdown">
