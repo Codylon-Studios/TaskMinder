@@ -186,12 +186,6 @@ $(document).ready(() => {
 
 updateColorTheme();
 
-$("#timetable-mode input").each(() => {
-  $(this).on("click", () => {
-    updateTimetableMode();
-  });
-});
-
 $("#color-theme input").each(() => {
   $(this).on("click", () => {
     updateColorTheme();

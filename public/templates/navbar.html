@@ -1,24 +1,33 @@
 <nav class="navbar bg-body-tertiary fixed-top">
 	<div class="container-fluid">
 		<div class="dropdown">
-			<button class="btn btn-tertiary me-auto d-sm-none" data-bs-toggle="dropdown">
+			<button class="btn btn-tertiary d-md-none" data-bs-toggle="dropdown">
 				<i class="fas fa-bars"></i>
 			</button>
 			<div class="dropdown-menu">
+				<a class="dropdown-item" href="/">
+					Home
+				</a>
+				<a class="dropdown-item" href="/allhomework">
+					Alle Hausaufgaben
+				</a>
 				<button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#settings-modal">
 					Einstellungen
 				</button>
 			</div>
 		</div>
 
-		<div class="navbar-text fs-5 me-sm-4">Hausaufgabenplaner</div>
+		<div class="navbar-text fs-5 me-md-4 ms-md-0 mx-auto">Hausaufgabenplaner</div>
 
-		<ul class="navbar-nav d-none d-sm-flex flex-row me-auto">
+		<ul class="navbar-nav d-none d-md-flex flex-row me-auto">
+			<li class="nav-item me-3">
+				<a class="nav-link" href="/">Home</a>
+			</li>
+			<li class="nav-item me-3">
+				<a class="nav-link" href="/allhomework">Alle Hausaufgaben</a>
+			</li>
 			<li class="nav-item me-3">
 				<button class="nav-link" data-bs-toggle="modal" data-bs-target="#settings-modal">Einstellungen</button>
-			</li>
-			<li class="nav-item">
-				<a class="nav-link" href="#">...</a>
 			</li>
 		</ul>
 
