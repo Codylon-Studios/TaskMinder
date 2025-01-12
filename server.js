@@ -3,7 +3,6 @@ const { createServer } = require('http');
 const auth = require('./routes/auth');
 const ha = require('./routes/homework')
 const session = require('express-session');
-const {redisClient, cacheKey} = require('./routes/constant');
 const app = express();
 const server = createServer(app);
 

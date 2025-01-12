@@ -3,19 +3,17 @@ const { Pool } = require('pg');
 const redis = require('redis');
 
 const saltRounds = 10;
-const cacheKey = 'homework_data';
+const cacheKeyHomework = 'homework_data';
 
-//Create Redis Client
 const redisClient = redis.createClient({
   url: 'redis://localhost:6379',
 });
 redisClient.on('error', (err) => console.error('Redis error:', err));
 
-// Create a PostgreSQL connection pool
 const dbConfig = JSON.parse(fs.readFileSync('db_config.json'));
 const pool = new Pool(dbConfig);
 
-// Helper to handle DB connection cleanup
+
 const withDB = async (callback) => {
   const client = await pool.connect();
   try {
@@ -51,4 +49,4 @@ const disconnectRedis = async () => {
   }
 };
 
-module.exports = {withDB, saltRounds, redisClient, connectRedis, disconnectRedis, cacheKey};
+module.exports = {withDB, saltRounds, redisClient, connectRedis, disconnectRedis, cacheKeyHomework};
