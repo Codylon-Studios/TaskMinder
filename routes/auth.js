@@ -1,23 +1,8 @@
 const bcrypt = require('bcrypt');
 const express = require('express');
-const fs = require('fs');
-const { Pool } = require('pg');
+const {withDB, saltRounds} = require('./constant');
 const router = express.Router();
 
-const saltRounds = 10;
-// Create a PostgreSQL connection pool
-const dbConfig = JSON.parse(fs.readFileSync('db_config.json'));
-const pool = new Pool(dbConfig);
-
-// Helper to handle DB connection cleanup
-const withDB = async (callback) => {
-  const client = await pool.connect();
-  try {
-    return await callback(client);
-  } finally {
-    client.release();
-  }
-};
 
 function checkUsername(username) {
   return /^\w{4,20}$/.test(username);
@@ -50,9 +35,13 @@ router.post('/logout', async (req, res) => {
 
 // Register route
 router.post('/register', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, classcode } = req.body;
   const classname = "10d";
   try {
+    if (classcode != "geheim") {
+      res.status(200).send('2');  // Invalid classcode
+      return;
+    }
     if (! checkUsername(username)) {
       res.status(200).send('0');  // Invalid username (But sending 0 to scam scammers)
       console.warn("Tried to use invalid username: ", username);
