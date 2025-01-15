@@ -12,3 +12,9 @@ function updateTimetableMode() {
 $(document).ready(() => {
   updateTimetableMode();
 });
+
+$("#timetable-mode input").each(() => {
+  $(this).on("click", () => {
+    updateTimetableMode();
+  });
+});

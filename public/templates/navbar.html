@@ -5,9 +5,6 @@
 				<i class="fas fa-bars"></i>
 			</button>
 			<div class="dropdown-menu">
-				<a class="dropdown-item" href="/">
-					Home
-				</a>
 				<a class="dropdown-item" href="/allhomework">
 					Alle Hausaufgaben
 				</a>
@@ -17,12 +14,9 @@
 			</div>
 		</div>
 
-		<div class="navbar-text fs-5 me-md-4 ms-md-0 mx-auto">Hausaufgabenplaner</div>
+		<a class="navbar-text fs-5 me-md-4 ms-md-0 mx-auto text-decoration-none" href="/">Hausaufgabenplaner</a>
 
 		<ul class="navbar-nav d-none d-md-flex flex-row me-auto">
-			<li class="nav-item me-3">
-				<a class="nav-link" href="/">Home</a>
-			</li>
 			<li class="nav-item me-3">
 				<a class="nav-link" href="/allhomework">Alle Hausaufgaben</a>
 			</li>
@@ -45,7 +39,7 @@
 			</div>
 		</div>
 
-		<button class="btn btn-tertiary">
+		<button class="btn btn-tertiary" id="navbar-reload-button">
 			<i class="fas fa-rotate"></i>
 		</button>
 	</div>
@@ -117,11 +111,24 @@
 							Die Passwörter stimmen nicht überein!
 						</span>
 					</div>
+					<div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-invalid-classcode">
+						<i class="fa-solid fa-circle-exclamation mx-1"></i>
+						<span class="d-block">
+							Der Klassencode stimmt nicht!
+						</span>
+					</div>
 					<div class="alert alert-warning p-2 d-none align-items-center gap-2" id="register-error-insecure-password">
 						<i class="fa-solid fa-triangle-exclamation mx-1"></i>
 						<span class="d-block">
 							Das Passwort ist nicht sehr sicher!
 						</span>
+					</div>
+					<div class="mb-3">
+						<label for="register-classcode" class="form-label">
+							Gib den Klassencode ein
+						</label>
+						<input type="text" class="form-control" id="register-classcode">
+						<div class="form-text">Frag uns einfach, wenn du ihn vergessen hast</div>
 					</div>
 					<div class="mb-3">
 						<label for="register-password" class="form-label">
@@ -146,40 +153,40 @@
 </div>
 
 <div class="toast-container position-fixed top-0 end-0 p-3">
-    <div id="error-server-toast" class="toast">
-      <div class="toast-header bg-danger text-white">
-          <b class="me-auto">Serverproblem</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-          Unser Server hat gerade Probleme. Bitte versuche es später erneut.
-      </div>
+  <div id="error-server-toast" class="toast">
+    <div class="toast-header bg-danger text-white">
+      <b class="me-auto">Serverproblem</b>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
     </div>
-    <div id="login-success-toast" class="toast">
-      <div class="toast-header bg-success text-white">
-          <b class="me-auto">Erfolgreich eingeloggt</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-          Willkommen zurück <b class="username">User</b>!
-      </div>
-    </div>
-    <div id="register-success-toast" class="toast">
-      <div class="toast-header bg-success text-white">
-          <b class="me-auto">Erfolgreich registriert</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-          Willkommen <b class="username">User</b>!
-      </div>
-    </div>
-    <div id="logout-success-toast" class="toast">
-      <div class="toast-header bg-info text-white">
-          <b class="me-auto">Erfolgreich ausgeloggt</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-          Auf Wiedersehen!
-      </div>
+    <div class="toast-body">
+      Unser Server hat gerade Probleme. Bitte versuche es später erneut.
     </div>
   </div>
+  <div id="login-success-toast" class="toast">
+    <div class="toast-header bg-success text-white">
+      <b class="me-auto">Erfolgreich eingeloggt</b>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+    </div>
+    <div class="toast-body">
+      Willkommen zurück <b class="username">User</b>!
+    </div>
+  </div>
+  <div id="register-success-toast" class="toast">
+    <div class="toast-header bg-success text-white">
+      <b class="me-auto">Erfolgreich registriert</b>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+    </div>
+    <div class="toast-body">
+      Willkommen <b class="username">User</b>!
+    </div>
+  </div>
+  <div id="logout-success-toast" class="toast">
+    <div class="toast-header bg-info text-white">
+      <b class="me-auto">Erfolgreich ausgeloggt</b>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+    </div>
+    <div class="toast-body">
+      Auf Wiedersehen!
+    </div>
+  </div>
+</div>

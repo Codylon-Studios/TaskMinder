@@ -1,9 +1,10 @@
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
-function registerAccount(username, password) {
+function registerAccount(username, password, classcode) {
   let url = "/account/register";
   let data = {
       username: username,
-      password: password
+      password: password,
+      classcode: classcode
   };
   let hasResponded = false;
   $.post(url, data, function (result) {
@@ -17,6 +18,10 @@ function registerAccount(username, password) {
       else if (result == "1") {
           //Unknown error on server side
           $("#error-server-toast").toast("show");
+      }
+      else if (result == "2") {
+        $("#register-error-invalid-classcode").removeClass("d-none");
+        $("#register-error-invalid-classcode").addClass("d-flex");
       }
   });
   setTimeout(() => {
@@ -133,16 +138,17 @@ function resetLoginRegisterModal() {
 //
 $("#login-button").on("click", () => {
   let username = $("#login-register-username").val();
-  let password = $("#login-password").val()
-  console.log("Login: ", username, password)
+  let password = $("#login-password").val();
+  console.log("Login: ", username, password);
   loginAccount(username, password);
 });
 
 $("#register-button").on("click", () => {
   let username = $("#login-register-username").val();
-  let password = $("#register-password").val()
-  console.log("Register: ", username, password)
-  registerAccount(username, password);
+  let password = $("#register-password").val();
+  let classcode = $("#register-classcode").val();
+  console.log("Register: ", username, password, classcode);
+  registerAccount(username, password, classcode);
 });
 
 $("#logout-button").on("click", () => {
@@ -253,6 +259,13 @@ $("#register-password-repeat").on("change", () => {
     $("#register-error-no-matching-passwords").removeClass("d-none");
     $("#register-error-no-matching-passwords").addClass("d-flex");
   }
+});
+
+ // Check classcode
+
+ $("#register-classcode").on("input", () => {
+  $("#register-error-invalid-classcode").addClass("d-none");
+  $("#register-error-invalid-classcode").removeClass("d-flex");
 });
 
 $("#login-register-next-button").on("click", async () => {
