@@ -42,15 +42,6 @@ jQueryScript.onload = () => {
 
   $head.append(resources.join(""));
 
-  // Load Socket.io
-  let socketScript = document.createElement("script");
-  socketScript.src = "/socket.io/socket.io.js";
-  socketScript.onload = () => {
-    socket = io(); // Initialize Socket.io globally
-    console.log("Socket.io connection established.");
-  };
-  document.head.appendChild(socketScript);
-
   // Add possibility to include divs with class "load-content" to load e.g. the navbar
   $(document).ready(() => {
     loadTemplateContent();
