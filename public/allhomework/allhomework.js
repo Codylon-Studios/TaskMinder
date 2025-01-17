@@ -105,6 +105,38 @@ function updateAll() {
   updateHomeworkList();
 }
 
+function addHomework(){
+  $("#add-homework-button").on("click", () => {
+    console.log("Add homework");
+    $('#add-homework-form').toggle(); 
+    updateAddHomeworkSubjectList();
+  })
+}
+
+function updateAddHomeworkSubjectList() {
+  $("#add-homework-subject-list").empty();
+
+  subjectData.forEach(subject => {
+    let subjectId = subject.id;
+    let subjectName = subject.name;
+    let template = 
+      `<div class="form-check">
+        <input type="checkbox" class="form-check-input add-homework-subject-option" id="add-homework-subject-${subjectId}">
+        <label class="form-check-label" for="add-homework-subject-${subjectId}">
+          ${subjectName}
+        </label>
+      </div>`;
+
+    $("#add-homework-subject-list").append(template);
+  });
+
+  $(".add-homework-subject-option").on("change", function () {
+    if (this.checked) {
+      $(".add-homework-subject-option").not(this).prop("checked", false);
+    }
+  });
+}
+
 function initFilters() {
   $("#filter-subject-all").on("click", () => {
     $(".filter-subject-option").prop("checked", true);
@@ -134,6 +166,10 @@ let subjectData = [
   {
     "id": 1,
     "name": "Mathe"
+  },
+  {
+    "id": 2,
+    "name": "Englisch"
   }
 ]
 let homeworkData = [
@@ -179,4 +215,5 @@ $(document).ready(() => {
   });
 
   initFilters();
+  addHomework();
 });
