@@ -14,7 +14,7 @@ const updateRedisCache = async (data, expiration = 3600) => {
 };
 
 // addHA route
-router.post('/addhomework', async (req, res) => {
+router.post('/add', async (req, res) => {
   const { subjectID, content, assignmentDate, submissionDate} = req.body;
 
   try {
@@ -29,7 +29,7 @@ router.post('/addhomework', async (req, res) => {
     const data = result.rows;
 
     await updateRedisCache(data);
-    res.status(200).json(data);
+    res.status(200).send('0');
   } catch (error) {
     console.error('Error while adding and storing hausaufgaben data:', error);
     res.status(500).send('1');
@@ -80,7 +80,7 @@ router.post('/edithomework', async (req, res) => {
 });
 
 // fetchHA route
-router.get('/fetchhomework', async (req, res) => {
+router.get('/fetch', async (req, res) => {
   try {
     const cachedDataHomeWork = await redisClient.get(cacheKeyHomework);
 
