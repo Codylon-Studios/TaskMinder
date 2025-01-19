@@ -68,16 +68,14 @@ function logoutAccount(){
       let hasResponded = false;
       $.post(url, data, function (result) {
           hasResponded = true;
-          // Handle result
           if (result == "0") {
-              console.log("logged out");
               $("#logout-success-toast").toast("show");
           }
           else if (result == "1") {
-              console.log("internal server error");
+            $("#error-server-toast").toast("show");
           }
           else if (result == "2") {
-              console.log("you are not logged in");
+            $("#error-server-toast").toast("show");
           }
       });
       setTimeout(() => {
@@ -140,7 +138,6 @@ function resetLoginRegisterModal() {
 $("#login-button").on("click", () => {
   let username = $("#login-register-username").val();
   let password = $("#login-password").val();
-  console.log("Login: ", username, password);
   loginAccount(username, password);
 });
 
@@ -148,12 +145,10 @@ $("#register-button").on("click", () => {
   let username = $("#login-register-username").val();
   let password = $("#register-password").val();
   let classcode = $("#register-classcode").val();
-  console.log("Register: ", username, password, classcode);
   registerAccount(username, password, classcode);
 });
 
 $("#logout-button").on("click", () => {
-  console.log("Logout");
   logoutAccount();
 });
 
@@ -280,12 +275,10 @@ $("#login-register-next-button").on("click", async () => {
     const exists = await checkExistingUsername($("#login-register-username").val());
 
     if (exists) {
-      console.log("login");
       $("#login-title").removeClass("d-none");
       $("#login-content").removeClass("d-none");
       $("#login-button").removeClass("d-none");
     } else {
-      console.log("register");
       $("#register-title").removeClass("d-none");
       $("#register-content").removeClass("d-none");
       $("#register-button").removeClass("d-none");
