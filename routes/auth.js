@@ -130,8 +130,7 @@ router.post('/checkusername', async (req, res) => {
       const userExists = await client.query('SELECT 1 FROM users WHERE username = $1', [username]);
       if (userExists.rows.length > 0) return res.status(200).send(['1']);  // Username already used -- LOGIN
 
-      res.status(200).send('0');
-      console.log("register-server");  // Username not being used -- REGISTER
+      res.status(200).send('0'); // Username not being used -- REGISTER
     });
   } catch (error) {
     console.error('Error while storing user data:', error);

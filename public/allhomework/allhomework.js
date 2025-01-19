@@ -12,14 +12,6 @@ function dateToMs(dateStr) {
   return date.getTime();
 }
 
-function getSubjectID(name) {
-  for (let subject of subjectData) {
-    if (subject.name == name) {
-      return subject.id;
-    }
-  }
-}
-
 async function updateHomeworkList() {
   await $.get('/homework/fetch', (data) => {
     homeworkData = data;
@@ -118,41 +110,45 @@ function updateAll() {
 }
 
 function updateAddHomeworkSubjectList() {
-  $("#add-homework-subject-list").empty();
+  $("#add-homework-subject-select").empty();
+  $("#add-homework-subject-select").append('<option value="" disabled selected>Fach</option>');
+  
   subjectData.forEach(subject => {
     let subjectId = subject.id;
     let subjectName = subject.name;
-    let template =
-      `<div class="form-check">
-        <input type="checkbox" class="form-check-input add-homework-subject-option" id="add-homework-subject-${subjectId}">
-        <label class="form-check-label" for="add-homework-subject-${subjectId}">
-          ${subjectName}
-        </label>
-      </div>`;
-    $("#add-homework-subject-list").append(template);
-  });
-  $(".add-homework-subject-option").on("change", function () {
-    if (this.checked) {
-      $(".add-homework-subject-option").not(this).prop("checked", false);
-    }
+    let option = `<option value="${subjectId}">${subjectName}</option>`;
+    $("#add-homework-subject-select").append(option);
   });
 }
 
 function addHomework() {
   let isFormVisible = false;
+
+  $("#add-homework-cancel-button").on("click", () => {
+    $("#add-homework-subject-select").val("");
+    $("#add-homework-input").val("");
+    $("#add-homework-date-submission-until").val("");
+    $('#add-homework-form').hide();
+    $('#add-homework-cancel-button').hide();
+    $('#add-homework-button').show();
+    $("#add-homework-no-data").addClass("d-none"); 
+    isFormVisible = false;
+});
   $("#add-homework-button").on("click", () => {
     if (!isFormVisible) {
       $('#add-homework-form').toggle();
+      $('#add-homework-cancel-button').show();
       updateAddHomeworkSubjectList();
       isFormVisible = true;
     } else {
-      const checkedSubject = $(".add-homework-subject-option:checked").closest('.form-check').find('.form-check-label').text().trim();
+      const checkedSubject = $("#add-homework-subject-select").val();
       const homework = $("#add-homework-input").val().trim();
       const dueDate = dateToMs($("#add-homework-date-submission-until").val());
 
       if (checkedSubject && homework && dueDate) {
+        $("#add-homework-no-data").addClass("d-none"); 
 
-        ToBackendSubject = getSubjectID(checkedSubject);
+        ToBackendSubject = checkedSubject;
         ToBackendContent = homework;
         ToBackendSubmissionDate = dueDate;
         ToBackendAssignmentDate = Date.now();
@@ -169,7 +165,6 @@ function addHomework() {
           hasResponded = true;
           if (result == "0") {
             $("#add-homework-success-toast").toast("show");
-            console.log("stored success");
           }
           else if (result == "1") {
             //Unknown error on server side
@@ -189,7 +184,7 @@ function addHomework() {
         $('#add-homework-form').toggle();
         isFormVisible = false;
       } else {
-        alert("Bitte füllen Sie alle Felder aus.");
+        $("#add-homework-no-data").removeClass("d-none").addClass("d-flex");
       }
     }
   });
