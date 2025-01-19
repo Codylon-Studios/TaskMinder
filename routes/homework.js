@@ -37,7 +37,7 @@ router.post('/add', async (req, res) => {
 });
 
 // deleteHA route
-router.post('/deletehomework', async (req, res) => {
+router.post('/delete', async (req, res) => {
   const { id } = req.body;
 
   try {
@@ -49,7 +49,7 @@ router.post('/deletehomework', async (req, res) => {
     const data = result.rows;
 
     await updateRedisCache(data, 7200); 
-    res.status(200).json(data);
+    res.status(200).send('0');
   } catch (error) {
     console.error('Error while deleting hausaufgaben data:', error);
     res.status(500).send('1');
