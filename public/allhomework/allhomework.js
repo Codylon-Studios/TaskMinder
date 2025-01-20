@@ -1,3 +1,19 @@
+let subjectData = [
+  {
+    "id": 1,
+    "name": "Deutsch"
+  },
+  {
+    "id": 2,
+    "name": "Mathe"
+  },
+  {
+    "id": 3,
+    "name": "Englisch"
+  }
+];
+let homeworkData = [];
+
 function msToDate(ms) {
   let date = new Date(parseInt(ms));
   let day = String(date.getDate()).padStart(2, '0');
@@ -12,21 +28,19 @@ function dateToMs(dateStr) {
   return date.getTime();
 }
 
+function getSubjectName(id) {
+  for (let subject of subjectData) {
+    if (subject.id == id) {
+      return subject.name;
+    }
+  }
+}
+
 async function updateHomeworkList() {
   await $.get('/homework/fetch', (data) => {
     homeworkData = data;
   });
-
-  function getSubjectName(id) {
-    for (let subject of subjectData) {
-      if (subject.id == id) {
-        return subject.name;
-      }
-    }
-  }
-
   $("#homework-list").empty();
-
   homeworkData.forEach(homework => {
     let homeworkID = homework.ha_id;
     let subject = getSubjectName(homework.subject_id);
@@ -67,7 +81,7 @@ async function updateHomeworkList() {
     }
 
     let template =
-    `<div class="mb-1 form-check d-flex align-items-center" id="${homeworkID}">
+      `<div class="mb-1 form-check d-flex align-items-center" id="${homeworkID}">
       <label class="form-check-label">
         <input type="checkbox" class="form-check-input">
         <b>${subject}</b> ${content}
@@ -82,15 +96,6 @@ async function updateHomeworkList() {
     $("#homework-list").append(template)
   });
 
-  $('.fa-pen-to-square').on('click', function() {
-    const id = $(this).data('id');
-  });
-
-  $('.fa-trash').on('click', function() {
-    const id = $(this).data('id');
-    deleteHomework(id);
-  });
-
   if ($("#homework-list").html() == "") {
     $("#homework-list").html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern gefunden!</div>`)
   }
@@ -100,70 +105,45 @@ function editHomework() {
 
 };
 
-function deleteHomework(homeworkID){
+function deleteHomework(homeworkID) {
   $.get('/account/auth', (response) => {
     if (response.authenticated) {
-          let url = "/homework/delete";
-          let data = {
-            id: homeworkID
-          };
-          let hasResponded = false;
-          $.post(url, data, function (result) {
-            hasResponded = true;
-            if (result == "0") {
-              $("#delete-homework-success-toast").toast("show");
-            }
-            else if (result == "1") {
-              $("#error-server-toast").toast("show");
-            }
-          });
-          setTimeout(() => {
-            if (!hasResponded) {
-              $("#error-server-toast").toast("show");
-            }
-          }, 1000);
-        } else {
+      const modal = new bootstrap.Modal(document.getElementById('delete-homework-confirmation'));
+      const confirmation = document.getElementById('delete-homework-confirmation-confirmation');
+
+      confirmation.replaceWith(confirmation.cloneNode(true));
+      const newConfirmation = document.getElementById('delete-homework-confirmation-confirmation');
+
+      newConfirmation.addEventListener('click', () => {
+        modal.hide();
+
+        let url = "/homework/delete";
+        let data = {
+          id: homeworkID
+        };
+        let hasResponded = false;
+
+        $.post(url, data, function (result) {
+          hasResponded = true;
+          if (result == "0") {
+            updateAll();
+            $("#delete-homework-success-toast").toast("show");
+          }
+          else if (result == "1") {
+            $("#error-server-toast").toast("show");
+          }
+        });
+
+        setTimeout(() => {
+          if (!hasResponded) {
+            $("#error-server-toast").toast("show");
+          }
+        }, 1000);
+      });
+      modal.show();
+    } else {
       $("#error-auth-toast").toast("show");
     }
-  });
-};
-
-function updateFilterSubjectList() {
-  $("#filter-subject-list").empty();
-
-  subjectData.forEach(subject => {
-    let subjectId = subject.id;
-    let subjectName = subject.name;
-    let template =
-      `<div class="form-check">
-        <input type="checkbox" class="form-check-input filter-subject-option" id="filter-subject-${subjectId}" checked>
-        <label class="form-check-label" for="filter-subject-${subjectId}">
-          ${subjectName}
-        </label>
-      </div>`;
-
-    $("#filter-subject-list").append(template)
-  });
-
-  $(".filter-subject-option").on("change", () => {
-    updateHomeworkList();
-  });
-}
-
-function updateAll() {
-  updateFilterSubjectList();
-  updateHomeworkList();
-}
-
-function updateAddHomeworkSubjectList() {
-  $("#add-homework-subject-select").empty();
-  $("#add-homework-subject-select").append('<option value="" disabled selected>Fach</option>');
-  
-  subjectData.forEach(subject => {
-    let subjectId = subject.id;
-    let subjectName = subject.name;
-    let option = `<option value="${subjectId}">${subjectName}</option>`;
-    $("#add-homework-subject-select").append(option);
   });
 }
 
@@ -180,13 +160,14 @@ function addHomework() {
     $("#add-homework-no-data").addClass("d-none"); 
     isFormVisible = false;
 });
-  $("#add-homework-button").on("click", () => {
+
+$("#add-homework-button").on("click", () => {
     $.get('/account/auth', (response) => {
       if (response.authenticated) {
         if (!isFormVisible) {
-          $('#add-homework-form').toggle();
+          $('#add-homework-form').show();
           $('#add-homework-cancel-button').show();
-          updateAddHomeworkSubjectList();
+          updateSubjectList();
           isFormVisible = true;
         } else {
           const checkedSubject = $("#add-homework-subject-select").val();
@@ -213,6 +194,9 @@ function addHomework() {
               hasResponded = true;
               if (result == "0") {
                 $("#add-homework-success-toast").toast("show");
+                $('#add-homework-cancel-button').hide();
+                isFormVisible = false;
+                updateAll();
               }
               else if (result == "1") {
                 $("#error-server-toast").toast("show");
@@ -228,7 +212,7 @@ function addHomework() {
             $("#add-homework-input").val("");
             $("#add-homework-date-submission-until").val("");
     
-            $('#add-homework-form').toggle();
+            $('#add-homework-form').hide();
             isFormVisible = false;
           } else {
             $("#add-homework-no-data").removeClass("d-none").addClass("d-flex");
@@ -239,6 +223,39 @@ function addHomework() {
       }
     });
   });
+}
+
+function updateSubjectList() {
+  $("#add-homework-subject-select").empty();
+  $("#add-homework-subject-select").append('<option value="" disabled selected>Fach</option>');
+  $("#filter-subject-list").empty();
+
+  subjectData.forEach(subject => {
+    let subjectId = subject.id;
+    let subjectName = subject.name;
+    let template =
+      `<div class="form-check">
+        <input type="checkbox" class="form-check-input filter-subject-option" id="filter-subject-${subjectId}" checked>
+        <label class="form-check-label" for="filter-subject-${subjectId}">
+          ${subjectName}
+        </label>
+      </div>`;
+
+    let templateAddHomeworkFormSelect =
+      `<option value="${subjectId}">${subjectName}</option>`;
+
+    $("#add-homework-subject-select").append(templateAddHomeworkFormSelect);
+    $("#filter-subject-list").append(template)
+  });
+
+  $(".filter-subject-option").on("change", () => {
+    updateHomeworkList();
+  });
+}
+
+function updateAll() {
+  updateSubjectList();
+  updateHomeworkList();
 }
 
 function initFilters() {
@@ -262,22 +279,6 @@ function initFilters() {
   });
 }
 
-let subjectData = [
-  {
-    "id": 1,
-    "name": "Deutsch"
-  },
-  {
-    "id": 2,
-    "name": "Mathe"
-  },
-  {
-    "id": 3,
-    "name": "Englisch"
-  }
-]
-let homeworkData = []
-
 $(document).ready(() => {
   $("#filter-toggle").on("click", () => {
     $("#filter-content").toggleClass("d-none");
@@ -293,6 +294,16 @@ $(document).ready(() => {
 
   $(document).on("click", "#navbar-reload-button", () => {
     updateAll();
+  });
+
+  $(document).on('click', '.fa-trash', function () {
+    const homeworkID = $(this).data('id');
+    deleteHomework(homeworkID);
+  });
+
+  $(document).on('click', '.fa-pen-to-square', function () {
+    const homeworkID = $(this).data('id');
+    console.log('Edit clicked for homework:', homeworkID);
   });
 
   initFilters();

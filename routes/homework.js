@@ -24,6 +24,7 @@ router.post('/add', async (req, res) => {
         [content, subjectID, assignmentDate, submissionDate]
       );
     });
+    
 
     const result = await withDB((client) => client.query('SELECT * FROM hausaufgaben10d'));
     const data = result.rows;

@@ -104,7 +104,24 @@
         <button type="button" class="btn btn-outline-secondary w-100" id="add-homework-cancel-button" style="display: none;">Abbrechen</button>
       </div>
     </div>
+  </div>
 
+  <div class="modal fade" id="delete-homework-confirmation" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Hausaufgabe löschen</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Wollen Sie diese Hausaufgabe sicher löschen?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" id = "delete-homework-confirmation-confirmation">Weiter</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="toast-container position-fixed top-0 end-0 p-3">
@@ -119,20 +136,20 @@
     </div>
     <div id="add-homework-success-toast" class="toast">
       <div class="toast-header bg-info text-white">
-        <b class="me-auto">Erfolgreich Hausaufgabe gespeichert</b>
+        <b class="me-auto">Erfolg</b>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
       </div>
       <div class="toast-body">
-        Bitte Seite neu laden, um den aktuellen Stand abzurufen.
+        Die Hausaufgabe wurde erfolgreich hinzugefügt. 
       </div>
     </div>
     <div id="delete-homework-success-toast" class="toast">
       <div class="toast-header bg-info text-white">
-        <b class="me-auto">Erfolgreich Hausaufgabe gelöscht</b>
+        <b class="me-auto">Erfolg</b>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
       </div>
       <div class="toast-body">
-        Bitte Seite neu laden, um den aktuellen Stand abzurufen.
+        Die Hausaufgabe wurde erfolgreich gelöscht.
       </div>
     </div>
     <div id="error-auth-toast" class="toast">
