@@ -1,0 +1,62 @@
+[
+    {
+      "id": 1,
+      "name": "Deutsch"
+    },
+    {
+      "id": 2,
+      "name": "Mathe"
+    },
+    {
+      "id": 3,
+      "name": "Englisch"
+    },
+    {
+      "id": 4,
+      "name": "WuR"
+    },
+    {
+      "id": 5,
+      "name": "ProfNW"
+    },
+    {
+      "id": 6,
+      "name": "Ethik"
+    },
+    {
+      "id": 7,
+      "name": "Geschichte"
+    },
+    {
+      "id": 8,
+      "name": "Physik"
+    },
+    {
+      "id": 9,
+      "name": "Chemie"
+    },
+    {
+      "id": 10,
+      "name": "PuG"
+    },
+    {
+      "id": 11,
+      "name": "Kunst"
+    },
+    {
+      "id": 12,
+      "name": "Geografie"
+    },
+    {
+      "id": 13,
+      "name": "Latein"
+    },
+    {
+      "id": 14,
+      "name": "Biologie"
+    },
+    {
+      "id": 15,
+      "name": "Informatik"
+    }
+]

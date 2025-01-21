@@ -1,17 +1,5 @@
-let subjectData = [
-  {
-    "id": 1,
-    "name": "Deutsch"
-  },
-  {
-    "id": 2,
-    "name": "Mathe"
-  },
-  {
-    "id": 3,
-    "name": "Englisch"
-  }
-];
+let subjectData;
+
 let homeworkData = [];
 
 function msToDate(ms) {
@@ -101,8 +89,64 @@ async function updateHomeworkList() {
   }
 }
 
-function editHomework() {
+function editHomework(homeworkID) {
+  $.get('/account/auth', (response) => {
+    if (response.authenticated) {
+      const editHomeworkModal = new bootstrap.Modal(document.getElementById('edit-homework-modal'));
+      const modalElement = document.getElementById('edit-homework-modal');
+      const oldButton = document.getElementById('edit-homework-confirmation-button');
+      const newButton = oldButton.cloneNode(true);
+      oldButton.parentNode.replaceChild(newButton, oldButton);
 
+      modalElement.addEventListener('hidden.bs.modal', function () {
+        document.getElementById('edit-homework-subject-select').value = '';
+        document.getElementById('edit-homework-input').value = '';
+        document.getElementById('edit-homework-date-submission-until').value = '';
+        document.getElementById('edit-homework-no-data').classList.add('d-none');
+      });
+
+      newButton.addEventListener('click', () => {
+        const checkedSubject = $("#edit-homework-subject-select").val();
+        const homework = $("#edit-homework-input").val().trim();
+        const dueDate = dateToMs($("#edit-homework-date-submission-until").val());
+
+        if (checkedSubject && homework && dueDate) {
+          $("#edit-homework-no-data").addClass("d-none");
+          let url = "/homework/edit";
+          let data = {
+            id: homeworkID,
+            subjectID: checkedSubject,
+            content: homework,
+            submissionDate: dueDate
+          };
+          let hasResponded = false;
+          $.post(url, data, function (result) {
+            hasResponded = true;
+            if (result == "0") {
+              editHomeworkModal.hide();
+              $("#edit-homework-success-toast").toast("show");
+              updateAll();
+            }
+            else if (result == "1") {
+              $("#error-server-toast").toast("show");
+            }
+          });
+          setTimeout(() => {
+            if (!hasResponded) {
+              $("#error-server-toast").toast("show");
+            }
+          }, 1000);
+        } else {
+          $("#edit-homework-no-data").removeClass("d-none");
+        }
+      });
+
+      editHomeworkModal.show();
+
+    } else {
+      $("#error-auth-toast").toast("show");
+    }
+  });
 };
 
 function deleteHomework(homeworkID) {
@@ -148,81 +192,56 @@ function deleteHomework(homeworkID) {
 }
 
 function addHomework() {
-  let isFormVisible = false;
+  const addHomeworkModal = new bootstrap.Modal(document.getElementById('add-homework-modal'));
+  const modalElement = document.getElementById('add-homework-modal');
+  const oldButton = document.getElementById('add-homework-confirmation-button');
+  const newButton = oldButton.cloneNode(true);
+  oldButton.parentNode.replaceChild(newButton, oldButton);
 
-  $("#add-homework-cancel-button").on("click", () => {
-    $("#add-homework-subject-select").val("");
-    $("#add-homework-input").val("");
-    $("#add-homework-date-submission-until").val("");
-    $('#add-homework-form').hide();
-    $('#add-homework-cancel-button').hide();
-    $('#add-homework-button').show();
-    $("#add-homework-no-data").addClass("d-none"); 
-    isFormVisible = false;
-});
-
-$("#add-homework-button").on("click", () => {
-    $.get('/account/auth', (response) => {
-      if (response.authenticated) {
-        if (!isFormVisible) {
-          $('#add-homework-form').show();
-          $('#add-homework-cancel-button').show();
-          updateSubjectList();
-          isFormVisible = true;
-        } else {
-          const checkedSubject = $("#add-homework-subject-select").val();
-          const homework = $("#add-homework-input").val().trim();
-          const dueDate = dateToMs($("#add-homework-date-submission-until").val());
-    
-          if (checkedSubject && homework && dueDate) {
-            $("#add-homework-no-data").addClass("d-none"); 
-    
-            ToBackendSubject = checkedSubject;
-            ToBackendContent = homework;
-            ToBackendSubmissionDate = dueDate;
-            ToBackendAssignmentDate = Date.now();
-    
-            let url = "/homework/add";
-            let data = {
-              subjectID: ToBackendSubject,
-              content:ToBackendContent,
-              assignmentDate: ToBackendAssignmentDate,
-              submissionDate:ToBackendSubmissionDate
-            };
-            let hasResponded = false;
-            $.post(url, data, function (result) {
-              hasResponded = true;
-              if (result == "0") {
-                $("#add-homework-success-toast").toast("show");
-                $('#add-homework-cancel-button').hide();
-                isFormVisible = false;
-                updateAll();
-              }
-              else if (result == "1") {
-                $("#error-server-toast").toast("show");
-              }
-            });
-            setTimeout(() => {
-              if (!hasResponded) {
-                $("#error-server-toast").toast("show");
-              }
-            }, 1000);
-    
-            $(".add-homework-subject-option").prop("checked", false);
-            $("#add-homework-input").val("");
-            $("#add-homework-date-submission-until").val("");
-    
-            $('#add-homework-form').hide();
-            isFormVisible = false;
-          } else {
-            $("#add-homework-no-data").removeClass("d-none").addClass("d-flex");
-          }
-        }
-      } else {
-        $("#error-auth-toast").toast("show");
-      }
-    });
+  modalElement.addEventListener('hidden.bs.modal', function () {
+    document.getElementById('add-homework-subject-select').value = '';
+    document.getElementById('add-homework-input').value = '';
+    document.getElementById('add-homework-date-submission-until').value = '';
+    document.getElementById('add-homework-no-data').classList.add('d-none');
   });
+
+  newButton.addEventListener('click', () => {
+    const checkedSubject = $("#add-homework-subject-select").val();
+    const homework = $("#add-homework-input").val().trim();
+    const dueDate = dateToMs($("#add-homework-date-submission-until").val());
+
+    if (checkedSubject && homework && dueDate) {
+      $("#add-homework-no-data").addClass("d-none");
+      let url = "/homework/add";
+      let data = {
+        subjectID: checkedSubject,
+        content: homework,
+        assignmentDate: Date.now(),
+        submissionDate: dueDate
+      };
+      let hasResponded = false;
+      $.post(url, data, function (result) {
+        hasResponded = true;
+        if (result == "0") {
+          addHomeworkModal.hide();
+          $("#add-homework-success-toast").toast("show");
+          updateAll();
+        }
+        else if (result == "1") {
+          $("#error-server-toast").toast("show");
+        }
+      });
+      setTimeout(() => {
+        if (!hasResponded) {
+          $("#error-server-toast").toast("show");
+        }
+      }, 1000);
+    } else {
+      $("#add-homework-no-data").removeClass("d-none");
+    }
+  });
+
+  addHomeworkModal.show();
 }
 
 function updateSubjectList() {
@@ -244,7 +263,11 @@ function updateSubjectList() {
     let templateAddHomeworkFormSelect =
       `<option value="${subjectId}">${subjectName}</option>`;
 
+    let templateEditHomeworkFormSelect =
+      `<option value="${subjectId}">${subjectName}</option>`;
+
     $("#add-homework-subject-select").append(templateAddHomeworkFormSelect);
+    $("#edit-homework-subject-select").append(templateEditHomeworkFormSelect);
     $("#filter-subject-list").append(template)
   });
 
@@ -280,6 +303,21 @@ function initFilters() {
 }
 
 $(document).ready(() => {
+  fetch('subjects.json')
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json();
+  })
+  .then(data => {
+    subjectData = data;
+    updateAll();
+  })
+  .catch(error => {
+    console.error('Error loading the JSON file:', error);
+  });
+
   $("#filter-toggle").on("click", () => {
     $("#filter-content").toggleClass("d-none");
   });
@@ -289,8 +327,6 @@ $(document).ready(() => {
       ev.stopPropagation();
     });
   });
-
-  updateAll();
 
   $(document).on("click", "#navbar-reload-button", () => {
     updateAll();
@@ -303,9 +339,18 @@ $(document).ready(() => {
 
   $(document).on('click', '.fa-pen-to-square', function () {
     const homeworkID = $(this).data('id');
-    console.log('Edit clicked for homework:', homeworkID);
+    editHomework(homeworkID);
   });
 
   initFilters();
-  addHomework();
+
+  $(document).on("click", "#add-homework-button", () => {
+    $.get('/account/auth', (response) => {
+      if (response.authenticated) {
+        addHomework();
+      } else {
+        $("#error-auth-toast").toast("show");
+      }
+    });
+  });
 });

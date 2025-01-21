@@ -58,14 +58,14 @@ router.post('/delete', async (req, res) => {
 });
 
 // editHA route
-router.post('/edithomework', async (req, res) => {
-  const { id, subjectID, content, assignmentDate, submissionDate} = req.body;
+router.post('/edit', async (req, res) => {
+  const { id, subjectID, content, submissionDate} = req.body;
 
   try {
     await withDB(async (client) => {
       await client.query(
-        'UPDATE hausaufgaben10d SET content = $1, subject = $2, assignment_date = $3, submission_date = $4 WHERE ha_id = $5',
-        [content, subjectID, assignmentDate, submissionDate, id]
+        'UPDATE hausaufgaben10d SET content = $1, subject_id = $2, submission_date = $3 WHERE ha_id = $4',
+        [content, subjectID, submissionDate, id]
       );
     });
 
@@ -73,7 +73,7 @@ router.post('/edithomework', async (req, res) => {
     const data = result.rows;
 
     await updateRedisCache(data, 7200);
-    res.status(200).json(data);
+    res.status(200).send("0");
   } catch (error) {
     console.error('Error while editing and storing hausaufgaben data:', error);
     res.status(500).send('1');
