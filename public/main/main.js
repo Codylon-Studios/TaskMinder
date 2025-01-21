@@ -1,4 +1,4 @@
-function updateTimetableMode() {
+/*function updateTimetableMode() {
   if ($("#timetable-mode-less")[0].checked) {
     $("#timetable-less")[0].classList.remove("d-none");
     $("#timetable-more")[0].classList.add("d-none");
@@ -17,4 +17,4 @@ $("#timetable-mode input").each(() => {
   $(this).on("click", () => {
     updateTimetableMode();
   });
-});
+});*/
