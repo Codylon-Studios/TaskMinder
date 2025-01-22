@@ -37,6 +37,39 @@ router.post('/add', async (req, res) => {
   }
 });
 
+router.post('/checked', async (req, res)=> {
+  const {ha_id, username, checkStatus} = req.body;
+  
+  if (checkStatus == "check"){
+    try {
+      await withDB(async (client) => {
+        await client.query(
+          'INSERT INTO homework10d_check (ha_id, username, checked) VALUES ($1, $2, TRUE)',
+          [ha_id, username]
+        );
+      });
+      const result = await withDB((client) => client.query('SELECT * FROM homework20d_check WHERE username = $1', [username]));
+      const data = result.rows;
+      res.status(200).send(data);
+    } catch (error) {
+      console.error('Error while checking hausaufgaben data:', error);
+      res.status(500).send('1');
+    }
+  } else if (checkStatus == "uncheck"){
+    try {
+      await withDB(async (client) => {
+        await client.query('DELETE FROM homework10d_check WHERE ha_id = $1 AND username = $2', [ha_id, username]);
+      });
+      const result = await withDB((client) => client.query('SELECT * FROM homework10d_check WHERE username = $1', [username]));
+      const data = result.rows;
+      res.status(200).send(data);
+    } catch (error) {
+      console.error('Error while unchecking hausaufgaben data:', error);
+      res.status(500).send('2');
+    }
+  }
+});
+
 // deleteHA route
 router.post('/delete', async (req, res) => {
   const { id } = req.body;

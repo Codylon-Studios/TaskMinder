@@ -247,6 +247,8 @@ function addHomework() {
 function updateSubjectList() {
   $("#add-homework-subject-select").empty();
   $("#add-homework-subject-select").append('<option value="" disabled selected>Fach</option>');
+  $("#edit-homework-subject-select").empty();
+  $("#edit-homework-subject-select").append('<option value="" disabled selected>Fach</option>');
   $("#filter-subject-list").empty();
 
   subjectData.forEach(subject => {
