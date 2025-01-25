@@ -11,12 +11,21 @@
 <body data-url="allhomework">
   <div class="load-content" data-url="navbar" data-html data-js></div>
   <div class="container">
-    <div class="d-flex align-items-center mb-3 flex-column flex-md-row gap-2 gap-md-3">
-      <button class="btn btn-outline-secondary" id="filter-toggle">
-        <i class="fa-solid fa-filter"></i>
-        Filtern
-      </button>
-      <div id="filter-content" class="d-contents d-none">
+    <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-md-2">
+      <div class="d-flex gap-2">
+        <input type="checkbox" class="btn-check" id="edit-toggle">
+        <label class="btn btn-outline-secondary" for="edit-toggle">
+          <i class="fa-solid fa-edit"></i>
+          Bearbeiten
+        </label>
+  
+        <input type="checkbox" class="btn-check" id="filter-toggle">
+        <label class="btn btn-outline-secondary" for="filter-toggle">
+          <i class="fa-solid fa-filter"></i>
+          Filtern
+        </label>
+      </div>
+      <div id="filter-content" class="d-flex align-items-center flex-column flex-md-row gap-2 d-contents d-none">
         <div class="dropdown">
           <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
             Fach
@@ -68,18 +77,22 @@
         </div>
       </div>
     </div>
-    <div class="container-fluid mb-3" id="homework-list">
+
+    <button type="button" class="btn btn-primary d-none" id="add-homework-btn">
+      <i class="fa-solid fa-plus"></i>
+      Neu
+    </button>
+
+    <div class="container-fluid mt-3" id="homework-list">
       <!--Gets filled-->
     </div>
 
-    <button type="button" class="btn btn-outline-primary" id="add-homework-button">Hausaufgabe hinzufügen</button>
-    <div class="modal fade" id="add-homework-modal" tabindex="-1" aria-labelledby="homeworkModalLabel"
-      aria-hidden="true">
+    <div class="modal fade" id="add-homework-modal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="add-homework-modal-label">Hausaufgabe hinzufügen</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 class="modal-title" id="add-homework-modal-label">Neue Hausaufgabe hinzufügen</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <div id="add-homework-form" class="container">
@@ -109,9 +122,9 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" id="add-homework-cancel-button"
+            <button type="button" class="btn btn-secondary" id="add-homework-cancel-button"
               data-bs-dismiss="modal">Abbrechen</button>
-            <button type="button" class="btn btn-outline-primary" id="add-homework-confirmation-button">Hausaufgabe
+            <button type="button" class="btn btn-primary" id="add-homework-confirmation-button">Hausaufgabe
               hinzufügen</button>
           </div>
         </div>
@@ -182,17 +195,8 @@
     </div>
 
     <div class="toast-container position-fixed top-0 end-0 p-3">
-      <div id="error-server-toast" class="toast">
-        <div class="toast-header bg-danger text-white">
-          <b class="me-auto">Serverproblem</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">
-          Unser Server hat gerade Probleme. Bitte versuche es später erneut.
-        </div>
-      </div>
       <div id="add-homework-success-toast" class="toast">
-        <div class="toast-header bg-info text-white">
+        <div class="toast-header bg-success text-white">
           <b class="me-auto">Erfolg</b>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
@@ -201,7 +205,7 @@
         </div>
       </div>
       <div id="edit-homework-success-toast" class="toast">
-        <div class="toast-header bg-info text-white">
+        <div class="toast-header bg-success text-white">
           <b class="me-auto">Erfolg</b>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
@@ -210,21 +214,12 @@
         </div>
       </div>
       <div id="delete-homework-success-toast" class="toast">
-        <div class="toast-header bg-info text-white">
+        <div class="toast-header bg-success text-white">
           <b class="me-auto">Erfolg</b>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body">
           Die Hausaufgabe wurde erfolgreich gelöscht.
-        </div>
-      </div>
-      <div id="error-auth-toast" class="toast">
-        <div class="toast-header bg-danger text-white">
-          <b class="me-auto">Authentifizierung fehlgeschlagen</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">
-          Bitte melden Sie sich an, um Änderungen vorzunehmen.
         </div>
       </div>
     </div>

@@ -68,20 +68,24 @@ async function updateHomeworkList() {
       }
     }
 
-    let template =
-      `<div class="mb-1 form-check d-flex align-items-center" id="${homeworkID}">
-      <label class="form-check-label">
-        <input type="checkbox" class="form-check-input">
-        <b>${subject}</b> ${content}
-        <span class="ms-4 d-block">Von ${assignmentDate} bis ${submissionDate}</span>
-      </label>
-      <div class="mb-4 ms-2">
-        <i class="fa-solid fa-pen-to-square" style="cursor: pointer; margin-right: 8px; color: grey" data-id="${homeworkID}"></i>
-        <i class="fa-solid fa-trash" style="cursor: pointer; color: grey" data-id="${homeworkID}"></i>
-      </div>
-    </div>`;
+    let template = 
+      `<div class="mb-1 form-check d-flex" id="homework-${homeworkID}">
+        <label class="form-check-label">
+          <input type="checkbox" class="form-check-input">
+          <b>${subject}</b> ${content}
+          <span class="ms-4 d-block">Von ${assignmentDate} bis ${submissionDate}</span>
+        </label>
+        <div class="homework-edit-options ms-2 d-none">
+          <button class="btn btn-sm btn-tertiary homework-edit" data-id="homework-${homeworkID}">
+            <i class="fa-solid fa-edit text-secondary"></i>
+          </button>
+          <button class="btn btn-sm btn-tertiary homework-delete" data-id="homework-${homeworkID}">
+            <i class="fa-solid fa-trash text-secondary"></i>
+          </button>
+        </div>
+      </div>`;
 
-    $("#homework-list").append(template)
+    $("#homework-list").append(template);
   });
 
   if ($("#homework-list").html() == "") {
@@ -90,63 +94,56 @@ async function updateHomeworkList() {
 }
 
 function editHomework(homeworkID) {
-  $.get('/account/auth', (response) => {
-    if (response.authenticated) {
-      const editHomeworkModal = new bootstrap.Modal(document.getElementById('edit-homework-modal'));
-      const modalElement = document.getElementById('edit-homework-modal');
-      const oldButton = document.getElementById('edit-homework-confirmation-button');
-      const newButton = oldButton.cloneNode(true);
-      oldButton.parentNode.replaceChild(newButton, oldButton);
+  const editHomeworkModal = new bootstrap.Modal(document.getElementById('edit-homework-modal'));
+  const modalElement = document.getElementById('edit-homework-modal');
+  const oldButton = document.getElementById('edit-homework-confirmation-button');
+  const newButton = oldButton.cloneNode(true);
+  oldButton.parentNode.replaceChild(newButton, oldButton);
 
-      modalElement.addEventListener('hidden.bs.modal', function () {
-        document.getElementById('edit-homework-subject-select').value = '';
-        document.getElementById('edit-homework-input').value = '';
-        document.getElementById('edit-homework-date-submission-until').value = '';
-        document.getElementById('edit-homework-no-data').classList.add('d-none');
-      });
+  modalElement.addEventListener('hidden.bs.modal', function () {
+    document.getElementById('edit-homework-subject-select').value = '';
+    document.getElementById('edit-homework-input').value = '';
+    document.getElementById('edit-homework-date-submission-until').value = '';
+    document.getElementById('edit-homework-no-data').classList.add('d-none');
+  });
 
-      newButton.addEventListener('click', () => {
-        const checkedSubject = $("#edit-homework-subject-select").val();
-        const homework = $("#edit-homework-input").val().trim();
-        const dueDate = dateToMs($("#edit-homework-date-submission-until").val());
+  newButton.addEventListener('click', () => {
+    const checkedSubject = $("#edit-homework-subject-select").val();
+    const homework = $("#edit-homework-input").val().trim();
+    const dueDate = dateToMs($("#edit-homework-date-submission-until").val());
 
-        if (checkedSubject && homework && dueDate) {
-          $("#edit-homework-no-data").addClass("d-none");
-          let url = "/homework/edit";
-          let data = {
-            id: homeworkID,
-            subjectID: checkedSubject,
-            content: homework,
-            submissionDate: dueDate
-          };
-          let hasResponded = false;
-          $.post(url, data, function (result) {
-            hasResponded = true;
-            if (result == "0") {
-              editHomeworkModal.hide();
-              $("#edit-homework-success-toast").toast("show");
-              updateAll();
-            }
-            else if (result == "1") {
-              $("#error-server-toast").toast("show");
-            }
-          });
-          setTimeout(() => {
-            if (!hasResponded) {
-              $("#error-server-toast").toast("show");
-            }
-          }, 1000);
-        } else {
-          $("#edit-homework-no-data").removeClass("d-none");
+    if (checkedSubject && homework && dueDate) {
+      $("#edit-homework-no-data").addClass("d-none");
+      let url = "/homework/edit";
+      let data = {
+        id: homeworkID,
+        subjectID: checkedSubject,
+        content: homework,
+        submissionDate: dueDate
+      };
+      let hasResponded = false;
+      $.post(url, data, function (result) {
+        hasResponded = true;
+        if (result == "0") {
+          editHomeworkModal.hide();
+          $("#edit-homework-success-toast").toast("show");
+          updateAll();
+        }
+        else if (result == "1") {
+          $("#error-server-toast").toast("show");
         }
       });
-
-      editHomeworkModal.show();
-
+      setTimeout(() => {
+        if (!hasResponded) {
+          $("#error-server-toast").toast("show");
+        }
+      }, 1000);
     } else {
-      $("#error-auth-toast").toast("show");
+      $("#edit-homework-no-data").removeClass("d-none");
     }
   });
+
+  editHomeworkModal.show();
 };
 
 function deleteHomework(homeworkID) {
@@ -192,17 +189,16 @@ function deleteHomework(homeworkID) {
 }
 
 function addHomework() {
-  const addHomeworkModal = new bootstrap.Modal(document.getElementById('add-homework-modal'));
-  const modalElement = document.getElementById('add-homework-modal');
+  $("#add-homework-modal").modal("show");
   const oldButton = document.getElementById('add-homework-confirmation-button');
   const newButton = oldButton.cloneNode(true);
   oldButton.parentNode.replaceChild(newButton, oldButton);
 
-  modalElement.addEventListener('hidden.bs.modal', function () {
-    document.getElementById('add-homework-subject-select').value = '';
-    document.getElementById('add-homework-input').value = '';
-    document.getElementById('add-homework-date-submission-until').value = '';
-    document.getElementById('add-homework-no-data').classList.add('d-none');
+  $("#add-homework-modal").on("show.bs.modal", () => {
+    $("#add-homework-subject-select").val();
+    $("#add-homework-input").val();
+    $("#add-homework-date-submission-until").val();
+    $("#add-homework-no-data").addClass("d-none");
   });
 
   newButton.addEventListener('click', () => {
@@ -223,7 +219,7 @@ function addHomework() {
       $.post(url, data, function (result) {
         hasResponded = true;
         if (result == "0") {
-          addHomeworkModal.hide();
+          $("#add-homework-modal").modal("hide");
           $("#add-homework-success-toast").toast("show");
           updateAll();
         }
@@ -240,8 +236,6 @@ function addHomework() {
       $("#add-homework-no-data").removeClass("d-none");
     }
   });
-
-  addHomeworkModal.show();
 }
 
 function updateSubjectList() {
@@ -320,8 +314,24 @@ $(document).ready(() => {
     console.error('Error loading the JSON file:', error);
   });
 
-  $("#filter-toggle").on("click", () => {
-    $("#filter-content").toggleClass("d-none");
+  $("#filter-toggle").on("click", function () {
+    if ($("#filter-toggle").is(":checked")) {
+      $("#filter-content").removeClass("d-none");
+    }
+    else {
+      $("#filter-content").addClass("d-none");
+    }
+  });
+
+  $("#edit-toggle").on("click", function () {
+    if ($("#edit-toggle").is(":checked")) {
+      $("#add-homework-btn").removeClass("d-none");
+      $(".homework-edit-options").removeClass("d-none");
+    }
+    else {
+      $("#add-homework-btn").addClass("d-none");
+      $(".homework-edit-options").addClass("d-none");
+    }
   });
 
   $(".dropdown-menu").each(function () {
@@ -334,25 +344,19 @@ $(document).ready(() => {
     updateAll();
   });
 
-  $(document).on('click', '.fa-trash', function () {
+  $(document).on('click', '.homework-delete', function () {
     const homeworkID = $(this).data('id');
     deleteHomework(homeworkID);
   });
 
-  $(document).on('click', '.fa-pen-to-square', function () {
+  $(document).on('click', '.homework-edit', function () {
     const homeworkID = $(this).data('id');
     editHomework(homeworkID);
   });
 
   initFilters();
 
-  $(document).on("click", "#add-homework-button", () => {
-    $.get('/account/auth', (response) => {
-      if (response.authenticated) {
-        addHomework();
-      } else {
-        $("#error-auth-toast").toast("show");
-      }
-    });
+  $(document).on("click", "#add-homework-btn", () => {
+    addHomework();
   });
 });
