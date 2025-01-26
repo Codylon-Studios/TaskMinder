@@ -92,13 +92,13 @@ router.post('/delete', async (req, res) => {
 
 // editHA route
 router.post('/edit', async (req, res) => {
-  const { id, subjectID, content, submissionDate} = req.body;
+  const { id, subjectID, content, assignmentDate, submissionDate} = req.body;
 
   try {
     await withDB(async (client) => {
       await client.query(
-        'UPDATE hausaufgaben10d SET content = $1, subject_id = $2, submission_date = $3 WHERE ha_id = $4',
-        [content, subjectID, submissionDate, id]
+        'UPDATE hausaufgaben10d SET content = $1, subject_id = $2, assignment_date = $3, submission_date = $4 WHERE ha_id = $5',
+        [content, subjectID, assignmentDate, submissionDate, id]
       );
     });
 
