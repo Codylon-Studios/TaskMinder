@@ -82,7 +82,7 @@ async function updateHomeworkList() {
     let template = 
       `<div class="mb-1 form-check d-flex" id="${homeworkID}">
         <label class="form-check-label">
-          <input type="checkbox" class="form-check-input">
+          <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkID}">
           <b>${subject}</b> ${content}
           <span class="ms-4 d-block">Von ${assignmentDate} bis ${submissionDate}</span>
         </label>
@@ -146,6 +146,9 @@ function editHomework(homeworkID) {
       else if (result == "1") {
         $("#error-server-toast").toast("show");
       }
+      else if (result == "2") {
+        $("#not-logged-in-toast").toast("show");
+      }
     });
     setTimeout(() => {
       if (!hasResponded) {
@@ -175,6 +178,9 @@ function deleteHomework(homeworkID) {
       }
       else if (result == "1") {
         $("#error-server-toast").toast("show");
+      }
+      else if (result == "2") {
+        $("#not-logged-in-toast").toast("show");
       }
     });
 
@@ -219,12 +225,47 @@ function addHomework() {
       else if (result == "1") {
         $("#error-server-toast").toast("show");
       }
+      else if (result == "2") {
+        $("#not-logged-in-toast").toast("show");
+      }
     });
     setTimeout(() => {
       if (!hasResponded) {
         $("#error-server-toast").toast("show");
       }
     }, 1000);
+  });
+}
+
+function checkHomework(homeworkID) {
+  let checkStatus = $(`.homework-check[data-id="${homeworkID}"]`).prop("checked");
+  $.get('/account/auth', (response) => {
+    if (response.authenticated) {
+      let url = "/homework/checked";
+      let data = {
+        ha_id: homeworkID,
+        checkStatus: checkStatus
+      };
+      let hasResponded = false;
+      $.post(url, data, function (result) {
+        hasResponded = true;
+        console.log("hi", result)
+        if (result == "0") {
+          console.log("hi", result)
+        }
+        else if (result == "1") {
+          $("#error-server-toast").toast("show");
+        }
+      });
+      setTimeout(() => {
+        if (!hasResponded) {
+          $("#error-server-toast").toast("show");
+        }
+      }, 1000);
+    }
+    else {
+      console.log("not logged in");
+    }
   });
 }
 
@@ -294,6 +335,12 @@ $(document).ready(() => {
   })
   .catch(error => {
     console.error('Error loading the JSON file:', error);
+  });
+
+  $.get('/account/auth', (response) => {
+    if (response.authenticated) {
+      $("#edit-toggle-label").removeClass("d-none")
+    }
   });
 
   $("#filter-toggle").prop("checked", false);
@@ -372,6 +419,11 @@ $(document).ready(() => {
   $(document).on('click', '.homework-edit', function () {
     const homeworkID = $(this).data('id');
     editHomework(homeworkID);
+  });
+
+  $(document).on('click', '.homework-check', function () {
+    const homeworkID = $(this).data('id');
+    checkHomework(homeworkID);
   });
 
   initFilters();

@@ -17,6 +17,11 @@ const updateRedisCache = async (data, expiration = 3600) => {
 router.post('/add', async (req, res) => {
   const { subjectID, content, assignmentDate, submissionDate} = req.body;
 
+  if (! req.session.user) {
+    res.status(200).send('2');
+    return;
+  }
+
   try {
     await withDB(async (client) => {
       await client.query(
@@ -38,9 +43,18 @@ router.post('/add', async (req, res) => {
 });
 
 router.post('/checked', async (req, res)=> {
-  const {ha_id, username, checkStatus} = req.body;
+  const {ha_id, checkStatus} = req.body;
+  let username
+
+  if (! req.session.user) {
+    res.status(200).send('2');
+    return;
+  }
+  else {
+    username = req.session.user.username;
+  }
   
-  if (checkStatus == "check"){
+  if (checkStatus == "true"){
     try {
       await withDB(async (client) => {
         await client.query(
@@ -48,14 +62,14 @@ router.post('/checked', async (req, res)=> {
           [ha_id, username]
         );
       });
-      const result = await withDB((client) => client.query('SELECT * FROM homework20d_check WHERE username = $1', [username]));
+      const result = await withDB((client) => client.query('SELECT * FROM homework10d_check WHERE username = $1', [username]));
       const data = result.rows;
       res.status(200).send(data);
     } catch (error) {
       console.error('Error while checking hausaufgaben data:', error);
       res.status(500).send('1');
     }
-  } else if (checkStatus == "uncheck"){
+  } else if (checkStatus == "false"){
     try {
       await withDB(async (client) => {
         await client.query('DELETE FROM homework10d_check WHERE ha_id = $1 AND username = $2', [ha_id, username]);
@@ -65,7 +79,7 @@ router.post('/checked', async (req, res)=> {
       res.status(200).send(data);
     } catch (error) {
       console.error('Error while unchecking hausaufgaben data:', error);
-      res.status(500).send('2');
+      res.status(500).send('1');
     }
   }
 });
@@ -73,6 +87,11 @@ router.post('/checked', async (req, res)=> {
 // deleteHA route
 router.post('/delete', async (req, res) => {
   const { id } = req.body;
+
+  if (! req.session.user) {
+    res.status(200).send('2');
+    return;
+  }
 
   try {
     await withDB(async (client) => {
@@ -93,6 +112,11 @@ router.post('/delete', async (req, res) => {
 // editHA route
 router.post('/edit', async (req, res) => {
   const { id, subjectID, content, assignmentDate, submissionDate} = req.body;
+
+  if (! req.session.user) {
+    res.status(200).send('2');
+    return;
+  }
 
   try {
     await withDB(async (client) => {
