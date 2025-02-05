@@ -1,13 +1,53 @@
-const { withDB, connectRedis, redisClient, cacheKeyHomework } = require('./constant');
+const { withDB, connectRedis, redisClient, cacheKeyHomeworkData, cacheKeyHomeworkCheckedData, cacheExpiration } = require('./constant');
 const express = require('express');
 const router = express.Router();
 
 connectRedis();
 
-const updateRedisCache = async (data, expiration = 3600) => {
+function changeKeys(data) {
+  let changedData = [];
+  for (let row in data) {
+    changedData.push({});
+    for (let key in data[row]) {
+      let newKey;
+      switch (key) {
+        case "homeworkid":
+          newKey = "homeworkId";
+          break;
+        case "subjectid":
+          newKey = "subjectId";
+          break;
+        case "assignmentdate":
+          newKey = "assignmentDate";
+          break;
+        case "submissiondate":
+          newKey = "submissionDate";
+          break;
+        case "checkid":
+          newKey = "checkId";
+          break;
+        default:
+          newKey = key;
+      }
+      changedData[row][newKey] = data[row][key];
+    }
+  }
+  return changedData;
+}
+
+async function updateCacheHomeworkData(data) {
   try {
-    await redisClient.set(cacheKeyHomework, JSON.stringify(data), { EX: expiration });
-    console.log('Data cached successfully in Redis');
+    await redisClient.set(cacheKeyHomeworkData, JSON.stringify(data), { EX: cacheExpiration });
+    console.log('Homework data cached successfully in Redis');
+  } catch (err) {
+    console.error('Error updating Redis cache:', err);
+  }
+};
+
+async function updateCacheHomeworkCheckedData(data) {
+  try {
+    await redisClient.set(cacheKeyHomeworkCheckedData, JSON.stringify(data), { EX: cacheExpiration });
+    console.log('Homework checked data cached successfully in Redis');
   } catch (err) {
     console.error('Error updating Redis cache:', err);
   }
@@ -15,26 +55,32 @@ const updateRedisCache = async (data, expiration = 3600) => {
 
 // addHA route
 router.post('/add', async (req, res) => {
-  const { subjectID, content, assignmentDate, submissionDate} = req.body;
+  const { subjectId, content, assignmentDate, submissionDate} = req.body;
 
   if (! req.session.user) {
     res.status(200).send('2');
     return;
   }
 
+  if ([ subjectId, content, assignmentDate, submissionDate ].includes("")) {
+    console.log("Empty information while adding homework")
+    res.status(200).send("1");
+    return;
+  }
+
   try {
     await withDB(async (client) => {
       await client.query(
-        'INSERT INTO hausaufgaben10d (content, subject_id, assignment_date, submission_date) VALUES ($1, $2, $3, $4)',
-        [content, subjectID, assignmentDate, submissionDate]
+        'INSERT INTO homework10d (content, subjectId, assignmentDate, submissionDate) VALUES ($1, $2, $3, $4)',
+        [content, subjectId, assignmentDate, submissionDate]
       );
     });
     
 
-    const result = await withDB((client) => client.query('SELECT * FROM hausaufgaben10d'));
+    const result = await withDB((client) => client.query('SELECT * FROM homework10d'));
     const data = result.rows;
 
-    await updateRedisCache(data);
+    await updateCacheHomeworkData(changeKeys(data));
     res.status(200).send('0');
   } catch (error) {
     console.error('Error while adding and storing hausaufgaben data:', error);
@@ -42,9 +88,10 @@ router.post('/add', async (req, res) => {
   }
 });
 
-router.post('/checked', async (req, res)=> {
-  const {ha_id, checkStatus} = req.body;
+router.post('/check', async (req, res)=> {
+  const {homeworkId, checkStatus} = req.body;
   let username
+  console.log(checkStatus)
 
   if (! req.session.user) {
     res.status(200).send('2');
@@ -54,33 +101,26 @@ router.post('/checked', async (req, res)=> {
     username = req.session.user.username;
   }
   
-  if (checkStatus == "true"){
-    try {
+  try {
+    await withDB(async (client) => {
       await withDB(async (client) => {
-        await client.query(
-          'INSERT INTO homework10d_check (ha_id, username, checked) VALUES ($1, $2, TRUE)',
-          [ha_id, username]
+        await client.query('DELETE FROM homework10dCheck WHERE homeworkId = $1 AND username = $2',
+          [homeworkId, username]
         );
       });
-      const result = await withDB((client) => client.query('SELECT * FROM homework10d_check WHERE username = $1', [username]));
-      const data = result.rows;
-      res.status(200).send(data);
-    } catch (error) {
-      console.error('Error while checking hausaufgaben data:', error);
-      res.status(500).send('1');
-    }
-  } else if (checkStatus == "false"){
-    try {
-      await withDB(async (client) => {
-        await client.query('DELETE FROM homework10d_check WHERE ha_id = $1 AND username = $2', [ha_id, username]);
-      });
-      const result = await withDB((client) => client.query('SELECT * FROM homework10d_check WHERE username = $1', [username]));
-      const data = result.rows;
-      res.status(200).send(data);
-    } catch (error) {
-      console.error('Error while unchecking hausaufgaben data:', error);
-      res.status(500).send('1');
-    }
+      await client.query(
+        'INSERT INTO homework10dCheck (homeworkId, username, checked) VALUES ($1, $2, $3)',
+        [homeworkId, username, checkStatus]
+      );
+    });
+    const result = await withDB((client) => client.query('SELECT * FROM homework10dcheck WHERE username = $1', [username]));
+    const data = result.rows;
+
+    await updateCacheHomeworkCheckedData(changeKeys(data));
+    res.status(200).send("0");
+  } catch (error) {
+    console.error('Error while checking hausaufgaben data:', error);
+    res.status(500).send('1');
   }
 });
 
@@ -95,13 +135,13 @@ router.post('/delete', async (req, res) => {
 
   try {
     await withDB(async (client) => {
-      await client.query('DELETE FROM hausaufgaben10d WHERE ha_id = $1', [id]);
+      await client.query('DELETE FROM homework10d WHERE homeworkId = $1', [id]);
     });
 
-    const result = await withDB((client) => client.query('SELECT * FROM hausaufgaben10d'));
+    const result = await withDB((client) => client.query('SELECT * FROM homework10d'));
     const data = result.rows;
 
-    await updateRedisCache(data, 7200); 
+    await updateCacheHomeworkData(changeKeys(data)); 
     res.status(200).send('0');
   } catch (error) {
     console.error('Error while deleting hausaufgaben data:', error);
@@ -111,25 +151,31 @@ router.post('/delete', async (req, res) => {
 
 // editHA route
 router.post('/edit', async (req, res) => {
-  const { id, subjectID, content, assignmentDate, submissionDate} = req.body;
+  const { id, subjectId, content, assignmentDate, submissionDate} = req.body;
 
   if (! req.session.user) {
     res.status(200).send('2');
     return;
   }
 
+  if ([ subjectId, content, assignmentDate, submissionDate ].includes("")) {
+    console.log("Empty information while editing homework")
+    res.status(200).send("1");
+    return;
+  }
+
   try {
     await withDB(async (client) => {
       await client.query(
-        'UPDATE hausaufgaben10d SET content = $1, subject_id = $2, assignment_date = $3, submission_date = $4 WHERE ha_id = $5',
-        [content, subjectID, assignmentDate, submissionDate, id]
+        'UPDATE homework10d SET content = $1, subjectId = $2, assignmentDate = $3, submissionDate = $4 WHERE homeworkId = $5',
+        [content, subjectId, assignmentDate, submissionDate, id]
       );
     });
 
-    const result = await withDB((client) => client.query('SELECT * FROM hausaufgaben10d'));
+    const result = await withDB((client) => client.query('SELECT * FROM homework10d'));
     const data = result.rows;
 
-    await updateRedisCache(data, 7200);
+    await updateCacheHomeworkData(changeKeys(data));
     res.status(200).send("0");
   } catch (error) {
     console.error('Error while editing and storing hausaufgaben data:', error);
@@ -138,20 +184,49 @@ router.post('/edit', async (req, res) => {
 });
 
 // fetchHA route
-router.get('/fetch', async (req, res) => {
+router.get('/get_homework_data', async (req, res) => {
   try {
-    const cachedDataHomeWork = await redisClient.get(cacheKeyHomework);
+    const cachedHomeworkData = await redisClient.get(cacheKeyHomeworkData);
 
-    if (cachedDataHomeWork) {
+    if (cachedHomeworkData) {
       console.log('Serving data from Redis cache');
-      return res.status(200).json(JSON.parse(cachedDataHomeWork));
+      return res.status(200).json(JSON.parse(cachedHomeworkData));
     }
 
-    const result = await withDB((client) => client.query('SELECT * FROM hausaufgaben10d'));
+    const result = await withDB((client) => client.query('SELECT * FROM homework10d'));
     const data = result.rows;
 
-    await updateRedisCache(data, 7200);
-    res.status(200).json(data);
+    await updateCacheHomeworkData(changeKeys(data));
+    res.status(200).json(changeKeys(data));
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// fetchHA route
+router.get('/get_homework_checked_data', async (req, res) => {
+  let username;
+  if (! req.session.user) {
+    res.status(200).send('2');
+    return;
+  }
+  else {
+    username = req.session.user.username;
+  }
+  try {
+    const cachedHomeworkCheckedData = await redisClient.get(cacheKeyHomeworkCheckedData);
+
+    if (cachedHomeworkCheckedData) {
+      console.log('Serving data from Redis cache');
+      return res.status(200).json(JSON.parse(cachedHomeworkCheckedData));
+    }
+
+    const result = await withDB((client) => client.query('SELECT * FROM homework10dcheck WHERE username = $1', [username]));
+    const data = result.rows;
+
+    await updateCacheHomeworkCheckedData(changeKeys(data));
+    res.status(200).json(changeKeys(data));
   } catch (err) {
     console.error('Error fetching data:', err);
     res.status(500).json({ error: 'Internal Server Error' });

@@ -4,52 +4,33 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Hausaufgabenplaner</title>
-  <script src="/global.js"></script>
+  <script src="/init.js"></script>
 </head>
 <body data-url="main">
   <div class="load-content" data-url="navbar" data-html data-js></div>
 
   <div class="container">
     <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
-      <button class="btn btn-semivisible">
+      <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-l-btn">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-      <div class="mx-2">
+      <div class="mx-2" id="calendar-month-year">
         Dezember 2024
       </div>
-      <button class="btn btn-semivisible btn-custom">
+      <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-r-btn">
         <i class="fa-solid fa-chevron-right"></i>
       </button>
     </div>
   
     <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
-      <button class="btn btn-semivisible">
+      <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-l-btn">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-      <div class="mx-2 d-flex">
-        <div class="days-overview-day btn-semivisible">
-          <div>Mo</div><div>23</div><div class="event-blue"></div>
-        </div>
-        <div class="days-overview-day btn-semivisible">
-          <div>Di</div><div>24</div><div></div>
-        </div>
-        <div class="days-overview-day btn-semivisible">
-          <div>Mi</div><div>25</div><div></div>
-        </div>
-        <div class="days-overview-day btn-semivisible days-overview-day-selected">
-          <div>Do</div><div>26</div><div class="event-orange"></div>
-        </div>
-        <div class="days-overview-day btn-semivisible">
-          <div>Fr</div><div>27</div><div class="event-blue"></div>
-        </div>
-        <div class="days-overview-day btn-semivisible">
-          <div>Sa</div><div>28</div><div></div>
-        </div>
-        <div class="days-overview-day btn-semivisible">
-          <div>So</div><div>29</div><div></div>
-        </div>
+      <div class="mx-2" id="calendar-week-wrapper">
+        <div class="d-flex calendar-week" id="calendar-week-old"></div>
+        <div class="d-none calendar-week" id="calendar-week-new"></div>
       </div>
-      <button class="btn btn-semivisible btn-custom">
+      <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-r-btn">
         <i class="fa-solid fa-chevron-right"></i>
       </button>
     </div>
@@ -173,30 +154,13 @@
         <div class="text-decoration-underline">
           Hausaufgaben
         </div>
-        <select class="form-select form-select-sm d-inline-block w-auto ms-2" style="padding: .2rem 2rem .2rem .5rem;">
-          <option value="auf-heute">auf diesen Tag</option>
-          <option value="von-heute">von diesen Tag</option>
+        <select class="form-select form-select-sm d-inline-block w-auto ms-2" id="filter-homework-mode" style="padding: .2rem 2rem .2rem .5rem;">
+          <option value="submission">auf diesen Tag</option>
+          <option value="assignment">von diesem Tag</option>
         </select>
       </div>
-      <div class="ms-3">
-        <div class="mb-1 form-check">
-          <label class="form-check-label">
-            <input type="checkbox" class="form-check-input">
-            <b>Deutsch</b> Buch Seite 167/3
-          </label>
-        </div>
-        <div class="mb-1 form-check">
-          <label class="form-check-label">
-            <input type="checkbox" class="form-check-input">
-            <b>Mathe</b> Arbeitsblatt Aufgabe 2 und 3
-          </label>
-        </div>
-        <div class="form-check">
-          <label class="form-check-label">
-            <input type="checkbox" class="form-check-input">
-            <b>Englisch</b> Mediation schreiben
-          </label>
-        </div>
+      <div class="ms-3" id="homework-list">
+        <!--Gets filled-->
       </div>
     </div>
     <!--Exclude for ALPHA -> l.224
