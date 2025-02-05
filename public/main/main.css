@@ -25,10 +25,15 @@ span.event-orange {
     padding: 0.2rem 0.5rem;
     border-radius: 0.5rem;
     transition: background-color 0.3s;
+    width: 30px;
 }
 
-.days-overview-day-selected {
+.days-overview-today {
     color: #dc3545;
+}
+
+.days-overview-selected {
+    border: 3px solid #e9ecef;
 }
 
 .days-overview-day > div:first-child {
@@ -85,4 +90,14 @@ span.event-orange {
 
 .wide {
     flex-grow: 2;
+}
+
+
+#calendar-week-wrapper {
+    overflow: hidden;
+    display: grid;
+}
+
+.calendar-week {
+    grid-area: 1 / 1 / 1 / 1;
 }

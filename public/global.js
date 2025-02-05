@@ -1,58 +1,29 @@
-//
-// This script will run on every single Website
-//
-
-function loadTemplateContent() {
-  $(".load-content").each(async function() {
-    const url = `/templates/${$(this).data("url")}.`;
-    if ($(this).data("html") != undefined) {
-      $(this).load(url + "html", () => {
-        if ($(this).data("js") != undefined) {
-          $.getScript(url + 'js');
-        }
-      })
-    }
-    else if ($(this).data("js") != undefined) {
-      $.getScript(url + 'js');
-    }
-    if ($(this).data("css") != undefined) {
-      $head.append(`<link rel="stylesheet" type="text/css" href="${url}css">`);
-    }
-  });
+function msToDisplayDate(ms) {
+  let date = new Date(parseInt(ms));
+  let day = String(date.getDate());
+  let month = String(date.getMonth() + 1);
+  let year = date.getFullYear();
+  return `${day}.${month}.${year}`;
 }
 
+function msToInputDate(ms) {
+  let date = new Date(parseInt(ms));
+  let day = String(date.getDate()).padStart(2, '0');
+  let month = String(date.getMonth() + 1).padStart(2, '0');
+  let year = date.getFullYear();
+  return `${year}-${month}-${day}`;
+}
 
-// Load jQuery without jQuery
-let jQueryScript = document.createElement('script');
-jQueryScript.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
-jQueryScript.defer = true;
-jQueryScript.onload = () => {
-  let $head = $("head");
-  let resources = [];
-  // Load Bootstrap
-  resources.push(`<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">`);
-  resources.push(`<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>`);
+function dateToMs(dateStr) {
+  let [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getTime();
+}
 
-  // Load global CSS
-  resources.push(`<link href="/global.css" rel="stylesheet">`);
-
-  // Load Font Awesome icons
-  resources.push(`<script src="https://kit.fontawesome.com/0ca04b82ef.js"></script>`);
-
-  $head.append(resources.join(""));
-
-  // Add possibility to include divs with class "load-content" to load e.g. the navbar
-  $(document).ready(() => {
-    loadTemplateContent();
-
-    // Load site specific resources
-    let url = $("body").data("url");
-
-    let siteSpecificScript = document.createElement("script");
-    siteSpecificScript.src = `/${url}/${url}.js`;
-    document.head.appendChild(siteSpecificScript);
-
-    $head.append(`<link href="/${url}/${url}.css" rel="stylesheet"></link>`);
-  });
-};
-document.head.appendChild(jQueryScript);
+function isSameDay(date1, date2) {
+  return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+  );
+}
