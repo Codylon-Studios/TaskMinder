@@ -145,9 +145,11 @@ function resetLoginRegisterModal() {
 function updateColorTheme() {
   if ($("#color-theme-dark")[0].checked) {
     document.body.setAttribute("data-bs-theme", "dark");
+    localStorage.setItem("colorTheme", "dark");
   }
   else {
     document.body.setAttribute("data-bs-theme", "light");
+    localStorage.setItem("colorTheme", "light");
   }
 }
 
@@ -249,7 +251,10 @@ $("#logout-button").on("click", () => {
   logoutAccount();
 });
 
-updateColorTheme();
+let colorTheme = localStorage.getItem("colorTheme") || "light";
+document.body.setAttribute("data-bs-theme", colorTheme);
+$("#color-theme-dark").prop("checked", colorTheme == "dark") 
+$("#color-theme-light").prop("checked", colorTheme == "light")
 
 $("#color-theme input").each(() => {
   $(this).on("click", () => {
