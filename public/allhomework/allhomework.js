@@ -143,7 +143,7 @@ async function updateHomeworkList() {
 
   // If no homeworks match, add an explanation text
   if ($ui.homeworkList.html() == "") {
-    $ui.homeworkList.html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern gefunden!</div>`)
+    $ui.homeworkList.html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>`)
   }
 }
 

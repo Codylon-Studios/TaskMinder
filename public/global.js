@@ -15,9 +15,19 @@ function msToInputDate(ms) {
 }
 
 function dateToMs(dateStr) {
-  let [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return date.getTime();
+  if (dateStr.includes("-")) {
+    let [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getTime();
+  }
+  else if (dateStr.includes(".")) {
+    let [day, month, year] = dateStr.split('.').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getTime();
+  }
+  else {
+    console.warn("Invalid date String", dateStr)
+  }
 }
 
 function isSameDay(date1, date2) {

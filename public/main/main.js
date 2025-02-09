@@ -217,7 +217,7 @@ async function updateHomeworkList() {
 
   // If no homeworks match, add an explanation text
   if ($("#homework-list").html() == "") {
-    $("#homework-list").html(`<div class="text-secondary">Keine Hausaufgaben ${(filterMode == "assignment") ? "von" : "auf"} diesen Tag gefunden!</div>`)
+    $("#homework-list").html(`<div class="text-secondary">Keine Hausaufgaben ${(filterMode == "assignment") ? "von diesem" : "auf diesen"} Tag.</div>`)
   }
 }
 
@@ -226,22 +226,18 @@ async function updateSubstitutionList() {
     substitutionsData = data;
   });
 
-  let timetableId;
+  $("#substitutions-updated").html(substitutionsData.updated)
+  let updatedDate = new Date(dateToMs(substitutionsData.updated.split(" ")[0]))
+  let updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][updatedDate.getDay()]
+  $("#substitutions-updated").html(updatedWeekDay + ", " + substitutionsData.updated.split(" ")[1])
 
-  let timetable1Date = new Date()
-  if (timetable1Date.getDay() == 0) { timetable1Date.setDate(timetable1Date.getDate() - 2) }
-  else if (timetable1Date.getDay() == 6) { timetable1Date.setDate(timetable1Date.getDate() - 1) }
+  let planId;
 
-  let timetable2Date = new Date()
-  if (timetable2Date.getDay() == 5) { timetable2Date.setDate(timetable2Date.getDate() + 3) }
-  else if (timetable2Date.getDay() == 6) { timetable2Date.setDate(timetable2Date.getDate() + 2) }
-  else { timetable2Date.setDate(timetable2Date.getDate() + 1) }
-
-  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], timetable1Date)) {
-    timetableId = 0
+  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(substitutionsData["plan1"]["date"])))) {
+    planId = 1
   }
-  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], timetable2Date)) {
-    timetableId = 1
+  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(substitutionsData["plan2"]["date"])))) {
+    planId = 2
   }
   else {
     $("#substitutions-table").addClass("d-none")
@@ -250,16 +246,16 @@ async function updateSubstitutionList() {
     return;
   }
   
-  if (substitutionsData[timetableId].length == 0) {
+  if (substitutionsData["plan" + planId]["substitutions"].length == 0) {
     $("#substitutions-table").addClass("d-none")
     $("#substitutions-no-entry").removeClass("d-none")
     $("#substitutions-no-data").addClass("d-none")
     return;
   }
 
-  $("#substitutions-list").html("")
+  $("#substitutions-list").empty()
 
-  for (let substitution of substitutionsData[timetableId]) {
+  for (let substitution of substitutionsData["plan" + planId]["substitutions"]) {
     let template = `
       <tr>
         <td>${substitution.type}</td>
@@ -275,13 +271,14 @@ async function updateSubstitutionList() {
   $("tr:last td").addClass("border-bottom-0")
 
   $("td").each(function () {
-    if ($(this).text() == "-") {
+    if ($(this).html() == "-") {
       $(this).addClass("text-center align-middle")
     }
   })
 
   $("#substitutions-table").removeClass("d-none")
-  $("#substitutions-none").addClass("d-none")
+  $("#substitutions-no-substitution").addClass("d-none")
+  $("#substitutions-no-data").addClass("d-none")
 }
 
 $(".calendar-week-move-button").on("click", function () {
