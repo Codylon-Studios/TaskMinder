@@ -63,7 +63,7 @@ function getSubjectName(id) {
   }
 }
 
-function getCheckStateServer(homeworkId) {
+function getCheckStatusServer(homeworkId) {
   for (let homework of homeworkCheckedData) {
     if (homework.homeworkId == homeworkId) {
       return homework.checked;
@@ -72,7 +72,7 @@ function getCheckStateServer(homeworkId) {
   return false;
 }
 
-function getCheckStateLocal(homeworkId) {
+function getCheckStatusLocal(homeworkId) {
   return homeworkCheckedData[homeworkId];
 }
 
@@ -182,12 +182,12 @@ async function updateHomeworkList() {
 
     let checked;
     if (user.loggedIn) {
-      // If the user is logged in, get the check state using the server data
-      checked = getCheckStateServer(homeworkId);
+      // If the user is logged in, get the check status using the server data
+      checked = getCheckStatusServer(homeworkId);
     }
     else {
-      // If the user is not logged in, get the check state using the local data
-      checked = getCheckStateLocal(homeworkId);
+      // If the user is not logged in, get the check status using the local data
+      checked = getCheckStatusLocal(homeworkId);
     }
 
     if (filterMode == "assignment") {
@@ -245,13 +245,15 @@ async function updateSubstitutionList() {
   }
   else {
     $("#substitutions-table").addClass("d-none")
-    $("#substitutions-none").removeClass("d-none")
+    $("#substitutions-no-entry").addClass("d-none")
+    $("#substitutions-no-data").removeClass("d-none")
     return;
   }
   
   if (substitutionsData[timetableId].length == 0) {
     $("#substitutions-table").addClass("d-none")
-    $("#substitutions-none").removeClass("d-none")
+    $("#substitutions-no-entry").removeClass("d-none")
+    $("#substitutions-no-data").addClass("d-none")
     return;
   }
 
