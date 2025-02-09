@@ -5,6 +5,7 @@ const redis = require('redis');
 const saltRounds = 10;
 const cacheKeyHomeworkData = 'homework_data';
 const cacheKeyHomeworkCheckedData = 'homework_checked_data';
+const cacheKeySubstitutionsData = 'substitutions_data';
 const cacheExpiration = 3600;
 
 const redisClient = redis.createClient({
@@ -51,4 +52,4 @@ const disconnectRedis = async () => {
   }
 };
 
-module.exports = {withDB, saltRounds, redisClient, connectRedis, disconnectRedis, cacheKeyHomeworkData, cacheKeyHomeworkCheckedData};
+module.exports = {withDB, saltRounds, redisClient, connectRedis, disconnectRedis, cacheKeyHomeworkData, cacheKeyHomeworkCheckedData, cacheKeySubstitutionsData, cacheExpiration};
