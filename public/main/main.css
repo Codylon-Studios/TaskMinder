@@ -33,7 +33,7 @@ span.event-orange {
 }
 
 .days-overview-selected {
-    border: 3px solid #e9ecef;
+    border: 3px solid var(--semivisible-hover);
 }
 
 .days-overview-day > div:first-child {

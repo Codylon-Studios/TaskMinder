@@ -38,11 +38,12 @@ function getWeekDates() {
   today.setDate(today.getDate() + 7 * calendarWeekOffset)
 
   // weekday is the current day (i.e. 0 for sunday, 1 for monday, 2 for tuesday, ...)
-  let weekday = today.getDay()
+  let weekDay = today.getDay()
+  weekDay = (weekDay == 0) ? 7 : weekDay;
 
   // monday is the Date Object of the monday in the currently selected week
   let monday = new Date(today)
-  monday.setDate(today.getDate() - weekday + 1)
+  monday.setDate(today.getDate() - weekDay + 1)
 
   for (let i = 0; i < 7; i++) {
     // dayDate is the Date Object of the days in the currently selected week
@@ -73,6 +74,73 @@ function getCheckStateServer(homeworkId) {
 
 function getCheckStateLocal(homeworkId) {
   return homeworkCheckedData[homeworkId];
+}
+
+function checkHomework(homeworkId) {
+  // Save whether the user has checked or unchecked the homework
+  let checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
+
+  // Check whether the user is logged in
+  if (user.loggedIn) {
+    // The user is logged in
+
+    // Prepare the POST request
+    let url = "/homework/check";
+    let data = {
+      homeworkId: homeworkId,
+      checkStatus: checkStatus
+    };
+    // Save whether the server has responed
+    let hasResponded = false;
+
+    // Post the request
+    $.post(url, data, function (result) {
+      // The server has responded
+      hasResponded = true;
+      if (result == "0") { // Everything worked
+        // The user doesn't need any notification here
+      }
+      else if (result == "1") { // An internal server error occurred
+        // Show an error notification
+        $navbarToasts.serverError.toast("show");
+      }
+      else if (result == "2") { // The user has to be logged in but isn't
+        // Show an error notification
+        $navbarToasts.notLoggedIn.toast("show");
+      }
+    });
+    setTimeout(() => {
+      // Wait for 1s
+      if (!hasResponded) {
+        // If the server hasn't answered, show the internal server error notification
+        $navbarToasts.serverError.toast("show");
+      }
+    }, 1000);
+  }
+  else {
+    // The user is not logged in
+
+    // Get the already saved data
+    let data = localStorage.getItem("homeworkCheckedData");
+
+    if (data == null) {
+      data = {}
+    }
+    else {
+      data = JSON.parse(data)
+    }
+
+    data[homeworkId] = checkStatus;
+
+    data = JSON.stringify(data);
+
+    localStorage.setItem("homeworkCheckedData", data);
+  }
+}
+
+function updateAll() {
+  updateHomeworkList();
+  updateSubstitutionList();
 }
 
 async function updateHomeworkList() {
@@ -153,66 +221,65 @@ async function updateHomeworkList() {
   }
 }
 
-function checkHomework(homeworkId) {
-  // Save whether the user has checked or unchecked the homework
-  let checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
+async function updateSubstitutionList() {
+  await $.get('/substitutions/get_substitutions_data', (data) => {
+    substitutionsData = data;
+  });
 
-  // Check whether the user is logged in
-  if (user.loggedIn) {
-    // The user is logged in
+  let timetableId;
 
-    // Prepare the POST request
-    let url = "/homework/check";
-    let data = {
-      homeworkId: homeworkId,
-      checkStatus: checkStatus
-    };
-    // Save whether the server has responed
-    let hasResponded = false;
+  let timetable1Date = new Date()
+  if (timetable1Date.getDay() == 0) { timetable1Date.setDate(timetable1Date.getDate() - 2) }
+  else if (timetable1Date.getDay() == 6) { timetable1Date.setDate(timetable1Date.getDate() - 1) }
 
-    // Post the request
-    $.post(url, data, function (result) {
-      // The server has responded
-      hasResponded = true;
-      if (result == "0") { // Everything worked
-        // The user doesn't need any notification here
-      }
-      else if (result == "1") { // An internal server error occurred
-        // Show an error notification
-        $navbarToasts.serverError.toast("show");
-      }
-      else if (result == "2") { // The user has to be logged in but isn't
-        // Show an error notification
-        $navbarToasts.notLoggedIn.toast("show");
-      }
-    });
-    setTimeout(() => {
-      // Wait for 1s
-      if (!hasResponded) {
-        // If the server hasn't answered, show the internal server error notification
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 1000);
+  let timetable2Date = new Date()
+  if (timetable2Date.getDay() == 5) { timetable2Date.setDate(timetable2Date.getDate() + 3) }
+  else if (timetable2Date.getDay() == 6) { timetable2Date.setDate(timetable2Date.getDate() + 2) }
+  else { timetable2Date.setDate(timetable2Date.getDate() + 1) }
+
+  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], timetable1Date)) {
+    timetableId = 0
+  }
+  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], timetable2Date)) {
+    timetableId = 1
   }
   else {
-    // The user is not logged in
-
-    // Get the already saved data
-    let data = localStorage.getItem("homeworkCheckedData");
-
-    if (data == null) {
-      data = {}
-    }
-    else {
-      data = JSON.parse(data)
-    }
-
-    data[homeworkId] = checkStatus;
-
-    data = JSON.stringify(data);
-
-    localStorage.setItem("homeworkCheckedData", data);
+    $("#substitutions-table").addClass("d-none")
+    $("#substitutions-none").removeClass("d-none")
+    return;
   }
+  
+  if (substitutionsData[timetableId].length == 0) {
+    $("#substitutions-table").addClass("d-none")
+    $("#substitutions-none").removeClass("d-none")
+    return;
+  }
+
+  $("#substitutions-list").html("")
+
+  for (let substitution of substitutionsData[timetableId]) {
+    let template = `
+      <tr>
+        <td>${substitution.type}</td>
+        <td>${substitution.lesson}</td>
+        <td>${substitution.subject}</td>
+        <td>${substitution.text}</td>
+        <td>${substitution.teacher}&nbsp;(${substitution.teacherOld})</td>
+        <td>${substitution.room}</td>
+      </tr>`
+      $("#substitutions-list").append(template);
+  }
+
+  $("tr:last td").addClass("border-bottom-0")
+
+  $("td").each(function () {
+    if ($(this).text() == "-") {
+      $(this).addClass("text-center align-middle")
+    }
+  })
+
+  $("#substitutions-table").removeClass("d-none")
+  $("#substitutions-none").addClass("d-none")
 }
 
 $(".calendar-week-move-button").on("click", function () {
@@ -266,7 +333,7 @@ $(".calendar-week-move-button").on("click", function () {
       calendarWeekMoving = false;
     }, 750)
   }, 20)
-  updateHomeworkList();
+  updateAll();
 });
 
 $(".calendar-month-year-move-button").on("click", function () {
@@ -340,7 +407,7 @@ $(document).on("click", ".days-overview-day", function () {
   selectedDay = $(this).data("day")
   getNewCalendarWeekContent();
   $("#calendar-week-old").html(newCalendarWeekContent);
-  updateHomeworkList();
+  updateAll();
 })
 
 // The currently selected day of the week (i.e. 0 for monday, 1 for tuesday, ...); initially today
@@ -370,6 +437,7 @@ $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDat
 let subjectData = [];
 let homeworkData = [];
 let homeworkCheckedData = [];
+let substitutionsData = [];
 
 $(document).ready(() => {
 
@@ -392,18 +460,18 @@ $(document).ready(() => {
   window.addEventListener("userVariableDefined", () => {
     // If user logs in / out update everything
     user.on("login", () => {
-      updateHomeworkList();
+      updateAll();
     });
 
     user.on("logout", () => {
-      updateHomeworkList();
+      updateAll();
     });
   });
 });
 
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", () => {
-  updateHomeworkList();
+  updateAll();
 });
 
 // Request checking the homework on clicking its checkbox

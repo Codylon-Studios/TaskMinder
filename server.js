@@ -1,7 +1,8 @@
 const express = require('express');
 const { createServer } = require('http');
 const auth = require('./routes/auth');
-const ha = require('./routes/homework')
+const homework = require('./routes/homework')
+const substitutions = require('./routes/substitutions')
 const session = require('express-session');
 const app = express();
 const server = createServer(app);
@@ -23,7 +24,8 @@ app.use(session({
 }));
 
 app.use('/account', auth);
-app.use('/homework', ha);
+app.use('/homework', homework);
+app.use('/substitutions', substitutions);
 
 // Serve index.html when root URL is accessed
 app.get('/', function (req, res) {
