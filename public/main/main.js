@@ -55,14 +55,6 @@ function getWeekDates() {
   }
 }
 
-function getSubjectName(id) {
-  for (let subject of subjectData) {
-    if (subject.id == id) {
-      return subject.name;
-    }
-  }
-}
-
 function getCheckStatusServer(homeworkId) {
   for (let homework of homeworkCheckedData) {
     if (homework.homeworkId == homeworkId) {
@@ -141,6 +133,7 @@ function checkHomework(homeworkId) {
 function updateAll() {
   updateHomeworkList();
   updateSubstitutionList();
+  updateTimetable();
 }
 
 async function updateHomeworkList() {
@@ -174,7 +167,7 @@ async function updateHomeworkList() {
   homeworkData.forEach(homework => {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = getSubjectName(homework.subjectId);
+    let subject = subjectData[homework.subjectId].name.long;
     let content = homework.content;
     let assignmentDate = new Date(Number(homework.assignmentDate));
     let submissionDate = new Date(Number(homework.submissionDate));
@@ -279,6 +272,84 @@ async function updateSubstitutionList() {
   $("#substitutions-table").removeClass("d-none")
   $("#substitutions-no-substitution").addClass("d-none")
   $("#substitutions-no-data").addClass("d-none")
+}
+
+function updateTimetable() {
+  $("#timetable-less").empty();
+  $("#timetable-more").empty();
+
+  if (selectedDay - 1 < 0 || selectedDay - 1 > 4) {
+    $("#timetable-less").addClass("d-none");
+    $("#timetable-more").addClass("d-none");
+    $("#timetable-mode-wrapper").addClass("d-none");
+    return;
+  }
+
+  $("#timetable-less").removeClass("d-none");
+  $("#timetable-more").removeClass("d-none");
+  $("#timetable-mode-wrapper").removeClass("d-none");
+  updateTimetableMode();
+
+  timetableData[selectedDay - 1].forEach((lesson) => {
+    let startTime = lesson.start;
+    let endTime = lesson.end;
+    let subjectsShort = [];
+    let subjectsLong = [];
+    let teachers = [];
+    let rooms = [];
+
+    if (lesson.lessonType == "grouped" || lesson.lessonType == "rotating") {
+      for (let variant of lesson.variants) {
+        subjectsShort.push(subjectData[variant.subjectId].name.short)
+        subjectsLong.push(subjectData[variant.subjectId].name.long)
+        rooms.push(variant.room)
+
+        let teacher = subjectData[variant.subjectId].teacher
+        teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+      }
+    }
+    else {
+      subjectsShort.push(subjectData[lesson.subjectId].name.short)
+      subjectsLong.push(subjectData[lesson.subjectId].name.long)
+      rooms.push(lesson.room)
+
+      let teacher = subjectData[lesson.subjectId].teacher
+      teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+    }
+
+    let templateModeLess = `
+      <div class="card ${(lesson.timingType == "double") ? "wide" : ""}">
+        <div class="card-body d-flex align-items-center justify-content-center">
+          ${subjectsShort.join(" / ")}
+        </div>
+      </div>`;
+    $("#timetable-less").append(templateModeLess);
+
+    let templateModeMore = `
+      <div class="card ${(lesson.timingType == "double") ? "wide" : ""}">
+        <div class="card-body pt-4">
+          <div class="position-absolute start-0 top-0 mx-2 my-1">${startTime}</div>
+          <div class="position-absolute end-0 top-0 mx-2 my-1">${endTime}</div>
+          <div class="d-flex align-items-center justify-content-center flex-column">
+            <span class="fw-semibold text-center">${subjectsLong.join(" / ")}</span>
+            <span class="text-center">${rooms.join(" / ")}, ${teachers.join(" / ")}</span>
+            <!--<span class="text-center event-orange fw-bold mt-2">Irgendwelche extra infos</span>-->
+          </div>
+        </div>
+      </div>`;
+    $("#timetable-more").append(templateModeMore);
+  })
+}
+
+function updateTimetableMode() {
+  if ($("#timetable-mode-less")[0].checked) {
+    $("#timetable-less").removeClass("d-none");
+    $("#timetable-more").addClass("d-none");
+  }
+  else {
+    $("#timetable-less").addClass("d-none");
+    $("#timetable-more").removeClass("d-none");
+  }
 }
 
 $(".calendar-week-move-button").on("click", function () {
@@ -434,6 +505,7 @@ $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDat
 
 // The homework stuff
 let subjectData = [];
+let timetableData = [];
 let homeworkData = [];
 let homeworkCheckedData = [];
 let substitutionsData = [];
@@ -442,6 +514,22 @@ $(document).ready(() => {
 
   // Get subject data
   fetch('/subjects.json')
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json();
+  })
+  .then(data => {
+    subjectData = data;
+    updateHomeworkList();
+  })
+  .catch(error => {
+    console.error('Error loading the JSON file:', error);
+  });
+  
+  // Get timetable data
+  fetch('/timetable.json')
     .then(response => {
       if (!response.ok) {
         throw new Error('Network response was not ok');
@@ -449,8 +537,7 @@ $(document).ready(() => {
       return response.json();
     })
     .then(data => {
-      subjectData = data;
-      updateHomeworkList();
+      timetableData = data;
     })
     .catch(error => {
       console.error('Error loading the JSON file:', error);
@@ -483,3 +570,12 @@ $(document).on('click', '.homework-check', function () {
 $("#filter-homework-mode").on("input", () => {
   updateHomeworkList();
 });
+
+$("#timetable-mode input").each(() => {
+  $(this).on("click", () => {
+    updateTimetableMode();
+  });
+});
+
+$("#timetable-mode-less").prop("checked", true);
+$("#timetable-mode-more").prop("checked", false);

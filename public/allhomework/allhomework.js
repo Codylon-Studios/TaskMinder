@@ -1,11 +1,3 @@
-function getSubjectName(id) {
-  for (let subject of subjectData) {
-    if (subject.id == id) {
-      return subject.name;
-    }
-  }
-}
-
 function getCheckStatusServer(homeworkId) {
   for (let homework of homeworkCheckedData) {
     if (homework.homeworkId == homeworkId) {
@@ -57,7 +49,7 @@ async function updateHomeworkList() {
   homeworkData.forEach(homework => {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = getSubjectName(homework.subjectId);
+    let subject = subjectData[homework.subjectId].name.long;
     let content = homework.content;
     let assignmentDate = msToDisplayDate(homework.assignmentDate).split('.').slice(0, 2).join('.');
     let submissionDate = msToDisplayDate(homework.submissionDate).split('.').slice(0, 2).join('.');
@@ -157,10 +149,9 @@ function updateSubjectList() {
   // Clear the list for filtering by subject
   $("#filter-subject-list").empty();
 
-  subjectData.forEach(subject => {
+  subjectData.forEach((subject, subjectId) => {
     // Get the subject data
-    let subjectId = subject.id;
-    let subjectName = subject.name;
+    let subjectName = subject.name.long;
 
     // Add the template for filtering by subject
     let templateFilterSubject =
