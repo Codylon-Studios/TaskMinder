@@ -2,6 +2,10 @@ const { connectRedis, redisClient, cacheKeyHomeworkData, cacheKeyHomeworkChecked
 var validator = require('validator');
 const Homework10d = require('../models/homework');
 const Homework10dCheck = require('../models/homeworkcheck');
+const createDOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
+const window = new JSDOM('').window;
+const DOMPurify = createDOMPurify(window);
 require('dotenv').config();
 
 connectRedis();
@@ -78,11 +82,19 @@ const homeworkService = {
         if (!Number.isInteger(Number(submissionDate)) || Number(submissionDate) < 0) {
             throw new Error('Invalid submission date - addHomework');
         }
+        DOMPurify.sanitize(content);
+        DOMPurify.sanitize(subjectId);
+        DOMPurify.sanitize(assignmentDate);
+        DOMPurify.sanitize(submissionDate);
+        const sanitizedContent = validator.escape.trim(content);
+        const sanitizedsubjectId = validator.escape.trim(subjectId);
+        const sanitizedassignmentDate = validator.escape.trim(assignmentDate);
+        const sanitizedsubmissionDate = validator.escape.trim(submissionDate);
         await Homework10d.create({
-            content: content,
-            subjectId: subjectId,
-            assignmentDate: assignmentDate,
-            submissionDate: submissionDate
+            content: sanitizedContent,
+            subjectId: sanitizedsubjectId,
+            assignmentDate: sanitizedassignmentDate,
+            submissionDate: sanitizedsubmissionDate
         });
         const data = await Homework10d.findAll({ raw: true });
         await updateCacheHomeworkData(changeKeys(data));
@@ -154,12 +166,20 @@ const homeworkService = {
         if (!Number.isInteger(Number(submissionDate)) || Number(submissionDate) < 0) {
             throw new Error('Invalid submission date - editHomework');
         }
+        DOMPurify.sanitize(content);
+        DOMPurify.sanitize(subjectId);
+        DOMPurify.sanitize(assignmentDate);
+        DOMPurify.sanitize(submissionDate);
+        const sanitizedContent = validator.escape.trim(content);
+        const sanitizedsubjectId = validator.escape.trim(subjectId);
+        const sanitizedassignmentDate = validator.escape.trim(assignmentDate);
+        const sanitizedsubmissionDate = validator.escape.trim(submissionDate);
         await Homework10d.update(
             {
-                content: content,
-                subjectId: subjectId,
-                assignmentDate: assignmentDate,
-                submissionDate: submissionDate
+                content: sanitizedContent,
+                subjectId: sanitizedsubjectId,
+                assignmentDate: sanitizedassignmentDate,
+                submissionDate: sanitizedsubmissionDate
             },
             {
                 where: { homeworkId: id }
