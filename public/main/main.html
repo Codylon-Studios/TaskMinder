@@ -35,9 +35,12 @@
       </button>
     </div>
     <div class="container-fluid d-flex justify-content-center align-items-center mb-3"  id="timetable-mode-wrapper">
-      <label class="mb-0 me-3 text-nowrap" for="timetable-mode">Anzeige des Stundenplans</label>
+      <label class="mb-0 me-3 text-nowrap" for="timetable-mode">Stundenplanart</label>
       <div class="btn-group" id="timetable-mode">
-        <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-less" checked>
+        <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-none">
+        <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-none">Nicht</label>
+
+        <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-less">
         <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-less">Weniger</label>
       
         <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-more">
