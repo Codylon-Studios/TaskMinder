@@ -19,6 +19,5 @@
   { "name": { "long": "Profilfach", "short": "Prof" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "Wvg" } },
   { "name": { "long": "Sport (m)", "short": "Sm" }, "teacher": {"gender": "m", "long": "Pleger", "short": "Ple" } },
   { "name": { "long": "Sport (w)", "short": "Sw" }, "teacher": {"gender": "w", "long": "Keine Ahnung sagts mir bitte", "short": "WöG" } },
-  { "name": { "long": "Wirtschaft und Recht", "short": "WuR" }, "teacher": {"gender": "w", "long": "Tausend", "short": "Tau" } },
-  { "name": { "long": "-", "short": "-" }, "teacher": {"gender": "-", "long": "-", "short": "-" } }
+  { "name": { "long": "Wirtschaft und Recht", "short": "WuR" }, "teacher": {"gender": "w", "long": "Tausend", "short": "Tau" } }
 ]

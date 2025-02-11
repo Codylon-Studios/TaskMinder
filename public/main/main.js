@@ -1,4 +1,7 @@
 function getNewCalendarWeekContent() {
+  if (typeof isSameDay != "function") {
+    return;
+  }
   // Get the list of all dates in this week
   getWeekDates()
 
@@ -17,6 +20,9 @@ function getNewCalendarWeekContent() {
     // If the day is selected, add the days-overview-selected class
     if (weekDates[i].getDay() == selectedDay) {
       specialClasses += "days-overview-selected "
+    }
+    if ([0, 6].includes(weekDates[i].getDay())) {
+      specialClasses += "text-body-tertiary "
     }
 
     // Append the days (All days will be added into and .calendar-week element)
@@ -275,6 +281,11 @@ async function updateSubstitutionList() {
 }
 
 function updateTimetable() {
+  // If the data hasn't loaded yet, stop
+  if (timetableData.length == 0 || subjectData.length == 0) {
+    return
+  }
+  
   $("#timetable-less").empty();
   $("#timetable-more").empty();
 
@@ -290,7 +301,7 @@ function updateTimetable() {
   $("#timetable-mode-wrapper").removeClass("d-none");
   updateTimetableMode();
 
-  timetableData[selectedDay - 1].forEach((lesson) => {
+  for (lesson of timetableData[selectedDay - 1]) {
     let startTime = lesson.start;
     let endTime = lesson.end;
     let subjectsShort = [];
@@ -298,8 +309,29 @@ function updateTimetable() {
     let teachers = [];
     let rooms = [];
 
-    if (lesson.lessonType == "grouped" || lesson.lessonType == "rotating") {
+    if (lesson.lessonType == "teamed") {
+      for (let team of lesson.teams) {
+        if (team.subjectId == -1) {
+          continue;
+        }
+        if (! teamData.includes(Number(team.teamId))) {
+          continue;
+        }
+
+        subjectsShort.push(subjectData[team.subjectId].name.short)
+        subjectsLong.push(subjectData[team.subjectId].name.long)
+        rooms.push(team.room)
+
+        let teacher = subjectData[team.subjectId].teacher
+        teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+      }
+    }
+    else if (lesson.lessonType == "rotating") {
       for (let variant of lesson.variants) {
+        if (variant.subjectId == -1) {
+          continue;
+        }
+
         subjectsShort.push(subjectData[variant.subjectId].name.short)
         subjectsLong.push(subjectData[variant.subjectId].name.long)
         rooms.push(variant.room)
@@ -315,6 +347,10 @@ function updateTimetable() {
 
       let teacher = subjectData[lesson.subjectId].teacher
       teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+    }
+
+    if ([subjectsShort.length, subjectsLong.length, teachers.length, rooms.length].includes(0)) {
+      continue;
     }
 
     let templateModeLess = `
@@ -338,17 +374,24 @@ function updateTimetable() {
         </div>
       </div>`;
     $("#timetable-more").append(templateModeMore);
-  })
+  }
 }
 
 function updateTimetableMode() {
   if ($("#timetable-mode-less")[0].checked) {
     $("#timetable-less").removeClass("d-none");
     $("#timetable-more").addClass("d-none");
+    localStorage.setItem("timetableMode", "less");
+  }
+  else if ($("#timetable-mode-more")[0].checked) {
+    $("#timetable-less").addClass("d-none");
+    $("#timetable-more").removeClass("d-none");
+    localStorage.setItem("timetableMode", "more");
   }
   else {
     $("#timetable-less").addClass("d-none");
-    $("#timetable-more").removeClass("d-none");
+    $("#timetable-more").addClass("d-none");
+    localStorage.setItem("timetableMode", "none");
   }
 }
 
@@ -504,6 +547,7 @@ $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDat
 
 
 // The homework stuff
+let teamData = [1, 4, 5]
 let subjectData = [];
 let timetableData = [];
 let homeworkData = [];
@@ -522,7 +566,7 @@ $(document).ready(() => {
   })
   .then(data => {
     subjectData = data;
-    updateHomeworkList();
+    updateAll();
   })
   .catch(error => {
     console.error('Error loading the JSON file:', error);
@@ -538,6 +582,7 @@ $(document).ready(() => {
     })
     .then(data => {
       timetableData = data;
+      updateTimetable();
     })
     .catch(error => {
       console.error('Error loading the JSON file:', error);
@@ -575,7 +620,7 @@ $("#timetable-mode input").each(() => {
   $(this).on("click", () => {
     updateTimetableMode();
   });
+  $(this).prop("checked", false);
 });
 
-$("#timetable-mode-less").prop("checked", true);
-$("#timetable-mode-more").prop("checked", false);
+$("#timetable-mode-" + (localStorage.getItem("timetableMode") || "less")).prop("checked", true);

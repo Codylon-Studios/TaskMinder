@@ -1,13 +1,15 @@
 [
   [
     {
-      "lessonType": "grouped",
-      "variants": [
+      "lessonType": "teamed",
+      "teams": [
         {
+          "teamId": 0,
           "subjectId": 6,
-          "room": "305"
+          "room": "306"
         },
         {
+          "teamId": 1,
           "subjectId": 17,
           "room": "N42"
         }
@@ -17,17 +19,20 @@
       "end": "9:30"
     },
     {
-      "lessonType": "grouped",
-      "variants": [
+      "lessonType": "teamed",
+      "teams": [
         {
+          "teamId": 2,
           "subjectId": 4,
           "room": "307"
         },
         {
+          "teamId": 3,
           "subjectId": 5,
           "room": "309"
         },
         {
+          "teamId": 4,
           "subjectId": 10,
           "room": "305"
         }
@@ -121,13 +126,15 @@
   ],
   [
     {
-      "lessonType": "grouped",
-      "variants": [
+      "lessonType": "teamed",
+      "teams": [
         {
+          "teamId": 5,
           "subjectId": 18,
           "room": "Caje"
         },
         {
+          "teamId": 6,
           "subjectId": 19,
           "room": "TSV Ost (Keine Ahnung sagts mir bitte)"
         }
@@ -161,15 +168,17 @@
       "end": "13:15"
     },
     {
-      "lessonType": "grouped",
-      "variants": [
+      "lessonType": "teamed",
+      "teams": [
         {
+          "teamId": 0,
           "subjectId": 6,
-          "room": "305"
+          "room": "306"
         },
         {
-          "subjectId": 21,
-          "room": "-"
+          "teamId": 1,
+          "subjectId": -1,
+          "room": ""
         }
       ],
       "timingType": "normal",
