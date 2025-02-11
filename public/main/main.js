@@ -1,4 +1,7 @@
 function getNewCalendarWeekContent() {
+  if (typeof isSameDay != "function") {
+    return;
+  }
   // Get the list of all dates in this week
   getWeekDates()
 
@@ -17,6 +20,9 @@ function getNewCalendarWeekContent() {
     // If the day is selected, add the days-overview-selected class
     if (weekDates[i].getDay() == selectedDay) {
       specialClasses += "days-overview-selected "
+    }
+    if ([0, 6].includes(weekDates[i].getDay())) {
+      specialClasses += "text-body-tertiary "
     }
 
     // Append the days (All days will be added into and .calendar-week element)
@@ -55,15 +61,7 @@ function getWeekDates() {
   }
 }
 
-function getSubjectName(id) {
-  for (let subject of subjectData) {
-    if (subject.id == id) {
-      return subject.name;
-    }
-  }
-}
-
-function getCheckStateServer(homeworkId) {
+function getCheckStatusServer(homeworkId) {
   for (let homework of homeworkCheckedData) {
     if (homework.homeworkId == homeworkId) {
       return homework.checked;
@@ -72,7 +70,7 @@ function getCheckStateServer(homeworkId) {
   return false;
 }
 
-function getCheckStateLocal(homeworkId) {
+function getCheckStatusLocal(homeworkId) {
   return homeworkCheckedData[homeworkId];
 }
 
@@ -141,6 +139,7 @@ function checkHomework(homeworkId) {
 function updateAll() {
   updateHomeworkList();
   updateSubstitutionList();
+  updateTimetable();
 }
 
 async function updateHomeworkList() {
@@ -174,7 +173,7 @@ async function updateHomeworkList() {
   homeworkData.forEach(homework => {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = getSubjectName(homework.subjectId);
+    let subject = subjectData[homework.subjectId].name.long;
     let content = homework.content;
     let assignmentDate = new Date(Number(homework.assignmentDate));
     let submissionDate = new Date(Number(homework.submissionDate));
@@ -182,12 +181,12 @@ async function updateHomeworkList() {
 
     let checked;
     if (user.loggedIn) {
-      // If the user is logged in, get the check state using the server data
-      checked = getCheckStateServer(homeworkId);
+      // If the user is logged in, get the check status using the server data
+      checked = getCheckStatusServer(homeworkId);
     }
     else {
-      // If the user is not logged in, get the check state using the local data
-      checked = getCheckStateLocal(homeworkId);
+      // If the user is not logged in, get the check status using the local data
+      checked = getCheckStatusLocal(homeworkId);
     }
 
     if (filterMode == "assignment") {
@@ -217,7 +216,7 @@ async function updateHomeworkList() {
 
   // If no homeworks match, add an explanation text
   if ($("#homework-list").html() == "") {
-    $("#homework-list").html(`<div class="text-secondary">Keine Hausaufgaben ${(filterMode == "assignment") ? "von" : "auf"} diesen Tag gefunden!</div>`)
+    $("#homework-list").html(`<div class="text-secondary">Keine Hausaufgaben ${(filterMode == "assignment") ? "von diesem" : "auf diesen"} Tag.</div>`)
   }
 }
 
@@ -226,38 +225,36 @@ async function updateSubstitutionList() {
     substitutionsData = data;
   });
 
-  let timetableId;
+  $("#substitutions-updated").html(substitutionsData.updated)
+  let updatedDate = new Date(dateToMs(substitutionsData.updated.split(" ")[0]))
+  let updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][updatedDate.getDay()]
+  $("#substitutions-updated").html(updatedWeekDay + ", " + substitutionsData.updated.split(" ")[1])
 
-  let timetable1Date = new Date()
-  if (timetable1Date.getDay() == 0) { timetable1Date.setDate(timetable1Date.getDate() - 2) }
-  else if (timetable1Date.getDay() == 6) { timetable1Date.setDate(timetable1Date.getDate() - 1) }
+  let planId;
 
-  let timetable2Date = new Date()
-  if (timetable2Date.getDay() == 5) { timetable2Date.setDate(timetable2Date.getDate() + 3) }
-  else if (timetable2Date.getDay() == 6) { timetable2Date.setDate(timetable2Date.getDate() + 2) }
-  else { timetable2Date.setDate(timetable2Date.getDate() + 1) }
-
-  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], timetable1Date)) {
-    timetableId = 0
+  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(substitutionsData["plan1"]["date"])))) {
+    planId = 1
   }
-  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], timetable2Date)) {
-    timetableId = 1
+  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(substitutionsData["plan2"]["date"])))) {
+    planId = 2
   }
   else {
     $("#substitutions-table").addClass("d-none")
-    $("#substitutions-none").removeClass("d-none")
+    $("#substitutions-no-entry").addClass("d-none")
+    $("#substitutions-no-data").removeClass("d-none")
     return;
   }
   
-  if (substitutionsData[timetableId].length == 0) {
+  if (substitutionsData["plan" + planId]["substitutions"].length == 0) {
     $("#substitutions-table").addClass("d-none")
-    $("#substitutions-none").removeClass("d-none")
+    $("#substitutions-no-entry").removeClass("d-none")
+    $("#substitutions-no-data").addClass("d-none")
     return;
   }
 
-  $("#substitutions-list").html("")
+  $("#substitutions-list").empty()
 
-  for (let substitution of substitutionsData[timetableId]) {
+  for (let substitution of substitutionsData["plan" + planId]["substitutions"]) {
     let template = `
       <tr>
         <td>${substitution.type}</td>
@@ -273,13 +270,129 @@ async function updateSubstitutionList() {
   $("tr:last td").addClass("border-bottom-0")
 
   $("td").each(function () {
-    if ($(this).text() == "-") {
+    if ($(this).html() == "-") {
       $(this).addClass("text-center align-middle")
     }
   })
 
   $("#substitutions-table").removeClass("d-none")
-  $("#substitutions-none").addClass("d-none")
+  $("#substitutions-no-substitution").addClass("d-none")
+  $("#substitutions-no-data").addClass("d-none")
+}
+
+function updateTimetable() {
+  // If the data hasn't loaded yet, stop
+  if (timetableData.length == 0 || subjectData.length == 0) {
+    return
+  }
+  
+  $("#timetable-less").empty();
+  $("#timetable-more").empty();
+
+  if (selectedDay - 1 < 0 || selectedDay - 1 > 4) {
+    $("#timetable-less").addClass("d-none");
+    $("#timetable-more").addClass("d-none");
+    $("#timetable-mode-wrapper").addClass("d-none");
+    return;
+  }
+
+  $("#timetable-less").removeClass("d-none");
+  $("#timetable-more").removeClass("d-none");
+  $("#timetable-mode-wrapper").removeClass("d-none");
+  updateTimetableMode();
+
+  for (lesson of timetableData[selectedDay - 1]) {
+    let startTime = lesson.start;
+    let endTime = lesson.end;
+    let subjectsShort = [];
+    let subjectsLong = [];
+    let teachers = [];
+    let rooms = [];
+
+    if (lesson.lessonType == "teamed") {
+      for (let team of lesson.teams) {
+        if (team.subjectId == -1) {
+          continue;
+        }
+        if (! teamData.includes(Number(team.teamId))) {
+          continue;
+        }
+
+        subjectsShort.push(subjectData[team.subjectId].name.short)
+        subjectsLong.push(subjectData[team.subjectId].name.long)
+        rooms.push(team.room)
+
+        let teacher = subjectData[team.subjectId].teacher
+        teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+      }
+    }
+    else if (lesson.lessonType == "rotating") {
+      for (let variant of lesson.variants) {
+        if (variant.subjectId == -1) {
+          continue;
+        }
+
+        subjectsShort.push(subjectData[variant.subjectId].name.short)
+        subjectsLong.push(subjectData[variant.subjectId].name.long)
+        rooms.push(variant.room)
+
+        let teacher = subjectData[variant.subjectId].teacher
+        teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+      }
+    }
+    else {
+      subjectsShort.push(subjectData[lesson.subjectId].name.short)
+      subjectsLong.push(subjectData[lesson.subjectId].name.long)
+      rooms.push(lesson.room)
+
+      let teacher = subjectData[lesson.subjectId].teacher
+      teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+    }
+
+    if ([subjectsShort.length, subjectsLong.length, teachers.length, rooms.length].includes(0)) {
+      continue;
+    }
+
+    let templateModeLess = `
+      <div class="card ${(lesson.timingType == "double") ? "wide" : ""}">
+        <div class="card-body d-flex align-items-center justify-content-center">
+          ${subjectsShort.join(" / ")}
+        </div>
+      </div>`;
+    $("#timetable-less").append(templateModeLess);
+
+    let templateModeMore = `
+      <div class="card ${(lesson.timingType == "double") ? "wide" : ""}">
+        <div class="card-body pt-4">
+          <div class="position-absolute start-0 top-0 mx-2 my-1">${startTime}</div>
+          <div class="position-absolute end-0 top-0 mx-2 my-1">${endTime}</div>
+          <div class="d-flex align-items-center justify-content-center flex-column">
+            <span class="fw-semibold text-center">${subjectsLong.join(" / ")}</span>
+            <span class="text-center">${rooms.join(" / ")}, ${teachers.join(" / ")}</span>
+            <!--<span class="text-center event-orange fw-bold mt-2">Irgendwelche extra infos</span>-->
+          </div>
+        </div>
+      </div>`;
+    $("#timetable-more").append(templateModeMore);
+  }
+}
+
+function updateTimetableMode() {
+  if ($("#timetable-mode-less")[0].checked) {
+    $("#timetable-less").removeClass("d-none");
+    $("#timetable-more").addClass("d-none");
+    localStorage.setItem("timetableMode", "less");
+  }
+  else if ($("#timetable-mode-more")[0].checked) {
+    $("#timetable-less").addClass("d-none");
+    $("#timetable-more").removeClass("d-none");
+    localStorage.setItem("timetableMode", "more");
+  }
+  else {
+    $("#timetable-less").addClass("d-none");
+    $("#timetable-more").addClass("d-none");
+    localStorage.setItem("timetableMode", "none");
+  }
 }
 
 $(".calendar-week-move-button").on("click", function () {
@@ -434,7 +547,9 @@ $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDat
 
 
 // The homework stuff
+let teamData = [1, 4, 5]
 let subjectData = [];
+let timetableData = [];
 let homeworkData = [];
 let homeworkCheckedData = [];
 let substitutionsData = [];
@@ -443,6 +558,22 @@ $(document).ready(() => {
 
   // Get subject data
   fetch('/subjects.json')
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json();
+  })
+  .then(data => {
+    subjectData = data;
+    updateAll();
+  })
+  .catch(error => {
+    console.error('Error loading the JSON file:', error);
+  });
+  
+  // Get timetable data
+  fetch('/timetable.json')
     .then(response => {
       if (!response.ok) {
         throw new Error('Network response was not ok');
@@ -450,8 +581,8 @@ $(document).ready(() => {
       return response.json();
     })
     .then(data => {
-      subjectData = data;
-      updateHomeworkList();
+      timetableData = data;
+      updateTimetable();
     })
     .catch(error => {
       console.error('Error loading the JSON file:', error);
@@ -484,3 +615,12 @@ $(document).on('click', '.homework-check', function () {
 $("#filter-homework-mode").on("input", () => {
   updateHomeworkList();
 });
+
+$("#timetable-mode input").each(() => {
+  $(this).on("click", () => {
+    updateTimetableMode();
+  });
+  $(this).prop("checked", false);
+});
+
+$("#timetable-mode-" + (localStorage.getItem("timetableMode") || "less")).prop("checked", true);

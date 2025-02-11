@@ -26,6 +26,13 @@
         </label>
       </div>
       <div id="filter-content" class="d-flex align-items-center flex-column flex-md-row gap-2 d-contents d-none">
+        <div class="btn-group" id="filter-status">
+          <input type="checkbox" class="btn-check" name="filter-status" id="filter-status-unchecked" checked>
+          <label class="btn btn-sm btn-outline-secondary" for="filter-status-unchecked">Unerledigt</label>
+
+          <input type="checkbox" class="btn-check" name="filter-status" id="filter-status-checked" checked>
+          <label class="btn btn-sm btn-outline-secondary" for="filter-status-checked">Erledigt</label>
+        </div>
         <div class="dropdown">
           <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
             Fach

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32mm"
+   height="32mm"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4 (e7c3feb, 2024-10-09)"
+   sodipodi:docname="HausaufgabenplanerLogo2.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="false"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showguides="true"
+     showgrid="true"
+     inkscape:zoom="6.2074636"
+     inkscape:cx="49.698237"
+     inkscape:cy="64.196913"
+     inkscape:window-width="1920"
+     inkscape:window-height="1114"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       id="grid2"
+       units="mm"
+       originx="0"
+       originy="0"
+       spacingx="0.99999997"
+       spacingy="0.99999997"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="4"
+       enabled="true"
+       visible="true"
+       dotted="false"
+       snapvisiblegridlinesonly="false" />
+    <sodipodi:guide
+       position="0,31.999999"
+       orientation="0,120.94488"
+       id="guide25"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="31.999999,31.999999"
+       orientation="120.94488,0"
+       id="guide26"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="31.999999,0"
+       orientation="0,-120.94488"
+       id="guide27"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="0,0"
+       orientation="-120.94488,0"
+       id="guide28"
+       inkscape:locked="false" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#64d5e4;fill-opacity:1;stroke:#64d5e4;stroke-width:2.08228;stroke-linecap:butt;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
+       id="rect28"
+       width="23.917719"
+       height="27.917723"
+       x="4.0411401"
+       y="3.0411408"
+       rx="2.2422857"
+       ry="2.6172853" />
+    <rect
+       style="opacity:1;fill:#3bb9ca;fill-opacity:1;stroke:none;stroke-width:5.23722;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:stroke markers fill"
+       id="rect29"
+       width="15.999999"
+       height="5.9999995"
+       x="7.9999995"
+       y="3.1789142e-07"
+       rx="1.1428571"
+       ry="1.4999999" />
+    <path
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:4.1477;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
+       d="M 21.426155,14.036922 V 12.055384 L 19.255694,10.07385 h -6.511381 l -2.170463,1.981536 v 11.889226 l 2.170463,1.981538 h 6.511381 l 2.170461,-1.981538 v -1.981538"
+       id="path38" />
+  </g>
+</svg>

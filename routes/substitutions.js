@@ -6,52 +6,58 @@ const cheerio = require('cheerio');
 const iconv = require('iconv-lite');
 
 async function getSubstitutionsData() {
-  async function parseTimetable(id) {
-    let url = [timetable1Url, timetable2Url][id]
-    let timetableRes = await axios.get(url, { responseType: 'arraybuffer' });
-    let timetableHtml = iconv.decode(Buffer.from(timetableRes.data), 'ISO-8859-1')
-    $ = cheerio.load(timetableHtml, { decodeEntities: true });
-    $(".mon_list tr:not(:nth-child(1))").each((i, element) => {
-      let classValue = $(element).find("td").first().text()
+  async function parsePlan(id) {
+    let planData = [];
+    let url = [plan1Url, plan2Url][id - 1]
+    let planRes = await axios.get(url, { responseType: 'arraybuffer' });
+    let planHtml = iconv.decode(Buffer.from(planRes.data), 'ISO-8859-1')
+    $ = cheerio.load(planHtml, { decodeEntities: true });
+    $(".mon_list tr:not(:nth-child(1))").each((i, substitutionEntry) => {
+      let classValue = $(substitutionEntry).find("td").first().text()
       if (! /^10[a-zA-Z]*d[a-zA-Z]*/.test(classValue)) { // Correct Regex: /^10[a-zA-Z]*d[a-zA-Z]*/   everything Regex: /^.*/
         return;
       }
       let data = {}
-      $(element).find("td").each((j, element2) => {
-        let val = $(element2).text();
+      $(substitutionEntry).find("td").each((j, substitutionEntryData) => {
+        let val = $(substitutionEntryData).text();
         if (["---", "&nbsp;", " ", "\u00A0"].includes(val)) {
           val = "-"
         }
-        data[timetableKeys[j]] = val
+        data[substitutionEntryKeys[j]] = val
       });
-      timetableData[id].push(data)
+      planData.push(data)
     });
+    substitutionsData["plan" + id]["substitutions"] = planData;
+
+    substitutionsData["plan" + id]["date"] = $(".mon_title").text().split(" ")[0];
+    substitutionsData["updated"] = $(".mon_head p").text().split("Stand: ")[1]
   }
+
   let username = "148762";
   let password = "MTGSuS201617";
   let authRes = await axios.get(`https://mobileapi.dsbcontrol.de/authid?user=${username}&password=${password}&appversion=&bundleid=&osversion=&pushid=`);
   let authId = authRes.data;
 
   let timetablesRes = await axios.get(`https://mobileapi.dsbcontrol.de/dsbtimetables?authid=${authId}`);
-  let timetable1Url = timetablesRes.data[0].Childs[0].Detail;
-  let timetable2Url = timetablesRes.data[2].Childs[0].Detail;
+  let plan1Url = timetablesRes.data[0].Childs[0].Detail;
+  let plan2Url = timetablesRes.data[2].Childs[0].Detail;
   let $;
 
-  let timetableKeys = ["class", "lesson", "time", "subject", "text", "teacher", "teacherOld", "room", "type"]
+  let substitutionEntryKeys = ["class", "lesson", "time", "subject", "text", "teacher", "teacherOld", "room", "type"]
 
-  let timetableData = [[], []]
+  let substitutionsData = {plan1: {}, plan2: {}}
   
-  await parseTimetable(0)
-  await parseTimetable(1)
+  await parsePlan(1)
+  await parsePlan(2)
 
   try {
-    await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(timetableData), { EX: cacheExpiration });
+    await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(substitutionsData), { EX: cacheExpiration });
   } catch (err) {
     console.error('Error updating Redis cache:', err);
   }
 }
 
-setInterval(getSubstitutionsData, 60000);
+setInterval(getSubstitutionsData, 6000);
 
 router.get('/get_substitutions_data', async (req, res) => {
   let cachedData = await redisClient.get(cacheKeySubstitutionsData);

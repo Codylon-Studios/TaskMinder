@@ -1,62 +1,23 @@
 [
-    {
-      "id": 1,
-      "name": "Deutsch"
-    },
-    {
-      "id": 2,
-      "name": "Mathe"
-    },
-    {
-      "id": 3,
-      "name": "Englisch"
-    },
-    {
-      "id": 4,
-      "name": "WuR"
-    },
-    {
-      "id": 5,
-      "name": "ProfNW"
-    },
-    {
-      "id": 6,
-      "name": "Ethik"
-    },
-    {
-      "id": 7,
-      "name": "Geschichte"
-    },
-    {
-      "id": 8,
-      "name": "Physik"
-    },
-    {
-      "id": 9,
-      "name": "Chemie"
-    },
-    {
-      "id": 10,
-      "name": "PuG"
-    },
-    {
-      "id": 11,
-      "name": "Kunst"
-    },
-    {
-      "id": 12,
-      "name": "Geografie"
-    },
-    {
-      "id": 13,
-      "name": "Latein"
-    },
-    {
-      "id": 14,
-      "name": "Biologie"
-    },
-    {
-      "id": 15,
-      "name": "Informatik"
-    }
+  { "name": { "long": "Biologie", "short": "Bio" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "Wvg" } },
+  { "name": { "long": "Chemie", "short": "Che" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "Wvg" } },
+  { "name": { "long": "Deutsch", "short": "Deu" }, "teacher": {"gender": "m", "long": "Strunz", "short": "Str" } },
+  { "name": { "long": "Englisch", "short": "Eng" }, "teacher": {"gender": "w", "long": "Ahrens", "short": "Ahr" } },
+  { "name": { "long": "Ethik", "short": "Eth" }, "teacher": {"gender": "m", "long": "Cramer", "short": "Cra" } },
+  { "name": { "long": "Evangelisch", "short": "Ev" }, "teacher": {"gender": "w", "long": "Bose", "short": "Bos" } },
+  { "name": { "long": "Französisch", "short": "Fra" }, "teacher": {"gender": "w", "long": "Neder", "short": "Ned" } },
+  { "name": { "long": "Geographie", "short": "Geo" }, "teacher": {"gender": "w", "long": "Saus", "short": "Sas" } },
+  { "name": { "long": "Geschichte", "short": "Ges" }, "teacher": {"gender": "m", "long": "Gießen", "short": "Gis" } },
+  { "name": { "long": "Informatik", "short": "Inf" }, "teacher": {"gender": "w", "long": "Weber", "short": "Web" } },
+  { "name": { "long": "Katholisch", "short": "Kath" }, "teacher": {"gender": "m", "long": "Grasmeier", "short": "Grm" } },
+  { "name": { "long": "Kunst", "short": "Kun" }, "teacher": {"gender": "m", "long": "Weber-Jobe", "short": "WbJ" } },
+  { "name": { "long": "Latein", "short": "Lat" }, "teacher": {"gender": "m", "long": "Waschbüsch", "short": "Wab" } },
+  { "name": { "long": "Mathe", "short": "Mat" }, "teacher": {"gender": "m", "long": "Todi", "short": "Tdi" } },
+  { "name": { "long": "Musik", "short": "Mus" }, "teacher": {"gender": "m", "long": "Hofknecht", "short": "Hfk" } },
+  { "name": { "long": "Physik", "short": "Phy" }, "teacher": {"gender": "m", "long": "Kopp", "short": "Kop" } },
+  { "name": { "long": "Politik und Gesellschaft", "short": "PuG" }, "teacher": {"gender": "w", "long": "Blickle", "short": "Bli" } },
+  { "name": { "long": "Profilfach", "short": "Prof" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "Wvg" } },
+  { "name": { "long": "Sport (m)", "short": "Sm" }, "teacher": {"gender": "m", "long": "Pleger", "short": "Ple" } },
+  { "name": { "long": "Sport (w)", "short": "Sw" }, "teacher": {"gender": "w", "long": "Keine Ahnung sagts mir bitte", "short": "WöG" } },
+  { "name": { "long": "Wirtschaft und Recht", "short": "WuR" }, "teacher": {"gender": "w", "long": "Tausend", "short": "Tau" } }
 ]

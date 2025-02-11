@@ -1,12 +1,4 @@
-function getSubjectName(id) {
-  for (let subject of subjectData) {
-    if (subject.id == id) {
-      return subject.name;
-    }
-  }
-}
-
-function getCheckStateServer(homeworkId) {
+function getCheckStatusServer(homeworkId) {
   for (let homework of homeworkCheckedData) {
     if (homework.homeworkId == homeworkId) {
       return homework.checked;
@@ -15,7 +7,7 @@ function getCheckStateServer(homeworkId) {
   return false;
 }
 
-function getCheckStateLocal(homeworkId) {
+function getCheckStatusLocal(homeworkId) {
   return homeworkCheckedData[homeworkId];
 }
 
@@ -57,19 +49,29 @@ async function updateHomeworkList() {
   homeworkData.forEach(homework => {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = getSubjectName(homework.subjectId);
+    let subject = subjectData[homework.subjectId].name.long;
     let content = homework.content;
     let assignmentDate = msToDisplayDate(homework.assignmentDate).split('.').slice(0, 2).join('.');
     let submissionDate = msToDisplayDate(homework.submissionDate).split('.').slice(0, 2).join('.');
 
     let checked;
     if (user.loggedIn) {
-      // If the user is logged in, get the check state using the server data
-      checked = getCheckStateServer(homeworkId);
+      // If the user is logged in, get the check status using the server data
+      checked = getCheckStatusServer(homeworkId);
     }
     else {
-      // If the user is not logged in, get the check state using the local data
-      checked = getCheckStateLocal(homeworkId);
+      // If the user is not logged in, get the check status using the local data
+      checked = getCheckStatusLocal(homeworkId);
+    }
+
+    // Filter by checked status
+    if ((checked) && ( ! $("#filter-status-checked").prop("checked"))) {
+      return;
+    }
+
+    // Filter by checked status
+    if (( ! checked) && ( ! $("#filter-status-unchecked").prop("checked"))) {
+      return;
     }
 
     // Filter by subject
@@ -133,7 +135,7 @@ async function updateHomeworkList() {
 
   // If no homeworks match, add an explanation text
   if ($ui.homeworkList.html() == "") {
-    $ui.homeworkList.html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern gefunden!</div>`)
+    $ui.homeworkList.html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>`)
   }
 }
 
@@ -147,10 +149,9 @@ function updateSubjectList() {
   // Clear the list for filtering by subject
   $("#filter-subject-list").empty();
 
-  subjectData.forEach(subject => {
+  subjectData.forEach((subject, subjectId) => {
     // Get the subject data
-    let subjectId = subject.id;
-    let subjectName = subject.name;
+    let subjectName = subject.name.long;
 
     // Add the template for filtering by subject
     let templateFilterSubject =
@@ -432,6 +433,14 @@ function checkHomework(homeworkId) {
   }
 }
 
+function resetFilters() {
+  $("#filter-status input").prop("checked", true)
+  $("#filter-date-assignment-from").val("")
+  $("#filter-date-assignment-until").val("")
+  $("#filter-date-submission-from").val(msToInputDate(Date.now()))
+  $("#filter-date-submission-until").val("")
+}
+
 let subjectData = [];
 let homeworkData = [];
 let homeworkCheckedData = [];
@@ -509,6 +518,8 @@ $(document).ready(() => {
     }
   });
 
+  resetFilters();
+
   // On changing any information in the add homework modal, disable the add button if any information is empty
   $(".add-homework-input").on("input", () => {
     const subject = $ui.addHomeworkSubject.val();
@@ -567,6 +578,11 @@ $(document).ready(() => {
   $(document).on('click', '.homework-check', function () {
     const homeworkId = $(this).data('id');
     checkHomework(homeworkId);
+  });
+
+  // On changing a filter checked option, update the homework list
+  $("#filter-status input").on("change", () => {
+    updateHomeworkList();
   });
 
   // On clicking the all subjects option, check all and update the homework list

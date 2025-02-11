@@ -38,6 +38,9 @@ function loadTemplateContent() {
   
     // Load Font Awesome icons
     resources.push(`<script src="https://kit.fontawesome.com/0ca04b82ef.js"></script>`);
+
+    // Load favicon
+    resources.push(`<link rel="icon" href="/favicon.svg">`)
   
     $head.append(resources.join(""));
   
