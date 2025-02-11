@@ -1,6 +1,10 @@
 const bcrypt = require('bcrypt');
 var validator = require('validator');
 const User = require('../models/users');
+const createDOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
+const window = new JSDOM('').window;
+const DOMPurify = createDOMPurify(window);
 require('dotenv').config();
 
 const SALTROUNDS= 10;
@@ -35,8 +39,10 @@ const userService = {
         if (UserExists) {
             throw new Error('User already registered. - Register');
         }
-        const sanitizedUsername = validator.escape(username);
-        const sanitizedPassword = validator.escape(password);
+        DOMPurify.sanitize(username);
+        DOMPurify.sanitize(password);
+        const sanitizedUsername = validator.escape.trim(username);
+        const sanitizedPassword = validator.escape.trim(password);
         const hashedPassword = await bcrypt.hash(sanitizedPassword, SALTROUNDS);
         await User.create({
             username: sanitizedUsername,
@@ -68,7 +74,9 @@ const userService = {
         if (! checkUsername(username)) {
             throw new Error('Invalid username - Login');
         }
-        const user = await User.findOne({ where: { username } });
+        DOMPurify.sanitize(username);
+        const sanitizedUsername = validator.escape.trim(username);
+        const user = await User.findOne({ where: { sanitizedUsername } });
         if (!user) {
             throw new Error('User not available - Login');
         }
@@ -79,6 +87,8 @@ const userService = {
         session.user = { username };
         return {message: 'Login succesful.'}
     },
+
+
     async deleteUser(session, password){
         const Sessionusername = session.user?.username;
         if (! checkUsername(Sessionusername)) {
@@ -104,6 +114,8 @@ const userService = {
         })
     },
     async checkUsername(username) { 
+        DOMPurify.sanitize(username);
+        validator.escape.trim(username);
         const userExists = await User.findOne({ where: { username } });
         if (userExists) {
             throw new Error('Username already taken. - checkUsername');
