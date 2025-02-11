@@ -34,11 +34,13 @@
         <i class="fa-solid fa-chevron-right"></i>
       </button>
     </div>
-    <!--Exclude for ALPHA -> l.169
-    <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
-      <label class="mb-0 me-3 text-nowrap" for="timetable-mode">Anzeige des Stundenplans</label>
+    <div class="container-fluid d-flex justify-content-center align-items-center mb-3"  id="timetable-mode-wrapper">
+      <label class="mb-0 me-3 text-nowrap" for="timetable-mode">Stundenplanart</label>
       <div class="btn-group" id="timetable-mode">
-        <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-less" checked>
+        <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-none">
+        <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-none">Nicht</label>
+
+        <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-less">
         <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-less">Weniger</label>
       
         <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-more">
@@ -46,89 +48,11 @@
       </div>
     </div>
 
-    <div class="container-fluid mb-3 d-flex flex-wrap flex-row gap-2" id="timetable-less">
-      <div class="card wide">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          Mat
-        </div>
-      </div>
-      <div class="card wide">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          WuR
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          Phy
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          Deu
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          Lat
-        </div>
-      </div>
-    </div>
+    <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-sm-row gap-2" id="timetable-less"></div>
 
-    <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xxl-row gap-3" id="timetable-more">
-      <div class="card wide">
-        <div class="card-body pt-4">
-          <div class="position-absolute start-0 top-0 mx-2 my-1">8:00</div>
-          <div class="position-absolute end-0 top-0 mx-2 my-1">9:30</div>
-          <div class="d-flex align-items-center justify-content-center flex-column">
-            <span class="fw-semibold text-center">Mathe</span>
-            <span class="text-center">411, Herr Todi</span>
-          </div>
-        </div>
-      </div>
-      <div class="card wide">
-        <div class="card-body pt-4">
-          <div class="position-absolute start-0 top-0 mx-2 my-1">9:35</div>
-          <div class="position-absolute end-0 top-0 mx-2 my-1">11:25</div>
-          <div class="d-flex align-items-center justify-content-center flex-column">
-            <span class="fw-semibold text-center">Wirtschaft & Recht</span>
-            <span class="text-center">411, Frau Tausend</span>
-            <span class="text-center event-orange fw-bold mt-2">Ausfrage</span>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body pt-4">
-          <div class="position-absolute start-0 top-0 mx-2 my-1">11:25</div>
-          <div class="position-absolute end-0 top-0 mx-2 my-1">12:10</div>
-          <div class="d-flex align-items-center justify-content-center flex-column">
-            <span class="fw-semibold text-center">Physik</span>
-            <span class="text-center">012, Herr Kopp</span>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body pt-4">
-          <div class="position-absolute start-0 top-0 mx-2 my-1">12:30</div>
-          <div class="position-absolute end-0 top-0 mx-2 my-1">13:15</div>
-          <div class="d-flex align-items-center justify-content-center flex-column">
-            <span class="fw-semibold text-center">Deutsch</span>
-            <span class="text-center">411, Herr Strunz</span>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body pt-4">
-          <div class="position-absolute start-0 top-0 mx-2 my-1">13:15</div>
-          <div class="position-absolute end-0 top-0 mx-2 my-1">14:00</div>
-          <div class="d-flex align-items-center justify-content-center flex-column mb-2">
-            <span class="fw-semibold text-center">Latein</span>
-            <span class="text-center">411, Herr Waschbüsch</span>
-            <span class="text-center event-blue fw-bold mt-2">Schulaufgabe</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xxl-row gap-3 d-none" id="timetable-more"></div>
     
+    <!--Exclude for ALPHA -> l.169
     <div class="container-fluid mb-3">
       <div class="mb-2 text-decoration-underline">
         Ereignisse
@@ -164,10 +88,16 @@
       </div>
     </div>
     <div class="container-fluid mb-3">
-      <div class="mb-2 text-decoration-underline">
-        Vertretungen
+      <div class="mb-2 d-flex align-items-center">
+        <div class="text-decoration-underline">
+          Vertretungen
+        </div>
+        <div class="ms-2 text-secondary">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span id="substitutions-updated">Keine Daten empfangen</span>
+        </div>
       </div>
-      <div class="ms-2">
+      <div class="ms-3">
         <div class="rounded-3 overflow-hidden border d-none" id="substitutions-table">
           <div class="table-responsive">
             <table class="table table-striped mb-0">
@@ -186,7 +116,8 @@
             </table>
           </div>
         </div>
-        <div class="text-secondary d-none" id="substitutions-none">Keine Vertretungen an diesem Tag.</div>
+        <div class="text-secondary d-none" id="substitutions-no-entry">Keine Vertretungen an diesem Tag.</div>
+        <div class="text-secondary d-none" id="substitutions-no-data">Keine Vertretungsdaten für diesen Tag verfügbar.</div>
       </div>
     </div>
     <!--Exclude for ALPHA -> l.224
