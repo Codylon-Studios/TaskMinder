@@ -1,30 +1,12 @@
-const fs = require('fs');
-const { Pool } = require('pg');
 const redis = require('redis');
-
-const saltRounds = 10;
 const cacheKeyHomeworkData = 'homework_data';
 const cacheKeyHomeworkCheckedData = 'homework_checked_data';
 const cacheKeySubstitutionsData = 'substitutions_data';
 const cacheExpiration = 3600;
-
 const redisClient = redis.createClient({
   url: 'redis://localhost:6379',
 });
 redisClient.on('error', (err) => console.error('Redis error:', err));
-
-const dbConfig = JSON.parse(fs.readFileSync('db_config.json'));
-const pool = new Pool(dbConfig);
-
-
-const withDB = async (callback) => {
-  const client = await pool.connect();
-  try {
-    return await callback(client);
-  } finally {
-    client.release();
-  }
-};
 
 //REDIS Connect
 const connectRedis = async () => {
@@ -52,4 +34,4 @@ const disconnectRedis = async () => {
   }
 };
 
-module.exports = {withDB, saltRounds, redisClient, connectRedis, disconnectRedis, cacheKeyHomeworkData, cacheKeyHomeworkCheckedData, cacheKeySubstitutionsData, cacheExpiration};
+module.exports = {redisClient, connectRedis, disconnectRedis, cacheKeyHomeworkData, cacheKeyHomeworkCheckedData, cacheKeySubstitutionsData, cacheExpiration};
