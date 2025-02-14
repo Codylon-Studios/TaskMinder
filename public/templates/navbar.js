@@ -161,6 +161,36 @@ function checkSecurePassword(password) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"'<>,.?/-]).{8,}$/.test(password);
 }
 
+async function updateTeamList() {
+  await fetch('/teams.json')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      availabeTeamsData = data;
+    })
+    .catch(error => {
+      console.error('Error loading the JSON file:', error);
+    });
+  
+  $("#team-list").empty()
+
+  availabeTeamsData.forEach((team, teamId) => {
+    let selected = teamData.includes(teamId)
+    let template = `
+      <div class="form-check">
+        <input type="checkbox" class="form-check-input" data-id="${teamId}" id="team-selection-team-${teamId}" ${(selected) ? "checked" : ""}>
+        <label class="form-check-label" for="team-selection-team-${teamId}">
+          ${team.name}
+        </label>
+      </div>`;
+    $("#team-list").append(template)
+  })
+}
+
 let $navbarUi = {
   lr: { // Login & Register related elements
     modal: $("#login-register-modal"),
@@ -377,3 +407,26 @@ user.on("logout", () => {
   $("#login-register-button").removeClass("d-none");
   $("#logout-button").addClass("d-none");
 });
+
+// Team selection
+let teamData = JSON.parse(localStorage.getItem("teamData") || "[]");
+
+let availabeTeamsData;
+
+$(document).on("click", "#navbar-reload-button", () => {
+  updateTeamList();
+});
+updateTeamList();
+
+$("#team-selection-save").on("click", () => {
+  let newTeamData = []
+  $("#team-list input").each(function () {
+    if ($(this).prop("checked")) {
+      newTeamData.push($(this).data("id"))
+    }
+  })
+  teamData = newTeamData;
+  localStorage.setItem("teamData", JSON.stringify(teamData))
+  $("#team-selection-modal").modal("hide")
+  updateAll()
+})
