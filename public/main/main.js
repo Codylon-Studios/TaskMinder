@@ -276,13 +276,13 @@ async function updateSubstitutionList() {
   })
 
   $("#substitutions-table").removeClass("d-none")
-  $("#substitutions-no-substitution").addClass("d-none")
+  $("#substitutions-no-entry").addClass("d-none")
   $("#substitutions-no-data").addClass("d-none")
 }
 
 function updateTimetable() {
   // If the data hasn't loaded yet, stop
-  if (timetableData.length == 0 || subjectData.length == 0) {
+  if (timetableData == undefined || subjectData == undefined || teamData == undefined) {
     return
   }
   
@@ -301,7 +301,7 @@ function updateTimetable() {
   $("#timetable-mode-wrapper").removeClass("d-none");
   updateTimetableMode();
 
-  for (lesson of timetableData[selectedDay - 1]) {
+  for (let lesson of timetableData[selectedDay - 1]) {
     let startTime = lesson.start;
     let endTime = lesson.end;
     let subjectsShort = [];
@@ -310,6 +310,7 @@ function updateTimetable() {
     let rooms = [];
 
     if (lesson.lessonType == "teamed") {
+      let foundLesson = false;
       for (let team of lesson.teams) {
         if (team.subjectId == -1) {
           continue;
@@ -324,6 +325,25 @@ function updateTimetable() {
 
         let teacher = subjectData[team.subjectId].teacher
         teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+        foundLesson = true;
+      }
+      if (! foundLesson) {
+        for (let team of lesson.teams) {
+          if (team.subjectId == -1) {
+            subjectsShort.push("-")
+            subjectsLong.push("Nichts")
+            rooms.push("-")
+            teachers.push("-")
+            continue;
+          }
+  
+          subjectsShort.push(subjectData[team.subjectId].name.short)
+          subjectsLong.push(subjectData[team.subjectId].name.long)
+          rooms.push(team.room)
+  
+          let teacher = subjectData[team.subjectId].teacher
+          teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+        }
       }
     }
     else if (lesson.lessonType == "rotating") {
@@ -547,12 +567,11 @@ $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDat
 
 
 // The homework stuff
-let teamData = [1, 4, 5]
-let subjectData = [];
-let timetableData = [];
-let homeworkData = [];
-let homeworkCheckedData = [];
-let substitutionsData = [];
+let subjectData;
+let timetableData;
+let homeworkData;
+let homeworkCheckedData;
+let substitutionsData;
 
 $(document).ready(() => {
 
@@ -624,3 +643,16 @@ $("#timetable-mode input").each(() => {
 });
 
 $("#timetable-mode-" + (localStorage.getItem("timetableMode") || "less")).prop("checked", true);
+
+if (localStorage.getItem("showTeamSelectionInfo") == undefined) {
+  localStorage.setItem("showTeamSelectionInfo", "true")
+}
+
+if (localStorage.getItem("showTeamSelectionInfo") == "true") {
+  $("#team-selection-info").addClass("d-flex").removeClass("d-none")
+}
+
+$("#team-selection-info-later").on("click", () => {
+  localStorage.setItem("showTeamSelectionInfo", "false")
+  $("#team-selection-info").removeClass("d-flex").addClass("d-none")
+})
