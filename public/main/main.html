@@ -51,8 +51,9 @@
         <i class="fa-solid fa-chevron-right"></i>
       </button>
     </div>
-    <div class="container-fluid d-flex justify-content-center align-items-center mb-3"  id="timetable-mode-wrapper">
-      <label class="mb-0 me-3 text-nowrap" for="timetable-mode">Stundenplanart</label>
+
+    <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-sm-3 flex-column flex-sm-row"  id="timetable-mode-wrapper">
+      <label class="text-nowrap" for="timetable-mode">Stundenplanart</label>
       <div class="btn-group" id="timetable-mode">
         <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-none">
         <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-none">Nicht</label>
@@ -114,12 +115,26 @@
           <span id="substitutions-updated">Keine Daten empfangen</span>
         </div>
       </div>
+      <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-sm-3 flex-column flex-sm-row" id="substitutions-mode-wrapper">
+        <label class="text-nowrap" for="substitutions-mode">Vertretungsplanart</label>
+        <div class="btn-group" id="substitutions-mode">
+          <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-none">
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-none">Nicht</label>
+
+          <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-class">
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-class">Nur von der Klasse</label>
+        
+          <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-all">
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-all">Alle</label>
+        </div>
+      </div>
       <div class="ms-3">
         <div class="rounded-3 overflow-hidden border d-none" id="substitutions-table">
           <div class="table-responsive">
             <table class="table table-striped mb-0">
               <thead>
                 <tr>
+                  <th>Klasse</th>
                   <th>Art</th>
                   <th>Stunde</th>
                   <th>Fach</th>

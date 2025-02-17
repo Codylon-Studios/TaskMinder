@@ -3,7 +3,7 @@ async function getNewCalendarWeekContent() {
   weekDates = undefined;
   loadWeekDates()
 
-  await dataLoaded(weekDates, "weekDatesLoaded")
+  await dataLoaded("weekDates")
 
   // Prepare the variable
   newCalendarWeekContent = ""
@@ -132,9 +132,9 @@ function checkHomework(homeworkId) {
 
 async function updateHomeworkList() {
   // Wait until the data is loaded
-  await dataLoaded(subjectData, "subjectDataLoaded")
-  await dataLoaded(homeworkData, "homeworkDataLoaded")
-  await dataLoaded(homeworkCheckedData, "homeworkCheckedDataLoaded")
+  await dataLoaded("subjectData")
+  await dataLoaded("homeworkData")
+  await dataLoaded("homeworkCheckedData")
 
   // Note: homeworkCheckedData will have a different structure
   // Server: [{checkId: int, username: String, homeworkId: int, checked: boolean}, ...]
@@ -154,15 +154,7 @@ async function updateHomeworkList() {
     let submissionDate = new Date(Number(homework.submissionDate));
     let selectedDate = weekDates[(selectedDay == 0) ? 6 : selectedDay - 1]
 
-    let checked;
-    if (user.loggedIn) {
-      // If the user is logged in, get the check status using the server data
-      checked = getHomeworkCheckStatusServer(homeworkId);
-    }
-    else {
-      // If the user is not logged in, get the check status using the local data
-      checked = getCheckStatusLocal(homeworkId);
-    }
+    let checked = getHomeworkCheckStatus(homeworkId);
 
     if (filterMode == "assignment") {
       if (! isSameDay(selectedDate, assignmentDate)) {
@@ -196,40 +188,68 @@ async function updateHomeworkList() {
 }
 
 async function updateSubstitutionList() {
-  await dataLoaded(substitutionsData, "substitutionsDataLoaded")
+  let substitutionsMode = localStorage.getItem("substitutionsMode") || "class";
 
-  $("#substitutions-updated").html(substitutionsData.updated)
-  let updatedDate = new Date(dateToMs(substitutionsData.updated.split(" ")[0]))
+  let data;
+
+  if (substitutionsMode == "class") {
+    await dataLoaded("classSubstitutionsData");
+    data = classSubstitutionsData;
+  }
+  else {
+    await dataLoaded("substitutionsData");
+    data = substitutionsData;
+  }
+
+  let updatedDate = new Date(dateToMs(data.updated.split(" ")[0]))
   let updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][updatedDate.getDay()]
-  $("#substitutions-updated").html(updatedWeekDay + ", " + substitutionsData.updated.split(" ")[1])
+  $("#substitutions-updated").html(updatedWeekDay + ", " + data.updated.split(" ")[1])
+
+  if (substitutionsMode == "none") {
+    $("#substitutions-table").addClass("d-none");
+    return;
+  }
 
   let planId;
 
-  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(substitutionsData["plan1"]["date"])))) {
+  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(data["plan1"]["date"])))) {
     planId = 1
   }
-  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(substitutionsData["plan2"]["date"])))) {
+  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(data["plan2"]["date"])))) {
     planId = 2
   }
   else {
     $("#substitutions-table").addClass("d-none")
     $("#substitutions-no-entry").addClass("d-none")
     $("#substitutions-no-data").removeClass("d-none")
+    $("#substitutions-mode-wrapper").addClass("d-none");
     return;
   }
   
-  if (substitutionsData["plan" + planId]["substitutions"].length == 0) {
+  if (data["plan" + planId]["substitutions"].length == 0) {
     $("#substitutions-table").addClass("d-none")
     $("#substitutions-no-entry").removeClass("d-none")
     $("#substitutions-no-data").addClass("d-none")
+    $("#substitutions-mode-wrapper").removeClass("d-none");
     return;
   }
 
   $("#substitutions-list").empty()
 
-  for (let substitution of substitutionsData["plan" + planId]["substitutions"]) {
+  if (substitutionsMode == "all") {
+    $("#substitutions-table th:first()").removeClass("d-none")
+  }
+  else {
+    $("#substitutions-table th:first()").addClass("d-none")
+  }
+
+  for (let substitution of data["plan" + planId]["substitutions"]) {
+    if (substitutionsMode == "class" && ! /^10[a-zA-Z]*d[a-zA-Z]*/.test(substitution.class)) {
+      continue;
+    }
     let template = `
       <tr>
+        ${(substitutionsMode == "all") ? `<td>${substitution.class}</td>` : ""}
         <td>${substitution.type}</td>
         <td>${substitution.lesson}</td>
         <td>${substitution.subject}</td>
@@ -251,13 +271,28 @@ async function updateSubstitutionList() {
   $("#substitutions-table").removeClass("d-none")
   $("#substitutions-no-entry").addClass("d-none")
   $("#substitutions-no-data").addClass("d-none")
+  $("#substitutions-mode-wrapper").removeClass("d-none");
+}
+
+function updateSubstitutionsMode() {
+  if ($("#substitutions-mode-class")[0].checked) {
+    localStorage.setItem("substitutionsMode", "class");
+  }
+  else if ($("#substitutions-mode-all")[0].checked) {
+    localStorage.setItem("substitutionsMode", "all");
+  }
+  else {
+    localStorage.setItem("substitutionsMode", "none");
+  }
+
+  updateSubstitutionList();
 }
 
 async function updateTimetable() {
   // If the data hasn't loaded yet, wait until it is loaded
-  await dataLoaded(timetableData, "timetableDataLoaded")
-  await dataLoaded(subjectData, "subjectDataLoaded")
-  await dataLoaded(teamData, "teamDataLoaded")
+  await dataLoaded("timetableData")
+  await dataLoaded("subjectData")
+  await dataLoaded("teamData")
   
   $("#timetable-less").empty();
   $("#timetable-more").empty();
@@ -375,7 +410,7 @@ function updateTimetableMode() {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
   }
-  else if ($("#timetable-mode-less")[0].checked || selectedDay - 1 < 0 || selectedDay - 1 > 4) {
+  else if ($("#timetable-mode-less")[0].checked) {
     $("#timetable-less").removeClass("d-none");
     $("#timetable-more").addClass("d-none");
     localStorage.setItem("timetableMode", "less");
@@ -393,7 +428,7 @@ function updateTimetableMode() {
 }
 
 async function renameCalendarMonthYear() {
-  await dataLoaded(weekDates, "weekDatesLoaded");
+  await dataLoaded("weekDates");
   $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDates[3].getFullYear()}`)
 }
 
@@ -438,6 +473,8 @@ updateAllFunctions.push(() => {
   updateSubstitutionList();
   updateTimetable();
 })
+
+updateAll();
 
 $(".calendar-week-move-button").on("click", function () {
   // If the calendar is already moving, stop; else set it moving
@@ -518,11 +555,6 @@ updateCalendarWeekContent("#calendar-week-old")
 let monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 renameCalendarMonthYear()
 
-// Update everything on clicking the reload button
-$(document).on("click", "#navbar-reload-button", () => {
-  reloadAll();
-});
-
 // Request checking the homework on clicking its checkbox
 $(document).on('click', '.homework-check', function () {
   const homeworkId = $(this).data('id');
@@ -542,6 +574,15 @@ $("#timetable-mode input").each(() => {
 });
 
 $("#timetable-mode-" + (localStorage.getItem("timetableMode") || "less")).prop("checked", true);
+
+$("#substitutions-mode input").each(() => {
+  $(this).on("click", () => {
+    updateSubstitutionsMode();
+  });
+  $(this).prop("checked", false);
+});
+
+$("#substitutions-mode-" + (localStorage.getItem("substitutionsMode") || "class")).prop("checked", true);
 
 if (localStorage.getItem("showTeamSelectionInfo") == undefined) {
   localStorage.setItem("showTeamSelectionInfo", "true")

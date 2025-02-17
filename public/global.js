@@ -39,7 +39,7 @@ function isSameDay(date1, date2) {
 }
 
 async function getHomeworkCheckStatus(homeworkId) {
-  await dataLoaded(homeworkCheckedData, "homeworkCheckedDataLoaded")
+  await dataLoaded("homeworkCheckedData")
 
   if (user.loggedIn) {
     for (let homework of homeworkCheckedData) {
@@ -54,7 +54,9 @@ async function getHomeworkCheckStatus(homeworkId) {
   }
 }
 
-function dataLoaded(dataVariable, eventName) {
+function dataLoaded(dataName) {
+  let dataVariable = eval(dataName);
+  let eventName = dataName + "Loaded"
   return new Promise((resolve) => {
     if (dataVariable != undefined && dataVariable != null) {
       resolve();
@@ -135,6 +137,17 @@ function loadSubstitutionsData() {
   });
 }
 
+async function loadClassSubstitutionsData() {
+  await dataLoaded("substitutionsData")
+  let data = [];
+  data = structuredClone(substitutionsData);
+  for (let planId = 1; planId <= 2; planId++) {
+    data["plan" + planId].substitutions = data["plan" + planId].substitutions.filter(entry => /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class))
+  }
+  classSubstitutionsData = data;
+  $(window).trigger("classSubstitutionsDataLoaded");
+}
+
 function loadTeamData() {
   teamData = JSON.parse(localStorage.getItem("teamData") || "[]");
   $(window).trigger("teamDataLoaded");
@@ -179,6 +192,7 @@ async function reloadAll() {
   homeworkData = undefined;
   homeworkCheckedData = undefined;
   substitutionsData = undefined;
+  classSubstitutionsData = undefined;
   teamData = undefined;
   availableTeamsData = undefined;
   loadSubjectData();
@@ -186,17 +200,20 @@ async function reloadAll() {
   loadHomeworkData();
   loadHomeworkCheckedData();
   loadSubstitutionsData();
+  loadClassSubstitutionsData();
   loadTeamData();
   loadAvailableTeamsData();
-  await dataLoaded(subjectData, "subjectDataLoaded");
-  await dataLoaded(timetableData, "timetableDataLoaded");
-  await dataLoaded(homeworkData, "homeworkDataLoaded");
-  await dataLoaded(homeworkCheckedData, "homeworkCheckedDataLoaded");
-  await dataLoaded(substitutionsData, "substitutionsDataLoaded");
-  await dataLoaded(teamData, "teamDataLoaded");
-  await dataLoaded(availableTeamsData, "availableTeamsDataLoaded");
 
   updateAll()
+
+  await dataLoaded("subjectData");
+  await dataLoaded("timetableData");
+  await dataLoaded("homeworkData");
+  await dataLoaded("homeworkCheckedData");
+  await dataLoaded("substitutionsData");
+  await dataLoaded("classSubstitutionsData");
+  await dataLoaded("teamData");
+  await dataLoaded("availableTeamsData");
 
   document.body.style.display = "block";
 }
@@ -212,6 +229,7 @@ let timetableData;
 let homeworkData;
 let homeworkCheckedData;
 let substitutionsData;
+let classSubstitutionsData;
 let teamData;
 let availableTeamsData;
 
@@ -219,6 +237,11 @@ let availableTeamsData;
 $(document).ready(() => {
   reloadAll();
 })
+
+// Update everything on clicking the reload button
+$(document).on("click", "#navbar-reload-button", () => {
+  reloadAll();
+});
 
 $(window).on("userDataLoaded", () => {
   let isFirstEvent = true; // If it's the first event (On opening the site), do not reload (It already happens)

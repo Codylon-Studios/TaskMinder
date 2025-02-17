@@ -162,8 +162,8 @@ function checkSecurePassword(password) {
 }
 
 async function updateTeamList() {
-  await dataLoaded(teamData, "teamDataLoaded");
-  await dataLoaded(availableTeamsData, "availableTeamsDataLoaded");
+  await dataLoaded("teamData");
+  await dataLoaded("availableTeamsData");
   
   $("#team-list").empty()
 
@@ -183,6 +183,8 @@ async function updateTeamList() {
 updateAllFunctions.push(() => {
   updateTeamList();
 })
+
+updateAll();
 
 let $navbarUi = {
   lr: { // Login & Register related elements
