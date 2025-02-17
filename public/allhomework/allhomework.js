@@ -1,7 +1,7 @@
 async function updateHomeworkList() {
-  await dataLoaded(subjectData, "subjectDataLoaded")
-  await dataLoaded(homeworkData, "homeworkDataLoaded")
-  await dataLoaded(homeworkCheckedData, "homeworkCheckedDataLoaded")
+  await dataLoaded("subjectData")
+  await dataLoaded("homeworkData")
+  await dataLoaded("homeworkCheckedData")
 
   // Note: homeworkCheckedData will have a different structure
   // Server: [{checkId: int, username: String, homeworkId: int, checked: boolean}, ...]
@@ -25,24 +25,24 @@ async function updateHomeworkList() {
 
     // Filter by checked status
     if ((checked) && ( ! $("#filter-status-checked").prop("checked"))) {
-      return;
+      continue;
     }
 
     // Filter by checked status
     if (( ! checked) && ( ! $("#filter-status-unchecked").prop("checked"))) {
-      return;
+      continue;
     }
 
     // Filter by subject
     if (!$(`#filter-subject-${homework.subjectId}`).prop("checked")) {
-      return;
+      continue;
     }
 
     // Filter by min. assignment date
     if ($("#filter-date-assignment-from").val() != "") {
       let filterDate = Date.parse($("#filter-date-assignment-from").val());
       if (filterDate > parseInt(homework.assignmentDate)) {
-        return;
+        continue;
       }
     }
 
@@ -50,7 +50,7 @@ async function updateHomeworkList() {
     if ($("#filter-date-assignment-until").val() != "") {
       let filterDate = Date.parse($("#filter-date-assignment-until").val());
       if (filterDate < parseInt(homework.assignmentDate)) {
-        return;
+        continue;
       }
     }
 
@@ -58,7 +58,7 @@ async function updateHomeworkList() {
     if ($("#filter-date-submission-from").val() != "") {
       let filterDate = Date.parse($("#filter-date-submission-from").val());
       if (filterDate > parseInt(homework.submissionDate)) {
-        return;
+        continue;
       }
     }
 
@@ -66,7 +66,7 @@ async function updateHomeworkList() {
     if ($("#filter-date-submission-until").val() != "") {
       let filterDate = Date.parse($("#filter-date-submission-until").val());
       if (filterDate < parseInt(homework.submissionDate)) {
-        return;
+        continue;
       }
     }
 
@@ -90,6 +90,8 @@ async function updateHomeworkList() {
 
     // Add this homework to the list
     $ui.homeworkList.append(template);
+
+    //console.location()
   };
 
   // If no homeworks match, add an explanation text
@@ -99,7 +101,7 @@ async function updateHomeworkList() {
 }
 
 async function updateSubjectList() {
-  await dataLoaded(subjectData, "subjectDataLoaded")
+  await dataLoaded("subjectData")
 
   // Clear the select element in the add homework modal
   $ui.addHomeworkSubject.empty();
@@ -406,6 +408,8 @@ updateAllFunctions.push(() => {
   updateSubjectList();
   updateHomeworkList();
 })
+
+updateAll();
 
 let $ui;
 

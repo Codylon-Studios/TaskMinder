@@ -11,10 +11,6 @@ async function getSubstitutionsData() {
         let planHtml = iconv.decode(Buffer.from(planRes.data), 'ISO-8859-1')
         $ = cheerio.load(planHtml, { decodeEntities: true });
         $(".mon_list tr:not(:nth-child(1))").each((i, substitutionEntry) => {
-            let classValue = $(substitutionEntry).find("td").first().text()
-            if (! /^10[a-zA-Z]*d[a-zA-Z]*/.test(classValue)) { // Correct Regex: /^10[a-zA-Z]*d[a-zA-Z]*/   everything Regex: /^.*/
-                return;
-            }
             let data = {}
             $(substitutionEntry).find("td").each((j, substitutionEntryData) => {
                 let val = $(substitutionEntryData).text();
@@ -55,7 +51,7 @@ async function getSubstitutionsData() {
     }
 }
 
-setInterval(getSubstitutionsData, 6000);
+setInterval(getSubstitutionsData, 60000);
 
 const substitutionService = {
     async getSubstitutionData() {
