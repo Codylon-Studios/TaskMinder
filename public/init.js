@@ -2,18 +2,25 @@
 // This script will run on every single Website
 //
 
+function loadScript(src) {
+  let script = document.createElement("script");
+  script.src = src;
+  script.defer = true;
+  document.head.appendChild(script)
+}
+
 function loadTemplateContent() {
     $(".load-content").each(async function() {
       const url = `/templates/${$(this).data("url")}.`;
       if ($(this).data("html") != undefined) {
         $(this).load(url + "html", () => {
           if ($(this).data("js") != undefined) {
-            $.getScript(url + 'js');
+            loadScript(url + 'js');
           }
         })
       }
       else if ($(this).data("js") != undefined) {
-        $.getScript(url + 'js');
+        loadScript(url + 'js');
       }
       if ($(this).data("css") != undefined) {
         $head.append(`<link rel="stylesheet" type="text/css" href="${url}css">`);
@@ -40,14 +47,12 @@ function loadTemplateContent() {
     resources.push(`<script src="https://kit.fontawesome.com/0ca04b82ef.js"></script>`);
 
     // Load favicon
-    resources.push(`<link rel="icon" href="/favicon.svg">`)
+    resources.push(`<link rel="icon" href="/favicon.ico" type="image/x-icon">`)
   
     $head.append(resources.join(""));
   
     // Load global JS
-    let globalJS = document.createElement("script");
-    globalJS.src = `/global.js`;
-    document.head.appendChild(globalJS);
+    loadScript("/global.js")
   
     // Add possibility to include divs with class "load-content" to load e.g. the navbar
     $(document).ready(() => {

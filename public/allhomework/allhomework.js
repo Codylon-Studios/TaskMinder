@@ -1,41 +1,8 @@
-function getCheckStatusServer(homeworkId) {
-  for (let homework of homeworkCheckedData) {
-    if (homework.homeworkId == homeworkId) {
-      return homework.checked;
-    }
-  }
-  return false;
-}
-
-function getCheckStatusLocal(homeworkId) {
-  return homeworkCheckedData[homeworkId];
-}
-
-function updateAll() {
-  // Update the subject data and homework data
-  updateSubjectList();
-  updateHomeworkList();
-}
-
 async function updateHomeworkList() {
-  // Get the server side homework data
-  await $.get('/homework/get_homework_data', (data) => {
-    homeworkData = data;
-  });
-  
-  if (user.loggedIn) {
-    // If the user is logged in, get the data from the server
-    await $.get('/homework/get_homework_checked_data', (data) => {
-      homeworkCheckedData = data;
-    });
-  }
-  else {
-    // If the user is not logged in, get the data from the local storage
-    homeworkCheckedData = JSON.parse(localStorage.getItem("homeworkCheckedData"))
-    if (homeworkCheckedData == null) {
-      homeworkCheckedData = {};
-    }
-  }
+  await dataLoaded(subjectData, "subjectDataLoaded")
+  await dataLoaded(homeworkData, "homeworkDataLoaded")
+  await dataLoaded(homeworkCheckedData, "homeworkCheckedDataLoaded")
+
   // Note: homeworkCheckedData will have a different structure
   // Server: [{checkId: int, username: String, homeworkId: int, checked: boolean}, ...]
   // Local: {homeworkId: checked, ...}
@@ -46,7 +13,7 @@ async function updateHomeworkList() {
   // Check if user is in edit mode
   let editEnabled = $ui.editToggle.is(":checked");
 
-  homeworkData.forEach(homework => {
+  for (let homework of homeworkData) {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
     let subject = subjectData[homework.subjectId].name.long;
@@ -54,15 +21,7 @@ async function updateHomeworkList() {
     let assignmentDate = msToDisplayDate(homework.assignmentDate).split('.').slice(0, 2).join('.');
     let submissionDate = msToDisplayDate(homework.submissionDate).split('.').slice(0, 2).join('.');
 
-    let checked;
-    if (user.loggedIn) {
-      // If the user is logged in, get the check status using the server data
-      checked = getCheckStatusServer(homeworkId);
-    }
-    else {
-      // If the user is not logged in, get the check status using the local data
-      checked = getCheckStatusLocal(homeworkId);
-    }
+    let checked = await getHomeworkCheckStatus(homeworkId);
 
     // Filter by checked status
     if ((checked) && ( ! $("#filter-status-checked").prop("checked"))) {
@@ -131,7 +90,7 @@ async function updateHomeworkList() {
 
     // Add this homework to the list
     $ui.homeworkList.append(template);
-  });
+  };
 
   // If no homeworks match, add an explanation text
   if ($ui.homeworkList.html() == "") {
@@ -139,7 +98,9 @@ async function updateHomeworkList() {
   }
 }
 
-function updateSubjectList() {
+async function updateSubjectList() {
+  await dataLoaded(subjectData, "subjectDataLoaded")
+
   // Clear the select element in the add homework modal
   $ui.addHomeworkSubject.empty();
   $ui.addHomeworkSubject.append('<option value="" disabled selected>Fach</option>');
@@ -441,9 +402,11 @@ function resetFilters() {
   $("#filter-date-submission-until").val("")
 }
 
-let subjectData = [];
-let homeworkData = [];
-let homeworkCheckedData = [];
+updateAllFunctions.push(() => {
+  updateSubjectList();
+  updateHomeworkList();
+})
+
 let $ui;
 
 $(document).ready(() => {
@@ -457,34 +420,16 @@ $(document).ready(() => {
     homeworkList: $("#homework-list"),
   }
 
-  // Get subject data
-  fetch('/subjects.json')
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  })
-  .then(data => {
-    subjectData = data;
-    updateAll();
-  })
-  .catch(error => {
-    console.error('Error loading the JSON file:', error);
-  });
-
-  window.addEventListener("userVariableDefined", () => {
+  $(window).on("userDataLoaded", () => {
     // If user is logged in, show the edit toggle button
     user.on("login", () => {
       $("#edit-toggle-label").removeClass("d-none");
-      updateAll();
     });
 
     user.on("logout", () => {
       $("#edit-toggle-label").addClass("d-none")
       $("#show-add-homework-button").addClass("d-none");
       $(".homework-edit-options").addClass("d-none");
-      updateAll();
     });
   });
 
@@ -555,11 +500,6 @@ $(document).ready(() => {
     $(this).on('click', (ev) => {
       ev.stopPropagation();
     });
-  });
-
-  // Update everything on clicking the reload button
-  $(document).on("click", "#navbar-reload-button", () => {
-    updateAll();
   });
 
   // Request deleting the homework on clicking its delete icon

@@ -1,9 +1,9 @@
-function getNewCalendarWeekContent() {
-  if (typeof isSameDay != "function") {
-    return;
-  }
+async function getNewCalendarWeekContent() {
   // Get the list of all dates in this week
-  getWeekDates()
+  weekDates = undefined;
+  loadWeekDates()
+
+  await dataLoaded(weekDates, "weekDatesLoaded")
 
   // Prepare the variable
   newCalendarWeekContent = ""
@@ -33,7 +33,12 @@ function getNewCalendarWeekContent() {
   }
 }
 
-function getWeekDates() {
+async function updateCalendarWeekContent(targetCalendar) {
+  await getNewCalendarWeekContent();
+  $(targetCalendar).html(newCalendarWeekContent);
+}
+
+function loadWeekDates() {
   // weekDates will be a list of all the dates in the currently selected week
   weekDates = []
 
@@ -59,19 +64,8 @@ function getWeekDates() {
     // Save everything in weekDates
     weekDates.push(dayDate)
   }
-}
 
-function getCheckStatusServer(homeworkId) {
-  for (let homework of homeworkCheckedData) {
-    if (homework.homeworkId == homeworkId) {
-      return homework.checked;
-    }
-  }
-  return false;
-}
-
-function getCheckStatusLocal(homeworkId) {
-  return homeworkCheckedData[homeworkId];
+  $(window).trigger("weekDatesLoaded")
 }
 
 function checkHomework(homeworkId) {
@@ -136,31 +130,12 @@ function checkHomework(homeworkId) {
   }
 }
 
-function updateAll() {
-  updateHomeworkList();
-  updateSubstitutionList();
-  updateTimetable();
-}
-
 async function updateHomeworkList() {
-  // Get the server side homework data
-  await $.get('/homework/get_homework_data', (data) => {
-    homeworkData = data;
-  });
-  
-  if (user.loggedIn) {
-    // If the user is logged in, get the data from the server
-    await $.get('/homework/get_homework_checked_data', (data) => {
-      homeworkCheckedData = data;
-    });
-  }
-  else {
-    // If the user is not logged in, get the data from the local storage
-    homeworkCheckedData = JSON.parse(localStorage.getItem("homeworkCheckedData"))
-    if (homeworkCheckedData == null) {
-      homeworkCheckedData = {};
-    }
-  }
+  // Wait until the data is loaded
+  await dataLoaded(subjectData, "subjectDataLoaded")
+  await dataLoaded(homeworkData, "homeworkDataLoaded")
+  await dataLoaded(homeworkCheckedData, "homeworkCheckedDataLoaded")
+
   // Note: homeworkCheckedData will have a different structure
   // Server: [{checkId: int, username: String, homeworkId: int, checked: boolean}, ...]
   // Local: {homeworkId: checked, ...}
@@ -182,7 +157,7 @@ async function updateHomeworkList() {
     let checked;
     if (user.loggedIn) {
       // If the user is logged in, get the check status using the server data
-      checked = getCheckStatusServer(homeworkId);
+      checked = getHomeworkCheckStatusServer(homeworkId);
     }
     else {
       // If the user is not logged in, get the check status using the local data
@@ -221,9 +196,7 @@ async function updateHomeworkList() {
 }
 
 async function updateSubstitutionList() {
-  await $.get('/substitutions/get_substitutions_data', (data) => {
-    substitutionsData = data;
-  });
+  await dataLoaded(substitutionsData, "substitutionsDataLoaded")
 
   $("#substitutions-updated").html(substitutionsData.updated)
   let updatedDate = new Date(dateToMs(substitutionsData.updated.split(" ")[0]))
@@ -280,11 +253,11 @@ async function updateSubstitutionList() {
   $("#substitutions-no-data").addClass("d-none")
 }
 
-function updateTimetable() {
-  // If the data hasn't loaded yet, stop
-  if (timetableData == undefined || subjectData == undefined || teamData == undefined) {
-    return
-  }
+async function updateTimetable() {
+  // If the data hasn't loaded yet, wait until it is loaded
+  await dataLoaded(timetableData, "timetableDataLoaded")
+  await dataLoaded(subjectData, "subjectDataLoaded")
+  await dataLoaded(teamData, "teamDataLoaded")
   
   $("#timetable-less").empty();
   $("#timetable-more").empty();
@@ -398,7 +371,11 @@ function updateTimetable() {
 }
 
 function updateTimetableMode() {
-  if ($("#timetable-mode-less")[0].checked) {
+  if (selectedDay - 1 < 0 || selectedDay - 1 > 4) {
+    $("#timetable-less").addClass("d-none");
+    $("#timetable-more").addClass("d-none");
+  }
+  else if ($("#timetable-mode-less")[0].checked || selectedDay - 1 < 0 || selectedDay - 1 > 4) {
     $("#timetable-less").removeClass("d-none");
     $("#timetable-more").addClass("d-none");
     localStorage.setItem("timetableMode", "less");
@@ -414,6 +391,53 @@ function updateTimetableMode() {
     localStorage.setItem("timetableMode", "none");
   }
 }
+
+async function renameCalendarMonthYear() {
+  await dataLoaded(weekDates, "weekDatesLoaded");
+  $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDates[3].getFullYear()}`)
+}
+
+function slideCalendar(direction, transition, slideTime) {
+  // Get the new content and append it to the new calendar
+  updateCalendarWeekContent("#calendar-week-new")
+
+  // Position the calendar left / right of the visible spot
+  $(".calendar-week").css("transition", "")
+  $("#calendar-week-new").css("transform", `translateX(${(direction == "r") ? "100%" : "-100%"})`)
+  $("#calendar-week-new").removeClass("d-none").addClass("d-flex")
+
+  // Wait shortly, so the styles can apply
+  setTimeout(() => {
+    // Slide the old calendar out and the new one in
+    $(".calendar-week").css("transition", transition)
+    $("#calendar-week-old").css("transform", `translateX(${(direction == "r") ? "-100%" : "100%"})`)
+    $("#calendar-week-new").css("transform", "translateX(0%)")
+
+    renameCalendarMonthYear();
+
+    // Wait until the calendars finished sliding
+    setTimeout(() => {
+      // Save the new html in the old calendar
+      $("#calendar-week-old").html($("#calendar-week-new").html());
+
+      // Position the old calendar in the visible spot, hide the new calendar
+      $(".calendar-week").css("transition", "")
+      $("#calendar-week-old").css("transform", "")
+      $("#calendar-week-new").removeClass("d-flex").addClass("d-none")
+
+      // The calendar isn't moving anymore
+      calendarWeekMoving = false;
+    }, slideTime)
+  }, 20)
+    
+  updateAll();
+}
+
+updateAllFunctions.push(() => {
+  updateHomeworkList();
+  updateSubstitutionList();
+  updateTimetable();
+})
 
 $(".calendar-week-move-button").on("click", function () {
   // If the calendar is already moving, stop; else set it moving
@@ -432,41 +456,7 @@ $(".calendar-week-move-button").on("click", function () {
     calendarWeekOffset--
   }
   
-  // Get the new content
-  getNewCalendarWeekContent();
-
-  // Append it to the new calendar
-  $("#calendar-week-new").html(newCalendarWeekContent);
-
-  // Position the calendar left / right of the visible spot
-  $(".calendar-week").css("transition", "")
-  $("#calendar-week-new").css("transform", `translateX(${(direction == "r") ? "100%" : "-100%"})`)
-  $("#calendar-week-new").removeClass("d-none").addClass("d-flex")
-
-  // Wait shortly, so the styles can apply
-  setTimeout(() => {
-    // Slide the old calendar out and the new one in
-    $(".calendar-week").css("transition", "transform 0.75s ease")
-    $("#calendar-week-old").css("transform", `translateX(${(direction == "r") ? "-100%" : "100%"})`)
-    $("#calendar-week-new").css("transform", "translateX(0%)")
-
-    $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDates[3].getFullYear()}`)
-
-    // Wait until the calendars finished sliding
-    setTimeout(() => {
-      // Save the new html in the old calendar
-      $("#calendar-week-old").html($("#calendar-week-new").html());
-
-      // Position the old calendar in the visible spot, hide the new calendar
-      $(".calendar-week").css("transition", "")
-      $("#calendar-week-old").css("transform", "")
-      $("#calendar-week-new").removeClass("d-flex").addClass("d-none")
-
-      // The calendar isn't moving anymore
-      calendarWeekMoving = false;
-    }, 750)
-  }, 20)
-  updateAll();
+  slideCalendar(direction, "transform 0.75s ease", 750)
 });
 
 $(".calendar-month-year-move-button").on("click", function () {
@@ -477,46 +467,11 @@ $(".calendar-month-year-move-button").on("click", function () {
     else {
       calendarWeekOffset--
     }
-
-    // Get the new content
-    getNewCalendarWeekContent();
-
-    // Append it to the new calendar
-    $("#calendar-week-new").html(newCalendarWeekContent);
-
-    // Position the calendar left / right of the visible spot
-    $(".calendar-week").css("transition", "")
-    $("#calendar-week-new").css("transform", `translateX(${(direction == "r") ? "100%" : "-100%"})`)
-    $("#calendar-week-new").removeClass("d-none").addClass("d-flex")
-
-    // Wait shortly, so the styles can apply
-    setTimeout(() => {
-      // Slide the old calendar out and the new one in
-      $(".calendar-week").css("transition", "transform 0.19s linear")
-      $("#calendar-week-old").css("transform", `translateX(${(direction == "r") ? "-100%" : "100%"})`)
-      $("#calendar-week-new").css("transform", "translateX(0%)")
-
-      $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDates[3].getFullYear()}`)
-
-      // Wait until the calendars finished sliding
-      setTimeout(() => {
-        // Save the new html in the old calendar
-        $("#calendar-week-old").html($("#calendar-week-new").html());
-
-        // Position the old calendar in the visible spot, hide the new calendar
-        $(".calendar-week").css("transition", "")
-        $("#calendar-week-old").css("transform", "")
-        $("#calendar-week-new").removeClass("d-flex").addClass("d-none")
-
-        // The calendar isn't moving anymore
-        calendarWeekMoving = false;
     
-        if (weekId != 3) {
-          animateWeek(weekId + 1)
-        }
-      }, 190)
-    }, 20)
-    updateHomeworkList();
+    slideCalendar(direction, "transform 0.19s linear", 190)
+    if (weekId != 3) {
+      animateWeek(weekId + 1)
+    }
   }
   // If the calendar is already moving, stop; else set it moving
   if (calendarWeekMoving) {return};
@@ -537,9 +492,8 @@ $(".calendar-month-year-move-button").on("click", function () {
 });
 
 $(document).on("click", ".days-overview-day", function () {
-  selectedDay = $(this).data("day")
-  getNewCalendarWeekContent();
-  $("#calendar-week-old").html(newCalendarWeekContent);
+  selectedDay = $(this).data("day");
+  updateCalendarWeekContent("#calendar-week-old")
   updateAll();
 })
 
@@ -556,72 +510,17 @@ let newCalendarWeekContent = ""
 let calendarWeekMoving = false;
 
 // Is a list of the dates (number of day in the month) of the week which is currently selected
-let weekDates = [];
+let weekDates;
 
 // Set the visible content of the calendar to today's week
-getNewCalendarWeekContent();
-$("#calendar-week-old").html(newCalendarWeekContent);
+updateCalendarWeekContent("#calendar-week-old")
 
 let monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
-$("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDates[3].getFullYear()}`)
-
-
-// The homework stuff
-let subjectData;
-let timetableData;
-let homeworkData;
-let homeworkCheckedData;
-let substitutionsData;
-
-$(document).ready(() => {
-
-  // Get subject data
-  fetch('/subjects.json')
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  })
-  .then(data => {
-    subjectData = data;
-    updateAll();
-  })
-  .catch(error => {
-    console.error('Error loading the JSON file:', error);
-  });
-  
-  // Get timetable data
-  fetch('/timetable.json')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      timetableData = data;
-      updateTimetable();
-    })
-    .catch(error => {
-      console.error('Error loading the JSON file:', error);
-    });
-
-  window.addEventListener("userVariableDefined", () => {
-    // If user logs in / out update everything
-    user.on("login", () => {
-      updateAll();
-    });
-
-    user.on("logout", () => {
-      updateAll();
-    });
-  });
-});
+renameCalendarMonthYear()
 
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", () => {
-  updateAll();
+  reloadAll();
 });
 
 // Request checking the homework on clicking its checkbox
