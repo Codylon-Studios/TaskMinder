@@ -162,23 +162,12 @@ function checkSecurePassword(password) {
 }
 
 async function updateTeamList() {
-  await fetch('/teams.json')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      availabeTeamsData = data;
-    })
-    .catch(error => {
-      console.error('Error loading the JSON file:', error);
-    });
+  await dataLoaded(teamData, "teamDataLoaded");
+  await dataLoaded(availableTeamsData, "availableTeamsDataLoaded");
   
   $("#team-list").empty()
 
-  availabeTeamsData.forEach((team, teamId) => {
+  availableTeamsData.forEach((team, teamId) => {
     let selected = teamData.includes(teamId)
     let template = `
       <div class="form-check">
@@ -190,6 +179,10 @@ async function updateTeamList() {
     $("#team-list").append(template)
   })
 }
+
+updateAllFunctions.push(() => {
+  updateTeamList();
+})
 
 let $navbarUi = {
   lr: { // Login & Register related elements
@@ -220,8 +213,6 @@ let $navbarToasts = {
 
 // Create the user object with a username variable and event listeners
 const user = $({})
-
-window.dispatchEvent(new Event("userVariableDefined"));
 
 // Give user the property username, using the jQuery data() function
 Object.defineProperty(user, "username", {
@@ -259,6 +250,8 @@ $.get('/account/auth', (response) => {
     user.trigger("logout");
     user.username = null;
   }
+
+  $(window).trigger("userDataLoaded");
 });
 
 //
@@ -407,16 +400,6 @@ user.on("logout", () => {
   $("#login-register-button").removeClass("d-none");
   $("#logout-button").addClass("d-none");
 });
-
-// Team selection
-let teamData = JSON.parse(localStorage.getItem("teamData") || "[]");
-
-let availabeTeamsData;
-
-$(document).on("click", "#navbar-reload-button", () => {
-  updateTeamList();
-});
-updateTeamList();
 
 $("#team-selection-save").on("click", () => {
   let newTeamData = []
