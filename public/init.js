@@ -37,11 +37,7 @@ function loadTemplateContent() {
     let $head = $("head");
     let resources = [];
     // Load Bootstrap
-    resources.push(`<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">`);
     resources.push(`<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>`);
-  
-    // Load global CSS
-    resources.push(`<link href="/global.css" rel="stylesheet">`);
   
     // Load Font Awesome icons
     resources.push(`<script src="https://kit.fontawesome.com/0ca04b82ef.js"></script>`);

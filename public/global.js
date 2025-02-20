@@ -1,3 +1,5 @@
+let updateAllFunctions = []
+
 function msToDisplayDate(ms) {
   let date = new Date(parseInt(ms));
   let day = String(date.getDate());
@@ -221,8 +223,6 @@ async function reloadAll() {
 function updateAll() {
   updateAllFunctions.forEach(fn => fn())
 }
-
-let updateAllFunctions = []
 
 let subjectData;
 let timetableData;

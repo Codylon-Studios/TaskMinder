@@ -6,7 +6,7 @@
         {
           "teamId": 0,
           "subjectId": 6,
-          "room": "306"
+          "room": "205"
         },
         {
           "teamId": 1,
@@ -14,8 +14,24 @@
           "room": "N42"
         }
       ],
-      "timingType": "double",
       "start": "8:00",
+      "end": "8:45"
+    },
+    {
+      "lessonType": "teamed",
+      "teams": [
+        {
+          "teamId": 0,
+          "subjectId": 6,
+          "room": "205"
+        },
+        {
+          "teamId": 1,
+          "subjectId": 17,
+          "room": "N42"
+        }
+      ],
+      "start": "8:45",
       "end": "9:30"
     },
     {
@@ -34,18 +50,38 @@
         {
           "teamId": 4,
           "subjectId": 10,
-          "room": "305"
+          "room": "306"
         }
       ],
-      "timingType": "double",
       "start": "9:35",
+      "end": "10:20"
+    },
+    {
+      "lessonType": "teamed",
+      "teams": [
+        {
+          "teamId": 2,
+          "subjectId": 4,
+          "room": "307"
+        },
+        {
+          "teamId": 3,
+          "subjectId": 5,
+          "room": "309"
+        },
+        {
+          "teamId": 4,
+          "subjectId": 10,
+          "room": "306"
+        }
+      ],
+      "start": "10:40",
       "end": "11:25"
     },
     {
       "lessonType": "normal",
-      "subjectId": 13,
+      "subjectId": 0,
       "room": "411",
-      "timingType": "normal",
       "start": "11:25",
       "end": "12:10"
     },
@@ -53,7 +89,6 @@
       "lessonType": "normal",
       "subjectId": 8,
       "room": "411",
-      "timingType": "normal",
       "start": "12:30",
       "end": "13:15"
     }
@@ -63,15 +98,13 @@
       "lessonType": "normal",
       "subjectId": 3,
       "room": "411",
-      "timingType": "normal",
       "start": "8:00",
       "end": "8:45"
     },
     {
       "lessonType": "normal",
-      "subjectId": 2,
+      "subjectId": 16,
       "room": "411",
-      "timingType": "normal",
       "start": "8:45",
       "end": "9:30"
     },
@@ -79,7 +112,6 @@
       "lessonType": "normal",
       "subjectId": 15,
       "room": "009",
-      "timingType": "normal",
       "start": "9:35",
       "end": "10:20"
     },
@@ -92,10 +124,9 @@
         },
         {
           "subjectId": 15,
-          "room": "006"
+          "room": "009"
         }
       ],
-      "timingType": "normal",
       "start": "10:40",
       "end": "11:25"
     },
@@ -103,24 +134,35 @@
       "lessonType": "normal",
       "subjectId": 1,
       "room": "108",
-      "timingType": "normal",
       "start": "11:25",
       "end": "12:10"
     },
     {
       "lessonType": "normal",
-      "subjectId": 16,
-      "room": "108",
-      "timingType": "normal",
+      "subjectId": 13,
+      "room": "411",
       "start": "12:10",
       "end": "13:15"
     },
     {
+      "lessonType": "break",
+      "subjectId": -1,
+      "room": "",
+      "start": "13:15",
+      "end": "14:00"
+    },
+    {
       "lessonType": "normal",
-      "subjectId": 14,
-      "room": "401",
-      "timingType": "double",
+      "subjectId": 11,
+      "room": "Z1",
       "start": "14:00",
+      "end": "14:45"
+    },
+    {
+      "lessonType": "normal",
+      "subjectId": 11,
+      "room": "Z1",
+      "start": "14:45",
       "end": "15:30"
     }
   ],
@@ -131,7 +173,7 @@
         {
           "teamId": 5,
           "subjectId": 18,
-          "room": "Caje"
+          "room": "Cajetanhalle"
         },
         {
           "teamId": 6,
@@ -139,23 +181,44 @@
           "room": "TSV Ost (Keine Ahnung sagts mir bitte)"
         }
       ],
-      "timingType": "double",
       "start": "8:00",
+      "end": "8:45"
+    },
+    {
+      "lessonType": "teamed",
+      "teams": [
+        {
+          "teamId": 5,
+          "subjectId": 18,
+          "room": "Cajetanhalle"
+        },
+        {
+          "teamId": 6,
+          "subjectId": 19,
+          "room": "TSV Ost (Keine Ahnung sagts mir bitte)"
+        }
+      ],
+      "start": "8:45",
       "end": "9:30"
     },
     {
       "lessonType": "normal",
       "subjectId": 7,
       "room": "411",
-      "timingType": "double",
       "start": "9:35",
+      "end": "10:20"
+    },
+    {
+      "lessonType": "normal",
+      "subjectId": 7,
+      "room": "411",
+      "start": "10:40",
       "end": "11:25"
     },
     {
       "lessonType": "normal",
       "subjectId": 1,
       "room": "110",
-      "timingType": "normal",
       "start": "11:25",
       "end": "12:10"
     },
@@ -163,7 +226,6 @@
       "lessonType": "normal",
       "subjectId": 2,
       "room": "411",
-      "timingType": "normal",
       "start": "12:10",
       "end": "13:15"
     },
@@ -173,7 +235,7 @@
         {
           "teamId": 0,
           "subjectId": 6,
-          "room": "306"
+          "room": "205"
         },
         {
           "teamId": 1,
@@ -181,7 +243,6 @@
           "room": ""
         }
       ],
-      "timingType": "normal",
       "start": "13:15",
       "end": "14:00"
     }
@@ -191,23 +252,34 @@
       "lessonType": "normal",
       "subjectId": 13,
       "room": "411",
-      "timingType": "double",
-      "start": "8.00",
+      "start": "8:00",
+      "end": "8:45"
+    },
+    {
+      "lessonType": "normal",
+      "subjectId": 13,
+      "room": "411",
+      "start": "8:45",
       "end": "9:30"
     },
     {
       "lessonType": "normal",
       "subjectId": 20,
       "room": "411",
-      "timingType": "double",
       "start": "9:35",
+      "end": "10:20"
+    },
+    {
+      "lessonType": "normal",
+      "subjectId": 20,
+      "room": "411",
+      "start": "10:40",
       "end": "11:25"
     },
     {
       "lessonType": "normal",
       "subjectId": 15,
-      "room": "012",
-      "timingType": "normal",
+      "room": "006",
       "start": "11:25",
       "end": "12:10"
     },
@@ -215,7 +287,6 @@
       "lessonType": "normal",
       "subjectId": 2,
       "room": "411",
-      "timingType": "normal",
       "start": "12:10",
       "end": "13:15"
     },
@@ -223,7 +294,6 @@
       "lessonType": "normal",
       "subjectId": 12,
       "room": "411",
-      "timingType": "normal",
       "start": "13:15",
       "end": "14:00"
     }
@@ -231,25 +301,29 @@
   [
     {
       "lessonType": "normal",
+      "subjectId": 2,
+      "room": "411",
+      "start": "8:00",
+      "end": "8:45"
+    },
+    {
+      "lessonType": "normal",
       "subjectId": 0,
-      "room": "306",
-      "timingType": "double",
-      "start": "8.00",
+      "room": "411",
+      "start": "8:45",
       "end": "9:30"
     },
     {
       "lessonType": "normal",
       "subjectId": 3,
-      "room": "306",
-      "timingType": "normal",
+      "room": "411",
       "start": "9:35",
       "end": "10:20"
     },
     {
       "lessonType": "normal",
       "subjectId": 12,
-      "room": "207",
-      "timingType": "normal",
+      "room": "411",
       "start": "10:40",
       "end": "11:25"
     },
@@ -257,8 +331,14 @@
       "lessonType": "normal",
       "subjectId": 9,
       "room": "209",
-      "timingType": "double",
       "start": "11:25",
+      "end": "12:10"
+    },
+    {
+      "lessonType": "normal",
+      "subjectId": 9,
+      "room": "209",
+      "start": "12:30",
       "end": "13:15"
     }
   ]
