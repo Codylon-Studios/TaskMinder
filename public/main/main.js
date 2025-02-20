@@ -27,7 +27,7 @@ async function getNewCalendarWeekContent() {
 
     // Append the days (All days will be added into and .calendar-week element)
     newCalendarWeekContent += `
-    <div class="days-overview-day ${specialClasses}btn-semivisible" data-day="${(i == 6) ? 0 : i + 1}">
+    <div class="days-overview-day ${specialClasses}btn btn-semivisible" data-day="${(i == 6) ? 0 : i + 1}">
       <div>${weekday}</div><div>${weekDates[i].getDate()}</div></div>
     </div>`
   }
@@ -154,7 +154,7 @@ async function updateHomeworkList() {
     let submissionDate = new Date(Number(homework.submissionDate));
     let selectedDate = weekDates[(selectedDay == 0) ? 6 : selectedDay - 1]
 
-    let checked = getHomeworkCheckStatus(homeworkId);
+    let checked = getHomeworkCheckStatus(homeworkId).value;
 
     if (filterMode == "assignment") {
       if (! isSameDay(selectedDate, assignmentDate)) {
@@ -244,9 +244,6 @@ async function updateSubstitutionList() {
   }
 
   for (let substitution of data["plan" + planId]["substitutions"]) {
-    if (substitutionsMode == "class" && ! /^10[a-zA-Z]*d[a-zA-Z]*/.test(substitution.class)) {
-      continue;
-    }
     let template = `
       <tr>
         ${(substitutionsMode == "all") ? `<td>${substitution.class}</td>` : ""}
@@ -293,6 +290,7 @@ async function updateTimetable() {
   await dataLoaded("timetableData")
   await dataLoaded("subjectData")
   await dataLoaded("teamData")
+  await dataLoaded("classSubstitutionsData")
   
   $("#timetable-less").empty();
   $("#timetable-more").empty();
@@ -309,31 +307,52 @@ async function updateTimetable() {
   $("#timetable-mode-wrapper").removeClass("d-none");
   updateTimetableMode();
 
-  for (let lesson of timetableData[selectedDay - 1]) {
+  let substitutionPlanId;
+
+  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(classSubstitutionsData["plan1"]["date"])))) {
+    substitutionPlanId = 1;
+  }
+  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(classSubstitutionsData["plan2"]["date"])))) {
+    substitutionPlanId = 2;
+  }
+  else {
+    substitutionPlanId = 0;
+  }
+
+  for (let [lessonId, lesson] of timetableData[selectedDay - 1].entries()) {
+    function addLesson(lessonData) {
+      subjectsShort.push(subjectData[lessonData.subjectId].name.short)
+        subjectsLong.push(subjectData[lessonData.subjectId].name.long)
+        rooms.push(lessonData.room)
+
+        let teacher = subjectData[lessonData.subjectId].teacher
+        teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+    }
     let startTime = lesson.start;
     let endTime = lesson.end;
+    // These are lists in case the user hasn't selected a team or there are rotating subjects
     let subjectsShort = [];
     let subjectsLong = [];
     let teachers = [];
     let rooms = [];
 
-    if (lesson.lessonType == "teamed") {
+    if (lesson.lessonType == "break") {
+      continue;
+    }
+    else if (lesson.lessonType == "teamed") {
       let foundLesson = false;
       for (let team of lesson.teams) {
-        if (team.subjectId == -1) {
-          continue;
-        }
         if (! teamData.includes(Number(team.teamId))) {
           continue;
         }
 
-        subjectsShort.push(subjectData[team.subjectId].name.short)
-        subjectsLong.push(subjectData[team.subjectId].name.long)
-        rooms.push(team.room)
-
-        let teacher = subjectData[team.subjectId].teacher
-        teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
         foundLesson = true;
+
+        if (team.subjectId == -1) {
+          continue;
+        }
+
+        addLesson(team);
       }
       if (! foundLesson) {
         for (let team of lesson.teams) {
@@ -345,12 +364,7 @@ async function updateTimetable() {
             continue;
           }
   
-          subjectsShort.push(subjectData[team.subjectId].name.short)
-          subjectsLong.push(subjectData[team.subjectId].name.long)
-          rooms.push(team.room)
-  
-          let teacher = subjectData[team.subjectId].teacher
-          teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+          addLesson(team);
         }
       }
     }
@@ -360,21 +374,11 @@ async function updateTimetable() {
           continue;
         }
 
-        subjectsShort.push(subjectData[variant.subjectId].name.short)
-        subjectsLong.push(subjectData[variant.subjectId].name.long)
-        rooms.push(variant.room)
-
-        let teacher = subjectData[variant.subjectId].teacher
-        teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+        addLesson(variant);
       }
     }
     else {
-      subjectsShort.push(subjectData[lesson.subjectId].name.short)
-      subjectsLong.push(subjectData[lesson.subjectId].name.long)
-      rooms.push(lesson.room)
-
-      let teacher = subjectData[lesson.subjectId].teacher
-      teachers.push(((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long)
+      addLesson(lesson);
     }
 
     if ([subjectsShort.length, subjectsLong.length, teachers.length, rooms.length].includes(0)) {
@@ -382,26 +386,144 @@ async function updateTimetable() {
     }
 
     let templateModeLess = `
-      <div class="card ${(lesson.timingType == "double") ? "wide" : ""}">
-        <div class="card-body d-flex align-items-center justify-content-center">
-          ${subjectsShort.join(" / ")}
+      <div class="card">
+        <div class="card-body d-flex align-items-center justify-content-center flex-column">
+          <span class="text-center">${subjectsShort.join(" / ")}</span>
         </div>
       </div>`;
-    $("#timetable-less").append(templateModeLess);
+    
+    let thisLessLesson = $(templateModeLess)
+
+    if (substitutionPlanId != 0) {
+      for (let substitution of classSubstitutionsData["plan" + substitutionPlanId]["substitutions"]) {
+        if (substitution.lesson.includes("-")) {
+          let start = substitution.lesson.split(" ")[0]
+          let end = substitution.lesson.split(" ")[2]
+          if (start > lessonId + 1 || lessonId + 1 > end) {
+            continue;
+          }
+        }
+        else if (Number(substitution.lesson) != lessonId + 1) {
+          continue;
+        }
+        let color = (substitution.type == "Entfall") ? "red" : "yellow"
+
+        if (substitution.type == "Entfall") {
+          thisLessLesson.find("span").addClass("line-through-" + color)
+        }
+        thisLessLesson.find(".card-body").append(`<div class="text-${color} text-center fw-bold mt-2">${substitution.type}</div>`)
+      }
+    }
+
+    let lastLessLesson = $("#timetable-less").find(".card:last()")
+    if (lastLessLesson.length > 0) {
+      let lastLessonHtml = lastLessLesson[0].outerHTML.replace(/\s+/g, "")
+      let thisLessonHtml = thisLessLesson[0].outerHTML.replace(/\s+/g, "")
+      if (lastLessonHtml == thisLessonHtml) {
+        lastLessLesson.addClass("wide")
+      }
+      else {
+        $("#timetable-less").append(thisLessLesson);
+      }
+    }
+    else {
+      $("#timetable-less").append(thisLessLesson);
+    }
 
     let templateModeMore = `
-      <div class="card ${(lesson.timingType == "double") ? "wide" : ""}">
-        <div class="card-body pt-4">
-          <div class="position-absolute start-0 top-0 mx-2 my-1">${startTime}</div>
-          <div class="position-absolute end-0 top-0 mx-2 my-1">${endTime}</div>
+      <div class="card">
+        <div class="card-body pt-4 text-center">
+          <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start">${startTime}</div>
+          <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end">${endTime}</div>
           <div class="d-flex align-items-center justify-content-center flex-column">
-            <span class="fw-semibold text-center">${subjectsLong.join(" / ")}</span>
-            <span class="text-center">${rooms.join(" / ")}, ${teachers.join(" / ")}</span>
-            <!--<span class="text-center event-orange fw-bold mt-2">Irgendwelche extra infos</span>-->
+            <span class="fw-semibold text-center timetable-more-subject">
+              <span>${subjectsLong.join(" / ")}</span>
+            </span>
+            <span>
+              <span class="text-center timetable-more-room">
+                <span>${rooms.join(" / ")}</span>
+              </span>,
+              <span class="text-center timetable-more-teacher">
+                <span>${teachers.join(" / ")}</span>
+              </span>
+            </span>
           </div>
+          <!--<span class="event-orange fw-bold mt-2">Events oder ähnliches</span>-->
         </div>
       </div>`;
-    $("#timetable-more").append(templateModeMore);
+    
+    let thisMoreLesson = $(templateModeMore)
+
+    if (substitutionPlanId != 0) {
+      for (let substitution of classSubstitutionsData["plan" + substitutionPlanId]["substitutions"]) {
+        if (substitution.lesson.includes("-")) {
+          let start = substitution.lesson.split(" ")[0]
+          let end = substitution.lesson.split(" ")[2]
+          if (start > lessonId + 1 || lessonId + 1 > end) {
+            continue;
+          }
+        }
+        else if (Number(substitution.lesson) != lessonId + 1) {
+          continue;
+        }
+        let color = (substitution.type == "Entfall") ? "red" : "yellow"
+
+        thisMoreLesson.find(".card-body").append(`<div class="text-${color} text-center fw-bold mt-2">${substitution.type}</div>`)
+        if (substitution.type == "Entfall" && substitution.text == "EVA") {
+          substitution.text = "-";
+        }
+        if (substitution.text != "-") {
+          thisMoreLesson.find(".card-body").append(`<div class="text-${color} text-center">${substitution.text}</div>`)
+        }
+
+        if (substitution.type == "Entfall") {
+          // Times
+          thisMoreLesson.find(".timetable-more-time").addClass("line-through-" + color)
+
+          // Subject
+          thisMoreLesson.find(".timetable-more-subject span").addClass("line-through-" + color)
+        }
+
+        // Room
+        if (substitution.room != thisMoreLesson.find(".timetable-more-room span")) {
+          thisMoreLesson.find(".timetable-more-room span").addClass("line-through-" + color)
+        }
+        if (substitution.room != "-") {
+          thisMoreLesson.find(".timetable-more-room").append(`<span class="text-${color} fw-bold">${substitution.room}</span>`)
+        }
+
+        // Teacher
+        if (substitution.teacher != thisMoreLesson.find(".timetable-more-teacher span")) {
+          thisMoreLesson.find(".timetable-more-teacher span").addClass("line-through-" + color)
+        }
+        if (substitution.teacher != "-") {
+          thisMoreLesson.find(".timetable-more-teacher").append(`<span class="text-${color} fw-bold">${substitution.teacher}</span>`)
+        }
+      }
+    }
+
+    let lastMoreLesson = $("#timetable-more").find(".card:last()")
+    if (lastMoreLesson.length > 0) {
+      // Remove the times
+      let lastLessonCopy = $(lastMoreLesson[0].outerHTML);
+      lastLessonCopy.find(".timetable-more-time").html("");
+      let lastLessonHtml = lastLessonCopy[0].outerHTML.replace(/\s+/g, "");
+
+      let thisLessonCopy = $(thisMoreLesson[0].outerHTML);
+      thisLessonCopy.find(".timetable-more-time").html("");
+      let thisLessonHtml = thisLessonCopy[0].outerHTML.replace(/\s+/g, "");
+
+      if (lastLessonHtml == thisLessonHtml) {
+        lastMoreLesson.addClass("wide")
+        lastMoreLesson.find(".card-body div:nth-child(2)").html(endTime)
+      }
+      else {
+        $("#timetable-more").append(thisMoreLesson);
+      }
+    }
+    else {
+      $("#timetable-more").append(thisMoreLesson);
+    }
   }
 }
 

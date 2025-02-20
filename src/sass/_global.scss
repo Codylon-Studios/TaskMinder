@@ -1,0 +1,116 @@
+@use "sass:color";
+@import "../../node_modules/bootstrap/scss/functions";
+
+// Overwriting Bootstrap standards
+$primary: #3bb9ca;
+
+@import "../../node_modules/bootstrap/scss/bootstrap";
+
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
+
+$event-blue: #5599ff;
+$event-orange: #ff9955;
+
+$event-colors: (
+    blue: $event-blue,
+    orange: $event-orange,
+);
+
+$custom-btn-variants: (
+    semivisible,
+    tertiary,
+);
+
+$semivisible-hover-light: #e9ecef;
+$semivisible-active-light: #d3d6da;
+$tertiary-hover-light: #d3d4d5;
+$tertiary-active-light: #c6c7c8;
+
+$semivisible-hover-dark: #353738;
+$semivisible-active-dark: #434547;
+$tertiary-hover-dark: #424649;
+$tertiary-active-dark: #4d5154;
+
+body {
+    font-family: "Quicksand", Arial, Helvetica, sans-serif;
+    padding-top: 70px;
+    font-weight: 500;
+
+    --btn-color: #212529;
+    --btn-semivisible-hover: #{$semivisible-hover-light};
+    --btn-semivisible-active: #{$semivisible-active-light};
+    --btn-tertiary-hover: #{$tertiary-hover-light};
+    --btn-tertiary-active: #{$tertiary-active-light};
+
+    &[data-bs-theme="dark"] {
+        --btn-color: #dee2e6;
+        --btn-semivisible-hover: #{$semivisible-hover-dark};
+        --btn-semivisible-active: #{$semivisible-active-dark};
+        --btn-tertiary-hover: #{$tertiary-hover-dark};
+        --btn-tertiary-active: #{$tertiary-active-dark};
+    }
+}
+
+
+.w-fit-content {
+    width: fit-content;
+}
+
+.d-contents {
+    display: contents;
+}
+
+@each $variant in $custom-btn-variants {
+    .btn-#{$variant} {
+        @include button-variant(white, $primary);
+        border: none;
+        background-color: transparent;
+        color: var(--btn-color) !important;
+    
+        &:hover {
+            background-color: var(--btn-#{$variant}-hover);
+        }
+    
+        &:active {
+            background-color: var(--btn-#{$variant}-active) !important;
+        }
+    
+        &:focus {
+            background-color: transparent;
+        }
+    
+        &:focus-visible {
+            background-color: var(--btn-#{$variant}-hover);
+        }
+    }
+}
+
+.btn-primary {
+    color: white !important;
+}
+
+.btn-check:checked + .btn-outline-primary {
+    color: white !important;
+}
+
+@each $name, $color in $colors {
+    .line-through-#{$name} {
+        position: relative;
+        display: inline-block;
+
+        &::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(50% - 0.15em);
+            height: 0.25em;
+            border-radius: 1rem;
+            pointer-events: none;
+            background-color: $color;
+        }
+    }
+    .text-#{$name} {
+        color: $color;
+    }
+}
