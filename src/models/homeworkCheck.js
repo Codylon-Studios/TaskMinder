@@ -1,21 +1,22 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../sequelize');
-const User = require('../models/users');
-const Homework10d = require('../models/homework');
 
+const Account = require('./account');
+const Homework10d = require('./homework');
 
 const Homework10dCheck = sequelize.define('Homework10dCheck', {
     checkId: {
       type: DataTypes.INTEGER,
+      allowNull: false,
       autoIncrement: true,
       primaryKey: true,
     },
-    username: {
-      type: DataTypes.STRING(255),
+    accountId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: User,
-        key: 'username',
+        model: Account,
+        key: 'accountId',
       },
       onDelete: 'CASCADE',
     },
@@ -28,21 +29,16 @@ const Homework10dCheck = sequelize.define('Homework10dCheck', {
       },
       onDelete: 'CASCADE',
     },
-    checked: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
   }, {
     tableName: 'homework10dCheck',
     timestamps: false,
     indexes: [
       {
         unique: true,
-        fields: ['username', 'homeworkId'],
+        fields: ['accountId', 'homeworkId'],
       },
     ],
   });
 
 
-  module.exports = Homework10dCheck;
+module.exports = Homework10dCheck;

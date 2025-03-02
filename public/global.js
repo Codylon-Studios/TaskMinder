@@ -43,17 +43,7 @@ function isSameDay(date1, date2) {
 async function getHomeworkCheckStatus(homeworkId) {
   await dataLoaded("homeworkCheckedData")
 
-  if (user.loggedIn) {
-    for (let homework of homeworkCheckedData) {
-      if (homework.homeworkId == homeworkId) {
-        return homework.checked;
-      }
-    }
-    return false;
-  }
-  else {
-    return homeworkCheckedData[homeworkId];
-  }
+  return homeworkCheckedData.includes(homeworkId)
 }
 
 function dataLoaded(dataName) {
@@ -150,26 +140,26 @@ async function loadClassSubstitutionsData() {
   $(window).trigger("classSubstitutionsDataLoaded");
 }
 
-function loadTeamData() {
-  teamData = JSON.parse(localStorage.getItem("teamData") || "[]");
-  $(window).trigger("teamDataLoaded");
+async function loadJoinedTeamsData() {
+  await userDataLoaded();
+
+  if (user.loggedIn) {
+    $.get('/teams/get_joined_teams_data', (data) => {
+      joinedTeamsData = data;
+      $(window).trigger("joinedTeamsDataLoaded");
+    });
+  }
+  else {
+    joinedTeamsData = JSON.parse(localStorage.getItem("joinedTeamsData") || "[]");
+    $(window).trigger("joinedTeamsDataLoaded");
+  }
 }
 
-function loadAvailableTeamsData() {
-  fetch('/teams.json')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      availableTeamsData = data;
-      $(window).trigger("availableTeamsDataLoaded");
-    })
-    .catch(error => {
-      console.error('Error loading the JSON file:', error);
-    });
+function loadTeamsData() {
+  $.get('/teams/get_teams_data', (data) => {
+    teamsData = data;
+    $(window).trigger("teamsDataLoaded");
+  });
 }
 
 function userDataLoaded() {
@@ -195,16 +185,16 @@ async function reloadAll() {
   homeworkCheckedData = undefined;
   substitutionsData = undefined;
   classSubstitutionsData = undefined;
-  teamData = undefined;
-  availableTeamsData = undefined;
+  joinedTeamsData = undefined;
+  teamsData = undefined;
   loadSubjectData();
   loadTimetableData();
   loadHomeworkData();
   loadHomeworkCheckedData();
   loadSubstitutionsData();
   loadClassSubstitutionsData();
-  loadTeamData();
-  loadAvailableTeamsData();
+  loadJoinedTeamsData();
+  loadTeamsData();
 
   updateAll()
 
@@ -214,11 +204,26 @@ async function reloadAll() {
   await dataLoaded("homeworkCheckedData");
   await dataLoaded("substitutionsData");
   await dataLoaded("classSubstitutionsData");
-  await dataLoaded("teamData");
-  await dataLoaded("availableTeamsData");
+  await dataLoaded("joinedTeamsData");
+  await dataLoaded("teamsData");
 
   document.body.style.display = "block";
 }
+
+reloadAll = runOnce(reloadAll);
+
+function runOnce(fn) {
+  async function wrapper(...args) {
+    if (wrapper.running) return;
+    wrapper.running = true;
+    let res = await fn(...args);
+    wrapper.running = false;
+    return res;
+  }
+  wrapper.running = false;
+  return wrapper;
+}
+
 
 function updateAll() {
   updateAllFunctions.forEach(fn => fn())
@@ -230,8 +235,8 @@ let homeworkData;
 let homeworkCheckedData;
 let substitutionsData;
 let classSubstitutionsData;
-let teamData;
-let availableTeamsData;
+let joinedTeamsData;
+let teamsData;
 
 
 $(document).ready(() => {
@@ -244,22 +249,11 @@ $(document).on("click", "#navbar-reload-button", () => {
 });
 
 $(window).on("userDataLoaded", () => {
-  let isFirstEvent = true; // If it's the first event (On opening the site), do not reload (It already happens)
   user.on("login", () => {
-    if (isFirstEvent) {
-      isFirstEvent = false;
-      return;
-    }
     reloadAll();
-    isFirstEvent = false;
   });
 
   user.on("logout", () => {
-    if (isFirstEvent) {
-      isFirstEvent = false;
-      return;
-    }
     reloadAll();
-    isFirstEvent = false;
   });
 });

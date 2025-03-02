@@ -14,10 +14,10 @@
   { "name": { "long": "Latein", "short": "Lat" }, "teacher": {"gender": "m", "long": "Waschbüsch", "short": "Wab" } },
   { "name": { "long": "Mathe", "short": "Mat" }, "teacher": {"gender": "m", "long": "Todi", "short": "Tdi" } },
   { "name": { "long": "Musik", "short": "Mus" }, "teacher": {"gender": "m", "long": "Hofknecht", "short": "Hfk" } },
-  { "name": { "long": "Physik", "short": "Phy" }, "teacher": {"gender": "w", "long": "Lehner", "short": "5Leh" } },
-  { "name": { "long": "Politik und Gesellschaft", "short": "PuG" }, "teacher": {"gender": "w", "long": "Blickle", "short": "Bli" } },
+  { "name": { "long": "Physik", "short": "Phy" }, "teacher": {"gender": "w", "long": "Lehner", "short": "5Leh", "substitution": ["5Leh", "Kop"] } },
+  { "name": { "long": "Politik und Gesellschaft", "short": "PuG", "substitution": "PuG" }, "teacher": {"gender": "w", "long": "Blickle", "short": "Bli" } },
   { "name": { "long": "Profilfach", "short": "Prof" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "Wvg" } },
   { "name": { "long": "Sport (m)", "short": "Sm" }, "teacher": {"gender": "m", "long": "Pleger", "short": "Ple" } },
-  { "name": { "long": "Sport (w)", "short": "Sw" }, "teacher": {"gender": "w", "long": "Keine Ahnung sagts mir bitte", "short": "WöG" } },
+  { "name": { "long": "Sport (w)", "short": "Sw" }, "teacher": {"gender": "w", "long": "Wöginger (Stimmt das?)", "short": "WöG" } },
   { "name": { "long": "Wirtschaft und Recht", "short": "WuR" }, "teacher": {"gender": "w", "long": "Tausend", "short": "Tau" } }
 ]

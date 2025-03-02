@@ -162,13 +162,13 @@ function checkSecurePassword(password) {
 }
 
 async function updateTeamList() {
-  await dataLoaded("teamData");
-  await dataLoaded("availableTeamsData");
+  await dataLoaded("joinedTeamsData");
+  await dataLoaded("teamsData");
   
   $("#team-list").empty()
 
-  availableTeamsData.forEach((team, teamId) => {
-    let selected = teamData.includes(teamId)
+  teamsData.forEach((team, teamId) => {
+    let selected = joinedTeamsData.includes(teamId)
     let template = `
       <div class="form-check">
         <input type="checkbox" class="form-check-input" data-id="${teamId}" id="team-selection-team-${teamId}" ${(selected) ? "checked" : ""}>
@@ -246,14 +246,18 @@ user.on("logout", () => {
 // Check if the user is logged in for the first time
 $.get('/account/auth', (response) => {
   if (response.authenticated) {
-    user.trigger("login");
-    user.username = response.user.username;
+    user.username = response.account.username;
   } else {
-    user.trigger("logout");
     user.username = null;
   }
 
   $(window).trigger("userDataLoaded");
+
+  if (response.authenticated) {
+    user.trigger("login");
+  } else {
+    user.trigger("logout");
+  }
 });
 
 //
@@ -404,14 +408,50 @@ user.on("logout", () => {
 });
 
 $("#team-selection-save").on("click", () => {
-  let newTeamData = []
+  let newJoinedTeamsData = []
   $("#team-list input").each(function () {
     if ($(this).prop("checked")) {
-      newTeamData.push($(this).data("id"))
+      newJoinedTeamsData.push(Number($(this).data("id")))
     }
   })
-  teamData = newTeamData;
-  localStorage.setItem("teamData", JSON.stringify(teamData))
+  joinedTeamsData = newJoinedTeamsData;
+
+  if (user.loggedIn) {
+    let url = "/teams/set_joined_teams_data";
+    let data = {
+      teams: joinedTeamsData,
+    };
+    // Save whether the server has responed
+    let hasResponded = false;
+
+    // Post the request
+    $.post(url, data, function (result) {
+      // The server has responded
+      hasResponded = true;
+      if (result == "0") { // Everything worked
+        // The user doesn't need any notification here
+      }
+      else if (result == "1") { // An internal server error occurred
+        // Show an error notification
+        $navbarToasts.serverError.toast("show");
+      }
+      else if (result == "2") { // The user has to be logged in but isn't
+        // Show an error notification
+        $navbarToasts.notLoggedIn.toast("show");
+      }
+    });
+    setTimeout(() => {
+      // Wait for 1s
+      if (!hasResponded) {
+        // If the server hasn't answered, show the internal server error notification
+        $navbarToasts.serverError.toast("show");
+      }
+    }, 1000);
+  }
+  else {
+    localStorage.setItem("joinedTeamsData", JSON.stringify(joinedTeamsData))
+  }
+  
   $("#team-selection-modal").modal("hide")
   updateAll()
 })

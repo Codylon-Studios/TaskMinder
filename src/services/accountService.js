@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
-var validator = require('validator');
-const User = require('../models/users');
+const validator = require('validator');
+const User = require('../models/account');
 const createDOMPurify = require('dompurify');
 const { JSDOM } = require('jsdom');
 const window = new JSDOM('').window;
@@ -15,8 +15,9 @@ function checkUsername(username) {
 
 const userService = {
     async getAuth(session){
-        if (session.user && session) {
-            return { authenticated: true, user: session.user };
+        if (session.account && session) {
+            const username = session.account.username;
+            return { authenticated: true, account: { username } };
           } else {
             return { authenticated: false };
         }
@@ -44,16 +45,17 @@ const userService = {
         const sanitizedUsername = validator.escape(username);
         const sanitizedPassword = validator.escape(password);
         const hashedPassword = await bcrypt.hash(sanitizedPassword, SALTROUNDS);
-        await User.create({
+        const user = await User.create({
             username: sanitizedUsername,
             password: hashedPassword,
             class: classname
         });
-        session.user = { username };
+        const accountId = user.accountId;
+        session.account = { username, accountId };
         return { message: 'User registered successfully.' };
     },
     async logoutUser(session) {
-        if (!session.user) {
+        if (!session.account) {
             throw new Error('Not logged in. - Logout');
         }
         await new Promise((resolve, reject) => {
@@ -84,13 +86,14 @@ const userService = {
         if (!isPasswordValid) {
             throw new Error('Invalid credentials - Login');
         }
-        session.user = { username };
+        const accountId = user.accountId;
+        session.account = { username, accountId };
         return {message: 'Login succesful.'}
     },
 
 
     async deleteUser(session, password){
-        const Sessionusername = session.user?.username;
+        const Sessionusername = session.account.username;
         if (! checkUsername(Sessionusername)) {
             throw new Error('Username not correct. - Delete')
           }

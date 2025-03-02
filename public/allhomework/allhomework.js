@@ -99,6 +99,7 @@ async function updateHomeworkList() {
     $ui.homeworkList.html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>`)
   }
 }
+updateHomeworkList = runOnce(updateHomeworkList);
 
 async function updateSubjectList() {
   await dataLoaded("subjectData")
@@ -138,6 +139,7 @@ async function updateSubjectList() {
     updateHomeworkList();
   });
 }
+updateSubjectList = runOnce(updateSubjectList);
 
 function addHomework() {
   //
@@ -183,6 +185,8 @@ function addHomework() {
       if (result == "0") { // Everything worked
         // Show a success notification and update the shown homework
         $("#add-homework-success-toast").toast("show");
+        homeworkData = undefined;
+        loadHomeworkData();
         updateHomeworkList();
       }
       else if (result == "1") { // An internal server error occurred
@@ -260,6 +264,8 @@ function editHomework(homeworkId) {
       if (result == "0") { // Everything worked
         // Show a success notification and update the shown homework
         $("#edit-homework-success-toast").toast("show");
+        homeworkData = undefined;
+        loadHomeworkData();
         updateHomeworkList();
       }
       else if (result == "1") { // An internal server error occurred
@@ -312,6 +318,8 @@ function deleteHomework(homeworkId) {
       if (result == "0") { // Everything worked
         // Show a success notification and update the shown homework
         $("#delete-homework-success-toast").toast("show");
+        homeworkData = undefined;
+        loadHomeworkData();
         updateHomeworkList();
       }
       else if (result == "1") { // An internal server error occurred
@@ -379,20 +387,23 @@ function checkHomework(homeworkId) {
     // The user is not logged in
 
     // Get the already saved data
-    let data = localStorage.getItem("homeworkCheckedData");
+    let dataString = localStorage.getItem("homeworkCheckedData");
+    let data = []
 
-    if (data == null) {
-      data = {}
+    if (dataString != null) {
+      data = JSON.parse(dataString)
+    }
+
+    if (checkStatus) {
+      data.push(homeworkId)
     }
     else {
-      data = JSON.parse(data)
+      data.splice(data.indexOf(homeworkId), 1)
     }
 
-    data[homeworkId] = checkStatus;
+    dataString = JSON.stringify(data);
 
-    data = JSON.stringify(data);
-
-    localStorage.setItem("homeworkCheckedData", data);
+    localStorage.setItem("homeworkCheckedData", dataString);
   }
 }
 

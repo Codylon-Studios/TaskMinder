@@ -1,4 +1,4 @@
-const substitutionService = require('../services/substitutionservice');
+const substitutionService = require('../services/substitutionService');
 const asyncHandler = require('express-async-handler');
 
 exports.substitutionController = {

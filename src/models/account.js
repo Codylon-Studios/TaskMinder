@@ -1,9 +1,10 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../sequelize');
 
-const User = sequelize.define('users', {
-  id: {
+const Account = sequelize.define('Account', {
+  accountId: {
     type: DataTypes.INTEGER,
+    allowNull: false,
     autoIncrement: true,
     primaryKey: true,
   },
@@ -21,8 +22,14 @@ const User = sequelize.define('users', {
     allowNull: false,
   },
 }, {
-  tableName: 'users',
+  tableName: 'account',
   timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['accountId'],
+    },
+  ],
 });
 
-module.exports = User;
+module.exports = Account;
