@@ -1,4 +1,4 @@
-const userService = require('../services/authservice');
+const userService = require('../services/accountService');
 const asyncHandler = require('express-async-handler');
 
 exports.userController = {
@@ -16,7 +16,6 @@ exports.userController = {
         const { username, password } = req.body;
         try {
             await userService.loginUser(username, password, req.session);
-            req.session.user = { username };
             res.status(200).send('0');
         } catch (error) {
             next(error);

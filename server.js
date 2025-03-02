@@ -2,9 +2,10 @@ const express = require('express');
 const ErrorHandler = require('./src/middleware/errorMiddleware');
 const sequelize = require('./src/sequelize');
 const { createServer } = require('http');
-const auth = require('./src/routes/authroute');
-const homework = require('./src/routes/homeworkroute');
-const substitutions = require('./src/routes/substitutionroute');
+const account = require('./src/routes/accountRoute');
+const homework = require('./src/routes/homeworkRoute');
+const substitutions = require('./src/routes/substitutionRoute');
+const teams = require('./src/routes/teamRoute');
 const session = require('express-session');
 const app = express();
 const server = createServer(app);
@@ -28,9 +29,10 @@ app.use(session({
   name: 'UserLogin',
 }));
 
-app.use('/account', auth);
+app.use('/account', account);
 app.use('/homework', homework);
 app.use('/substitutions', substitutions);
+app.use('/teams', teams);
 app.use(ErrorHandler);
 
 // Sync models with the database

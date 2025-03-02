@@ -34,6 +34,8 @@ const errorMap = {
     "Invalid assignment date - editHomework": "1",
     "Invalid submission date - editHomework": "1",
     "No session available - getHomeworkCheckedData": "2",
+    "No session available - getJoinedTeamsData": "2",
+    "No session available - setJoinedTeamsData": "2",
 };
 
 const ErrorHandler = (err, req, res, next) => {

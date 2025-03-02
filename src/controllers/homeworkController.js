@@ -1,4 +1,4 @@
-const homeworkService = require('../services/homeworkservice');
+const homeworkService = require('../services/homeworkService');
 const asyncHandler = require('express-async-handler');
 
 exports.homeworkController = {

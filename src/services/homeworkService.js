@@ -1,7 +1,7 @@
 const { connectRedis, redisClient, cacheKeyHomeworkData, cacheKeyHomeworkCheckedData, cacheExpiration } = require('../constant');
-var validator = require('validator');
+const validator = require('validator');
 const Homework10d = require('../models/homework');
-const Homework10dCheck = require('../models/homeworkcheck');
+const Homework10dCheck = require('../models/homeworkCheck');
 const createDOMPurify = require('dompurify');
 const { JSDOM } = require('jsdom');
 const window = new JSDOM('').window;
@@ -64,7 +64,7 @@ const homeworkService = {
         if (!(subjectId && content && assignmentDate && submissionDate)) {
             throw new Error('Please fill out all data. - addHomework');
         }
-        if (!(session.user)) {
+        if (!(session.account)) {
             throw new Error('No session available - addHomework');
         }
         if ([subjectId, content, assignmentDate, submissionDate].includes("")) {
@@ -102,33 +102,31 @@ const homeworkService = {
     },
 
     async checkHomework(homeworkId, checkStatus, session) {
-        let username;
-        if (!(session.user)) {
+        let accountId;
+        if (!(session.account)) {
             throw new Error('No session available - checkHomeowrk');
         } else {
-            username = session.user.username;
+            accountId = session.account.accountId;
         }
-        await Homework10dCheck.destroy({
-            where: {
-                homeworkId: homeworkId,
-                username: username
-            }
-        });
-        await Homework10dCheck.create({
-            homeworkId: homeworkId,
-            username: username,
-            checked: checkStatus
-        });
-        const data = await Homework10dCheck.findAll({
-            where: { username: username },
-            raw: true
-        });
-        await updateCacheHomeworkCheckedData(changeKeys(data));
+        if (checkStatus == "true") {
+            await Homework10dCheck.findOrCreate({
+                where: { accountId, homeworkId },
+                defaults: { accountId, homeworkId },
+            });
+        }
+        else {
+            await Homework10dCheck.destroy({
+                where: {
+                    accountId: accountId,
+                    homeworkId: homeworkId,
+                }
+            });
+        }
         return { message: 'Homework successfully checked.' }
     },
 
     async deleteHomework(id, session) {
-        if (!(session.user)) {
+        if (!(session.account)) {
             throw new Error('No session available - deleteHomework');
         }
         if (!validator.isInt(id.toString())) {
@@ -145,7 +143,7 @@ const homeworkService = {
     },
 
     async editHomework(id, subjectId, content, assignmentDate, submissionDate, session) {
-        if (!(session.user)) {
+        if (!(session.account)) {
             throw new Error('No session available - editHomework');
         }
         if ([subjectId, content, assignmentDate, submissionDate].includes("")) {
@@ -209,28 +207,22 @@ const homeworkService = {
         return changeKeys(data);
     },
 
-
-
     async getHomeworkCheckedData(session) {
-        let username;
-        if (!(session.user)) {
+        let accountId;
+        if (!(session.account)) {
             throw new Error('No session available - getHomeworkCheckedData');
         } else {
-            username = session.user.username;
+            accountId = session.account.accountId;
         }
-        const cachedHomeworkCheckedData = await redisClient.get(cacheKeyHomeworkCheckedData);
-
-        if (cachedHomeworkCheckedData) {
-            console.log('Serving data from Redis cache');
-            return JSON.parse(cachedHomeworkCheckedData);
-        }
-        const data = await Homework10dCheck.findAll({
-            where: { username: username },
+        let data = await Homework10dCheck.findAll({
+            where: { accountId: accountId },
+            attributes: [ "homeworkId" ],
             raw: true
         });
-        await updateCacheHomeworkCheckedData(changeKeys(data));
 
-        return changeKeys(data);
+        data = data.map((homework) => {return homework.homeworkId})
+
+        return data;
     }
 }
 

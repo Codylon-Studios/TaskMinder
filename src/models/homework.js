@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../sequelize');
+
 const Homework10d = sequelize.define('Homework10d', {
     homeworkId: {
       type: DataTypes.INTEGER,
@@ -27,4 +28,4 @@ const Homework10d = sequelize.define('Homework10d', {
     timestamps: false,
   });
   
-  module.exports = Homework10d;
+module.exports = Homework10d;
