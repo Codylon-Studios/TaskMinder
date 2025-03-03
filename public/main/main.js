@@ -76,8 +76,6 @@ function checkHomework(homeworkId) {
   if (user.loggedIn) {
     // The user is logged in
 
-    // Prepare the POST request
-    let url = "/homework/check";
     let data = {
       homeworkId: homeworkId,
       checkStatus: checkStatus
@@ -86,19 +84,25 @@ function checkHomework(homeworkId) {
     let hasResponded = false;
 
     // Post the request
-    $.post(url, data, function (result) {
-      // The server has responded
-      hasResponded = true;
-      if (result == "0") { // Everything worked
-        // The user doesn't need any notification here
-      }
-      else if (result == "1") { // An internal server error occurred
-        // Show an error notification
-        $navbarToasts.serverError.toast("show");
-      }
-      else if (result == "2") { // The user has to be logged in but isn't
-        // Show an error notification
-        $navbarToasts.notLoggedIn.toast("show");
+    $.ajax({
+      url : "/homework/check",
+      type: "POST",
+      data: data,
+      error: (xhr) => {
+        if (xhr.status === 401) { // The user has to be logged in but isn't
+          // Show an error notification
+          $navbarToasts.notLoggedIn.toast("show");
+        }
+        else if (xhr.status === 500) { // An internal server error occurred
+          $navbarToasts.serverError.toast("show");
+        }
+        else {
+          $navbarToasts.unknownError.toast("show");
+        }
+      },
+      complete: () => {
+        // The server has responded
+        hasResponded = true;
       }
     });
     setTimeout(() => {
@@ -113,20 +117,23 @@ function checkHomework(homeworkId) {
     // The user is not logged in
 
     // Get the already saved data
-    let data = localStorage.getItem("homeworkCheckedData");
+    let dataString = localStorage.getItem("homeworkCheckedData");
+    let data = []
 
-    if (data == null) {
-      data = {}
+    if (dataString != null) {
+      data = JSON.parse(dataString)
+    }
+
+    if (checkStatus) {
+      data.push(homeworkId)
     }
     else {
-      data = JSON.parse(data)
+      data.splice(data.indexOf(homeworkId), 1)
     }
 
-    data[homeworkId] = checkStatus;
+    dataString = JSON.stringify(data);
 
-    data = JSON.stringify(data);
-
-    localStorage.setItem("homeworkCheckedData", data);
+    localStorage.setItem("homeworkCheckedData", dataString);
   }
 }
 
@@ -145,7 +152,7 @@ async function updateHomeworkList() {
 
   let filterMode = $("#filter-homework-mode").val()
 
-  homeworkData.forEach(homework => {
+ for (let homework of homeworkData) {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
     let subject = subjectData[homework.subjectId].name.long;
@@ -154,17 +161,17 @@ async function updateHomeworkList() {
     let submissionDate = new Date(Number(homework.submissionDate));
     let selectedDate = weekDates[(selectedDay == 0) ? 6 : selectedDay - 1]
 
-    let checked = getHomeworkCheckStatus(homeworkId);
+    let checked = await getHomeworkCheckStatus(homeworkId);
 
     if (filterMode == "assignment") {
       if (! isSameDay(selectedDate, assignmentDate)) {
-        return
+        continue
       }
     }
 
     if (filterMode == "submission") {
       if (! isSameDay(selectedDate, submissionDate)) {
-        return
+        continue
       }
     }
 
@@ -179,7 +186,7 @@ async function updateHomeworkList() {
 
     // Add this homework to the list
     $("#homework-list").append(template);
-  });
+  };
 
   // If no homeworks match, add an explanation text
   if ($("#homework-list").html() == "") {

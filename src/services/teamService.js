@@ -1,3 +1,4 @@
+const logger = require('../../logger');
 const { redisClient, cacheExpiration } = require('../constant');
 
 const JoinedTeams = require('../models/joinedTeam');
@@ -8,11 +9,11 @@ const teamsService = {
         const cachedTeamsData = await redisClient.get("teams_data");
 
         if (cachedTeamsData) {
-            console.log('Serving data from Redis cache:', cachedTeamsData);
             try {
                 return JSON.parse(cachedTeamsData);
             } catch (error) {
-                console.error('Error parsing Redis data:', error);
+                logger.error('Error parsing Redis data:', error);
+                throw new Error();
             }
         }
 
@@ -20,9 +21,9 @@ const teamsService = {
 
         try {
             await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
-            console.log('Teams data cached successfully in Redis');
         } catch (err) {
-            console.error('Error updating Redis cache:', err);
+            logger.error('Error updating Redis cache:', err);
+            throw new Error();
         }
 
         return data;
@@ -30,7 +31,9 @@ const teamsService = {
     async getJoinedTeamsData(session) {
         let accountId
         if (!(session.account)) {
-            throw new Error("No session available - getJoinedTeamsData");
+            let err = new Error("User not logged in");
+            err.status = 401;
+            throw err;
         } else {
             accountId = session.account.accountId;
         }
@@ -50,19 +53,17 @@ const teamsService = {
     async setJoinedTeamsData(teams, session) {
         let accountId
         if (!(session.account)) {
-            throw new Error("No session available - setJoinedTeamsData");
+            let err = new Error("User not logged in");
+            err.status = 401;
+            throw err;
         } else {
             accountId = session.account.accountId;
         }
 
         if (! Array.isArray(teams)) {
-            console.log("Invalid team data given");
-            return
-        }
-    
-        if (! teams.every(num => Number.isInteger(Number(num)))) {
-            console.log("Invalid team data given");
-            return
+            let err = new Error("Bad Request");
+            err.status = 400;
+            throw err;
         }
 
         await JoinedTeams.destroy({
@@ -77,8 +78,9 @@ const teamsService = {
                 })
             }
             catch {
-                console.log("Invalid team data given");
-                return;
+                let err = new Error("Bad Request");
+                err.status = 400;
+                throw err;
             }
         }
     },

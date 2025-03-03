@@ -1,5 +1,17 @@
 let updateAllFunctions = []
 
+function runOnce(fn) {
+  async function wrapper(...args) {
+    if (wrapper.running) return;
+    wrapper.running = true;
+    let res = await fn(...args);
+    wrapper.running = false;
+    return res;
+  }
+  wrapper.running = false;
+  return wrapper;
+}
+
 function msToDisplayDate(ms) {
   let date = new Date(parseInt(ms));
   let day = String(date.getDate());
@@ -211,19 +223,6 @@ async function reloadAll() {
 }
 
 reloadAll = runOnce(reloadAll);
-
-function runOnce(fn) {
-  async function wrapper(...args) {
-    if (wrapper.running) return;
-    wrapper.running = true;
-    let res = await fn(...args);
-    wrapper.running = false;
-    return res;
-  }
-  wrapper.running = false;
-  return wrapper;
-}
-
 
 function updateAll() {
   updateAllFunctions.forEach(fn => fn())

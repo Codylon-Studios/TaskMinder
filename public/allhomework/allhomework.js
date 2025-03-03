@@ -168,7 +168,6 @@ function addHomework() {
     const submissionDate = $("#add-homework-date-submission").val();
 
     // Prepare the POST request
-    let url = "/homework/add";
     let data = {
       subjectId: subject,
       content: content,
@@ -177,28 +176,37 @@ function addHomework() {
     };
     // Save whether the server has responed
     let hasResponded = false;
-    // Post the request
 
-    $.post(url, data, function (result) {
-      // The server has responded
-      hasResponded = true;
-      if (result == "0") { // Everything worked
+    // Post the request
+    $.ajax({
+      url : "/homework/add",
+      type: "POST",
+      data: data,
+      success: () => {
         // Show a success notification and update the shown homework
         $("#add-homework-success-toast").toast("show");
         homeworkData = undefined;
         loadHomeworkData();
         updateHomeworkList();
+      },
+      error: (xhr) => {
+        if (xhr.status === 401) { // The user has to be logged in but isn't
+          // Show an error notification
+          $navbarToasts.notLoggedIn.toast("show");
+        }
+        else if (xhr.status === 500) { // An internal server error occurred
+          $navbarToasts.serverError.toast("show");
+        }
+        else {
+          $navbarToasts.unknownError.toast("show");
+        }
+      },
+      complete: () => {
+        // The server has responded
+        hasResponded = true;
+        // Hide the add homework modal
+        $("#add-homework-modal").modal("hide");
       }
-      else if (result == "1") { // An internal server error occurred
-        // Show an error notification
-        $navbarToasts.serverError.toast("show");
-      }
-      else if (result == "2") { // The user has to be logged in but isn't
-        // Show an error notification
-        $navbarToasts.notLoggedIn.toast("show");
-      }
-      // Hide the add homework modal
-      $("#add-homework-modal").modal("hide");
     });
     setTimeout(() => {
       // Wait for 1s
@@ -245,8 +253,6 @@ function editHomework(homeworkId) {
     const assignmentDate = $("#edit-homework-date-assignment").val();
     const submissionDate = $("#edit-homework-date-submission").val();
 
-    // Prepare the POST request
-    let url = "/homework/edit";
     let data = {
       id: homeworkId,
       subjectId: subject,
@@ -258,26 +264,34 @@ function editHomework(homeworkId) {
     let hasResponded = false;
 
     // Post the request
-    $.post(url, data, function (result) {
-      // The server has responded
-      hasResponded = true;
-      if (result == "0") { // Everything worked
+    $.ajax({
+      url : "/homework/edit",
+      type: "POST",
+      data: data,
+      success: () => {
         // Show a success notification and update the shown homework
         $("#edit-homework-success-toast").toast("show");
         homeworkData = undefined;
         loadHomeworkData();
         updateHomeworkList();
+      },
+      error: (xhr) => {
+        if (xhr.status === 401) { // The user has to be logged in but isn't
+          // Show an error notification
+          $navbarToasts.notLoggedIn.toast("show");
+        }
+        else if (xhr.status === 500) { // An internal server error occurred
+          $navbarToasts.serverError.toast("show");
+        }
+        else {
+          $navbarToasts.unknownError.toast("show");
+        }
+      },
+      complete: () => {
+        // The server has responded
+        hasResponded = true;
+        $("#edit-homework-modal").modal("hide");
       }
-      else if (result == "1") { // An internal server error occurred
-        // Show an error notification
-        $navbarToasts.serverError.toast("show");
-      }
-      else if (result == "2") { // The user has to be logged in but isn't
-        // Show an error notification
-        $navbarToasts.notLoggedIn.toast("show");
-      }
-      // Hide the add homework modal
-      $("#edit-homework-modal").modal("hide");
     });
     setTimeout(() => {
       // Wait for 1s
@@ -303,8 +317,6 @@ function deleteHomework(homeworkId) {
     // Hide the confirmation toast
     $("#delete-homework-confirm-toast").toast("hide");
 
-    // Prepare the POST request
-    let url = "/homework/delete";
     let data = {
       id: homeworkId
     };
@@ -312,26 +324,34 @@ function deleteHomework(homeworkId) {
     let hasResponded = false;
 
     // Post the request
-    $.post(url, data, function (result) {
-      // The server has responded
-      hasResponded = true;
-      if (result == "0") { // Everything worked
+    $.ajax({
+      url : "/homework/delete",
+      type: "POST",
+      data: data,
+      success: () => {
         // Show a success notification and update the shown homework
         $("#delete-homework-success-toast").toast("show");
         homeworkData = undefined;
         loadHomeworkData();
         updateHomeworkList();
-      }
-      else if (result == "1") { // An internal server error occurred
-        // Show an error notification
-        $navbarToasts.serverError.toast("show");
-      }
-      else if (result == "2") { // The user has to be logged in but isn't
-        // Show an error notification
-        $navbarToasts.notLoggedIn.toast("show");
+      },
+      error: (xhr) => {
+        if (xhr.status === 401) { // The user has to be logged in but isn't
+          // Show an error notification
+          $navbarToasts.notLoggedIn.toast("show");
+        }
+        else if (xhr.status === 500) { // An internal server error occurred
+          $navbarToasts.serverError.toast("show");
+        }
+        else {
+          $navbarToasts.unknownError.toast("show");
+        }
+      },
+      complete: () => {
+        // The server has responded
+        hasResponded = true;
       }
     });
-
     setTimeout(() => {
       // Wait for 1s
       if (!hasResponded) {
@@ -349,9 +369,6 @@ function checkHomework(homeworkId) {
   // Check whether the user is logged in
   if (user.loggedIn) {
     // The user is logged in
-
-    // Prepare the POST request
-    let url = "/homework/check";
     let data = {
       homeworkId: homeworkId,
       checkStatus: checkStatus
@@ -360,19 +377,25 @@ function checkHomework(homeworkId) {
     let hasResponded = false;
 
     // Post the request
-    $.post(url, data, function (result) {
-      // The server has responded
-      hasResponded = true;
-      if (result == "0") { // Everything worked
-        // The user doesn't need any notification here
-      }
-      else if (result == "1") { // An internal server error occurred
-        // Show an error notification
-        $navbarToasts.serverError.toast("show");
-      }
-      else if (result == "2") { // The user has to be logged in but isn't
-        // Show an error notification
-        $navbarToasts.notLoggedIn.toast("show");
+    $.ajax({
+      url : "/homework/check",
+      type: "POST",
+      data: data,
+      error: (xhr) => {
+        if (xhr.status === 401) { // The user has to be logged in but isn't
+          // Show an error notification
+          $navbarToasts.notLoggedIn.toast("show");
+        }
+        else if (xhr.status === 500) { // An internal server error occurred
+          $navbarToasts.serverError.toast("show");
+        }
+        else {
+          $navbarToasts.unknownError.toast("show");
+        }
+      },
+      complete: () => {
+        // The server has responded
+        hasResponded = true;
       }
     });
     setTimeout(() => {
