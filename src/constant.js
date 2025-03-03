@@ -1,21 +1,22 @@
 const redis = require('redis');
+const logger = require('../logger');
 const cacheKeyHomeworkData = 'homework_data';
 const cacheKeySubstitutionsData = 'substitutions_data';
 const cacheExpiration = 3600;
 const redisClient = redis.createClient({
   url: 'redis://localhost:6379',
 });
-redisClient.on('error', (err) => console.error('Redis error:', err));
+redisClient.on('error', (err) => logger.error('Redis error:', err));
 
 //REDIS Connect
 const connectRedis = async () => {
   try {
     if (!redisClient.isOpen) {
       await redisClient.connect();
-      console.log('Connected to Redis');
+      logger.success('Connected to Redis');
     }
   } catch (err) {
-    console.error('Error connecting to Redis:', err);
+    logger.error('Error connecting to Redis:', err);
     throw err;
   }
 };
@@ -25,10 +26,10 @@ const disconnectRedis = async () => {
   try {
     if (redisClient.isOpen) {
       await redisClient.quit();
-      console.log('Disconnected from Redis');
+      logger.success('Disconnected from Redis');
     }
   } catch (err) {
-    console.error('Error disconnecting from Redis:', err);
+    logger.error('Error disconnecting from Redis:', err);
     throw err;
   }
 };

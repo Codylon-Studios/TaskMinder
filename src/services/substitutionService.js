@@ -2,6 +2,7 @@ const { redisClient, cacheKeySubstitutionsData, cacheExpiration } = require('../
 const axios = require('axios');
 const cheerio = require('cheerio');
 const iconv = require('iconv-lite');
+const logger = require('../../logger');
 
 async function getSubstitutionsData() {
     async function parsePlan(id) {
@@ -47,7 +48,8 @@ async function getSubstitutionsData() {
     try {
         await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(substitutionsData), { EX: cacheExpiration });
     } catch (err) {
-        console.error('Error updating Redis cache:', err);
+        logger.error('Error updating Redis cache:', err);
+        throw new Error()
     }
 }
 

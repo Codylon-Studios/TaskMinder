@@ -4,16 +4,16 @@ const asyncHandler = require('express-async-handler');
 exports.teamsController = {
     getTeams: asyncHandler(async(req, res, next) => {
         try {
-            const response = await teamsService.getTeamsData();
-            res.json(response);
+            const teamsData = await teamsService.getTeamsData();
+            res.status(200).json(teamsData);
         } catch (error) {
             next(error);
         }
     }),
     getJoinedTeams: asyncHandler(async(req, res, next) => {
         try {
-            const response = await teamsService.getJoinedTeamsData(req.session);
-            res.json(response);
+            const joinedTeamsData = await teamsService.getJoinedTeamsData(req.session);
+            res.status(200).json(joinedTeamsData);
         } catch (error) {
             next(error);
         }
@@ -22,7 +22,7 @@ exports.teamsController = {
         const { teams } = req.body;
         try {
             await teamsService.setJoinedTeamsData(teams, req.session);
-            res.status(200).send('0');
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }

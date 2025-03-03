@@ -1,21 +1,22 @@
+const logger = require('../../logger');
 const homeworkService = require('../services/homeworkService');
 const asyncHandler = require('express-async-handler');
 
 exports.homeworkController = {
     addHomework: asyncHandler(async(req, res, next) =>{
-        const { subjectId, content, assignmentDate, submissionDate} = req.body;
+        const { subjectId, content, assignmentDate, submissionDate } = req.body;
         try {
             await homeworkService.addHomework(subjectId, content, assignmentDate, submissionDate, req.session);
-            res.status(200).send('0');
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }
     }),
     checkHomework: asyncHandler(async(req, res, next) => {
-        const { homeworkId, checkStatus} = req.body;
+        const { homeworkId, checkStatus } = req.body;
         try {
             await homeworkService.checkHomework(homeworkId, checkStatus, req.session);
-            res.status(200).send('0');
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }
@@ -24,7 +25,7 @@ exports.homeworkController = {
         const { id } = req.body;
         try {
             await homeworkService.deleteHomework(id, req.session);
-            res.status(200).send('0');
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }
@@ -33,23 +34,23 @@ exports.homeworkController = {
         const { id, subjectId, content, assignmentDate, submissionDate} = req.body;
         try {
             await homeworkService.editHomework(id, subjectId, content, assignmentDate, submissionDate, req.session);
-            res.status(200).send('0');
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }
     }),
     getHomeworkData: asyncHandler(async(req, res, next) => {
         try {
-            const cachedHomeworkData = await homeworkService.getHomeworkData();
-            res.status(200).json(cachedHomeworkData);
+            const homeworkData = await homeworkService.getHomeworkData();
+            res.status(200).json(homeworkData);
         } catch (error) {
             next(error);
         }
     }),
     getHomeworkCheckedData: asyncHandler(async(req, res, next) => {
         try {
-            const cachedHomeworkCheckedData = await homeworkService.getHomeworkCheckedData(req.session);
-            res.status(200).json(cachedHomeworkCheckedData);
+            const homeworkCheckedData = await homeworkService.getHomeworkCheckedData(req.session);
+            res.status(200).json(homeworkCheckedData);
         } catch (error) {
             next(error);
         }

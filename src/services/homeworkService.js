@@ -2,109 +2,52 @@ const { connectRedis, redisClient, cacheKeyHomeworkData, cacheKeyHomeworkChecked
 const validator = require('validator');
 const Homework10d = require('../models/homework');
 const Homework10dCheck = require('../models/homeworkCheck');
-const createDOMPurify = require('dompurify');
-const { JSDOM } = require('jsdom');
-const window = new JSDOM('').window;
-const DOMPurify = createDOMPurify(window);
+const logger = require('../../logger');
 require('dotenv').config();
 
 connectRedis();
 
-function changeKeys(data) {
-    let changedData = [];
-    for (let row in data) {
-        changedData.push({});
-        for (let key in data[row]) {
-            let newKey;
-            switch (key) {
-                case "homeworkid":
-                    newKey = "homeworkId";
-                    break;
-                case "subjectid":
-                    newKey = "subjectId";
-                    break;
-                case "assignmentdate":
-                    newKey = "assignmentDate";
-                    break;
-                case "submissiondate":
-                    newKey = "submissionDate";
-                    break;
-                case "checkid":
-                    newKey = "checkId";
-                    break;
-                default:
-                    newKey = key;
-            }
-            changedData[row][newKey] = data[row][key];
-        }
-    }
-    return changedData;
-}
-
 async function updateCacheHomeworkData(data) {
     try {
         await redisClient.set(cacheKeyHomeworkData, JSON.stringify(data), { EX: cacheExpiration });
-        console.log('Homework data cached successfully in Redis');
     } catch (err) {
-        console.error('Error updating Redis cache:', err);
-    }
-};
-
-async function updateCacheHomeworkCheckedData(data) {
-    try {
-        await redisClient.set(cacheKeyHomeworkCheckedData, JSON.stringify(data), { EX: cacheExpiration });
-        console.log('Homework checked data cached successfully in Redis');
-    } catch (err) {
-        console.error('Error updating Redis cache:', err);
+        logger.error('Error updating Redis cache:', err);
     }
 };
 
 const homeworkService = {
     async addHomework(subjectId, content, assignmentDate, submissionDate, session) {
-        if (!(subjectId && content && assignmentDate && submissionDate)) {
-            throw new Error('Please fill out all data. - addHomework');
-        }
         if (!(session.account)) {
-            throw new Error('No session available - addHomework');
+            let err = new Error("User not logged in");
+            err.status = 401;
+            throw err;
         }
-        if ([subjectId, content, assignmentDate, submissionDate].includes("")) {
-            throw new Error('Empty information while adding homework - addHomework');
+        let badRequestError = new Error("Bad Request");
+        badRequestError.status = 400;
+        if (!(subjectId && content && assignmentDate && submissionDate)) {
+            throw badRequestError;
         }
-        if (!validator.isInt(subjectId.toString())) {
-            throw new Error('Invalid subject ID - addHomework');
+        try {
+            await Homework10d.create({
+                content: content,
+                subjectId: subjectId,
+                assignmentDate: assignmentDate,
+                submissionDate: submissionDate
+            });
         }
-        if (validator.isEmpty(content)) {
-            throw new Error('Content cannot be empty - addHomework');
+        catch {
+            throw badRequestError;
         }
-        if (!Number.isInteger(Number(assignmentDate)) || Number(assignmentDate) < 0) {
-            throw new Error('Invalid assignment date - addHomework');
-        }
-        if (!Number.isInteger(Number(submissionDate)) || Number(submissionDate) < 0) {
-            throw new Error('Invalid submission date - addHomework');
-        }
-        DOMPurify.sanitize(content);
-        DOMPurify.sanitize(subjectId);
-        DOMPurify.sanitize(assignmentDate);
-        DOMPurify.sanitize(submissionDate);
-        const sanitizedContent = validator.escape(content);
-        const sanitizedsubjectId = validator.escape(subjectId);
-        const sanitizedassignmentDate = validator.escape(assignmentDate);
-        const sanitizedsubmissionDate = validator.escape(submissionDate);
-        await Homework10d.create({
-            content: sanitizedContent,
-            subjectId: sanitizedsubjectId,
-            assignmentDate: sanitizedassignmentDate,
-            submissionDate: sanitizedsubmissionDate
-        });
         const data = await Homework10d.findAll({ raw: true });
-        await updateCacheHomeworkData(changeKeys(data));
-        return { data };
+        await updateCacheHomeworkData(data);
     },
 
     async checkHomework(homeworkId, checkStatus, session) {
         let accountId;
         if (!(session.account)) {
-            throw new Error('No session available - checkHomeowrk');
+            let err = new Error("User not logged in");
+            err.status = 401;
+            throw err;
         } else {
             accountId = session.account.accountId;
         }
@@ -122,95 +65,85 @@ const homeworkService = {
                 }
             });
         }
-        return { message: 'Homework successfully checked.' }
     },
 
-    async deleteHomework(id, session) {
+    async deleteHomework(homeworkId, session) {
         if (!(session.account)) {
-            throw new Error('No session available - deleteHomework');
+            let err = new Error("User not logged in");
+            err.status = 401;
+            throw err;
         }
-        if (!validator.isInt(id.toString())) {
-            throw new Error('Invalid homework ID - deleteHomework');
+        if (!homeworkId) {
+            let err = new Error("Bad Request");
+            err.status = 400;
+            throw err;
         }
         await Homework10d.destroy({
             where: {
-                homeworkId: id
+                homeworkId: homeworkId
             }
         });
         const data = await Homework10d.findAll({ raw: true });
-        await updateCacheHomeworkData(changeKeys(data));
-        return { message: 'Homework successfully deleted.' }
+        await updateCacheHomeworkData(data);
     },
 
-    async editHomework(id, subjectId, content, assignmentDate, submissionDate, session) {
+    async editHomework(homeworkId, subjectId, content, assignmentDate, submissionDate, session) {
         if (!(session.account)) {
-            throw new Error('No session available - editHomework');
+            let err = new Error("User not logged in");
+            err.status = 401;
+            throw err;
         }
-        if ([subjectId, content, assignmentDate, submissionDate].includes("")) {
-            throw new Error('Empty information while editing homework - editHomework');
+        let badRequestError = new Error("Bad Request");
+        badRequestError.status = 400;
+        if (!(homeworkId && subjectId && content && assignmentDate && submissionDate)) {
+            throw badRequestError;
         }
-        if (!validator.isInt(id.toString())) {
-            throw new Error('Invalid homework ID - editHomework');
+        try {
+            await Homework10d.update(
+                {
+                    content: content,
+                    subjectId: subjectId,
+                    assignmentDate: assignmentDate,
+                    submissionDate: submissionDate
+                },
+                {
+                    where: { homeworkId: homeworkId }
+                }
+            );
         }
-        if (!validator.isInt(subjectId.toString())) {
-            throw new Error('Invalid subject ID - editHomework');
+        catch {
+            throw badRequestError;
         }
-        if (validator.isEmpty(content)) {
-            throw new Error('Content cannot be empty - editHomework');
-        }
-        if (!Number.isInteger(Number(assignmentDate)) || Number(assignmentDate) < 0) {
-            throw new Error('Invalid assignment date - editHomework');
-        }
-        if (!Number.isInteger(Number(submissionDate)) || Number(submissionDate) < 0) {
-            throw new Error('Invalid submission date - editHomework');
-        }
-        DOMPurify.sanitize(content);
-        DOMPurify.sanitize(subjectId);
-        DOMPurify.sanitize(assignmentDate);
-        DOMPurify.sanitize(submissionDate);
-        const sanitizedContent = validator.escape(content);
-        const sanitizedsubjectId = validator.escape(subjectId);
-        const sanitizedassignmentDate = validator.escape(assignmentDate);
-        const sanitizedsubmissionDate = validator.escape(submissionDate);
-        await Homework10d.update(
-            {
-                content: sanitizedContent,
-                subjectId: sanitizedsubjectId,
-                assignmentDate: sanitizedassignmentDate,
-                submissionDate: sanitizedsubmissionDate
-            },
-            {
-                where: { homeworkId: id }
-            }
-        );
+        
         const data = await Homework10d.findAll({ raw: true });
-        await updateCacheHomeworkData(changeKeys(data));
-        return { message: 'Homework successfully edited.' }
+        await updateCacheHomeworkData(data);
     },
 
     async getHomeworkData() {
         const cachedHomeworkData = await redisClient.get(cacheKeyHomeworkData);
 
         if (cachedHomeworkData) {
-            console.log('Serving data from Redis cache:', cachedHomeworkData);
             try {
                 return JSON.parse(cachedHomeworkData);
             } catch (error) {
-                console.error('Error parsing Redis data:', error);
+                logger.error('Error parsing Redis data:', error);
+                throw new Error()
             }
         }
 
         const data = await Homework10d.findAll({ raw: true });
 
-        await updateCacheHomeworkData(changeKeys(data));
+        await updateCacheHomeworkData(data);
 
-        return changeKeys(data);
+        return data;
     },
 
     async getHomeworkCheckedData(session) {
         let accountId;
         if (!(session.account)) {
-            throw new Error('No session available - getHomeworkCheckedData');
+            let err = new Error("User not logged in");
+            err.status = 401;
+            throw err;
         } else {
             accountId = session.account.accountId;
         }

@@ -1,10 +1,7 @@
 const bcrypt = require('bcrypt');
 const validator = require('validator');
-const User = require('../models/account');
-const createDOMPurify = require('dompurify');
-const { JSDOM } = require('jsdom');
-const window = new JSDOM('').window;
-const DOMPurify = createDOMPurify(window);
+const Account = require('../models/account');
+const logger = require('../../logger');
 require('dotenv').config();
 
 const SALTROUNDS= 10;
@@ -25,109 +22,100 @@ const userService = {
     async registerUser(username, password, classcode, session ){
         const classname = "10d";
         if (!(username && password && classcode)) {
-            throw new Error('Please fill out all data. - Register');
+            let err = new Error("Please fill out all data");
+            err.status = 400;
+            throw err;
         }
-        const sanitizedClasscode = validator.escape(classcode);
-        if (sanitizedClasscode != "geheim"){
-            throw new Error('Classcode is wrong. - Register');
+        if (classcode != "geheim"){
+            let err = new Error("Invalid classcode");
+            err.status = 401;
+            throw err;
         }
         if (! checkUsername(username)) {
-            throw new Error('Invalid username. - Register');
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.additionalInformation = "The requested username does not comply with the rules!"
+            throw err;
         }
-        const UserExists = await User.findOne({
+
+        const accountExists = await Account.findOne({
             where: { username: username },
         });
-        if (UserExists) {
-            throw new Error('User already registered. - Register');
+        if (accountExists) {
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.additionalInformation = "The requested username is already registered!"
+            throw err;
         }
-        DOMPurify.sanitize(username);
-        DOMPurify.sanitize(password);
-        const sanitizedUsername = validator.escape(username);
-        const sanitizedPassword = validator.escape(password);
-        const hashedPassword = await bcrypt.hash(sanitizedPassword, SALTROUNDS);
-        const user = await User.create({
-            username: sanitizedUsername,
+        const hashedPassword = await bcrypt.hash(password, SALTROUNDS);
+        const account = await Account.create({
+            username: username,
             password: hashedPassword,
             class: classname
         });
-        const accountId = user.accountId;
+        const accountId = account.accountId;
         session.account = { username, accountId };
-        return { message: 'User registered successfully.' };
     },
     async logoutUser(session) {
         if (!session.account) {
-            throw new Error('Not logged in. - Logout');
+            let err = new Error("User not logged in");
+            err.status = 200;
+            throw err;
         }
-        await new Promise((resolve, reject) => {
-            session.destroy((err) => {
-                if (err) {
-                    return reject(new Error('Internal server error. - Logout'));
-                }
-                resolve();
-            });
+        await session.destroy((err) => {
+            if (err) {
+                throw new Error();
+            }
         });
-        return { message: 'Logout successful.' };
     },
-    
     async loginUser(username, password, session){
         if (!(username && password)) {
-            throw new Error('Please fill out all data. - Login');
+            let err = new Error("Please fill out all data");
+            err.status = 400;
+            throw err;
         }
-        if (! checkUsername(username)) {
-            throw new Error('Invalid username - Login');
+        const account = await Account.findOne({ where: { username: username } });
+        if (!account) {
+            let err = new Error("Invalid credentials");
+            err.status = 401;
+            err.additionalInformation = "The requested username does not comply with the rules!";
+            throw err;
         }
-        const sanitizedUsernamePurify = DOMPurify.sanitize(username);
-        const validatedUsernamePurify = validator.escape(sanitizedUsernamePurify );
-        const user = await User.findOne({ where: { username: validatedUsernamePurify } });
-        if (!user) {
-            throw new Error('User not available - Login');
-        }
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(password, account.password);
         if (!isPasswordValid) {
-            throw new Error('Invalid credentials - Login');
+            let err = new Error("Invalid credentials");
+            err.status = 401;
+            throw err;
         }
-        const accountId = user.accountId;
+        const accountId = account.accountId;
         session.account = { username, accountId };
-        return {message: 'Login succesful.'}
     },
-
-
     async deleteUser(session, password){
-        const Sessionusername = session.account.username;
-        if (! checkUsername(Sessionusername)) {
-            throw new Error('Username not correct. - Delete')
-          }
-          const user = await User.findOne({ where: {Sessionusername} });
-          if (!user) {
-              throw new Error('User not available. - Delete');
-          }
-          const isPasswordValid = await bcrypt.compare(password, user.password);
-          if (!isPasswordValid) {
-              throw new Error('Invaild credentials. - Delete');
-          }
-          await user.destroy();
-          await new Promise((resolve, reject) => {
-            session.destroy((err) => {
-                if (err) {
-                    return reject(new Error('Internal server error. - Delete'));
-                }
-                resolve();
-            });
-            return { message: 'Deletion successful.' };
+        const username = session.account.username;
+        const account = await Account.findOne({ where: { username: username } });
+        if (! account) {
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.additionalInformation = "The account requested to be deleted does not exist!"
+            throw err;
+        }
+        const isPasswordValid = await bcrypt.compare(password, account.password);
+        if (! isPasswordValid) {
+            let err = new Error("Invalid credentials");
+            err.status = 401;
+            throw err;
+        }
+        await user.destroy();
+        await session.destroy((err) => {
+            if (err) {
+                throw new Error();
+            }
         })
     },
-    async checkUsername(username) { 
-        const sanitizedUsernamePurify = DOMPurify.sanitize(username);
-        const validatedUsernamePurify = validator.escape(sanitizedUsernamePurify );
-        const userExists = await User.findOne({ where: { username: validatedUsernamePurify } });
-        if (userExists) {
-            throw new Error('Username already taken. - checkUsername');
-        }
-    
-        return { message: 'Username is available' };
+    async checkUsername(username) {
+        const accountExists = await Account.findOne({ where: { username: username } });
+        return accountExists != null;
     }
-    
 }
 
 module.exports = userService;
-

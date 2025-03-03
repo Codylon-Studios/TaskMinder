@@ -1,113 +1,152 @@
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 function registerAccount(username, password, classcode) {
-  let url = "/account/register";
   let data = {
       username: username,
       password: password,
       classcode: classcode
   };
   let hasResponded = false;
-  $.post(url, data, function (result) {
-      hasResponded = true;
-      if (result == "0") {
-          //success
-          $("#register-success-toast .username").html(username);
-          $("#register-success-toast").toast("show");
-          $navbarUi.lr.modal.modal("hide");
-          user.trigger("login");
-          user.username = username;
-      }
-      else if (result == "1") {
-          //Unknown error on server side
-          $navbarToasts.serverError.toast("show");
-      }
-      else if (result == "2") {
+
+  $.ajax({
+    url: "/account/register",
+    type: 'POST',
+    data: data,
+    success: () => {
+      $("#register-success-toast .username").html(username);
+      $("#register-success-toast").toast("show");
+      $navbarUi.lr.modal.modal("hide");
+      user.trigger("login");
+      user.username = username;
+    },
+    error: (xhr) => {
+      if (xhr.status === 401) {
         $navbarUi.r.invalidClasscode.removeClass("d-none");
         $navbarUi.r.invalidClasscode.addClass("d-flex");
       }
-  });
-  setTimeout(() => {
-      if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
+      else if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
       }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
   }, 1000);
 }
 
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
 function loginAccount(username, password) {
-  let url = "/account/login";
   let data = {
       username: username,
       password: password
   };
   let hasResponded = false;
-  $.post(url, data, function (result) {
-      hasResponded = true;
-      if (result == "0") {
-          $("#login-success-toast .username").html(username);
-          $("#login-success-toast").toast("show");
-          $navbarUi.lr.modal.modal("hide");
-          user.trigger("login");
-          user.username = username;
-      }
-      else if (result == "1") {
-        $navbarToasts.serverError.toast("show");
-      }
-      else if (result == "2") {
+
+  $.ajax({
+    url: "/account/login",
+    type: 'POST',
+    data: data,
+    success: () => {
+      $("#login-success-toast .username").html(username);
+      $("#login-success-toast").toast("show");
+      $navbarUi.lr.modal.modal("hide");
+      user.trigger("login");
+      user.username = username;
+    },
+    error: (xhr) => {
+      if (xhr.status === 401) {
         $navbarUi.l.invalidPassword.removeClass("d-none");
         $navbarUi.l.invalidPassword.addClass("d-flex");
       }
-  });
-  setTimeout(() => {
-      if (!hasResponded) {
+      else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
       }
-  }, 1000);
-};
-
-//LOGOUT -- LOGOUT -- LOGOUT
-function logoutAccount(){
-  let url = "/account/logout";
-  let data = {};
-  let hasResponded = false;
-  $.post(url, data, function (result) {
-    hasResponded = true;
-    if (result == "0") {
-      $("#logout-success-toast").toast("show");
-      user.trigger("logout");
-    }
-    else if (result == "1") {
-      $navbarToasts.serverError.toast("show");
-    }
-    else if (result == "2") {
-      $navbarToasts.serverError.toast("show");
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
     }
   });
+
   setTimeout(() => {
     if (!hasResponded) {
       $navbarToasts.serverError.toast("show");
     }
-  }, 5000);
+  }, 1000);
+};
+
+//LOGOUT -- LOGOUT -- LOGOUT
+function logoutAccount() {
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/account/logout",
+    type: 'POST',
+    success: () => {
+      $("#logout-success-toast").toast("show");
+      user.trigger("logout");
+    },
+    error: (xhr) => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
 }
 
 function checkExistingUsername(username) {
-  let url = "/account/checkusername";
   let data = { username: username };
+  let hasResponded = false;
 
-  return new Promise((resolve, reject) => {
-    $.post(url, data, function (result) {
-      if (result == "0") {
-        // REGISTER
-        resolve(false);
-      } else if (result == "1") {
-        // LOGIN
-        resolve(true);
+  return new Promise((resolve) => {
+    $.ajax({
+      url: "/account/checkusername",
+      type: 'POST',
+      data: data,
+      success: (res) => {
+        resolve(res);
+      },
+      error: (xhr) => {
+        if (xhr.status === 500) {
+          $navbarToasts.serverError.toast("show");
+        }
+        else {
+          $navbarToasts.unknownError.toast("show");
+        }
+      },
+      complete: () => {
+        hasResponded = true;
       }
-    }).fail(() => {
-      reject(new Error("Server error"));
-      $navbarToasts.serverError.toast("show");
     });
-  });
+  
+    setTimeout(() => {
+      if (!hasResponded) {
+        $navbarToasts.serverError.toast("show");
+      }
+    }, 1000);
+  })
 }
 
 function resetLoginRegisterModal() {
@@ -210,6 +249,7 @@ let $navbarUi = {
 
 let $navbarToasts = {
   serverError: $("#error-server-toast"),
+  unknownError: $("#unknown-error-toast"),
   notLoggedIn: $("#not-logged-in-toast"),
 }
 
@@ -376,10 +416,8 @@ $navbarUi.lr.nextBtn.on("click", async () => {
   $("#login-register-content").addClass("d-none");
   $navbarUi.lr.nextBtn.addClass("d-none");
 
-  try {
-    const exists = await checkExistingUsername($navbarUi.lr.username.val());
-
-    if (exists) {
+  checkExistingUsername($navbarUi.lr.username.val()).then(response => {
+    if (response) {
       $("#login-title").removeClass("d-none");
       $("#login-content").removeClass("d-none");
       $("#login-button").removeClass("d-none");
@@ -388,10 +426,7 @@ $navbarUi.lr.nextBtn.on("click", async () => {
       $("#register-content").removeClass("d-none");
       $navbarUi.r.btn.removeClass("d-none");
     }
-  } catch (error) {
-    console.error("Error checking username:", error);
-    $navbarToasts.serverError.toast("show");
-  }
+  })
 });
 
 $navbarUi.lr.backBtn.on("click", resetLoginRegisterModal);
@@ -417,33 +452,33 @@ $("#team-selection-save").on("click", () => {
   joinedTeamsData = newJoinedTeamsData;
 
   if (user.loggedIn) {
-    let url = "/teams/set_joined_teams_data";
     let data = {
       teams: joinedTeamsData,
     };
-    // Save whether the server has responed
     let hasResponded = false;
 
-    // Post the request
-    $.post(url, data, function (result) {
-      // The server has responded
-      hasResponded = true;
-      if (result == "0") { // Everything worked
-        // The user doesn't need any notification here
-      }
-      else if (result == "1") { // An internal server error occurred
-        // Show an error notification
-        $navbarToasts.serverError.toast("show");
-      }
-      else if (result == "2") { // The user has to be logged in but isn't
-        // Show an error notification
-        $navbarToasts.notLoggedIn.toast("show");
+    $.ajax({
+      url: "/teams/set_joined_teams_data",
+      type: 'POST',
+      data: data,
+      error: (xhr) => {
+        if (xhr.status === 401) {
+          $navbarToasts.serverError.toast("show");
+        }
+        else if (xhr.status === 500) {
+          $navbarToasts.serverError.toast("show");
+        }
+        else {
+          $navbarToasts.unknownError.toast("show");
+        }
+      },
+      complete: () => {
+        hasResponded = true;
       }
     });
+
     setTimeout(() => {
-      // Wait for 1s
       if (!hasResponded) {
-        // If the server hasn't answered, show the internal server error notification
         $navbarToasts.serverError.toast("show");
       }
     }, 1000);

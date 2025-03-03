@@ -1,13 +1,14 @@
+const logger = require('../../logger');
 const userService = require('../services/accountService');
 const asyncHandler = require('express-async-handler');
 
 exports.userController = {
-    registerUser: asyncHandler(async(req, res, next) =>{
+    registerUser: asyncHandler(async(req, res, next) => {
         const { username, password, classcode} = req.body;
         const session = req.session;
         try {
             await userService.registerUser(username, password, classcode, session);
-            res.status(200).send('0');
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }
@@ -16,7 +17,7 @@ exports.userController = {
         const { username, password } = req.body;
         try {
             await userService.loginUser(username, password, req.session);
-            res.status(200).send('0');
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }
@@ -25,7 +26,7 @@ exports.userController = {
         try {
             await userService.logoutUser(req.session);
             res.clearCookie('UserLogin');
-            res.status(200).send('0');
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }
@@ -52,10 +53,10 @@ exports.userController = {
     checkUsername: asyncHandler(async(req, res, next) => {
         const {username} = req.body;
         try {
-            await userService.checkUsername(username);
-            res.status(200).send('0');
+            const response = await userService.checkUsername(username);
+            res.status(200).json(response);
         } catch (error) {
-            next(error);
+            next(error)
         }
     }),
 };
