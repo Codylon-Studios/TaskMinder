@@ -55,7 +55,8 @@ jQueryScript.onload = () => {
   loadScript("/global.js")
 
   // Add possibility to include divs with class "load-content" to load e.g. the navbar
-  $(document).ready(() => {
+  $( () => {
+    document.body.style.display = "none"  
     loadTemplateContent();
 
     // Load site specific resources

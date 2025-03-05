@@ -324,6 +324,15 @@ $("#logout-button").on("click", () => {
   logoutAccount();
 });
 
+console.log(localStorage.getItem("animations"))
+let animations = JSON.parse(localStorage.getItem("animations"));
+if (animations == undefined) animations = true
+$("#animations input").prop("checked", animations);
+$("#animations input").on("click", function () {
+  animations = $(this).prop("checked");
+  localStorage.setItem("animations", animations)
+})
+
 let colorTheme = localStorage.getItem("colorTheme") || "light";
 document.body.setAttribute("data-bs-theme", colorTheme);
 $("#color-theme-dark").prop("checked", colorTheme == "dark") 

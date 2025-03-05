@@ -38,6 +38,7 @@ app.use(helmet({
         "'self'",
         'https://ka-f.fontawesome.com/',
         'https://fonts.googleapis.com/',
+        "'unsafe-inline'"
       ],
       "font-src": [
         "'self'",

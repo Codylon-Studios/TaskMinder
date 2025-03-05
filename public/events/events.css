@@ -12228,3 +12228,7 @@ body[data-bs-theme=dark] {
 .text-gray-dark {
   color: #343a40;
 }
+
+#animations {
+  min-height: min-content;
+}

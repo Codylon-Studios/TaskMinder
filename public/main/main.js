@@ -737,6 +737,11 @@ async function renameCalendarMonthYear() {
 }
 
 function slideCalendar(direction, transition, slideTime) {
+  if (! animations) {
+    transition = "";
+    slideTime = 0;
+  }
+
   // Get the new content and append it to the new calendar
   updateCalendarWeekContent("#calendar-week-new")
 
