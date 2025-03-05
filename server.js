@@ -7,6 +7,7 @@ const account = require('./src/routes/accountRoute');
 const homework = require('./src/routes/homeworkRoute');
 const substitutions = require('./src/routes/substitutionRoute');
 const teams = require('./src/routes/teamRoute');
+const events = require('./src/routes/eventRoute');
 const session = require('express-session');
 const logger = require('./logger');
 const app = express();
@@ -36,6 +37,7 @@ app.use('/account', account);
 app.use('/homework', homework);
 app.use('/substitutions', substitutions);
 app.use('/teams', teams);
+app.use('/events', events);
 app.use(ErrorHandler);
 
 // Sync models with the database
@@ -49,6 +51,9 @@ sequelize.authenticate()
 app.get('/', function (req, res) {
   res.sendFile(__dirname + '/public/main/main.html');
 });
-app.get('/allhomework', function (req, res) {
-  res.sendFile(__dirname + '/public/allhomework/allhomework.html');
+app.get('/homework', function (req, res) {
+  res.sendFile(__dirname + '/public/homework/homework.html');
+});
+app.get('/events', function (req, res) {
+  res.sendFile(__dirname + '/public/events/events.html');
 });

@@ -9,16 +9,16 @@ const Account = sequelize.define('Account', {
     primaryKey: true,
   },
   username: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.TEXT,
     allowNull: false,
     unique: true,
   },
   password: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.TEXT,
     allowNull: false,
   },
   class: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.TEXT,
     allowNull: false,
   },
 }, {

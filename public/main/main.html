@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Hausaufgabenplaner</title>
   <script src="/init.js"></script>
+  <link href="/events/event_type_styles" rel="stylesheet">
 </head>
 <body data-url="main" style="display: none;">
   <div class="load-content" data-url="navbar" data-html data-js></div>
@@ -39,15 +40,17 @@
       </button>
     </div>
   
-    <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
-      <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-l-btn">
+    <div class="container-fluid d-flex justify-content-center align-items-center">
+      <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-l-btn" style="transform: translateY(-1rem);">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-      <div class="mx-2" id="calendar-week-wrapper">
-        <div class="d-flex calendar-week" id="calendar-week-old"></div>
-        <div class="d-none calendar-week" id="calendar-week-new"></div>
+      <div class="position-relative">
+        <div class="mx-2" id="calendar-week-wrapper">
+          <div class="d-flex calendar-week" id="calendar-week-old"></div>
+          <div class="d-none calendar-week" id="calendar-week-new"></div>
+        </div>
       </div>
-      <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-r-btn">
+      <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-r-btn" style="transform: translateY(-1rem);">
         <i class="fa-solid fa-chevron-right"></i>
       </button>
     </div>
@@ -70,27 +73,17 @@
 
     <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xxl-row gap-3 d-none" id="timetable-more"></div>
     
-    <!--Exclude for ALPHA -> l.169
     <div class="container-fluid mb-3">
-      <div class="mb-2 text-decoration-underline">
-        Ereignisse
+      <div class="mb-2 d-flex align-items-center">
+        <div class="text-decoration-underline">
+          Ereignisse
+        </div>
       </div>
-      <ul class="ms-0 ps-4">
-        <li class="card event-blue w-fit-content mb-1">
-          <div class="card-body p-2">
-            Schulaufgabe Latein
-            <span class="badge text-body author-badge">Von abc123</span>
-          </div>
-        </li>
-        <li class="card event-orange w-fit-content">
-          <div class="card-body p-2">
-            Ausfrage Chemie
-            <span class="badge text-body author-badge">Von abc123</span>
-          </div>
-        </li>
-      </ul>
+      <div class="ms-3" id="event-list">
+        <!--Gets filled-->
+      </div>
     </div>
-    -->
+
     <div class="container-fluid mb-3">
       <div class="mb-2 d-flex align-items-center">
         <div class="text-decoration-underline">

@@ -1,6 +1,5 @@
 const logger = require('../../logger');
 
-
 const ErrorHandler = (err, req, res, next) => {
     try {
         if (err.additionalInformation) {
@@ -17,7 +16,13 @@ const ErrorHandler = (err, req, res, next) => {
             logger.write({}, "")
         }
 
-        res.status(err.status || 500).send(err.message)
+        if (err.expected) {
+            res.status(err.status || 500).send(err.message)
+        }
+        else {
+            console.log(err)
+            res.status(500).send("Internal Server Error")
+        }
     }
     catch (err) {
         logger.warn("An error occured in the error handler middleware:\t", err)

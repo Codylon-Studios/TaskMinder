@@ -29,7 +29,7 @@ exports.homeworkController = {
         } catch (error) {
             next(error);
         }
-    }),    
+    }),
     editHomework: asyncHandler(async(req, res, next) => {
         const { id, subjectId, content, assignmentDate, submissionDate} = req.body;
         try {

@@ -1,10 +1,10 @@
 const logger = require('../../logger');
 const { redisClient, cacheExpiration } = require('../constant');
 
-const JoinedTeams = require('../models/joinedTeam');
-const Teams = require('../models/team');
+const JoinedTeam = require('../models/joinedTeam');
+const Team = require('../models/team');
 
-const teamsService = {
+const teamService = {
     async getTeamsData() {
         const cachedTeamsData = await redisClient.get("teams_data");
 
@@ -17,7 +17,7 @@ const teamsService = {
             }
         }
 
-        const data = await Teams.findAll({ raw: true });
+        const data = await Team.findAll({ raw: true });
 
         try {
             await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
@@ -33,12 +33,13 @@ const teamsService = {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
+            err.expected = true;
             throw err;
         } else {
             accountId = session.account.accountId;
         }
 
-        const data = await JoinedTeams.findAll({
+        const data = await JoinedTeam.findAll({
             where: { accountId: accountId }
         });
 
@@ -55,6 +56,7 @@ const teamsService = {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
+            err.expected = true;
             throw err;
         } else {
             accountId = session.account.accountId;
@@ -63,16 +65,17 @@ const teamsService = {
         if (! Array.isArray(teams)) {
             let err = new Error("Bad Request");
             err.status = 400;
+            err.expected = true;
             throw err;
         }
 
-        await JoinedTeams.destroy({
+        await JoinedTeam.destroy({
             where: { accountId: accountId }
         });
 
         for (let teamId of teams) {
             try {
-                await JoinedTeams.create({
+                await JoinedTeam.create({
                     teamId: teamId,
                     accountId: accountId
                 })
@@ -80,10 +83,11 @@ const teamsService = {
             catch {
                 let err = new Error("Bad Request");
                 err.status = 400;
+                err.expected = true;
                 throw err;
             }
         }
     },
 }
 
-module.exports = teamsService;
+module.exports = teamService;
