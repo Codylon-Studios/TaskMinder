@@ -17,6 +17,6 @@ const defaultTeams = [
     await Team.destroy({ truncate: true, cascade: true });
     await Team.bulkCreate(defaultTeams);
     logger.write({prefix: {text: "[TableInitialisor]", color: "green"}}, "Successfully initialised team table.")
-    logger.write({prefix: {text: "[TableInitialisor]", color: "cyan"}}, "Remember to comment out the use of redis to update the data there.")
+    logger.write({prefix: {text: "[TableInitialisor]", color: "cyan"}}, "Remember to execute 'redis-cli flushall' to clear the redis cache.")
     process.exit()
 })();

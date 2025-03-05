@@ -18,17 +18,73 @@ server.listen(3000, () => {
   logger.success('Server running at http://localhost:3000');
 });
 
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        "default-src": ["'self'"],
-        "script-src": ["'self'", "https://code.jquery.com", "https://cdn.jsdelivr.net", "https://kit.fontawesome.com"],
-        "connect-src": ["'self'", "https://ka-f.fontawesome.com"]
-      },
+
+// Content Security Policy
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": [
+        "'self'", 
+        "https://code.jquery.com", 
+        "https://cdn.jsdelivr.net", 
+        "https://kit.fontawesome.com"
+      ],
+      "connect-src": [
+        "'self'", 
+        "https://ka-f.fontawesome.com"
+      ],
+      "style-src": [
+        "'self'",
+        'https://ka-f.fontawesome.com/',
+        'https://fonts.googleapis.com/',
+      ],
+      "font-src": [
+        "'self'",
+        'https://ka-f.fontawesome.com/',
+        'https://fonts.gstatic.com/'
+      ],
+      "img-src": ["'self'", 'data:'],
+      "object-src": ["'none'"],
+      "frame-ancestors": ["'self'"]
     },
-  }),
-);
+  },
+
+  // Ensures a top-level document does not share a browser context group with cross-origin documents
+  crossOriginOpenerPolicy: {
+    policy: 'same-origin' // Protects against timing and XS-Leaks attacks
+  },
+
+  // Prevents resources from being loaded cross-origin
+  crossOriginResourcePolicy: {
+    policy: 'same-origin'
+  },
+
+  // Controls how much referrer information should be included
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  },
+
+  // Prevents MIME type sniffing
+  noSniff: true,
+
+  // Helps manage DNS prefetching for performance and privacy
+  dnsPrefetchControl: {
+    allow: false
+  },
+
+  // X-Frame-Options
+  // Prevents clickjacking attacks
+  frameguard: {
+    action: 'deny' // Completely prevent framing
+  },
+
+  // Remove X-Powered-By header to reduce fingerprinting
+  hidePoweredBy: true,
+
+  // Provides origin-based process isolation
+  originAgentCluster: true,
+}));
 
 // Middleware to parse request bodies
 app.use(express.urlencoded({ extended: true }));
