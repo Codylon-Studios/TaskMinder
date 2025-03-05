@@ -10,58 +10,63 @@ function loadScript(src) {
 }
 
 function loadTemplateContent() {
-    $(".load-content").each(async function() {
-      const url = `/templates/${$(this).data("url")}.`;
-      if ($(this).data("html") != undefined) {
-        $(this).load(url + "html", () => {
-          if ($(this).data("js") != undefined) {
-            loadScript(url + 'js');
-          }
-        })
-      }
-      else if ($(this).data("js") != undefined) {
-        loadScript(url + 'js');
-      }
-      if ($(this).data("css") != undefined) {
-        $head.append(`<link rel="stylesheet" type="text/css" href="${url}css">`);
-      }
-    });
-  }
-  
-  
-  // Load jQuery without jQuery
-  let jQueryScript = document.createElement('script');
-  jQueryScript.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
-  jQueryScript.defer = true;
-  jQueryScript.onload = () => {
-    let $head = $("head");
-    let resources = [];
-    // Load Bootstrap
-    resources.push(`<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>`);
-  
-    // Load Font Awesome icons
-    resources.push(`<script src="https://kit.fontawesome.com/0ca04b82ef.js"></script>`);
+  $(".load-content").each(async function() {
+    const url = `/templates/${$(this).data("url")}.`;
+    if ($(this).data("html") != undefined) {
+      $(this).load(url + "html", () => {
+        if ($(this).data("js") != undefined) {
+          loadScript(url + 'js');
+        }
+      })
+    }
+    else if ($(this).data("js") != undefined) {
+      loadScript(url + 'js');
+    }
+    if ($(this).data("css") != undefined) {
+      document.head.appendChild(`<link rel="stylesheet" type="text/css" href="${url}css">`);
+    }
+  });
+}
 
-    // Load favicon
-    resources.push(`<link rel="icon" href="/favicon.ico" type="image/x-icon">`)
-  
-    $head.append(resources.join(""));
-  
-    // Load global JS
-    loadScript("/global.js")
-  
-    // Add possibility to include divs with class "load-content" to load e.g. the navbar
-    $(document).ready(() => {
-      loadTemplateContent();
-  
-      // Load site specific resources
-      let url = $("body").data("url");
-  
-      let siteSpecificScript = document.createElement("script");
-      siteSpecificScript.src = `/${url}/${url}.js`;
-      document.head.appendChild(siteSpecificScript);
-  
-      $head.append(`<link href="/${url}/${url}.css" rel="stylesheet"></link>`);
-    });
-  };
-  document.head.appendChild(jQueryScript);
+if (localStorage.getItem("colorTheme") == "dark") {
+  document.getElementsByTagName("html")[0].style.background = "#212529"
+}
+
+// Load jQuery without jQuery
+let jQueryScript = document.createElement('script');
+jQueryScript.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
+jQueryScript.defer = true;
+jQueryScript.onload = () => {
+  // Load Bootstrap
+  loadScript("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js")
+
+  // Load Font Awesome icons
+  loadScript("https://kit.fontawesome.com/0ca04b82ef.js")
+
+  // Load favicon
+  let favicon = document.createElement("link")
+  favicon.rel = "icon"
+  favicon.href = "/favicon.ico"
+  favicon.type = "image/x-icon"
+  document.head.appendChild(favicon);
+  //resources.push(`<link rel="icon" href="/favicon.ico" type="image/x-icon">`)
+
+  // Load global JS
+  loadScript("/global.js")
+
+  // Add possibility to include divs with class "load-content" to load e.g. the navbar
+  $(document).ready(() => {
+    loadTemplateContent();
+
+    // Load site specific resources
+    let url = $("body").data("url");
+
+    loadScript(`/${url}/${url}.js`)
+
+    let siteSpecificStyle = document.createElement("link")
+    siteSpecificStyle.href = `/${url}/${url}.css`
+    siteSpecificStyle.rel = "stylesheet"
+    document.head.appendChild(siteSpecificStyle);
+  });
+};
+document.head.appendChild(jQueryScript);
