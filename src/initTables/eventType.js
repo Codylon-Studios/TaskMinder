@@ -15,6 +15,6 @@ const defaultEventTypes = [
     await EventType.destroy({ truncate: true, cascade: true });
     await EventType.bulkCreate(defaultEventTypes);
     logger.write({prefix: {text: "[TableInitialisor]", color: "green"}}, "Successfully initialised eventType table.")
-    logger.write({prefix: {text: "[TableInitialisor]", color: "cyan"}}, "Remember to comment out the use of redis to update the data there.")
+    logger.write({prefix: {text: "[TableInitialisor]", color: "cyan"}}, "Remember to execute 'redis-cli flushall' to clear the redis cache.")
     process.exit()
 })();
