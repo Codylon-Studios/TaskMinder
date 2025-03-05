@@ -56,7 +56,25 @@ async function getHomeworkCheckStatus(homeworkId) {
 }
 
 function dataLoaded(dataName) {
-  let dataVariable = eval(dataName);
+  let dataVariableMap = {
+    subjectData: subjectData,
+    timetableData: timetableData,
+    homeworkData: homeworkData,
+    homeworkCheckedData: homeworkCheckedData,
+    substitutionsData: substitutionsData,
+    classSubstitutionsData: classSubstitutionsData,
+    joinedTeamsData: joinedTeamsData,
+    teamsData: teamsData,
+    eventData: eventData,
+    eventTypeData: eventTypeData,
+    weeklyEventData: weeklyEventData,
+  }
+
+  let dataVariable = dataVariableMap[dataName];
+  if (dataName == "weekDates") {
+    dataVariable = weekDates;
+  }
+
   let eventName = dataName + "Loaded"
   return new Promise((resolve) => {
     if (dataVariable != undefined && dataVariable != null) {

@@ -183,10 +183,12 @@ function resetLoginRegisterModal() {
 
 function updateColorTheme() {
   if ($("#color-theme-dark")[0].checked) {
+    document.getElementsByTagName("html")[0].style.background = "#212529";
     document.body.setAttribute("data-bs-theme", "dark");
     localStorage.setItem("colorTheme", "dark");
   }
   else {
+    document.getElementsByTagName("html")[0].style.background = "#ffffff";
     document.body.setAttribute("data-bs-theme", "light");
     localStorage.setItem("colorTheme", "light");
   }

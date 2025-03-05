@@ -1,4 +1,5 @@
 const express = require('express');
+const helmet = require('helmet');
 const ErrorHandler = require('./src/middleware/errorMiddleware');
 const RequestLogger = require('./src/middleware/loggerMiddleware');
 const sequelize = require('./src/sequelize');
@@ -16,6 +17,18 @@ const server = createServer(app);
 server.listen(3000, () => {
   logger.success('Server running at http://localhost:3000');
 });
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", "https://code.jquery.com", "https://cdn.jsdelivr.net", "https://kit.fontawesome.com"],
+        "connect-src": ["'self'", "https://ka-f.fontawesome.com"]
+      },
+    },
+  }),
+);
 
 // Middleware to parse request bodies
 app.use(express.urlencoded({ extended: true }));
