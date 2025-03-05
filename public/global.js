@@ -39,9 +39,6 @@ function dateToMs(dateStr) {
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.getTime();
   }
-  else {
-    console.warn("Invalid date String", dateStr)
-  }
 }
 
 function isSameDay(date1, date2) {
@@ -174,6 +171,44 @@ function loadTeamsData() {
   });
 }
 
+function loadEventData() {
+  $.get('/events/get_event_data', (data) => {
+    eventData = data;
+    $(window).trigger("eventDataLoaded");
+  });
+}
+
+function loadEventTypeData() {
+  $.get('/events/get_event_type_data', (data) => {
+    eventTypeData = data;
+    $(window).trigger("eventTypeDataLoaded");
+  });
+}
+
+async function loadWeeklyEventData(weekMonday, weekSunday) {
+  await dataLoaded("eventData");
+  let data = [];
+  for (let event of eventData) {
+    // Filter by min. date
+    if (weekMonday.getTime() > parseInt(event.endDate || event.startDate)) {
+      if (! isSameDay(weekMonday, new Date(parseInt(event.endDate || event.startDate)))) {
+        continue;
+      }
+    }
+  
+    // Filter by max. date
+    if (weekSunday.getTime() < parseInt(event.startDate)) {
+      if (! isSameDay(weekSunday, new Date(parseInt(event.startDate)))) {
+        continue;
+      }
+    }
+
+    data.push(event)
+  }
+  weeklyEventData = data;
+  $(window).trigger("weeklyEventDataLoaded");
+}
+
 function userDataLoaded() {
   return new Promise((resolve) => {
     try {
@@ -199,6 +234,9 @@ async function reloadAll() {
   classSubstitutionsData = undefined;
   joinedTeamsData = undefined;
   teamsData = undefined;
+  eventData = undefined;
+  eventTypeData = undefined;
+
   loadSubjectData();
   loadTimetableData();
   loadHomeworkData();
@@ -207,6 +245,8 @@ async function reloadAll() {
   loadClassSubstitutionsData();
   loadJoinedTeamsData();
   loadTeamsData();
+  loadEventData();
+  loadEventTypeData();
 
   updateAll()
 
@@ -218,6 +258,8 @@ async function reloadAll() {
   await dataLoaded("classSubstitutionsData");
   await dataLoaded("joinedTeamsData");
   await dataLoaded("teamsData");
+  await dataLoaded("eventData");
+  await dataLoaded("eventTypeData");
 
   document.body.style.display = "block";
 }
@@ -236,7 +278,9 @@ let substitutionsData;
 let classSubstitutionsData;
 let joinedTeamsData;
 let teamsData;
-
+let eventData;
+let eventTypeData;
+let weeklyEventData;
 
 $(document).ready(() => {
   reloadAll();

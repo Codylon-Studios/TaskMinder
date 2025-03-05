@@ -20,12 +20,8 @@ const homeworkService = {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
+            err.expected = true;
             throw err;
-        }
-        let badRequestError = new Error("Bad Request");
-        badRequestError.status = 400;
-        if (!(subjectId && content && assignmentDate && submissionDate)) {
-            throw badRequestError;
         }
         try {
             await Homework10d.create({
@@ -36,7 +32,10 @@ const homeworkService = {
             });
         }
         catch {
-            throw badRequestError;
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.expected = true;
+            throw err;
         }
         const data = await Homework10d.findAll({ raw: true });
         await updateCacheHomeworkData(data);
@@ -47,6 +46,7 @@ const homeworkService = {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
+            err.expected = true;
             throw err;
         } else {
             accountId = session.account.accountId;
@@ -71,11 +71,13 @@ const homeworkService = {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
+            err.expected = true;
             throw err;
         }
         if (!homeworkId) {
             let err = new Error("Bad Request");
             err.status = 400;
+            err.expected = true;
             throw err;
         }
         await Homework10d.destroy({
@@ -91,12 +93,8 @@ const homeworkService = {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
+            err.expected = true;
             throw err;
-        }
-        let badRequestError = new Error("Bad Request");
-        badRequestError.status = 400;
-        if (!(homeworkId && subjectId && content && assignmentDate && submissionDate)) {
-            throw badRequestError;
         }
         try {
             await Homework10d.update(
@@ -112,7 +110,10 @@ const homeworkService = {
             );
         }
         catch {
-            throw badRequestError;
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.expected = true;
+            throw err;
         }
         
         const data = await Homework10d.findAll({ raw: true });
@@ -143,6 +144,7 @@ const homeworkService = {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
+            err.expected = true;
             throw err;
         } else {
             accountId = session.account.accountId;

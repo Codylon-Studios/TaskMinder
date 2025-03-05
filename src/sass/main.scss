@@ -1,30 +1,6 @@
 @use "sass:color";
 @use "global" as *;
 
-@each $name, $color in $event-colors {
-    .event-#{"" + $name} {
-        $bg-transparent: color.change($color: $color, $alpha: 0.4);
-    
-        &.card {
-            border-color: $color;
-            background-color: $bg-transparent;
-        }
-
-        &span {
-            color: $color;
-        }
-
-        &.days-overview-day > & {
-            background-color: $color;
-        }
-    }
-        
-    .event-list li.event-#{"" + $name}::before {
-        background-color: $color;
-    }
-}
-
-
 .days-overview-day {
     display: flex;
     flex-direction: column;
@@ -34,18 +10,12 @@
     padding: 0.2rem 0.5rem;
     border-radius: 0.5rem;
     transition: background-color 0.3s;
-    width: 30px;
+    width: 2rem;
     font-weight: 500;
+    border: 3px solid transparent !important;
 
     & > div:first-child {
         font-size: 0.75rem;
-    }
-
-    & > div:nth-child(3) {
-        width: 0.5rem;
-        height: 0.5rem;
-        margin-top: 0.3rem;
-        border-radius: 50%;
     }
 
     &.days-overview-today {
@@ -57,6 +27,58 @@
 
         body[data-bs-theme="dark"] & {
             border: 3px solid $semivisible-hover-dark !important;
+        }
+    }
+
+    & .events {
+        position: absolute;
+        top: 3.5rem;
+        pointer-events: none;
+
+        & .single-events {
+            width: 2rem;
+            justify-content: center;
+            margin: 0;
+
+            & .col {
+                padding: 0 0 0.1rem 0;
+                display: flex;
+                justify-content: center;
+
+                & .event {
+                    width: 0.5rem;
+                    height: 0.5rem;
+                    border-radius: 0.25rem;
+                }
+            }
+        }
+
+        & .multi-events {
+            width: 2rem;
+            justify-content: center;
+
+            & .event {
+                height: 0.5rem;
+                margin-bottom: 0.1rem;
+
+                &.event-start {
+                    width: 2.14rem;
+                    margin-left: -0.02rem;
+                    border-radius: 0.25rem 0 0 0.25rem;
+                }
+
+                &.event-middle {
+                    width: 2.24rem;
+                    margin-left: -0.12rem;
+                    border-radius: 0rem;
+                }
+
+                &.event-end {
+                    width: 2.14rem;
+                    margin-left: -0.12rem;
+                    border-radius: 0 0.25rem 0.25rem 0;
+                }
+            }
         }
     }
 }
@@ -94,6 +116,7 @@
 #calendar-week-wrapper {
     overflow: hidden;
     display: grid;
+    padding-bottom: 2rem;
 }
 
 .calendar-week {

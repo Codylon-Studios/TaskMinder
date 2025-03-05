@@ -1,8 +1,8 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../sequelize');
 
-const Teams = require('./team');
-const Accounts = require('./account');
+const Team = require('./team');
+const Account = require('./account');
 
 const JoinedTeams = sequelize.define('JoinedTeams', {
     joinedTeamId: {
@@ -14,7 +14,7 @@ const JoinedTeams = sequelize.define('JoinedTeams', {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: Teams,
+        model: Team,
         key: 'teamId',
       },
       onDelete: 'CASCADE',
@@ -23,7 +23,7 @@ const JoinedTeams = sequelize.define('JoinedTeams', {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: Accounts,
+        model: Account,
         key: 'accountId',
       },
       onDelete: 'CASCADE',

@@ -1,4 +1,5 @@
 async function updateHomeworkList() {
+  updateHomeworkList = runOnce(updateHomeworkList);
   await dataLoaded("subjectData")
   await dataLoaded("homeworkData")
   await dataLoaded("homeworkCheckedData")
@@ -80,10 +81,10 @@ async function updateHomeworkList() {
         </label>
         <div class="homework-edit-options ms-2 ${(editEnabled) ? "" : "d-none"}">
           <button class="btn btn-sm btn-tertiary homework-edit" data-id="${homeworkId}">
-            <i class="fa-solid fa-edit text-secondary"></i>
+            <i class="fa-solid fa-edit opacity-50"></i>
           </button>
           <button class="btn btn-sm btn-tertiary homework-delete" data-id="${homeworkId}">
-            <i class="fa-solid fa-trash text-secondary"></i>
+            <i class="fa-solid fa-trash opacity-50"></i>
           </button>
         </div>
       </div>`;
@@ -99,9 +100,9 @@ async function updateHomeworkList() {
     $ui.homeworkList.html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>`)
   }
 }
-updateHomeworkList = runOnce(updateHomeworkList);
 
 async function updateSubjectList() {
+  updateSubjectList = runOnce(updateSubjectList);
   await dataLoaded("subjectData")
 
   // Clear the select element in the add homework modal
@@ -139,7 +140,6 @@ async function updateSubjectList() {
     updateHomeworkList();
   });
 }
-updateSubjectList = runOnce(updateSubjectList);
 
 function addHomework() {
   //
@@ -438,16 +438,16 @@ function resetFilters() {
   $("#filter-date-submission-until").val("")
 }
 
-updateAllFunctions.push(() => {
-  updateSubjectList();
-  updateHomeworkList();
-})
-
-updateAll();
-
 let $ui;
 
 $(document).ready(() => {
+  updateAllFunctions.push(() => {
+    updateSubjectList();
+    updateHomeworkList();
+  })
+  
+  updateAll();
+  
   // Initialize all jQuery variables
   $ui = {
     editToggle: $("#edit-toggle"),
@@ -510,7 +510,7 @@ $(document).ready(() => {
     const assignmentDate = $("#add-homework-date-assignment").val();
     const submissionDate = $("#add-homework-date-submission").val();
 
-    if ([ subject, content, assignmentDate, submissionDate ].includes("")) {
+    if ([ content, assignmentDate, submissionDate ].includes("") || subject == null) {
       $ui.addHomeWorkButton.addClass("disabled");
     }
     else {
@@ -525,7 +525,7 @@ $(document).ready(() => {
     const assignmentDate = $("#edit-homework-date-assignment").val();
     const submissionDate = $("#edit-homework-date-submission").val();
 
-    if ([ subject, content, assignmentDate, submissionDate ].includes("")) {
+    if ([ content, assignmentDate, submissionDate ].includes("") || subject == null) {
       $ui.editHomeworkButton.addClass("disabled");
     }
     else {

@@ -219,12 +219,6 @@ async function updateTeamList() {
   })
 }
 
-updateAllFunctions.push(() => {
-  updateTeamList();
-})
-
-updateAll();
-
 let $navbarUi = {
   lr: { // Login & Register related elements
     modal: $("#login-register-modal"),
@@ -252,6 +246,14 @@ let $navbarToasts = {
   unknownError: $("#unknown-error-toast"),
   notLoggedIn: $("#not-logged-in-toast"),
 }
+
+$(document).ready(() => {
+  updateAllFunctions.push(() => {
+    updateTeamList();
+  })
+  
+  updateAll();
+})
 
 // Create the user object with a username variable and event listeners
 const user = $({})

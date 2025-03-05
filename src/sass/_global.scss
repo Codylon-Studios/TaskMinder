@@ -8,28 +8,20 @@ $primary: #3bb9ca;
 
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
 
-$event-blue: #5599ff;
-$event-orange: #ff9955;
-
-$event-colors: (
-    blue: $event-blue,
-    orange: $event-orange,
-);
-
 $custom-btn-variants: (
     semivisible,
     tertiary,
 );
 
-$semivisible-hover-light: #e9ecef;
-$semivisible-active-light: #d3d6da;
-$tertiary-hover-light: #d3d4d5;
-$tertiary-active-light: #c6c7c8;
+$semivisible-hover-light: rgba(black, 0.074);
+$semivisible-active-light: rgba(black, 0.16);
+$tertiary-hover-light: rgba(black, 0.148);
+$tertiary-active-light: rgba(black, 0.2);
 
-$semivisible-hover-dark: #353738;
-$semivisible-active-dark: #434547;
-$tertiary-hover-dark: #424649;
-$tertiary-active-dark: #4d5154;
+$semivisible-hover-dark: rgba(white, 0.08);
+$semivisible-active-dark: rgba(white, 0.15);
+$tertiary-hover-dark: rgba(white, 0.11);
+$tertiary-active-dark: rgba(white, 0.16);
 
 body {
     font-family: "Quicksand", Arial, Helvetica, sans-serif;
@@ -68,13 +60,17 @@ body {
         color: var(--btn-color) !important;
     
         &:hover {
-            background-color: var(--btn-#{$variant}-hover);
+            background-color: var(--btn-#{$variant}-hover) !important;
         }
     
         &:active {
             background-color: var(--btn-#{$variant}-active) !important;
         }
-    
+
+        &.show {
+            background-color: transparent;
+        }
+
         &:focus {
             background-color: transparent;
         }

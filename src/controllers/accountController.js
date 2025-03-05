@@ -1,5 +1,5 @@
 const logger = require('../../logger');
-const userService = require('../services/accountService');
+const accountService = require('../services/accountService');
 const asyncHandler = require('express-async-handler');
 
 exports.userController = {
@@ -7,7 +7,7 @@ exports.userController = {
         const { username, password, classcode} = req.body;
         const session = req.session;
         try {
-            await userService.registerUser(username, password, classcode, session);
+            await accountService.registerUser(username, password, classcode, session);
             res.sendStatus(200);
         } catch (error) {
             next(error);
@@ -16,7 +16,7 @@ exports.userController = {
     loginUser: asyncHandler(async(req, res, next) => {
         const { username, password } = req.body;
         try {
-            await userService.loginUser(username, password, req.session);
+            await accountService.loginUser(username, password, req.session);
             res.sendStatus(200);
         } catch (error) {
             next(error);
@@ -24,7 +24,7 @@ exports.userController = {
     }),
     logoutUser: asyncHandler(async (req, res, next) => {
         try {
-            await userService.logoutUser(req.session);
+            await accountService.logoutUser(req.session);
             res.clearCookie('UserLogin');
             res.sendStatus(200);
         } catch (error) {
@@ -35,7 +35,7 @@ exports.userController = {
         const {password} = req.body;
         const session = req.session;
         try {
-            await userService.deleteUser(session, password);
+            await accountService.deleteUser(session, password);
             res.clearCookie('UserLogin');
             res.status(200).send('0');
         } catch (error) {
@@ -44,7 +44,7 @@ exports.userController = {
     }),
     getAuth: asyncHandler(async(req, res, next) => {
         try {
-            const response = await userService.getAuth(req.session);
+            const response = await accountService.getAuth(req.session);
             res.json(response);
         } catch (error) {
             next(error);
@@ -53,7 +53,7 @@ exports.userController = {
     checkUsername: asyncHandler(async(req, res, next) => {
         const {username} = req.body;
         try {
-            const response = await userService.checkUsername(username);
+            const response = await accountService.checkUsername(username);
             res.status(200).json(response);
         } catch (error) {
             next(error)

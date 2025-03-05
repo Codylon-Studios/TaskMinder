@@ -24,17 +24,20 @@ const userService = {
         if (!(username && password && classcode)) {
             let err = new Error("Please fill out all data");
             err.status = 400;
+            err.expected = true;
             throw err;
         }
         if (classcode != "geheim"){
             let err = new Error("Invalid classcode");
             err.status = 401;
+            err.expected = true;
             throw err;
         }
         if (! checkUsername(username)) {
             let err = new Error("Bad Request");
             err.status = 400;
             err.additionalInformation = "The requested username does not comply with the rules!"
+            err.expected = true;
             throw err;
         }
 
@@ -45,6 +48,7 @@ const userService = {
             let err = new Error("Bad Request");
             err.status = 400;
             err.additionalInformation = "The requested username is already registered!"
+            err.expected = true;
             throw err;
         }
         const hashedPassword = await bcrypt.hash(password, SALTROUNDS);
@@ -60,6 +64,7 @@ const userService = {
         if (!session.account) {
             let err = new Error("User not logged in");
             err.status = 200;
+            err.expected = true;
             throw err;
         }
         await session.destroy((err) => {
@@ -72,6 +77,7 @@ const userService = {
         if (!(username && password)) {
             let err = new Error("Please fill out all data");
             err.status = 400;
+            err.expected = true;
             throw err;
         }
         const account = await Account.findOne({ where: { username: username } });
@@ -79,12 +85,14 @@ const userService = {
             let err = new Error("Invalid credentials");
             err.status = 401;
             err.additionalInformation = "The requested username does not comply with the rules!";
+            err.expected = true;
             throw err;
         }
         const isPasswordValid = await bcrypt.compare(password, account.password);
         if (!isPasswordValid) {
             let err = new Error("Invalid credentials");
             err.status = 401;
+            err.expected = true;
             throw err;
         }
         const accountId = account.accountId;
@@ -97,12 +105,14 @@ const userService = {
             let err = new Error("Bad Request");
             err.status = 400;
             err.additionalInformation = "The account requested to be deleted does not exist!"
+            err.expected = true;
             throw err;
         }
         const isPasswordValid = await bcrypt.compare(password, account.password);
         if (! isPasswordValid) {
             let err = new Error("Invalid credentials");
             err.status = 401;
+            err.expected = true;
             throw err;
         }
         await user.destroy();
