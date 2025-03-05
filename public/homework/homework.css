@@ -12229,6 +12229,10 @@ body[data-bs-theme=dark] {
   color: #343a40;
 }
 
+#animations {
+  min-height: min-content;
+}
+
 #filter-dropdown .dropdown .dropdown-menu {
   margin-left: -3px !important;
 }

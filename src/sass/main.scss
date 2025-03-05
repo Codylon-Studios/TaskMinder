@@ -122,3 +122,11 @@
 .calendar-week {
     grid-area: 1 / 1 / 1 / 1;
 }
+
+.calendar-week-move-button {
+    transform: translateY(-1rem);
+}
+
+#filter-homework-mode {
+    padding: .2rem 2rem .2rem .5rem;
+}

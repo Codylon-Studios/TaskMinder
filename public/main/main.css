@@ -12229,6 +12229,10 @@ body[data-bs-theme=dark] {
   color: #343a40;
 }
 
+#animations {
+  min-height: min-content;
+}
+
 .days-overview-day {
   display: flex;
   flex-direction: column;
@@ -12332,4 +12336,12 @@ body[data-bs-theme=dark] .days-overview-day.days-overview-selected {
 
 .calendar-week {
   grid-area: 1/1/1/1;
+}
+
+.calendar-week-move-button {
+  transform: translateY(-1rem);
+}
+
+#filter-homework-mode {
+  padding: 0.2rem 2rem 0.2rem 0.5rem;
 }
