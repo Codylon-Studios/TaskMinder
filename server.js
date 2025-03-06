@@ -1,16 +1,20 @@
+const { createServer } = require('http');
 const express = require('express');
 const helmet = require('helmet');
+const session = require('express-session')
+const { Pool } = require('pg');
+
 const ErrorHandler = require('./src/middleware/errorMiddleware');
 const RequestLogger = require('./src/middleware/loggerMiddleware');
+const logger = require('./logger');
 const sequelize = require('./src/sequelize');
-const { createServer } = require('http');
+
 const account = require('./src/routes/accountRoute');
 const homework = require('./src/routes/homeworkRoute');
 const substitutions = require('./src/routes/substitutionRoute');
 const teams = require('./src/routes/teamRoute');
 const events = require('./src/routes/eventRoute');
-const session = require('express-session');
-const logger = require('./logger');
+
 const app = express();
 const server = createServer(app);
 
@@ -18,6 +22,13 @@ server.listen(3000, () => {
   logger.success('Server running at http://localhost:3000');
 });
 
+const sessionPool = new Pool({
+  user: sequelize.config.username,
+  host: sequelize.config.host,
+  database: sequelize.config.database,
+  password: sequelize.config.password,
+  port: sequelize.config.port,
+});
 
 // Content Security Policy
 app.use(helmet({
@@ -92,6 +103,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(express.json());
 app.use(session({
+  store: new (require('connect-pg-simple')(session))({
+    pool: sessionPool,
+    tableName: 'account_sessions',
+    createTableIfMissing: true
+  }),
   secret: "notsecret",
   resave: false,
   saveUninitialized: false,
