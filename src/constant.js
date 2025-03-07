@@ -3,8 +3,11 @@ const logger = require('../logger');
 const cacheKeyHomeworkData = 'homework_data';
 const cacheKeySubstitutionsData = 'substitutions_data';
 const cacheExpiration = 3600;
+const redisUrl = process.env.NODE_ENV === 'DEVELOPMENT' 
+    ? `redis://localhost:6379`  // Use localhost for development (if running on host machine)
+    : `redis://redis:6379`;     // Use the Docker service name for production
 const redisClient = redis.createClient({
-  url: 'redis://localhost:6379',
+  url: redisUrl,
 });
 redisClient.on('error', (err) => logger.error('Redis error:', err));
 
