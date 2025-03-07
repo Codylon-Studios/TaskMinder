@@ -1,8 +1,8 @@
 {
-  "name": "hausaufgabenplaner",
+  "name": "taskminder",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -29,9 +29,7 @@
     "redis": "^4.7.0",
     "sequelize": "^6.37.5",
     "tree-kill": "^1.2.2",
-    "validator": "^13.12.0"
-  },
-  "devDependencies": {
+    "validator": "^13.12.0",
     "sass": "^1.85.0"
   }
 }
