@@ -3,6 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const session = require('express-session')
 const { Pool } = require('pg');
+require('dotenv').config();
 
 const ErrorHandler = require('./src/middleware/errorMiddleware');
 const RequestLogger = require('./src/middleware/loggerMiddleware');
@@ -62,39 +63,23 @@ app.use(helmet({
     },
   },
 
-  // Ensures a top-level document does not share a browser context group with cross-origin documents
   crossOriginOpenerPolicy: {
-    policy: 'same-origin' // Protects against timing and XS-Leaks attacks
+    policy: 'same-origin'
   },
-
-  // Prevents resources from being loaded cross-origin
   crossOriginResourcePolicy: {
     policy: 'same-origin'
   },
-
-  // Controls how much referrer information should be included
   referrerPolicy: {
     policy: 'strict-origin-when-cross-origin'
   },
-
-  // Prevents MIME type sniffing
   noSniff: true,
-
-  // Helps manage DNS prefetching for performance and privacy
   dnsPrefetchControl: {
     allow: false
   },
-
-  // X-Frame-Options
-  // Prevents clickjacking attacks
   frameguard: {
-    action: 'deny' // Completely prevent framing
+    action: 'deny'
   },
-
-  // Remove X-Powered-By header to reduce fingerprinting
   hidePoweredBy: true,
-
-  // Provides origin-based process isolation
   originAgentCluster: true,
 }));
 
@@ -108,7 +93,7 @@ app.use(session({
     tableName: 'account_sessions',
     createTableIfMissing: true
   }),
-  secret: "notsecret",
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
