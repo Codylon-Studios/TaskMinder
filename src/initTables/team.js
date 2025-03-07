@@ -17,6 +17,6 @@ const defaultTeams = [
     await Team.destroy({ truncate: true, cascade: true });
     await Team.bulkCreate(defaultTeams);
     logger.write({prefix: {text: "[TableInitialisor]", color: "green"}}, "Successfully initialised team table.")
-    logger.write({prefix: {text: "[TableInitialisor]", color: "cyan"}}, "Remember to execute 'redis-cli flushall' to clear the redis cache.")
+    logger.write({prefix: {text: "[TableInitialisor]", color: "cyan"}}, "Remember to execute 'redis-cli flushall' to clear the redis cache. If deploying using Docker Compose, this will be done automatically.")
     process.exit()
 })();
