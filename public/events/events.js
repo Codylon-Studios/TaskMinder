@@ -1,5 +1,4 @@
 async function updateEventList() {
-  updateEventList = runOnce(updateEventList);
   await dataLoaded("eventData")
   await dataLoaded("eventTypeData")
 
@@ -77,9 +76,9 @@ async function updateEventList() {
     $("#event-list").html(`<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>`)
   }
 }
+updateEventList = runOnce(updateEventList);
 
 async function updateEventTypeList() {
-  updateEventTypeList = runOnce(updateEventTypeList);
   await dataLoaded("eventTypeData")
 
   // Clear the select element in the add event modal
@@ -117,6 +116,7 @@ async function updateEventTypeList() {
     updateEventList();
   });
 }
+updateEventTypeList = runOnce(updateEventTypeList);
 
 function addEvent() {
   //

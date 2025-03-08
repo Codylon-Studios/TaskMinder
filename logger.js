@@ -2,190 +2,169 @@ const logger = {
     StyledTextComponent: class {
         constructor(styles, content) {
             this.styles = styles;
-            this.content = logger.convertToString(content);
+            this.content = logger.convertToString(content, styles.disableParsing);
         }
         apply(styles) {
-            function deepMerge(target, source, stack) {
+            function deepMerge(target, source) {
                 for (let [key, value] of Object.entries(source)) {
-                    let nextStack = (stack != "") ? (`${stack}.${key}`) : key
-                    if (! logger.notInheritableStyles.includes(nextStack)) {
-                        if (typeof value == "object") {
-                            if (!(key in target)) {
-                                target[key] = {}
-                            }
-                            deepMerge(target[key], value, nextStack)
+                    //let nextStack = (stack != "") ? (`${stack}.${key}`) : key
+                    if (Array.isArray(value)) {
+                        if (!(key in target)) {
+                            target[key] = []
                         }
-                        else if (! (key in target)) {
-                            target[key] = value;
+                        deepMerge(target[key], value)
+                    }
+                    else if (typeof value == "object") {
+                        if (!(key in target)) {
+                            target[key] = {}
                         }
+                        deepMerge(target[key], value)
+                    }
+                    else if (! (key in target)) {
+                        target[key] = value;
                     }
                 }
             }
-            deepMerge(this.styles, styles, "");
+            deepMerge(this.styles, styles);
         }
         toString() {
+            let paddingLeftCharacters = ""
+            let paddingRightCharacters = ""
+
+            if (this.styles.padding) {
+                let paddingStyles = this.styles.padding
+
+                let fillStyledText = new logger.StyledText(paddingStyles.fillCharacter || " ")
+                let { padding, ...otherStyles } = this.styles
+                fillStyledText.apply(otherStyles)
+
+                let remainingCharacters = (paddingStyles.totalWidth || 0) - logger.printableLength(this.content)
+                if (remainingCharacters < 0) remainingCharacters = 0;
+
+                let alignment = paddingStyles.alignment || "left";
+
+                if (alignment == "left") {
+                    paddingRightCharacters = fillStyledText.toString().repeat(remainingCharacters)
+                }
+                else if (alignment == "right") {
+                    paddingLeftCharacters = fillStyledText.toString().repeat(remainingCharacters)
+                }
+                else if (alignment == "center") {
+                    paddingLeftCharacters = fillStyledText.toString().repeat(Math.floor(remainingCharacters / 2))
+                    paddingRightCharacters = fillStyledText.toString().repeat(Math.ceil(remainingCharacters / 2))
+                }
+            }
+
             let startEscapeCodes = logger.findEscapeCodes(this.styles);
-            let endEscapeCodes = "\x1b[0m";
-            return startEscapeCodes +
-                this.content +
-                endEscapeCodes;
+            let endEscapeCodes = (startEscapeCodes != "") ? "\x1b[0m" : "";
+            return paddingLeftCharacters + startEscapeCodes + this.content + endEscapeCodes + paddingRightCharacters;
         }
     },
     StyledText: class {
-        constructor(styles, ...texts) {
+        constructor(texts) {
             this.components = []
-            for (let text of texts) {
-                if (text instanceof logger.StyledTextComponent) {
-                    text.apply(styles)
-                    this.components.push({
-                        type: "normal", // normal or prefix or padding
-                        styledTextComponent: text
-                    })
-                }
-                else if (text instanceof logger.StyledText) {
-                    text.apply(styles)
-                    for (let component of text.components) {
-                        this.components.push({
-                            type: component.type,
-                            styledTextComponent: component.styledTextComponent
-                        })
+            if (Array.isArray(texts)) {
+                for (let text of texts) {
+                    let styledText = new logger.StyledText(text)
+                    for (let styledTextComponent of styledText.components) {
+                        this.components.push(styledTextComponent)
                     }
                 }
+            }
+            else if (typeof texts == "object") {
+                if (texts.disableParsing) {
+                    let { text, ...styles } = texts
+                    this.components.push(new logger.StyledTextComponent(styles, text))
+                }
                 else {
-                    this.components.push({
-                        type: "normal",
-                        styledTextComponent: new logger.StyledTextComponent(styles, text)
-                    })
+                    let { text, ...styles } = texts
+                    let styledText = new logger.StyledText(text)
+                    styledText.apply(styles)
+                    for (let styledTextComponent of styledText.components) {
+                        this.components.push(styledTextComponent)
+                    }
                 }
             }
-            if (styles.prefix) {
-                this.components.splice(0, 0, {
-                    type: "prefix",
-                    styledTextComponent: new logger.StyledTextComponent(styles.prefix, styles.prefix.text || logger.standardPrefix)
-                })
+            else {
+                this.components.push(new logger.StyledTextComponent({}, texts))
             }
         }
         apply(styles) {
             this.components.forEach((component) => {
-                component.styledTextComponent.apply(styles);
+                component.apply(styles);
             })
         }
-        addPaddingTextComponents() {
-            let newComponents = []
-            for (let component of this.components) {
-                let paddingStyles = component.styledTextComponent.styles.padding
-                if (paddingStyles) {
-                    let paddingLeftCharacters = ""
-                    let paddingRightCharacters = ""
-                    let remainingCharacters = (paddingStyles.totalWidth || logger.getPrintableLength(component.styledTextComponent.content)) -
-                                              logger.getPrintableLength(component.styledTextComponent.content)
-                    if (remainingCharacters < 0) remainingCharacters = 0;
-                    let alignment = paddingStyles.alignment || "left";
-                    let fillCharacter = paddingStyles.fillCharacter || " ";
-                    if (alignment == "left") {
-                        paddingRightCharacters = fillCharacter.repeat(remainingCharacters)
-                    }
-                    else if (alignment == "right") {
-                        paddingLeftCharacters = fillCharacter.repeat(remainingCharacters)
-                    }
-                    else if (alignment == "center") {
-                        paddingLeftCharacters = fillCharacter.repeat(Math.floor(remainingCharacters / 2))
-                        paddingRightCharacters = fillCharacter.repeat(Math.ceil(remainingCharacters / 2))
-                    }
-                    newComponents.push({
-                        type: "padding",
-                        styledTextComponent: new logger.StyledTextComponent(component.styledTextComponent.styles, paddingLeftCharacters),
-                        position: "left"
-                    })
-                    newComponents.push(component)
-                    newComponents.push({
-                        type: "padding",
-                        styledTextComponent: new logger.StyledTextComponent(component.styledTextComponent.styles, paddingRightCharacters),
-                        position: "right"
-                    })
-                }
-                else {
-                    newComponents.push(component)
-                }
-                this.components = newComponents;
-            }
-        }
         toString() {
-            this.addPaddingTextComponents();
-            
             let result = ""
-            let previousComponent = {type: null};
-            for (let currentComponent of this.components) {
-                result += this.getComponentSpacing(previousComponent, currentComponent)
-                result += currentComponent.styledTextComponent
-                previousComponent = currentComponent;
+            for (let [ styledTextComponentId, styledTextComponent ] of Object.entries(this.components)) {
+                result += styledTextComponent.toString()
+                let space = true
+                if (styledTextComponentId == this.components.length - 1) space = false
+                if (styledTextComponent.styles.space != undefined) space = styledTextComponent.styles.space
+                if (space) result += " "
             }
             return result;
         }
-        getComponentSpacing(previousComponent, currentComponent) {
-            let previousType = previousComponent.type;
-            let currentType = currentComponent.type;
-            if (previousType == null) {
-                return "";
-            }
-            else if (["prefix", "normal"].includes(previousType)) {
-                if (["prefix", "normal"].includes(currentType)) {
-                    return " ";
-                }
-                else if ([""].includes(currentType)) {
-                    return "";
-                }
-                else if (currentType == "padding") {
-                    if (currentComponent.position == "right") {
-                        return "";
-                    }
-                    else {
-                        return " ";
-                    }
-                }
-                else {
-                    return "?";
-                }
-            }
-            else if (previousType == "padding") {
-                if (["prefix", "normal"].includes(currentType)) {
-                    if (previousComponent.position == "left") {
-                        return "";
-                    }
-                    else {
-                        return " ";
-                    }
-                }
-                else if ([""].includes(currentType)) {
-                    return "";
-                }
-                else if (currentType == "padding") {
-                    return " ";
-                }
-                else {
-                    return "?";
-                }
-            }
-            else {
-                return "?";
-            }
-        }
     },
-    convertToString(obj) {
+    convertToString(obj, disableParsing, depth) {
+        if (! depth || depth == 3) depth = 0
+        let color = [logger.colors.blue.fg, logger.colors.magenta.fg, logger.colors.yellow.fg][depth]
+
         if (typeof obj == "string") {
-            return obj.toString();
+            return logger.colors.gray.fg + JSON.stringify(obj) + "\x1b[0m";
         }
         else if (typeof obj == "number") {
-            return obj.toString()
+            if (isNaN(obj) || ! isFinite(obj)) return logger.colors.green.fg + "\x1b[1m" + obj.toString() + "\x1b[0m"
+            return logger.colors.cyan.fg + obj.toString() + "\x1b[0m"
+        }
+        else if (typeof obj == "boolean") {
+            return logger.colors.green.fg + "\x1b[1m" + obj.toString() + "\x1b[0m"
+        }
+        else if (typeof obj == "undefined") {
+            return logger.colors.green.fg + "\x1b[1m" + "undefined" + "\x1b[0m"
+        }
+        else if (obj == null) {
+            return logger.colors.green.fg + "\x1b[1m" + "null" + "\x1b[0m"
+        }
+
+        if (disableParsing) {
+            if (Array.isArray(obj)) {
+                let res = ""
+                res += color + "\x1b[1m"  + "[ " + "\x1b[0m"
+                res += obj.map((entry) => {
+                    return this.convertToString(entry, true, depth + 1)
+                }).join(", ")
+                res += color + "\x1b[1m"  + " ]" + "\x1b[0m"
+                return res
+            }
+            else if (typeof obj == "object"){
+                let res = ""
+                res += color + "\x1b[1m"  + "{ " + "\x1b[0m"
+                res += Object.entries(obj).map(([key, val]) => {
+                    return key.toString() + ": " + this.convertToString(val, true, depth + 1)
+                }).join(", ")
+                res += color + "\x1b[1m"  + " }" + "\x1b[0m"
+                return res
+            }
+            else {
+                console.error("Unknown Object type:", obj)
+                return logger.colors.red.fg + "???" + "\x1b[0m"
+            }
         }
         else {
-            console.log("Unknown Object type: ", obj)
-            return "???"
+            try {
+                return obj.toString()
+            }
+            catch {
+                console.error("Unknown Object type:", obj)
+                return logger.colors.red.fg + "???" + "\x1b[0m"
+            }
         }
     },
 
     standardPrefix: "[TaskMinder]",
     consoleWidth: process.stdout.columns || 80,
+    consoleHeight: process.stdout.rows || 24,
     colors: {
         black: { fg: "\x1b[30m", bg: "\x1b[40m" },
         red: { fg: "\x1b[31m", bg: "\x1b[41m" },
@@ -197,14 +176,49 @@ const logger = {
         white: { fg: "\x1b[37m", bg: "\x1b[47m" },
         gray: { fg: "\x1b[90m", bg: "\x1b[100m" },
     },
-    getPrintableLength(str) {
+    printableLength(str) {
         const printableStr = str.replace(/\x1b\[[0-9;]*m/g, "");
         return printableStr.length;
+    },
+    printableSubstring(str, start, end) {
+        let length = this.printableLength(str)
+        if (end == undefined) end = length
+        let charsFound = 0;
+        let charsAdded = 0;
+        let escapeSequenceFound = false
+        let res = ""
+        for (const char of str) {
+            if (escapeSequenceFound) {
+                if (char == "m") {
+                    escapeSequenceFound = false
+                }
+                res += char
+            }
+            else  if (/\x1b/.test(char)) {
+                escapeSequenceFound = true
+                res += char
+            }
+            else {
+                if (charsAdded >= end - start) {
+                    break
+                }
+                if (charsFound >= start) {
+                    res += char
+                    charsAdded++
+                }
+                charsFound++
+            }
+        }
+        res += "\x1b[0m"
+        return res
     },
     findEscapeCodes(styles) {
         let res = ""
         if (styles.bold) {
             res += "\x1b[1m";
+        }
+        if (styles.dim) {
+            res += "\x1b[2m";
         }
         if (styles.italic) {
             res += "\x1b[3m";
@@ -223,35 +237,48 @@ const logger = {
         }
         return res
     },
-    notInheritableStyles: [
-        "prefix"
-    ],
-    write(styles, ...texts) {
-        let styledTextsArray = new this.StyledText(styles, ...texts)
-        process.stdout.write(styledTextsArray.toString())
+    write(...data) {
+        let styledText = new this.StyledText(data)
+        process.stdout.write(styledText.toString())
         process.stdout.write("\n");
     },
-    parse(styles, text) {
-        return new this.StyledText(styles, text)
+    writeError(...data) {
+        let styledTextsArray = new this.StyledText(data)
+        process.stderr.write(styledTextsArray.toString())
+        process.stderr.write("\n");
+    },
+    toString(...data) {
+        let styledText = new this.StyledText(data)
+        return styledText.toString()
     },
     info(...texts) {
-        this.write({ prefix: { color: "cyan" } }, ...texts)
+        this.write({color: "cyan", text: this.standardPrefix}, ...texts)
     },
     success(...texts) {
-        this.write({ prefix: { color: "green" } }, ...texts)
+        this.write({color: "green", text: this.standardPrefix}, ...texts)
     },
     warn(...texts) {
-        this.write({ prefix: { color: "yellow" } }, ...texts)
+        this.write({color: "yellow", text: this.standardPrefix}, ...texts)
     },
     error(...texts) {
-        this.write({ prefix: { color: "red" } }, ...texts)
+        this.write({color: "red", text: this.standardPrefix}, ...texts)
     },
     highlightError(...texts) {
-        this.write({ prefix: { background: "red" } }, ...texts)
+        this.write({background: "red", text: this.standardPrefix}, ...texts)
     },
     highlight(...texts) {
-        this.write({ prefix: { background: "blue", bold: true } }, ...texts)
+        this.write({background: "blue", text: this.standardPrefix}, ...texts)
+    },
+    setStandardPrefix(text) {
+        this.standardPrefix = text;
     }
 }
 
 module.exports = logger;
+
+process.stdout.on("resize", () => {
+    logger.consoleWidth = process.stdout.columns || 80
+    logger.consoleHeight = process.stdout.rows || 24
+})
+
+logger.write({disableParsing: true, text: {true: true, b: null,  a: "124", geheim: [1, NaN, 7, {"HJEI": 12}]}})

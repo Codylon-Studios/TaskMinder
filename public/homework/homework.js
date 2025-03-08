@@ -1,5 +1,4 @@
 async function updateHomeworkList() {
-  updateHomeworkList = runOnce(updateHomeworkList);
   await dataLoaded("subjectData")
   await dataLoaded("homeworkData")
   await dataLoaded("homeworkCheckedData")
@@ -100,9 +99,9 @@ async function updateHomeworkList() {
     $ui.homeworkList.html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>`)
   }
 }
+updateHomeworkList = runOnce(updateHomeworkList);
 
 async function updateSubjectList() {
-  updateSubjectList = runOnce(updateSubjectList);
   await dataLoaded("subjectData")
 
   // Clear the select element in the add homework modal
@@ -140,6 +139,7 @@ async function updateSubjectList() {
     updateHomeworkList();
   });
 }
+updateSubjectList = runOnce(updateSubjectList);
 
 function addHomework() {
   //
@@ -413,7 +413,7 @@ function checkHomework(homeworkId) {
     let dataString = localStorage.getItem("homeworkCheckedData");
     let data = []
 
-    if (dataString != null) {
+    if (dataString != null && dataString != undefined) {
       data = JSON.parse(dataString)
     }
 

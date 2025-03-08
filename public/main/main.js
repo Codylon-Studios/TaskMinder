@@ -202,7 +202,6 @@ function checkHomework(homeworkId) {
 }
 
 async function updateHomeworkList() {
-  updateHomeworkList = runOnce(updateHomeworkList);
   // Wait until the data is loaded
   await dataLoaded("subjectData")
   await dataLoaded("homeworkData")
@@ -258,9 +257,9 @@ async function updateHomeworkList() {
     $("#homework-list").html(`<div class="text-secondary">Keine Hausaufgaben ${(filterMode == "assignment") ? "von diesem" : "auf diesen"} Tag.</div>`)
   }
 }
+updateHomeworkList = runOnce(updateHomeworkList);
 
 async function updateEventList() {
-  updateEventList = runOnce(updateEventList);
   await dataLoaded("weeklyEventData")
   await dataLoaded("eventTypeData")
 
@@ -318,9 +317,9 @@ async function updateEventList() {
     $("#event-list").html(`<div class="text-secondary">Keine Ereignisse heute.</div>`)
   }
 }
+updateEventList = runOnce(updateEventList);
 
 async function updateSubstitutionList() {
-  updateSubstitutionList = runOnce(updateSubstitutionList);
   let substitutionsMode = localStorage.getItem("substitutionsMode") || "class";
 
   let data;
@@ -403,6 +402,7 @@ async function updateSubstitutionList() {
   $("#substitutions-no-data").addClass("d-none")
   $("#substitutions-mode-wrapper").removeClass("d-none");
 }
+updateSubstitutionList = runOnce(updateSubstitutionList);
 
 function updateSubstitutionsMode() {
   if ($("#substitutions-mode-class")[0].checked) {
@@ -419,7 +419,6 @@ function updateSubstitutionsMode() {
 }
 
 async function updateTimetable() {
-  updateTimetable = runOnce(updateTimetable);
   // If the data hasn't loaded yet, wait until it is loaded
   await dataLoaded("timetableData")
   await dataLoaded("subjectData")
@@ -708,6 +707,7 @@ async function updateTimetable() {
     }
   }
 }
+updateTimetable = runOnce(updateTimetable);
 
 function updateTimetableMode() {
   if (selectedDay - 1 < 0 || selectedDay - 1 > 4) {
