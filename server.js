@@ -1,16 +1,21 @@
+const { createServer } = require('http');
 const express = require('express');
 const helmet = require('helmet');
+const session = require('express-session')
+const { Pool } = require('pg');
+require('dotenv').config();
+
 const ErrorHandler = require('./src/middleware/errorMiddleware');
 const RequestLogger = require('./src/middleware/loggerMiddleware');
+const logger = require('./logger');
 const sequelize = require('./src/sequelize');
-const { createServer } = require('http');
+
 const account = require('./src/routes/accountRoute');
 const homework = require('./src/routes/homeworkRoute');
 const substitutions = require('./src/routes/substitutionRoute');
 const teams = require('./src/routes/teamRoute');
 const events = require('./src/routes/eventRoute');
-const session = require('express-session');
-const logger = require('./logger');
+
 const app = express();
 const server = createServer(app);
 
@@ -18,6 +23,13 @@ server.listen(3000, () => {
   logger.success('Server running at http://localhost:3000');
 });
 
+const sessionPool = new Pool({
+  user: sequelize.config.username,
+  host: sequelize.config.host,
+  database: sequelize.config.database,
+  password: sequelize.config.password,
+  port: sequelize.config.port,
+});
 
 // Content Security Policy
 app.use(helmet({
@@ -51,39 +63,23 @@ app.use(helmet({
     },
   },
 
-  // Ensures a top-level document does not share a browser context group with cross-origin documents
   crossOriginOpenerPolicy: {
-    policy: 'same-origin' // Protects against timing and XS-Leaks attacks
+    policy: 'same-origin'
   },
-
-  // Prevents resources from being loaded cross-origin
   crossOriginResourcePolicy: {
     policy: 'same-origin'
   },
-
-  // Controls how much referrer information should be included
   referrerPolicy: {
     policy: 'strict-origin-when-cross-origin'
   },
-
-  // Prevents MIME type sniffing
   noSniff: true,
-
-  // Helps manage DNS prefetching for performance and privacy
   dnsPrefetchControl: {
     allow: false
   },
-
-  // X-Frame-Options
-  // Prevents clickjacking attacks
   frameguard: {
-    action: 'deny' // Completely prevent framing
+    action: 'deny'
   },
-
-  // Remove X-Powered-By header to reduce fingerprinting
   hidePoweredBy: true,
-
-  // Provides origin-based process isolation
   originAgentCluster: true,
 }));
 
@@ -92,7 +88,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(express.json());
 app.use(session({
-  secret: "notsecret",
+  store: new (require('connect-pg-simple')(session))({
+    pool: sessionPool,
+    tableName: 'account_sessions',
+    createTableIfMissing: true
+  }),
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
