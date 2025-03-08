@@ -27,8 +27,8 @@ services:
          export REDIS_HOST=redis &&
          export REDIS_PORT=$(cat /run/secrets/redis_port) &&
          export SESSION_SECRET=$(cat /run/secrets/session_secret) &&
-         node ./src/initTables/eventType.js &&
-         node ./src/initTables/team.js &&
+         node ./src/initTable/eventType.js &&
+         node ./src/initTable/team.js &&
          redis-cli -h redis FLUSHALL &&
          node server.js"
   postgres:
