@@ -14,8 +14,10 @@ services:
       - redis_port
       - session_secret
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - .:/app
       - /app/node_modules
@@ -34,6 +36,12 @@ services:
   postgres:
     image: postgres:14
     container_name: taskminder-postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $(cat /run/secrets/db_user) -d $(cat /run/secrets/db_name)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
     secrets:
       - db_user
       - db_password
@@ -47,6 +55,11 @@ services:
   redis:
     image: redis:6
     container_name: taskminder-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
     volumes:
       - redis-data:/data
 
