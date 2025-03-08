@@ -143,7 +143,7 @@ async function loadHomeworkCheckedData() {
     // If the user is not logged in, get the data from the local storage
     homeworkCheckedData = JSON.parse(localStorage.getItem("homeworkCheckedData"))
     if (homeworkCheckedData == null) {
-      homeworkCheckedData = {};
+      homeworkCheckedData = [];
     }
     $(window).trigger("homeworkCheckedDataLoaded");
   }
@@ -281,7 +281,6 @@ async function reloadAll() {
 
   document.body.style.display = "block";
 }
-
 reloadAll = runOnce(reloadAll);
 
 function updateAll() {

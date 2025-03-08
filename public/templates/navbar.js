@@ -324,7 +324,6 @@ $("#logout-button").on("click", () => {
   logoutAccount();
 });
 
-console.log(localStorage.getItem("animations"))
 let animations = JSON.parse(localStorage.getItem("animations"));
 if (animations == undefined) animations = true
 $("#animations input").prop("checked", animations);
