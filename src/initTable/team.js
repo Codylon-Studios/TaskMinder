@@ -2,6 +2,9 @@ const { exec } = require("child_process");
 const logger = require('../../logger');
 const Team = require('../models/team');
 const sequelize = require('../sequelize');
+const redisCmd = process.env.NODE_ENV === 'DEVELOPMENT' 
+    ? `redis-cli flushall`
+    : `redis-cli -h redis FLUSHALL`;
 
 const defaultTeams = [
     { teamId: 0, name: "Französisch" },
@@ -28,7 +31,7 @@ const defaultTeams = [
     }
 
     try {
-        exec("redis-cli flushall", (error, stdout, stderr) => {
+        exec(redisCmd, (error, stdout, stderr) => {
             if (error) {
                 logger.writeError("Error flushing redis cache:", error.message)
                 process.exit(1)
