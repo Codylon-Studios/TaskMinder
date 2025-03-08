@@ -210,7 +210,8 @@ function executeCommand(forceRestart, command, args) {
     let stdoutBuffer = ""
     let stderrBuffer = ""
     
-    let commandProcess = spawn(command, args)
+    let commandProcess = spawn(command, args, {env: {}})
+    
     options[optionId].commandProcess = commandProcess;
     commandProcess.stdout.on("data", (data) => {
         stdoutBuffer += data.toString()
@@ -293,7 +294,7 @@ const options = [
         name: `Init Table "team"`,
         information: `Clear the table "src/models/team" and fill it with the standard teams ("Französisch", ` +
             `"Profilfach", "Ethik", "Evangelisch", "Katholisch", "Sport (m)", "Sport (w)").`,
-        commands: ["node src/initTables/team.js"],
+        commands: ["node src/initTable/team.js"],
         function: (forceRestart) => { executeCommand(forceRestart, "node", [`src/initTable/team.js`]) },
         state: "nothing",
         commandProcess: null,
@@ -303,7 +304,7 @@ const options = [
         name: `Init Table "eventType"`,
         information: `Clear the table "src/models/eventType" and fill it with the standard event types ("Prüfung" (blue), ` +
             `"Ausflug" (orange), "Geburtstag" (pink), "Schulfrei" (green), "Sonstiges" (gray)).`,
-        commands: ["node src/initTables/eventType.js"],
+        commands: ["node src/initTable/eventType.js"],
         function: (forceRestart) => { executeCommand(forceRestart, "node", [`src/initTable/eventType.js`]) },
         state: "nothing",
         commandProcess: null,
@@ -314,7 +315,7 @@ const options = [
         information: `Start a sass compiler watching for changes in main.scss, events.scss and homework.scss. Source maps are deactivated.`,
         commands: ["sass --watch --no-source-map src/sass/main.scss:public/main/main.css src/sass/events.scss:public/events/events.css" +
             "src/sass/homework.scss:public/homework/homework.css"],
-        function: (restart) => { executeCommand(restart, "sass", ["--watch", "--no-source-map", "src/sass/main.scss:public/main/main.css",
+        function: (restart) => { executeCommand(restart, "node_modules/.bin/sass", ["--watch", "--no-source-map", "src/sass/main.scss:public/main/main.css",
             "src/sass/events.scss:public/events/events.css", "src/sass/homework.scss:public/homework/homework.css"
         ]) },
         state: "nothing",
@@ -389,6 +390,9 @@ process.stdin.on("keypress", (str, key) => {
             }
         }
         else if (key.name === "r") {
+            if (options[selectedOption].commandProcess != null) {
+                kill(options[selectedOption].commandProcess.pid, "SIGKILL")
+            }
             options[selectedOption].function(true)
         }
         else {

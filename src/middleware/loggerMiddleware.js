@@ -7,6 +7,10 @@ const ErrorHandler = (req, res, next) => {
 
     res.send = function (body) {
         try {
+            const d = new Date()
+            let dateStr = `[${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${(d.getDate()).toString().padStart(2, "0")} ` +
+                `${(d.getHours()).toString().padStart(2, "0")}:${(d.getMinutes()).toString().padStart(2, "0")}]`
+
             const duration = Date.now() - start;
 
             let statusCodeColor = "";
@@ -21,7 +25,7 @@ const ErrorHandler = (req, res, next) => {
             
             logger.write(
                 {color: "magenta", text: "[TaskMinder]"},
-                {color: "gray", text: `[${new Date().toISOString()}]`},
+                {color: "gray", text: dateStr},
                 {padding: {totalWidth: 5, alignment: "right"}, color: durationColor, text: `${duration}ms`},
                 {bold: true, padding: {totalWidth: 4}, text: req.method},
                 {underline: true, text: req.url},

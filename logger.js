@@ -63,7 +63,7 @@ const logger = {
     StyledText: class {
         constructor(texts) {
             this.components = []
-            if (Array.isArray(texts)) {
+            if (Object.prototype.toString.call(texts) == "[object Array]") {
                 for (let text of texts) {
                     let styledText = new logger.StyledText(text)
                     for (let styledTextComponent of styledText.components) {
@@ -71,7 +71,7 @@ const logger = {
                     }
                 }
             }
-            else if (typeof texts == "object") {
+            else if (Object.prototype.toString.call(texts) == "[object Object]") {
                 if (texts.disableParsing) {
                     let { text, ...styles } = texts
                     this.components.push(new logger.StyledTextComponent(styles, text))
@@ -107,53 +107,62 @@ const logger = {
         }
     },
     convertToString(obj, disableParsing, depth) {
+        function parseError(err) {
+            let errArray = err.stack.split("\n")
+            errArray[0] = logger.colors.red.fg + "\x1b[1m" + err.name + "\x1b[0m: " + logger.colors.red.fg + err.message + "\x1b[0m"
+            return errArray.join("\n")
+        }
+
         if (! depth || depth == 3) depth = 0
         let color = [logger.colors.blue.fg, logger.colors.magenta.fg, logger.colors.yellow.fg][depth]
 
-        if (typeof obj == "string") {
-            return logger.colors.gray.fg + JSON.stringify(obj) + "\x1b[0m";
-        }
-        else if (typeof obj == "number") {
-            if (isNaN(obj) || ! isFinite(obj)) return logger.colors.green.fg + "\x1b[1m" + obj.toString() + "\x1b[0m"
-            return logger.colors.cyan.fg + obj.toString() + "\x1b[0m"
-        }
-        else if (typeof obj == "boolean") {
-            return logger.colors.green.fg + "\x1b[1m" + obj.toString() + "\x1b[0m"
-        }
-        else if (typeof obj == "undefined") {
-            return logger.colors.green.fg + "\x1b[1m" + "undefined" + "\x1b[0m"
-        }
-        else if (obj == null) {
-            return logger.colors.green.fg + "\x1b[1m" + "null" + "\x1b[0m"
-        }
-
         if (disableParsing) {
-            if (Array.isArray(obj)) {
-                let res = ""
-                res += color + "\x1b[1m"  + "[ " + "\x1b[0m"
-                res += obj.map((entry) => {
-                    return this.convertToString(entry, true, depth + 1)
-                }).join(", ")
-                res += color + "\x1b[1m"  + " ]" + "\x1b[0m"
-                return res
-            }
-            else if (typeof obj == "object"){
-                let res = ""
-                res += color + "\x1b[1m"  + "{ " + "\x1b[0m"
-                res += Object.entries(obj).map(([key, val]) => {
-                    return key.toString() + ": " + this.convertToString(val, true, depth + 1)
-                }).join(", ")
-                res += color + "\x1b[1m"  + " }" + "\x1b[0m"
-                return res
-            }
-            else {
-                console.error("Unknown Object type:", obj)
-                return logger.colors.red.fg + "???" + "\x1b[0m"
+            let res;
+            switch (Object.prototype.toString.call(obj)) {
+                case "[object Boolean]":
+                    return logger.colors.green.fg + "\x1b[1m" + obj.toString() + "\x1b[0m"
+                case "[object Undefined]":
+                    return logger.colors.green.fg + "\x1b[1m" + "undefined" + "\x1b[0m"
+                case "[object Null]":
+                    return logger.colors.green.fg + "\x1b[1m" + "null" + "\x1b[0m"
+                case "[object Number]":
+                    if (isNaN(obj) || ! isFinite(obj)) return logger.colors.green.fg + "\x1b[1m" + obj.toString() + "\x1b[0m"
+                    return logger.colors.cyan.fg + obj.toString() + "\x1b[0m"
+                case "[object String]":
+                    return logger.colors.gray.fg + JSON.stringify(obj) + "\x1b[0m";
+                case "[object Array]":
+                    res = ""
+                    res += color + "\x1b[1m"  + "[ " + "\x1b[0m"
+                    res += obj.map((entry) => {
+                        return this.convertToString(entry, true, depth + 1)
+                    }).join(", ")
+                    res += color + "\x1b[1m"  + " ]" + "\x1b[0m"
+                    return res
+                case "[object Object]":
+                    res = ""
+                    res += color + "\x1b[1m"  + "{ " + "\x1b[0m"
+                    res += Object.entries(obj).map(([key, val]) => {
+                        return key.toString() + ": " + this.convertToString(val, true, depth + 1)
+                    }).join(", ")
+                    res += color + "\x1b[1m"  + " }" + "\x1b[0m"
+                    return res
+                default:
+                    console.error("Unknown Object type:", obj)
+                    return logger.colors.red.fg + "???" + "\x1b[0m"
             }
         }
         else {
             try {
-                return obj.toString()
+                switch (Object.prototype.toString.call(obj)) {
+                    case "[object Undefined]":
+                        return "undefined"
+                    case "[object Null]":
+                        return "null"
+                    case "[object Error]":
+                        return parseError(obj)
+                    default:
+                        return obj.toString()
+                }
             }
             catch {
                 console.error("Unknown Object type:", obj)
@@ -280,5 +289,3 @@ process.stdout.on("resize", () => {
     logger.consoleWidth = process.stdout.columns || 80
     logger.consoleHeight = process.stdout.rows || 24
 })
-
-logger.write({disableParsing: true, text: {true: true, b: null,  a: "124", geheim: [1, NaN, 7, {"HJEI": 12}]}})
