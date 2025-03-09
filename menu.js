@@ -285,7 +285,7 @@ const options = [
         name: `Start Server`,
         information: `Start the TaskMinder server (server.js) using nodemon. Only watches for changes in the src folder.`,
         commands: ["nodemon --watch src server.js"],
-        function: (restart) => { executeCommand(restart, "nodemon", ["--watch", "src", "server.js"]) },
+        function: (restart) => { executeCommand(restart, "node_modules/.bin/nodemon", ["--watch", "src", "server.js"]) },
         state: "nothing",
         commandProcess: null,
         logs: []
