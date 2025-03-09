@@ -2,10 +2,11 @@
 // This script will run on every single Website
 //
 
-function loadScript(src) {
+function loadScript(src, func) {
   let script = document.createElement("script");
   script.src = src;
   script.defer = true;
+  script.onload = func
   document.head.appendChild(script)
 }
 
@@ -52,11 +53,9 @@ jQueryScript.onload = () => {
   //resources.push(`<link rel="icon" href="/favicon.ico" type="image/x-icon">`)
 
   // Load global JS
-  loadScript("/global.js")
-
-  // Add possibility to include divs with class "load-content" to load e.g. the navbar
-  $( () => {
+  loadScript("/global.js", () => {
     document.body.style.display = "none"  
+    // Add possibility to include divs with class "load-content" to load e.g. the navbar
     loadTemplateContent();
 
     // Load site specific resources
@@ -68,6 +67,6 @@ jQueryScript.onload = () => {
     siteSpecificStyle.href = `/${url}/${url}.css`
     siteSpecificStyle.rel = "stylesheet"
     document.head.appendChild(siteSpecificStyle);
-  });
+  })
 };
 document.head.appendChild(jQueryScript);
