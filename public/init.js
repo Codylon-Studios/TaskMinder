@@ -50,7 +50,12 @@ jQueryScript.onload = () => {
   favicon.href = "/favicon.ico"
   favicon.type = "image/x-icon"
   document.head.appendChild(favicon);
-  //resources.push(`<link rel="icon" href="/favicon.ico" type="image/x-icon">`)
+
+  // Load pwa manifest
+  let manifest = document.createElement("link")
+  manifest.rel = "manifest"
+  manifest.href = "/manifest.json"
+  document.head.appendChild(manifest);
 
   // Load global JS
   loadScript("/global.js", () => {
