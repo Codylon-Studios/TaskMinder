@@ -3,13 +3,12 @@ const express = require('express');
 const helmet = require('helmet');
 const session = require('express-session')
 const { Pool } = require('pg');
+const socketIO = require('./src/socket');
 require('dotenv').config();
-
 const ErrorHandler = require('./src/middleware/errorMiddleware');
 const RequestLogger = require('./src/middleware/loggerMiddleware');
 const logger = require('./logger');
 const sequelize = require('./src/sequelize');
-
 const account = require('./src/routes/accountRoute');
 const homework = require('./src/routes/homeworkRoute');
 const substitutions = require('./src/routes/substitutionRoute');
@@ -18,6 +17,7 @@ const events = require('./src/routes/eventRoute');
 
 const app = express();
 const server = createServer(app);
+const io = socketIO.initialize(server);
 
 server.listen(3000, () => {
   logger.success('Server running at http://localhost:3000');
@@ -44,7 +44,8 @@ app.use(helmet({
       ],
       "connect-src": [
         "'self'", 
-        "https://ka-f.fontawesome.com"
+        "https://ka-f.fontawesome.com",
+        "wss://*"
       ],
       "style-src": [
         "'self'",
@@ -62,7 +63,6 @@ app.use(helmet({
       "frame-ancestors": ["'self'"]
     },
   },
-
   crossOriginOpenerPolicy: {
     policy: 'same-origin'
   },
@@ -87,7 +87,8 @@ app.use(helmet({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(express.json());
-app.use(session({
+
+const sessionMiddleware = session({
   store: new (require('connect-pg-simple')(session))({
     pool: sessionPool,
     tableName: 'account_sessions',
@@ -99,10 +100,11 @@ app.use(session({
   cookie: { 
     maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-  }, //10 days
+  }, //30 days
   name: 'UserLogin',
-}));
+});
 
+app.use(sessionMiddleware);
 app.use(RequestLogger);
 app.use('/account', account);
 app.use('/homework', homework);
@@ -122,9 +124,13 @@ sequelize.authenticate()
 app.get('/', function (req, res) {
   res.sendFile(__dirname + '/public/main/main.html');
 });
+
 app.get('/homework', function (req, res) {
   res.sendFile(__dirname + '/public/homework/homework.html');
 });
+
 app.get('/events', function (req, res) {
   res.sendFile(__dirname + '/public/events/events.html');
 });
+
+module.exports = { app, server };

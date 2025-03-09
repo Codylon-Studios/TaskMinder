@@ -33,6 +33,9 @@ if (localStorage.getItem("colorTheme") == "dark") {
   document.getElementsByTagName("html")[0].style.background = "#212529"
 }
 
+// Global socket variable that can be accessed from any script
+let socket;
+
 // Load jQuery without jQuery
 let jQueryScript = document.createElement('script');
 jQueryScript.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
@@ -51,7 +54,23 @@ jQueryScript.onload = () => {
   favicon.type = "image/x-icon"
   document.head.appendChild(favicon);
   //resources.push(`<link rel="icon" href="/favicon.ico" type="image/x-icon">`)
-
+  // Load Socket.IO client library
+  loadScript("/socket.io/socket.io.js", () => {
+    // Initialize Socket.IO connection
+    socket = io();
+    // Setup basic Socket.IO event handlers
+    socket.on('connect', () => {
+      console.log('Connected to server via Socket.IO');
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+    });
+    
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
+  });
   // Load global JS
   loadScript("/global.js", () => {
     document.body.style.display = "none"  
