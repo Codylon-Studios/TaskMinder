@@ -2,6 +2,7 @@ const { connectRedis, redisClient, cacheKeyHomeworkData, cacheKeyHomeworkChecked
 const validator = require('validator');
 const Homework10d = require('../models/homework');
 const Homework10dCheck = require('../models/homeworkCheck');
+const socketIO = require('../socket');
 const logger = require('../../logger');
 require('dotenv').config();
 
@@ -39,6 +40,8 @@ const homeworkService = {
         }
         const data = await Homework10d.findAll({ raw: true });
         await updateCacheHomeworkData(data);
+        const io = socketIO.getIO();
+        io.emit('updateHomeworkData');
     },
 
     async checkHomework(homeworkId, checkStatus, session) {
@@ -87,6 +90,8 @@ const homeworkService = {
         });
         const data = await Homework10d.findAll({ raw: true });
         await updateCacheHomeworkData(data);
+        const io = socketIO.getIO();
+        io.emit('updateHomeworkData');
     },
 
     async editHomework(homeworkId, subjectId, content, assignmentDate, submissionDate, session) {
@@ -118,6 +123,8 @@ const homeworkService = {
         
         const data = await Homework10d.findAll({ raw: true });
         await updateCacheHomeworkData(data);
+        const io = socketIO.getIO();
+        io.emit('updateHomeworkData');
     },
 
     async getHomeworkData() {
