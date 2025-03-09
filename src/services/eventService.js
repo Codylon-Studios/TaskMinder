@@ -1,5 +1,6 @@
 const logger = require('../../logger');
 const { redisClient, cacheExpiration } = require('../constant');
+const socketIO = require('../socket');
 const sass = require('sass');
 
 const EventType = require('../models/eventType');
@@ -55,6 +56,8 @@ const eventService = {
         const data = await Event.findAll({ raw: true });
         try {
             await redisClient.set("event_data", JSON.stringify(data), { EX: cacheExpiration });
+            const io = socketIO.getIO();
+            io.emit('updateEventData');
         } catch (err) {
             logger.error('Error updating Redis cache:', err);
             throw new Error();
@@ -92,6 +95,8 @@ const eventService = {
         const data = await Event.findAll({ raw: true });
         try {
             await redisClient.set("event_data", JSON.stringify(data), { EX: cacheExpiration });
+            const io = socketIO.getIO();
+            io.emit('updateEventData');
         } catch (err) {
             logger.error('Error updating Redis cache:', err);
             throw new Error();
@@ -119,6 +124,8 @@ const eventService = {
         const data = await Event.findAll({ raw: true });
         try {
             await redisClient.set("event_data", JSON.stringify(data), { EX: cacheExpiration });
+            const io = socketIO.getIO();
+            io.emit('updateEventData');
         } catch (err) {
             logger.error('Error updating Redis cache:', err);
             throw new Error();
