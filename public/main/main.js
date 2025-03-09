@@ -777,7 +777,7 @@ function slideCalendar(direction, transition, slideTime) {
   updateAll();
 }
 
-$(document).ready(() => {
+$(function(){
   updateAllFunctions.push(() => {
     updateHomeworkList();
     updateEventList();
@@ -913,3 +913,27 @@ $("#team-selection-info-later").on("click", () => {
   localStorage.setItem("showTeamSelectionInfo", "false")
   $("#team-selection-info").removeClass("d-flex").addClass("d-none")
 })
+
+socket.on('updateHomeworkData', () => {
+  try {
+    homeworkData = undefined; // Reset homeworkData
+    loadHomeworkData(); // Reload the homework data
+    updateSubjectList(); // Update subject list
+    updateHomeworkList(); // Update homework list
+    console.log("homework UI updated");
+  } catch (error) {
+    console.error("Error handling updateHomeworkData:", error);
+  }
+});
+
+
+socket.on('updateEventData', ()=>{
+  try {
+  eventData = undefined;
+  loadEventData();
+  updateEventList();
+  console.log("event UI updated");
+  } catch (error) {
+    console.error("Error handling updateEventData:", error);
+  }
+});

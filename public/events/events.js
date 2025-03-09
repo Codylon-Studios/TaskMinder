@@ -358,7 +358,7 @@ function resetFilters() {
 
 let $ui;
 
-$(document).ready(() => {
+$(function(){
   updateAllFunctions.push(() => {
     updateEventTypeList();
     updateEventList();
@@ -492,4 +492,15 @@ $(document).ready(() => {
   $(document).on("click", "#show-add-event-button", () => {
     addEvent();
   });
+});
+
+socket.on('updateEventData', ()=>{
+  try {
+  eventData = undefined;
+  loadEventData();
+  updateEventList();
+  console.log("event UI updated");
+  } catch (error) {
+    console.error("Error handling updateEventData:", error);
+  }
 });
