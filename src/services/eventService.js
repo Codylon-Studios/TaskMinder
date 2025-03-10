@@ -30,7 +30,7 @@ const eventService = {
 
         return data;
     },
-    async addEvent(type, name, description, startDate, lesson, endDate, session) {
+    async addEvent(type, name, description, startDate, lesson, endDate, teamId, session) {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
@@ -44,7 +44,8 @@ const eventService = {
                 description: description,
                 startDate: startDate,
                 lesson: lesson,
-                endDate: endDate
+                endDate: endDate,
+                teamId: teamId
             });
         }
         catch {
@@ -63,7 +64,7 @@ const eventService = {
             throw new Error();
         }
     },
-    async editEvent(eventId, type, name, description, startDate, lesson, endDate, session) {
+    async editEvent(eventId, type, name, description, startDate, lesson, endDate, teamId, session) {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
@@ -78,7 +79,8 @@ const eventService = {
                     description: description,
                     startDate: startDate,
                     lesson: lesson,
-                    endDate: endDate
+                    endDate: endDate,
+                    teamId: teamId
                 },
                 {
                     where: { eventId: eventId }

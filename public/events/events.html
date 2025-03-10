@@ -88,25 +88,29 @@
                 <!-- Gets filled -->
               </select>
             </div>
+
             <div class="mb-3">
               <label for="add-event-name" class="form-label">
                 Bennene das Ereignis
               </label>
               <input type="text" class="form-control add-event-input" id="add-event-name" placeholder='zum Beispiel "Schulaufgabe Latein" '>
             </div>
+
             <div class="mb-3">
               <label for="add-event-description" class="form-label">
                 Füge eine Beschreibung für das Ereignis hinzu (optional)
               </label>
               <input type="text" class="form-control add-event-input" id="add-event-description" placeholder='zum Beispiel "Kreativschulaufgabe"'>
             </div>
+
             <div class="mb-3">
               <label for="add-event-start-date" class="form-label">
                 Gib ein, wann das Ereignis stattfindet
               </label>
               <input type="date" class="form-control add-event-input" id="add-event-start-date">
             </div>
-            <div class="row">
+
+            <div class="row mb-3">
               <div class="col">
                 <label for="add-event-lesson" class="form-label">
                   Gib eine Unterrichtsstunde an (optional)
@@ -114,6 +118,7 @@
                 <input type="text" class="form-control add-event-input" id="add-event-lesson" placeholder='zum Beispiel "2" oder "1 - 3"'>
                 <div class="form-text">zum Beispiel für Schulaufgaben</div>
               </div>
+
               <div class="col">
                 <label for="add-event-end-date" class="form-label">
                   Gib ein Enddatum an (optional)
@@ -122,6 +127,14 @@
                 <div class="form-text">zum Beispiel für Ferien</div>
               </div>
             </div>
+
+            <label for="add-event-team" class="form-label">
+              Wähle ein Team für das Ereignis aus (optional)
+            </label>
+            <select class="form-select add-event-input" id="add-event-team">
+              <option value="-1" selected>Alle</option>
+              <!-- Gets filled -->
+            </select>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
@@ -148,25 +161,29 @@
                 <!-- Gets filled -->
               </select>
             </div>
+
             <div class="mb-3">
               <label for="edit-event-name" class="form-label">
                 Bennene das Ereignis
               </label>
               <input type="text" class="form-control edit-event-input" id="edit-event-name" placeholder='zum Beispiel "Schulaufgabe Latein" '>
             </div>
+
             <div class="mb-3">
               <label for="edit-event-description" class="form-label">
                 Füge eine Beschreibung für das Ereignis hinzu (optional)
               </label>
               <input type="text" class="form-control edit-event-input" id="edit-event-description" placeholder='zum Beispiel "Kreativschulaufgabe"'>
             </div>
+
             <div class="mb-3">
               <label for="edit-event-start-date" class="form-label">
                 Gib ein, wann das Ereignis stattfindet
               </label>
               <input type="date" class="form-control edit-event-input" id="edit-event-start-date">
             </div>
-            <div class="row">
+
+            <div class="row mb-3">
               <div class="col">
                 <label for="edit-event-lesson" class="form-label">
                   Gib eine Unterrichtsstunde an (optional)
@@ -174,6 +191,7 @@
                 <input type="text" class="form-control edit-event-input" id="edit-event-lesson" placeholder='zum Beispiel "2" oder "1-3"'>
                 <div class="form-text">zum Beispiel für Schulaufgaben</div>
               </div>
+
               <div class="col">
                 <label for="edit-event-end-date" class="form-label">
                   Gib ein Enddatum an (optional)
@@ -182,6 +200,15 @@
                 <div class="form-text">zum Beispiel für Ferien</div>
               </div>
             </div>
+
+
+            <label for="edit-event-team" class="form-label">
+              Wähle ein Team für das Ereignis aus (optional)
+            </label>
+            <select class="form-select edit-event-input" id="edit-event-team">
+              <option value="-1" selected>Alle</option>
+              <!-- Gets filled -->
+            </select>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>

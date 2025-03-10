@@ -6,6 +6,7 @@ async function getNewCalendarWeekContent() {
 
   await dataLoaded("weekDates")
   await dataLoaded("weeklyEventData")
+  await dataLoaded("joinedTeamsData")
 
   // Prepare the variable
   newCalendarWeekContent = ""
@@ -36,6 +37,10 @@ async function getNewCalendarWeekContent() {
     let multiDayEventsA = []
 
     for (let event of weeklyEventData) {
+      if (! joinedTeamsData.includes(event.teamId) && event.teamId != -1) {
+        continue;
+      }
+
       if (event.endDate == null) {
         if (isSameDay(new Date(parseInt(event.startDate)), weekDates[i])) {
           singleDayEvents += `<div class="col"><div class="event event-${event.type}"></div></div>`
@@ -211,6 +216,7 @@ async function updateHomeworkList() {
   await dataLoaded("subjectData")
   await dataLoaded("homeworkData")
   await dataLoaded("homeworkCheckedData")
+  await dataLoaded("joinedTeamsData")
 
   // Note: homeworkCheckedData will have a different structure
   // Server: [{checkId: int, username: String, homeworkId: int, checked: boolean}, ...]
@@ -244,6 +250,11 @@ async function updateHomeworkList() {
       }
     }
 
+    // Filter by team
+    if (! joinedTeamsData.includes(homework.teamId) && homework.teamId != -1) {
+      continue;
+    }
+
     // The template for a homework with checkbox and edit options
     let template = 
       `<div class="mb-1 form-check d-flex">
@@ -267,11 +278,16 @@ updateHomeworkList = runOnce(updateHomeworkList);
 async function updateEventList() {
   await dataLoaded("weeklyEventData")
   await dataLoaded("eventTypeData")
+  await dataLoaded("joinedTeamsData")
 
   // Clear the list
   $("#event-list").empty();
 
   for (let event of weeklyEventData) {
+    if (! joinedTeamsData.includes(event.teamId) && event.teamId != -1) {
+      continue;
+    }
+
     // Get the information for the event
     let type = event.type;
     let name = event.name;
@@ -573,7 +589,6 @@ async function updateTimetable() {
           return true;
         }
         function matchesTeacher(substitution, lesson) {
-          console.log(lesson.substitutionTeacherName.includes(substitution.teacherOld))
           return lesson.substitutionTeacherName.includes(substitution.teacherOld);
         }
 
@@ -654,6 +669,10 @@ async function updateTimetable() {
           return false;
         }
         return true;
+      }
+
+      if (! joinedTeamsData.includes(event.teamId) && event.teamId != -1) {
+        continue;
       }
 
       if (event.lesson == "") {
@@ -790,6 +809,7 @@ $(function(){
     updateEventList();
     updateSubstitutionList();
     updateTimetable();
+    updateCalendarWeekContent("#calendar-week-old")
   })
 
   updateAll();

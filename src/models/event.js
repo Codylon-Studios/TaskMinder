@@ -2,6 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../sequelize');
 
 const EventType = require('./eventType');
+const Team = require('./team');
 
 const Event = sequelize.define('Event', {
     eventId: {
@@ -37,6 +38,20 @@ const Event = sequelize.define('Event', {
     lesson: {
       type: DataTypes.TEXT,
       allowNull: true,
+    },
+    teamId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        async isValidTeamId(teamId) {
+          if (teamId == -1) return;
+    
+          const teamExists = await Team.findByPk(teamId);
+          if (!teamExists) {
+            throw new Error("Invalid teamId (Team does not exist): " + teamId);
+          }
+        }
+      }
     },
   }, {
     tableName: 'event',

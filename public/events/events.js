@@ -1,6 +1,7 @@
 async function updateEventList() {
   await dataLoaded("eventData")
   await dataLoaded("eventTypeData")
+  await dataLoaded("joinedTeamsData")
 
   // Clear the list
   $("#event-list").empty();
@@ -43,6 +44,11 @@ async function updateEventList() {
       if (filterDate < parseInt(event.startDate)) {
         continue;
       }
+    }
+
+    // Filter by team
+    if (! joinedTeamsData.includes(event.teamId) && event.teamId != -1) {
+      continue;
     }
 
     // The template for an event with edit options
@@ -118,6 +124,29 @@ async function updateEventTypeList() {
 }
 updateEventTypeList = runOnce(updateEventTypeList);
 
+async function updateTeamList() {
+  await dataLoaded("teamsData");
+
+  // Clear the select element in the add event modal
+  $("#add-event-team").empty();
+  $("#add-event-team").append('<option value="-1" selected>Alle</option>');
+  // Clear the select element in the edit event modal
+  $("#edit-event-team").empty();
+  $("#edit-event-team").append('<option value="-1" selected>Alle</option>');
+
+  teamsData.forEach((team, teamId) => {
+    // Get the team data
+    let teamName = team.name;
+
+    // Add the template for the select elements
+    let templateFormSelect =
+      `<option value="${teamId}">${teamName}</option>`;
+    $("#add-event-team").append(templateFormSelect);
+    $("#edit-event-team").append(templateFormSelect);
+  });
+}
+updateTeamList = runOnce(updateTeamList);
+
 function addEvent() {
   //
   // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS AN EVENT
@@ -130,6 +159,7 @@ function addEvent() {
   $("#add-event-start-date").val("");
   $("#add-event-lesson").val("");
   $("#add-event-end-date").val("");
+  $("#add-event-team").val("-1");
 
   // Disable the actual "add" button, because not all information is given
   $("#add-event-button").addClass("disabled");
@@ -147,6 +177,7 @@ function addEvent() {
     const startDate = $("#add-event-start-date").val();
     const lesson = $("#add-event-lesson").val().trim();
     const endDate = $("#add-event-end-date").val();
+    const team = $("#add-event-team").val();
 
     // Prepare the POST request
     let data = {
@@ -155,7 +186,8 @@ function addEvent() {
       description: description,
       startDate: dateToMs(startDate),
       lesson: lesson,
-      endDate: dateToMs(endDate)
+      endDate: dateToMs(endDate),
+      teamId: team
     };
     // Save whether the server has responed
     let hasResponded = false;
@@ -222,6 +254,7 @@ function editEvent(eventId) {
   $("#edit-event-start-date").val(msToInputDate(data.startDate));
   $("#edit-event-lesson").val(data.lesson);
   $("#edit-event-end-date").val(msToInputDate(data.endDate));
+  $("#edit-event-team").val(data.teamId);
 
   // Enable the actual "edit" button, because all information is given
   $("#edit-event-button").removeClass("disabled");
@@ -239,6 +272,7 @@ function editEvent(eventId) {
     const startDate = $("#edit-event-start-date").val();
     const lesson = $("#edit-event-lesson").val().trim();
     const endDate = $("#edit-event-end-date").val();
+    const team = $("#edit-event-team").val();
 
     let data = {
       eventId: eventId,
@@ -247,7 +281,8 @@ function editEvent(eventId) {
       description: description,
       startDate: dateToMs(startDate),
       lesson: lesson,
-      endDate: dateToMs(endDate)
+      endDate: dateToMs(endDate),
+      teamId: team
     };
     // Save whether the server has responed
     let hasResponded = false;
@@ -362,6 +397,7 @@ $(function(){
   updateAllFunctions.push(() => {
     updateEventTypeList();
     updateEventList();
+    updateTeamList();
   })
   
   updateAll();
@@ -433,7 +469,7 @@ $(function(){
   })
 
   // On changing any information in the edit event modal, disable the edit button if any information is empty
-  $(".edit-event-input").on("input", () => {
+  $(".edit-event-input").on("input", function () {
     const type = $("#edit-event-type").val();
     const name = $("#edit-event-name").val().trim();
     const startDate = $("#edit-event-start-date").val();
