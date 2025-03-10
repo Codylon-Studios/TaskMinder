@@ -65,14 +65,6 @@ jQueryScript.onload = () => {
     // Initialize Socket.IO connection
     socket = io();
     // Setup basic Socket.IO event handlers
-    socket.on('connect', () => {
-      console.log('Connected to server via Socket.IO');
-    });
-    
-    socket.on('disconnect', () => {
-      console.log('Disconnected from server');
-    });
-    
     socket.on('connect_error', (error) => {
       console.error('Connection error:', error);
     });

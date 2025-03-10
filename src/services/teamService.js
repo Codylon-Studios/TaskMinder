@@ -52,6 +52,8 @@ const teamService = {
         return teams;
     },
     async setJoinedTeamsData(teams, session) {
+        teams = teams || []
+
         let accountId
         if (!(session.account)) {
             let err = new Error("User not logged in");

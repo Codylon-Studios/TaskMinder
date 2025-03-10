@@ -572,22 +572,13 @@ async function updateTimetable() {
           }
           return true;
         }
-        function matchesSubject(substitution, lesson) {
-          if (substitution.subject == lesson.substitutionSubjectName) {
-            return true;
-          }
-          return substitution.subject == "-";
-        }
         function matchesTeacher(substitution, lesson) {
+          console.log(lesson.substitutionTeacherName.includes(substitution.teacherOld))
           return lesson.substitutionTeacherName.includes(substitution.teacherOld);
         }
 
-
         for (let substitution of classSubstitutionsData["plan" + substitutionPlanId]["substitutions"]) {
           if (! matchesLessonId(substitution, timetableEntryId)) {
-            continue;
-          }
-          if (! matchesSubject(substitution, lesson)) {
             continue;
           }
           if (! matchesTeacher(substitution, lesson)) {
@@ -609,31 +600,42 @@ async function updateTimetable() {
           }
   
           if (substitution.type == "Entfall") {
-            thisLessLesson.find(".timetable-less-subject .original").eq(lessonId).addClass("line-through-" + color)
-  
             // Times
             thisMoreLesson.find(".timetable-more-time").addClass("line-through-" + color)
+          }
   
-            // Subject
-            thisMoreLesson.find(".timetable-more-subject .original").eq(lessonId).addClass("line-through-" + color)
+          // Subject
+          let lessSubjectElement = thisLessLesson.find(".timetable-less-subject .original").eq(lessonId)
+          let moreSubjectElement = thisMoreLesson.find(".timetable-more-subject .original").eq(lessonId)
+          if (substitution.subject != lesson.substitutionSubjectName) {
+            moreSubjectElement.addClass("line-through-" + color)
+            lessSubjectElement.addClass("line-through-" + color)
+            if (substitution.subject != "-") {
+              moreSubjectElement.after(` <span class="text-${color} fw-bold">${substitution.subject}</span>`)
+              lessSubjectElement.after(` <span class="text-${color} fw-bold">${substitution.subject}</span>`)
+            }
+          }
+          else {
+            lessSubjectElement.addClass("fst-italic fw-semibold")
+            moreSubjectElement.addClass("fst-italic fw-bold")
           }
   
           // Room
           let roomElement = thisMoreLesson.find(".timetable-more-room .original").eq(lessonId)
-          if (substitution.room != thisMoreLesson.find(".timetable-more-room span")) {
+          if (substitution.room != lesson.room) {
             roomElement.addClass("line-through-" + color)
-          }
-          if (substitution.room != "-") {
-            roomElement.after(` <span class="text-${color} fw-bold">${substitution.room}</span>`)
+            if (substitution.room != "-") {
+              roomElement.after(` <span class="text-${color} fw-bold">${substitution.room}</span>`)
+            }
           }
   
           // Teacher
           let teacherElement = thisMoreLesson.find(".timetable-more-teacher .original").eq(lessonId)
-          if (substitution.teacher != thisMoreLesson.find(".timetable-more-teacher span")) {
+          if (substitution.teacher != lesson.teacher) {
             teacherElement.addClass("line-through-" + color)
-          }
-          if (substitution.teacher != "-") {
-            teacherElement.after(` <span class="text-${color} fw-bold">${substitution.teacher}</span>`)
+            if (substitution.teacher != "-") {
+              teacherElement.after(` <span class="text-${color} fw-bold">${substitution.teacher}</span>`)
+            }
           }
         }
       }
