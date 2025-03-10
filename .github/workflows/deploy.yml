@@ -22,7 +22,7 @@ jobs:
         - run: npm test
 
         - name: Build Docker Compose
-          run: docker-compose build
+          run: docker compose build
 
 #        - name: Set up SSH key
 #          uses: webfactory/ssh-agent@v0.7.0
