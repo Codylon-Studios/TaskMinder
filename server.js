@@ -1,6 +1,7 @@
 const { createServer } = require('http');
 const express = require('express');
 const helmet = require('helmet');
+const cron = require('node-cron');
 const session = require('express-session')
 const { Pool } = require('pg');
 const socketIO = require('./src/socket');
@@ -8,6 +9,7 @@ require('dotenv').config();
 const ErrorHandler = require('./src/middleware/errorMiddleware');
 const RequestLogger = require('./src/middleware/loggerMiddleware');
 const logger = require('./logger');
+const { cleanupOldHomework } = require('./src/homeworkCleanup');
 const sequelize = require('./src/sequelize');
 const account = require('./src/routes/accountRoute');
 const homework = require('./src/routes/homeworkRoute');
@@ -21,6 +23,12 @@ const io = socketIO.initialize(server);
 
 server.listen(3000, () => {
   logger.success('Server running at http://localhost:3000');
+});
+
+// Schedule the cron job to run at midnight (00:00) every day
+cron.schedule('0 0 * * *', () => {
+  logger.info('Starting scheduled homework cleanup');
+  cleanupOldHomework();
 });
 
 const sessionPool = new Pool({
@@ -132,5 +140,3 @@ app.get('/homework', function (req, res) {
 app.get('/events', function (req, res) {
   res.sendFile(__dirname + '/public/events/events.html');
 });
-
-module.exports = { app, server };
