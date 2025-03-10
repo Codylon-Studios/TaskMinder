@@ -496,10 +496,11 @@ $(function(){
 
 socket.on('updateEventData', ()=>{
   try {
-  eventData = undefined;
-  loadEventData();
-  updateEventList();
-  console.log("event UI updated");
+    eventData = undefined;
+
+    loadEventData();
+
+    updateEventList();
   } catch (error) {
     console.error("Error handling updateEventData:", error);
   }

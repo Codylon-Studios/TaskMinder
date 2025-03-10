@@ -587,11 +587,14 @@ $(function(){
 
 socket.on('updateHomeworkData', () => {
   try {
-    homeworkData = undefined; // Reset homeworkData
-    loadHomeworkData(); // Reload the homework data
-    updateSubjectList(); // Update subject list
-    updateHomeworkList(); // Update homework list
-    console.log("UI updated");
+    homeworkData = undefined;
+    homeworkCheckedData = undefined;
+
+    loadHomeworkData();
+    loadHomeworkCheckedData();
+
+    updateHomeworkList();
+
   } catch (error) {
     console.error("Error handling updateHomeworkData:", error);
   }

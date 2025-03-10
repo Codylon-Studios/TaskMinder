@@ -68,6 +68,8 @@ const homeworkService = {
                 }
             });
         }
+        const io = socketIO.getIO();
+        io.emit('updateHomeworkData');
     },
 
     async deleteHomework(homeworkId, session) {
