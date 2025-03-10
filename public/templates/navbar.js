@@ -202,7 +202,7 @@ function checkSecurePassword(password) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"'<>,.?/-]).{8,}$/.test(password);
 }
 
-async function updateTeamList() {
+async function updateTeamSelectionList() {
   await dataLoaded("joinedTeamsData");
   await dataLoaded("teamsData");
   
@@ -251,7 +251,7 @@ let $navbarToasts = {
 
 $(document).ready(() => {
   updateAllFunctions.push(() => {
-    updateTeamList();
+    updateTeamSelectionList();
   })
   
   updateAll();

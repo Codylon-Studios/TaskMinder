@@ -17,7 +17,7 @@ async function updateCacheHomeworkData(data) {
 };
 
 const homeworkService = {
-    async addHomework(subjectId, content, assignmentDate, submissionDate, session) {
+    async addHomework(subjectId, content, assignmentDate, submissionDate, teamId, session) {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
@@ -29,7 +29,8 @@ const homeworkService = {
                 content: content,
                 subjectId: subjectId,
                 assignmentDate: assignmentDate,
-                submissionDate: submissionDate
+                submissionDate: submissionDate,
+                teamId: teamId
             });
         }
         catch {
@@ -96,7 +97,7 @@ const homeworkService = {
         io.emit('updateHomeworkData');
     },
 
-    async editHomework(homeworkId, subjectId, content, assignmentDate, submissionDate, session) {
+    async editHomework(homeworkId, subjectId, content, assignmentDate, submissionDate, teamId, session) {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
@@ -109,7 +110,8 @@ const homeworkService = {
                     content: content,
                     subjectId: subjectId,
                     assignmentDate: assignmentDate,
-                    submissionDate: submissionDate
+                    submissionDate: submissionDate,
+                    teamId: teamId
                 },
                 {
                     where: { homeworkId: homeworkId }

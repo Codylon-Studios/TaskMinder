@@ -111,22 +111,35 @@
                 <!-- Gets filled -->
               </select>
             </div>
+
             <div class="mb-3">
               <label for="add-homework-content" class="form-label">
                 Füge eine Beschreibung für die Hausaufgabe hinzu
               </label>
               <input type="text" class="form-control add-homework-input" id="add-homework-content" placeholder="Deine Beschreibung">
             </div>
+
             <div class="mb-3">
               <label for="add-homework-date-assignment" class="form-label">
                 Gib ein, wann die Hausaufgabe aufgegeben wurde
               </label>
               <input type="date" class="form-control add-homework-input" id="add-homework-date-assignment">
             </div>
-            <label for="add-homework-date-submission" class="form-label">
-              Gib ein, bis wann die Hausaufgabe abgegeben werden muss
+
+            <div class="mb-3">
+              <label for="add-homework-date-submission" class="form-label">
+                Gib ein, bis wann die Hausaufgabe abgegeben werden muss
+              </label>
+              <input type="date" class="form-control add-homework-input" id="add-homework-date-submission">
+            </div>
+
+            <label for="add-homework-team" class="form-label">
+              Wähle ein Team für die Hausaufgabe aus (optional)
             </label>
-            <input type="date" class="form-control add-homework-input" id="add-homework-date-submission">
+            <select class="form-select add-homework-input" id="add-homework-team">
+              <option value="" selected>Alle</option>
+              <!-- Gets filled -->
+            </select>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
@@ -153,22 +166,35 @@
                 <!-- Gets filled -->
               </select>
             </div>
+
             <div class="mb-3">
               <label for="edit-homework-content" class="form-label">
                 Füge eine Beschreibung für die Hausaufgabe hinzu
               </label>
               <input type="text" class="form-control edit-homework-input" id="edit-homework-content" placeholder="Deine Beschreibung">
             </div>
+
             <div class="mb-3">
               <label for="edit-homework-date-assignment" class="form-label">
                 Gib ein, wann die Hausaufgabe aufgegeben wurde
               </label>
               <input type="date" class="form-control edit-homework-input" id="edit-homework-date-assignment">
             </div>
-            <label for="edit-homework-date-submission" class="form-label">
-              Gib ein, bis wann die Hausaufgabe abgegeben werden muss
+
+            <div class="mb-3">
+              <label for="edit-homework-date-submission" class="form-label">
+                Gib ein, bis wann die Hausaufgabe abgegeben werden muss
+              </label>
+              <input type="date" class="form-control edit-homework-input" id="edit-homework-date-submission">
+            </div>
+
+            <label for="edit-homework-team" class="form-label">
+              Wähle ein Team für die Hausaufgabe aus (optional)
             </label>
-            <input type="date" class="form-control edit-homework-input" id="edit-homework-date-submission">
+            <select class="form-select edit-homework-input" id="edit-homework-team">
+              <option value="" selected>Alle</option>
+              <!-- Gets filled -->
+            </select>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>

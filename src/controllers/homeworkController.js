@@ -4,9 +4,9 @@ const asyncHandler = require('express-async-handler');
 
 exports.homeworkController = {
     addHomework: asyncHandler(async(req, res, next) =>{
-        const { subjectId, content, assignmentDate, submissionDate } = req.body;
+        const { subjectId, content, assignmentDate, submissionDate, teamId } = req.body;
         try {
-            await homeworkService.addHomework(subjectId, content, assignmentDate, submissionDate, req.session);
+            await homeworkService.addHomework(subjectId, content, assignmentDate, submissionDate, teamId, req.session);
             res.sendStatus(200);
         } catch (error) {
             next(error);
@@ -31,9 +31,9 @@ exports.homeworkController = {
         }
     }),
     editHomework: asyncHandler(async(req, res, next) => {
-        const { id, subjectId, content, assignmentDate, submissionDate} = req.body;
+        const { id, subjectId, content, assignmentDate, submissionDate, teamId } = req.body;
         try {
-            await homeworkService.editHomework(id, subjectId, content, assignmentDate, submissionDate, req.session);
+            await homeworkService.editHomework(id, subjectId, content, assignmentDate, submissionDate, teamId, req.session);
             res.sendStatus(200);
         } catch (error) {
             next(error);

@@ -2,6 +2,7 @@ async function updateHomeworkList() {
   await dataLoaded("subjectData")
   await dataLoaded("homeworkData")
   await dataLoaded("homeworkCheckedData")
+  await dataLoaded("joinedTeamsData")
 
   // Note: homeworkCheckedData will have a different structure
   // Server: [{checkId: int, username: String, homeworkId: int, checked: boolean}, ...]
@@ -68,6 +69,11 @@ async function updateHomeworkList() {
       if (filterDate < parseInt(homework.submissionDate)) {
         continue;
       }
+    }
+
+    // Filter by team
+    if (! joinedTeamsData.includes(homework.teamId) && homework.teamId != -1) {
+      continue;
     }
 
     // The template for a homework with checkbox and edit options
@@ -141,6 +147,29 @@ async function updateSubjectList() {
 }
 updateSubjectList = runOnce(updateSubjectList);
 
+async function updateTeamList() {
+  await dataLoaded("teamsData");
+
+  // Clear the select element in the add homework modal
+  $("#add-homework-team").empty();
+  $("#add-homework-team").append('<option value="-1" selected>Alle</option>');
+  // Clear the select element in the edit homework modal
+  $("#edit-homework-team").empty();
+  $("#edit-homework-team").append('<option value="-1" selected>Alle</option>');
+
+  teamsData.forEach((team, teamId) => {
+    // Get the team data
+    let teamName = team.name;
+
+    // Add the template for the select elements
+    let templateFormSelect =
+      `<option value="${teamId}">${teamName}</option>`;
+    $("#add-homework-team").append(templateFormSelect);
+    $("#edit-homework-team").append(templateFormSelect);
+  });
+}
+updateTeamList = runOnce(updateTeamList);
+
 function addHomework() {
   //
   // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS A HOMEWORK
@@ -151,6 +180,7 @@ function addHomework() {
   $("#add-homework-content").val("");
   $("#add-homework-date-assignment").val(msToInputDate(Date.now())); // But set the assignment date to the current date
   $("#add-homework-date-submission").val("");
+  $("#add-homework-team").val("-1");
 
   // Disable the actual "add" button, because not all information is given
   $ui.addHomeWorkButton.addClass("disabled");
@@ -166,13 +196,15 @@ function addHomework() {
     const content = $("#add-homework-content").val().trim();
     const assignmentDate = $("#add-homework-date-assignment").val();
     const submissionDate = $("#add-homework-date-submission").val();
+    const team = $("#add-homework-team").val();
 
     // Prepare the POST request
     let data = {
       subjectId: subject,
       content: content,
       assignmentDate: dateToMs(assignmentDate),
-      submissionDate: dateToMs(submissionDate)
+      submissionDate: dateToMs(submissionDate),
+      teamId: team
     };
     // Save whether the server has responed
     let hasResponded = false;
@@ -237,6 +269,7 @@ function editHomework(homeworkId) {
   $("#edit-homework-content").val(data.content);
   $("#edit-homework-date-assignment").val(msToInputDate(data.assignmentDate));
   $("#edit-homework-date-submission").val(msToInputDate(data.submissionDate));
+  $("#edit-homework-team").val(data.teamId);
 
   // Enable the actual "edit" button, because all information is given
   $ui.editHomeworkButton.removeClass("disabled");
@@ -252,13 +285,15 @@ function editHomework(homeworkId) {
     const content = $("#edit-homework-content").val().trim();
     const assignmentDate = $("#edit-homework-date-assignment").val();
     const submissionDate = $("#edit-homework-date-submission").val();
+    const team = $("#edit-homework-team").val();
 
     let data = {
       id: homeworkId,
       subjectId: subject,
       content: content,
       assignmentDate: dateToMs(assignmentDate),
-      submissionDate: dateToMs(submissionDate)
+      submissionDate: dateToMs(submissionDate),
+      teamId: team
     };
     // Save whether the server has responed
     let hasResponded = false;
@@ -444,6 +479,7 @@ $(function(){
   updateAllFunctions.push(() => {
     updateSubjectList();
     updateHomeworkList();
+    updateTeamList();
   })
   
   updateAll();
