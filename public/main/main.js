@@ -51,7 +51,12 @@ async function getNewCalendarWeekContent() {
           }
         }
         if (isSameDay(new Date(parseInt(event.startDate)), weekDates[i])) {
-          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-start event-${event.type}"></div>`
+          if (isSameDay(new Date(parseInt(event.endDate)), weekDates[i])) {
+            multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-single event-${event.type}"></div>`
+          }
+          else {
+            multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-start event-${event.type}"></div>`
+          }
         }
         else if (isSameDay(new Date(parseInt(event.endDate)), weekDates[i])) {
           multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-end event-${event.type}"></div>`
@@ -916,11 +921,13 @@ $("#team-selection-info-later").on("click", () => {
 
 socket.on('updateHomeworkData', () => {
   try {
-    homeworkData = undefined; // Reset homeworkData
-    loadHomeworkData(); // Reload the homework data
-    updateSubjectList(); // Update subject list
-    updateHomeworkList(); // Update homework list
-    console.log("homework UI updated");
+    homeworkData = undefined;
+    homeworkCheckedData = undefined;
+
+    loadHomeworkData();
+    loadHomeworkCheckedData();
+
+    updateHomeworkList();
   } catch (error) {
     console.error("Error handling updateHomeworkData:", error);
   }
@@ -929,10 +936,15 @@ socket.on('updateHomeworkData', () => {
 
 socket.on('updateEventData', ()=>{
   try {
-  eventData = undefined;
-  loadEventData();
-  updateEventList();
-  console.log("event UI updated");
+    eventData = undefined;
+    weeklyEventData = undefined;
+
+    loadEventData();
+    loadWeeklyEventData(weekDates[0], weekDates[6]);
+
+    updateEventList();
+    updateCalendarWeekContent("#calendar-week-old")
+    updateTimetable();
   } catch (error) {
     console.error("Error handling updateEventData:", error);
   }

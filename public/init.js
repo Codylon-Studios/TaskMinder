@@ -59,6 +59,7 @@ jQueryScript.onload = () => {
   manifest.rel = "manifest"
   manifest.href = "/manifest.json"
   document.head.appendChild(manifest);
+  
   // Load Socket.IO client library
   loadScript("/socket.io/socket.io.js", () => {
     // Initialize Socket.IO connection

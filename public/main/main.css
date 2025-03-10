@@ -12301,6 +12301,10 @@ body[data-bs-theme=dark] .days-overview-day.days-overview-selected {
   margin-left: -0.12rem;
   border-radius: 0 0.25rem 0.25rem 0;
 }
+.days-overview-day .events .multi-events .event.event-single {
+  width: 2rem;
+  border-radius: 0.25rem;
+}
 
 .event-list {
   list-style: none;
