@@ -1,6 +1,6 @@
 [
-  { "name": { "long": "Biologie", "short": "Bio" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "Wvg" } },
-  { "name": { "long": "Chemie", "short": "Che" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "Wvg" } },
+  { "name": { "long": "Biologie", "short": "Bio" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "WVg" } },
+  { "name": { "long": "Chemie", "short": "Che" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "WVg" } },
   { "name": { "long": "Deutsch", "short": "Deu" }, "teacher": {"gender": "m", "long": "Strunz", "short": "Str" } },
   { "name": { "long": "Englisch", "short": "Eng" }, "teacher": {"gender": "w", "long": "Ahrens", "short": "Ahr" } },
   { "name": { "long": "Ethik", "short": "Eth" }, "teacher": {"gender": "m", "long": "Cramer", "short": "Cra" } },
@@ -16,7 +16,7 @@
   { "name": { "long": "Musik", "short": "Mus" }, "teacher": {"gender": "m", "long": "Hofknecht", "short": "Hfk" } },
   { "name": { "long": "Physik", "short": "Phy" }, "teacher": {"gender": "w", "long": "Lehner", "short": "5Leh", "substitution": ["5Leh", "Kop"] } },
   { "name": { "long": "Politik und Gesellschaft", "short": "PuG", "substitution": "PuG" }, "teacher": {"gender": "w", "long": "Blickle", "short": "Bli" } },
-  { "name": { "long": "Profilfach", "short": "Prof" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "Wvg" } },
+  { "name": { "long": "Profilfach", "short": "Prof", "substitution": "ProfNW" }, "teacher": {"gender": "w", "long": "Weiß-Vogtmann", "short": "WVg" } },
   { "name": { "long": "Sport (m)", "short": "Sm" }, "teacher": {"gender": "m", "long": "Pleger", "short": "Ple" } },
   { "name": { "long": "Sport (w)", "short": "Sw" }, "teacher": {"gender": "w", "long": "Wöginger (Stimmt das?)", "short": "WöG" } },
   { "name": { "long": "Wirtschaft und Recht", "short": "WuR" }, "teacher": {"gender": "w", "long": "Tausend", "short": "Tau" } }
