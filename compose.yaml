@@ -29,6 +29,9 @@ services:
          export REDIS_HOST=redis &&
          export REDIS_PORT=$(cat /run/secrets/redis_port) &&
          export SESSION_SECRET=$(cat /run/secrets/session_secret) &&
+         export CLASSCODE=$(cat /run/secrets/classcode) &&
+         export DSB_USER=$(cat /run/secrets/dsb_user) &&
+         export DSB_PASSWORD=$(cat /run/secrets/dsb_password) &&
          node ./src/initTable/eventType.js &&
          node ./src/initTable/team.js &&
          redis-cli -h redis FLUSHALL &&
