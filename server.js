@@ -42,7 +42,7 @@ const sessionPool = new Pool({
 // Content Security Policy
 app.use(helmet({
   contentSecurityPolicy: {
-    directives: {
+    directives: { 
       "default-src": ["'self'"],
       "script-src": [
         "'self'", 
@@ -75,7 +75,7 @@ app.use(helmet({
     policy: 'same-origin'
   },
   crossOriginResourcePolicy: {
-    policy: 'same-origin'
+    policy: 'same-origin' 
   },
   referrerPolicy: {
     policy: 'strict-origin-when-cross-origin'
@@ -108,6 +108,7 @@ const sessionMiddleware = session({
   cookie: { 
     maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true,
+    secure: true
   }, //30 days
   name: 'UserLogin',
 });

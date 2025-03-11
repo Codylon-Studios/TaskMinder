@@ -13,6 +13,9 @@ services:
       - db_name
       - redis_port
       - session_secret
+      - classcode
+      - dsb_user
+      - dsb_password
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,6 +80,12 @@ secrets:
     file: ./docker_secrets/redis_port.txt
   session_secret:
     file: ./docker_secrets/session_secret.txt
+  classcode:
+    file: ./docker_secrets/classcode.txt
+  dsb_user:
+    file: ./docker_secrets/dsb_user.txt
+  dsb_password:
+    file: ./docker_secrets/dsb_password.txt
   
 volumes:
   postgres-data:
