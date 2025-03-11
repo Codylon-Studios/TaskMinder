@@ -5,8 +5,11 @@
 				<i class="fas fa-bars"></i>
 			</button>
 			<div class="dropdown-menu">
-				<a class="dropdown-item" href="/allhomework">
-					Alle Hausaufgaben
+				<a class="dropdown-item" href="/homework">
+					Hausaufgaben
+				</a>
+				<a class="dropdown-item" href="/events">
+					Ereignisse
 				</a>
 				<button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#settings-modal">
 					Einstellungen
@@ -18,7 +21,10 @@
 
 		<ul class="navbar-nav d-none d-md-flex flex-row me-auto">
 			<li class="nav-item me-3">
-				<a class="nav-link" href="/allhomework">Alle Hausaufgaben</a>
+				<a class="nav-link" href="/homework">Hausaufgaben</a>
+			</li>
+			<li class="nav-item me-3">
+				<a class="nav-link" href="/events">Ereignisse</a>
 			</li>
 			<li class="nav-item me-3">
 				<button class="nav-link" data-bs-toggle="modal" data-bs-target="#settings-modal">Einstellungen</button>
@@ -53,13 +59,51 @@
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
-				<label class="mb-0 me-3 text-nowrap" for="color-theme">Farbthema</label>
-				<div class="btn-group" id="color-theme">
-					<input type="radio" class="btn-check" name="color-theme" id="color-theme-light" checked>
-					<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-light">Hell</label>
+				<div class="mb-3">
+					<a class="text-decoration-none" href="#" data-bs-toggle="modal" data-bs-target="#team-selection-modal">Teams auswählen</a>
+				</div>
+				<div class="mb-3 d-flex align-items-center">
+					<label class="me-3" for="animations">Animationen</label>
+					<div class="form-check form-switch fs-5 mb-0" id="animations">
+						<input class="form-check-input mt-0" type="checkbox" id="flexSwitchCheckDefault">
+					</div>
+				</div>
+				<div class="mb-3 d-flex align-items-center">
+					<label class="me-3" for="color-theme">Farbthema</label>
+					<div class="btn-group" id="color-theme">
+						<input type="radio" class="btn-check" name="color-theme" id="color-theme-light" checked>
+						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-light">Hell</label>
 
-					<input type="radio" class="btn-check" name="color-theme" id="color-theme-dark">
-					<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-dark">Dunkel</label>
+						<input type="radio" class="btn-check" name="color-theme" id="color-theme-dark">
+						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-dark">Dunkel</label>
+					</div>
+				</div>
+				<div>
+					<a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#credits">
+						Credits anzeigen
+					</a>
+					
+					<div class="collapse mt-2" id="credits">
+						<h5 class="w-semibold">Credits</h5>
+						<ul class="list-unstyled mb-2">
+							<li>Mingqi Li</li>
+							<li>Fabian Leonardi</li>
+						</ul>
+						<p class="mb-1">
+							<i class="fas fa-balance-scale me-2"></i>
+							Dieses Projekt steht unter der 
+							<a href="https://opensource.org/licenses/MIT" target="_blank" class="text-primary">MIT-Lizenz</a>.
+						</p>
+						<p class="mb-1">
+							<i class="far fa-copyright me-2"></i>
+							Copyright © 2025 Codylon-Studios
+						</p>
+						<p class="mb-0">
+							<i class="fab fa-github me-2"></i>
+							GitHub: 
+							<a href="https://github.com/Codylon-Studios/TaskMinder" target="_blank" class="text-primary">Codylon-Studios/TaskMinder</a>
+						</p>
+					</div>
 				</div>
 			</div>
 			<div class="modal-footer">
@@ -67,7 +111,7 @@
 			</div>
 		</div>
 	</div>
-	</div>
+</div>
 
 <div class="modal fade" id="login-register-modal">
 	<div class="modal-dialog">
@@ -152,16 +196,57 @@
 	</div>
 </div>
 
+<div class="modal fade" id="team-selection-modal">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h1 class="modal-title fs-5">Teams auswählen</h1>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<label for="login-password" class="form-label">
+					Wähle deine Teams aus
+				</label>
+				<div class="ms-3" id="team-list">
+					<!--Gets filled-->
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+				<button type="button" class="btn btn-primary" id="team-selection-save">Speichern</button>
+			</div>
+		</div>
+	</div>
+</div>
+
 <div class="toast-container position-fixed top-0 end-0 p-3">
-  <div id="error-server-toast" class="toast">
-    <div class="toast-header bg-danger text-white">
-      <b class="me-auto">Serverproblem</b>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-    </div>
-    <div class="toast-body">
-      Unser Server hat gerade Probleme. Bitte versuche es später erneut.
-    </div>
-  </div>
+	<div id="error-server-toast" class="toast">
+		<div class="toast-header bg-danger text-white">
+		<b class="me-auto">Serverproblem</b>
+		<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
+		<div class="toast-body">
+			Unser Server hat gerade Probleme. Bitte versuche es später erneut.
+		</div>
+	</div>
+	<div id="unknown-error-toast" class="toast">
+		<div class="toast-header bg-danger text-white">
+		<b class="me-auto">Unerwarteter Fehler</b>
+		<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
+		<div class="toast-body">
+			Ein unbekannter Fehler ist aufgetreten.
+		</div>
+	</div>
+	<div id="not-logged-in-toast" class="toast">
+		<div class="toast-header bg-danger text-white">
+		<b class="me-auto">Nicht angemeldet</b>
+		<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
+		<div class="toast-body">
+			Du musst dafür angemeldet sein.
+		</div>
+	</div>
   <div id="login-success-toast" class="toast">
     <div class="toast-header bg-success text-white">
       <b class="me-auto">Erfolgreich eingeloggt</b>
@@ -181,7 +266,7 @@
     </div>
   </div>
   <div id="logout-success-toast" class="toast">
-    <div class="toast-header bg-info text-white">
+    <div class="toast-header bg-success text-white">
       <b class="me-auto">Erfolgreich ausgeloggt</b>
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
     </div>
