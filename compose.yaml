@@ -1,0 +1,92 @@
+services:
+  app:
+    build: .
+    container_name: taskminder
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=PRODUCTION
+    secrets:
+      - db_user
+      - db_password
+      - db_name
+      - redis_port
+      - session_secret
+      - classcode
+      - dsb_user
+      - dsb_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: >
+      sh -c "export DB_USER=$(cat /run/secrets/db_user) &&
+         export DB_PASSWORD=$(cat /run/secrets/db_password) &&
+         export DB_NAME=$(cat /run/secrets/db_name) &&
+         export DB_HOST=postgres &&
+         export REDIS_HOST=redis &&
+         export REDIS_PORT=$(cat /run/secrets/redis_port) &&
+         export SESSION_SECRET=$(cat /run/secrets/session_secret) &&
+         export CLASSCODE=$(cat /run/secrets/classcode) &&
+         export DSB_USER=$(cat /run/secrets/dsb_user) &&
+         export DSB_PASSWORD=$(cat /run/secrets/dsb_password) &&
+         node ./src/initTable/eventType.js &&
+         node ./src/initTable/team.js &&
+         redis-cli -h redis FLUSHALL &&
+         node server.js"
+  postgres:
+    image: postgres:14
+    container_name: taskminder-postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $(cat /run/secrets/db_user) -d $(cat /run/secrets/db_name)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    secrets:
+      - db_user
+      - db_password
+      - db_name
+    environment:
+      - POSTGRES_USER_FILE=/run/secrets/db_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB_FILE=/run/secrets/db_name
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+  redis:
+    image: redis:6
+    container_name: taskminder-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - redis-data:/data
+
+secrets:
+  db_user:
+    file: ./docker_secrets/db_user.txt
+  db_password:
+    file: ./docker_secrets/db_password.txt
+  db_name:
+    file: ./docker_secrets/db_name.txt
+  redis_port:
+    file: ./docker_secrets/redis_port.txt
+  session_secret:
+    file: ./docker_secrets/session_secret.txt
+  classcode:
+    file: ./docker_secrets/classcode.txt
+  dsb_user:
+    file: ./docker_secrets/dsb_user.txt
+  dsb_password:
+    file: ./docker_secrets/dsb_password.txt
+  
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,21 +1,37 @@
 {
-  "name": "zippedaeus",
+  "name": "taskminder",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "test": "echo \"No tests specified, but passing anyway\" && exit 0"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "bootstrap": "^5.3.3",
+    "cheerio": "^1.0.0",
+    "connect-pg-simple": "^10.0.0",
+    "dompurify": "^3.2.4",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-async-handler": "^1.2.0",
     "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "iconv-lite": "^0.6.3",
+    "jquery": "^3.7.1",
+    "jsdom": "^26.0.0",
+    "node-cron": "^3.0.3",
     "nodemon": "^3.1.9",
-    "pg": "^8.13.1",
-    "redis": "^4.7.0"
+    "pg": "^8.13.3",
+    "redis": "^4.7.0",
+    "sass": "^1.85.0",
+    "sequelize": "^6.37.5",
+    "socket.io": "^4.8.1",
+    "tree-kill": "^1.2.2",
+    "validator": "^13.12.0"
   }
 }
