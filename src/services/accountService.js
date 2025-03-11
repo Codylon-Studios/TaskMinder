@@ -27,7 +27,7 @@ const userService = {
             err.expected = true;
             throw err;
         }
-        if (classcode != "geheim"){
+        if (classcode != process.env.CLASSCODE){
             let err = new Error("Invalid classcode");
             err.status = 401;
             err.expected = true;

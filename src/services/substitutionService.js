@@ -28,8 +28,8 @@ async function getSubstitutionsData() {
         substitutionsData["updated"] = $(".mon_head p").text().split("Stand: ")[1]
     }
 
-    let username = "148762";
-    let password = "MTGSuS201617";
+    let username = process.env.DSB_USER;
+    let password = process.env.DSB_PASSWORD;
     let authRes = await axios.get(`https://mobileapi.dsbcontrol.de/authid?user=${username}&password=${password}&appversion=&bundleid=&osversion=&pushid=`);
     let authId = authRes.data;
 
