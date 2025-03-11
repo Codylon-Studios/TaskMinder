@@ -12,7 +12,7 @@ function registerAccount(username, password, classcode) {
     type: 'POST',
     data: data,
     success: () => {
-      $("#register-success-toast .username").html(username);
+      $("#register-success-toast .username").text(username);
       $("#register-success-toast").toast("show");
       $navbarUi.lr.modal.modal("hide");
       user.trigger("login");
@@ -55,7 +55,7 @@ function loginAccount(username, password) {
     type: 'POST',
     data: data,
     success: () => {
-      $("#login-success-toast .username").html(username);
+      $("#login-success-toast .username").text(username);
       $("#login-success-toast").toast("show");
       $navbarUi.lr.modal.modal("hide");
       user.trigger("login");
