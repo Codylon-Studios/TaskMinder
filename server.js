@@ -102,12 +102,14 @@ const sessionMiddleware = session({
     tableName: 'account_sessions',
     createTableIfMissing: true
   }),
+  proxy: process.env.NODE_ENV === 'DEVELOPMENT' ? false : true,
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
     maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'DEVELOPMENT' ? false : true,
   }, //30 days
   name: 'UserLogin',
 });
