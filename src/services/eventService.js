@@ -19,7 +19,7 @@ const eventService = {
             }
         }
 
-        const data = await Event.findAll({ raw: true });
+        const data = await Event.findAll({ raw: true, order: [["startDate", "ASC"]]});
 
         try {
             await redisClient.set("event_data", JSON.stringify(data), { EX: cacheExpiration });
@@ -54,7 +54,7 @@ const eventService = {
             err.expected = true;
             throw err;
         }
-        const data = await Event.findAll({ raw: true });
+        const data = await Event.findAll({ raw: true, order: [["startDate", "ASC"]] });
         try {
             await redisClient.set("event_data", JSON.stringify(data), { EX: cacheExpiration });
             const io = socketIO.getIO();
@@ -94,7 +94,7 @@ const eventService = {
             throw err;
         }
         
-        const data = await Event.findAll({ raw: true });
+        const data = await Event.findAll({ raw: true, order: [["startDate", "ASC"]] });
         try {
             await redisClient.set("event_data", JSON.stringify(data), { EX: cacheExpiration });
             const io = socketIO.getIO();

@@ -26,8 +26,6 @@ COPY . .
 EXPOSE 3000
 
 # Run the initialization scripts, flush the Redis cache, and then start the application
-CMD node ./src/initTables/eventType.js && \
-    node ./src/initTables/team.js && \
-    redis-cli -h redis FLUSHALL && \
+CMD redis-cli -h redis FLUSHALL && \
     node server.js
 

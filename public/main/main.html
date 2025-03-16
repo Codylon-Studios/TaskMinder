@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hausaufgabenplaner</title>
+  <title>TaskMinder</title>
   <script src="/init.js"></script>
   <link href="/events/event_type_styles" rel="stylesheet">
 </head>
@@ -89,10 +89,19 @@
         <div class="text-decoration-underline">
           Hausaufgaben
         </div>
-        <select class="form-select form-select-sm d-inline-block w-auto ms-2" id="filter-homework-mode">
-          <option value="submission">auf diesen Tag</option>
-          <option value="assignment">von diesem Tag</option>
-        </select>
+      </div>
+      <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-sm-3 flex-column flex-sm-row" id="homework-mode-wrapper">
+        <label class="text-nowrap" for="homework-mode">Hausaufgabenart</label>
+        <div class="btn-group" id="homework-mode">
+          <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-tomorrow">
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-tomorrow">Auf morgen</label>
+
+          <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-assignment">
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-assignment">Von heute</label>
+
+          <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-submission">
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-submission">Auf heute</label>
+        </div>
       </div>
       <div class="ms-3" id="homework-list">
         <!--Gets filled-->

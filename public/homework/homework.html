@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hausaufgabenplaner</title>
+  <title>TaskMinder</title>
   <script src="/init.js"></script>
 </head>
 
@@ -50,39 +50,26 @@
         </div>
         <div class="dropdown">
           <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            Aufgegeben (Datum)
+            Datum
           </button>
-          <div class="dropdown-menu" id="filter-date-assignment-dropwdown">
+          <div class="dropdown-menu" id="filter-date-dropwdown">
             <div class="px-2 py-1">
               <div class="d-flex align-items-center mb-3">
-                <label class="mb-0 me-2 text-nowrap" for="filter-date-assignment-from">Von</label>
-                <input type="date" class="form-control form-control-sm filter-date" id="filter-date-assignment-from">
+                <label class="mb-0 me-2 text-nowrap" for="filter-date-from">Von</label>
+                <input type="date" class="form-control form-control-sm filter-date" id="filter-date-from">
               </div>
               <div class="d-flex align-items-center">
-                <label class="mb-0 me-2 text-nowrap" for="filter-date-assignment-until">Bis</label>
-                <input type="date" class="form-control form-control-sm filter-date" id="filter-date-assignment-until">
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            Abgabe (Datum)
-          </button>
-          <div class="dropdown-menu" id="filter-date-submission-dropwdown">
-            <div class="px-2 py-1">
-              <div class="d-flex align-items-center mb-3">
-                <label class="mb-0 me-2 text-nowrap" for="filter-date-submission-from">Von</label>
-                <input type="date" class="form-control form-control-sm filter-date" id="filter-date-submission-from">
-              </div>
-              <div class="d-flex align-items-center">
-                <label class="mb-0 me-2 text-nowrap" for="filter-date-submission-until">Bis</label>
-                <input type="date" class="form-control form-control-sm filter-date" id="filter-date-submission-until">
+                <label class="mb-0 me-2 text-nowrap" for="filter-date-until">Bis</label>
+                <input type="date" class="form-control form-control-sm filter-date" id="filter-date-until">
               </div>
             </div>
           </div>
         </div>
       </div>
+      <button class="btn btn-secondary d-none" id="filter-reset">
+        <i class="fa-solid fa-trash"></i>
+        Zurücksetzen
+      </button>
     </div>
 
     <button type="button" class="btn btn-primary d-none" id="show-add-homework-button">

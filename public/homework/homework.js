@@ -39,34 +39,18 @@ async function updateHomeworkList() {
       continue;
     }
 
-    // Filter by min. assignment date
-    if ($("#filter-date-assignment-from").val() != "") {
-      let filterDate = Date.parse($("#filter-date-assignment-from").val());
-      if (filterDate > parseInt(homework.assignmentDate)) {
-        continue;
-      }
-    }
-
-    // Filter by max. assignment date
-    if ($("#filter-date-assignment-until").val() != "") {
-      let filterDate = Date.parse($("#filter-date-assignment-until").val());
-      if (filterDate < parseInt(homework.assignmentDate)) {
-        continue;
-      }
-    }
-
-    // Filter by min. submission date
-    if ($("#filter-date-submission-from").val() != "") {
-      let filterDate = Date.parse($("#filter-date-submission-from").val());
+    // Filter by min. date
+    if ($("#filter-date-from").val() != "") {
+      let filterDate = Date.parse($("#filter-date-from").val());
       if (filterDate > parseInt(homework.submissionDate)) {
         continue;
       }
     }
 
-    // Filter by max. submission date
-    if ($("#filter-date-submission-until").val() != "") {
-      let filterDate = Date.parse($("#filter-date-submission-until").val());
-      if (filterDate < parseInt(homework.submissionDate)) {
+    // Filter by max. date
+    if ($("#filter-date-until").val() != "") {
+      let filterDate = Date.parse($("#filter-date-until").val());
+      if (filterDate < parseInt(homework.assignmentDate)) {
         continue;
       }
     }
@@ -119,14 +103,22 @@ async function updateSubjectList() {
   // Clear the list for filtering by subject
   $("#filter-subject-list").empty();
 
+  let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+  if (filterData.subject == undefined) {
+    filterData.subject = {}
+  }
+
   subjectData.forEach((subject, subjectId) => {
     // Get the subject data
     let subjectName = subject.name.long;
 
+    if (filterData.subject[subjectId] == undefined) filterData.subject[subjectId] = true
+    let checkedStatus = (filterData.subject[subjectId]) ? "checked" : "" 
+
     // Add the template for filtering by subject
     let templateFilterSubject =
       `<div class="form-check">
-        <input type="checkbox" class="form-check-input filter-subject-option" id="filter-subject-${subjectId}" checked>
+        <input type="checkbox" class="form-check-input filter-subject-option" id="filter-subject-${subjectId}" data-id="${subjectId}" ${checkedStatus}>
         <label class="form-check-label" for="filter-subject-${subjectId}">
           ${subjectName}
         </label>
@@ -141,9 +133,17 @@ async function updateSubjectList() {
   });
 
   // If any subject filter gets changed, update the shown homework
-  $(".filter-subject-option").on("change", () => {
+  $(".filter-subject-option").on("change", function () {
     updateHomeworkList();
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    if (filterData.subject == undefined) {
+      filterData.subject = {}
+    }
+    filterData.subject[$(this).data('id')] = $(this).prop("checked")
+    localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
   });
+
+  localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
 }
 updateSubjectList = runOnce(updateSubjectList);
 
@@ -466,11 +466,37 @@ function checkHomework(homeworkId) {
 }
 
 function resetFilters() {
-  $("#filter-status input").prop("checked", true)
-  $("#filter-date-assignment-from").val("")
-  $("#filter-date-assignment-until").val("")
-  $("#filter-date-submission-from").val(msToInputDate(Date.now()))
-  $("#filter-date-submission-until").val("")
+  let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+
+  if (filterData.statusUnchecked == undefined) {
+   $("#filter-status-unchecked").prop("checked", true)
+  }
+  else {
+    $("#filter-status-unchecked").prop("checked", filterData.statusUnchecked)
+  }
+
+  if (filterData.statusChecked == undefined) {
+   $("#filter-status-checked").prop("checked", true)
+  }
+  else {
+    $("#filter-status-checked").prop("checked", filterData.statusChecked)
+  }
+
+  if (filterData.dateFrom == undefined) {
+    $("#filter-date-from").val(msToInputDate(Date.now()))
+  }
+  else {
+    $("#filter-date-from").val(filterData.dateFrom)
+  }
+
+  if (filterData.dateUntil == undefined) {
+    let nextMonth = new Date(Date.now())
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    $("#filter-date-until").val(msToInputDate(nextMonth.getTime()))
+  }
+  else {
+    $("#filter-date-from").val(filterData.dateUntil)
+  }
 }
 
 let $ui;
@@ -530,14 +556,24 @@ $(function(){
     if ($("#filter-toggle").is(":checked")) {
       // On checking the filter toggle, show the filter options
       $("#filter-content").removeClass("d-none");
+      $("#filter-reset").removeClass("d-none");
     }
     else {
       // On checking the filter toggle, hide the filter options
       $("#filter-content").addClass("d-none");
+      $("#filter-reset").addClass("d-none");
     }
   });
 
+  if (! localStorage.getItem("homeworkFilter")) {
+    localStorage.setItem("homeworkFilter", `{}`)
+  }
   resetFilters();
+  $("#filter-reset").on("click", () => {
+    localStorage.setItem("homeworkFilter", `{}`)
+    resetFilters()
+    updateAll()
+  })
 
   // On changing any information in the add homework modal, disable the add button if any information is empty
   $(".add-homework-input").on("input", () => {
@@ -594,26 +630,60 @@ $(function(){
     checkHomework(homeworkId);
   });
 
-  // On changing a filter checked option, update the homework list
-  $("#filter-status input").on("change", () => {
+  // On changing the filter unchecked option, update the homework list & saved filters
+  $("#filter-status-unchecked").on("change", () => {
     updateHomeworkList();
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    filterData.statusUnchecked = $("#filter-status-unchecked").prop("checked")
+    localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
+  });
+
+  // On changing the filter checked option, update the homework list & saved filters
+  $("#filter-status-checked").on("change", () => {
+    updateHomeworkList();
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    filterData.statusChecked = $("#filter-status-checked").prop("checked")
+    localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
   });
 
   // On clicking the all subjects option, check all and update the homework list
   $("#filter-subject-all").on("click", () => {
-    $(".filter-subject-option").prop("checked", true);
     updateHomeworkList();
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    if (filterData.subject == undefined) filterData.subject = {}
+    $(".filter-subject-option").prop("checked", true);
+    $(".filter-subject-option").each(function () {
+      filterData.subject[$(this).data('id')] = true
+    })
+    localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
   });
 
   // On clicking the none subjects option, uncheck all and update the homework list
   $("#filter-subject-none").on("click", () => {
-    $(".filter-subject-option").prop("checked", false);
     updateHomeworkList();
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    if (filterData.subject == undefined) filterData.subject = {}
+    $(".filter-subject-option").prop("checked", false);
+    $(".filter-subject-option").each(function () {
+      filterData.subject[$(this).data('id')] = false
+    })
+    localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
   });
 
   // On changing any filter date option, update the homework list
-  $(".filter-date").on("change", () => {
+  $("#filter-date-from").on("change", () => {
     updateHomeworkList();
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    filterData.dateFrom = $("#filter-date-from").val()
+    localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
+  });
+
+  // On changing any filter date option, update the homework list
+  $("#filter-date-until").on("change", () => {
+    updateHomeworkList();
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    filterData.dateUntil = $("#filter-date-until").val()
+    localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
   });
 
   $(document).on("click", "#show-add-homework-button", () => {
