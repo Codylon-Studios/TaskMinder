@@ -2,10 +2,12 @@ async function getNewCalendarWeekContent() {
   // Get the list of all dates in this week
   weekDates = undefined;
   loadWeekDates()
-  weeklyEventData = undefined;
-
   await dataLoaded("weekDates")
+
+  weeklyEventData = undefined;
+  loadWeeklyEventData(weekDates[0], weekDates[6])
   await dataLoaded("weeklyEventData")
+
   await dataLoaded("joinedTeamsData")
 
   // Prepare the variable
@@ -234,17 +236,25 @@ async function updateHomeworkList() {
     let content = homework.content;
     let assignmentDate = new Date(Number(homework.assignmentDate));
     let submissionDate = new Date(Number(homework.submissionDate));
-    let selectedDate = weekDates[(selectedDay == 0) ? 6 : selectedDay - 1]
+    let selectedDate = new Date(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1])
 
     let checked = await getHomeworkCheckStatus(homeworkId);
 
-    if (filterMode == "assignment") {
+    if ($("#homework-mode-tomorrow")[0].checked) {
+      let tomorrow = new Date(selectedDate);
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      if (! isSameDay(tomorrow, submissionDate)) {
+        continue
+      }
+    }
+
+    if ($("#homework-mode-assignment")[0].checked) {
       if (! isSameDay(selectedDate, assignmentDate)) {
         continue
       }
     }
 
-    if (filterMode == "submission") {
+    if ($("#homework-mode-submission")[0].checked) {
       if (! isSameDay(selectedDate, submissionDate)) {
         continue
       }
@@ -274,6 +284,20 @@ async function updateHomeworkList() {
   }
 }
 updateHomeworkList = runOnce(updateHomeworkList);
+
+function updateHomeworkMode() {
+  if ($("#homework-mode-tomorrow")[0].checked) {
+    localStorage.setItem("homeworkMode", "tomorrow");
+  }
+  else if ($("#homework-mode-assignment")[0].checked) {
+    localStorage.setItem("homeworkMode", "assignment");
+  }
+  else {
+    localStorage.setItem("homeworkMode", "submission");
+  }
+
+  updateHomeworkList();
+}
 
 async function updateEventList() {
   await dataLoaded("weeklyEventData")
@@ -577,8 +601,9 @@ async function updateTimetable() {
       for (let [lessonId, lesson] of lessons.entries()) {
         function matchesLessonId(substitution, lessonId) {
           if (substitution.lesson.includes("-")) {
-            let start = substitution.lesson.split(" ")[0]
-            let end = substitution.lesson.split(" ")[2]
+            substitution.lesson = substitution.lesson.replace(" ", "")
+            let start = substitution.lesson.split("-")[0]
+            let end = substitution.lesson.split("-")[1]
             if (start > lessonId + 1 || lessonId + 1 > end) {
               return false;
             }
@@ -659,8 +684,9 @@ async function updateTimetable() {
     for (let event of weeklyEventData) {
       function matchesLessonId(event, lessonId) {
         if (event.lesson.includes("-")) {
-          let start = event.lesson.split(" ")[0]
-          let end = event.lesson.split(" ")[2]
+          event.lesson = event.lesson.replace(" ", "")
+          let start = event.lesson.split("-")[0]
+          let end = event.lesson.split("-")[1]
           if (start > lessonId + 1 || lessonId + 1 > end) {
             return false;
           }
@@ -809,7 +835,6 @@ $(function(){
     updateEventList();
     updateSubstitutionList();
     updateTimetable();
-    updateCalendarWeekContent("#calendar-week-old")
   })
 
   updateAll();
@@ -867,15 +892,58 @@ $(".calendar-month-year-move-button").on("click", function () {
     
 });
 
+function swipe() {
+  if (Math.abs(swipeEnd - swipeStart) > 50) {
+    // If the calendar is already moving, stop; else set it moving
+    if (calendarWeekMoving) {return};
+    calendarWeekMoving = true;
+
+    // Save whether the user clicked left or right
+    // Change calendarWeekOffset
+    let direction
+    if (swipeEnd - swipeStart < 0) {
+      direction = "r";
+      calendarWeekOffset++
+    }
+    else {
+      direction = "l"
+      calendarWeekOffset--
+    }
+    
+    slideCalendar(direction, "transform 0.75s ease", 750)
+  }
+}
+
+let swipeStart;
+let swipeEnd;
+$("#calendar-week-wrapper").on("touchstart", (ev) => {
+  swipeStart = ev.originalEvent.touches[0].clientX;
+  swipeEnd = swipeStart;
+})
+$("#calendar-week-wrapper").on("touchmove", (ev) => {
+  swipeEnd = ev.originalEvent.touches[0].clientX;
+  ev.originalEvent.preventDefault()
+})
+$("#calendar-week-wrapper").on("touchend", (ev) => {
+  swipe()
+})
+
+$("#calendar-week-wrapper").on("mousedown", (ev) => {
+  swipeStart = ev.originalEvent.clientX;
+  swipeEnd = swipeStart;
+})
+$("#calendar-week-wrapper").on("mousemove", (ev) => {
+  swipeEnd = ev.originalEvent.clientX;
+})
+$("#calendar-week-wrapper").on("mouseup", (ev) => {
+  swipe()
+})
+
 $(document).on("click", ".days-overview-day", function () {
   selectedDay = $(this).data("day");
   $("#calendar-week-old").find(".days-overview-selected").removeClass("days-overview-selected")
   $("#calendar-week-old").find(`.days-overview-day:nth-child(${(selectedDay == 0) ? 7 : selectedDay}`).addClass("days-overview-selected")
   updateAll();
-})
-
-$(window).on("weekDatesLoaded", () => {
-  loadWeeklyEventData(weekDates[0], weekDates[6])
 })
 
 // The currently selected day of the week (i.e. 0 for monday, 1 for tuesday, ...); initially today
@@ -927,6 +995,15 @@ $("#substitutions-mode input").each(function () {
 });
 
 $("#substitutions-mode-" + (localStorage.getItem("substitutionsMode") || "class")).prop("checked", true);
+
+$("#homework-mode input").each(function () {
+  $(this).on("click", () => {
+    updateHomeworkMode();
+  });
+  $(this).prop("checked", false);
+});
+
+$("#homework-mode-" + (localStorage.getItem("homeworkMode") || "tomorrow")).prop("checked", true);
 
 if (localStorage.getItem("showTeamSelectionInfo") == undefined) {
   localStorage.setItem("showTeamSelectionInfo", "true")

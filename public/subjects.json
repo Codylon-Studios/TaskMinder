@@ -9,7 +9,7 @@
   { "name": { "long": "Geographie", "short": "Geo" }, "teacher": {"gender": "w", "long": "Saus", "short": "Sas" } },
   { "name": { "long": "Geschichte", "short": "Ges" }, "teacher": {"gender": "m", "long": "Gießen", "short": "Gis" } },
   { "name": { "long": "Informatik", "short": "Inf" }, "teacher": {"gender": "w", "long": "Weber", "short": "Web" } },
-  { "name": { "long": "Katholisch", "short": "Kath" }, "teacher": {"gender": "m", "long": "Grasmeier", "short": "Grm" } },
+  { "name": { "long": "Katholisch", "short": "Kath", "substitution": "Katholische Religionslehre" }, "teacher": {"gender": "m", "long": "Grasmeier", "short": "Grm" } },
   { "name": { "long": "Kunst", "short": "Kun" }, "teacher": {"gender": "m", "long": "Weber-Jobe", "short": "WbJ" } },
   { "name": { "long": "Latein", "short": "Lat" }, "teacher": {"gender": "m", "long": "Waschbüsch", "short": "Wab" } },
   { "name": { "long": "Mathe", "short": "Mat" }, "teacher": {"gender": "m", "long": "Todi", "short": "Tdi" } },
