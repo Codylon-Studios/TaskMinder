@@ -16,6 +16,8 @@ services:
       - classcode
       - dsb_user
       - dsb_password
+      - db_container
+      - backup_dir
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,6 +37,8 @@ services:
          export CLASSCODE=$(cat /run/secrets/classcode) &&
          export DSB_USER=$(cat /run/secrets/dsb_user) &&
          export DSB_PASSWORD=$(cat /run/secrets/dsb_password) &&
+         export DB_CONTAINER=$(cat /run/secrets/db_container)
+         export BACKUP_DIR=$(cat /run/secrets/backup_dir)
          redis-cli -h redis FLUSHALL &&
          node server.js"
   postgres:
@@ -84,6 +88,10 @@ secrets:
     file: ./docker_secrets/dsb_user.txt
   dsb_password:
     file: ./docker_secrets/dsb_password.txt
+  db_container:
+    file: ./docker_secrets/db_container.txt
+  backup_dir:
+    file: ./docker_secrets/backup_dir.txt
   
 volumes:
   postgres-data:

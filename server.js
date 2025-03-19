@@ -10,6 +10,7 @@ const ErrorHandler = require('./src/middleware/errorMiddleware');
 const RequestLogger = require('./src/middleware/loggerMiddleware');
 const logger = require('./logger');
 const { cleanupOldHomework } = require('./src/homeworkCleanup');
+const {createBackup} = require ('./src/backupTable');
 const sequelize = require('./src/sequelize');
 const account = require('./src/routes/accountRoute');
 const homework = require('./src/routes/homeworkRoute');
@@ -29,6 +30,12 @@ server.listen(3000, () => {
 cron.schedule('0 0 * * *', () => {
   logger.info('Starting scheduled homework cleanup');
   cleanupOldHomework();
+});
+
+// Schedule PostgreSQL backup every hour
+cron.schedule("0 * * * *", () => {
+  logger.info("Starting hourly PostgreSQL backup");
+  createBackup();
 });
 
 const sessionPool = new Pool({
