@@ -1,147 +1,171 @@
+function getCalendarDayHtml(date, week, multiEventPositions) {
+  // Any special classes of the day
+  let specialClasses = ""
+  // If the day is today, add the days-overview-today class
+  if (isSameDay(date, new Date())) {
+    specialClasses = "days-overview-today fw-bold "
+  }
+  // If the day is selected, add the days-overview-selected class
+  if (isSameDay(date, selectedDate)) {
+    specialClasses += "days-overview-selected "
+  }
+  if ([0, 6].includes(date.getDay())) {
+    specialClasses += "text-body-tertiary "
+  }
+  if (calendarMode == "month" && date.getMonth() != selectedDate.getMonth()) {
+    specialClasses += "days-overview-other-month "
+  }
+
+  // Single day events
+  let singleDayEvents = ""
+  let multiDayEventsA = []
+
+  for (let event of eventData) {
+    if (! joinedTeamsData.includes(event.teamId) && event.teamId != -1) {
+      continue;
+    }
+
+    if (event.endDate == null) {
+      if (isSameDay(new Date(parseInt(event.startDate)), date)) {
+        singleDayEvents += `<div class="col"><div class="event event-${event.type}"></div></div>`
+      }
+    }
+    else if (event.endDate != null) {
+      if (! multiEventPositions.includes(event.eventId)) {
+        if (multiEventPositions.indexOf(null) == -1) {
+          multiEventPositions.push(event.eventId)
+        }
+        else {
+          multiEventPositions.splice(multiEventPositions.indexOf(null), 1, event.eventId)
+        }
+      }
+      if (isSameDay(new Date(parseInt(event.startDate)), date)) {
+        if (isSameDay(new Date(parseInt(event.endDate)), date)) {
+          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-single event-${event.type}"></div>`
+        }
+        else {
+          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-start event-${event.type}"></div>`
+        }
+      }
+      else if (isSameDay(new Date(parseInt(event.endDate)), date)) {
+        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-end event-${event.type}"></div>`
+      }
+      else if (parseInt(event.startDate) < date.getTime() && parseInt(event.endDate) > date.getTime()) {
+        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-middle event-${event.type}"></div>`
+      }
+      else if (multiEventPositions.indexOf(event.eventId) == multiEventPositions.length - 1) {
+        multiEventPositions.pop()
+      }
+      else {
+        multiEventPositions[multiEventPositions.indexOf(event.eventId)] = null
+      }
+    }
+  }
+
+  // Multi day events
+  let multiDayEvents = ""
+
+  for (let event of multiDayEventsA) {
+    if (! event) {
+      multiDayEvents += `<div class="event"></div>`
+    }
+    else {
+      multiDayEvents += event
+    }
+  }
+  
+  let weekday = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][date.getDay()]
+
+  // Append the days (All days will be added into and .calendar-week element)
+  return `
+  <div class="days-overview-day ${specialClasses}btn btn-semivisible" data-week="${week}" data-day="${date.getDay()}">
+    <div class="weekday">${(calendarMode == "week") ? weekday: ""}</div>
+    <div class="date">${date.getDate()}</div>
+    <div class="events ${calendarMode}">
+      <div class="multi-events">
+        ${multiDayEvents}
+      </div>
+      <div class="single-events row row-cols-3">
+        ${singleDayEvents}
+      </div>
+    </div>
+  </div>`
+}
+
 async function getNewCalendarWeekContent() {
   // Get the list of all dates in this week
-  weekDates = undefined;
-  loadWeekDates()
-  await dataLoaded("weekDates")
+  monthDates = undefined;
+  loadMonthDates(selectedDate)
+  await dataLoaded("monthDates")
 
-  weeklyEventData = undefined;
-  loadWeeklyEventData(weekDates[0], weekDates[6])
-  await dataLoaded("weeklyEventData")
+  await dataLoaded("eventData")
 
   await dataLoaded("joinedTeamsData")
-
-  // Prepare the variable
-  newCalendarWeekContent = ""
 
   // Save the vertical positions of the multi events (in case two events intersect)
   let multiEventPositions = []
 
-  for (let i = 0; i < 7; i++) {
-    // Get the String for the weekday
-    let weekday = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][i]
+  let newCalendarWeekContent = ""
 
-    // Any special classes of the day
-    let specialClasses = ""
-    // If the day is today, add the days-overview-today class
-    if (isSameDay(weekDates[i], new Date())) {
-      specialClasses = "days-overview-today "
+  if (calendarMode == "week") {
+    newCalendarWeekContent += `<div class="d-flex position-relative">`
+      let weekDates = monthDates[selectedWeek]
+    for (let i = 0; i < 7; i++) {
+      newCalendarWeekContent += getCalendarDayHtml(weekDates[i], selectedWeek, multiEventPositions)
     }
-    // If the day is selected, add the days-overview-selected class
-    if (weekDates[i].getDay() == selectedDay) {
-      specialClasses += "days-overview-selected "
+    newCalendarWeekContent += "</div>"
+    return newCalendarWeekContent
+  }
+  else {
+    newCalendarWeekContent += `<div class="d-flex weekdays">`
+    let weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+    newCalendarWeekContent += weekdays.map((e) => {return `<div>${e}</div>`}).join("")
+    newCalendarWeekContent += "</div>"
+    for (let week in monthDates) {
+      let weekDates = monthDates[week]
+      newCalendarWeekContent += `<div class="d-flex position-relative mb-4">`
+      for (let i = 0; i < 7; i++) {
+        newCalendarWeekContent += getCalendarDayHtml(weekDates[i], week, multiEventPositions)
+      }
+      newCalendarWeekContent += "</div>"
     }
-    if ([0, 6].includes(weekDates[i].getDay())) {
-      specialClasses += "text-body-tertiary "
-    }
-
-    // Single day events
-    let singleDayEvents = ""
-    let multiDayEventsA = []
-
-    for (let event of weeklyEventData) {
-      if (! joinedTeamsData.includes(event.teamId) && event.teamId != -1) {
-        continue;
-      }
-
-      if (event.endDate == null) {
-        if (isSameDay(new Date(parseInt(event.startDate)), weekDates[i])) {
-          singleDayEvents += `<div class="col"><div class="event event-${event.type}"></div></div>`
-        }
-      }
-      else if (event.endDate != null) {
-        if (! multiEventPositions.includes(event.eventId)) {
-          if (multiEventPositions.indexOf(null) == -1) {
-            multiEventPositions.push(event.eventId)
-          }
-          else {
-            multiEventPositions.splice(multiEventPositions.indexOf(null), 1, event.eventId)
-          }
-        }
-        if (isSameDay(new Date(parseInt(event.startDate)), weekDates[i])) {
-          if (isSameDay(new Date(parseInt(event.endDate)), weekDates[i])) {
-            multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-single event-${event.type}"></div>`
-          }
-          else {
-            multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-start event-${event.type}"></div>`
-          }
-        }
-        else if (isSameDay(new Date(parseInt(event.endDate)), weekDates[i])) {
-          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-end event-${event.type}"></div>`
-        }
-        else if (parseInt(event.startDate) < weekDates[i].getTime() && parseInt(event.endDate) > weekDates[i].getTime()) {
-          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-middle event-${event.type}"></div>`
-        }
-        else if (multiEventPositions.indexOf(event.eventId) == multiEventPositions.length - 1) {
-          multiEventPositions.pop()
-        }
-        else {
-          multiEventPositions[multiEventPositions.indexOf(event.eventId)] = null
-        }
-      }
-    }
-
-    // Multi day events
-    let multiDayEvents = ""
-
-    for (let event of multiDayEventsA) {
-      if (! event) {
-        multiDayEvents += `<div class="event"></div>`
-      }
-      else {
-        multiDayEvents += event
-      }
-    }
-
-    // Append the days (All days will be added into and .calendar-week element)
-    newCalendarWeekContent += `
-    <div class="days-overview-day ${specialClasses}btn btn-semivisible" data-day="${(i == 6) ? 0 : i + 1}">
-      <div class="weekday">${weekday}</div>
-      <div class="date">${weekDates[i].getDate()}</div>
-      <div class="events">
-        <div class="multi-events">
-          ${multiDayEvents}
-        </div>
-        <div class="single-events row row-cols-3">
-          ${singleDayEvents}
-        </div>
-      </div>
-    </div>`
+    return newCalendarWeekContent
   }
 }
 
 async function updateCalendarWeekContent(targetCalendar) {
-  await getNewCalendarWeekContent();
-  $(targetCalendar).html(newCalendarWeekContent);
+  let content = await getNewCalendarWeekContent();
+  $(targetCalendar).html(content);
 }
 
-function loadWeekDates() {
-  // weekDates will be a list of all the dates in the currently selected week
-  weekDates = []
+function loadMonthDates(selectedDate) {
+  // monthDates will be a list of all the dates in the currently selected week
+  monthDates = []
 
-  // today is the Date Object of today
-  let today = new Date();
+  let firstDate = new Date(selectedDate)
+  firstDate.setDate(1)
 
-  // calendarWeekOffset saves how often the user has clicked left / right
-  today.setDate(today.getDate() + 7 * calendarWeekOffset)
+  let firstDateDay = firstDate.getDay()
+  firstDateDay = (firstDateDay == 0) ? 7 : firstDateDay;
 
-  // weekday is the current day (i.e. 0 for sunday, 1 for monday, 2 for tuesday, ...)
-  let weekDay = today.getDay()
-  weekDay = (weekDay == 0) ? 7 : weekDay;
+  let firstMonday = new Date(firstDate)
+  firstMonday.setDate(firstMonday.getDate() - firstDateDay + 1)
 
-  // monday is the Date Object of the monday in the currently selected week
-  let monday = new Date(today)
-  monday.setDate(today.getDate() - weekDay + 1)
-
-  for (let i = 0; i < 7; i++) {
-    // dayDate is the Date Object of the days in the currently selected week
-    let dayDate = new Date(monday);
-    dayDate.setDate(monday.getDate() + i)
-
-    // Save everything in weekDates
-    weekDates.push(dayDate)
+  let iteratorDate = new Date(firstMonday)
+  let weekId = 0
+  let firstWeek = true
+  while (firstWeek || iteratorDate.getMonth() == selectedDate.getMonth()) {
+    firstWeek = false
+    monthDates[weekId] = []
+    for (let weekDay = 0; weekDay < 7; weekDay++) {
+      monthDates[weekId].push(new Date(iteratorDate))
+      if (isSameDay(iteratorDate, selectedDate)) selectedWeek = weekId
+      iteratorDate.setDate(iteratorDate.getDate() + 1)
+    }
+    weekId++
   }
 
-  $(window).trigger("weekDatesLoaded")
+  $(window).trigger("monthDatesLoaded")
 }
 
 function checkHomework(homeworkId) {
@@ -219,6 +243,7 @@ async function updateHomeworkList() {
   await dataLoaded("homeworkData")
   await dataLoaded("homeworkCheckedData")
   await dataLoaded("joinedTeamsData")
+  await dataLoaded("monthDates")
 
   // Note: homeworkCheckedData will have a different structure
   // Server: [{checkId: int, username: String, homeworkId: int, checked: boolean}, ...]
@@ -236,7 +261,6 @@ async function updateHomeworkList() {
     let content = homework.content;
     let assignmentDate = new Date(Number(homework.assignmentDate));
     let submissionDate = new Date(Number(homework.submissionDate));
-    let selectedDate = new Date(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1])
 
     let checked = await getHomeworkCheckStatus(homeworkId);
 
@@ -300,14 +324,14 @@ function updateHomeworkMode() {
 }
 
 async function updateEventList() {
-  await dataLoaded("weeklyEventData")
+  await dataLoaded("eventData")
   await dataLoaded("eventTypeData")
   await dataLoaded("joinedTeamsData")
 
   // Clear the list
   $("#event-list").empty();
 
-  for (let event of weeklyEventData) {
+  for (let event of eventData) {
     if (! joinedTeamsData.includes(event.teamId) && event.teamId != -1) {
       continue;
     }
@@ -326,7 +350,6 @@ async function updateEventList() {
       endDate = null;
     }
     let msStartDate = parseInt(event.startDate)
-    let selectedDate = weekDates[(selectedDay == 0) ? 6 : selectedDay - 1]
     let msEndDate = parseInt(event.endDate || event.startDate)
 
     // Filter by start date
@@ -389,10 +412,10 @@ async function updateSubstitutionList() {
 
   let planId;
 
-  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(data["plan1"]["date"])))) {
+  if (isSameDay(selectedDate, new Date(dateToMs(data["plan1"]["date"])))) {
     planId = 1
   }
-  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(data["plan2"]["date"])))) {
+  else if (isSameDay(selectedDate, new Date(dateToMs(data["plan2"]["date"])))) {
     planId = 2
   }
   else {
@@ -469,7 +492,7 @@ async function updateTimetable() {
   await dataLoaded("subjectData")
   await dataLoaded("joinedTeamsData")
   await dataLoaded("classSubstitutionsData")
-  await dataLoaded("weeklyEventData")
+  await dataLoaded("eventData")
   
   $("#timetable-less").empty();
   $("#timetable-more").empty();
@@ -488,10 +511,10 @@ async function updateTimetable() {
 
   let substitutionPlanId;
 
-  if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(classSubstitutionsData["plan1"]["date"])))) {
+  if (isSameDay(selectedDate, new Date(dateToMs(classSubstitutionsData["plan1"]["date"])))) {
     substitutionPlanId = 1;
   }
-  else if (isSameDay(weekDates[(selectedDay == 0) ? 6 : selectedDay - 1], new Date(dateToMs(classSubstitutionsData["plan2"]["date"])))) {
+  else if (isSameDay(selectedDate, new Date(dateToMs(classSubstitutionsData["plan2"]["date"])))) {
     substitutionPlanId = 2;
   }
   else {
@@ -671,7 +694,7 @@ async function updateTimetable() {
   
           // Teacher
           let teacherElement = thisMoreLesson.find(".timetable-more-teacher .original").eq(lessonId)
-          if (substitution.teacher != lesson.teacher) {
+          if (! lesson.substitutionTeacherName.includes(substitution.teacher)) {
             teacherElement.addClass("line-through-" + color)
             if (substitution.teacher != "-") {
               teacherElement.after(` <span class="text-${color} fw-bold">${substitution.teacher}</span>`)
@@ -681,7 +704,7 @@ async function updateTimetable() {
       }
     }
 
-    for (let event of weeklyEventData) {
+    for (let event of eventData) {
       function matchesLessonId(event, lessonId) {
         if (event.lesson.includes("-")) {
           event.lesson = event.lesson.replace(" ", "")
@@ -704,7 +727,7 @@ async function updateTimetable() {
       if (event.lesson == "") {
         continue;
       }
-      if (! isSameDay(new Date(parseInt(event.startDate)), weekDates[(selectedDay == 0) ? 6 : selectedDay - 1])) {
+      if (! isSameDay(new Date(parseInt(event.startDate)), selectedDate)) {
         continue;
       }
       if (! matchesLessonId(event, timetableEntryId)) {
@@ -784,49 +807,51 @@ function updateTimetableMode() {
 }
 
 async function renameCalendarMonthYear() {
-  await dataLoaded("weekDates");
-  $("#calendar-month-year").html(`${monthNames[weekDates[3].getMonth()]} ${weekDates[3].getFullYear()}`)
+  await dataLoaded("monthDates");
+  $("#calendar-month-year").html(`${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`)
 }
 
 function slideCalendar(direction, transition, slideTime) {
-  if (! animations) {
-    transition = "";
-    slideTime = 0;
-  }
-
-  // Get the new content and append it to the new calendar
-  updateCalendarWeekContent("#calendar-week-new")
-
-  // Position the calendar left / right of the visible spot
-  $(".calendar-week").css("transition", "")
-  $("#calendar-week-new").css("transform", `translateX(${(direction == "r") ? "100%" : "-100%"})`)
-  $("#calendar-week-new").removeClass("d-none").addClass("d-flex")
-
-  // Wait shortly, so the styles can apply
-  setTimeout(() => {
-    // Slide the old calendar out and the new one in
-    $(".calendar-week").css("transition", transition)
-    $("#calendar-week-old").css("transform", `translateX(${(direction == "r") ? "-100%" : "100%"})`)
-    $("#calendar-week-new").css("transform", "translateX(0%)")
-
-    renameCalendarMonthYear();
-
-    // Wait until the calendars finished sliding
+  return new Promise((resolve)=> {
+    if (! animations) {
+      transition = "";
+      slideTime = 0;
+    }
+  
+    // Get the new content and append it to the new calendar
+    updateCalendarWeekContent("#calendar-week-new")
+  
+    // Position the calendar left / right of the visible spot
+    $(".calendar-week").css("transition", "")
+    $("#calendar-week-new").css("transform", `translateX(${(direction == "r") ? "100%" : "-100%"})`)
+    $("#calendar-week-new").removeClass("d-none")
+  
+    // Wait shortly, so the styles can apply
     setTimeout(() => {
-      // Save the new html in the old calendar
-      $("#calendar-week-old").html($("#calendar-week-new").html());
-
-      // Position the old calendar in the visible spot, hide the new calendar
-      $(".calendar-week").css("transition", "")
-      $("#calendar-week-old").css("transform", "")
-      $("#calendar-week-new").removeClass("d-flex").addClass("d-none")
-
-      // The calendar isn't moving anymore
-      calendarWeekMoving = false;
-    }, slideTime)
-  }, 20)
-    
-  updateAll();
+      // Slide the old calendar out and the new one in
+      $(".calendar-week").css("transition", transition)
+      $("#calendar-week-old").css("transform", `translateX(${(direction == "r") ? "-100%" : "100%"})`)
+      $("#calendar-week-new").css("transform", "translateX(0%)")
+  
+      renameCalendarMonthYear();
+  
+      // Wait until the calendars finished sliding
+      setTimeout(() => {
+        // Save the new html in the old calendar
+        $("#calendar-week-old").html($("#calendar-week-new").html());
+  
+        // Position the old calendar in the visible spot, hide the new calendar
+        $(".calendar-week").css("transition", "")
+        $("#calendar-week-old").css("transform", "")
+        $("#calendar-week-new").addClass("d-none")
+  
+        // The calendar isn't moving anymore
+        calendarMoving = false;
+        resolve()
+      }, slideTime)
+    }, 20)
+    updateAll();
+  })
 }
 
 $(function(){
@@ -842,44 +867,36 @@ $(function(){
 
 $(".calendar-week-move-button").on("click", function () {
   // If the calendar is already moving, stop; else set it moving
-  if (calendarWeekMoving) {return};
-  calendarWeekMoving = true;
+  if (calendarMoving) {return};
+  calendarMoving = true;
 
   // Save whether the user clicked left or right
-  // Change calendarWeekOffset
   let direction
   if ($(this).attr("id") == "calendar-week-r-btn") {
     direction = "r";
-    calendarWeekOffset++
   }
   else {
     direction = "l"
-    calendarWeekOffset--
+  }
+
+  if (calendarMode == "week") {
+    if (direction == "r") selectedDate.setDate(selectedDate.getDate() + 7)
+    if (direction == "l") selectedDate.setDate(selectedDate.getDate() - 7)
+  }
+  else {
+    if (direction == "r") selectedDate.setMonth(selectedDate.getMonth() + 1)
+    if (direction == "l") selectedDate.setMonth(selectedDate.getMonth() - 1)
   }
   
   slideCalendar(direction, "transform 0.75s ease", 750)
 });
 
 $(".calendar-month-year-move-button").on("click", function () {
-  function animateWeek(weekId) {
-    if (direction == "r") {
-      calendarWeekOffset++
-    }
-    else {
-      calendarWeekOffset--
-    }
-    
-    slideCalendar(direction, "transform 0.19s linear", 190)
-    if (weekId != 3) {
-      animateWeek(weekId + 1)
-    }
-  }
   // If the calendar is already moving, stop; else set it moving
-  if (calendarWeekMoving) {return};
-  calendarWeekMoving = true;
+  if (calendarMoving) {return};
+  calendarMoving = true;
 
   // Save whether the user clicked left or right
-  // Change calendarWeekOffset
   let direction
   if ($(this).attr("id") == "calendar-month-year-r-btn") {
     direction = "r";
@@ -888,78 +905,135 @@ $(".calendar-month-year-move-button").on("click", function () {
     direction = "l"
   }
 
-  animateWeek(0);
-    
+  if (calendarMode == "week") {
+    if (direction == "r") selectedDate.setMonth(selectedDate.getMonth() + 1)
+    if (direction == "l") selectedDate.setMonth(selectedDate.getMonth() - 1)
+  }
+  else {
+    if (direction == "r") selectedDate.setFullYear(selectedDate.getFullYear() + 1)
+    if (direction == "l") selectedDate.setFullYear(selectedDate.getFullYear() - 1)
+  }
+  updateCalendarWeekContent("#calendar-week-old")
+  renameCalendarMonthYear()
+  calendarMoving = false;
 });
 
 function swipe() {
-  if (Math.abs(swipeEnd - swipeStart) > 50) {
+  if (Math.abs(swipeXEnd - swipeXStart) > 50) {
     // If the calendar is already moving, stop; else set it moving
-    if (calendarWeekMoving) {return};
-    calendarWeekMoving = true;
+    if (calendarMoving) {return};
+    calendarMoving = true;
 
-    // Save whether the user clicked left or right
-    // Change calendarWeekOffset
+    // Save whether the user swiped left or right
     let direction
-    if (swipeEnd - swipeStart < 0) {
-      direction = "r";
-      calendarWeekOffset++
+    if (calendarMode == "week") {
+      if (swipeXEnd - swipeXStart < 0) {
+        direction = "r";
+        selectedDate.setDate(selectedDate.getDate() + 7)
+      }
+      else {
+        direction = "l"
+        selectedDate.setDate(selectedDate.getDate() - 7)
+      }
     }
-    else {
-      direction = "l"
-      calendarWeekOffset--
+    else if (calendarMode == "month") {
+      if (swipeXEnd - swipeXStart < 0) {
+        direction = "r";
+        selectedDate.setMonth(selectedDate.getMonth() + 1)
+      }
+      else {
+        direction = "l"
+        selectedDate.setMonth(selectedDate.getMonth() - 1)
+      }
     }
     
     slideCalendar(direction, "transform 0.75s ease", 750)
   }
 }
 
-let swipeStart;
-let swipeEnd;
+let swipeXStart;
+let swipeXEnd;
+let swipeYStart;
+let swipeYEnd;
 $("#calendar-week-wrapper").on("touchstart", (ev) => {
-  swipeStart = ev.originalEvent.touches[0].clientX;
-  swipeEnd = swipeStart;
+  swipeXStart = ev.originalEvent.touches[0].clientX;
+  swipeYStart = ev.originalEvent.touches[0].clientY;
+  swipeXEnd = swipeXStart;
+  swipeYEnd = swipeYStart;
 })
 $("#calendar-week-wrapper").on("touchmove", (ev) => {
-  swipeEnd = ev.originalEvent.touches[0].clientX;
-  ev.originalEvent.preventDefault()
+  swipeXEnd = ev.originalEvent.touches[0].clientX;
+  swipeYEnd = ev.originalEvent.touches[0].clientY;
+  if (Math.abs(swipeYEnd - swipeYStart) < Math.abs(swipeXEnd - swipeXStart)) {
+    ev.originalEvent.preventDefault()
+  }
 })
 $("#calendar-week-wrapper").on("touchend", (ev) => {
   swipe()
 })
 
 $("#calendar-week-wrapper").on("mousedown", (ev) => {
-  swipeStart = ev.originalEvent.clientX;
-  swipeEnd = swipeStart;
+  swipeXStart = ev.originalEvent.clientX;
+  swipeXEnd = swipeXStart;
 })
 $("#calendar-week-wrapper").on("mousemove", (ev) => {
-  swipeEnd = ev.originalEvent.clientX;
+  swipeXEnd = ev.originalEvent.clientX;
 })
 $("#calendar-week-wrapper").on("mouseup", (ev) => {
   swipe()
 })
 
+$("#calendar-today-btn").on("click", () => {
+  // If the calendar is already moving, stop; else set it moving
+  if (calendarMoving) {return};
+
+  selectedDay = new Date().getDay()
+  selectedDate = new Date()
+
+  updateCalendarWeekContent("#calendar-week-old")
+  updateAll();
+})
+
+let calendarMode = localStorage.getItem("calendarMode") || "week";
+$(`#calendar-${calendarMode}-btn`).addClass("d-none")
+
+$("#calendar-month-btn").on("click", () => {
+  calendarMode = "month"
+  localStorage.setItem("calendarMode", calendarMode)
+  $("#calendar-week-btn").removeClass("d-none")
+  $("#calendar-month-btn").addClass("d-none")
+  updateCalendarWeekContent("#calendar-week-old")
+})
+
+$("#calendar-week-btn").on("click", () => {
+  calendarMode = "week"
+  localStorage.setItem("calendarMode", calendarMode)
+  $("#calendar-month-btn").removeClass("d-none")
+  $("#calendar-week-btn").addClass("d-none")
+  updateCalendarWeekContent("#calendar-week-old")
+})
+
 $(document).on("click", ".days-overview-day", function () {
-  selectedDay = $(this).data("day");
+  let day = parseInt($(this).data("day"))
+  selectedDate = monthDates[parseInt($(this).data("week"))][(day == 0) ? 6 : day - 1]
   $("#calendar-week-old").find(".days-overview-selected").removeClass("days-overview-selected")
-  $("#calendar-week-old").find(`.days-overview-day:nth-child(${(selectedDay == 0) ? 7 : selectedDay}`).addClass("days-overview-selected")
+  $(this).addClass("days-overview-selected")
+  updateCalendarWeekContent("#calendar-week-old")
+  renameCalendarMonthYear()
   updateAll();
 })
 
 // The currently selected day of the week (i.e. 0 for monday, 1 for tuesday, ...); initially today
 let selectedDay = new Date().getDay();
 
-// Changes when the user clicks left / right
-let calendarWeekOffset = 0;
-
-// Saves what content should be shown next
-let newCalendarWeekContent = ""
+let selectedDate = new Date()
 
 // Save whether the calendar is currently moving (It shouldn't be moved then, as bugs could appear)
-let calendarWeekMoving = false;
+let calendarMoving = false;
 
 // Is a list of the dates (number of day in the month) of the week which is currently selected
-let weekDates;
+let monthDates;
+let selectedWeek;
 
 // Set the visible content of the calendar to today's week
 updateCalendarWeekContent("#calendar-week-old")
@@ -1036,10 +1110,8 @@ socket.on('updateHomeworkData', () => {
 socket.on('updateEventData', ()=>{
   try {
     eventData = undefined;
-    weeklyEventData = undefined;
 
     loadEventData();
-    loadWeeklyEventData(weekDates[0], weekDates[6]);
 
     updateEventList();
     updateCalendarWeekContent("#calendar-week-old")
