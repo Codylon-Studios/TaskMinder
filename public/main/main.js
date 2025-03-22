@@ -252,8 +252,6 @@ async function updateHomeworkList() {
   // Clear the list
   $("#homework-list").empty();
 
-  let filterMode = $("#filter-homework-mode").val()
-
  for (let homework of homeworkData) {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
@@ -304,7 +302,17 @@ async function updateHomeworkList() {
 
   // If no homeworks match, add an explanation text
   if ($("#homework-list").html() == "") {
-    $("#homework-list").html(`<div class="text-secondary">Keine Hausaufgaben ${(filterMode == "assignment") ? "von diesem" : "auf diesen"} Tag.</div>`)
+    let text
+    if ($("#homework-mode-tomorrow")[0].checked) {
+      text = "auf den nächsten"
+    }
+    else if ($("#homework-mode-submission")[0].checked) {
+      text = "auf diesen"
+    }
+    else if ($("#homework-mode-assignment")[0].checked) {
+      text = "von diesem"
+    }
+    $("#homework-list").html(`<div class="text-secondary">Keine Hausaufgaben ${text} Tag.</div>`)
   }
 }
 updateHomeworkList = runOnce(updateHomeworkList);
@@ -497,7 +505,7 @@ async function updateTimetable() {
   $("#timetable-less").empty();
   $("#timetable-more").empty();
 
-  if (selectedDay - 1 < 0 || selectedDay - 1 > 4) {
+  if ([0, 6].includes(selectedDate.getDay())) {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
     $("#timetable-mode-wrapper").addClass("d-none");
@@ -521,7 +529,7 @@ async function updateTimetable() {
     substitutionPlanId = 0;
   }
 
-  for (let [timetableEntryId, timetableEntry] of timetableData[selectedDay - 1].entries()) {
+  for (let [timetableEntryId, timetableEntry] of timetableData[selectedDate.getDay() - 1].entries()) {
     function addLesson(lessonData) {
       let lesson = {};
       lesson.subjectShort = subjectData[lessonData.subjectId].name.short;
@@ -785,7 +793,7 @@ async function updateTimetable() {
 updateTimetable = runOnce(updateTimetable);
 
 function updateTimetableMode() {
-  if (selectedDay - 1 < 0 || selectedDay - 1 > 4) {
+  if ([0, 6].includes(selectedDate.getDay())) {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
   }
@@ -987,7 +995,6 @@ $("#calendar-today-btn").on("click", () => {
   // If the calendar is already moving, stop; else set it moving
   if (calendarMoving) {return};
 
-  selectedDay = new Date().getDay()
   selectedDate = new Date()
 
   updateCalendarWeekContent("#calendar-week-old")
@@ -1023,9 +1030,6 @@ $(document).on("click", ".days-overview-day", function () {
   renameCalendarMonthYear()
   updateAll();
 })
-
-// The currently selected day of the week (i.e. 0 for monday, 1 for tuesday, ...); initially today
-let selectedDay = new Date().getDay();
 
 let selectedDate = new Date()
 

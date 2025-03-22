@@ -62,7 +62,7 @@
       </button>
     </div>
 
-    <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-sm-3 flex-column flex-sm-row"  id="timetable-mode-wrapper">
+    <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row"  id="timetable-mode-wrapper">
       <label class="text-nowrap" for="timetable-mode">Stundenplanart</label>
       <div class="btn-group" id="timetable-mode">
         <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-none">
@@ -97,17 +97,17 @@
           Hausaufgaben
         </div>
       </div>
-      <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-sm-3 flex-column flex-sm-row" id="homework-mode-wrapper">
+      <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row" id="homework-mode-wrapper">
         <label class="text-nowrap" for="homework-mode">Hausaufgabenart</label>
-        <div class="btn-group" id="homework-mode">
+        <div class="btn-group btn-group-dynamic" id="homework-mode">
           <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-tomorrow">
-          <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-tomorrow">Auf morgen</label>
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-tomorrow">Auf den nächsten Tag</label>
 
           <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-assignment">
-          <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-assignment">Von heute</label>
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-assignment">Von diesem Tag</label>
 
           <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-submission">
-          <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-submission">Auf heute</label>
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-submission">Auf diesen Tag</label>
         </div>
       </div>
       <div class="ms-3" id="homework-list">
@@ -124,7 +124,7 @@
           <span id="substitutions-updated">Keine Daten empfangen</span>
         </div>
       </div>
-      <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-sm-3 flex-column flex-sm-row" id="substitutions-mode-wrapper">
+      <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row" id="substitutions-mode-wrapper">
         <label class="text-nowrap" for="substitutions-mode">Vertretungsplanart</label>
         <div class="btn-group" id="substitutions-mode">
           <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-none">
@@ -161,29 +161,6 @@
         <div class="text-secondary d-none" id="substitutions-no-data">Keine Vertretungsdaten für diesen Tag verfügbar.</div>
       </div>
     </div>
-    <!--Exclude for ALPHA -> l.224
-    <div class="container-fluid">
-      <div class="mb-2 text-decoration-underline">
-        Anmerkungen
-      </div>
-      <div class="ms-3">
-        <div class="mb-1 form-check">
-          <label class="form-check-label">
-            <input type="checkbox" class="form-check-input">
-            Mathe Schulaufgabe mitnehmen
-          </label>
-          <span class="badge text-body author-badge">Von abc123</span>
-        </div>
-        <div class="mb-1 form-check">
-          <label class="form-check-label">
-            <input type="checkbox" class="form-check-input">
-            Weihnachtsstunde
-          </label>
-          <span class="badge text-body author-badge">Von abc123</span>
-        </div>
-      </div>
-    </div>
-    -->
   </div>
 </body>
 </html> 
