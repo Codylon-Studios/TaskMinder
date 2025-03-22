@@ -29,14 +29,23 @@
     </div>
 
     <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
+      <button class="btn btn-sm fw-bold btn-primary me-2 calendar-special-button" id="calendar-today-btn">
+        Heute
+      </button>
       <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-l-btn">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-      <div class="mx-2" id="calendar-month-year">
+      <div class="mx-2 text-center" id="calendar-month-year">
         Dezember 2024
       </div>
       <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-r-btn">
         <i class="fa-solid fa-chevron-right"></i>
+      </button>
+      <button class="btn btn-sm fw-bold btn-primary ms-2 calendar-special-button" id="calendar-month-btn">
+        Monat
+      </button>
+      <button class="btn btn-sm fw-bold btn-primary ms-2 calendar-special-button" id="calendar-week-btn">
+        Woche
       </button>
     </div>
   
@@ -44,11 +53,9 @@
       <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-l-btn">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-      <div class="position-relative">
-        <div class="mx-2" id="calendar-week-wrapper">
-          <div class="d-flex calendar-week" id="calendar-week-old"></div>
-          <div class="d-none calendar-week" id="calendar-week-new"></div>
-        </div>
+      <div class="mx-2" id="calendar-week-wrapper">
+        <div class="calendar-week calendar-old" id="calendar-week-old"></div>
+        <div class="d-none calendar-week calendar-new" id="calendar-week-new"></div>
       </div>
       <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-r-btn">
         <i class="fa-solid fa-chevron-right"></i>

@@ -67,12 +67,11 @@ function dataLoaded(dataName) {
     teamsData: teamsData,
     eventData: eventData,
     eventTypeData: eventTypeData,
-    weeklyEventData: weeklyEventData,
   }
 
   let dataVariable = dataVariableMap[dataName];
-  if (dataName == "weekDates") {
-    dataVariable = weekDates;
+  if (dataName == "monthDates") {
+    dataVariable = monthDates;
   }
 
   let eventName = dataName + "Loaded"
@@ -203,30 +202,6 @@ function loadEventTypeData() {
   });
 }
 
-async function loadWeeklyEventData(weekMonday, weekSunday) {
-  await dataLoaded("eventData");
-  let data = [];
-  for (let event of eventData) {
-    // Filter by min. date
-    if (weekMonday.getTime() > parseInt(event.endDate || event.startDate)) {
-      if (! isSameDay(weekMonday, new Date(parseInt(event.endDate || event.startDate)))) {
-        continue;
-      }
-    }
-  
-    // Filter by max. date
-    if (weekSunday.getTime() < parseInt(event.startDate)) {
-      if (! isSameDay(weekSunday, new Date(parseInt(event.startDate)))) {
-        continue;
-      }
-    }
-
-    data.push(event)
-  }
-  weeklyEventData = data;
-  $(window).trigger("weeklyEventDataLoaded");
-}
-
 function userDataLoaded() {
   return new Promise((resolve) => {
     try {
@@ -297,7 +272,6 @@ let joinedTeamsData;
 let teamsData;
 let eventData;
 let eventTypeData;
-let weeklyEventData;
 
 $(document).ready(() => {
   reloadAll();

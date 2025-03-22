@@ -12258,10 +12258,21 @@ body[data-bs-theme=dark] {
 body[data-bs-theme=dark] .days-overview-day.days-overview-selected {
   border: 3px solid rgba(255, 255, 255, 0.08) !important;
 }
+.days-overview-day.days-overview-other-month {
+  opacity: 30%;
+}
+.days-overview-day.text-body-tertiary:not(.days-overview-today):not(.days-overview-other-month) {
+  opacity: 60%;
+}
 .days-overview-day .events {
   position: absolute;
-  top: 3.5rem;
   pointer-events: none;
+}
+.days-overview-day .events.week {
+  top: 3.5rem;
+}
+.days-overview-day .events.month {
+  top: 2.5rem;
 }
 .days-overview-day .events .single-events {
   width: 2rem;
@@ -12306,22 +12317,17 @@ body[data-bs-theme=dark] .days-overview-day.days-overview-selected {
   border-radius: 0.25rem;
 }
 
-.event-list {
-  list-style: none;
-  padding-left: 0;
+.calendar-special-button {
+  width: 4rem;
 }
-.event-list li {
-  position: relative;
-}
-.event-list li::before {
-  content: "";
-  position: absolute;
-  left: 0.25rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0.65rem;
-  height: 0.65rem;
-  border-radius: 50%;
+
+.weekdays div {
+  display: flex;
+  justify-content: center;
+  margin: 0 0.1rem;
+  padding: 0.4rem 0.5rem;
+  width: 2rem;
+  font-size: 0.75rem;
 }
 
 .card {
