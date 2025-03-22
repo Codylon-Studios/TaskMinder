@@ -291,3 +291,18 @@ $(window).on("userDataLoaded", () => {
     reloadAll();
   });
 });
+
+// Change btn group selections to vertical / horizontal
+const smallScreenQuery = window.matchMedia("(max-width: 575px)");
+
+function handleSmallScreenQueryChange(ev) {
+  if (ev.matches) {
+    $(".btn-group-dynamic").removeClass("btn-group").addClass("btn-group-vertical")
+  } else {
+    $(".btn-group-dynamic").addClass("btn-group").removeClass("btn-group-vertical")
+  }
+}
+
+smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
+
+handleSmallScreenQueryChange(smallScreenQuery)
