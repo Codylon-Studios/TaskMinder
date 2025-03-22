@@ -113,7 +113,8 @@ async function updateSubjectList() {
     let subjectName = subject.name.long;
 
     if (filterData.subject[subjectId] == undefined) filterData.subject[subjectId] = true
-    let checkedStatus = (filterData.subject[subjectId]) ? "checked" : "" 
+    let checkedStatus = (filterData.subject[subjectId]) ? "checked" : ""
+    if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none")
 
     // Add the template for filtering by subject
     let templateFilterSubject =
@@ -141,6 +142,7 @@ async function updateSubjectList() {
     }
     filterData.subject[$(this).data('id')] = $(this).prop("checked")
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
@@ -466,6 +468,8 @@ function checkHomework(homeworkId) {
 }
 
 function resetFilters() {
+  $("#filter-changed").addClass("d-none")
+
   let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
 
   if (filterData.statusUnchecked == undefined) {
@@ -473,6 +477,7 @@ function resetFilters() {
   }
   else {
     $("#filter-status-unchecked").prop("checked", filterData.statusUnchecked)
+    if (! filterData.statusUnchecked) $("#filter-changed").removeClass("d-none")
   }
 
   if (filterData.statusChecked == undefined) {
@@ -480,6 +485,7 @@ function resetFilters() {
   }
   else {
     $("#filter-status-checked").prop("checked", filterData.statusChecked)
+    if (! filterData.statusChecked) $("#filter-changed").removeClass("d-none")
   }
 
   if (filterData.dateFrom == undefined) {
@@ -487,6 +493,7 @@ function resetFilters() {
   }
   else {
     $("#filter-date-from").val(filterData.dateFrom)
+    if (! isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none")
   }
 
   if (filterData.dateUntil == undefined) {
@@ -496,7 +503,12 @@ function resetFilters() {
   }
   else {
     $("#filter-date-from").val(filterData.dateUntil)
+    let nextMonth = new Date(Date.now())
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    if (! isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none")
   }
+
+  updateSubjectList()
 }
 
 let $ui;
@@ -636,6 +648,7 @@ $(function(){
     let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
     filterData.statusUnchecked = $("#filter-status-unchecked").prop("checked")
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On changing the filter checked option, update the homework list & saved filters
@@ -644,6 +657,7 @@ $(function(){
     let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
     filterData.statusChecked = $("#filter-status-checked").prop("checked")
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On clicking the all subjects option, check all and update the homework list
@@ -656,6 +670,7 @@ $(function(){
       filterData.subject[$(this).data('id')] = true
     })
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On clicking the none subjects option, uncheck all and update the homework list
@@ -668,6 +683,7 @@ $(function(){
       filterData.subject[$(this).data('id')] = false
     })
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On changing any filter date option, update the homework list
@@ -676,6 +692,7 @@ $(function(){
     let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
     filterData.dateFrom = $("#filter-date-from").val()
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On changing any filter date option, update the homework list
@@ -684,6 +701,7 @@ $(function(){
     let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
     filterData.dateUntil = $("#filter-date-until").val()
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   $(document).on("click", "#show-add-homework-button", () => {
