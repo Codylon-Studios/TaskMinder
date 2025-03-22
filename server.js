@@ -32,7 +32,7 @@ cron.schedule('0 0 * * *', () => {
   cleanupOldHomework();
 });
 
-// Schedule PostgreSQL backup every hour
+// Schedule PostgreSQL backup every hour -- comment out section if not working
 cron.schedule("0 * * * *", () => {
   logger.info("Starting hourly PostgreSQL backup");
   createDBBackup();
