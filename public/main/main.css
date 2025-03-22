@@ -12246,10 +12246,10 @@ body[data-bs-theme=dark] {
   font-weight: 500;
   border: 3px solid transparent !important;
 }
-.days-overview-day > div:first-child {
+.days-overview-day > .weekday {
   font-size: 0.75rem;
 }
-.days-overview-day.days-overview-today {
+.days-overview-day.days-overview-today span {
   color: #dc3545 !important;
 }
 .days-overview-day.days-overview-selected {
@@ -12258,10 +12258,10 @@ body[data-bs-theme=dark] {
 body[data-bs-theme=dark] .days-overview-day.days-overview-selected {
   border: 3px solid rgba(255, 255, 255, 0.08) !important;
 }
-.days-overview-day.days-overview-other-month {
+.days-overview-day.days-overview-other-month span {
   opacity: 30%;
 }
-.days-overview-day.text-body-tertiary:not(.days-overview-today):not(.days-overview-other-month) {
+.days-overview-day.text-body-tertiary:not(.days-overview-today):not(.days-overview-other-month) span {
   opacity: 60%;
 }
 .days-overview-day .events {

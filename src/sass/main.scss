@@ -14,11 +14,11 @@
     font-weight: 500;
     border: 3px solid transparent !important;
 
-    & > div:first-child {
+    & > .weekday {
         font-size: 0.75rem;
     }
 
-    &.days-overview-today {
+    &.days-overview-today span {
         color: #dc3545 !important;
     }
 
@@ -30,11 +30,11 @@
         }
     }
 
-    &.days-overview-other-month {
+    &.days-overview-other-month span {
         opacity: 30%;
     }
 
-    &.text-body-tertiary:not(.days-overview-today):not(.days-overview-other-month) {
+    &.text-body-tertiary:not(.days-overview-today):not(.days-overview-other-month) span {
         opacity: 60%;
     }
 
