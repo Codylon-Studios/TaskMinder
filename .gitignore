@@ -134,3 +134,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# dev server
+dev-server.js
+
+# useful commands
+useful.md

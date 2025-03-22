@@ -96,14 +96,23 @@ async function updateEventTypeList() {
   // Clear the list for filtering by type
   $("#filter-type-list").empty();
 
+  let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+  if (filterData.type == undefined) {
+    filterData.type = {}
+  }
+
   eventTypeData.forEach((eventType, eventTypeId) => {
     // Get the event type data
     let eventName = eventType.name;
 
+    if (filterData.type[eventTypeId] == undefined) filterData.type[eventTypeId] = true
+    let checkedStatus = (filterData.type[eventTypeId]) ? "checked" : ""
+    if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none")
+
     // Add the template for filtering by type
     let templateFilterType =
       `<div class="form-check">
-        <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${eventTypeId}" checked>
+        <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
         <label class="form-check-label" for="filter-type-${eventTypeId}">
           ${eventName}
         </label>
@@ -118,9 +127,18 @@ async function updateEventTypeList() {
   });
 
   // If any type filter gets changed, update the shown events
-  $(".filter-type-option").on("change", () => {
+  $(".filter-type-option").on("change", function () {
     updateEventList();
+    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+    if (filterData.type == undefined) {
+      filterData.type = {}
+    }
+    filterData.type[$(this).data('id')] = $(this).prop("checked")
+    localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
   });
+
+  localStorage.setItem("eventFilter", JSON.stringify(filterData))
 }
 updateEventTypeList = runOnce(updateEventTypeList);
 
@@ -387,8 +405,31 @@ function deleteEvent(eventId) {
 }
 
 function resetFilters() {
-  $("#filter-date-from").val(msToInputDate(Date.now()))
-  $("#filter-date-until").val("")
+  $("#filter-changed").addClass("d-none")
+
+  let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+  
+  if (filterData.dateFrom == undefined) {
+    $("#filter-date-from").val(msToInputDate(Date.now()))
+  }
+  else {
+    $("#filter-date-from").val(filterData.dateFrom)
+    if (! isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none")
+  }
+
+  if (filterData.dateUntil == undefined) {
+    let nextMonth = new Date(Date.now())
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    $("#filter-date-until").val(msToInputDate(nextMonth.getTime()))
+  }
+  else {
+    $("#filter-date-from").val(filterData.dateUntil)
+    let nextMonth = new Date(Date.now())
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    if (! isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none")
+  }
+
+  updateEventTypeList()
 }
 
 let $ui;
@@ -438,14 +479,24 @@ $(function(){
     if ($("#filter-toggle").is(":checked")) {
       // On checking the filter toggle, show the filter options
       $("#filter-content").removeClass("d-none");
+      $("#filter-reset").removeClass("d-none");
     }
     else {
       // On checking the filter toggle, hide the filter options
       $("#filter-content").addClass("d-none");
+      $("#filter-reset").addClass("d-none");
     }
   });
 
+  if (! localStorage.getItem("eventFilter")) {
+    localStorage.setItem("eventFilter", `{}`)
+  }
   resetFilters();
+  $("#filter-reset").on("click", () => {
+    localStorage.setItem("eventFilter", `{}`)
+    resetFilters()
+    updateAll()
+  })
 
   // On changing any information in the add event modal, disable the add button if any information is empty
   $(".add-event-input").on("input", function () {
@@ -510,19 +561,46 @@ $(function(){
 
   // On clicking the all types option, check all and update the event list
   $("#filter-type-all").on("click", () => {
-    $(".filter-type-option").prop("checked", true);
     updateEventList();
+    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+    if (filterData.type == undefined) filterData.type = {}
+    $(".filter-type-option").prop("checked", true);
+    $(".filter-type-option").each(function () {
+      filterData.type[$(this).data('id')] = true
+    })
+    localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On clicking the none types option, uncheck all and update the event list
   $("#filter-type-none").on("click", () => {
-    $(".filter-type-option").prop("checked", false);
     updateEventList();
+    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+    if (filterData.type == undefined) filterData.type = {}
+    $(".filter-type-option").prop("checked", false);
+    $(".filter-type-option").each(function () {
+      filterData.type[$(this).data('id')] = false
+    })
+    localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On changing any filter date option, update the event list
-  $(".filter-date").on("change", () => {
+  $("#filter-date-from").on("change", () => {
     updateEventList();
+    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+    filterData.dateFrom = $("#filter-date-from").val()
+    localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
+  });
+
+  // On changing any filter date option, update the event list
+  $("#filter-date-until").on("change", () => {
+    updateEventList();
+    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+    filterData.dateUntil = $("#filter-date-until").val()
+    localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   $(document).on("click", "#show-add-event-button", () => {

@@ -29,9 +29,31 @@ function loadTemplateContent() {
   });
 }
 
+let themeColor = document.createElement("meta")
+themeColor.name = "theme-color"
+let colorTheme
 if (localStorage.getItem("colorTheme") == "dark") {
-  document.getElementsByTagName("html")[0].style.background = "#212529"
+  colorTheme = "dark"
 }
+else if (localStorage.getItem("colorTheme") == "light") {
+  colorTheme = "light"
+}
+else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  colorTheme = "dark"
+}
+else {
+  colorTheme = "light"
+}
+
+if (colorTheme == "light") {
+  themeColor.content = "#f8f9fa"
+}
+else {
+  document.getElementsByTagName("html")[0].style.background = "#212529"
+  themeColor.content = "#2b3035"
+}
+
+document.head.appendChild(themeColor);
 
 // Global socket variable that can be accessed from any script
 let socket;

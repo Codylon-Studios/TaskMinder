@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hausaufgabenplaner</title>
+  <title>TaskMinder</title>
   <script src="/init.js"></script>
   <link href="/events/event_type_styles" rel="stylesheet">
 </head>
@@ -21,9 +21,10 @@
         </label>
   
         <input type="checkbox" class="btn-check" id="filter-toggle">
-        <label class="btn btn-outline-secondary" for="filter-toggle">
+        <label class="btn btn-outline-secondary position-relative" for="filter-toggle">
           <i class="fa-solid fa-filter"></i>
           Filtern
+          <span class="position-absolute top-0 start-100 translate-middle p-2 bg-primary border border-light border-1 rounded-circle" id="filter-changed"></span>
         </label>
       </div>
       <div id="filter-content" class="d-flex align-items-center flex-column flex-md-row gap-2 d-contents d-none">
@@ -60,6 +61,10 @@
           </div>
         </div>
       </div>
+      <button class="btn btn-secondary d-none" id="filter-reset">
+        <i class="fa-solid fa-trash"></i>
+        Zurücksetzen
+      </button>
     </div>
 
     <button type="button" class="btn btn-primary d-none" id="show-add-event-button">

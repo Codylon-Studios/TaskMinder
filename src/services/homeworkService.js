@@ -39,7 +39,7 @@ const homeworkService = {
             err.expected = true;
             throw err;
         }
-        const data = await Homework10d.findAll({ raw: true });
+        const data = await Homework10d.findAll({ raw: true, order: [["submissionDate", "ASC"]] });
         await updateCacheHomeworkData(data);
         const io = socketIO.getIO();
         io.emit('updateHomeworkData');
@@ -91,7 +91,7 @@ const homeworkService = {
                 homeworkId: homeworkId
             }
         });
-        const data = await Homework10d.findAll({ raw: true });
+        const data = await Homework10d.findAll({ raw: true, order: [["submissionDate", "ASC"]] });
         await updateCacheHomeworkData(data);
         const io = socketIO.getIO();
         io.emit('updateHomeworkData');
@@ -125,7 +125,7 @@ const homeworkService = {
             throw err;
         }
         
-        const data = await Homework10d.findAll({ raw: true });
+        const data = await Homework10d.findAll({ raw: true, order: [["submissionDate", "ASC"]] });
         await updateCacheHomeworkData(data);
         const io = socketIO.getIO();
         io.emit('updateHomeworkData');
@@ -143,7 +143,7 @@ const homeworkService = {
             }
         }
 
-        const data = await Homework10d.findAll({ raw: true });
+        const data = await Homework10d.findAll({ raw: true, order: [["submissionDate", "ASC"]] });
 
         await updateCacheHomeworkData(data);
 
