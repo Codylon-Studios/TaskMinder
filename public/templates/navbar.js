@@ -183,14 +183,32 @@ function resetLoginRegisterModal() {
 
 function updateColorTheme() {
   if ($("#color-theme-dark")[0].checked) {
-    document.getElementsByTagName("html")[0].style.background = "#212529";
-    document.body.setAttribute("data-bs-theme", "dark");
+    colorTheme = "dark"
     localStorage.setItem("colorTheme", "dark");
   }
+  else if ($("#color-theme-light")[0].checked) {
+    colorTheme = "light"
+    localStorage.setItem("colorTheme", "light");
+  }
   else {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      colorTheme = "dark"
+    }
+    else {
+      colorTheme = "light"
+    }
+    localStorage.setItem("colorTheme", "auto");
+  }
+
+  if (colorTheme == "light") {
     document.getElementsByTagName("html")[0].style.background = "#ffffff";
     document.body.setAttribute("data-bs-theme", "light");
-    localStorage.setItem("colorTheme", "light");
+    $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
+  }
+  else {
+    document.getElementsByTagName("html")[0].style.background = "#212529";
+    document.body.setAttribute("data-bs-theme", "dark");
+    $(`meta[name="theme-color"]`).attr("content", "#2b3035")
   }
 }
 
@@ -332,16 +350,20 @@ $("#animations input").on("click", function () {
   localStorage.setItem("animations", animations)
 })
 
-let colorTheme = localStorage.getItem("colorTheme") || "light";
+let colorThemeSetting = localStorage.getItem("colorTheme") || "auto";
 document.body.setAttribute("data-bs-theme", colorTheme);
-$("#color-theme-dark").prop("checked", colorTheme == "dark") 
-$("#color-theme-light").prop("checked", colorTheme == "light")
+$("#color-theme-auto").prop("checked", colorThemeSetting == "auto") 
+$("#color-theme-dark").prop("checked", colorThemeSetting == "dark") 
+$("#color-theme-light").prop("checked", colorThemeSetting == "light")
 
 $("#color-theme input").each(() => {
   $(this).on("click", () => {
     updateColorTheme();
   });
 });
+
+window.matchMedia('(prefers-color-scheme: light)').addEventListener("change", updateColorTheme)
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener("change", updateColorTheme)
 
 $navbarUi.lr.username.val("");
 

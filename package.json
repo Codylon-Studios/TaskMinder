@@ -4,13 +4,13 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-  "test": "echo \"No tests specified, but passing anyway\" && exit 0"
+    "test": "echo \"No tests specified, but passing anyway\" && exit 0"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.7.9",
+    "axios": "^1.8.3",
     "bcrypt": "^5.1.1",
     "bootstrap": "^5.3.3",
     "cheerio": "^1.0.0",

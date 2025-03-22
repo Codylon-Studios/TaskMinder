@@ -1,7 +1,7 @@
 <nav class="navbar bg-body-tertiary fixed-top">
 	<div class="container-fluid">
-		<div class="dropdown">
-			<button class="btn btn-tertiary d-md-none" data-bs-toggle="dropdown">
+		<div class="dropdown me-auto me-sm-0">
+			<button class="btn btn-tertiary d-sm-none" data-bs-toggle="dropdown">
 				<i class="fas fa-bars"></i>
 			</button>
 			<div class="dropdown-menu">
@@ -17,9 +17,13 @@
 			</div>
 		</div>
 
-		<a class="navbar-text fs-5 me-md-4 ms-md-0 mx-auto text-decoration-none" href="/">Hausaufgabenplaner</a>
+		<!--<a class="navbar-text fs-5 me-md-4 ms-md-0 mx-auto text-decoration-none" href="/">TaskMinder</a>-->
+		<a class="d-sm-none navbar-text fs-5 text-decoration-none position-absolute start-50 translate-middle-x" href="/">TaskMinder</a>
+		<a class="d-none d-sm-block navbar-text fs-5 text-decoration-none ms-0 me-4" href="/">
+			TaskMinder
+		</a>
 
-		<ul class="navbar-nav d-none d-md-flex flex-row me-auto">
+		<ul class="navbar-nav d-none d-sm-flex flex-row me-auto">
 			<li class="nav-item me-3">
 				<a class="nav-link" href="/homework">Hausaufgaben</a>
 			</li>
@@ -71,6 +75,9 @@
 				<div class="mb-3 d-flex align-items-center">
 					<label class="me-3" for="color-theme">Farbthema</label>
 					<div class="btn-group" id="color-theme">
+						<input type="radio" class="btn-check" name="color-theme" id="color-theme-auto" checked>
+						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-auto">Automatisch</label>
+
 						<input type="radio" class="btn-check" name="color-theme" id="color-theme-light" checked>
 						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-light">Hell</label>
 
