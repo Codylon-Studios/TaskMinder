@@ -67,12 +67,11 @@ function dataLoaded(dataName) {
     teamsData: teamsData,
     eventData: eventData,
     eventTypeData: eventTypeData,
-    weeklyEventData: weeklyEventData,
   }
 
   let dataVariable = dataVariableMap[dataName];
-  if (dataName == "weekDates") {
-    dataVariable = weekDates;
+  if (dataName == "monthDates") {
+    dataVariable = monthDates;
   }
 
   let eventName = dataName + "Loaded"
@@ -203,30 +202,6 @@ function loadEventTypeData() {
   });
 }
 
-async function loadWeeklyEventData(weekMonday, weekSunday) {
-  await dataLoaded("eventData");
-  let data = [];
-  for (let event of eventData) {
-    // Filter by min. date
-    if (weekMonday.getTime() > parseInt(event.endDate || event.startDate)) {
-      if (! isSameDay(weekMonday, new Date(parseInt(event.endDate || event.startDate)))) {
-        continue;
-      }
-    }
-  
-    // Filter by max. date
-    if (weekSunday.getTime() < parseInt(event.startDate)) {
-      if (! isSameDay(weekSunday, new Date(parseInt(event.startDate)))) {
-        continue;
-      }
-    }
-
-    data.push(event)
-  }
-  weeklyEventData = data;
-  $(window).trigger("weeklyEventDataLoaded");
-}
-
 function userDataLoaded() {
   return new Promise((resolve) => {
     try {
@@ -297,7 +272,6 @@ let joinedTeamsData;
 let teamsData;
 let eventData;
 let eventTypeData;
-let weeklyEventData;
 
 $(document).ready(() => {
   reloadAll();
@@ -317,3 +291,18 @@ $(window).on("userDataLoaded", () => {
     reloadAll();
   });
 });
+
+// Change btn group selections to vertical / horizontal
+const smallScreenQuery = window.matchMedia("(max-width: 575px)");
+
+function handleSmallScreenQueryChange(ev) {
+  if (ev.matches) {
+    $(".btn-group-dynamic").removeClass("btn-group").addClass("btn-group-vertical")
+  } else {
+    $(".btn-group-dynamic").addClass("btn-group").removeClass("btn-group-vertical")
+  }
+}
+
+smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
+
+handleSmallScreenQueryChange(smallScreenQuery)

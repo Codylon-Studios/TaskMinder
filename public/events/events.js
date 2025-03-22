@@ -106,7 +106,8 @@ async function updateEventTypeList() {
     let eventName = eventType.name;
 
     if (filterData.type[eventTypeId] == undefined) filterData.type[eventTypeId] = true
-    let checkedStatus = (filterData.type[eventTypeId]) ? "checked" : "" 
+    let checkedStatus = (filterData.type[eventTypeId]) ? "checked" : ""
+    if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none")
 
     // Add the template for filtering by type
     let templateFilterType =
@@ -134,6 +135,7 @@ async function updateEventTypeList() {
     }
     filterData.type[$(this).data('id')] = $(this).prop("checked")
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   localStorage.setItem("eventFilter", JSON.stringify(filterData))
@@ -403,6 +405,8 @@ function deleteEvent(eventId) {
 }
 
 function resetFilters() {
+  $("#filter-changed").addClass("d-none")
+
   let filterData = JSON.parse(localStorage.getItem("eventFilter"))
   
   if (filterData.dateFrom == undefined) {
@@ -410,6 +414,7 @@ function resetFilters() {
   }
   else {
     $("#filter-date-from").val(filterData.dateFrom)
+    if (! isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none")
   }
 
   if (filterData.dateUntil == undefined) {
@@ -419,7 +424,12 @@ function resetFilters() {
   }
   else {
     $("#filter-date-from").val(filterData.dateUntil)
+    let nextMonth = new Date(Date.now())
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    if (! isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none")
   }
+
+  updateEventTypeList()
 }
 
 let $ui;
@@ -559,6 +569,7 @@ $(function(){
       filterData.type[$(this).data('id')] = true
     })
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On clicking the none types option, uncheck all and update the event list
@@ -571,6 +582,7 @@ $(function(){
       filterData.type[$(this).data('id')] = false
     })
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On changing any filter date option, update the event list
@@ -579,6 +591,7 @@ $(function(){
     let filterData = JSON.parse(localStorage.getItem("eventFilter"))
     filterData.dateFrom = $("#filter-date-from").val()
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   // On changing any filter date option, update the event list
@@ -587,6 +600,7 @@ $(function(){
     let filterData = JSON.parse(localStorage.getItem("eventFilter"))
     filterData.dateUntil = $("#filter-date-until").val()
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
+    resetFilters();
   });
 
   $(document).on("click", "#show-add-event-button", () => {
