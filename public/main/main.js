@@ -79,8 +79,8 @@ function getCalendarDayHtml(date, week, multiEventPositions) {
   // Append the days (All days will be added into and .calendar-week element)
   return `
   <div class="days-overview-day ${specialClasses}btn btn-semivisible" data-week="${week}" data-day="${date.getDay()}">
-    <div class="weekday">${(calendarMode == "week") ? weekday: ""}</div>
-    <div class="date">${date.getDate()}</div>
+    <span class="weekday">${(calendarMode == "week") ? weekday: ""}</span>
+    <span class="date">${date.getDate()}</span>
     <div class="events ${calendarMode}">
       <div class="multi-events">
         ${multiDayEvents}
@@ -991,6 +991,7 @@ $("#calendar-today-btn").on("click", () => {
   selectedDate = new Date()
 
   updateCalendarWeekContent("#calendar-week-old")
+  renameCalendarMonthYear()
   updateAll();
 })
 
