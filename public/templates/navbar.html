@@ -1,40 +1,46 @@
 <nav class="navbar bg-body-tertiary fixed-top">
 	<div class="container-fluid">
-		<div class="dropdown me-auto me-sm-0">
-			<button class="btn btn-tertiary d-sm-none" data-bs-toggle="dropdown">
-				<i class="fas fa-bars"></i>
-			</button>
-			<div class="dropdown-menu">
-				<a class="dropdown-item" href="/homework">
-					Hausaufgaben
-				</a>
-				<a class="dropdown-item" href="/events">
-					Ereignisse
-				</a>
-				<button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#settings-modal">
-					Einstellungen
-				</button>
+		<button class="btn btn-tertiary d-sm-none" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title">Menü</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/homework">Hausaufgaben</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/events">Ereignisse</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="modal" data-bs-target="#settings-modal">Einstellungen</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+		<div class="d-flex justify-content-between align-items-center flex-grow-1">
+			<div class="d-sm-none text-center flex-grow-1">
+				<a class="navbar-text fs-5 text-decoration-none" href="/">TaskMinder</a>
 			</div>
+			<a class="d-none d-sm-block navbar-text fs-5 text-decoration-none ms-0 me-4" href="/">
+				TaskMinder
+			</a>
+			<ul class="navbar-nav d-none d-sm-flex flex-row me-auto">
+				<li class="nav-item me-3">
+					<a class="nav-link" href="/homework">Hausaufgaben</a>
+				</li>
+				<li class="nav-item me-3">
+					<a class="nav-link" href="/events">Ereignisse</a>
+				</li>
+				<li class="nav-item me-3">
+					<button class="nav-link" data-bs-toggle="modal" data-bs-target="#settings-modal">Einstellungen</button>
+				</li>
+			</ul>
 		</div>
-
-		<!--<a class="navbar-text fs-5 me-md-4 ms-md-0 mx-auto text-decoration-none" href="/">TaskMinder</a>-->
-		<a class="d-sm-none navbar-text fs-5 text-decoration-none position-absolute start-50 translate-middle-x" href="/">TaskMinder</a>
-		<a class="d-none d-sm-block navbar-text fs-5 text-decoration-none ms-0 me-4" href="/">
-			TaskMinder
-		</a>
-
-		<ul class="navbar-nav d-none d-sm-flex flex-row me-auto">
-			<li class="nav-item me-3">
-				<a class="nav-link" href="/homework">Hausaufgaben</a>
-			</li>
-			<li class="nav-item me-3">
-				<a class="nav-link" href="/events">Ereignisse</a>
-			</li>
-			<li class="nav-item me-3">
-				<button class="nav-link" data-bs-toggle="modal" data-bs-target="#settings-modal">Einstellungen</button>
-			</li>
-		</ul>
-
 		<div class="dropdown">
 			<button class="btn btn-tertiary" data-bs-toggle="dropdown" id="user-dropdown">
 				<i class="fas fa-user"></i>
@@ -48,7 +54,6 @@
 				</button>
 			</div>
 		</div>
-
 		<button class="btn btn-tertiary" id="navbar-reload-button">
 			<i class="fas fa-rotate"></i>
 		</button>
