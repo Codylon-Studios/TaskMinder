@@ -22,7 +22,7 @@ function createDBBackup() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const backupFileName = `backup_${timestamp}.sql`;
     const backupFile = `/backups/${backupFileName}`;
-    const command = `docker exec -t ${CONTAINER_NAME} pg_dump -U ${DB_USER} -d ${DB_NAME} -f ${backupFile}`;
+    const command = `pg_dump -h ${CONTAINER_NAME} -U ${DB_USER} -d ${DB_NAME} -f ${backupFile}`;
 
     logger.info(`Executing backup command: ${command}`);
     
