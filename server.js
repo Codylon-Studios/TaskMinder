@@ -15,6 +15,7 @@ const sequelize = require('./src/sequelize');
 const account = require('./src/routes/accountRoute');
 const homework = require('./src/routes/homeworkRoute');
 const substitutions = require('./src/routes/substitutionRoute');
+const schedules = require('./src/routes/scheduleRoute');
 const teams = require('./src/routes/teamRoute');
 const events = require('./src/routes/eventRoute');
 
@@ -126,6 +127,7 @@ app.use(RequestLogger);
 app.use('/account', account);
 app.use('/homework', homework);
 app.use('/substitutions', substitutions);
+app.use('/schedule', schedules);
 app.use('/teams', teams);
 app.use('/events', events);
 app.use(ErrorHandler);

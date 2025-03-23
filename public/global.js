@@ -88,7 +88,7 @@ function dataLoaded(dataName) {
 }
 
 function loadSubjectData() {
-  fetch('/subjects.json')
+  fetch('/schedule/get_subject_data')
   .then(response => {
     if (!response.ok) {
       throw new Error('Network response was not ok');
@@ -105,7 +105,7 @@ function loadSubjectData() {
 }
 
 function loadTimetableData() {
-  fetch('/timetable.json')
+  fetch('/schedule/get_timetable_data')
     .then(response => {
       if (!response.ok) {
         throw new Error('Network response was not ok');
