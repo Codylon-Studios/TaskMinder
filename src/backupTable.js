@@ -6,6 +6,7 @@ require("dotenv").config();
 
 const DB_USER = process.env.DB_USER;
 const DB_NAME = process.env.DB_NAME;
+const DB_PASSWORD = process.env.DB_PASSWORD;
 const CONTAINER_NAME = "taskminder-postgres";
 const BACKUP_DIR = "/backups";
 const MAX_BACKUPS = 48;
@@ -22,7 +23,7 @@ function createDBBackup() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const backupFileName = `backup_${timestamp}.sql`;
     const backupFile = `/backups/${backupFileName}`;
-    const command = `pg_dump -h ${CONTAINER_NAME} -U ${DB_USER} -d ${DB_NAME} -f ${backupFile}`;
+    const command = `docker exec ${CONTAINER_NAME} bash -c "PGPASSWORD='${DB_PASSWORD}' pg_dump -U ${DB_USER} -d ${DB_NAME} -f ${backupFile}"`;
 
     logger.info(`Executing backup command: ${command}`);
     
