@@ -13,6 +13,20 @@ exports.userController = {
             next(error);
         }
     }),
+    joinClass: asyncHandler(async(req, res, next) => {
+        const { classcode } = req.body;
+        try {
+            const response = await accountService.joinClass(classcode);
+            if(response.redirectmain == true){
+                req.session.classcode = classcode;
+                res.redirect('/main');
+            } else {
+                res.redirect('/join');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }),
     loginUser: asyncHandler(async(req, res, next) => {
         const { username, password } = req.body;
         try {

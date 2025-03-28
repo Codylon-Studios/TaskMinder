@@ -9,6 +9,7 @@ router.post('/delete', userController.deleteUser);
 router.get('/auth', userController.getAuth);
 router.post('/logout', userController.logoutUser);
 router.post('/checkusername', userController.checkUsername);
+router.post('/join', userController.joinClass)
 
 
 module.exports = router

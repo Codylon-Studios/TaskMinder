@@ -141,6 +141,29 @@ sequelize.authenticate()
   .catch(err => logger.error('Unable to connect to PostgreSQL:', err));
 
 app.get('/', function (req, res) {
+  res.redirect('/join');
+  //res.sendFile(__dirname + '/public/main/main.html');
+});
+
+app.get('/join', function (req, res) {
+  const classCodeFromQuery = req.query.classcode;
+  if (classCodeFromQuery){
+    req.session.classcode = classCodeFromQuery;
+    return res.redirect('/main');
+  }
+  if (req.session.account){
+    return res.redirect('/main');
+  }
+  if (req.session.classcode){
+    if (req.session.classcode == process.env.CLASSCODE){
+      return res.redirect('/main');
+    }
+  }
+  //send join classcode html page
+  res.sendFile(__dirname + '/public/join/join.html');
+});
+
+app.get('/main', function (req, res) {
   res.sendFile(__dirname + '/public/main/main.html');
 });
 
