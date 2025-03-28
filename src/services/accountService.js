@@ -125,6 +125,13 @@ const userService = {
     async checkUsername(username) {
         const accountExists = await Account.findOne({ where: { username: username } });
         return accountExists != null;
+    },
+    async joinClass(classcode) {
+        if (classcode == process.env.CLASSCODE){
+            return { redirectmain: true };
+          } else {
+            return { redirectmain: false };
+          }
     }
 }
 
