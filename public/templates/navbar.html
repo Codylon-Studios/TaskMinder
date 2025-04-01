@@ -1,27 +1,27 @@
 <nav class="navbar bg-body-tertiary fixed-top">
 	<div class="container-fluid">
 		<button class="btn btn-tertiary d-sm-none" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar">
-            <i class="fas fa-bars"></i>
-        </button>
-        <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar">
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title">Menü</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-            </div>
-            <div class="offcanvas-body">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/homework">Hausaufgaben</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/events">Ereignisse</a>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="modal" data-bs-target="#settings-modal">Einstellungen</button>
-                    </li>
-                </ul>
-            </div>
-        </div>
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Menü</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+      </div>
+      <div class="offcanvas-body">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="/homework">Hausaufgaben</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/events">Ereignisse</a>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="modal" data-bs-target="#settings-modal">Einstellungen</button>
+          </li>
+        </ul>
+      </div>
+    </div>
 		<div class="d-flex justify-content-between align-items-center flex-grow-1">
 			<div class="d-sm-none text-center flex-grow-1">
 				<a class="navbar-text fs-5 text-decoration-none" href="/">TaskMinder</a>
@@ -47,7 +47,7 @@
 			</button>
 			<div class="dropdown-menu dropdown-menu-end" id="dropdown-menu">
 				<button class="dropdown-item" id="login-register-button" data-bs-toggle="modal" data-bs-target="#login-register-modal">
-					Einloggen oder Registrieren
+					Anmelden oder Registrieren
 				</button>
 				<button class="dropdown-item d-none" id="logout-button">
 					Logout
@@ -129,7 +129,7 @@
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header">
-				<h1 class="modal-title fs-5" id="login-register-title">Einloggen oder Registrieren</h1>
+				<h1 class="modal-title fs-5" id="login-register-title">Anmelden oder Registrieren</h1>
 				<h1 class="modal-title fs-5 d-none" id="login-title">Willkommen zurück!</h1>
 				<h1 class="modal-title fs-5 d-none" id="register-title">Registriere dich!</h1>
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -201,7 +201,7 @@
 				<button type="button" class="btn btn-secondary d-none" id="login-register-back-button">Zurück</button>
 				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
 				<button type="button" class="btn btn-primary disabled" id="login-register-next-button">Weiter</button>
-				<button type="button" class="btn btn-primary d-none" id="login-button">Einloggen</button>
+				<button type="button" class="btn btn-primary d-none" id="login-button">Anmelden</button>
 				<button type="button" class="btn btn-primary d-none" id="register-button">Registrieren</button>
 			</div>
 		</div>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskMinder</title>
+  <script src="/init.js"></script>
+</head>
+<body data-url="join" style="display: none;">
+  <div class="load-content" data-url="navbar" data-html data-js></div>
+
+  <div class="container d-flex justify-content-center">
+    <div class="card p-4 shadow-sm mt-5 panel">
+      <div id="decide-action-panel">
+        <h2 class="text-center mb-4">Was möchtest du tun?</h2>
+        <button class="btn btn-primary w-100 fw-semibold mb-3" data-bs-toggle="modal" data-bs-target="#login-register-modal">Anmelden oder Registrieren</button>
+        <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-join-class-btn">Klasse beitreten</button>
+        <button class="btn btn-primary w-100 fw-semibold" id="show-create-class-btn" disabled>Klasse erstellen</button>
+        <div class="form-text">Wir arbeiten gerade noch daran, TaskMinder für jeden verfügbar zu machen. Schau gerne bald wieder vorbei!</div>
+      </div>
+
+      <div id="join-class-panel" class="d-none">
+        <h2 class="text-center mb-4">Klasse beitreten</h2>
+        <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2" id="error-invalid-classcode">
+          <i class="fa-solid fa-circle-exclamation mx-1"></i>
+          <span class="d-block">
+            Der Klassencode ist ungültig!
+          </span>
+        </div>
+        <div class="mb-3">
+          <label for="join-class-classcode" class="form-label">
+            Gib den Klassencode ein
+          </label>
+          <input type="text" class="form-control" id="join-class-classcode">
+          <div class="form-text">Frag den Ersteller eurer Klasse, wenn du ihn vergessen hast</div>
+        </div>
+        <button class="btn btn-primary w-100 fw-semibold" id="join-class-btn">Beitreten</button>
+      </div>
+
+      <div id="decide-account-panel" class="d-none">
+        <div class="alert alert-success p-2 d-flex align-items-center gap-2">
+          <i class="fa-solid fa-circle-check mx-1"></i>
+          <span class="d-block">
+            Du bist der Klasse <b>10d</b> beigetreten!
+          </span>
+        </div>
+        <h2 class="text-center mb-4">Möchtest du einen Account nutzen?</h2>
+        <button class="btn btn-primary w-100 fw-semibold mb-3" data-bs-toggle="modal" data-bs-target="#login-register-modal">Anmelden oder Registrieren</button>
+        <div class="text-center mb-3"><a href="/">Ohne Account fortfahren</a></div>
+        <a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#decide-account-reasons">Was bringt ein Account?</a>
+        <div class="collapse mt-2" id="decide-account-reasons">
+          <div class="align-items-center gap-2 d-flex">
+            <div class="fw-bold text-primary me-2">+</div>
+            <div>Möglichkeit zum Bearbeiten von Klassendaten (z.B. Hausaufgaben, Ereignisse, ...)</div>
+          </div>
+          <div class="align-items-center gap-2 d-flex">
+            <div class="fw-bold text-primary me-2">+</div>
+            <div>Synchronisation deiner Daten auf verschiedenen Geräten</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
