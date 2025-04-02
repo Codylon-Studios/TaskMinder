@@ -12,15 +12,27 @@ $("#show-join-class-btn").on("click", () => {
   $("#join-class-panel").removeClass("d-none")
 })
 
-$("#join-class-btn").on("click", () => {
-  if ($("#join-class-classcode").val() == "123") {
-    $("#join-class-panel").addClass("d-none")
-    $("#decide-account-panel").removeClass("d-none")
+document.getElementById("join-class-btn").addEventListener("click", async () => {
+  const classcode = document.getElementById("join-class-classcode").value;
+
+  try {
+    const response = await fetch("/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ classcode })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      $("#join-class-panel").addClass("d-none")
+      $("#decide-account-panel").removeClass("d-none")
+    } else {
+      document.getElementById("error-invalid-classcode").classList.remove("d-none");
+    }
+  } catch (error) {
+    console.error("Error joining class:", error);
   }
-  else {
-    $("#error-invalid-classcode").removeClass("d-none")
-  }
-})
+});
 
 $("#join-class-classcode").on("input", () => {
   $("#error-invalid-classcode").addClass("d-none")
