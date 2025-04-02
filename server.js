@@ -174,3 +174,7 @@ app.get('/homework', function (req, res) {
 app.get('/events', function (req, res) {
   res.sendFile(__dirname + '/public/events/events.html');
 });
+
+app.get('/join', function (req, res) {
+  res.sendFile(__dirname + '/public/join/join.html');
+});
