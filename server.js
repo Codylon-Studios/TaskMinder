@@ -1,4 +1,5 @@
 const { createServer } = require('http');
+const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const cron = require('node-cron');
@@ -8,6 +9,7 @@ const socketIO = require('./src/socket');
 require('dotenv').config();
 const ErrorHandler = require('./src/middleware/errorMiddleware');
 const RequestLogger = require('./src/middleware/loggerMiddleware');
+const checkAccess = require('./src/middleware/accessMiddleware');
 const logger = require('./logger');
 const { cleanupOldHomework } = require('./src/homeworkCleanup');
 const { createDBBackup } = require ('./src/backupTable');
@@ -140,41 +142,48 @@ sequelize.authenticate()
   .then(() => logger.success('Connected to PostgreSQL'))
   .catch(err => logger.error('Unable to connect to PostgreSQL:', err));
 
-app.get('/', function (req, res) {
-  res.redirect('/join');
-  //res.sendFile(__dirname + '/public/main/main.html');
-});
 
-app.get('/join', function (req, res) {
+app.get('/', (req, res) => res.redirect('/join'));
+
+
+app.get('/join', (req, res) => {
   const classCodeFromQuery = req.query.classcode;
-  if (classCodeFromQuery){
+
+  if (classCodeFromQuery) {
     req.session.classcode = classCodeFromQuery;
-    return res.redirect('/main');
-  }
-  if (req.session.account){
-    return res.redirect('/main');
-  }
-  if (req.session.classcode){
-    if (req.session.classcode == process.env.CLASSCODE){
+
+    if (req.session.classcode === process.env.CLASSCODE) {
       return res.redirect('/main');
     }
   }
-  //send join classcode html page
-  res.sendFile(__dirname + '/public/join/join.html');
+  if (req.session.account || req.session.classcode === process.env.CLASSCODE) {
+    return res.redirect('/main');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'join', 'join.html'));
 });
 
-app.get('/main', function (req, res) {
-  res.sendFile(__dirname + '/public/main/main.html');
+app.post('/join', (req, res) => {
+  const { classcode } = req.body;
+
+  if (classcode === process.env.CLASSCODE) {
+    req.session.classcode = classcode;
+    return res.json({ success: true });
+  } else {
+    return res.json({ success: false, error: 'Invalid class code' });
+  }
 });
 
-app.get('/homework', function (req, res) {
-  res.sendFile(__dirname + '/public/homework/homework.html');
+//
+// Protected routes: Redirect to /join if not logged in
+//
+app.get('/main', checkAccess, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'main', 'main.html'));
 });
 
-app.get('/events', function (req, res) {
-  res.sendFile(__dirname + '/public/events/events.html');
+app.get('/homework', checkAccess, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'homework', 'homework.html'));
 });
 
-app.get('/join', function (req, res) {
-  res.sendFile(__dirname + '/public/join/join.html');
+app.get('/events', checkAccess, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'events', 'events.html'));
 });
