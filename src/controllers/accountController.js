@@ -19,9 +19,9 @@ exports.userController = {
             const response = await accountService.joinClass(classcode);
             if(response.redirectmain == true){
                 req.session.classcode = classcode;
-                res.redirect('/main');
+                res.redirect(308, '/main');
             } else {
-                res.redirect('/join');
+                res.redirect(308, '/join');
             }
         } catch (error) {
             next(error);
@@ -59,7 +59,7 @@ exports.userController = {
     getAuth: asyncHandler(async(req, res, next) => {
         try {
             const response = await accountService.getAuth(req.session);
-            res.json(response);
+            res.status(200).json(response);
         } catch (error) {
             next(error);
         }
