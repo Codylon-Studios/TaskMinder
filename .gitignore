@@ -1,9 +1,10 @@
 # Ignore redis binary dump (dump.rdb) files
 *.rdb
+# Ignore sensitive data
+/src/subjects.json
+/src/timetable.json
 # Ignore Docker Secrets (/docker_secrets folder)
 /docker_secrets
-# Ignore Database .json file
-db_config.json
 # Logs
 logs
 *.log

@@ -273,9 +273,9 @@ let teamsData;
 let eventData;
 let eventTypeData;
 
-$(document).ready(() => {
+$(function(){
   reloadAll();
-})
+});
 
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", () => {

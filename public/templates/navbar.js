@@ -267,13 +267,13 @@ let $navbarToasts = {
   notLoggedIn: $("#not-logged-in-toast"),
 }
 
-$(document).ready(() => {
+$(function() {
   updateAllFunctions.push(() => {
     updateTeamSelectionList();
-  })
+  });
   
   updateAll();
-})
+});
 
 // Create the user object with a username variable and event listeners
 const user = $({})
