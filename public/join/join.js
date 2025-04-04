@@ -12,6 +12,12 @@ $("#show-join-class-btn").on("click", () => {
   $("#join-class-panel").removeClass("d-none")
 })
 
+$("#join-class-back-btn").on("click", () => {
+  $("#decide-action-panel").removeClass("d-none")
+  $("#join-class-panel").addClass("d-none")
+  $("#error-invalid-classcode").addClass("d-none")
+})
+
 document.getElementById("join-class-btn").addEventListener("click", async () => {
   const classcode = document.getElementById("join-class-classcode").value;
 
