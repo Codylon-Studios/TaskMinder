@@ -1,6 +1,7 @@
 const { createServer } = require('http');
 const path = require('path');
 const express = require('express');
+const compression = require('compression')
 const helmet = require('helmet');
 const cron = require('node-cron');
 const session = require('express-session')
@@ -101,6 +102,7 @@ app.use(helmet({
   originAgentCluster: true,
 }));
 
+app.use(compression());
 // Middleware to parse request bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -123,7 +125,6 @@ const sessionMiddleware = session({
   }, //30 days
   name: 'UserLogin',
 });
-
 app.use(sessionMiddleware);
 app.use(RequestLogger);
 app.use('/account', account);
@@ -143,21 +144,20 @@ sequelize.authenticate()
   .catch(err => logger.error('Unable to connect to PostgreSQL:', err));
 
 
-app.get('/', (req, res) => res.redirect(308, '/join'));
+app.get('/', (req, res) => res.redirect(302, '/join'));
 
 
 app.get('/join', (req, res) => {
   const classCodeFromQuery = req.query.classcode;
 
   if (classCodeFromQuery) {
-    req.session.classcode = classCodeFromQuery;
-
-    if (req.session.classcode === process.env.CLASSCODE) {
-      return res.redirect(308, '/main');
+    if (classCodeFromQuery === process.env.CLASSCODE) {
+      req.session.classcode = classCodeFromQuery;
+      return res.redirect(302, '/main');
     }
   }
   if (req.session.account || req.session.classcode === process.env.CLASSCODE) {
-    return res.redirect(308, '/main');
+    return res.redirect(302, '/main');
   }
   res.sendFile(path.join(__dirname, 'public', 'join', 'join.html'));
 });

@@ -21,6 +21,10 @@ const Account = sequelize.define('Account', {
     type: DataTypes.TEXT,
     allowNull: false,
   },
+  isAdmin: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true
+  }
 }, {
   tableName: 'account',
   timestamps: false,

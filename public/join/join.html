@@ -1,22 +1,31 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TaskMinder</title>
+  <!-- Preconnect to domains used by init.js -->
+  <link rel="preconnect" href="https://code.jquery.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://kit.fontawesome.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://ka-f.fontawesome.com" crossorigin>
   <script src="/init.js"></script>
 </head>
-<body data-url="join" style="display: none;">
-  <div class="load-content" data-url="navbar" data-html data-js></div>
 
+<body data-url="join" style="display: none;" class="d-flex flex-column min-vh-100 bg-body-tertiary">
   <div class="container d-flex justify-content-center">
     <div class="card p-4 shadow-sm mt-5 panel">
       <div id="decide-action-panel">
         <h2 class="text-center mb-4">Was möchtest du tun?</h2>
-        <button class="btn btn-primary w-100 fw-semibold mb-3" data-bs-toggle="modal" data-bs-target="#login-register-modal">Anmelden oder Registrieren</button>
+        <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-login-register-btn">Anmelden oder
+          Registrieren</button>
         <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-join-class-btn">Klasse beitreten</button>
         <button class="btn btn-primary w-100 fw-semibold" id="show-create-class-btn" disabled>Klasse erstellen</button>
-        <div class="form-text">Wir arbeiten gerade noch daran, TaskMinder für jeden verfügbar zu machen. Schau gerne bald wieder vorbei!</div>
+        <div class="form-text">Wir arbeiten gerade noch daran, TaskMinder für jeden verfügbar zu machen. Schau gerne
+          bald wieder vorbei!</div>
       </div>
 
       <div id="join-class-panel" class="d-none">
@@ -48,9 +57,10 @@
           </span>
         </div>
         <h2 class="text-center mb-4">Möchtest du einen Account nutzen?</h2>
-        <button class="btn btn-primary w-100 fw-semibold mb-3" data-bs-toggle="modal" data-bs-target="#login-register-modal">Anmelden oder Registrieren</button>
-        <div class="text-center mb-3"><a href="/">Ohne Account fortfahren</a></div>
-        <a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#decide-account-reasons">Was bringt ein Account?</a>
+        <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-classcode-login-register-btn">Anmelden oder Registrieren</button>
+        <div class="text-center mb-3"><a href="/main">Ohne Account fortfahren</a></div>
+        <a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#decide-account-reasons">Was
+          bringt ein Account?</a>
         <div class="collapse mt-2" id="decide-account-reasons">
           <div class="align-items-center gap-2 d-flex">
             <div class="fw-bold text-primary me-2">+</div>
@@ -62,7 +72,132 @@
           </div>
         </div>
       </div>
-
+      <div id="login-register-panel" class="d-none">
+        <!--CHECKUSERNAME CONTENT-->
+        <div id="checkusername-content" class="d-none">
+          <div class="d-flex align-items-center mb-4">
+            <i class="fa-solid fa-arrow-left me-2" style="cursor: pointer;" id="checkusername-back-btn"></i>
+            <h2 class="text-center mb-0 flex-grow-1">Anmelden oder Registrieren</h2>
+          </div>
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2"
+            id="login-register-error-invalid-username">
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block">
+              Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.
+            </span>
+          </div>
+          <label for="login-register-username" class="form-label">
+            Gib deinen Benutzernamen ein
+          </label>
+          <input type="text" class="form-control" id="login-register-username">
+          <div class="form-text">Gib zum Registrieren deinen Wunschnamen ein</div>
+          <button class="btn btn-primary disabled w-100 fw-semibold mt-2" id="checkusername-next-button">Weiter</button>
+        </div>
+        <!--LOGIN CONTENT-->
+        <div id="login-content" class="d-none">
+          <div class="d-flex align-items-center mb-4">
+            <i class="fa-solid fa-arrow-left me-2" style="cursor: pointer;" id="login-back-button"></i>
+            <h2 class="text-center mb-0 flex-grow-1">Anmelden</h2>
+          </div>
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="login-error-invalid-password">
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block">
+              Das Passwort ist falsch!
+            </span>
+          </div>
+          <label for="login-password" class="form-label">
+            Gib dein Passwort ein
+          </label>
+          <input type="password" class="form-control" id="login-password">
+          <button type="button" class="btn btn-primary w-100 fw-semibold mt-2" id="login-button">Anmelden</button>
+        </div>
+        <!--REGISTER CONTENT-->
+        <div id="register-content" class="d-none">
+          <div class="d-flex align-items-center mb-4">
+            <i class="fa-solid fa-arrow-left me-2" style="cursor: pointer;" id="register-back-button"></i>
+            <h2 class="text-center mb-0 flex-grow-1">Registrieren</h2>
+          </div>
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-no-matching-passwords">
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block">
+              Die Passwörter stimmen nicht überein!
+            </span>
+          </div>
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-invalid-classcode">
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block">
+              Der Klassencode stimmt nicht!
+            </span>
+          </div>
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-no-data">
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block">
+              Zu wenige Daten angegeben
+            </span>
+          </div>
+          <div class="alert alert-warning p-2 d-none align-items-center gap-2" id="register-error-insecure-password">
+            <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+            <span class="d-block">
+              Das Passwort ist nicht sicher!
+            </span>
+          </div>
+          <div class="mb-3">
+            <label for="register-classcode" class="form-label">
+              Gib den Klassencode ein
+            </label>
+            <input type="text" class="form-control" id="register-classcode">
+            <div class="form-text">Frag uns einfach, wenn du ihn vergessen hast</div>
+          </div>
+          <div class="mb-3">
+            <label for="register-password" class="form-label">
+              Gib dein Passwort ein
+            </label>
+            <input type="password" class="form-control" id="register-password">
+            <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
+          </div>
+          <input type="password" class="form-control" id="register-password-repeat">
+          <div class="form-text">Gib es noch mal ein</div>
+          <button type="button" class="btn btn-primary w-100 fw-semibold mt-2" id="register-button">Registrieren</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="error-server-toast" class="toast">
+      <div class="toast-header bg-danger text-white">
+        <b class="me-auto">Serverproblem</b>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+        Unser Server hat gerade Probleme. Bitte versuche es später erneut.
+      </div>
+    </div>
+    <div id="unknown-error-toast" class="toast">
+      <div class="toast-header bg-danger text-white">
+        <b class="me-auto">Unerwarteter Fehler</b>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+        Ein unbekannter Fehler ist aufgetreten.
+      </div>
+    </div>
+    <div id="login-success-toast" class="toast">
+      <div class="toast-header bg-success text-white">
+        <b class="me-auto">Erfolgreich eingeloggt</b>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+        Willkommen zurück <b class="username">User</b>!
+      </div>
+    </div>
+    <div id="register-success-toast" class="toast">
+      <div class="toast-header bg-success text-white">
+        <b class="me-auto">Erfolgreich registriert</b>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+        Willkommen <b class="username">User</b>!
+      </div>
     </div>
   </div>
 </body>
