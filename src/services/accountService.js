@@ -67,11 +67,16 @@ const userService = {
             err.expected = true;
             throw err;
         }
-        await session.destroy((err) => {
-            if (err) {
-                throw new Error();
-            }
+
+        delete session.account;
+
+        await new Promise((resolve, reject) => {
+            session.save((err) => {
+                if (err) return reject(err);
+                resolve();
+            });
         });
+
     },
     async loginUser(username, password, session){
         if (!(username && password)) {
