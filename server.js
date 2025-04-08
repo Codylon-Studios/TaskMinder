@@ -144,21 +144,15 @@ sequelize.authenticate()
   .catch(err => logger.error('Unable to connect to PostgreSQL:', err));
 
 
-app.get('/', (req, res) => res.redirect(302, '/join'));
-
-
-app.get('/join', (req, res) => {
-  const classCodeFromQuery = req.query.classcode;
-
-  if (classCodeFromQuery) {
-    if (classCodeFromQuery === process.env.CLASSCODE) {
-      req.session.classcode = classCodeFromQuery;
-      return res.redirect(302, '/main');
-    }
-  }
+app.get('/', (req, res) => {
   if (req.session.account || req.session.classcode === process.env.CLASSCODE) {
     return res.redirect(302, '/main');
   }
+  res.redirect(302, '/join');
+})
+
+
+app.get('/join', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'join', 'join.html'));
 });
 
@@ -169,7 +163,7 @@ app.post('/join', (req, res) => {
     req.session.classcode = classcode;
     return res.status(200).json({ success: true });
   } else {
-    return res.status(200).json({ success: false, error: 'Invalid class code' });
+    return res.status(401).json({ success: false, error: 'Invalid class code' });
   }
 });
 

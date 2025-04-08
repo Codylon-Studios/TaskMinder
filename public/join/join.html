@@ -16,7 +16,9 @@
   <script src="/init.js"></script>
 </head>
 
-<body data-url="join" style="display: none;" class="d-flex flex-column min-vh-100 bg-body-tertiary">
+<body data-url="join" style="display: none;">
+  <div class="load-content" data-url="navbar" data-html data-js></div>
+
   <div class="container d-flex justify-content-center">
     <div class="card p-4 shadow-sm mt-5 panel">
       <div id="decide-action-panel">
@@ -31,7 +33,7 @@
 
       <div id="join-class-panel" class="d-none">
         <div class="d-flex align-items-center mb-4">
-          <i class="fa-solid fa-arrow-left me-2" style="cursor: pointer;" id="join-class-back-btn"></i>
+          <button class="btn-back" id="join-class-back-btn"></button>
           <h2 class="text-center mb-0 flex-grow-1">Klasse beitreten</h2>
         </div>
         <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2" id="error-invalid-classcode">
@@ -74,130 +76,72 @@
         </div>
       </div>
       <div id="login-register-panel" class="d-none">
-        <!--CHECKUSERNAME CONTENT-->
-        <div id="checkusername-content" class="d-none">
+        <!--LOGIN REGISTER CONTENT-->
+        <div class="d-none login-register-element">
           <div class="d-flex align-items-center mb-4">
-            <i class="fa-solid fa-arrow-left me-2" style="cursor: pointer;" id="checkusername-back-btn"></i>
+            <button class="btn-back" id="login-register-back-btn"></button>
             <h2 class="text-center mb-0 flex-grow-1">Anmelden oder Registrieren</h2>
           </div>
-          <div class="alert alert-danger p-2 d-none align-items-center gap-2"
-            id="login-register-error-invalid-username">
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-register-error-invalid-username">
             <i class="fa-solid fa-circle-exclamation mx-1"></i>
             <span class="d-block">
               Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.
             </span>
           </div>
-          <label for="login-register-username" class="form-label">
+          <label for="panel-login-register-username" class="form-label">
             Gib deinen Benutzernamen ein
           </label>
-          <input type="text" class="form-control" id="login-register-username">
+          <input type="text" class="form-control login-register-username" id="panel-login-register-username">
           <div class="form-text">Gib zum Registrieren deinen Wunschnamen ein</div>
-          <button class="btn btn-primary disabled w-100 fw-semibold mt-2" id="checkusername-next-button">Weiter</button>
+          <button class="btn btn-primary disabled w-100 fw-semibold mt-2 login-register-next-button" id="login-register-next-button">Weiter</button>
         </div>
         <!--LOGIN CONTENT-->
-        <div id="login-content" class="d-none">
+        <div class="d-none login-element">
           <div class="d-flex align-items-center mb-4">
-            <i class="fa-solid fa-arrow-left me-2" style="cursor: pointer;" id="login-back-button"></i>
+            <button class="btn-back login-register-back-button"></button>
             <h2 class="text-center mb-0 flex-grow-1">Anmelden</h2>
           </div>
-          <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="login-error-invalid-password">
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-error-invalid-password">
             <i class="fa-solid fa-circle-exclamation mx-1"></i>
             <span class="d-block">
               Das Passwort ist falsch!
             </span>
           </div>
-          <label for="login-password" class="form-label">
+          <label for="panel-login-password" class="form-label">
             Gib dein Passwort ein
           </label>
-          <input type="password" class="form-control" id="login-password">
-          <button type="button" class="btn btn-primary w-100 fw-semibold mt-2" id="login-button">Anmelden</button>
+          <input type="password" class="form-control login-password" id="panel-login-password">
+          <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 login-element login-button" id="panel-login-button">Anmelden</button>
         </div>
         <!--REGISTER CONTENT-->
-        <div id="register-content" class="d-none">
+        <div class="d-none register-element">
           <div class="d-flex align-items-center mb-4">
-            <i class="fa-solid fa-arrow-left me-2" style="cursor: pointer;" id="register-back-button"></i>
+            <button class="btn-back login-register-back-button"></button>
             <h2 class="text-center mb-0 flex-grow-1">Registrieren</h2>
           </div>
-          <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-no-matching-passwords">
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-no-matching-passwords">
             <i class="fa-solid fa-circle-exclamation mx-1"></i>
             <span class="d-block">
               Die Passwörter stimmen nicht überein!
             </span>
           </div>
-          <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-invalid-classcode">
-            <i class="fa-solid fa-circle-exclamation mx-1"></i>
-            <span class="d-block">
-              Der Klassencode stimmt nicht!
-            </span>
-          </div>
-          <div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-no-data">
-            <i class="fa-solid fa-circle-exclamation mx-1"></i>
-            <span class="d-block">
-              Zu wenige Daten angegeben
-            </span>
-          </div>
-          <div class="alert alert-warning p-2 d-none align-items-center gap-2" id="register-error-insecure-password">
+          <div class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password">
             <i class="fa-solid fa-triangle-exclamation mx-1"></i>
             <span class="d-block">
               Das Passwort ist nicht sicher!
             </span>
           </div>
           <div class="mb-3">
-            <label for="register-classcode" class="form-label">
-              Gib den Klassencode ein
-            </label>
-            <input type="text" class="form-control" id="register-classcode">
-            <div class="form-text">Frag uns einfach, wenn du ihn vergessen hast</div>
-          </div>
-          <div class="mb-3">
-            <label for="register-password" class="form-label">
+            <label for="panel-register-password" class="form-label">
               Gib dein Passwort ein
             </label>
-            <input type="password" class="form-control" id="register-password">
+            <input type="password" class="form-control register-password" id="panel-register-password">
             <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
           </div>
-          <input type="password" class="form-control" id="register-password-repeat">
+          <input type="password" class="form-control register-password-repeat">
           <div class="form-text">Gib es noch mal ein</div>
-          <button type="button" class="btn btn-primary w-100 fw-semibold mt-2" id="register-button">Registrieren</button>
+          <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 register-element register-button">Registrieren</button>
         </div>
-      </div>
-    </div>
-  </div>
-  <div class="toast-container position-fixed top-0 end-0 p-3">
-    <div id="error-server-toast" class="toast">
-      <div class="toast-header bg-danger text-white">
-        <b class="me-auto">Serverproblem</b>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-        Unser Server hat gerade Probleme. Bitte versuche es später erneut.
-      </div>
-    </div>
-    <div id="unknown-error-toast" class="toast">
-      <div class="toast-header bg-danger text-white">
-        <b class="me-auto">Unerwarteter Fehler</b>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-        Ein unbekannter Fehler ist aufgetreten.
-      </div>
-    </div>
-    <div id="login-success-toast" class="toast">
-      <div class="toast-header bg-success text-white">
-        <b class="me-auto">Erfolgreich eingeloggt</b>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-        Willkommen zurück <b class="username">User</b>!
-      </div>
-    </div>
-    <div id="register-success-toast" class="toast">
-      <div class="toast-header bg-success text-white">
-        <b class="me-auto">Erfolgreich registriert</b>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-        Willkommen <b class="username">User</b>!
       </div>
     </div>
   </div>

@@ -122,80 +122,67 @@
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header">
-				<h1 class="modal-title fs-5" id="login-register-title">Anmelden oder Registrieren</h1>
-				<h1 class="modal-title fs-5 d-none" id="login-title">Willkommen zurück!</h1>
-				<h1 class="modal-title fs-5 d-none" id="register-title">Registriere dich!</h1>
+				<h1 class="modal-title fs-5 login-register-element">Anmelden oder Registrieren</h1>
+				<h1 class="modal-title fs-5 d-none login-element">Willkommen zurück!</h1>
+				<h1 class="modal-title fs-5 d-none register-element">Registriere dich!</h1>
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
-				<div id="login-register-content">
-					<div class="alert alert-danger p-2 d-none align-items-center gap-2" id="login-register-error-invalid-username">
+				<div id="login-register-content" class="login-register-element">
+					<div class="alert alert-danger p-2 d-none align-items-center gap-2 login-register-error-invalid-username">
 						<i class="fa-solid fa-circle-exclamation mx-1"></i>
 						<span class="d-block">
 							Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.
 						</span>
 					</div>
-					<label for="login-register-username" class="form-label">
+					<label for="navbar-login-register-username" class="form-label">
 						Gib deinen Benutzernamen ein
 					</label>
-					<input type="text" class="form-control" id="login-register-username">
+					<input type="text" class="form-control login-register-username" id="navbar-login-register-username">
 					<div class="form-text">Gib zum Registrieren deinen Wunschnamen ein</div>
 				</div>
-				<div id="login-content" class="d-none">
-					<div class="alert alert-danger p-2 d-none align-items-center gap-2" id="login-error-invalid-password">
+				<div id="login-content" class="d-none login-element">
+					<div class="alert alert-danger p-2 d-none align-items-center gap-2 login-error-invalid-password">
 						<i class="fa-solid fa-circle-exclamation mx-1"></i>
 						<span class="d-block">
 							Das Passwort ist falsch!
 						</span>
 					</div>
-					<label for="login-password" class="form-label">
+					<label for="navbar-login-password" class="form-label">
 						Gib dein Passwort ein
 					</label>
-					<input type="password" class="form-control" id="login-password">
+					<input type="password" class="form-control login-password" id="navbar-login-password">
 				</div>
-				<div id="register-content" class="d-none">
-					<div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-no-matching-passwords">
+				<div id="register-content" class="d-none register-element">
+					<div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-no-matching-passwords">
 						<i class="fa-solid fa-circle-exclamation mx-1"></i>
 						<span class="d-block">
 							Die Passwörter stimmen nicht überein!
 						</span>
 					</div>
-					<div class="alert alert-danger p-2 d-none align-items-center gap-2" id="register-error-invalid-classcode">
-						<i class="fa-solid fa-circle-exclamation mx-1"></i>
-						<span class="d-block">
-							Der Klassencode stimmt nicht!
-						</span>
-					</div>
-					<div class="alert alert-warning p-2 d-none align-items-center gap-2" id="register-error-insecure-password">
+					<div class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password">
 						<i class="fa-solid fa-triangle-exclamation mx-1"></i>
 						<span class="d-block">
 							Das Passwort ist nicht sehr sicher!
 						</span>
 					</div>
 					<div class="mb-3">
-						<label for="register-classcode" class="form-label">
-							Gib den Klassencode ein
-						</label>
-						<input type="text" class="form-control" id="register-classcode">
-						<div class="form-text">Frag uns einfach, wenn du ihn vergessen hast</div>
-					</div>
-					<div class="mb-3">
-						<label for="register-password" class="form-label">
+						<label for="navbar-register-password" class="form-label">
 							Gib dein Passwort ein
 						</label>
-						<input type="password" class="form-control" id="register-password">
+						<input type="password" class="form-control register-password" id="navbar-register-password">
 						<div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
 					</div>
-					<input type="password" class="form-control" id="register-password-repeat">
+					<input type="password" class="form-control register-password-repeat">
 					<div class="form-text">Gib es noch mal ein</div>
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary d-none" id="login-register-back-button">Zurück</button>
+				<button type="button" class="btn btn-secondary d-none login-register-back-button">Zurück</button>
 				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-				<button type="button" class="btn btn-primary disabled" id="login-register-next-button">Weiter</button>
-				<button type="button" class="btn btn-primary d-none" id="login-button">Anmelden</button>
-				<button type="button" class="btn btn-primary d-none" id="register-button">Registrieren</button>
+				<button type="button" class="btn btn-primary disabled login-register-next-button" id="navbar-login-register-next-button">Weiter</button>
+				<button type="button" class="btn btn-primary d-none login-element login-button">Anmelden</button>
+				<button type="button" class="btn btn-primary d-none register-element register-button">Registrieren</button>
 			</div>
 		</div>
 	</div>

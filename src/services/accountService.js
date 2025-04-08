@@ -19,17 +19,10 @@ const userService = {
             return { authenticated: false };
         }
     },
-    async registerUser(username, password, classcode, session ){
-        const classname = "10d";
-        if (!(username && password && classcode)) {
+    async registerUser(username, password, session ){
+        if (!(username && password)) {
             let err = new Error("Please fill out all data");
             err.status = 400;
-            err.expected = true;
-            throw err;
-        }
-        if (classcode != process.env.CLASSCODE){
-            let err = new Error("Invalid classcode");
-            err.status = 401;
             err.expected = true;
             throw err;
         }
@@ -54,8 +47,7 @@ const userService = {
         const hashedPassword = await bcrypt.hash(password, SALTROUNDS);
         const account = await Account.create({
             username: username,
-            password: hashedPassword,
-            class: classname
+            password: hashedPassword
         });
         const accountId = account.accountId;
         session.account = { username, accountId };
