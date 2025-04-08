@@ -4,10 +4,10 @@ const asyncHandler = require('express-async-handler');
 
 exports.userController = {
     registerUser: asyncHandler(async(req, res, next) => {
-        const { username, password, classcode} = req.body;
+        const { username, password} = req.body;
         const session = req.session;
         try {
-            await accountService.registerUser(username, password, classcode, session);
+            await accountService.registerUser(username, password, session);
             res.sendStatus(200);
         } catch (error) {
             next(error);
