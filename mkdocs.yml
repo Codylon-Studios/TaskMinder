@@ -1,0 +1,32 @@
+# Project information
+site_name: TaskMinder Docs
+site_url: https://codylon.de
+site_author: skynightgamer
+site_description: >-
+  You can search for different projects and install guides to see what Codylon Studios has done so far.
+# Repository
+repo_name: TaskMinder
+repo_url: https://github.com/Codylon-Studios/TaskMinder
+
+# Copyright
+copyright: Copyright &copy; 2025 Codylon Studios
+
+theme:
+  name: material
+  font: 
+    text: Quicksand
+    code: Red Hat Mono
+  favicon: assets/favicon.ico
+  palette:
+    - scheme: slate
+      toggle: 
+        icon: material/weather-sunny
+        name: dark mode
+      primary: black
+      accent: cyan
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: light mode
+      primary: light
+      accent: cyan
