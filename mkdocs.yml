@@ -12,6 +12,8 @@ repo_url: https://github.com/Codylon-Studios/TaskMinder
 copyright: Copyright &copy; 2025 Codylon Studios
 
 theme:
+  features:
+    - navigation.tabs
   name: material
   font: 
     text: Quicksand
@@ -30,3 +32,10 @@ theme:
         name: light mode
       primary: light
       accent: cyan
+nav:
+  - Home: index.md
+  - Development: development.md
+  - Deployment: deploy.md
+  - About:
+    - License: license.md
+    - Release Notes: release-notes.md
