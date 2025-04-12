@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const validator = require('validator');
 const Account = require('../models/account');
+const JoinedClass = require('../models/joinedClass');
 const logger = require('../../logger');
 require('dotenv').config();
 
@@ -12,14 +13,34 @@ function checkUsername(username) {
 
 const userService = {
     async getAuth(session){
-        if (session.account && session) {
-            const username = session.account.username;
-            return { authenticated: true, account: { username } };
-          } else {
-            return { authenticated: false };
+        let res = {}
+        if (! session) {
+            res.loggedIn = false
+            res.classJoined = false
         }
+        if (session.account) {
+            res.loggedIn = true
+            const username = session.account.username;
+            res.account = { username }
+          } else {
+            res.loggedIn = false
+        }
+        if (session.classJoined) {
+            res.classJoined = true
+        }
+        else {
+            res.classJoined = false
+        }
+        return res
     },
-    async registerUser(username, password, session ){
+    async registerUser(username, password, session ) {
+        if (session.account) {
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.additionalInformation = "The requesting session is already logged in!"
+            err.expected = true;
+            throw err;
+        }
         if (!(username && password)) {
             let err = new Error("Please fill out all data");
             err.status = 400;
@@ -51,6 +72,13 @@ const userService = {
         });
         const accountId = account.accountId;
         session.account = { username, accountId };
+
+        if (session.classJoined) {
+            let accountId = session.account.accountId
+            JoinedClass.create({
+                accountId: accountId
+            });
+        }
     },
     async logoutUser(session) {
         if (!session.account) {
@@ -71,6 +99,13 @@ const userService = {
 
     },
     async loginUser(username, password, session){
+        if (session.account) {
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.additionalInformation = "The requesting session is already logged in!"
+            err.expected = true;
+            throw err;
+        }
         if (!(username && password)) {
             let err = new Error("Please fill out all data");
             err.status = 400;
@@ -94,6 +129,16 @@ const userService = {
         }
         const accountId = account.accountId;
         session.account = { username, accountId };
+
+        const joinedClassExists = await JoinedClass.findOne({ where: { accountId: accountId } });
+        if (joinedClassExists == null && session.classJoined) {
+            JoinedClass.create({
+                accountId: accountId
+            });
+        }
+        else if(joinedClassExists != null) {
+            session.classJoined = true;
+        }
     },
     async deleteUser(session, password){
         const username = session.account.username;
@@ -123,12 +168,31 @@ const userService = {
         const accountExists = await Account.findOne({ where: { username: username } });
         return accountExists != null;
     },
-    async joinClass(classcode) {
-        if (classcode == process.env.CLASSCODE){
-            return { redirectmain: true };
-          } else {
-            return { redirectmain: false };
-          }
+    async joinClass(session, classcode) {
+        if (session.classJoined) {
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.additionalInformation = "The requesting session has already joined a class!"
+            err.expected = true;
+            throw err;
+        }
+        if (classcode == process.env.CLASSCODE) {
+            session.classJoined = true;
+            if (session.account) {
+                let accountId = session.account.accountId
+                const joinedClassExists = await JoinedClass.findOne({ where: { accountId: accountId } });
+                if (joinedClassExists == null) {
+                    JoinedClass.create({
+                        accountId: accountId
+                    });
+                }
+            }
+            return
+        }
+        let err = new Error("Invalid classcode");
+        err.status = 401;
+        err.expected = true;
+        throw err;
     }
 }
 

@@ -16,13 +16,8 @@ exports.userController = {
     joinClass: asyncHandler(async(req, res, next) => {
         const { classcode } = req.body;
         try {
-            const response = await accountService.joinClass(classcode);
-            if(response.redirectmain == true){
-                req.session.classcode = classcode;
-                res.redirect(308, '/main');
-            } else {
-                res.redirect(308, '/join');
-            }
+            await accountService.joinClass(req.session, classcode);
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }

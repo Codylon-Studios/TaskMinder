@@ -271,7 +271,7 @@ user.on("logout", () => {
 
 // Check if the user is logged in for the first time
 $.get('/account/auth', (response) => {
-  if (response.authenticated) {
+  if (response.loggedIn) {
     user.username = response.account.username;
   } else {
     user.username = null;
@@ -279,11 +279,13 @@ $.get('/account/auth', (response) => {
 
   $(window).trigger("userDataLoaded");
 
-  if (response.authenticated) {
+  if (response.loggedIn) {
     user.trigger("login");
   } else {
     user.trigger("logout");
   }
+
+  user.classJoined = response.classJoined;
 });
 
 //
