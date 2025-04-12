@@ -88,37 +88,17 @@ function dataLoaded(dataName) {
 }
 
 function loadSubjectData() {
-  fetch('/schedule/get_subject_data')
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-  })
-  .then(data => {
+  $.get('/schedule/get_subject_data', (data) => {
     subjectData = data;
     $(window).trigger("subjectDataLoaded");
-  })
-  .catch(error => {
-    console.error('Error loading the JSON file:', error);
   });
 }
 
 function loadTimetableData() {
-  fetch('/schedule/get_timetable_data')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
-    .then(data => {
-      timetableData = data;
-      $(window).trigger("timetableDataLoaded");
-    })
-    .catch(error => {
-      console.error('Error loading the JSON file:', error);
-    });
+  $.get('/schedule/get_timetable_data', (data) => {
+    timetableData = data;
+    $(window).trigger("timetableDataLoaded");
+  });
 }
 
 function loadHomeworkData() {

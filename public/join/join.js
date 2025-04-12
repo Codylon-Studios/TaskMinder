@@ -21,48 +21,73 @@ $("#join-class-back-btn").on("click", () => {
   $("#error-invalid-classcode").addClass("d-none")
 })
 
-function exitLoginRegisterPanel() {
-  $(".login-register-element, .login-element, .register-element").addClass("d-none")
-  if (user.class) {
-    if (user.loggedIn) {
-      window.location.href = "/main"
+function onLogin() {
+  $("#show-login-register-btn").addClass("disabled").find("i").removeClass("d-none")
+
+  $.get('/account/auth', (response) => {
+    user.classJoined = response.classJoined;
+
+    if (user.classJoined) {
+      location.href = "/main"
     }
-    else {
+  });
+
+  if (! firstLogin) {
+    $(".login-register-element, .login-element, .register-element").addClass("d-none")
+    if (user.classJoined) {
       $("#decide-account-panel").removeClass("d-none")
     }
+    else {
+      $("#decide-action-panel").removeClass("d-none")
+    }
   }
-  else {
-    $("#decide-action-panel").removeClass("d-none")
-  }
+  firstLogin = false
 }
 
-$("#login-register-back-btn").on("click", exitLoginRegisterPanel)
+$("#login-register-back-btn").on("click", () => {
+  $(".login-register-element, .login-element, .register-element").addClass("d-none")
+    if (user.classJoined) {
+      $("#decide-account-panel").removeClass("d-none")
+    }
+    else {
+      $("#decide-action-panel").removeClass("d-none")
+    }
+})
 
+let firstLogin = true
 $(window).on("userDataLoaded", () => {
-  user.on("login", exitLoginRegisterPanel)
+  user.on("login", onLogin)
+  user.on("logout", () => {firstLogin = false})
 })
 
 $("#join-class-btn").on("click", async () => {
   const classcode = document.getElementById("join-class-classcode").value;
 
-  try {
-    const response = await fetch("/join", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ classcode })
-    });
+  let data = {
+      classcode: classcode,
+    };
 
-    const data = await response.json();
-    if (data.success) {
-      localStorage.setItem("classcode", "true");
+    $.ajax({
+    url: "/account/join",
+    type: 'POST',
+    data: data,
+    success: () => {
       $("#join-class-panel").addClass("d-none")
       $("#decide-account-panel").removeClass("d-none")
-    } else {
-      document.getElementById("error-invalid-classcode").classList.remove("d-none");
+      user.classJoined = true
+      if (user.loggedIn) {
+        location.href = "/main"
+      }
+    },
+    error: (xhr) => {
+      if (xhr.status === 401) {
+        document.getElementById("error-invalid-classcode").classList.remove("d-none");
+      }
+      else if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
     }
-  } catch (error) {
-    console.error("Error joining class:", error);
-  }
+  });
 });
 
 $("#join-class-classcode").on("input", () => {
@@ -75,6 +100,10 @@ if (urlParams.has("action")) {
   if (urlParams.get("action") == "join") {
     $("#decide-action-panel").addClass("d-none")
     $("#join-class-panel").removeClass("d-none")
+  }
+  else if (urlParams.get("action") == "account") {
+    $("#decide-action-panel").addClass("d-none")
+    $("#decide-account-panel").removeClass("d-none")
   }
 }
 
