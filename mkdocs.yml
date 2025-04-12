@@ -1,7 +1,7 @@
 # Project information
 site_name: TaskMinder Docs
 site_url: https://codylon.de
-site_author: skynightgamer
+site_author: Codylon Studios
 site_description: >-
   You can search for different projects and install guides to see what Codylon Studios has done so far.
 # Repository
@@ -24,14 +24,14 @@ theme:
       toggle: 
         icon: material/weather-sunny
         name: dark mode
-      primary: black
-      accent: cyan
+      primary: :)
+      accent: :)
     - scheme: default
       toggle:
         icon: material/weather-night
         name: light mode
-      primary: light
-      accent: cyan
+      primary: :)
+      accent: :)
 nav:
   - Home: index.md
   - Development: development.md
@@ -39,3 +39,6 @@ nav:
   - About:
     - License: license.md
     - Release Notes: release-notes.md
+
+extra_css:
+  - assets/custom.css
