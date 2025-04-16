@@ -396,6 +396,15 @@ async function updateEventList() {
 updateEventList = runOnce(updateEventList);
 
 async function updateSubstitutionList() {
+  await dataLoaded("substitutionsData")
+  
+  if (JSON.stringify(substitutionsData) == "{}") {
+    $("#substitutions-table").addClass("d-none")
+    $("#substitutions-no-entry").addClass("d-none")
+    $("#substitutions-no-data").removeClass("d-none")
+    $("#substitutions-mode-wrapper").addClass("d-none");
+    return;
+  }
   let substitutionsMode = localStorage.getItem("substitutionsMode") || "class";
 
   let data;
@@ -869,6 +878,16 @@ $(function(){
     updateSubstitutionList();
     updateTimetable();
   })
+  requiredData.push(
+    "subjectData",
+    "timetableData",
+    "homeworkData",
+    "homeworkCheckedData",
+    "substitutionsData",
+    "classSubstitutionsData",
+    "eventData",
+    "eventTypeData"
+  )
 
   updateAll();
 })

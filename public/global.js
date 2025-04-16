@@ -1,4 +1,5 @@
 let updateAllFunctions = []
+let requiredData = []
 
 function runOnce(fn) {
   async function wrapper(...args) {
@@ -55,23 +56,38 @@ async function getHomeworkCheckStatus(homeworkId) {
   return homeworkCheckedData.includes(homeworkId)
 }
 
-function dataLoaded(dataName) {
-  let dataVariableMap = {
-    subjectData: subjectData,
-    timetableData: timetableData,
-    homeworkData: homeworkData,
-    homeworkCheckedData: homeworkCheckedData,
-    substitutionsData: substitutionsData,
-    classSubstitutionsData: classSubstitutionsData,
-    joinedTeamsData: joinedTeamsData,
-    teamsData: teamsData,
-    eventData: eventData,
-    eventTypeData: eventTypeData,
+function getDataMap(filtered) {
+  let dataMap = {
+    "subjectData": {dataVar: subjectData, loadFn: loadSubjectData},
+    "timetableData": {dataVar: timetableData, loadFn: loadTimetableData},
+    "homeworkData": {dataVar: homeworkData, loadFn: loadHomeworkData},
+    "homeworkCheckedData": {dataVar: homeworkCheckedData, loadFn: loadHomeworkCheckedData},
+    "substitutionsData": {dataVar: substitutionsData, loadFn: loadSubstitutionsData},
+    "classSubstitutionsData": {dataVar: classSubstitutionsData, loadFn: loadClassSubstitutionsData},
+    "joinedTeamsData": {dataVar: joinedTeamsData, loadFn: loadJoinedTeamsData},
+    "teamsData": {dataVar: teamsData, loadFn: loadTeamsData},
+    "eventData": {dataVar: eventData, loadFn: loadEventData},
+    "eventTypeData": {dataVar: eventTypeData, loadFn: loadEventTypeData},
   }
+  if (filtered) {
+    for (let key in dataMap) {
+      if (! requiredData.includes(key)) {
+        delete dataMap[key]
+      }
+    }
+  }
+  return dataMap
+}
 
-  let dataVariable = dataVariableMap[dataName];
+function dataLoaded(dataName) {
+  let dataMap = getDataMap()
+
+  let dataVariable
   if (dataName == "monthDates") {
     dataVariable = monthDates;
+  }
+  else {
+    dataVariable = dataMap[dataName].dataVar;
   }
 
   let eventName = dataName + "Loaded"
@@ -137,6 +153,13 @@ function loadSubstitutionsData() {
 
 async function loadClassSubstitutionsData() {
   await dataLoaded("substitutionsData")
+
+  if (JSON.stringify(substitutionsData) == "{}") {
+    classSubstitutionsData = [];
+    $(window).trigger("classSubstitutionsDataLoaded");
+    return
+  }
+
   let data = [];
   data = structuredClone(substitutionsData);
   for (let planId = 1; planId <= 2; planId++) {
@@ -199,42 +222,21 @@ function userDataLoaded() {
 }
 
 async function reloadAll() {
-  subjectData = undefined;
-  timetableData = undefined;
-  homeworkData = undefined;
-  homeworkCheckedData = undefined;
-  substitutionsData = undefined;
-  classSubstitutionsData = undefined;
-  joinedTeamsData = undefined;
-  teamsData = undefined;
-  eventData = undefined;
-  eventTypeData = undefined;
+  let dataMap = getDataMap(true)
 
-  loadSubjectData();
-  loadTimetableData();
-  loadHomeworkData();
-  loadHomeworkCheckedData();
-  loadSubstitutionsData();
-  loadClassSubstitutionsData();
-  loadJoinedTeamsData();
-  loadTeamsData();
-  loadEventData();
-  loadEventTypeData();
-
-  updateAll()
-
-  await dataLoaded("subjectData");
-  await dataLoaded("timetableData");
-  await dataLoaded("homeworkData");
-  await dataLoaded("homeworkCheckedData");
-  await dataLoaded("substitutionsData");
-  await dataLoaded("classSubstitutionsData");
-  await dataLoaded("joinedTeamsData");
-  await dataLoaded("teamsData");
-  await dataLoaded("eventData");
-  await dataLoaded("eventTypeData");
-
-  document.body.style.display = "block";
+  if (Object.keys(dataMap).length != 0) {
+    for (let key in dataMap) {
+      dataMap[key].dataVar = undefined
+      dataMap[key].loadFn()
+    }
+  
+    updateAll()
+    
+    let promises = Object.keys(dataMap).map(key => dataLoaded(key));
+    await Promise.all(promises);
+    
+    document.body.style.display = "block";
+  }
 }
 reloadAll = runOnce(reloadAll);
 

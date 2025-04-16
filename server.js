@@ -145,7 +145,7 @@ sequelize.authenticate()
 
 
 app.get('/', (req, res) => {
-  if (req.session.account || req.session.classJoined) {
+  if (req.session.account && req.session.classJoined) {
     return res.redirect(302, '/main');
   }
   res.redirect(302, '/join');

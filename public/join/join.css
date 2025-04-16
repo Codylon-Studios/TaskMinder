@@ -12004,19 +12004,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-blue {
-  position: relative;
-  display: inline-block;
-}
-.line-through-blue::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #0d6efd;
+  text-decoration: line-through solid #0d6efd 0.25em;
 }
 
 .text-blue {
@@ -12024,19 +12012,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-indigo {
-  position: relative;
-  display: inline-block;
-}
-.line-through-indigo::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #6610f2;
+  text-decoration: line-through solid #6610f2 0.25em;
 }
 
 .text-indigo {
@@ -12044,19 +12020,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-purple {
-  position: relative;
-  display: inline-block;
-}
-.line-through-purple::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #6f42c1;
+  text-decoration: line-through solid #6f42c1 0.25em;
 }
 
 .text-purple {
@@ -12064,19 +12028,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-pink {
-  position: relative;
-  display: inline-block;
-}
-.line-through-pink::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #d63384;
+  text-decoration: line-through solid #d63384 0.25em;
 }
 
 .text-pink {
@@ -12084,19 +12036,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-red {
-  position: relative;
-  display: inline-block;
-}
-.line-through-red::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #dc3545;
+  text-decoration: line-through solid #dc3545 0.25em;
 }
 
 .text-red {
@@ -12104,19 +12044,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-orange {
-  position: relative;
-  display: inline-block;
-}
-.line-through-orange::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #fd7e14;
+  text-decoration: line-through solid #fd7e14 0.25em;
 }
 
 .text-orange {
@@ -12124,19 +12052,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-yellow {
-  position: relative;
-  display: inline-block;
-}
-.line-through-yellow::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #ffc107;
+  text-decoration: line-through solid #ffc107 0.25em;
 }
 
 .text-yellow {
@@ -12144,19 +12060,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-green {
-  position: relative;
-  display: inline-block;
-}
-.line-through-green::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #198754;
+  text-decoration: line-through solid #198754 0.25em;
 }
 
 .text-green {
@@ -12164,19 +12068,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-teal {
-  position: relative;
-  display: inline-block;
-}
-.line-through-teal::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #20c997;
+  text-decoration: line-through solid #20c997 0.25em;
 }
 
 .text-teal {
@@ -12184,19 +12076,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-cyan {
-  position: relative;
-  display: inline-block;
-}
-.line-through-cyan::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #0dcaf0;
+  text-decoration: line-through solid #0dcaf0 0.25em;
 }
 
 .text-cyan {
@@ -12204,19 +12084,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-black {
-  position: relative;
-  display: inline-block;
-}
-.line-through-black::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #000;
+  text-decoration: line-through solid #000 0.25em;
 }
 
 .text-black {
@@ -12224,19 +12092,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-white {
-  position: relative;
-  display: inline-block;
-}
-.line-through-white::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #fff;
+  text-decoration: line-through solid #fff 0.25em;
 }
 
 .text-white {
@@ -12244,19 +12100,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-gray {
-  position: relative;
-  display: inline-block;
-}
-.line-through-gray::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #6c757d;
+  text-decoration: line-through solid #6c757d 0.25em;
 }
 
 .text-gray {
@@ -12264,19 +12108,7 @@ body[data-bs-theme=dark] {
 }
 
 .line-through-gray-dark {
-  position: relative;
-  display: inline-block;
-}
-.line-through-gray-dark::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(50% - 0.15em);
-  height: 0.25em;
-  border-radius: 1rem;
-  pointer-events: none;
-  background-color: #343a40;
+  text-decoration: line-through solid #343a40 0.25em;
 }
 
 .text-gray-dark {

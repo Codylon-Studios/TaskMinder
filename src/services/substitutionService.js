@@ -5,6 +5,9 @@ const iconv = require('iconv-lite');
 const logger = require('../../logger');
 
 async function getSubstitutionsData() {
+    if (process.env.DSB_ACTIVATED != "true") {
+        return
+    }
     try {
         async function parsePlan(id) {
             let planData = [];
@@ -63,6 +66,9 @@ setInterval(getSubstitutionsData, 60000);
 
 const substitutionService = {
     async getSubstitutionData() {
+        if (process.env.DSB_ACTIVATED != "true") {
+            return {}
+        }
         let cachedData = await redisClient.get(cacheKeySubstitutionsData);
         if (cachedData) {
             return JSON.parse(cachedData);
