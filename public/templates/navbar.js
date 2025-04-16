@@ -231,12 +231,26 @@ let $navbarToasts = {
   notLoggedIn: $("#not-logged-in-toast"),
 }
 
-$(function() {
+$(async () => {
   updateAllFunctions.push(() => {
     updateTeamSelectionList();
   });
+
+  requiredData.push(
+    "joinedTeamsData",
+    "teamsData"
+  )
   
   updateAll();
+
+  await userDataLoaded()
+  if (user.classJoined) {
+    $(".class-joined-content").removeClass("d-none")
+    $(".navbar-home-link").attr("href", "/main")
+  }
+  if (["/main/", "/homework/", "/events/"].includes(location.pathname)) {
+    $(".class-page-content").removeClass("d-none")
+  }
 });
 
 // Create the user object with a username variable and event listeners
@@ -426,15 +440,17 @@ $(".login-register-next-button").on("click", async () => {
 $(".login-register-back-button").on("click", resetLoginRegisterModal);
 
 
-user.on("login", () => {
-  $("#login-register-button").addClass("d-none");
-  $("#logout-button").removeClass("d-none");
-});
-
-user.on("logout", () => {
-  $("#login-register-button").removeClass("d-none");
-  $("#logout-button").addClass("d-none");
-});
+if (location.pathname != "/join/") {
+  user.on("login", () => {
+    $("#login-register-button").addClass("d-none");
+    $("#logout-button").removeClass("d-none");
+  });
+  
+  user.on("logout", () => {
+    $("#login-register-button").removeClass("d-none");
+    $("#logout-button").addClass("d-none");
+  });
+}
 
 $("#team-selection-save").on("click", () => {
   let newJoinedTeamsData = []

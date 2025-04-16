@@ -3,7 +3,7 @@ const logger = require('../../logger');
 const ErrorHandler = (err, req, res, next) => {
     try {
         if (err.additionalInformation) {
-            logger.write()
+           logger.write()
             logger.write({padding: { totalWidth: logger.consoleWidth, alignment: "center", fillCharacter: "="}, color: "red", text: " Critical Exception "})
             logger.write({color: "gray", text: "This might be an attack attempt as normal use of the UI should not have caused this error!"})
             logger.write(

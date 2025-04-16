@@ -520,6 +520,12 @@ $(function(){
     updateTeamList();
   })
   
+  requiredData.push(
+    "subjectData",
+    "homeworkData",
+    "homeworkCheckedData"
+  )
+  
   updateAll();
   
   // Initialize all jQuery variables

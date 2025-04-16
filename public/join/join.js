@@ -78,6 +78,8 @@ $("#join-class-btn").on("click", async () => {
       if (user.loggedIn) {
         location.href = "/main"
       }
+      $(".class-joined-content").removeClass("d-none")
+      $(".navbar-home-link").attr("href", "/main")
     },
     error: (xhr) => {
       if (xhr.status === 401) {

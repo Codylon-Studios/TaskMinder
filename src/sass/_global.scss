@@ -92,20 +92,7 @@ body {
 
 @each $name, $color in $colors {
     .line-through-#{$name} {
-        position: relative;
-        display: inline-block;
-
-        &::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            top: calc(50% - 0.15em);
-            height: 0.25em;
-            border-radius: 1rem;
-            pointer-events: none;
-            background-color: $color;
-        }
+        text-decoration: line-through solid $color 0.25em;
     }
     .text-#{$name} {
         color: $color;
