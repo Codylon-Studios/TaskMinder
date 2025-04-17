@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="Log in or create/join a class to synchronize homework events and more with your classmates!.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskMinder</title>
+  <!-- Preconnect to domains used by init.js -->
+  <link rel="preconnect" href="https://code.jquery.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://kit.fontawesome.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://ka-f.fontawesome.com" crossorigin>
+  <script src="/init.js"></script>
+</head>
+
+<body data-url="settings" style="display: none;">
+  <div class="load-content" data-url="navbar" data-html data-js></div>
+
+  <div class="container">
+    <div class="nav nav-tabs mb-3">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#nav-settings-app">App</button>
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-student">Schüler</button>
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-class">Klasse</button>
+    </div>
+    
+    <div class="tab-content container">
+      <div class="tab-pane fade show active" id="nav-settings-app">
+				<div class="d-flex align-items-center mb-2">
+					<label class="me-3" for="animations">Animationen</label>
+					<div class="form-check form-switch fs-5 mb-0" id="animations">
+						<input class="form-check-input mt-0" type="checkbox">
+					</div>
+				</div>
+        <div class="form-text mb-4">
+          Aktiviert / deaktiviert Animationen in der App wie zum Beispiel beim Kalender.
+        </div>
+        <div class="d-flex align-items-center mb-2">
+					<label class="me-3" for="color-theme">Farbthema</label>
+					<div class="btn-group" id="color-theme">
+						<input type="radio" class="btn-check" name="color-theme" id="color-theme-auto" checked>
+						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-auto">Automatisch</label>
+
+						<input type="radio" class="btn-check" name="color-theme" id="color-theme-light" checked>
+						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-light">Hell</label>
+
+						<input type="radio" class="btn-check" name="color-theme" id="color-theme-dark">
+						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-dark">Dunkel</label>
+					</div>
+				</div>
+        <div class="form-text mb-4">
+          Bestimmt das Farbthema der App. Bei Automatisch folgt das Farbthema dem deines Geräts.
+        </div>
+        <hr></hr>
+        <div>
+					<a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#credits">
+						Credits anzeigen
+					</a>
+					
+					<div class="collapse mt-2" id="credits">
+						<ul class="list-unstyled mb-2">
+							<li><b>Codylon Studios</b></li>
+							<li>Mingqi Li</li>
+							<li>Fabian Leonardi</li>
+						</ul>
+						<p class="mb-1">
+							<i class="fas fa-balance-scale me-2"></i>
+							Dieses Projekt steht unter einer  
+							<a href="https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE" target="_blank" class="text-primary">eigenen Lizenz</a>.
+						</p>
+						<p class="mb-1">
+							<i class="far fa-copyright me-2"></i>
+							Copyright © 2025 Codylon-Studios
+						</p>
+						<p class="mb-0">
+							<i class="fab fa-github me-2"></i>
+							GitHub: 
+							<a href="https://github.com/Codylon-Studios/TaskMinder" target="_blank" class="text-primary">Codylon-Studios/TaskMinder</a>
+						</p>
+					</div>
+				</div>
+      </div>
+      <div class="tab-pane fade" id="nav-settings-student">
+        <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
+          <i class="fa-solid fa-circle-xmark"></i>
+          <div>
+            <div class="d-block">
+              Für diese Einstellungen musst du einer Klasse beigetreten sein.
+            </div>
+            <div class="d-block">
+              <a href="/join?action=join">Klasse beitreten</a>
+            </div>
+          </div>
+        </div>
+
+        <div id="settings-student" class="d-none">
+          <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
+            <i class="fa-solid fa-circle-info"></i>
+            <div class="d-block">
+              Wenn du einen Account hast, werden diese Einstellungen mit anderen angemeldeten Geräten synchronisiert.
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <h5 class="mb-2" for="team-list">Teams auswählen</h5>
+            <div class="mb-2 ms-2 row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6" id="team-list">
+              <!--Gets filled-->
+            </div>
+            <button class="btn btn-primary btn-sm fw-semibold" id="team-selection-save">Speichern</button>
+          </div>
+          <div class="form-text mb-1">
+            Teams sind Untergruppen deiner Klasse, zum Beispiel für verschiedene Sprachkurse. Du siehst dann nur die Hausaufgaben und
+            Ereignisse der Teams, die du hier ausgewählt hast.
+          </div>
+          <div class="form-text mb-4">
+            Du kannst die verfügbaren Teams deiner Klasse unter "Klasse" einstellen.
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="nav-settings-class">
+        Klasseneinstellungen
+      </div>
+    </div>
+  </div>
+</body>
+</html>

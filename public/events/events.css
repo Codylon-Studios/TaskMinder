@@ -12115,8 +12115,12 @@ body[data-bs-theme=dark] {
   color: #343a40;
 }
 
-#animations {
-  min-height: min-content;
+.nav-tabs .nav-link.active {
+  color: #3bb9ca;
+}
+
+.nav-tabs .nav-link {
+  color: var(--bsnav-link-color);
 }
 
 /*# sourceMappingURL=events.css.map */

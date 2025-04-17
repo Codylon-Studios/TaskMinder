@@ -1,0 +1,10 @@
+@use "sass:color";
+@use "global" as *;
+
+#animations {
+  min-height: min-content;
+}
+
+#team-selection-save {
+  width: 6rem;
+}

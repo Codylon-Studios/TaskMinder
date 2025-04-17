@@ -878,19 +878,12 @@ $(function(){
     updateSubstitutionList();
     updateTimetable();
   })
-  requiredData.push(
-    "subjectData",
-    "timetableData",
-    "homeworkData",
-    "homeworkCheckedData",
-    "substitutionsData",
-    "classSubstitutionsData",
-    "eventData",
-    "eventTypeData"
-  )
 
   updateAll();
 })
+
+let animations = JSON.parse(localStorage.getItem("animations"));
+if (animations == undefined) animations = true
 
 $(".calendar-week-move-button").on("click", function () {
   // If the calendar is already moving, stop; else set it moving
