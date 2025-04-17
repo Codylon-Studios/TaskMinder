@@ -99,6 +99,10 @@ body {
     }
 }
 
-#animations {
-    min-height: min-content;
+.nav-tabs .nav-link.active {
+    color: $primary;
+}
+
+.nav-tabs .nav-link {
+    color: var(--bsnav-link-color);
 }

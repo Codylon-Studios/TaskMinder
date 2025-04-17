@@ -440,11 +440,6 @@ $(function(){
     updateEventList();
     updateTeamList();
   })
-
-  requiredData.push(
-    "eventData",
-    "eventTypeData"
-  )
   
   updateAll();
 

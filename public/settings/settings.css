@@ -12123,8 +12123,12 @@ body[data-bs-theme=dark] {
   color: var(--bsnav-link-color);
 }
 
-#filter-dropdown .dropdown .dropdown-menu {
-  margin-left: -3px !important;
+#animations {
+  min-height: min-content;
 }
 
-/*# sourceMappingURL=homework.css.map */
+#team-selection-save {
+  width: 6rem;
+}
+
+/*# sourceMappingURL=settings.css.map */

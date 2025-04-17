@@ -1,5 +1,5 @@
 let updateAllFunctions = []
-let requiredData = []
+let requiredData
 
 function runOnce(fn) {
   async function wrapper(...args) {
@@ -233,8 +233,15 @@ async function reloadAll() {
     updateAll()
     
     let promises = Object.keys(dataMap).map(key => dataLoaded(key));
+    promises.push(userDataLoaded())
     await Promise.all(promises);
-    
+
+    document.body.style.display = "block";
+  }
+  else {
+    updateAll()
+
+    await userDataLoaded();
     document.body.style.display = "block";
   }
 }
@@ -256,6 +263,46 @@ let eventData;
 let eventTypeData;
 
 $(function(){
+  switch (location.pathname) {
+    case "/homework/":
+      requiredData = [
+        "subjectData",
+        "homeworkData",
+        "homeworkCheckedData",
+        "joinedTeamsData"
+      ]
+      break;
+    case "/events/":
+      requiredData = [
+        "eventData",
+        "eventTypeData",
+        "joinedTeamsData"
+      ]
+      break;
+    case "/main/":
+      requiredData = [
+        "subjectData",
+        "timetableData",
+        "homeworkData",
+        "homeworkCheckedData",
+        "substitutionsData",
+        "classSubstitutionsData",
+        "eventData",
+        "eventTypeData",
+        "joinedTeamsData"
+      ]
+      break;
+    case "/settings/":
+      requiredData = [
+        "teamsData",
+        "joinedTeamsData"
+      ]
+      break;
+    default:
+      requiredData = []
+      break;
+  }
+  
   reloadAll();
 });
 
@@ -288,3 +335,10 @@ function handleSmallScreenQueryChange(ev) {
 smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
 
 handleSmallScreenQueryChange(smallScreenQuery)
+
+if (colorTheme == "light") {
+    document.body.setAttribute("data-bs-theme", "light");
+}
+else {
+    document.body.setAttribute("data-bs-theme", "dark");
+}
