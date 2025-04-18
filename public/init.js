@@ -60,14 +60,11 @@ let socket;
 
 // Load jQuery without jQuery
 let jQueryScript = document.createElement('script');
-jQueryScript.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
+jQueryScript.src = '/vendor/jquery/jquery.min.js';
 jQueryScript.defer = true;
 jQueryScript.onload = () => {
   // Load Bootstrap
-  loadScript("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js")
-
-  // Load Font Awesome icons
-  loadScript("https://kit.fontawesome.com/0ca04b82ef.js")
+  loadScript("/vendor/bootstrap/bootstrap.bundle.min.js")
 
   // Load favicon
   let favicon = document.createElement("link")

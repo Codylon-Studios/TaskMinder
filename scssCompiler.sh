@@ -21,15 +21,15 @@ for arg in $@; do
   esac
 done
 
-for filePath in src/sass/*; do
+for filePath in src/scss/*.scss; do
   fileName=$(basename "$filePath")
   fileName="${fileName%.*}"
   case "$fileName" in
     _*) continue ;;
     *)  if [ "$watch" = true ]; then
-          sass -w -q --quiet-deps "$filePath" "public/${fileName}/${fileName}.css" &
+          sass -w "$filePath" "public/${fileName}/${fileName}.css" &
         else
-          sass -q --quiet-deps "$filePath" "public/${fileName}/${fileName}.css"
+          sass "$filePath" "public/${fileName}/${fileName}.css"
         fi
         ;;
     esac
