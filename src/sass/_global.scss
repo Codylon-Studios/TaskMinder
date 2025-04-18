@@ -14,6 +14,8 @@ $custom-btn-variants: (
     tertiary,
 );
 
+$navbar-top-offset: 70px;
+
 $semivisible-hover-light: rgba(black, 0.074);
 $semivisible-active-light: rgba(black, 0.16);
 $tertiary-hover-light: rgba(black, 0.148);
@@ -26,7 +28,7 @@ $tertiary-active-dark: rgba(white, 0.16);
 
 body {
     font-family: "Quicksand", Arial, Helvetica, sans-serif;
-    padding-top: 70px;
+    padding-top: $navbar-top-offset;
     font-weight: 500;
 
     --btn-color: #212529;
@@ -42,6 +44,10 @@ body {
         --btn-tertiary-hover: #{$tertiary-hover-dark};
         --btn-tertiary-active: #{$tertiary-active-dark};
     }
+}
+
+* {
+    scroll-margin-top: $navbar-top-offset;
 }
 
 

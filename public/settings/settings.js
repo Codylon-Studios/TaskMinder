@@ -59,7 +59,7 @@ $(async () => {
   await userDataLoaded()
   if (user.classJoined) {
     $(".not-joined-info").addClass("d-none")
-    $("#settings-student").removeClass("d-none")
+    $("#settings-student, #settings-class").removeClass("d-none")
   }
 });
 
