@@ -1,4 +1,5 @@
 @use "sass:color";
+
 @import "../../node_modules/bootstrap/scss/functions";
 
 // Overwriting Bootstrap standards
@@ -6,15 +7,23 @@ $primary: #3bb9ca;
 
 @import "../../node_modules/bootstrap/scss/bootstrap";
 
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
+$navbar-top-offset: 70px;
+
+$fa-font-path: '../fonts/fontawesome';
+@import '../vendor/fontawesome/scss/fontawesome';
+@import '../vendor/fontawesome/scss/solid';
+
+@font-face {
+    font-family: 'Quicksand';
+    src: url('/fonts/Quicksand-VariableFont_wght.ttf') format('truetype');
+}
+
 @import "btn-back";
 
 $custom-btn-variants: (
     semivisible,
     tertiary,
 );
-
-$navbar-top-offset: 70px;
 
 $semivisible-hover-light: rgba(black, 0.074);
 $semivisible-active-light: rgba(black, 0.16);
