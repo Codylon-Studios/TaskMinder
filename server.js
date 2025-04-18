@@ -171,6 +171,10 @@ app.get('/settings', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'settings', 'settings.html'));
 });
 
+app.get('/about', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'about', 'about.html'));
+});
+
 //
 // Protected routes: Redirect to /join if not logged in
 //

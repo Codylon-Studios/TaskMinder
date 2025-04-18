@@ -1096,19 +1096,6 @@ $("#homework-mode input").each(function () {
 
 $("#homework-mode-" + (localStorage.getItem("homeworkMode") || "tomorrow")).prop("checked", true);
 
-if (localStorage.getItem("showTeamSelectionInfo") == undefined) {
-  localStorage.setItem("showTeamSelectionInfo", "true")
-}
-
-if (localStorage.getItem("showTeamSelectionInfo") == "true") {
-  $("#team-selection-info").addClass("d-flex").removeClass("d-none")
-}
-
-$("#team-selection-info-later").on("click", () => {
-  localStorage.setItem("showTeamSelectionInfo", "false")
-  $("#team-selection-info").removeClass("d-flex").addClass("d-none")
-})
-
 socket.on('updateHomeworkData', () => {
   try {
     homeworkData = undefined;

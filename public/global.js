@@ -222,28 +222,32 @@ function userDataLoaded() {
 }
 
 async function reloadAll() {
-  let dataMap = getDataMap(true)
-
-  if (Object.keys(dataMap).length != 0) {
-    for (let key in dataMap) {
-      dataMap[key].dataVar = undefined
-      dataMap[key].loadFn()
-    }
+  return new Promise(async (resolve) => {
+    let dataMap = getDataMap(true)
   
-    updateAll()
+    if (Object.keys(dataMap).length != 0) {
+      for (let key in dataMap) {
+        dataMap[key].dataVar = undefined
+        dataMap[key].loadFn()
+      }
     
-    let promises = Object.keys(dataMap).map(key => dataLoaded(key));
-    promises.push(userDataLoaded())
-    await Promise.all(promises);
-
-    document.body.style.display = "block";
-  }
-  else {
-    updateAll()
-
-    await userDataLoaded();
-    document.body.style.display = "block";
-  }
+      updateAll()
+      
+      let promises = Object.keys(dataMap).map(key => dataLoaded(key));
+      promises.push(userDataLoaded())
+      await Promise.all(promises);
+  
+      document.body.style.display = "block";
+      resolve()
+    }
+    else {
+      updateAll()
+  
+      await userDataLoaded();
+      document.body.style.display = "block";
+      resolve()
+    }
+  })
 }
 reloadAll = runOnce(reloadAll);
 
@@ -262,7 +266,7 @@ let teamsData;
 let eventData;
 let eventTypeData;
 
-$(function(){
+$(async () => {
   switch (location.pathname) {
     case "/homework/":
       requiredData = [
@@ -303,7 +307,17 @@ $(function(){
       break;
   }
   
-  reloadAll();
+  await reloadAll();
+  
+  let hash = window.location.hash;
+  if (hash) {
+    let $target = $(hash);
+      if ($target.length) {
+        $("html").animate({
+          scrollTop: $target.offset().top - 70
+        });
+      }
+  }
 });
 
 // Update everything on clicking the reload button
