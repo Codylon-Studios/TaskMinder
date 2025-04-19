@@ -1,15 +1,13 @@
-# Development
+# Development Setup Guide
 
-## Installation
-
-This Guide installs the tooling needed for development: NodeJS and npm packages, python3 and pip for mkdocs and the installation of redis and PostgreSQL.
+This guide details the steps required to set up your development environment for TaskMinder. This includes installing NodeJS, npm, Python 3 (for documentation), Redis, and PostgreSQL.
 
 !!! info
-    Windows is officially not supported for development. However, guides for windows have been included, but are not battletested, so be careful when operating on windows.
+    While guides for Windows are included, the primary development and testing occur on Linux/macOS. Windows setups are not actively maintained or thoroughly tested ('battle-tested'), so you may encounter unique issues.
 
 ### Installation of Redis and PostgreSQL
 
-Recommend and tested versions for PostgreSQL and Redis are 14.0 and 7.4 respectively.
+Recommended and tested versions are PostgreSQL 14.0+ and Redis 7.x (Community Edition < v8).
 
 === "Linux (Ubuntu/Debian)"
 
@@ -23,7 +21,7 @@ Recommend and tested versions for PostgreSQL and Redis are 14.0 and 7.4 respecti
 
     Don't forget to start and enabling (starting on system startup) the services by excecuting
 
-    ```
+    ``` zsh
     # already described in the redis installation guide
     sudo systemctl enable redis-server
     sudo systemctl start redis-server
@@ -58,34 +56,36 @@ Recommend and tested versions for PostgreSQL and Redis are 14.0 and 7.4 respecti
     As Github Codespaces is a virtual machine running ubuntu, it's similar to the Linux guide.
     The auto-start at startup of the server has not been included, as it saves memory and run time.
     Installation and startup of redis:
-    ```
+
+    ``` zsh
     sudo apt-get update
     sudo apt-get install redis
     sudo service redis-server start
     ```
+
     Installation and startup of PostgreSQL:
-    ```
+    ``` zsh
     sudo apt-get update
     sudo apt-get -y install postgresql
     sudo service postgresql start
     ```
 
 ### Installation of NodeJS and npm
-This step is the same for Linux, Windows and MacOS. NodeJS and npm is already installed on Github Codespaces, so it is not necessary to check for node and npm. 
+NodeJS and its package manager, npm, are required. (Skip this step on Github Codespaces, where they are pre-installed).
 
 First, check if node and npm are installed.
 Open the terminal or the and type 
 
-``` 
+``` zsh
 node --version
 ```
 and 
 
-``` 
+``` zsh
 npm --version
 ```
 
-For node, it should at least return v20.19.0 or higher, for npm v20.8.2 or higher. You can see the compatible versions here: [NodeJS versions]
+For node, it should at least return v20.19.0 or higher, for npm v10.8.2 or higher. You can see the compatible versions here: [NodeJS versions]
 
 [NodeJS Versions]: https://nodejs.org/en/about/previous-releases
 
@@ -100,13 +100,14 @@ Go to [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon
 On your local machine, find a good place where you can develop.
 
 Clone the forked repository:
-``` 
-git clone https://github.com/Codylon-Studios/TaskMinder.git
+``` zsh
+git clone https://github.com/YOUR_GITHUB_USERNAME/TaskMinder.git
 cd TaskMinder
 ```
+(Replace `YOUR_GITHUB_USERNAME` with your actual GitHub username).
 
 Install all dependencies through
-``` 
+``` zsh
 npm install
 ```
 
@@ -115,20 +116,20 @@ npm install
 Before using the Database, you should initialise it, that means to log into the terminal based frontend of PostgreSQL, psql. Then, create a Database where you store the data. It is recommended to change the password for the postgres user. Replace `your_db_name` with your actual database name.
 
 === "Linux"
-    ``` 
+    ``` zsh
     sudo -u postgres psql
     \password
     CREATE DATABASE your_db_name;
     ```
 === "MacOS"
-    ```
+    ``` zsh
     psql postgres
     \password
     CREATE DATABASE your_db_name;
     ```
 === "Windows"
     Open the SQL shell (psql):
-    ```
+    ``` sql
     CREATE DATABASE your_db_name;
     ```
 === "Github Codespaces"
@@ -141,7 +142,7 @@ Before using the Database, you should initialise it, that means to log into the 
 
 ### Create the .env file
 As it would be dangerous to store your sensitive data plain text in the source code, you need a file called `.env` located directly in the root of your project folder holding all of your enviroment variables. Replace the values beginning with `your_* ` (highlighted) with your actual credentials.
-``` py hl_lines="2 3 8 9 10 11"
+``` dotenv hl_lines="2 3 8 9 10 11"
 DB_USER=postgres
 DB_PASSWORD=your_postgres_password
 DB_NAME=your_db_name
