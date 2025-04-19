@@ -37,7 +37,7 @@ $tertiary-active-dark: rgba(white, 0.16);
 
 body {
     font-family: "Quicksand", Arial, Helvetica, sans-serif;
-    padding-top: $navbar-top-offset;
+    padding: $navbar-top-offset 0;
     font-weight: 500;
 
     --btn-color: #212529;
@@ -81,6 +81,10 @@ body {
     
         &:active {
             background-color: var(--btn-#{$variant}-active) !important;
+        }
+    
+        &.active {
+            background-color: transparent;
         }
 
         &.show {
