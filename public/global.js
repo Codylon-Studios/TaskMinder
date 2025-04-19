@@ -356,3 +356,31 @@ if (colorTheme == "light") {
 else {
     document.body.setAttribute("data-bs-theme", "dark");
 }
+
+let colorThemeSetting = localStorage.getItem("colorTheme") || "auto";
+
+if (colorThemeSetting == "auto") {
+  function updateColorTheme() {
+    let colorTheme
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      colorTheme = "dark"
+    }
+    else {
+      colorTheme = "light"
+    }
+  
+    if (colorTheme == "light") {
+      document.getElementsByTagName("html")[0].style.background = "#ffffff";
+      document.body.setAttribute("data-bs-theme", "light");
+      $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
+    }
+    else {
+      document.getElementsByTagName("html")[0].style.background = "#212529";
+      document.body.setAttribute("data-bs-theme", "dark");
+      $(`meta[name="theme-color"]`).attr("content", "#2b3035")
+    }
+  }
+
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener("change", updateColorTheme)
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener("change", updateColorTheme)
+}
