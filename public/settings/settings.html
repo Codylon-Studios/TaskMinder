@@ -78,7 +78,7 @@
       </div>
       <div class="tab-pane fade" id="nav-settings-student">
         <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
-          <i class="fa-solid fa-circle-xmark"></i>
+          <i class="fa-solid fa-circle-xmark  mx-1"></i>
           <div>
             <div class="d-block">
               Für diese Einstellungen musst du einer Klasse beigetreten sein.
@@ -91,15 +91,15 @@
 
         <div id="settings-student" class="d-none">
           <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
-            <i class="fa-solid fa-circle-info"></i>
+            <i class="fa-solid fa-circle-info mx-1"></i>
             <div class="d-block">
               Wenn du einen Account hast, werden diese Einstellungen mit anderen angemeldeten Geräten synchronisiert.
             </div>
           </div>
 
           <div class="mb-2">
-            <h5 class="mb-2" for="team-list">Teams auswählen</h5>
-            <div class="mb-2 ms-2 row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6" id="team-list">
+            <h5 class="mb-2" for="team-selection-list">Teams auswählen</h5>
+            <div class="mb-2 ms-2 row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6" id="team-selection-list">
               <!--Gets filled-->
             </div>
             <button class="btn btn-primary btn-sm fw-semibold" id="team-selection-save">Speichern</button>
@@ -115,7 +115,7 @@
       </div>
       <div class="tab-pane fade" id="nav-settings-class">
         <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
-          <i class="fa-solid fa-circle-xmark"></i>
+          <i class="fa-solid fa-circle-xmark mx-1"></i>
           <div>
             <div class="d-block">
               Für diese Einstellungen musst du einer Klasse beigetreten sein.
@@ -127,7 +127,36 @@
         </div>
 
         <div id="settings-class" class="d-none">
-          Klasseneinstellungen
+          <div class="alert alert-warning p-2 d-flex align-items-center gap-2 width-fit-content">
+            <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+            <div>
+              <div class="d-block">
+                Diese Einstellungen betreffen die ganze Klasse!
+                <br>
+                Manche Änderungen können Informationen für immer löschen!
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <h5 class="mb-2" for="teams-list">Teams</h5>
+            <div class="mb-2" id="teams-list">
+              <!--Gets filled-->
+            </div>
+            <button class="btn btn-secondary btn-sm fw-semibold" id="teams-cancel">Abbrechen</button>
+            <button class="btn btn-success btn-sm fw-semibold" id="new-team">Neues Team</button>
+            <button class="btn btn-primary btn-sm fw-semibold" id="teams-save">Speichern</button>
+            <div class="my-2 d-none" id="teams-save-confirm-container">
+              <span class="fw-bold text-danger">Achtung!</span>
+              Es werden alle Hausaufgaben, Ereignisse und Stundenplaneinträge <span id="teams-save-confirm-list"></span> gelöscht!
+              Das kann nicht rückgängig gemacht werden!
+            </div>
+            <button class="btn btn-danger btn-sm fw-semibold d-none" id="teams-save-confirm">Fortfahren</button>
+          </div>
+          <div class="form-text mb-1">
+            Teams sind Untergruppen deiner Klasse, zum Beispiel für verschiedene Sprachkurse. Schülerinnen und Schüler sehen dann nur die
+            Hausaufgaben und Ereignisse der Teams, die sie unter "Schüler" ausgewählt haben.
+          </div>
         </div>
       </div>
     </div>

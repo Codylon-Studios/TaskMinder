@@ -18,6 +18,7 @@ const teamService = {
         }
 
         const data = await Team.findAll({ raw: true });
+        await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
 
         try {
             await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
@@ -27,6 +28,59 @@ const teamService = {
         }
 
         return data;
+    },
+    async setTeamsData(teams) {
+        if (! Array.isArray(teams)) {
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.expected = true;
+            throw err;
+        }
+
+        let existingTeams = await Team.findAll({ raw: true });
+        existingTeams.forEach((team) => {
+            if (!teams.some((t) => t.teamId === team.teamId)) {
+                Team.destroy({
+                    where: { teamId: team.teamId }
+                });
+            }
+        })
+
+        for (let team of teams) {
+            try {
+                if (team.teamId == "") {
+                    await Team.create({
+                        name: team.name
+                    })
+                }
+                else {
+                    await Team.update(
+                        {
+                            name: team.name
+                        },
+                        {
+                            where: { teamId: team.teamId }
+                        }
+                    );
+                }
+            }
+            catch {
+                let err = new Error("Bad Request");
+                err.status = 400;
+                err.expected = true;
+                throw err;
+            }
+        }
+
+        const data = await Team.findAll({ raw: true });
+        await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
+
+        try {
+            await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
+        } catch (err) {
+            logger.error('Error updating Redis cache:', err);
+            throw new Error();
+        }
     },
     async getJoinedTeamsData(session) {
         let accountId
@@ -52,8 +106,6 @@ const teamService = {
         return teams;
     },
     async setJoinedTeamsData(teams, session) {
-        teams = teams || []
-
         let accountId
         if (!(session.account)) {
             let err = new Error("User not logged in");

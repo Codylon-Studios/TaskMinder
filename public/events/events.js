@@ -152,13 +152,13 @@ async function updateTeamList() {
   $("#edit-event-team").empty();
   $("#edit-event-team").append('<option value="-1" selected>Alle</option>');
 
-  teamsData.forEach((team, teamId) => {
+  teamsData.forEach(team => {
     // Get the team data
     let teamName = team.name;
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${teamId}">${teamName}</option>`;
+      `<option value="${team.teamId}">${teamName}</option>`;
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
   });
