@@ -2,6 +2,14 @@
 
 This guide details the steps required to set up your development environment for TaskMinder. This includes installing NodeJS, npm, Python 3 (for documentation), Redis, and PostgreSQL.
 
+!!! warning "License Notice"
+    **Please be aware of [our license](./license.md) when developing!**  
+    Short Summary:
+
+    - Give appropiate credit to Codylon Studios
+    - Do not use for commercial purposes
+    - Use the same license terms for your project
+
 !!! info
     While guides for Windows are included, the primary development and testing occur on Linux/macOS. Windows setups are not actively maintained or thoroughly tested ('battle-tested'), so you may encounter unique issues.
 
@@ -119,12 +127,16 @@ Before using the Database, you should initialise it, that means to log into the 
     ``` zsh
     sudo -u postgres psql
     \password
+    ```
+    ``` sql
     CREATE DATABASE your_db_name;
     ```
 === "MacOS"
     ``` zsh
     psql postgres
     \password
+    ```
+    ``` sql
     CREATE DATABASE your_db_name;
     ```
 === "Windows"
@@ -133,16 +145,18 @@ Before using the Database, you should initialise it, that means to log into the 
     CREATE DATABASE your_db_name;
     ```
 === "Github Codespaces"
-    ```
+    ```sh
     sudo su postgres
     psql postgres
     \password
+    ```
+    ```sql
     CREATE DATABASE your_db_name;
     ```
 
 ### Create the .env file
 As it would be dangerous to store your sensitive data plain text in the source code, you need a file called `.env` located directly in the root of your project folder holding all of your enviroment variables. Replace the values beginning with `your_* ` (highlighted) with your actual credentials.
-``` dotenv hl_lines="2 3 8 9 10 11"
+``` sh hl_lines="2 3 8 9 10 11"
 DB_USER=postgres
 DB_PASSWORD=your_postgres_password
 DB_NAME=your_db_name
@@ -171,11 +185,13 @@ node menu.js
 !!! info
     The following content describes the initialisation of the tables and the timetable and subjects. This will be replaced by an admin page in the future.
 
-### Initialize tables:
+### Initialize tables
 After starting the server, the tables `eventType` and `team` have been created but are empty. You might want to fill them with suitable data. To do that, execute:
-```
+```sh
 sudo -u postgres psql
 \c your_db_name
+```
+```sql
 INSERT INTO team (name) VALUES ('Name of a team');
 INSERT INTO team (name) VALUES ('Name of another team');
 ...
@@ -188,7 +204,7 @@ As our subjects and timetable shouldn't be visible for anyone, the files have be
 If you have problems understanding the following, you might want to read [this tutorial on JSON](https://www.hostinger.com/tutorials/what-is-json) or ask an AI assistant.
 ##### Subjects
 Start by adding a file `subjects.json` in the `public` folder. Then fill it like this:
-```
+```json
 [
   { "name": { "long": "Biology", "short": "Bio" }, "teacher": {"gender": "w", "long": "Johnson", "short": "Joh" } },
   { "name": { "long": "Chemistry", "short": "Che" }, "teacher": {"gender": "m", "long": "Smith", "short": "Smi" } },
@@ -198,13 +214,13 @@ Start by adding a file `subjects.json` in the `public` folder. Then fill it like
 You will see the long name in the larger timetable view and for homework and the short name in the smaller timetable. You will only see the teacher's long name in the larger timetable (the short one is for checking substitutions, so don't worry about it) with a salutation matching the gender ("w" for women, "m" for men).
 ##### Timetable
 Start by adding a file `timetable.json` in the `public` folder. Start with this content:
-```
+```json
 [
   [], [], [], [], []
 ]
 ```
 Each list stands for one day. You will have to fill each day with the respective lessons. Each lesson looks like this:
-```
+```json
 {
   "lessonType": "normal",
   "subjectId": 0,
@@ -215,7 +231,7 @@ Each list stands for one day. You will have to fill each day with the respective
 ```
 We'll cover other lesson types in a moment. `sujectId` references an subject in your `subjects.json` file (their id is just the index in the subject list). `room`, `start` and `end` are just plaintexts displayed in the larger timetable.  
 Another lesson type is `rotating`. This is used if the lesson is different each week. The code looks like this:
-```
+```json
 {
   "lessonType": "rotating",
   "variants": [
@@ -234,7 +250,7 @@ Another lesson type is `rotating`. This is used if the lesson is different each 
 ```
 Like before, `start` and `end` are plain texts. But now you'll see both options in the timetable, seperated with a "/".  
 The last lesson type is `teamed`. It looks pretty similiar to `rotating`:
-```
+```json
 {
   "lessonType": "teamed",
   "teams": [
@@ -254,7 +270,7 @@ The last lesson type is `teamed`. It looks pretty similiar to `rotating`:
 }
 ```
 Now only the users who joined the team with the respective teamId (automatically defined in your `team` table) will see the lesson. If there are multiple lessons matching the joined teams, they will be seperated by a "/". If there are no matching lessons found, all lessons will be shown. If you want to not show this lesson to a certain team, add the following in `"teams"`:
-```
+```json
 {
   "teamId": 0,
   "subjectId": -1,
