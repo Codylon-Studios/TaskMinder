@@ -56,38 +56,26 @@ async function getHomeworkCheckStatus(homeworkId) {
   return homeworkCheckedData.includes(homeworkId)
 }
 
-function getDataMap(filtered) {
-  let dataMap = {
-    "subjectData": {dataVar: subjectData, loadFn: loadSubjectData},
-    "timetableData": {dataVar: timetableData, loadFn: loadTimetableData},
-    "homeworkData": {dataVar: homeworkData, loadFn: loadHomeworkData},
-    "homeworkCheckedData": {dataVar: homeworkCheckedData, loadFn: loadHomeworkCheckedData},
-    "substitutionsData": {dataVar: substitutionsData, loadFn: loadSubstitutionsData},
-    "classSubstitutionsData": {dataVar: classSubstitutionsData, loadFn: loadClassSubstitutionsData},
-    "joinedTeamsData": {dataVar: joinedTeamsData, loadFn: loadJoinedTeamsData},
-    "teamsData": {dataVar: teamsData, loadFn: loadTeamsData},
-    "eventData": {dataVar: eventData, loadFn: loadEventData},
-    "eventTypeData": {dataVar: eventTypeData, loadFn: loadEventTypeData},
-  }
-  if (filtered) {
-    for (let key in dataMap) {
-      if (! requiredData.includes(key)) {
-        delete dataMap[key]
-      }
-    }
-  }
-  return dataMap
-}
-
 function dataLoaded(dataName) {
-  let dataMap = getDataMap()
+  let dataMap = {
+    "subjectData": subjectData,
+    "timetableData": timetableData,
+    "homeworkData": homeworkData,
+    "homeworkCheckedData": homeworkCheckedData,
+    "substitutionsData": substitutionsData,
+    "classSubstitutionsData": classSubstitutionsData,
+    "joinedTeamsData": joinedTeamsData,
+    "teamsData": teamsData,
+    "eventData": eventData,
+    "eventTypeData": eventTypeData
+  }
 
   let dataVariable
   if (dataName == "monthDates") {
     dataVariable = monthDates;
   }
   else {
-    dataVariable = dataMap[dataName].dataVar;
+    dataVariable = dataMap[dataName];
   }
 
   let eventName = dataName + "Loaded"
@@ -223,17 +211,33 @@ function userDataLoaded() {
 
 async function reloadAll() {
   return new Promise(async (resolve) => {
-    let dataMap = getDataMap(true)
-  
-    if (Object.keys(dataMap).length != 0) {
-      for (let key in dataMap) {
-        dataMap[key].dataVar = undefined
-        dataMap[key].loadFn()
-      }
+    if (requiredData.length != 0) {
+      if (requiredData.includes("subjectData")) {subjectData = undefined; loadSubjectData()}
+      if (requiredData.includes("timetableData")) {timetableData = undefined; loadTimetableData()}
+      if (requiredData.includes("homeworkData")) {homeworkData = undefined; loadHomeworkData()}
+      if (requiredData.includes("homeworkCheckedData")) {homeworkCheckedData = undefined; loadHomeworkCheckedData()}
+      if (requiredData.includes("substitutionsData")) {substitutionsData = undefined; loadSubstitutionsData()}
+      if (requiredData.includes("classSubstitutionsData")) {classSubstitutionsData = undefined; loadClassSubstitutionsData()}
+      if (requiredData.includes("joinedTeamsData")) {joinedTeamsData = undefined; loadJoinedTeamsData()}
+      if (requiredData.includes("teamsData")) {teamsData = undefined; loadTeamsData()}
+      if (requiredData.includes("eventData")) {eventData = undefined; loadEventData()}
+      if (requiredData.includes("eventTypeData")) {eventTypeData = undefined; loadEventTypeData()}
     
       updateAll()
+
+      let promises = [];
       
-      let promises = Object.keys(dataMap).map(key => dataLoaded(key));
+      if (requiredData.includes("subjectData")) {promises.push(dataLoaded("subjectData"))}
+      if (requiredData.includes("timetableData")) {promises.push(dataLoaded("timetableData"))}
+      if (requiredData.includes("homeworkData")) {promises.push(dataLoaded("homeworkData"))}
+      if (requiredData.includes("homeworkCheckedData")) {promises.push(dataLoaded("homeworkCheckedData"))}
+      if (requiredData.includes("substitutionsData")) {promises.push(dataLoaded("substitutionsData"))}
+      if (requiredData.includes("classSubstitutionsData")) {promises.push(dataLoaded("classSubstitutionsData"))}
+      if (requiredData.includes("joinedTeamsData")) {promises.push(dataLoaded("joinedTeamsData"))}
+      if (requiredData.includes("teamsData")) {promises.push(dataLoaded("teamsData"))}
+      if (requiredData.includes("eventData")) {promises.push(dataLoaded("eventData"))}
+      if (requiredData.includes("eventTypeData")) {promises.push(dataLoaded("eventTypeData"))}
+
       promises.push(userDataLoaded())
       await Promise.all(promises);
   
@@ -273,6 +277,7 @@ $(async () => {
         "subjectData",
         "homeworkData",
         "homeworkCheckedData",
+        "teamsData",
         "joinedTeamsData"
       ]
       break;
@@ -280,6 +285,7 @@ $(async () => {
       requiredData = [
         "eventData",
         "eventTypeData",
+        "teamsData",
         "joinedTeamsData"
       ]
       break;
@@ -357,30 +363,32 @@ else {
     document.body.setAttribute("data-bs-theme", "dark");
 }
 
-let colorThemeSetting = localStorage.getItem("colorTheme") || "auto";
+if (location.pathname != "/settings/") {
+  let colorThemeSetting = localStorage.getItem("colorTheme") || "auto";
 
-if (colorThemeSetting == "auto") {
-  function updateColorTheme() {
-    let colorTheme
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      colorTheme = "dark"
+  if (colorThemeSetting == "auto") {
+    function updateColorTheme() {
+      let colorTheme
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        colorTheme = "dark"
+      }
+      else {
+        colorTheme = "light"
+      }
+    
+      if (colorTheme == "light") {
+        document.getElementsByTagName("html")[0].style.background = "#ffffff";
+        document.body.setAttribute("data-bs-theme", "light");
+        $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
+      }
+      else {
+        document.getElementsByTagName("html")[0].style.background = "#212529";
+        document.body.setAttribute("data-bs-theme", "dark");
+        $(`meta[name="theme-color"]`).attr("content", "#2b3035")
+      }
     }
-    else {
-      colorTheme = "light"
-    }
-  
-    if (colorTheme == "light") {
-      document.getElementsByTagName("html")[0].style.background = "#ffffff";
-      document.body.setAttribute("data-bs-theme", "light");
-      $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
-    }
-    else {
-      document.getElementsByTagName("html")[0].style.background = "#212529";
-      document.body.setAttribute("data-bs-theme", "dark");
-      $(`meta[name="theme-color"]`).attr("content", "#2b3035")
-    }
+
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener("change", updateColorTheme)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener("change", updateColorTheme)
   }
-
-  window.matchMedia('(prefers-color-scheme: light)').addEventListener("change", updateColorTheme)
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener("change", updateColorTheme)
 }

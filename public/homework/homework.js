@@ -80,8 +80,6 @@ async function updateHomeworkList() {
 
     // Add this homework to the list
     $ui.homeworkList.append(template);
-
-    //console.location()
   };
 
   // If no homeworks match, add an explanation text
@@ -159,13 +157,13 @@ async function updateTeamList() {
   $("#edit-homework-team").empty();
   $("#edit-homework-team").append('<option value="-1" selected>Alle</option>');
 
-  teamsData.forEach((team, teamId) => {
+  teamsData.forEach(team => {
     // Get the team data
     let teamName = team.name;
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${teamId}">${teamName}</option>`;
+      `<option value="${team.teamId}">${teamName}</option>`;
     $("#add-homework-team").append(templateFormSelect);
     $("#edit-homework-team").append(templateFormSelect);
   });

@@ -20319,6 +20319,11 @@ body[data-bs-theme=dark] {
   color: white !important;
 }
 
+.btn-sm-square {
+  width: 2rem;
+  height: 2rem;
+}
+
 .line-through-blue {
   text-decoration: line-through solid #0d6efd 0.25em;
 }

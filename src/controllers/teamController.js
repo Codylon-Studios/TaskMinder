@@ -10,6 +10,15 @@ exports.teamsController = {
             next(error);
         }
     }),
+    setTeams: asyncHandler(async(req, res, next) => {
+        const { teams } = req.body;
+        try {
+            await teamService.setTeamsData(teams);
+            res.sendStatus(200);
+        } catch (error) {
+            next(error);
+        }
+    }),
     getJoinedTeams: asyncHandler(async(req, res, next) => {
         try {
             const joinedTeamsData = await teamService.getJoinedTeamsData(req.session);
