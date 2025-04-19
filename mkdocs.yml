@@ -14,6 +14,8 @@ copyright: Copyright &copy; 2025 Codylon Studios
 theme:
   features:
     - navigation.tabs
+    - content.code.copy
+    - content.tabs.link
   name: material
   font: 
     text: Quicksand
@@ -42,3 +44,16 @@ nav:
 
 extra_css:
   - assets/custom.css
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details

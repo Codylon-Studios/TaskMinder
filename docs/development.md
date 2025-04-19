@@ -2,28 +2,79 @@
 
 ## Installation
 
-This Guide installs all tools needed for development: NodeJS and npm packages, python3 and pip for mkdocs and the installation of redis and PostgreSQL.
+This Guide installs the tooling needed for development: NodeJS and npm packages, python3 and pip for mkdocs and the installation of redis and PostgreSQL.
 
-### On Linux (Ubuntu/Debian)
+!!! info
+    Windows is officially not supported for development. However, guides for windows have been included, but are not battletested, so be careful when operating on windows.
 
-#### Installation of Redis and PostgreSQL
+### Installation of Redis and PostgreSQL
 
-You can find the installation guide for Redis CE (< v8) here: [Install Redis on Linux]  
-Once installed, come back to continue.
+Recommend and tested versions for PostgreSQL and Redis are 14.0 and 7.4 respectively.
 
-[Install Redis on Linux]: https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-linux/
+=== "Linux (Ubuntu/Debian)"
 
-Download postgreSQL here: [Download page of PostgreSQL]  
-Once installed, come back to continue.
+    You can find the installation guide for Redis CE (Community Edition) (< v8) here: [Install Redis on Linux]. Once installed, come back to continue.
 
-[Download page of PostgreSQL]: https://www.postgresql.org/download/
+    [Install Redis on Linux]: https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-linux/
 
-Don't forget to start the services.
+    Download postgreSQL here: [Download page of PostgreSQL]. Once installed, come back to continue.
 
-#### Installation of NodeJS and npm
+    [Download page of PostgreSQL]: https://www.postgresql.org/download/
 
-First, check if node and npm are already installed.
-Open the terminal and type 
+    Don't forget to start and enabling (starting on system startup) the services by excecuting
+
+    ```
+    # already described in the redis installation guide
+    sudo systemctl enable redis-server
+    sudo systemctl start redis-server
+    # not described in the postgresql installation guide -- or use the postgres program
+    sudo systemctl enable postgresql
+    sudo systemctl start postgresql
+    ```
+
+=== "Windows"
+    You can find the installation guide for Redis CE (Community Edition) (< v8) here: [Install Redis on Windows]. Once installed, come back to continue.
+
+    [Install Redis on Windows]: https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-windows/
+
+    Download postgreSQL here: [Download page of PostgreSQL]. Once installed, come back to continue. You should remember the password for the superuser (postgres).
+
+    [Download page of PostgreSQL]: https://www.postgresql.org/download/windows/
+
+    Starting the services should be described in the guides.
+
+=== "MacOS"
+    You can find the installation guide for Redis CE (Community Edition) (< v8) here: [Install Redis on MacOS]. Once installed, come back to continue.
+
+    [Install Redis on MacOS]: https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-mac-os/
+
+    Download postgreSQL here: [Download page of PostgreSQL]. Once installed, come back to continue.
+
+    [Download page of PostgreSQL]: https://www.postgresql.org/download/macosx/
+
+    Starting the services should be described in the guides.
+
+=== "Github Codespaces"
+    As Github Codespaces is a virtual machine running ubuntu, it's similar to the Linux guide.
+    The auto-start at startup of the server has not been included, as it saves memory and run time.
+    Installation and startup of redis:
+    ```
+    sudo apt-get update
+    sudo apt-get install redis
+    sudo service redis-server start
+    ```
+    Installation and startup of PostgreSQL:
+    ```
+    sudo apt-get update
+    sudo apt-get -y install postgresql
+    sudo service postgresql start
+    ```
+
+### Installation of NodeJS and npm
+This step is the same for Linux, Windows and MacOS. NodeJS and npm is already installed on Github Codespaces, so it is not necessary to check for node and npm. 
+
+First, check if node and npm are installed.
+Open the terminal or the and type 
 
 ``` 
 node --version
@@ -38,30 +89,59 @@ For node, it should at least return v20.19.0 or higher, for npm v20.8.2 or highe
 
 [NodeJS Versions]: https://nodejs.org/en/about/previous-releases
 
-#### Clone Repository and install packages
-Go to github and fork the repository. 
+If not installed, please refer to [NodeJS Download] to install nodeJS and npm. 
 
-Find a suitable folder to develop in.
+[NodeJS Download]: https://nodejs.org/en/download
+
+
+### Clone Repository and install npm packages
+Go to [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder) and fork the repository. 
+
+On your local machine, find a good place where you can develop.
+
 Clone the forked repository:
 ``` 
-git clone https://github.com/your-username/forked-repo.git
-cd forked-repo
+git clone https://github.com/Codylon-Studios/TaskMinder.git
+cd TaskMinder
 ```
+
 Install all dependencies through
 ``` 
 npm install
 ```
-#### Initialisation of Database 
 
-Before using the Database, you should initialise it, that means to log into the terminal based frontend of PostgreSQL, psql. Then, create a Database where you store the data. it is recommended to change the password for the postgres user.
-``` 
-sudo -u postgres psql
-\password
-CREATE DATABASE your_db_name;
-```
-#### Create the .env file
-As it would be dangerous to store your sensitive data plain text in the source code, you need a file called `.env` located directly in your project folder holding all of your enviroment variables. Replace the values beginning with `your_* ` with your actual credentials.
-``` 
+### Initialisation of Database 
+
+Before using the Database, you should initialise it, that means to log into the terminal based frontend of PostgreSQL, psql. Then, create a Database where you store the data. It is recommended to change the password for the postgres user. Replace `your_db_name` with your actual database name.
+
+=== "Linux"
+    ``` 
+    sudo -u postgres psql
+    \password
+    CREATE DATABASE your_db_name;
+    ```
+=== "MacOS"
+    ```
+    psql postgres
+    \password
+    CREATE DATABASE your_db_name;
+    ```
+=== "Windows"
+    Open the SQL shell (psql):
+    ```
+    CREATE DATABASE your_db_name;
+    ```
+=== "Github Codespaces"
+    ```
+    sudo su postgres
+    psql postgres
+    \password
+    CREATE DATABASE your_db_name;
+    ```
+
+### Create the .env file
+As it would be dangerous to store your sensitive data plain text in the source code, you need a file called `.env` located directly in the root of your project folder holding all of your enviroment variables. Replace the values beginning with `your_* ` (highlighted) with your actual credentials.
+``` py hl_lines="2 3 8 9 10 11"
 DB_USER=postgres
 DB_PASSWORD=your_postgres_password
 DB_NAME=your_db_name
@@ -76,17 +156,21 @@ CLASSCODE=your_classcode
 ```
 `your_session_secret` and `your_classcode` can be any (ideally secure) passwords as long as they don't change over time. `your_dsb_user` and `your_dsb_password` are the credentials for [DSBmobile](https://www.dsbmobile.de) (used to get substitutions data). If you don't have any credentials, don't worry, you can write anything in the enviroment variables.
 
-#### Start the server
+### Start the server
 Start the server using
 ```
 nodemon server.js
 ```
-or visually using menu.js
+or in the terminal using menu.js
 ```
 node menu.js
 ```
-This will create all tables.
-#### Initialize tables:
+
+
+!!! info
+    The following content describes the initialisation of the tables and the timetable and subjects. This will be replaced by an admin page in the future.
+
+### Initialize tables:
 After starting the server, the tables `eventType` and `team` have been created but are empty. You might want to fill them with suitable data. To do that, execute:
 ```
 sudo -u postgres psql
@@ -177,9 +261,6 @@ Now only the users who joined the team with the respective teamId (automatically
 }
 ```
 
-### on Mac
-### on Github Codespaces
-### on Windows
 ### Docs development
 If you want to install the tools for mkdocs to work on the documentation, follow this youtube guide:
 __[How to set up Material for MkDocs]__. You only need the part where he explains the installation. (3:49-5:53)
