@@ -47,6 +47,12 @@ const teamService = {
         })
 
         for (let team of teams) {
+            if (team.name.trim() == "") {
+                let err = new Error("Bad Request");
+                err.status = 400;
+                err.expected = true;
+                throw err;
+            }
             try {
                 if (team.teamId == "") {
                     await Team.create({

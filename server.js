@@ -178,14 +178,14 @@ app.get('/about', (req, res) => {
 //
 // Protected routes: Redirect to /join if not logged in
 //
-app.get('/main', checkAccess, (req, res) => {
+app.get('/main', checkAccess.elseRedirect, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'main', 'main.html'));
 });
 
-app.get('/homework', checkAccess, (req, res) => {
+app.get('/homework', checkAccess.elseRedirect, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'homework', 'homework.html'));
 });
 
-app.get('/events', checkAccess, (req, res) => {
+app.get('/events', checkAccess.elseRedirect, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'events', 'events.html'));
 });
