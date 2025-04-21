@@ -52,8 +52,13 @@ async function updateTeamLists() {
     template = `
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center">
         <div class="d-flex flex-column flex-md-row align-items-md-center">
+        <div>
           <input class="form-control form-control-sm d-inline w-fit-content me-3 team-name-input"
             type="text" value="${team.name}" placeholder="${team.name}" data-id="${teamId}">
+          <div class="invalid-feedback">
+            Teamnamen dürfen nicht leer sein!
+          </div>
+        </div>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none team-renamed" data-id="${teamId}">
             Umbenannt
             <span class="text-secondary fw-normal team-renamed-name" data-id="${teamId}">(${team.name} zu <b>NEU</b>)</span>
@@ -73,19 +78,33 @@ async function updateTeamLists() {
     $("#team-selection-list, #teams-list").append(`<span class="text-secondary no-teams">Keine Teams vorhanden</span>`)
   }
 
-  $(".team-name-input").on("change", function () {
+  $(document).on("change", ".team-name-input", function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
 
+    if ($(this).val().trim() == "") {
+      $(this).addClass("is-invalid")
+      $("#teams-save").addClass("disabled")
+    }
+
     let teamId = $(this).data("id")
-    let newName = $(this).val()
-    let oldName = teamsData.find(team => team.teamId == teamId).name
-    if (newName != oldName) {
-      if ($(`.team-deleted[data-id="${teamId}"]`).hasClass("d-none")) {
-        $(`.team-renamed[data-id="${teamId}"]`).removeClass("d-none").find("*").removeClass("d-none").find("b").text(newName)
+    if (teamId != "") {
+      let newName = $(this).val()
+      let oldName = teamsData.find(team => team.teamId == teamId).name
+      if (newName != oldName) {
+        if ($(`.team-deleted[data-id="${teamId}"]`).hasClass("d-none")) {
+          $(`.team-renamed[data-id="${teamId}"]`).removeClass("d-none").find("*").removeClass("d-none").find("b").text(newName)
+        }
+      }
+      else {
+        $(`.team-renamed[data-id="${teamId}"]`).addClass("d-none").find("*").addClass("d-none")
       }
     }
-    else {
-      $(`.team-renamed[data-id="${teamId}"]`).addClass("d-none").find("*").addClass("d-none")
+  })
+
+  $(document).on("input", ".team-name-input", function () {
+    $(this).removeClass("is-invalid")
+    if (! $(".team-name-input").hasClass("is-invalid")) {
+      $("#teams-save").removeClass("disabled")
     }
   })
 
@@ -213,8 +232,13 @@ $("#new-team").on("click", () => {
   let template = `
     <div class="card m-2 p-2 flex-row justify-content-between align-items-center">
       <div class="d-flex flex-column flex-md-row align-items-md-center">
-        <input class="form-control form-control-sm d-inline w-fit-content me-3 team-name-input"
-          type="text" value="" placeholder="Neues Team" data-id="">
+        <div>
+          <input class="form-control form-control-sm d-inline w-fit-content me-3 team-name-input"
+            type="text" value="" placeholder="Neues Team" data-id="">
+          <div class="invalid-feedback">
+            Teamnamen dürfen nicht leer sein!
+          </div>
+        </div>
         <span class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</span>
       </div
       <div>
@@ -224,6 +248,14 @@ $("#new-team").on("click", () => {
       </div>
     </div>`
   $("#teams-list").append(template)
+  $(".team-name-input").last().trigger("focus")
+
+  $(".team-name-input").last().on("focusout", function () {
+    if ($(this).val().trim() == "") {
+      $(this).addClass("is-invalid")
+      $("#teams-save").addClass("disabled")
+    }
+  })
 
   $(".new-team-delete").off("click").on("click", function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
