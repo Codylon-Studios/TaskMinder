@@ -34,3 +34,13 @@ for filePath in src/scss/*.scss; do
         ;;
     esac
 done
+
+for filePath in src/scss/templates/*.scss; do
+  fileName=$(basename "$filePath")
+  fileName="${fileName%.*}"
+  if [ "$watch" = true ]; then
+    sass -w "$filePath" "public/templates/${fileName}.css" &
+  else
+    sass "$filePath" "public/templates/${fileName}.css"
+  fi
+done

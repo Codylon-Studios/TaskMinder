@@ -38,13 +38,13 @@ const teamService = {
         }
 
         let existingTeams = await Team.findAll({ raw: true });
-        existingTeams.forEach((team) => {
+        await Promise.all(existingTeams.map(async (team) => {
             if (!teams.some((t) => t.teamId === team.teamId)) {
-                Team.destroy({
+                await Team.destroy({
                     where: { teamId: team.teamId }
                 });
             }
-        })
+        }));
 
         for (let team of teams) {
             if (team.name.trim() == "") {

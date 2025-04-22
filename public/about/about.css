@@ -20231,6 +20231,10 @@ body[data-bs-theme=dark] {
   width: fit-content;
 }
 
+.cursor-pointer {
+  cursor: pointer;
+}
+
 .d-contents {
   display: contents;
 }

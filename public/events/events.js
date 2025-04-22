@@ -12,7 +12,7 @@ async function updateEventList() {
   for (let event of eventData) {
     // Get the information for the event
     let eventId = event.eventId;
-    let type = event.type;
+    let eventTypeId = event.eventTypeId;
     let name = event.name;
     let description = event.description;
     let startDate = msToDisplayDate(event.startDate).split('.').slice(0, 2).join('.');
@@ -26,7 +26,7 @@ async function updateEventList() {
     }
 
     // Filter by type
-    if (!$(`#filter-type-${type}`).prop("checked")) {
+    if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
       continue;
     }
 
@@ -54,10 +54,10 @@ async function updateEventList() {
     // The template for an event with edit options
     let template = 
       `<div class="col p-2">
-        <div class="card event-${type} h-100">
+        <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column me-3">
-              <span class="fw-bold event-${type}">${name}</span>
+              <span class="fw-bold event-${eventTypeId}">${name}</span>
               <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${lesson}. Stunde)` : ""}</b>
               <span>${description}</span>
             </div>
@@ -101,8 +101,9 @@ async function updateEventTypeList() {
     filterData.type = {}
   }
 
-  eventTypeData.forEach((eventType, eventTypeId) => {
+  eventTypeData.forEach(eventType => {
     // Get the event type data
+    let eventTypeId = eventType.eventTypeId;
     let eventName = eventType.name;
 
     if (filterData.type[eventTypeId] == undefined) filterData.type[eventTypeId] = true
@@ -189,7 +190,7 @@ function addEvent() {
   // Note: .off("click") removes the existing click event listener from a previous call of this function
   $("#add-event-button").off("click").on("click", () => {
     // Save the given information in variables
-    const type = $("#add-event-type").val();
+    const eventTypeId = $("#add-event-type").val();
     const name = $("#add-event-name").val().trim();
     const description = $("#add-event-description").val().trim();
     const startDate = $("#add-event-start-date").val();
@@ -199,7 +200,7 @@ function addEvent() {
 
     // Prepare the POST request
     let data = {
-      type: type,
+      eventTypeId: eventTypeId,
       name: name,
       description: description,
       startDate: dateToMs(startDate),
@@ -266,7 +267,7 @@ function editEvent(eventId) {
   }
 
   // Set the inputs on the already saved information
-  $("#edit-event-type").val(data.type);
+  $("#edit-event-type").val(data.eventTypeId);
   $("#edit-event-name").val(data.name);
   $("#edit-event-description").val(data.description);
   $("#edit-event-start-date").val(msToInputDate(data.startDate));
@@ -284,7 +285,7 @@ function editEvent(eventId) {
   // Note: .off("click") removes the existing click event listener from a previous call of this function
   $("#edit-event-button").off("click").on("click", () => {
     // Save the given information in variables
-    const type = $("#edit-event-type").val();
+    const eventTypeId = $("#edit-event-type").val();
     const name = $("#edit-event-name").val();
     const description = $("#edit-event-description").val();
     const startDate = $("#edit-event-start-date").val();
@@ -294,7 +295,7 @@ function editEvent(eventId) {
 
     let data = {
       eventId: eventId,
-      type: type,
+      eventTypeId: eventTypeId,
       name: name,
       description: description,
       startDate: dateToMs(startDate),

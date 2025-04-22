@@ -10,12 +10,12 @@ const Event = sequelize.define('Event', {
       autoIncrement: true,
       primaryKey: true,
     },
-    type: {
+    eventTypeId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: EventType,
-        key: 'type',
+        key: 'eventTypeId',
       },
       onDelete: 'CASCADE',
     },

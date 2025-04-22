@@ -27,7 +27,7 @@ function getCalendarDayHtml(date, week, multiEventPositions) {
 
     if (event.endDate == null) {
       if (isSameDay(new Date(parseInt(event.startDate)), date)) {
-        singleDayEvents += `<div class="col"><div class="event event-${event.type}"></div></div>`
+        singleDayEvents += `<div class="col"><div class="event event-${event.eventTypeId}"></div></div>`
       }
     }
     else if (event.endDate != null) {
@@ -41,17 +41,17 @@ function getCalendarDayHtml(date, week, multiEventPositions) {
       }
       if (isSameDay(new Date(parseInt(event.startDate)), date)) {
         if (isSameDay(new Date(parseInt(event.endDate)), date)) {
-          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-single event-${event.type}"></div>`
+          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-single event-${event.eventTypeId}"></div>`
         }
         else {
-          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-start event-${event.type}"></div>`
+          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-start event-${event.eventTypeId}"></div>`
         }
       }
       else if (isSameDay(new Date(parseInt(event.endDate)), date)) {
-        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-end event-${event.type}"></div>`
+        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-end event-${event.eventTypeId}"></div>`
       }
       else if (parseInt(event.startDate) < date.getTime() && parseInt(event.endDate) > date.getTime()) {
-        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-middle event-${event.type}"></div>`
+        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-middle event-${event.eventTypeId}"></div>`
       }
       else if (multiEventPositions.indexOf(event.eventId) == multiEventPositions.length - 1) {
         multiEventPositions.pop()
@@ -345,7 +345,7 @@ async function updateEventList() {
     }
 
     // Get the information for the event
-    let type = event.type;
+    let eventTypeId = event.eventTypeId;
     let name = event.name;
     let description = event.description;
     let startDate = msToDisplayDate(event.startDate).split('.').slice(0, 2).join('.');
@@ -373,10 +373,10 @@ async function updateEventList() {
     // The template for an event
     let template = 
       `<div class="col p-2">
-        <div class="card event-${type} h-100">
+        <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column">
-              <span class="fw-bold event-${type}">${name}</span>
+              <span class="fw-bold event-${eventTypeId}">${name}</span>
               <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${lesson}. Stunde)` : ""}</b>
               <span>${description}</span>
             </div>
@@ -751,12 +751,12 @@ async function updateTimetable() {
         continue;
       }
 
-      let eventName = `<span class="event-${event.type} text-center fw-bold mt-2 d-block">${event.name}</span>`
+      let eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${event.name}</span>`
       thisLessLesson.find(".card-body").append(eventName)
       thisMoreLesson.find(".card-body").append(eventName)
 
       if (event.description != "") {
-        thisMoreLesson.find(".card-body").append(`<span class="event-${event.type} text-centerd-block">${event.description}</span>`)
+        thisMoreLesson.find(".card-body").append(`<span class="event-${event.eventTypeId} text-centerd-block">${event.description}</span>`)
       }
     }
 
