@@ -24,7 +24,11 @@ function loadTemplateContent() {
       loadScript(url + 'js');
     }
     if ($(this).data("css") != undefined) {
-      document.head.appendChild(`<link rel="stylesheet" type="text/css" href="${url}css">`);
+      let link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.type = "text/css";
+      link.href = `${url}css`;
+      document.head.appendChild(link);
     }
   });
 }

@@ -7806,7 +7806,7 @@ textarea.form-control-lg {
   margin-left: 0 !important;
 }
 
-.mx-1 {
+.mx-1, .event-type-recolored-color-display {
   margin-right: 0.25rem !important;
   margin-left: 0.25rem !important;
 }
@@ -7911,7 +7911,7 @@ textarea.form-control-lg {
   margin-right: 0.5rem !important;
 }
 
-.me-3 {
+.me-3, .event-type-color-input + .color-picker-trigger {
   margin-right: 1rem !important;
 }
 
@@ -8807,7 +8807,7 @@ textarea.form-control-lg {
   pointer-events: auto !important;
 }
 
-.rounded {
+.rounded, .event-type-recolored-color-display {
   border-radius: var(--bs-border-radius) !important;
 }
 
@@ -20231,6 +20231,10 @@ body[data-bs-theme=dark] {
   width: fit-content;
 }
 
+.cursor-pointer {
+  cursor: pointer;
+}
+
 .d-contents {
   display: contents;
 }
@@ -20448,8 +20452,15 @@ body[data-bs-theme=dark] {
   min-height: min-content;
 }
 
-#team-selection-save, #teams-save {
+#team-selection-save, #teams-save, #event-types-save {
   width: 6rem;
+}
+
+.event-type-recolored-color-display {
+  width: 1rem;
+  height: 1rem;
+  margin-bottom: -0.1rem;
+  display: inline-block;
 }
 
 /*# sourceMappingURL=settings.css.map */

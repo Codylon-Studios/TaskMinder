@@ -12,18 +12,18 @@ exports.eventController = {
         }
     }),
     addEvent: asyncHandler(async(req, res, next) => {
-        const { type, name, description, startDate, lesson, endDate, teamId } = req.body;
+        const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = req.body;
         try {
-            await eventService.addEvent(type, name, description, startDate, lesson, endDate, teamId, req.session);
+            await eventService.addEvent(eventTypeId, name, description, startDate, lesson, endDate, teamId, req.session);
             res.sendStatus(200);
         } catch (error) {
             next(error);
         }
     }),
     editEvent: asyncHandler(async(req, res, next) => {
-        const { eventId, type, name, description, startDate, lesson, endDate, teamId } = req.body;
+        const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = req.body;
         try {
-            await eventService.editEvent(eventId, type, name, description, startDate, lesson, endDate, teamId, req.session);
+            await eventService.editEvent(eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId, req.session);
             res.sendStatus(200);
         } catch (error) {
             next(error);
@@ -42,6 +42,15 @@ exports.eventController = {
         try {
             const eventTypeData = await eventService.getEventTypeData();
             res.status(200).json(eventTypeData);
+        } catch (error) {
+            next(error);
+        }
+    }),
+    setEventTypeData: asyncHandler(async(req, res, next) => {
+        const { eventTypes } = req.body;
+        try {
+            await eventService.setEventTypeData(eventTypes);
+            res.sendStatus(200);
         } catch (error) {
             next(error);
         }

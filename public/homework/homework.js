@@ -106,8 +106,9 @@ async function updateSubjectList() {
     filterData.subject = {}
   }
 
-  subjectData.forEach((subject, subjectId) => {
+  subjectData.forEach(subject => {
     // Get the subject data
+    let subjectId = subject.subjectId;
     let subjectName = subject.name.long;
 
     if (filterData.subject[subjectId] == undefined) filterData.subject[subjectId] = true

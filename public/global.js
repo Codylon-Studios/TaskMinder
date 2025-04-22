@@ -2,8 +2,9 @@ let updateAllFunctions = []
 let requiredData
 
 function runOnce(fn) {
-  async function wrapper(...args) {
-    if (wrapper.running) return;
+  async function wrapper(force, ...args) {
+    if (force == undefined) force = false;
+    if (wrapper.running && ! force) return;
     wrapper.running = true;
     let res = await fn(...args);
     wrapper.running = false;
@@ -200,17 +201,22 @@ function userDataLoaded() {
         resolve();
         return;
       }
+      $(window).on("userDataLoaded", () => {
+        $(window).off("userDataLoaded");
+        resolve();
+      });
     }
-    catch (err) { } // Just wait for the event
-    $(window).on("userDataLoaded", () => {
-      $(window).off("userDataLoaded");
-      resolve();
-    });
+    catch {
+      $(window).on("userDataLoaded", () => {
+        $(window).off("userDataLoaded");
+        resolve();
+      });
+    }
   });
 }
 
 async function reloadAll() {
-  return new Promise(async (resolve) => {
+  return new Promise((resolve) => {(async (resolve) => {
     if (requiredData.length != 0) {
       if (requiredData.includes("subjectData")) {subjectData = undefined; loadSubjectData()}
       if (requiredData.includes("timetableData")) {timetableData = undefined; loadTimetableData()}
@@ -251,7 +257,7 @@ async function reloadAll() {
       document.body.style.display = "block";
       resolve()
     }
-  })
+  })(resolve)})
 }
 reloadAll = runOnce(reloadAll);
 
@@ -302,12 +308,6 @@ $(async () => {
         "joinedTeamsData"
       ]
       break;
-    case "/settings/":
-      requiredData = [
-        "teamsData",
-        "joinedTeamsData"
-      ]
-      break;
     default:
       requiredData = []
       break;
@@ -332,6 +332,15 @@ $(document).on("click", "#navbar-reload-button", () => {
 });
 
 $(window).on("userDataLoaded", () => {
+  if (user.classJoined && location.pathname == "/settings/") {
+    requiredData = [
+      "teamsData",
+      "joinedTeamsData",
+      "eventTypeData",
+    ]
+    reloadAll(true);
+  }
+
   user.on("login", () => {
     reloadAll();
   });

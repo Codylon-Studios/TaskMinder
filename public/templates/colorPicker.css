@@ -7235,7 +7235,7 @@ textarea.form-control-lg {
   display: table-cell !important;
 }
 
-.d-flex {
+.d-flex, .color-picker-hsl-wrapper {
   display: flex !important;
 }
 
@@ -7247,7 +7247,7 @@ textarea.form-control-lg {
   display: none !important;
 }
 
-.shadow {
+.shadow, .color-picker-popup {
   box-shadow: var(--bs-box-shadow) !important;
 }
 
@@ -7303,7 +7303,7 @@ textarea.form-control-lg {
   position: relative !important;
 }
 
-.position-absolute {
+.position-absolute, .color-picker-popup {
   position: absolute !important;
 }
 
@@ -7605,11 +7605,11 @@ textarea.form-control-lg {
   flex: 1 1 auto !important;
 }
 
-.flex-row {
+.flex-row, .color-picker-hsl-wrapper {
   flex-direction: row !important;
 }
 
-.flex-column {
+.flex-column, .color-picker-popup {
   flex-direction: column !important;
 }
 
@@ -7777,7 +7777,7 @@ textarea.form-control-lg {
   margin: 0 !important;
 }
 
-.m-1 {
+.m-1, .color-picker-option {
   margin: 0.25rem !important;
 }
 
@@ -7806,7 +7806,7 @@ textarea.form-control-lg {
   margin-left: 0 !important;
 }
 
-.mx-1 {
+.mx-1, .color-picker-hsl-wrapper, .color-picker-hex-wrapper {
   margin-right: 0.25rem !important;
   margin-left: 0.25rem !important;
 }
@@ -7935,7 +7935,7 @@ textarea.form-control-lg {
   margin-bottom: 0.25rem !important;
 }
 
-.mb-2 {
+.mb-2, .color-picker-hsl-wrapper, .color-picker-hex-wrapper {
   margin-bottom: 0.5rem !important;
 }
 
@@ -7991,7 +7991,7 @@ textarea.form-control-lg {
   padding: 0.25rem !important;
 }
 
-.p-2 {
+.p-2, .color-picker-popup {
   padding: 0.5rem !important;
 }
 
@@ -8807,7 +8807,7 @@ textarea.form-control-lg {
   pointer-events: auto !important;
 }
 
-.rounded {
+.rounded, .color-picker-popup, .color-picker-saturation-value, .color-picker-hue, .color-picker-marker-hue, .color-picker-option {
   border-radius: var(--bs-border-radius) !important;
 }
 
@@ -11864,6 +11864,7 @@ textarea.form-control-lg {
 .far,
 .fab,
 .fa-solid,
+.color-picker-option.selected,
 .fa-regular,
 .fa-brands,
 .fa {
@@ -11880,6 +11881,7 @@ textarea.form-control-lg {
 .far::before,
 .fab::before,
 .fa-solid::before,
+.color-picker-option.selected::before,
 .fa-regular::before,
 .fa-brands::before,
 .fa::before {
@@ -11889,6 +11891,7 @@ textarea.form-control-lg {
 .fa-classic,
 .fas,
 .fa-solid,
+.color-picker-option.selected,
 .far,
 .fa-regular {
   font-family: "Font Awesome 6 Free";
@@ -20149,7 +20152,8 @@ readers do not read off random characters that represent icons */
   src: url("../fonts/fontawesome/fa-solid-900.woff2") format("woff2"), url("../fonts/fontawesome/fa-solid-900.ttf") format("truetype");
 }
 .fas,
-.fa-solid {
+.fa-solid,
+.color-picker-option.selected {
   font-weight: 900;
 }
 
@@ -20231,7 +20235,7 @@ body[data-bs-theme=dark] {
   width: fit-content;
 }
 
-.cursor-pointer {
+.cursor-pointer, .color-picker-option {
   cursor: pointer;
 }
 
@@ -20448,8 +20452,119 @@ body[data-bs-theme=dark] {
   color: var(--bsnav-link-color);
 }
 
-.panel {
-  width: 30rem;
+.color-picker-trigger {
+  width: 2rem;
+  height: 2rem;
 }
 
-/*# sourceMappingURL=join.css.map */
+.color-picker-popup {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--btn-tertiary-active);
+  display: flex;
+  z-index: 1;
+}
+
+.color-picker-hsl-wrapper {
+  width: 10.75rem;
+  height: 6rem;
+}
+
+.color-picker-saturation-value {
+  background: linear-gradient(transparent 0%, black 100%), linear-gradient(90deg, white 0%, transparent 100%), linear-gradient(red 0%, red 100%);
+  margin-right: 0.5rem;
+  width: 8.5rem;
+  position: relative;
+}
+
+.color-picker-marker-saturation-value {
+  position: absolute;
+  left: 1rem;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin: -0.3125rem 0 0 -0.3125rem;
+  border-radius: 50%;
+  border: 0.0625rem solid white;
+  box-shadow: 0 0 0 0.0625rem black;
+  pointer-events: none;
+}
+
+.color-picker-hue {
+  background: linear-gradient(#f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+  width: 1.75rem;
+  position: relative;
+}
+
+.color-picker-marker-hue {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0.33rem;
+  margin-top: -0.16rem;
+  border: 0.0625rem solid white;
+  box-shadow: 0 0 0 0.0625rem black;
+  pointer-events: none;
+}
+
+.color-picker-hex-wrapper {
+  width: 10.75rem;
+}
+
+.color-picker-option {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex !important;
+  justify-content: center;
+}
+.color-picker-option.selected {
+  color: #fff;
+  --fa: "";
+}
+.color-picker-option.selected::before {
+  align-self: center;
+}
+
+.color-picker-option[data-color="#ffee33"] {
+  background: #ffee33;
+}
+
+.color-picker-option[data-color="#ff9955"] {
+  background: #ff9955;
+}
+
+.color-picker-option[data-color="#ff4433"] {
+  background: #ff4433;
+}
+
+.color-picker-option[data-color="#ff55aa"] {
+  background: #ff55aa;
+}
+
+.color-picker-option[data-color="#9955ff"] {
+  background: #9955ff;
+}
+
+.color-picker-option[data-color="#5599ff"] {
+  background: #5599ff;
+}
+
+.color-picker-option[data-color="#44ddee"] {
+  background: #44ddee;
+}
+
+.color-picker-option[data-color="#44dd33"] {
+  background: #44dd33;
+}
+
+.color-picker-option[data-color="#449933"] {
+  background: #449933;
+}
+
+.color-picker-option[data-color="#888888"] {
+  background: #888888;
+}
+
+input[type=color].color-picker {
+  display: none;
+}
+
+/*# sourceMappingURL=colorPicker.css.map */

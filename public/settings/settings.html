@@ -11,6 +11,7 @@
 
 <body data-url="settings" style="display: none;">
   <div class="load-content" data-url="navbar" data-html data-js></div>
+  <div class="load-content" data-url="colorPicker" data-html data-css data-js></div>
 
   <div class="container">
     <div class="nav nav-tabs mb-3">
@@ -153,9 +154,29 @@
             </div>
             <button class="btn btn-danger btn-sm fw-semibold d-none" id="teams-save-confirm">Fortfahren</button>
           </div>
-          <div class="form-text mb-1">
+          <div class="form-text mb-4">
             Teams sind Untergruppen deiner Klasse, zum Beispiel für verschiedene Sprachkurse. Schülerinnen und Schüler sehen dann nur die
             Hausaufgaben und Ereignisse der Teams, die sie unter "Schüler" ausgewählt haben.
+          </div>
+
+          <div class="mb-2">
+            <h5 class="mb-2" for="event-types-list">Ereignisarten</h5>
+            <div class="mb-2" id="event-types-list">
+              <!--Gets filled-->
+            </div>
+            <button class="btn btn-secondary btn-sm fw-semibold" id="event-types-cancel">Abbrechen</button>
+            <button class="btn btn-success btn-sm fw-semibold" id="new-event-type">Neue Art</button>
+            <button class="btn btn-primary btn-sm fw-semibold" id="event-types-save">Speichern</button>
+            <div class="my-2 d-none" id="event-types-save-confirm-container">
+              <span class="fw-bold text-danger">Achtung!</span>
+              Es werden alle Ereignisse <span id="event-types-save-confirm-list"></span> gelöscht!
+              Das kann nicht rückgängig gemacht werden!
+            </div>
+            <button class="btn btn-danger btn-sm fw-semibold d-none" id="event-types-save-confirm">Fortfahren</button>
+          </div>
+          <div class="form-text mb-4">
+            Mit Ereignisarten kannst du verschiedene Ereignisse gruppieren, zum Beispiel nach Prüfungen, Ausflügen oder Ferien.
+            Durch verschiedene Farben kannst du die Ereignisse besser unterscheiden.
           </div>
         </div>
       </div>

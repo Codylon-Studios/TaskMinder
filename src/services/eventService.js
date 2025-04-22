@@ -30,7 +30,7 @@ const eventService = {
 
         return data;
     },
-    async addEvent(type, name, description, startDate, lesson, endDate, teamId, session) {
+    async addEvent(eventTypeId, name, description, startDate, lesson, endDate, teamId, session) {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
@@ -39,7 +39,7 @@ const eventService = {
         }
         try {
             await Event.create({
-                type: type,
+                eventTypeId: eventTypeId,
                 name: name,
                 description: description,
                 startDate: startDate,
@@ -64,7 +64,7 @@ const eventService = {
             throw new Error();
         }
     },
-    async editEvent(eventId, type, name, description, startDate, lesson, endDate, teamId, session) {
+    async editEvent(eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId, session) {
         if (!(session.account)) {
             let err = new Error("User not logged in");
             err.status = 401;
@@ -74,7 +74,7 @@ const eventService = {
         try {
             await Event.update(
                 {
-                    type: type,
+                    eventTypeId: eventTypeId,
                     name: name,
                     description: description,
                     startDate: startDate,
@@ -156,6 +156,68 @@ const eventService = {
 
         return data;
     },
+    async setEventTypeData(eventTypes) {
+        if (! Array.isArray(eventTypes)) {
+            let err = new Error("Bad Request");
+            err.status = 400;
+            err.expected = true;
+            throw err;
+        }
+
+        let existingEventTypes = await EventType.findAll({ raw: true });
+        await Promise.all(existingEventTypes.map(async (eventType) => {
+            if (!eventTypes.some((e) => e.eventTypeId === eventType.eventTypeId)) {
+                await EventType.destroy({
+                    where: { eventTypeId: eventType.eventTypeId }
+                });
+            }
+        }));
+
+        for (let eventType of eventTypes) {
+            if (eventType.name.trim() == "") {
+                let err = new Error("Bad Request");
+                err.status = 400;
+                err.expected = true;
+                throw err;
+            }
+            try {
+                if (eventType.eventTypeId == "") {
+                    await EventType.create({
+                        name: eventType.name,
+                        color: eventType.color
+                    })
+                }
+                else {
+                    await EventType.update(
+                        {
+                            name: eventType.name,
+                            color: eventType.color
+                        },
+                        {
+                            where: { eventTypeId: eventType.eventTypeId }
+                        }
+                    );
+                }
+            }
+            catch {
+                let err = new Error("Bad Request");
+                err.status = 400;
+                err.expected = true;
+                throw err;
+            }
+        }
+
+        const data = await EventType.findAll({ raw: true });
+        await redisClient.set("event_type_data", JSON.stringify(data), { EX: cacheExpiration });
+
+        try {
+            await redisClient.set("event_type_data", JSON.stringify(data), { EX: cacheExpiration });
+        } catch (err) {
+            logger.error('Error updating Redis cache:', err);
+            throw new Error();
+        }
+        this.updateEventTypeStyles();
+    },
     async getEventTypeStyles() {
         const cachedEventTypeStyles = await redisClient.get("event_type_styles");
 
@@ -170,13 +232,6 @@ const eventService = {
         
         const eventTypeStyles = await this.updateEventTypeStyles();
 
-        try {
-            await redisClient.set("event_type_styles", eventTypeStyles, { EX: cacheExpiration });
-        } catch (err) {
-            logger.error('Error updating Redis cache:', err);
-            throw new Error();
-        }
-
         return eventTypeStyles;
     },
     async updateEventTypeStyles() {
@@ -184,13 +239,13 @@ const eventService = {
         let scss = `
             @use "sass:color";
 
-            ${eventTypeData.map((type) => {
-                return `$event-${type.type}: ${type.color};`
+            ${eventTypeData.map((eventType) => {
+                return `$event-${eventType.eventTypeId}: ${eventType.color};`
             }).join("")}
 
             $event-colors: (
-                ${eventTypeData.map((type) => {
-                    return `${type.type}: $event-${type.type},`
+                ${eventTypeData.map((eventType) => {
+                    return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`
                 }).join("")}
             );
 
@@ -221,6 +276,14 @@ const eventService = {
                 }
             }`
         let css = sass.compileString(scss).css;
+
+        try {
+            await redisClient.set("event_type_styles", css, { EX: cacheExpiration });
+        } catch (err) {
+            logger.error('Error updating Redis cache:', err);
+            throw new Error();
+        }
+
         return css;
     }
 }
