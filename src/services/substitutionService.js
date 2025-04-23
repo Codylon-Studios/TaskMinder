@@ -1,4 +1,4 @@
-const { redisClient, cacheKeySubstitutionsData, cacheExpiration } = require('../constant');
+const { redisClient, cacheKeySubstitutionsData, cacheExpiration } = require('../config/constant');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const iconv = require('iconv-lite');
