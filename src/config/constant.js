@@ -1,5 +1,5 @@
 const redis = require('redis');
-const logger = require('../logger');
+const logger = require('../../logger');
 const cacheKeyHomeworkData = 'homework_data';
 const cacheKeySubstitutionsData = 'substitutions_data';
 const cacheExpiration = 3600;

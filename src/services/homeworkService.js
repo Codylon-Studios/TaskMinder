@@ -1,4 +1,4 @@
-const { connectRedis, redisClient, cacheKeyHomeworkData, cacheKeyHomeworkCheckedData, cacheExpiration } = require('../constant');
+const { connectRedis, redisClient, cacheKeyHomeworkData, cacheKeyHomeworkCheckedData, cacheExpiration } = require('../config/constant');
 const validator = require('validator');
 const Homework10d = require('../models/homework');
 const Homework10dCheck = require('../models/homeworkCheck');

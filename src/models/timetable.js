@@ -23,5 +23,4 @@ const timetable = sequelize.define('Timetable', {
     tableName: 'timetable',
     timestamps: false,
   });
-  
 module.exports = timetable;

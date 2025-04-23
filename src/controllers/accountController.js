@@ -1,4 +1,3 @@
-const logger = require('../../logger');
 const accountService = require('../services/accountService');
 const asyncHandler = require('express-async-handler');
 

@@ -1,5 +1,5 @@
 const logger = require('../../logger');
-const { redisClient, cacheExpiration } = require('../constant');
+const { redisClient, cacheExpiration } = require('../config/constant');
 const socketIO = require('../socket');
 const sass = require('sass');
 
