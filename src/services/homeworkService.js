@@ -1,8 +1,7 @@
-const { connectRedis, redisClient, cacheKeyHomeworkData, cacheKeyHomeworkCheckedData, cacheExpiration } = require('../config/constant');
-const validator = require('validator');
+const { connectRedis, redisClient, cacheKeyHomeworkData, cacheExpiration } = require('../config/constant');
 const Homework10d = require('../models/homework');
 const Homework10dCheck = require('../models/homeworkCheck');
-const socketIO = require('../socket');
+const socketIO = require('../config/socket');
 const logger = require('../../logger');
 require('dotenv').config();
 
