@@ -6,7 +6,7 @@ const helmet = require('helmet');
 const cron = require('node-cron');
 const session = require('express-session')
 const { Pool } = require('pg');
-const socketIO = require('./src/socket');
+const socketIO = require('./src/config/socket');
 require('dotenv').config();
 const ErrorHandler = require('./src/middleware/errorMiddleware');
 const RequestLogger = require('./src/middleware/loggerMiddleware');

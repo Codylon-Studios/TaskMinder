@@ -1,6 +1,6 @@
 const logger = require('../../logger');
 const { redisClient, cacheExpiration } = require('../config/constant');
-const socketIO = require('../socket');
+const socketIO = require('../config/socket');
 const sass = require('sass');
 
 const EventType = require('../models/eventType');
