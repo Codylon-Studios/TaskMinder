@@ -7,7 +7,7 @@ const timetable = sequelize.define('Timetable', {
       autoIncrement: true,
       primaryKey: true,
     },
-    school: {
+    class: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
