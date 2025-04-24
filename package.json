@@ -4,7 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"No tests specified, but passing anyway\" && exit 0"
+    "test": "echo \"No tests specified, but passing anyway\" && exit 0",
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "",
