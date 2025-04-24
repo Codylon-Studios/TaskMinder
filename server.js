@@ -4,6 +4,7 @@ const express = require('express');
 const compression = require('compression')
 const helmet = require('helmet');
 const cron = require('node-cron');
+const { rateLimit } = require('express-rate-limit');
 const session = require('express-session')
 const { Pool } = require('pg');
 const socketIO = require('./src/config/socket');
@@ -50,6 +51,16 @@ const sessionPool = new Pool({
   password: sequelize.config.password,
   port: sequelize.config.port,
 });
+
+const limiter = rateLimit({
+  windowMs: 1000, // 1 second
+  limit: 20, // Max 20 requests per IP per second
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { status: 429, message: 'Too many requests, please slow down.' }
+});
+
+app.use(limiter)
 
 if (process.env.NODE_ENV !== 'DEVELOPMENT') {
   // Content Security Policy
