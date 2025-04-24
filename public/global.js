@@ -93,7 +93,7 @@ function dataLoaded(dataName) {
 }
 
 function loadSubjectData() {
-  $.get('/schedule/get_subject_data', (data) => {
+  $.get('/subjects/get_subject_data', (data) => {
     subjectData = data;
     $(window).trigger("subjectDataLoaded");
   });
@@ -324,6 +324,19 @@ $(async () => {
         });
       }
   }
+
+  $(`[data-bs-toggle="tooltip"]`).tooltip();
+  new MutationObserver((mutationsList) => {
+    mutationsList.forEach((mutation) => {
+      $(mutation.addedNodes).each(function () {
+        $(this).find(`[data-bs-toggle="tooltip"]`).tooltip();
+        $(this).filter(`[data-bs-toggle="tooltip"]`).tooltip();
+      });
+    });
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
 });
 
 // Update everything on clicking the reload button
@@ -337,6 +350,8 @@ $(window).on("userDataLoaded", () => {
       "teamsData",
       "joinedTeamsData",
       "eventTypeData",
+      "subjectData",
+      "substitutionsData",
     ]
     reloadAll(true);
   }

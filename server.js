@@ -21,6 +21,7 @@ const substitutions = require('./src/routes/substitutionRoute');
 const schedules = require('./src/routes/scheduleRoute');
 const teams = require('./src/routes/teamRoute');
 const events = require('./src/routes/eventRoute');
+const subjects = require('./src/routes/subjectRoute');
 
 const app = express();
 const server = createServer(app);
@@ -50,57 +51,59 @@ const sessionPool = new Pool({
   port: sequelize.config.port,
 });
 
-// Content Security Policy
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: { 
-      "default-src": ["'self'"],
-      "script-src": [
-        "'self'", 
-        "https://code.jquery.com", 
-        "https://cdn.jsdelivr.net", 
-        "https://kit.fontawesome.com"
-      ],
-      "connect-src": [
-        "'self'", 
-        "https://ka-f.fontawesome.com",
-        "wss://*"
-      ],
-      "style-src": [
-        "'self'",
-        'https://ka-f.fontawesome.com/',
-        'https://fonts.googleapis.com/',
-        "'unsafe-inline'"
-      ],
-      "font-src": [
-        "'self'",
-        'https://ka-f.fontawesome.com/',
-        'https://fonts.gstatic.com/'
-      ],
-      "img-src": ["'self'", 'data:'],
-      "object-src": ["'none'"],
-      "frame-ancestors": ["'self'"]
+if (process.env.NODE_ENV !== 'DEVELOPMENT') {
+  // Content Security Policy
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: { 
+        "default-src": ["'self'"],
+        "script-src": [
+          "'self'", 
+          "https://code.jquery.com", 
+          "https://cdn.jsdelivr.net", 
+          "https://kit.fontawesome.com"
+        ],
+        "connect-src": [
+          "'self'", 
+          "https://ka-f.fontawesome.com",
+          "wss://*"
+        ],
+        "style-src": [
+          "'self'",
+          'https://ka-f.fontawesome.com/',
+          'https://fonts.googleapis.com/',
+          "'unsafe-inline'"
+        ],
+        "font-src": [
+          "'self'",
+          'https://ka-f.fontawesome.com/',
+          'https://fonts.gstatic.com/'
+        ],
+        "img-src": ["'self'", 'data:'],
+        "object-src": ["'none'"],
+        "frame-ancestors": ["'self'"]
+      },
     },
-  },
-  crossOriginOpenerPolicy: {
-    policy: 'same-origin'
-  },
-  crossOriginResourcePolicy: {
-    policy: 'same-origin' 
-  },
-  referrerPolicy: {
-    policy: 'strict-origin-when-cross-origin'
-  },
-  noSniff: true,
-  dnsPrefetchControl: {
-    allow: false
-  },
-  frameguard: {
-    action: 'deny'
-  },
-  hidePoweredBy: true,
-  originAgentCluster: true,
-}));
+    crossOriginOpenerPolicy: {
+      policy: 'same-origin'
+    },
+    crossOriginResourcePolicy: {
+      policy: 'same-origin' 
+    },
+    referrerPolicy: {
+      policy: 'strict-origin-when-cross-origin'
+    },
+    noSniff: true,
+    dnsPrefetchControl: {
+      allow: false
+    },
+    frameguard: {
+      action: 'deny'
+    },
+    hidePoweredBy: true,
+    originAgentCluster: true,
+  }));
+}
 
 app.use(compression());
 // Middleware to parse request bodies
@@ -114,25 +117,26 @@ const sessionMiddleware = session({
     tableName: 'account_sessions',
     createTableIfMissing: true
   }),
-  proxy: process.env.NODE_ENV === 'DEVELOPMENT' ? false : true,
+  proxy: process.env.NODE_ENV !== 'DEVELOPMENT',
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
     maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'DEVELOPMENT' ? false : true,
+    secure: process.env.NODE_ENV !== 'DEVELOPMENT',
   }, //30 days
   name: 'UserLogin',
 });
 app.use(sessionMiddleware);
 app.use(RequestLogger);
-app.use('/account', account);
-app.use('/homework', homework);
-app.use('/substitutions', substitutions);
-app.use('/schedule', schedules);
-app.use('/teams', teams);
-app.use('/events', events);
+app.use("/account", account);
+app.use("/homework", homework);
+app.use("/substitutions", substitutions);
+app.use("/schedule", schedules);
+app.use("/teams", teams);
+app.use("/events", events);
+app.use("/subjects", subjects);
 app.use(ErrorHandler);
 
 // Sync models with the database

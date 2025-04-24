@@ -17,7 +17,7 @@ async function updateHomeworkList() {
   for (let homework of homeworkData) {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = subjectData[homework.subjectId].name.long;
+    let subject = subjectData[homework.subjectId].subjectNameLong;
     let content = homework.content;
     let assignmentDate = msToDisplayDate(homework.assignmentDate).split('.').slice(0, 2).join('.');
     let submissionDate = msToDisplayDate(homework.submissionDate).split('.').slice(0, 2).join('.');
@@ -109,7 +109,7 @@ async function updateSubjectList() {
   subjectData.forEach(subject => {
     // Get the subject data
     let subjectId = subject.subjectId;
-    let subjectName = subject.name.long;
+    let subjectName = subject.subjectNameLong;
 
     if (filterData.subject[subjectId] == undefined) filterData.subject[subjectId] = true
     let checkedStatus = (filterData.subject[subjectId]) ? "checked" : ""

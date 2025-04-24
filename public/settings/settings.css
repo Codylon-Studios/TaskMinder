@@ -7681,7 +7681,7 @@ textarea.form-control-lg {
   align-items: flex-end !important;
 }
 
-.align-items-center {
+.align-items-center, .subject-inputs-label {
   align-items: center !important;
 }
 
@@ -8099,7 +8099,7 @@ textarea.form-control-lg {
   padding-right: 0.25rem !important;
 }
 
-.pe-2 {
+.pe-2, .team-name-input, .team-name-new-input, .event-type-name-input, .event-type-name-new-input, .subject-name-long-input, .subject-name-long-new-input {
   padding-right: 0.5rem !important;
 }
 
@@ -8279,7 +8279,7 @@ textarea.form-control-lg {
   font-weight: 300 !important;
 }
 
-.fw-normal {
+.fw-normal, .subject-changed span {
   font-weight: 400 !important;
 }
 
@@ -8371,7 +8371,7 @@ textarea.form-control-lg {
   color: rgba(var(--bs-primary-rgb), var(--bs-text-opacity)) !important;
 }
 
-.text-secondary {
+.text-secondary, .subject-inputs-label a, .subject-changed span {
   --bs-text-opacity: 1;
   color: rgba(var(--bs-secondary-rgb), var(--bs-text-opacity)) !important;
 }
@@ -20231,6 +20231,16 @@ body[data-bs-theme=dark] {
   width: fit-content;
 }
 
+@media (min-width: 768px) {
+  .w-md-50 {
+    width: 50% !important;
+  }
+}
+
+.h-fit-content {
+  height: fit-content;
+}
+
 .cursor-pointer {
   cursor: pointer;
 }
@@ -20452,7 +20462,7 @@ body[data-bs-theme=dark] {
   min-height: min-content;
 }
 
-#team-selection-save, #teams-save, #event-types-save {
+#team-selection-save, #teams-save, #event-types-save, #subjects-save {
   width: 6rem;
 }
 
@@ -20461,6 +20471,55 @@ body[data-bs-theme=dark] {
   height: 1rem;
   margin-bottom: -0.1rem;
   display: inline-block;
+}
+
+.subject-inputs-label {
+  width: 5%;
+}
+@media (min-width: 992px) {
+  .subject-inputs-label {
+    width: 20% !important;
+  }
+}
+div:has(> .subject-name-long-input) {
+  width: 50%;
+}
+
+.subject-name-short-input {
+  width: 25%;
+}
+
+div:has(> .subject-teacher-gender-input) {
+  width: 15%;
+}
+
+div:has(> .subject-teacher-long-input) {
+  width: 31.5%;
+}
+
+.subject-teacher-short-input {
+  width: 25%;
+}
+
+.subject-name-substitution-input {
+  width: 37.5%;
+}
+
+.subject-teacher-substitution-input {
+  width: 37.5%;
+}
+
+.subject-changed span:not(.d-none)::after {
+  content: ", ";
+}
+.subject-changed span:not(.d-none):not(:has(~ span:not(.d-none)))::after {
+  content: ")";
+}
+.subject-changed span:not(.d-none)::before {
+  content: "(";
+}
+.subject-changed span:not(.d-none) ~ span:not(.d-none)::before {
+  content: "";
 }
 
 /*# sourceMappingURL=settings.css.map */

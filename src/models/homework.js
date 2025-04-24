@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/sequelize');
 
+const Subject = require('./subject');
 const Team = require('./team');
 
 const Homework10d = sequelize.define('Homework10d', {
@@ -16,6 +17,11 @@ const Homework10d = sequelize.define('Homework10d', {
     subjectId: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      references: {
+        model: Subject,
+        key: 'subjectId',
+      },
+      onDelete: 'CASCADE',
     },
     assignmentDate: {
       type: DataTypes.BIGINT,

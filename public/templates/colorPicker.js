@@ -282,7 +282,7 @@ function replaceColorPickers() {
 }
 
 $(() => {
-  const observer = new MutationObserver((mutationsList) => {
+  new MutationObserver((mutationsList) => {
     mutationsList.forEach((mutation) => {
       $(mutation.addedNodes).each(function () {
         if ($(this).find(".color-picker")) {
@@ -290,9 +290,7 @@ $(() => {
         }
       });
     });
-  });
-
-  observer.observe(document.body, {
+  }).observe(document.body, {
     childList: true,
     subtree: true
   });
