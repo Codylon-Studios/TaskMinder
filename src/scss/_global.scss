@@ -63,6 +63,16 @@ body {
     width: fit-content;
 }
 
+.w-md-50 {
+    @include media-breakpoint-up(md) {
+        width: 50% !important;
+    }
+}
+
+.h-fit-content {
+    height: fit-content;
+}
+
 .cursor-pointer {
     cursor: pointer;
 }

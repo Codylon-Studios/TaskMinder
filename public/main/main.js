@@ -255,7 +255,7 @@ async function updateHomeworkList() {
  for (let homework of homeworkData) {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = subjectData[homework.subjectId].name.long;
+    let subject = subjectData[homework.subjectId].subjectNameLong;
     let content = homework.content;
     let assignmentDate = new Date(Number(homework.assignmentDate));
     let submissionDate = new Date(Number(homework.submissionDate));
@@ -540,14 +540,14 @@ async function updateTimetable() {
 
   for (let [timetableEntryId, timetableEntry] of timetableData[selectedDate.getDay() - 1].entries()) {
     function addLesson(lessonData) {
+      let subject = subjectData[lessonData.subjectId]
       let lesson = {};
-      lesson.subjectShort = subjectData[lessonData.subjectId].name.short;
-      lesson.subjectLong = subjectData[lessonData.subjectId].name.long;
-      lesson.substitutionSubjectName = subjectData[lessonData.subjectId].name.substitution || lesson.subjectLong;
+      lesson.subjectShort = subject.subjectNameShort;
+      lesson.subjectLong = subject.subjectNameLong;
+      lesson.substitutionSubjectName = subject.subjectNameSubstitution || lesson.subjectLong;
       lesson.room = lessonData.room;
-      let teacher = subjectData[lessonData.subjectId].teacher;
-      lesson.teacher = ((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long;
-      lesson.substitutionTeacherName = subjectData[lessonData.subjectId].teacher.substitution || [ teacher.short ];
+      lesson.teacher = ((subject.teacherGender == "m") ? "Herr " : "Frau ") + subject.teacherNameLong;
+      lesson.substitutionTeacherName = subject.teacherNameSubstitution || [ subject.teacherNameShort ];
 
       lessons.push(lesson);
     }

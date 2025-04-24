@@ -83,7 +83,7 @@ async function updateTeamLists() {
     }
 
     let teamId = $(this).data("id")
-    if (teamId != "") {
+    if (teamId !== "") {
       let newName = $(this).val()
       let oldName = teamsData.find(team => team.teamId == teamId).name
       if (newName != oldName) {
@@ -178,7 +178,7 @@ async function updateEventTypeList() {
     }
 
     let eventTypeId = $(this).data("id")
-    if (eventTypeId != "") {
+    if (eventTypeId !== "") {
       let newName = $(this).val()
       let oldName = eventTypeData.find(eventType => eventType.eventTypeId == eventTypeId).name
       if (newName != oldName) {
@@ -203,7 +203,7 @@ async function updateEventTypeList() {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
 
     let eventTypeId = $(this).data("id")
-    if (eventTypeId != "") {
+    if (eventTypeId !== "") {
       let newColor = $(this).val()
       let oldColor = eventTypeData.find(eventType => eventType.eventTypeId == eventTypeId).color
       if (newColor != oldColor) {
@@ -245,10 +245,277 @@ async function updateEventTypeList() {
   }
 }
 
+async function updateSubjectList() {
+  await dataLoaded("subjectData");
+  await dataLoaded("substitutionsData");
+  
+  $("#subjects-list").empty()
+
+  subjectData.forEach(subject => {
+    let subjectId = subject.subjectId
+    let template = `
+      <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
+        <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
+          <div class="me-3 w-md-50">
+            <div class="d-flex gap-3 mb-2">
+              <div class="subject-inputs-label d-flex align-items-center">
+                <span class="d-none d-lg-inline">Name</span>
+                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name des Fachs"><i class="fa-solid fa-circle-info"></i></a>
+              </div>
+              <div class="d-inline-block">
+                <input class="form-control form-control-sm subject-name-long-input"
+                  type="text" value="${subject.subjectNameLong}" placeholder="${subject.subjectNameLong}" data-id="${subjectId}">
+                <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
+              </div>
+              <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input"
+                type="text" value="${subject.subjectNameShort}" placeholder="${subject.subjectNameShort}" data-id="${subjectId}">
+            </div>
+            <div class="d-flex gap-3 ${dsbActivated ? "mb-2" : ""}">
+              <div class="subject-inputs-label d-flex align-items-center">
+                <span class="d-none d-lg-inline">Lehrkraft</span>
+                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name der Lehrkraft"><i class="fa-solid fa-circle-info"></i></a>
+              </div>
+              <div class="d-inline-block">
+                <select class="form-control form-control-sm subject-teacher-gender-input" data-id="${subjectId}">
+                  <option value="d" ${subject.teacherGender == "d" ? "selected": ""}>-</option>
+                  <option value="w" ${subject.teacherGender == "w" ? "selected": ""}>Frau</option>
+                  <option value="m" ${subject.teacherGender == "m" ? "selected": ""}>Herr</option>
+                </select>
+              </div>
+              <div class="d-inline-block">
+                <input class="form-control form-control-sm h-fit-content subject-teacher-long-input"
+                  type="text" value="${subject.teacherNameLong}" placeholder="${subject.teacherNameLong}" data-id="${subjectId}">
+                <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
+              </div>
+              <input class="form-control form-control-sm h-fit-content subject-teacher-short-input"
+                type="text" value="${subject.teacherNameShort}" placeholder="${subject.teacherNameShort}" data-id="${subjectId}">
+            </div>
+            <div class="d-flex gap-3 ${dsbActivated ? "" : "d-none"}">
+              <div class="subject-inputs-label d-flex align-items-center">
+                <span class="d-none d-lg-inline">Vertretung</span>
+                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Vertretungsoptionen"><i class="fa-solid fa-circle-info"></i></a>
+              </div>
+              <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"
+                type="text" value="${subject.subjectNameSubstitution || ""}" placeholder="${subject.subjectNameSubstitution || "keine Angabe"}">
+              <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id="${subjectId}"
+                type="text" value="${subject.teacherNameSubstitution || ""}" placeholder="${subject.teacherNameSubstitution || "keine Angabe"}">
+            </div>
+          </div>
+          <div class="w-md-50">
+            <span class="text-warning fw-bold mt-2 mt-md-0 d-none subject-changed" data-id="${subjectId}">
+              Geändert
+              <span class="subject-changed-name-long">${subject.subjectNameLong} zu <b></b></span>
+              <span class="subject-changed-name-short">${subject.subjectNameShort} zu <b></b></span>
+              <span class="subject-changed-name-substitution">${subject.subjectNameSubstitution || "keine Angabe"} zu <b></b></span>
+              <span class="subject-changed-teacher-gender">${{"w": "Frau", "m": "Herr", "d": "Keine Anrede"}[subject.teacherGender]} zu <b></b></span>
+              <span class="subject-changed-teacher-long">${subject.teacherNameLong} zu <b></b></span>
+              <span class="subject-changed-teacher-short">${subject.teacherNameShort} zu <b></b></span>
+              <span class="subject-changed-teacher-substitution">${subject.teacherNameSubstitution || "keine Angabe"} zu <b></b></span>
+            </span>
+            <span class="text-danger fw-bold mt-2 mt-md-0 d-none subject-deleted" data-id="${subjectId}">Gelöscht</span>
+          </div>
+        </div
+        <div>
+          <button class="btn btn-sm btn-sm-square btn-danger float-end subject-delete" data-id="${subjectId}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>`
+    $("#subjects-list").append(template)
+    $("#subjects-list").find(".subject-changed").last().find("span").addClass("d-none").attr("data-id", subjectId)
+  })
+  
+  $(document).on("change", ".subject-name-long-input", function () {
+    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+
+    if ($(this).val().trim() == "") {
+      $(this).addClass("is-invalid")
+      $("#subjects-save").addClass("disabled")
+    }
+
+    let subjectId = $(this).data("id")
+    if (subjectId !== "") {
+      let newName = $(this).val()
+      let oldName = subjectData.find(subject => subject.subjectId == subjectId).subjectNameLong
+      if (newName != oldName) {
+        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
+          $(`.subject-changed-name-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName)
+        }
+      }
+      else {
+        $(`.subject-changed-name-long[data-id="${subjectId}"]`).addClass("d-none")
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none")
+        }
+      }
+    }
+  })
+
+  $(document).on("input", ".subject-name-long-input", function () {
+    $(this).removeClass("is-invalid")
+    if (! $(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
+      $("#subjects-save").removeClass("disabled")
+    }
+  })
+  
+  $(document).on("change", ".subject-name-short-input", function () {
+    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+
+    let subjectId = $(this).data("id")
+    if (subjectId !== "") {
+      let newName = $(this).val()
+      let oldName = subjectData.find(subject => subject.subjectId == subjectId).subjectNameShort
+      if (newName != oldName) {
+        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
+          $(`.subject-changed-name-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName)
+        }
+      }
+      else {
+        $(`.subject-changed-name-short[data-id="${subjectId}"]`).addClass("d-none")
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none")
+        }
+      }
+    }
+  })
+  
+  $(document).on("change", ".subject-teacher-gender-input", function () {
+    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+
+    let subjectId = $(this).data("id")
+    if (subjectId !== "") {
+      let newGender = $(this).val()
+      let oldGender = subjectData.find(subject => subject.subjectId == subjectId).teacherGender
+      if (newGender != oldGender) {
+        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
+          $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`).removeClass("d-none").find("b")
+            .text({"w": "Frau", "m": "Herr", "d": "Keine Anrede"}[newGender])
+        }
+      }
+      else {
+        $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`).addClass("d-none")
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none")
+        }
+      }
+    }
+  })
+
+  $(document).on("change", ".subject-teacher-long-input", function () {
+    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+
+    if ($(this).val().trim() == "") {
+      $(this).addClass("is-invalid")
+      $("#subjects-save").addClass("disabled")
+    }
+
+    let subjectId = $(this).data("id")
+    if (subjectId !== "") {
+      let newName = $(this).val()
+      let oldName = subjectData.find(subject => subject.subjectId == subjectId).teacherNameLong
+      if (newName != oldName) {
+        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
+          $(`.subject-changed-teacher-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName)
+        }
+      }
+      else {
+        $(`.subject-changed-teacher-long[data-id="${subjectId}"]`).addClass("d-none")
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none")
+        }
+      }
+    }
+  })
+
+  $(document).on("input", ".subject-teacher-long-input", function () {
+    $(this).removeClass("is-invalid")
+    if (! $(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
+      $("#subjects-save").removeClass("disabled")
+    }
+  })
+
+  $(document).on("change", ".subject-teacher-short-input", function () {
+    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+
+    let subjectId = $(this).data("id")
+    if (subjectId !== "") {
+      let newName = $(this).val()
+      let oldName = subjectData.find(subject => subject.subjectId == subjectId).teacherNameShort
+      if (newName != oldName) {
+        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
+          $(`.subject-changed-teacher-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName)
+        }
+      }
+      else {
+        $(`.subject-changed-teacher-short[data-id="${subjectId}"]`).addClass("d-none")
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none")
+        }
+      }
+    }
+  })
+
+  $(document).on("change", ".subject-name-substitution-input", function () {
+    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+
+    let subjectId = $(this).data("id")
+    if (subjectId !== "") {
+      let newName = $(this).val()
+      let oldName = subjectData.find(subject => subject.subjectId == subjectId).subjectNameSubstitution || "keine Angabe"
+      if (newName != oldName) {
+        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
+          $(`.subject-changed-name-substitution[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName)
+        }
+      }
+      else {
+        $(`.subject-changed-name-substitution[data-id="${subjectId}"]`).addClass("d-none")
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none")
+        }
+      }
+    }
+  })
+
+  $(document).on("change", ".subject-teacher-substitution-input", function () {
+    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+
+    let subjectId = $(this).data("id")
+    if (subjectId !== "") {
+      let newName = $(this).val()
+      let oldName = subjectData.find(subject => subject.subjectId == subjectId).subjectNameSubstitution || "keine Angabe"
+      if (newName != oldName) {
+        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
+          $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName)
+        }
+      }
+      else {
+        $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`).addClass("d-none")
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none")
+        }
+      }
+    }
+  })
+
+  if (subjectData.length == 0) {
+    $("#subject-selection-list, #subjects-list").append(`<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>`)
+  }
+}
+
+let dsbActivated = false;
+
 $(async () => {
   updateAllFunctions.push(() => {
     updateTeamLists();
     updateEventTypeList();
+    updateSubjectList();
   });
 
   
@@ -256,6 +523,11 @@ $(async () => {
   if (user.classJoined) {
     $(".not-joined-info").addClass("d-none")
     $("#settings-student, #settings-class").removeClass("d-none")
+  }
+
+  await dataLoaded("substitutionsData");
+  if (JSON.stringify(substitutionsData) != "{}") {
+    dsbActivated = true
   }
 });
 
@@ -508,7 +780,7 @@ $("#new-event-type").on("click", () => {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
     $(this).parent().remove()
     if ($("#event-types-list").children().length == 0) {
-      $("#event-types-list").append(`<span class="text-secondary no-event-types">Keine Arten vorhanden</span>`)
+      $("#event-types-list").append(`<span class="text-secondary no-event-types">Keine Ereignisarten vorhanden</span>`)
     }
   })
 })
@@ -591,3 +863,175 @@ $("#event-types-save").on("click", () => {
 })
 
 $("#event-types-save-confirm").on("click", saveEventTypes)
+
+// SUBJECTS
+
+$("#new-subject").on("click", () => {
+  $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+
+  $("#subjects-list .no-subjects").remove()
+
+  let template = `
+    <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="">
+        <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
+          <div class="me-3 w-md-50">
+            <div class="d-flex gap-3 mb-2">
+              <div class="subject-inputs-label d-flex align-items-center">
+                <span class="d-none d-lg-inline">Name</span>
+                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name des Fachs"><i class="fa-solid fa-circle-info"></i></a>
+              </div>
+              <div class="d-inline-block">
+                <input class="form-control form-control-sm subject-name-long-input"
+                  type="text" placeholder="Fachname (lang)" data-id="">
+                <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
+              </div>
+              <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input"
+                type="text" placeholder="kurz" data-id="">
+            </div>
+            <div class="d-flex gap-3 ${dsbActivated ? "mb-2" : ""}">
+              <div class="subject-inputs-label d-flex align-items-center">
+                <span class="d-none d-lg-inline">Lehrkraft</span>
+                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name der Lehrkraft"><i class="fa-solid fa-circle-info"></i></a>
+              </div>
+              <div class="d-inline-block">
+                <select class="form-control form-control-sm subject-teacher-gender-input" data-id="">
+                  <option value="d" selected>-</option>
+                  <option value="w">Frau</option>
+                  <option value="m">Herr</option>
+                </select>
+              </div>
+              <div class="d-inline-block">
+                <input class="form-control form-control-sm h-fit-content subject-teacher-long-input"
+                  type="text" placeholder="Lehrkraftname (lang)" data-id="">
+                <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
+              </div>
+              <input class="form-control form-control-sm h-fit-content subject-teacher-short-input"
+                type="text" placeholder="kurz" data-id="">
+            </div>
+            <div class="d-flex gap-3 ${dsbActivated ? "" : "d-none"}">
+              <div class="subject-inputs-label d-flex align-items-center">
+                <span class="d-none d-lg-inline">Vertretung</span>
+                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Vertretungsoptionen"><i class="fa-solid fa-circle-info"></i></a>
+              </div>
+              <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id=""
+                type="text" placeholder="Fachname (Vertretung)">
+              <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id=""
+                type="text" placeholder="Lehrkraftname (Vertretung)">
+            </div>
+          </div>
+          <div class="w-md-50">
+            <span class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</span>
+          </div>
+        </div
+        <div>
+          <button class="btn btn-sm btn-sm-square btn-danger float-end new-subject-delete" data-id="">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>`
+  $("#subjects-list").append(template)
+  $(".subject-teacher-long-input").last().addClass("is-invalid")
+  $(".subject-name-long-input").last().trigger("focus")
+
+  $(".subject-name-long-input").last().on("focusout", function () {
+    if ($(this).val().trim() == "") {
+      $(this).addClass("is-invalid")
+      $("#subjects-save").addClass("disabled")
+    }
+  })
+
+  $(".new-subject-delete").off("click").on("click", function () {
+    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+    $(this).parent().remove()
+    if ($("#subjects-list").children().length == 0) {
+      $("#subjects-list").append(`<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>`)
+    }
+  })
+})
+
+$("#subjects-cancel").on("click", () => {
+  updateSubjectList()
+  $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+})
+
+function saveSubjects() {
+  let newSubjectData = []
+  $("#subjects-list > div").each(function () {
+    if ($(this).find(".btn-success").length > 0) return
+
+    let subjectNameLong = $(this).find(".subject-name-long-input").val().trim()
+    let teacherNameShort = $(this).find(".subject-teacher-short-input").val().trim() || $(this).find(".subject-teacher-long-input").val().trim().substring(0, 3)
+    newSubjectData.push({
+      subjectId: $(this).data("id"),
+      subjectNameLong: subjectNameLong,
+      subjectNameShort: $(this).find(".subject-name-short-input").val().trim() || $(this).find(".subject-name-long-input").val().trim().substring(0, 3),
+      teacherGender: $(this).find(".subject-teacher-gender-input").val().trim(),
+      teacherNameLong: $(this).find(".subject-teacher-long-input").val().trim(),
+      teacherNameShort: teacherNameShort,
+      subjectNameSubstitution: ($(this).find(".subject-name-substitution-input").val() || subjectNameLong).split(",").map(v => v.trim()),
+      teacherNameSubstitution: ($(this).find(".subject-teacher-substitution-input").val() || teacherNameShort).split(",").map(v => v.trim())
+    })
+  })
+  
+  let data = {
+    subjects: newSubjectData,
+  };
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/subjects/set_subject_data",
+    type: 'POST',
+    data: JSON.stringify(data),
+    contentType: 'application/json',
+    success: () => {
+      reloadAll()
+      $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
+      $("#subjects-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
+      setTimeout(() => {
+        $("#subjects-save").html("Speichern").prop("disabled", false);
+      }, 1000);
+    },
+    error: (xhr) => {
+      if (xhr.status === 401) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+}
+
+$("#subjects-save").on("click", () => {
+  let deleted = []
+  $(".subjects-deleted:not(.d-none)").each(function () {
+    deleted.push($(this).parent().find("input").attr("placeholder"))
+  })
+  
+  if (deleted.length == 0) {
+    saveSubjects()
+  }
+  else {
+    $("#subjects-save-confirm-container, #subjects-save-confirm").removeClass("d-none")
+    if (deleted.length == 1) {
+      $("#subjects-save-confirm-list").html(`des Fachs <b>${deleted[0]}</b>`)
+    }
+    else {
+      $("#subjects-save-confirm-list").html("der Fächer " + (deleted.map(e => `<b>${e}</b>`).join(", ").replace(/,(?!.*,)/, " und")))
+    }
+  }
+})
+
+$("#subjects-save-confirm").on("click", saveSubjects)
