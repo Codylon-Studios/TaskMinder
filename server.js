@@ -142,6 +142,7 @@ const sessionMiddleware = session({
 });
 app.use(sessionMiddleware);
 app.use(RequestLogger);
+app.use('/docs', express.static('./site'));
 app.use("/account", account);
 app.use("/homework", homework);
 app.use("/substitutions", substitutions);
