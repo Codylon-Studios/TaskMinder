@@ -1,0 +1,37 @@
+# Custom License for TaskMinder
+
+**Copyright (c) 2025 Codylon Studios**
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to use, copy, modify, merge, publish and distribute the Software for non-commercial purposes only, subject to the following conditions:
+
+#### Attribution  
+You must give appropriate credit to “Codylon Studios,” including a link  to the original source, and indicate if changes were made. Appropriate credit includes, but is not limited to, displaying the following information:
+
+> "Original source code from TaskMinder by Codylon Studios, available at [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)"
+
+You may provide this credit in any reasonable manner, but not in any way that suggests  endorsement by the original authors. The attribution requirement applies to all forms of distribution, including but not limited to, source code, binaries, documentation, and any other materials that include or are derived from the Software.
+
+#### Non-commercial Use only  
+The Software may not be used, in whole or in part, for any commercial purposes without prior written permission from the authors. Commercial use includes, but is not limited to:
+
+- Selling, licensing, or distributing the Software as part of a
+  product or service  
+- Offering paid subscriptions or memberships  
+- Running ads on, in, or alongside the Software  
+- Using the Software to offer commercial services  
+- Deploying the Software in a commercial or enterprise environment
+
+The authors reserve the right to determine, in their sole discretion, what constitutes commercial use of the Software, and to modify or update this definition at any time. "Non-commercial" refers to personal, educational, or research use where no financial gain or profit is involved.
+
+#### Derivative Works  
+You may create and distribute derivative works of the Software under the same license terms, provided you comply with both the Attribution and Non-Commercial Use requirements. "Derivative works" means any work that is based on or derived from the Software, including but not limited to modifications, translations, adaptations, and combinations with other software or materials.
+
+#### Termination
+This license will terminate automatically if you fail to comply with any of the terms and conditions. Upon termination, you must immediately stop using and distributing the Software.
+
+#### Disclaimer of Warranty and Liability  
+The software is provided "as is", without warranties of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and non-infringement. in no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.
+
+### Contact  
+For commercial licensing or other inquiries, please contact:
+[codylon.studios@gmail.com](mailto:codylon.studios@gmail.com)
