@@ -1,6 +1,6 @@
 const express = require("express");
 const {timetableController} = require("../controllers/timetableController")
-const upload = require("../middleware/fileUpload");
+const upload = require("../middleware/fileUploadMiddleware");
 const checkAccess = require("../middleware/accessMiddleware")
 
 const router = express.Router();

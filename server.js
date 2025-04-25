@@ -23,6 +23,7 @@ const schedules = require("./src/routes/scheduleRoute");
 const teams = require("./src/routes/teamRoute");
 const events = require("./src/routes/eventRoute");
 const subjects = require("./src/routes/subjectRoute");
+const timetable = require("./src/routes/timetableRoute");
 
 const app = express();
 const server = createServer(app);
@@ -148,6 +149,7 @@ app.use("/schedule", schedules);
 app.use("/teams", teams);
 app.use("/events", events);
 app.use("/subjects", subjects);
+app.use("/timetable", timetable);
 app.use(ErrorHandler);
 
 // Sync models with the database
