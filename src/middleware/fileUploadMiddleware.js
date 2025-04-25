@@ -1,11 +1,11 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 // Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads');
+    const uploadDir = path.join(__dirname, "../uploads");
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -19,10 +19,10 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/json') {
+  if (file.mimetype === "application/json") {
     cb(null, true);
   } else {
-    cb(new Error('Only JSON files are allowed'), false);
+    cb(new Error("Only JSON files are allowed"), false);
   }
 };
 

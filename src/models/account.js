@@ -1,7 +1,7 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/sequelize');
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config/sequelize");
 
-const Account = sequelize.define('Account', {
+const Account = sequelize.define("Account", {
   accountId: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -22,12 +22,12 @@ const Account = sequelize.define('Account', {
     allowNull: true
   }
 }, {
-  tableName: 'account',
+  tableName: "account",
   timestamps: false,
   indexes: [
     {
       unique: true,
-      fields: ['accountId'],
+      fields: ["accountId"],
     },
   ],
 });

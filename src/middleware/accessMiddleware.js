@@ -4,7 +4,7 @@ const accessMiddleware = {
     if (req.session.classJoined) {
       return next();
     }
-    return res.redirect(302, '/join');
+    return res.redirect(302, "/join");
   },
   elseUnauthorized(req, res, next) {
     if (req.session.classJoined) {

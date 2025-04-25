@@ -348,11 +348,11 @@ async function updateEventList() {
     let eventTypeId = event.eventTypeId;
     let name = event.name;
     let description = event.description;
-    let startDate = msToDisplayDate(event.startDate).split('.').slice(0, 2).join('.');
+    let startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
     let lesson = event.lesson;
     let endDate;
     if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate).split('.').slice(0, 2).join('.');
+      endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
     }
     else {
       endDate = null;
@@ -1059,8 +1059,8 @@ let monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", 
 renameCalendarMonthYear()
 
 // Request checking the homework on clicking its checkbox
-$(document).on('click', '.homework-check', function () {
-  const homeworkId = $(this).data('id');
+$(document).on("click", ".homework-check", function () {
+  const homeworkId = $(this).data("id");
   checkHomework(homeworkId);
 });
 
@@ -1096,7 +1096,7 @@ $("#homework-mode input").each(function () {
 
 $("#homework-mode-" + (localStorage.getItem("homeworkMode") || "tomorrow")).prop("checked", true);
 
-socket.on('updateHomeworkData', () => {
+socket.on("updateHomeworkData", () => {
   try {
     homeworkData = undefined;
     homeworkCheckedData = undefined;
@@ -1111,7 +1111,7 @@ socket.on('updateHomeworkData', () => {
 });
 
 
-socket.on('updateEventData', ()=>{
+socket.on("updateEventData", ()=>{
   try {
     eventData = undefined;
 

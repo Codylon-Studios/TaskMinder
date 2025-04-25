@@ -1,5 +1,5 @@
-const subjectService = require('../services/subjectService');
-const asyncHandler = require('express-async-handler');
+const subjectService = require("../services/subjectService");
+const asyncHandler = require("express-async-handler");
 
 exports.subjectController = {
   getSubjectData: asyncHandler(async(req, res, next) => {

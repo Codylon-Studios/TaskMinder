@@ -24,7 +24,7 @@ $("#join-class-back-btn").on("click", () => {
 function onLogin() {
   $("#show-login-register-btn").addClass("disabled").find("i").removeClass("d-none")
 
-  $.get('/account/auth', (response) => {
+  $.get("/account/auth", (response) => {
     user.classJoined = response.classJoined;
 
     if (user.classJoined) {
@@ -69,7 +69,7 @@ $("#join-class-btn").on("click", async () => {
 
     $.ajax({
     url: "/account/join",
-    type: 'POST',
+    type: "POST",
     data: data,
     success: () => {
       $("#join-class-panel").addClass("d-none")
@@ -122,5 +122,5 @@ function checkUsername(username) {
 }
 
 function checkSecurePassword(password) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"'<>,.?/-]).{8,}$/.test(password);
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;""<>,.?/-]).{8,}$/.test(password);
 }

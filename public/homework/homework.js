@@ -19,8 +19,8 @@ async function updateHomeworkList() {
     let homeworkId = homework.homeworkId;
     let subject = subjectData[homework.subjectId].subjectNameLong;
     let content = homework.content;
-    let assignmentDate = msToDisplayDate(homework.assignmentDate).split('.').slice(0, 2).join('.');
-    let submissionDate = msToDisplayDate(homework.submissionDate).split('.').slice(0, 2).join('.');
+    let assignmentDate = msToDisplayDate(homework.assignmentDate).split(".").slice(0, 2).join(".");
+    let submissionDate = msToDisplayDate(homework.submissionDate).split(".").slice(0, 2).join(".");
 
     let checked = await getHomeworkCheckStatus(homeworkId);
 
@@ -139,7 +139,7 @@ async function updateSubjectList() {
     if (filterData.subject == undefined) {
       filterData.subject = {}
     }
-    filterData.subject[$(this).data('id')] = $(this).prop("checked")
+    filterData.subject[$(this).data("id")] = $(this).prop("checked")
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
   });
@@ -618,26 +618,26 @@ $(function(){
 
   // Don't close the dropdown when the user clicked inside of it
   $(".dropdown-menu").each(function () {
-    $(this).on('click', (ev) => {
+    $(this).on("click", (ev) => {
       ev.stopPropagation();
     });
   });
 
   // Request deleting the homework on clicking its delete icon
-  $(document).on('click', '.homework-delete', function () {
-    const homeworkId = $(this).data('id');
+  $(document).on("click", ".homework-delete", function () {
+    const homeworkId = $(this).data("id");
     deleteHomework(homeworkId);
   });
 
   // Request editing the homework on clicking its delete icon
-  $(document).on('click', '.homework-edit', function () {
-    const homeworkId = $(this).data('id');
+  $(document).on("click", ".homework-edit", function () {
+    const homeworkId = $(this).data("id");
     editHomework(homeworkId);
   });
 
   // Request checking the homework on clicking its checkbox
-  $(document).on('click', '.homework-check', function () {
-    const homeworkId = $(this).data('id');
+  $(document).on("click", ".homework-check", function () {
+    const homeworkId = $(this).data("id");
     checkHomework(homeworkId);
   });
 
@@ -666,7 +666,7 @@ $(function(){
     if (filterData.subject == undefined) filterData.subject = {}
     $(".filter-subject-option").prop("checked", true);
     $(".filter-subject-option").each(function () {
-      filterData.subject[$(this).data('id')] = true
+      filterData.subject[$(this).data("id")] = true
     })
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
@@ -679,7 +679,7 @@ $(function(){
     if (filterData.subject == undefined) filterData.subject = {}
     $(".filter-subject-option").prop("checked", false);
     $(".filter-subject-option").each(function () {
-      filterData.subject[$(this).data('id')] = false
+      filterData.subject[$(this).data("id")] = false
     })
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
@@ -708,7 +708,7 @@ $(function(){
   });
 });
 
-socket.on('updateHomeworkData', () => {
+socket.on("updateHomeworkData", () => {
   try {
     homeworkData = undefined;
     homeworkCheckedData = undefined;
