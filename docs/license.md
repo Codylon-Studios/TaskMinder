@@ -1,4 +1,4 @@
-# Custom License for TaskMinder
+# Codylon Studios License for TaskMinder
 
 **Copyright (c) 2025 Codylon Studios**
 

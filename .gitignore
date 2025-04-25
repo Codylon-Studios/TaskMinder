@@ -1,5 +1,7 @@
 # Ignore redis binary dump (dump.rdb) files
 *.rdb
+# Ignore built /site after mkdocs build
+/site
 # Ignore sensitive data
 /src/subjects.json
 /src/timetable.json
