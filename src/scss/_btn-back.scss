@@ -14,63 +14,63 @@ $btn-back-white-filter:     invert(1) grayscale(100%) brightness(200%) !default;
 $btn-back-filter-dark:      $btn-back-white-filter !default;
 
 .btn-back {
-    // scss-docs-start back-css-vars
-    --#{$prefix}btn-back-color: #{$btn-back-color};
-    --#{$prefix}btn-back-bg: #{ escape-svg($btn-back-bg) };
-    --#{$prefix}btn-back-opacity: #{$btn-back-opacity};
-    --#{$prefix}btn-back-hover-opacity: #{$btn-back-hover-opacity};
-    --#{$prefix}btn-back-focus-shadow: #{$btn-back-focus-shadow};
-    --#{$prefix}btn-back-focus-opacity: #{$btn-back-focus-opacity};
-    --#{$prefix}btn-back-disabled-opacity: #{$btn-back-disabled-opacity};
-    // scss-docs-end back-css-vars
-  
-    box-sizing: content-box;
-    width: $btn-back-width;
-    height: $btn-back-height;
-    padding: $btn-back-padding-y $btn-back-padding-x;
+  // scss-docs-start back-css-vars
+  --#{$prefix}btn-back-color: #{$btn-back-color};
+  --#{$prefix}btn-back-bg: #{ escape-svg($btn-back-bg) };
+  --#{$prefix}btn-back-opacity: #{$btn-back-opacity};
+  --#{$prefix}btn-back-hover-opacity: #{$btn-back-hover-opacity};
+  --#{$prefix}btn-back-focus-shadow: #{$btn-back-focus-shadow};
+  --#{$prefix}btn-back-focus-opacity: #{$btn-back-focus-opacity};
+  --#{$prefix}btn-back-disabled-opacity: #{$btn-back-disabled-opacity};
+  // scss-docs-end back-css-vars
+
+  box-sizing: content-box;
+  width: $btn-back-width;
+  height: $btn-back-height;
+  padding: $btn-back-padding-y $btn-back-padding-x;
+  color: var(--#{$prefix}btn-back-color);
+  background: transparent var(--#{$prefix}btn-back-bg) center / $btn-back-width auto no-repeat; // include transparent for button elements
+  filter: var(--#{$prefix}btn-back-filter);
+  border: 0; // for button elements
+  @include border-radius();
+  opacity: var(--#{$prefix}btn-back-opacity);
+
+  // Override <a>'s hover style
+  &:hover {
     color: var(--#{$prefix}btn-back-color);
-    background: transparent var(--#{$prefix}btn-back-bg) center / $btn-back-width auto no-repeat; // include transparent for button elements
-    filter: var(--#{$prefix}btn-back-filter);
-    border: 0; // for button elements
-    @include border-radius();
-    opacity: var(--#{$prefix}btn-back-opacity);
-  
-    // Override <a>'s hover style
-    &:hover {
-      color: var(--#{$prefix}btn-back-color);
-      text-decoration: none;
-      opacity: var(--#{$prefix}btn-back-hover-opacity);
-    }
-  
-    &:focus {
-      outline: 0;
-      box-shadow: var(--#{$prefix}btn-back-focus-shadow);
-      opacity: var(--#{$prefix}btn-back-focus-opacity);
-    }
-  
-    &:disabled,
-    &.disabled {
-      pointer-events: none;
-      user-select: none;
-      opacity: var(--#{$prefix}btn-back-disabled-opacity);
-    }
+    text-decoration: none;
+    opacity: var(--#{$prefix}btn-back-hover-opacity);
   }
-  
-  @mixin btn-back-white() {
-    --#{$prefix}btn-back-filter: #{$btn-back-filter-dark};
+
+  &:focus {
+    outline: 0;
+    box-shadow: var(--#{$prefix}btn-back-focus-shadow);
+    opacity: var(--#{$prefix}btn-back-focus-opacity);
   }
-  
-  .btn-back-white {
+
+  &:disabled,
+  &.disabled {
+    pointer-events: none;
+    user-select: none;
+    opacity: var(--#{$prefix}btn-back-disabled-opacity);
+  }
+}
+
+@mixin btn-back-white() {
+  --#{$prefix}btn-back-filter: #{$btn-back-filter-dark};
+}
+
+.btn-back-white {
+  @include btn-back-white();
+}
+
+:root,
+[data-bs-theme="light"] {
+  --#{$prefix}btn-back-filter: #{$btn-back-filter};
+}
+
+@if $enable-dark-mode {
+  @include color-mode(dark, true) {
     @include btn-back-white();
   }
-  
-  :root,
-  [data-bs-theme="light"] {
-    --#{$prefix}btn-back-filter: #{$btn-back-filter};
-  }
-  
-  @if $enable-dark-mode {
-    @include color-mode(dark, true) {
-      @include btn-back-white();
-    }
-  }
+}

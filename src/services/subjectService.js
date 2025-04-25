@@ -1,7 +1,7 @@
-const logger = require('../../logger');
-const { redisClient, cacheExpiration } = require('../config/constant');
+const logger = require("../../logger");
+const { redisClient, cacheExpiration } = require("../config/constant");
 
-const Subject = require('../models/subject');
+const Subject = require("../models/subject");
 
 const subjectService = {
   async getSubjectData() {
@@ -11,7 +11,7 @@ const subjectService = {
       try {
         return JSON.parse(cachedSubjectata);
       } catch (error) {
-        logger.error('Error parsing Redis data:', error);
+        logger.error("Error parsing Redis data:", error);
         throw new Error();
       }
     }
@@ -21,7 +21,7 @@ const subjectService = {
     try {
       await redisClient.set("subject_data", JSON.stringify(data), { EX: cacheExpiration });
     } catch (err) {
-      logger.error('Error updating Redis cache:', err);
+      logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
 
@@ -95,7 +95,7 @@ const subjectService = {
     try {
       await redisClient.set("subject_data", JSON.stringify(data), { EX: cacheExpiration });
     } catch (err) {
-      logger.error('Error updating Redis cache:', err);
+      logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
   },

@@ -8,7 +8,7 @@ function registerAccount(username, password) {
 
   $.ajax({
     url: "/account/register",
-    type: 'POST',
+    type: "POST",
     data: data,
     success: () => {
       $("#register-success-toast .username").text(username);
@@ -47,7 +47,7 @@ function loginAccount(username, password) {
 
   $.ajax({
     url: "/account/login",
-    type: 'POST',
+    type: "POST",
     data: data,
     success: () => {
       $("#login-success-toast .username").text(username);
@@ -86,7 +86,7 @@ function logoutAccount() {
 
   $.ajax({
     url: "/account/logout",
-    type: 'POST',
+    type: "POST",
     success: () => {
       $("#logout-success-toast").toast("show");
       user.trigger("logout");
@@ -118,7 +118,7 @@ function checkExistingUsername(username) {
   return new Promise((resolve) => {
     $.ajax({
       url: "/account/checkusername",
-      type: 'POST',
+      type: "POST",
       data: data,
       success: (res) => {
         resolve(res);
@@ -172,7 +172,7 @@ function checkUsername(username) {
 }
 
 function checkSecurePassword(password) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"'<>,.?/-]).{8,}$/.test(password);
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;""<>,.?/-]).{8,}$/.test(password);
 }
 
 let $navbarToasts = {
@@ -225,7 +225,7 @@ user.on("logout", () => {
 });
 
 // Check if the user is logged in for the first time
-$.get('/account/auth', (response) => {
+$.get("/account/auth", (response) => {
   if (response.loggedIn) {
     user.loggedIn = true;
     user.username = response.account.username;

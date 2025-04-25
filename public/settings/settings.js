@@ -9,7 +9,7 @@ function updateColorTheme() {
     localStorage.setItem("colorTheme", "light");
   }
   else {
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
       colorTheme = "dark"
     }
     else {
@@ -551,8 +551,8 @@ $("#color-theme input").each(() => {
   });
 });
 
-window.matchMedia('(prefers-color-scheme: light)').addEventListener("change", updateColorTheme)
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener("change", updateColorTheme)
+window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme)
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme)
 
 // TEAM SELECTION
 
@@ -573,9 +573,9 @@ $("#team-selection-save").on("click", () => {
 
     $.ajax({
       url: "/teams/set_joined_teams_data",
-      type: 'POST',
+      type: "POST",
       data: JSON.stringify(data),
-      contentType: 'application/json',
+      contentType: "application/json",
       success: () => {
         $("#team-selection-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
         setTimeout(() => {
@@ -682,9 +682,9 @@ function saveTeams() {
 
   $.ajax({
     url: "/teams/set_teams_data",
-    type: 'POST',
+    type: "POST",
     data: JSON.stringify(data),
-    contentType: 'application/json',
+    contentType: "application/json",
     success: () => {
       reloadAll()
       $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
@@ -808,9 +808,9 @@ function saveEventTypes() {
 
   $.ajax({
     url: "/events/set_event_type_data",
-    type: 'POST',
+    type: "POST",
     data: JSON.stringify(data),
-    contentType: 'application/json',
+    contentType: "application/json",
     success: () => {
       reloadAll()
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
@@ -980,9 +980,9 @@ function saveSubjects() {
 
   $.ajax({
     url: "/subjects/set_subject_data",
-    type: 'POST',
+    type: "POST",
     data: JSON.stringify(data),
-    contentType: 'application/json',
+    contentType: "application/json",
     success: () => {
       reloadAll()
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")

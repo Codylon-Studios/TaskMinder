@@ -15,4 +15,4 @@ ${content}</pre>
     `;
   }
 }
-customElements.define('license-display', LicenseDisplay);
+customElements.define("license-display", LicenseDisplay);

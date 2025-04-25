@@ -1,10 +1,10 @@
 const scheduleService = {
   async getSubjectData() {
-    return require('../subjects.json');
+    return require("../subjects.json");
   },
 
   async getTimetableData() {
-    return require('../timetable.json');
+    return require("../timetable.json");
   },
 };
 

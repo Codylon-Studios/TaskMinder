@@ -1,6 +1,6 @@
-const { Op } = require('sequelize');
-const Homework = require('./models/homework');
-const logger = require('../logger');
+const { Op } = require("sequelize");
+const Homework = require("./models/homework");
+const logger = require("../logger");
 
 /**
  * Deletes homework records that are older than 30 days based on submission date
@@ -31,7 +31,7 @@ async function cleanupOldHomework() {
     
     logger.info("Homework cleanup completed: ", result, "records deleted out of ", count, " found");
   } catch (error) {
-    logger.error('Error during homework cleanup:', error);
+    logger.error("Error during homework cleanup:", error);
   }
 }
 

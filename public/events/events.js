@@ -15,11 +15,11 @@ async function updateEventList() {
     let eventTypeId = event.eventTypeId;
     let name = event.name;
     let description = event.description;
-    let startDate = msToDisplayDate(event.startDate).split('.').slice(0, 2).join('.');
+    let startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
     let lesson = event.lesson;
     let endDate;
     if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate).split('.').slice(0, 2).join('.');
+      endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
     }
     else {
       endDate = null;
@@ -134,7 +134,7 @@ async function updateEventTypeList() {
     if (filterData.type == undefined) {
       filterData.type = {}
     }
-    filterData.type[$(this).data('id')] = $(this).prop("checked")
+    filterData.type[$(this).data("id")] = $(this).prop("checked")
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
   });
@@ -543,20 +543,20 @@ $(function(){
 
   // Don't close the dropdown when the user clicked inside of it
   $(".dropdown-menu").each(function () {
-    $(this).on('click', (ev) => {
+    $(this).on("click", (ev) => {
       ev.stopPropagation();
     });
   });
 
   // Request deleting the event on clicking its delete icon
-  $(document).on('click', '.event-delete', function () {
-    const eventId = $(this).data('id');
+  $(document).on("click", ".event-delete", function () {
+    const eventId = $(this).data("id");
     deleteEvent(eventId);
   });
 
   // Request editing the event on clicking its delete icon
-  $(document).on('click', '.event-edit', function () {
-    const eventId = $(this).data('id');
+  $(document).on("click", ".event-edit", function () {
+    const eventId = $(this).data("id");
     editEvent(eventId);
   });
 
@@ -567,7 +567,7 @@ $(function(){
     if (filterData.type == undefined) filterData.type = {}
     $(".filter-type-option").prop("checked", true);
     $(".filter-type-option").each(function () {
-      filterData.type[$(this).data('id')] = true
+      filterData.type[$(this).data("id")] = true
     })
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
@@ -580,7 +580,7 @@ $(function(){
     if (filterData.type == undefined) filterData.type = {}
     $(".filter-type-option").prop("checked", false);
     $(".filter-type-option").each(function () {
-      filterData.type[$(this).data('id')] = false
+      filterData.type[$(this).data("id")] = false
     })
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
@@ -609,7 +609,7 @@ $(function(){
   });
 });
 
-socket.on('updateEventData', ()=>{
+socket.on("updateEventData", ()=>{
   try {
     eventData = undefined;
 

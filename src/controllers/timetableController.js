@@ -1,5 +1,5 @@
-const timetableService = require('../services/timetableService');
-const asyncHandler = require('express-async-handler');
+const timetableService = require("../services/timetableService");
+const asyncHandler = require("express-async-handler");
 
 exports.timetableController = {
   getTimetableData: asyncHandler(async (req, res, next) => {
@@ -8,8 +8,8 @@ exports.timetableController = {
     const classId = parseInt(req.params.classId);
     if (!classId || isNaN(classId)) {
       return res.status(400).json({
-        status: 'error',
-        message: 'Valid class ID is required'
+        status: "error",
+        message: "Valid class ID is required"
       });
     }
     */
@@ -20,7 +20,7 @@ exports.timetableController = {
 
     if (!timetable) {
       return res.status(404).json({
-        status: 'error',
+        status: "error",
         message: `Timetable not found for class ID: ${classId}`
       });
     }
@@ -33,8 +33,8 @@ exports.timetableController = {
     try {
       if (!req.file) {
         return res.status(400).json({
-          status: 'error',
-          message: 'No file uploaded'
+          status: "error",
+          message: "No file uploaded"
         });
       }
 
@@ -42,8 +42,8 @@ exports.timetableController = {
       const classId = parseInt(req.body.classId);
       if (!classId || isNaN(classId)) {
         return res.status(400).json({
-          status: 'error',
-          message: 'Valid class ID is required'
+          status: "error",
+          message: "Valid class ID is required"
         });
       }
       */
@@ -53,8 +53,8 @@ exports.timetableController = {
       const timetable = await timetableService.setTimetableData(req.file.path, classId);
 
       res.status(200).json({
-        status: 'success',
-        message: 'Timetable uploaded successfully',
+        status: "success",
+        message: "Timetable uploaded successfully",
         data: {
           timetableId: timetable.timetableId,
           class: timetable.class,

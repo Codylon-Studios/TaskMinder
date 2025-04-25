@@ -24,20 +24,20 @@ function msToDisplayDate(ms) {
 
 function msToInputDate(ms) {
   let date = new Date(parseInt(ms));
-  let day = String(date.getDate()).padStart(2, '0');
-  let month = String(date.getMonth() + 1).padStart(2, '0');
+  let day = String(date.getDate()).padStart(2, "0");
+  let month = String(date.getMonth() + 1).padStart(2, "0");
   let year = date.getFullYear();
   return `${year}-${month}-${day}`;
 }
 
 function dateToMs(dateStr) {
   if (dateStr.includes("-")) {
-    let [year, month, day] = dateStr.split('-').map(Number);
+    let [year, month, day] = dateStr.split("-").map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.getTime();
   }
   else if (dateStr.includes(".")) {
-    let [day, month, year] = dateStr.split('.').map(Number);
+    let [day, month, year] = dateStr.split(".").map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.getTime();
   }
@@ -93,21 +93,21 @@ function dataLoaded(dataName) {
 }
 
 function loadSubjectData() {
-  $.get('/subjects/get_subject_data', (data) => {
+  $.get("/subjects/get_subject_data", (data) => {
     subjectData = data;
     $(window).trigger("subjectDataLoaded");
   });
 }
 
 function loadTimetableData() {
-  $.get('/schedule/get_timetable_data', (data) => {
+  $.get("/schedule/get_timetable_data", (data) => {
     timetableData = data;
     $(window).trigger("timetableDataLoaded");
   });
 }
 
 function loadHomeworkData() {
-  $.get('/homework/get_homework_data', (data) => {
+  $.get("/homework/get_homework_data", (data) => {
     homeworkData = data;
     $(window).trigger("homeworkDataLoaded");
   });
@@ -118,7 +118,7 @@ async function loadHomeworkCheckedData() {
 
   if (user.loggedIn) {
     // If the user is logged in, get the data from the server
-    $.get('/homework/get_homework_checked_data', (data) => {
+    $.get("/homework/get_homework_checked_data", (data) => {
       homeworkCheckedData = data;
       $(window).trigger("homeworkCheckedDataLoaded");
     });
@@ -134,7 +134,7 @@ async function loadHomeworkCheckedData() {
 }
 
 function loadSubstitutionsData() {
-  $.get('/substitutions/get_substitutions_data', (data) => {
+  $.get("/substitutions/get_substitutions_data", (data) => {
     substitutionsData = data;
     $(window).trigger("substitutionsDataLoaded");
   });
@@ -162,7 +162,7 @@ async function loadJoinedTeamsData() {
   await userDataLoaded();
 
   if (user.loggedIn) {
-    $.get('/teams/get_joined_teams_data', (data) => {
+    $.get("/teams/get_joined_teams_data", (data) => {
       joinedTeamsData = data;
       $(window).trigger("joinedTeamsDataLoaded");
     });
@@ -174,21 +174,21 @@ async function loadJoinedTeamsData() {
 }
 
 function loadTeamsData() {
-  $.get('/teams/get_teams_data', (data) => {
+  $.get("/teams/get_teams_data", (data) => {
     teamsData = data;
     $(window).trigger("teamsDataLoaded");
   });
 }
 
 function loadEventData() {
-  $.get('/events/get_event_data', (data) => {
+  $.get("/events/get_event_data", (data) => {
     eventData = data;
     $(window).trigger("eventDataLoaded");
   });
 }
 
 function loadEventTypeData() {
-  $.get('/events/get_event_type_data', (data) => {
+  $.get("/events/get_event_type_data", (data) => {
     eventTypeData = data;
     $(window).trigger("eventTypeDataLoaded");
   });
@@ -393,7 +393,7 @@ if (location.pathname != "/settings/") {
   if (colorThemeSetting == "auto") {
     function updateColorTheme() {
       let colorTheme
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
         colorTheme = "dark"
       }
       else {
@@ -412,7 +412,7 @@ if (location.pathname != "/settings/") {
       }
     }
 
-    window.matchMedia('(prefers-color-scheme: light)').addEventListener("change", updateColorTheme)
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener("change", updateColorTheme)
+    window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme)
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme)
   }
 }
