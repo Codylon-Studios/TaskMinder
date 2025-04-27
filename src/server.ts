@@ -1,0 +1,235 @@
+import express, { Request, Response } from "express";
+import session from "express-session";
+import { createServer } from "http";
+import path from "path";
+import compression from "compression";
+import helmet from "helmet";
+import cron from "node-cron";
+import { rateLimit } from "express-rate-limit";
+import { Pool } from "pg";
+import socketIO from "./config/socket";
+import * as dotenv from "dotenv";
+import { ErrorHandler } from "./middleware/errorMiddleware";
+import RequestLogger from "./middleware/loggerMiddleware";
+import checkAccess from "./middleware/accessMiddleware";
+import logger from "./logger";
+import cleanupOldHomework from "./homeworkCleanup";
+import { createDBBackup } from "./backupTable";
+import connectPgSimple from "connect-pg-simple";
+import sequelize from "./config/sequelize";
+import account from "./routes/accountRoute";
+import homework from "./routes/homeworkRoute";
+import substitutions from "./routes/substitutionRoute";
+import schedules from "./routes/scheduleRoute";
+import teams from "./routes/teamRoute";
+import events from "./routes/eventRoute";
+import subjects from "./routes/subjectRoute";
+import timetable from "./routes/timetableRoute";
+
+dotenv.config()
+
+declare module 'express-session' {
+  interface SessionData {
+    account?: {
+      accountId: number;
+      username: string;
+    };
+    loggedIn: boolean;
+    classJoined: boolean;
+  }
+}
+
+const app = express();
+const server = createServer(app);
+const io = socketIO.initialize(server);
+
+server.listen(3000, () => {
+  logger.success("Server running at http://localhost:3000");
+});
+
+// Schedule the cron job to run at midnight (00:00) every day
+cron.schedule("0 0 * * *", () => {
+  logger.info("Starting scheduled homework cleanup");
+  cleanupOldHomework();
+});
+
+// Schedule PostgreSQL backup every hour -- comment out section if not working
+cron.schedule("0 * * * *", () => {
+  logger.info("Starting hourly PostgreSQL backup");
+  createDBBackup();
+});
+
+const sessionPool = new Pool({
+  user: sequelize.config.username,
+  host: sequelize.config.host,
+  database: sequelize.config.database,
+  password: sequelize.config.password ?? "secret",
+  port: parseInt(sequelize.config.port ?? "0"),
+});
+
+const limiter = rateLimit({
+  windowMs: 1000, // 1 second
+  limit: 40, // Max 40 requests per IP per second
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { status: 429, message: "Too many requests, please slow down." }
+});
+
+app.use(limiter)
+
+if (process.env.NODE_ENV !== "DEVELOPMENT") {
+  // Content Security Policy
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: { 
+        "default-src": ['"self"'],
+        "script-src": [
+          '"self"', 
+          "https://code.jquery.com", 
+          "https://cdn.jsdelivr.net", 
+          "https://kit.fontawesome.com"
+        ],
+        "connect-src": [
+          '"self"', 
+          "https://ka-f.fontawesome.com",
+          "wss://*"
+        ],
+        "style-src": [
+          '"self"',
+          "https://ka-f.fontawesome.com/",
+          "https://fonts.googleapis.com/",
+          '"unsafe-inline"'
+        ],
+        "font-src": [
+          '"self"',
+          "https://ka-f.fontawesome.com/",
+          "https://fonts.gstatic.com/"
+        ],
+        "img-src": ['"self"', "data:"],
+        "object-src": ['"none"'],
+        "frame-ancestors": ['"self"']
+      },
+    },
+    crossOriginOpenerPolicy: {
+      policy: "same-origin"
+    },
+    crossOriginResourcePolicy: {
+      policy: "same-origin" 
+    },
+    referrerPolicy: {
+      policy: "strict-origin-when-cross-origin"
+    },
+    noSniff: true,
+    dnsPrefetchControl: {
+      allow: false
+    },
+    frameguard: {
+      action: "deny"
+    },
+    hidePoweredBy: true,
+    originAgentCluster: true,
+  }));
+}
+
+app.use(compression());
+// Middleware to parse request bodies
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public"));
+app.use(express.json());
+
+const sessionSecret = process.env.SESSION_SECRET;
+
+if (! sessionSecret) {
+  logger.error("SESSION_SECRET is undefined! Please define in the .env file.");
+  process.exit(1);
+}
+
+const PgSession = connectPgSimple(session);
+
+const sessionMiddleware = session({
+  store: new PgSession({
+    pool: sessionPool,
+    tableName: "account_sessions",
+    createTableIfMissing: true
+  }),
+  proxy: process.env.NODE_ENV !== "DEVELOPMENT",
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: process.env.NODE_ENV !== "DEVELOPMENT",
+  }, //30 days
+  name: "UserLogin",
+});
+app.use(sessionMiddleware);
+app.use(RequestLogger);
+app.use('/docs', express.static('./site'));
+app.use("/account", account);
+app.use("/homework", homework);
+app.use("/substitutions", substitutions);
+app.use("/schedule", schedules);
+app.use("/teams", teams);
+app.use("/events", events);
+app.use("/subjects", subjects);
+app.use("/timetable", timetable);
+app.use(ErrorHandler);
+
+// Sync models with the database
+sequelize.sync({alter: true})
+  .then(() => logger.success("Database synced"));
+
+sequelize.authenticate()
+  .then(() => logger.success("Connected to PostgreSQL"))
+  .catch((err: unknown) => {
+    if (err instanceof Error) {
+      logger.error("Unable to connect to PostgreSQL:", err.message)
+    }
+  });
+
+app.get("/", (req: Request, res: Response) => {
+  if (req.session.account && req.session.classJoined) {
+    return res.redirect(302, "/main");
+  }
+  res.redirect(302, "/join");
+})
+
+
+app.get("/join", (req, res) => {
+  if (req.session.account && req.session.classJoined) {
+    return res.redirect(302, "/main");
+  }
+  else if (! req.query.action) {
+    if (req.session.account) {
+      return res.redirect(302, "/join?action=join");
+    }
+    else if (req.session.classJoined) {
+      return res.redirect(302, "/join?action=account");
+    }
+  }
+  res.sendFile(path.join(__dirname, "..", "public", "join", "join.html"));
+});
+
+app.get("/settings", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "settings", "settings.html"));
+});
+
+app.get("/about", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "about", "about.html"));
+});
+
+//
+// Protected routes: Redirect to /join if not logged in
+//
+app.get("/main", checkAccess.elseRedirect, (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "main", "main.html"));
+});
+
+app.get("/homework", checkAccess.elseRedirect, (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "homework", "homework.html"));
+});
+
+app.get("/events", checkAccess.elseRedirect, (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "events", "events.html"));
+});
