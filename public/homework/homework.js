@@ -4,10 +4,6 @@ async function updateHomeworkList() {
   await dataLoaded("homeworkCheckedData")
   await dataLoaded("joinedTeamsData")
 
-  // Note: homeworkCheckedData will have a different structure
-  // Server: [{checkId: int, username: String, homeworkId: int, checked: boolean}, ...]
-  // Local: {homeworkId: checked, ...}
-
   // Clear the list
   $ui.homeworkList.empty();
   
@@ -17,7 +13,7 @@ async function updateHomeworkList() {
   for (let homework of homeworkData) {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = subjectData[homework.subjectId].subjectNameLong;
+    let subject = subjectData.find((s) => s.subjectId == homework.subjectId).subjectNameLong;
     let content = homework.content;
     let assignmentDate = msToDisplayDate(homework.assignmentDate).split(".").slice(0, 2).join(".");
     let submissionDate = msToDisplayDate(homework.submissionDate).split(".").slice(0, 2).join(".");
@@ -289,7 +285,7 @@ function editHomework(homeworkId) {
     const team = $("#edit-homework-team").val();
 
     let data = {
-      id: homeworkId,
+      homeworkId: homeworkId,
       subjectId: subject,
       content: content,
       assignmentDate: dateToMs(assignmentDate),
@@ -354,7 +350,7 @@ function deleteHomework(homeworkId) {
     $("#delete-homework-confirm-toast").toast("hide");
 
     let data = {
-      id: homeworkId
+      homeworkId: homeworkId
     };
     // Save whether the server has responed
     let hasResponded = false;
