@@ -1,0 +1,38 @@
+@use "sass:color";
+@use "../../global/global" as *;
+
+.license-toggle {
+  width: 2rem;
+  height: 2rem;
+
+  &.active {
+    --fa: "\f070";
+  }
+  
+  &:not(.active) {
+    --fa: "\f06e";
+
+    .license-fade-wrapper:has(~ &) {
+      height: 5rem;
+      position: relative;
+      overflow: hidden;
+
+      &::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 3rem;
+        background: linear-gradient(to bottom, rgba(var(--bs-tertiary-bg-rgb), 0), rgba(var(--bs-tertiary-bg-rgb), 1));
+        pointer-events: none;
+      }
+    }
+  }
+}
+
+.license-toggle-placeholder {
+  width: 2rem;
+  height: 2rem;
+  float: right;
+}
