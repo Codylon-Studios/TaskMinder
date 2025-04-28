@@ -1,0 +1,145 @@
+@use "sass:color";
+
+@import "../../../node_modules/bootstrap/scss/functions";
+
+// Overwriting Bootstrap standards
+$primary: #3bb9ca;
+
+@import "../../../node_modules/bootstrap/scss/bootstrap";
+
+$navbar-top-offset: 70px;
+
+$fa-font-path: "/assets/fonts/fontawesome";
+@import "../vendor/fontawesome/scss/fontawesome";
+@import "../vendor/fontawesome/scss/solid";
+
+@font-face {
+  font-family: "Quicksand";
+  src: url("/assets/fonts/Quicksand-VariableFont_wght.ttf") format("truetype");
+}
+
+@import "btn-back";
+
+$custom-btn-variants: (
+  semivisible,
+  tertiary,
+);
+
+$semivisible-hover-light: rgba(black, 0.074);
+$semivisible-active-light: rgba(black, 0.16);
+$tertiary-hover-light: rgba(black, 0.148);
+$tertiary-active-light: rgba(black, 0.2);
+
+$semivisible-hover-dark: rgba(white, 0.08);
+$semivisible-active-dark: rgba(white, 0.15);
+$tertiary-hover-dark: rgba(white, 0.11);
+$tertiary-active-dark: rgba(white, 0.16);
+
+body {
+  font-family: "Quicksand", Arial, Helvetica, sans-serif;
+  padding: $navbar-top-offset 0;
+  font-weight: 500;
+
+  --btn-color: #212529;
+  --btn-semivisible-hover: #{$semivisible-hover-light};
+  --btn-semivisible-active: #{$semivisible-active-light};
+  --btn-tertiary-hover: #{$tertiary-hover-light};
+  --btn-tertiary-active: #{$tertiary-active-light};
+
+  &[data-bs-theme="dark"] {
+    --btn-color: #dee2e6;
+    --btn-semivisible-hover: #{$semivisible-hover-dark};
+    --btn-semivisible-active: #{$semivisible-active-dark};
+    --btn-tertiary-hover: #{$tertiary-hover-dark};
+    --btn-tertiary-active: #{$tertiary-active-dark};
+  }
+}
+
+* {
+  scroll-margin-top: $navbar-top-offset;
+}
+
+.w-fit-content {
+  width: fit-content;
+}
+
+.w-md-50 {
+  @include media-breakpoint-up(md) {
+    width: 50% !important;
+  }
+}
+
+.h-fit-content {
+  height: fit-content;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.d-contents {
+  display: contents;
+}
+
+@each $variant in $custom-btn-variants {
+  .btn-#{$variant} {
+    @include button-variant(white, $primary);
+    border: none;
+    background-color: transparent;
+    color: var(--btn-color) !important;
+
+    &:hover {
+      background-color: var(--btn-#{$variant}-hover) !important;
+    }
+
+    &:active {
+      background-color: var(--btn-#{$variant}-active) !important;
+    }
+
+    &.active {
+      background-color: transparent;
+    }
+
+    &.show {
+      background-color: transparent;
+    }
+
+    &:focus {
+      background-color: transparent;
+    }
+
+    &:focus-visible {
+      background-color: var(--btn-#{$variant}-hover);
+    }
+  }
+}
+
+.btn-primary {
+  color: white !important;
+}
+
+.btn-check:checked + .btn-outline-primary {
+  color: white !important;
+}
+
+.btn-sm-square {
+  width: 2rem;
+  height: 2rem;
+}
+
+@each $name, $color in $colors {
+  .line-through-#{$name} {
+    text-decoration: line-through solid $color 0.25em;
+  }
+  .text-#{$name} {
+    color: $color;
+  }
+}
+
+.nav-tabs .nav-link.active {
+  color: $primary;
+}
+
+.nav-tabs .nav-link {
+  color: var(--bsnav-link-color);
+}
