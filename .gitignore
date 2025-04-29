@@ -2,6 +2,8 @@
 *.rdb
 # Ignore built /site after mkdocs build
 /site
+# Ignore database backups
+/db-backups
 # Ignore sensitive data
 /src/subjects.json
 /src/timetable.json
