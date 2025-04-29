@@ -2,6 +2,9 @@ ARG NODE_VERSION=20.11.0
 
 FROM node:${NODE_VERSION}-alpine
 
+# Add psql client tools for backup DBs
+RUN apk add --no-cache postgresql-client
+
 WORKDIR /usr/src/app
 
 # Download dependencies as a separate step to take advantage of Docker's caching.
@@ -16,15 +19,16 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 # Install redis-tools to be able to flush Redis cache
 RUN apk add --no-cache redis
 
-# Run the application as a non-root user.
-USER node
-
 # Copy the rest of the source files into the image.
 COPY . .
+
+RUN npm install -g typescript
+
+# Compile/Build everything needed for production -- TODO: add docs compiling through pip installment
+RUN npm run build:backend && npm run build:frontend
 
 # Expose the port that the application listens on.
 EXPOSE 3000
 
-# Run the initialization scripts, flush the Redis cache, and then start the application
-CMD redis-cli -h redis FLUSHALL && \
-    node server.js
+# Run the compiled JavaScript file
+CMD ["sh", "-c", "redis-cli -h redis FLUSHALL && node backend/dist/server.js"]

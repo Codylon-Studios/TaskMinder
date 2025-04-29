@@ -53,7 +53,7 @@ cron.schedule("0 0 * * *", () => {
   cleanupOldHomework();
 });
 
-// Schedule PostgreSQL backup every hour -- comment out section if not working
+// Schedule PostgreSQL backup every hour every day
 cron.schedule("0 * * * *", () => {
   logger.info("Starting hourly PostgreSQL backup");
   createDBBackup();
@@ -82,32 +82,32 @@ if (process.env.NODE_ENV !== "DEVELOPMENT") {
   app.use(helmet({
     contentSecurityPolicy: {
       directives: { 
-        "default-src": ['"self"'],
+        "default-src": ["'self'"],
         "script-src": [
-          '"self"', 
+          "'self'", 
           "https://code.jquery.com", 
           "https://cdn.jsdelivr.net", 
-          "https://kit.fontawesome.com"
+          "https://kit.fontawesome.com",
         ],
         "connect-src": [
-          '"self"', 
+          "'self'", 
           "https://ka-f.fontawesome.com",
           "wss://*"
         ],
         "style-src": [
-          '"self"',
+          "'self'",
           "https://ka-f.fontawesome.com/",
           "https://fonts.googleapis.com/",
-          '"unsafe-inline"'
+          "'unsafe-inline'"
         ],
         "font-src": [
-          '"self"',
+          "'self'",
           "https://ka-f.fontawesome.com/",
           "https://fonts.gstatic.com/"
         ],
-        "img-src": ['"self"', "data:"],
-        "object-src": ['"none"'],
-        "frame-ancestors": ['"self"']
+        "img-src": ["'self'", "data:"],
+        "object-src": ["'none'"],
+        "frame-ancestors": ["'self'"]
       },
     },
     crossOriginOpenerPolicy: {
@@ -176,6 +176,8 @@ app.use("/events", events);
 app.use("/subjects", subjects);
 app.use("/timetable", timetable);
 app.use(ErrorHandler);
+
+logger.highlight("helllo world")
 
 // Sync models with the database
 sequelize.sync({alter: true})
