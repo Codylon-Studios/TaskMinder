@@ -177,8 +177,6 @@ app.use("/subjects", subjects);
 app.use("/timetable", timetable);
 app.use(ErrorHandler);
 
-logger.highlight("helllo world")
-
 // Sync models with the database
 sequelize.sync({alter: true})
   .then(() => logger.success("Database synced"));

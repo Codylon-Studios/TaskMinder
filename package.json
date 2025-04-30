@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "build:server": "nodemon backend/dist/server.js",
+    "build:server": "redis-cli -h redis FLUSHALL && nodemon backend/dist/server.js",
     "build:docs": "mkdocs build --config-file=docs/mkdocs.yml",
     "build:backend": "npm run build:backend:copy && npm run build:backend:tsc",
     "build:backend:tsc": "tsc -p backend",

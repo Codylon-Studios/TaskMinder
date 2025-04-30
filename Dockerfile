@@ -1,9 +1,23 @@
-ARG NODE_VERSION=20.11.0
+ARG NODE_VERSION=20.19.1
 
 FROM node:${NODE_VERSION}-alpine
 
-# Add psql client tools for backup DBs
-RUN apk add --no-cache postgresql-client
+# Install required packages: postgresql-client, redis, python3, py3-pip, and build tools
+RUN apk add --no-cache \
+    postgresql-client \
+    redis \
+    python3 \
+    py3-pip \
+    build-base
+
+# Create a virtual environment and install mkdocs-material inside it
+RUN python3 -m venv /venv && \
+    . /venv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install mkdocs-material
+
+# Make venv default for mkdocs
+ENV PATH="/venv/bin:$PATH"
 
 WORKDIR /usr/src/app
 
@@ -16,19 +30,14 @@ RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=cache,target=/root/.npm \
   npm ci --omit=dev
 
-# Install redis-tools to be able to flush Redis cache
-RUN apk add --no-cache redis
-
 # Copy the rest of the source files into the image.
 COPY . .
 
 RUN npm install -g typescript
 
-# Compile/Build everything needed for production -- TODO: add docs compiling through pip installment
-RUN npm run build:backend && npm run build:frontend
+# Compile/Build everything needed for production
+RUN npm run build:backend && npm run build:frontend && npm run build:docs
 
 # Expose the port that the application listens on.
 EXPOSE 3000
 
-# Run the compiled JavaScript file
-CMD ["sh", "-c", "redis-cli -h redis FLUSHALL && node backend/dist/server.js"]
