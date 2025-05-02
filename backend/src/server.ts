@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { createServer } from "http";
 import path from "path";
@@ -25,6 +25,22 @@ import teams from "./routes/teamRoute";
 import events from "./routes/eventRoute";
 import subjects from "./routes/subjectRoute";
 import timetable from "./routes/timetableRoute";
+import client from 'prom-client';
+
+const register = new client.Registry();
+register.setDefaultLabels({
+  app: 'taskminder-nodejs'
+});
+
+client.collectDefaultMetrics({ register });
+
+const httpRequestDurationMicroseconds = new client.Histogram({
+  name: 'http_request_duration_ms',
+  help: 'Duration of HTTP requests in ms',
+  labelNames: ['method', 'route', 'code'],
+  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000]
+});
+register.registerMetric(httpRequestDurationMicroseconds);
 
 dotenv.config()
 
@@ -42,6 +58,23 @@ declare module 'express-session' {
 const app = express();
 const server = createServer(app);
 const io = socketIO.initialize(server);
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (
+    req.path === '/metrics' ||
+    req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)
+  ) {
+    return next();
+  }
+
+  const end = httpRequestDurationMicroseconds.startTimer();
+  res.on('finish', () => {
+    const route = (req.route && req.route.path) ? req.route.path : req.path;
+    end({ route, code: res.statusCode, method: req.method });
+  });
+
+  next();
+});
 
 server.listen(3000, () => {
   logger.success("Server running at http://localhost:3000");
@@ -81,16 +114,16 @@ if (process.env.NODE_ENV !== "DEVELOPMENT") {
   // Content Security Policy
   app.use(helmet({
     contentSecurityPolicy: {
-      directives: { 
+      directives: {
         "default-src": ["'self'"],
         "script-src": [
-          "'self'", 
-          "https://code.jquery.com", 
-          "https://cdn.jsdelivr.net", 
+          "'self'",
+          "https://code.jquery.com",
+          "https://cdn.jsdelivr.net",
           "https://kit.fontawesome.com",
         ],
         "connect-src": [
-          "'self'", 
+          "'self'",
           "https://ka-f.fontawesome.com",
           "wss://*"
         ],
@@ -114,7 +147,7 @@ if (process.env.NODE_ENV !== "DEVELOPMENT") {
       policy: "same-origin"
     },
     crossOriginResourcePolicy: {
-      policy: "same-origin" 
+      policy: "same-origin"
     },
     referrerPolicy: {
       policy: "strict-origin-when-cross-origin"
@@ -139,7 +172,7 @@ app.use(express.json());
 
 const sessionSecret = process.env.SESSION_SECRET;
 
-if (! sessionSecret) {
+if (!sessionSecret) {
   logger.error("SESSION_SECRET is undefined! Please define in the .env file.");
   process.exit(1);
 }
@@ -156,7 +189,7 @@ const sessionMiddleware = session({
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
-  cookie: { 
+  cookie: {
     maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     secure: process.env.NODE_ENV !== "DEVELOPMENT",
@@ -178,7 +211,7 @@ app.use("/timetable", timetable);
 app.use(ErrorHandler);
 
 // Sync models with the database
-sequelize.sync({alter: true})
+sequelize.sync({ alter: true })
   .then(() => logger.success("Database synced"));
 
 sequelize.authenticate()
@@ -188,6 +221,11 @@ sequelize.authenticate()
       logger.error("Unable to connect to PostgreSQL:", err.message)
     }
   });
+
+app.get('/metrics', async (req: Request, res: Response) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
 
 app.get("/", (req: Request, res: Response) => {
   if (req.session.account && req.session.classJoined) {
@@ -202,7 +240,7 @@ app.get("/join", (req, res) => {
   if (req.session.account && req.session.classJoined) {
     return res.redirect(302, "/main");
   }
-  else if (! req.query.action) {
+  else if (!req.query.action) {
     if (req.session.account) {
       return res.redirect(302, "/join?action=join");
     }
