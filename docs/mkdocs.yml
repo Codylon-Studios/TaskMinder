@@ -40,7 +40,7 @@ theme:
 nav:
   - Home: index.md
   - Development: development.md
-  - Deployment: deploy.md
+  - Production: deploy.md
   - Create Files: filestructure.md
   - About:
     - License: license.md
