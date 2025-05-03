@@ -42,7 +42,7 @@ services:
              export DSB_USER=$(cat /run/secrets/dsb_user) &&
              export DSB_PASSWORD=$(cat /run/secrets/dsb_password) &&
              redis-cli -h redis FLUSHALL &&
-             node backend/dist/server.js" # Adjusted path based on WORKDIR and build step
+             node backend/dist/server.js"
 
   postgres:
     image: postgres:14

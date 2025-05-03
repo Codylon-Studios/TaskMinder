@@ -13,10 +13,6 @@ scrape_configs:
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
-        # Filters can be added here if needed, e.g., to only scrape specific labels
-        # filters:
-        #   - name: label
-        #     values: ["logging=promtail"]
     relabel_configs:
       - source_labels: ['__meta_docker_container_name']
         regex: '/(.*)' 
@@ -28,3 +24,11 @@ scrape_configs:
       - source_labels: ['__meta_docker_container_name']
         regex: '/(.*)'
         target_label: 'instance'
+    pipeline_stages:
+      - match:
+          selector: '{job="taskminder-app"}'
+          stages:
+            - drop:
+                expression: 'GET /metrics'
+            - drop:
+                expression: '\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)'
