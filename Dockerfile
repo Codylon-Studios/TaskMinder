@@ -35,9 +35,12 @@ COPY . .
 
 RUN npm install -g typescript
 
+# Start the container as node user
+USER node
+
+
 # Compile/Build everything needed for production
 RUN npm run build:backend && npm run build:frontend && npm run build:docs
 
 # Expose the port that the application listens on.
 EXPOSE 3000
-
