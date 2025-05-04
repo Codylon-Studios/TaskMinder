@@ -12,21 +12,21 @@ async function updateEventList() {
   for (let event of eventData) {
     // Get the information for the event
     let eventId = event.eventId;
-    let type = event.type;
+    let eventTypeId = event.eventTypeId;
     let name = event.name;
     let description = event.description;
-    let startDate = msToDisplayDate(event.startDate).split('.').slice(0, 2).join('.');
+    let startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
     let lesson = event.lesson;
     let endDate;
     if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate).split('.').slice(0, 2).join('.');
+      endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
     }
     else {
       endDate = null;
     }
 
     // Filter by type
-    if (!$(`#filter-type-${type}`).prop("checked")) {
+    if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
       continue;
     }
 
@@ -54,10 +54,10 @@ async function updateEventList() {
     // The template for an event with edit options
     let template = 
       `<div class="col p-2">
-        <div class="card event-${type} h-100">
+        <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column me-3">
-              <span class="fw-bold event-${type}">${name}</span>
+              <span class="fw-bold event-${eventTypeId}">${name}</span>
               <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${lesson}. Stunde)` : ""}</b>
               <span>${description}</span>
             </div>
@@ -101,8 +101,9 @@ async function updateEventTypeList() {
     filterData.type = {}
   }
 
-  eventTypeData.forEach((eventType, eventTypeId) => {
+  eventTypeData.forEach(eventType => {
     // Get the event type data
+    let eventTypeId = eventType.eventTypeId;
     let eventName = eventType.name;
 
     if (filterData.type[eventTypeId] == undefined) filterData.type[eventTypeId] = true
@@ -133,7 +134,7 @@ async function updateEventTypeList() {
     if (filterData.type == undefined) {
       filterData.type = {}
     }
-    filterData.type[$(this).data('id')] = $(this).prop("checked")
+    filterData.type[$(this).data("id")] = $(this).prop("checked")
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
   });
@@ -152,13 +153,13 @@ async function updateTeamList() {
   $("#edit-event-team").empty();
   $("#edit-event-team").append('<option value="-1" selected>Alle</option>');
 
-  teamsData.forEach((team, teamId) => {
+  teamsData.forEach(team => {
     // Get the team data
     let teamName = team.name;
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${teamId}">${teamName}</option>`;
+      `<option value="${team.teamId}">${teamName}</option>`;
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
   });
@@ -189,7 +190,7 @@ function addEvent() {
   // Note: .off("click") removes the existing click event listener from a previous call of this function
   $("#add-event-button").off("click").on("click", () => {
     // Save the given information in variables
-    const type = $("#add-event-type").val();
+    const eventTypeId = $("#add-event-type").val();
     const name = $("#add-event-name").val().trim();
     const description = $("#add-event-description").val().trim();
     const startDate = $("#add-event-start-date").val();
@@ -199,7 +200,7 @@ function addEvent() {
 
     // Prepare the POST request
     let data = {
-      type: type,
+      eventTypeId: eventTypeId,
       name: name,
       description: description,
       startDate: dateToMs(startDate),
@@ -266,7 +267,7 @@ function editEvent(eventId) {
   }
 
   // Set the inputs on the already saved information
-  $("#edit-event-type").val(data.type);
+  $("#edit-event-type").val(data.eventTypeId);
   $("#edit-event-name").val(data.name);
   $("#edit-event-description").val(data.description);
   $("#edit-event-start-date").val(msToInputDate(data.startDate));
@@ -284,7 +285,7 @@ function editEvent(eventId) {
   // Note: .off("click") removes the existing click event listener from a previous call of this function
   $("#edit-event-button").off("click").on("click", () => {
     // Save the given information in variables
-    const type = $("#edit-event-type").val();
+    const eventTypeId = $("#edit-event-type").val();
     const name = $("#edit-event-name").val();
     const description = $("#edit-event-description").val();
     const startDate = $("#edit-event-start-date").val();
@@ -294,7 +295,7 @@ function editEvent(eventId) {
 
     let data = {
       eventId: eventId,
-      type: type,
+      eventTypeId: eventTypeId,
       name: name,
       description: description,
       startDate: dateToMs(startDate),
@@ -542,20 +543,20 @@ $(function(){
 
   // Don't close the dropdown when the user clicked inside of it
   $(".dropdown-menu").each(function () {
-    $(this).on('click', (ev) => {
+    $(this).on("click", (ev) => {
       ev.stopPropagation();
     });
   });
 
   // Request deleting the event on clicking its delete icon
-  $(document).on('click', '.event-delete', function () {
-    const eventId = $(this).data('id');
+  $(document).on("click", ".event-delete", function () {
+    const eventId = $(this).data("id");
     deleteEvent(eventId);
   });
 
   // Request editing the event on clicking its delete icon
-  $(document).on('click', '.event-edit', function () {
-    const eventId = $(this).data('id');
+  $(document).on("click", ".event-edit", function () {
+    const eventId = $(this).data("id");
     editEvent(eventId);
   });
 
@@ -566,7 +567,7 @@ $(function(){
     if (filterData.type == undefined) filterData.type = {}
     $(".filter-type-option").prop("checked", true);
     $(".filter-type-option").each(function () {
-      filterData.type[$(this).data('id')] = true
+      filterData.type[$(this).data("id")] = true
     })
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
@@ -579,7 +580,7 @@ $(function(){
     if (filterData.type == undefined) filterData.type = {}
     $(".filter-type-option").prop("checked", false);
     $(".filter-type-option").each(function () {
-      filterData.type[$(this).data('id')] = false
+      filterData.type[$(this).data("id")] = false
     })
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
@@ -608,7 +609,7 @@ $(function(){
   });
 });
 
-socket.on('updateEventData', ()=>{
+socket.on("updateEventData", ()=>{
   try {
     eventData = undefined;
 

@@ -4,10 +4,6 @@ async function updateHomeworkList() {
   await dataLoaded("homeworkCheckedData")
   await dataLoaded("joinedTeamsData")
 
-  // Note: homeworkCheckedData will have a different structure
-  // Server: [{checkId: int, username: String, homeworkId: int, checked: boolean}, ...]
-  // Local: {homeworkId: checked, ...}
-
   // Clear the list
   $ui.homeworkList.empty();
   
@@ -17,10 +13,10 @@ async function updateHomeworkList() {
   for (let homework of homeworkData) {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = subjectData[homework.subjectId].name.long;
+    let subject = subjectData.find((s) => s.subjectId == homework.subjectId).subjectNameLong;
     let content = homework.content;
-    let assignmentDate = msToDisplayDate(homework.assignmentDate).split('.').slice(0, 2).join('.');
-    let submissionDate = msToDisplayDate(homework.submissionDate).split('.').slice(0, 2).join('.');
+    let assignmentDate = msToDisplayDate(homework.assignmentDate).split(".").slice(0, 2).join(".");
+    let submissionDate = msToDisplayDate(homework.submissionDate).split(".").slice(0, 2).join(".");
 
     let checked = await getHomeworkCheckStatus(homeworkId);
 
@@ -80,8 +76,6 @@ async function updateHomeworkList() {
 
     // Add this homework to the list
     $ui.homeworkList.append(template);
-
-    //console.location()
   };
 
   // If no homeworks match, add an explanation text
@@ -108,9 +102,10 @@ async function updateSubjectList() {
     filterData.subject = {}
   }
 
-  subjectData.forEach((subject, subjectId) => {
+  subjectData.forEach(subject => {
     // Get the subject data
-    let subjectName = subject.name.long;
+    let subjectId = subject.subjectId;
+    let subjectName = subject.subjectNameLong;
 
     if (filterData.subject[subjectId] == undefined) filterData.subject[subjectId] = true
     let checkedStatus = (filterData.subject[subjectId]) ? "checked" : ""
@@ -140,7 +135,7 @@ async function updateSubjectList() {
     if (filterData.subject == undefined) {
       filterData.subject = {}
     }
-    filterData.subject[$(this).data('id')] = $(this).prop("checked")
+    filterData.subject[$(this).data("id")] = $(this).prop("checked")
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
   });
@@ -159,13 +154,13 @@ async function updateTeamList() {
   $("#edit-homework-team").empty();
   $("#edit-homework-team").append('<option value="-1" selected>Alle</option>');
 
-  teamsData.forEach((team, teamId) => {
+  teamsData.forEach(team => {
     // Get the team data
     let teamName = team.name;
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${teamId}">${teamName}</option>`;
+      `<option value="${team.teamId}">${teamName}</option>`;
     $("#add-homework-team").append(templateFormSelect);
     $("#edit-homework-team").append(templateFormSelect);
   });
@@ -290,7 +285,7 @@ function editHomework(homeworkId) {
     const team = $("#edit-homework-team").val();
 
     let data = {
-      id: homeworkId,
+      homeworkId: homeworkId,
       subjectId: subject,
       content: content,
       assignmentDate: dateToMs(assignmentDate),
@@ -355,7 +350,7 @@ function deleteHomework(homeworkId) {
     $("#delete-homework-confirm-toast").toast("hide");
 
     let data = {
-      id: homeworkId
+      homeworkId: homeworkId
     };
     // Save whether the server has responed
     let hasResponded = false;
@@ -619,26 +614,26 @@ $(function(){
 
   // Don't close the dropdown when the user clicked inside of it
   $(".dropdown-menu").each(function () {
-    $(this).on('click', (ev) => {
+    $(this).on("click", (ev) => {
       ev.stopPropagation();
     });
   });
 
   // Request deleting the homework on clicking its delete icon
-  $(document).on('click', '.homework-delete', function () {
-    const homeworkId = $(this).data('id');
+  $(document).on("click", ".homework-delete", function () {
+    const homeworkId = $(this).data("id");
     deleteHomework(homeworkId);
   });
 
   // Request editing the homework on clicking its delete icon
-  $(document).on('click', '.homework-edit', function () {
-    const homeworkId = $(this).data('id');
+  $(document).on("click", ".homework-edit", function () {
+    const homeworkId = $(this).data("id");
     editHomework(homeworkId);
   });
 
   // Request checking the homework on clicking its checkbox
-  $(document).on('click', '.homework-check', function () {
-    const homeworkId = $(this).data('id');
+  $(document).on("click", ".homework-check", function () {
+    const homeworkId = $(this).data("id");
     checkHomework(homeworkId);
   });
 
@@ -667,7 +662,7 @@ $(function(){
     if (filterData.subject == undefined) filterData.subject = {}
     $(".filter-subject-option").prop("checked", true);
     $(".filter-subject-option").each(function () {
-      filterData.subject[$(this).data('id')] = true
+      filterData.subject[$(this).data("id")] = true
     })
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
@@ -680,7 +675,7 @@ $(function(){
     if (filterData.subject == undefined) filterData.subject = {}
     $(".filter-subject-option").prop("checked", false);
     $(".filter-subject-option").each(function () {
-      filterData.subject[$(this).data('id')] = false
+      filterData.subject[$(this).data("id")] = false
     })
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
@@ -709,7 +704,7 @@ $(function(){
   });
 });
 
-socket.on('updateHomeworkData', () => {
+socket.on("updateHomeworkData", () => {
   try {
     homeworkData = undefined;
     homeworkCheckedData = undefined;

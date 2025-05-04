@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="description" content="Synchronize homework events and more with your classmates!.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TaskMinder</title>
   <script src="/init.js"></script>
@@ -11,23 +12,6 @@
   <div class="load-content" data-url="navbar" data-html data-js></div>
 
   <div class="container">
-    <div class="alert alert-primary p-2 d-none align-items-center gap-2 width-fit-content" id="team-selection-info">
-      <i class="fa-solid fa-circle-info"></i>
-      <div class="d-block">
-        <span class="d-block fw-bold">
-          Wähle deine Teams aus!
-        </span>
-        <span class="d-block">
-          Teams sind zum Beispiel für verschiedene Sprachen in der Klasse. Du siehst dann nur die Hausaufgaben, Ereignisse und ähnliches,
-          wenn du in dem Team bist. 
-        </span>
-        <div class="d-block">
-          <a class="me-2" href="#" data-bs-toggle="modal" data-bs-target="#team-selection-modal">Jetzt auswählen</a>
-          <a class="text-secondary" href="#" id="team-selection-info-later">Später</a>
-        </div>
-      </div>
-    </div>
-
     <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
       <button class="btn btn-sm fw-bold btn-primary me-2 calendar-special-button" id="calendar-today-btn">
         Heute
@@ -76,9 +60,8 @@
       </div>
     </div>
 
-    <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-sm-row gap-2" id="timetable-less"></div>
-
-    <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xxl-row gap-3 d-none" id="timetable-more"></div>
+    <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xl-row gap-2" id="timetable-less"></div>
+    <div class="container-fluid mb-3 d-flex flex-wrap flex-column gap-3 d-none" id="timetable-more"></div>
     
     <div class="container-fluid mb-3">
       <div class="mb-2 d-flex align-items-center">

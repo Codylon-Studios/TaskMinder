@@ -16,15 +16,19 @@ function loadTemplateContent() {
     if ($(this).data("html") != undefined) {
       $(this).load(url + "html", () => {
         if ($(this).data("js") != undefined) {
-          loadScript(url + 'js');
+          loadScript(url + "js");
         }
       })
     }
     else if ($(this).data("js") != undefined) {
-      loadScript(url + 'js');
+      loadScript(url + "js");
     }
     if ($(this).data("css") != undefined) {
-      document.head.appendChild(`<link rel="stylesheet" type="text/css" href="${url}css">`);
+      let link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.type = "text/css";
+      link.href = `${url}css`;
+      document.head.appendChild(link);
     }
   });
 }
@@ -38,7 +42,7 @@ if (localStorage.getItem("colorTheme") == "dark") {
 else if (localStorage.getItem("colorTheme") == "light") {
   colorTheme = "light"
 }
-else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
   colorTheme = "dark"
 }
 else {
@@ -59,15 +63,12 @@ document.head.appendChild(themeColor);
 let socket;
 
 // Load jQuery without jQuery
-let jQueryScript = document.createElement('script');
-jQueryScript.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
+let jQueryScript = document.createElement("script");
+jQueryScript.src = "/vendor/jquery/jquery.min.js";
 jQueryScript.defer = true;
 jQueryScript.onload = () => {
   // Load Bootstrap
-  loadScript("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js")
-
-  // Load Font Awesome icons
-  loadScript("https://kit.fontawesome.com/0ca04b82ef.js")
+  loadScript("/vendor/bootstrap/bootstrap.bundle.min.js")
 
   // Load favicon
   let favicon = document.createElement("link")
@@ -87,8 +88,8 @@ jQueryScript.onload = () => {
     // Initialize Socket.IO connection
     socket = io();
     // Setup basic Socket.IO event handlers
-    socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
+    socket.on("connect_error", (error) => {
+      console.error("Connection error:", error);
     });
   });
   // Load global JS

@@ -11,7 +11,7 @@ WORKDIR /usr/src/app
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
     --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
+  npm ci --omit=dev
 
 # Install redis-tools to be able to flush Redis cache
 RUN apk add --no-cache redis
@@ -28,4 +28,3 @@ EXPOSE 3000
 # Run the initialization scripts, flush the Redis cache, and then start the application
 CMD redis-cli -h redis FLUSHALL && \
     node server.js
-

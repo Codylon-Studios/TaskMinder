@@ -1,29 +1,24 @@
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
-function registerAccount(username, password, classcode) {
+function registerAccount(username, password) {
   let data = {
       username: username,
-      password: password,
-      classcode: classcode
+      password: password
   };
   let hasResponded = false;
 
   $.ajax({
     url: "/account/register",
-    type: 'POST',
+    type: "POST",
     data: data,
     success: () => {
       $("#register-success-toast .username").text(username);
       $("#register-success-toast").toast("show");
-      $navbarUi.lr.modal.modal("hide");
+      $("#login-register-modal").modal("hide");
       user.trigger("login");
       user.username = username;
     },
     error: (xhr) => {
-      if (xhr.status === 401) {
-        $navbarUi.r.invalidClasscode.removeClass("d-none");
-        $navbarUi.r.invalidClasscode.addClass("d-flex");
-      }
-      else if (xhr.status === 500) {
+      if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
       }
       else {
@@ -52,19 +47,19 @@ function loginAccount(username, password) {
 
   $.ajax({
     url: "/account/login",
-    type: 'POST',
+    type: "POST",
     data: data,
     success: () => {
       $("#login-success-toast .username").text(username);
       $("#login-success-toast").toast("show");
-      $navbarUi.lr.modal.modal("hide");
+      $("#login-register-modal").modal("hide");
       user.trigger("login");
       user.username = username;
     },
     error: (xhr) => {
       if (xhr.status === 401) {
-        $navbarUi.l.invalidPassword.removeClass("d-none");
-        $navbarUi.l.invalidPassword.addClass("d-flex");
+        $(".login-error-invalid-password").removeClass("d-none");
+        $(".login-error-invalid-password").addClass("d-flex");
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
@@ -91,7 +86,7 @@ function logoutAccount() {
 
   $.ajax({
     url: "/account/logout",
-    type: 'POST',
+    type: "POST",
     success: () => {
       $("#logout-success-toast").toast("show");
       user.trigger("logout");
@@ -123,7 +118,7 @@ function checkExistingUsername(username) {
   return new Promise((resolve) => {
     $.ajax({
       url: "/account/checkusername",
-      type: 'POST',
+      type: "POST",
       data: data,
       success: (res) => {
         resolve(res);
@@ -150,66 +145,26 @@ function checkExistingUsername(username) {
 }
 
 function resetLoginRegisterModal() {
-  $("#login-register-title").removeClass("d-none");
-  $("#login-title").addClass("d-none");
-  $("#register-title").addClass("d-none");
+  $(".login-register-element").removeClass("d-none");
+  $(".login-element").addClass("d-none");
+  $(".register-element").addClass("d-none");
 
-  $("#login-register-content").removeClass("d-none");
-  $("#login-content").addClass("d-none");
-  $("#register-content").addClass("d-none");
-
-  $("#login-password").val("");
-  $navbarUi.r.classcode.val("");
-  $navbarUi.r.password.val("");
-  $navbarUi.r.passwordRepeat.val("");
+  $(".login-password").val("");
+  $(".register-password").val("");
+  $(".register-password").val("");
   
-  $navbarUi.lr.nextBtn.removeClass("d-none");
-  $navbarUi.lr.backBtn.addClass("d-none");
-  $("#login-button").addClass("d-none");
-  $navbarUi.r.btn.addClass("d-none");
+  $(".login-register-next-button").removeClass("d-none");
+  $(".login-register-back-button").addClass("d-none");
+  $(".login-button").addClass("d-none");
+  $(".register-button").addClass("d-none");
 
-  $navbarUi.lr.invalidUsername.addClass("d-none");
-  $navbarUi.lr.invalidUsername.removeClass("d-flex");
+  $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
 
-  $navbarUi.l.invalidPassword.addClass("d-none");
-  $navbarUi.l.invalidPassword.removeClass("d-flex");
+  $(".login-error-invalid-password").addClass("d-none");
+  $(".login-error-invalid-password").removeClass("d-flex");
 
-  $navbarUi.r.invalidClasscode.addClass("d-none");
-  $navbarUi.r.invalidClasscode.removeClass("d-flex");
-
-  $navbarUi.r.insecurePassword.addClass("d-none");
-  $navbarUi.r.insecurePassword.removeClass("d-flex");
-}
-
-function updateColorTheme() {
-  if ($("#color-theme-dark")[0].checked) {
-    colorTheme = "dark"
-    localStorage.setItem("colorTheme", "dark");
-  }
-  else if ($("#color-theme-light")[0].checked) {
-    colorTheme = "light"
-    localStorage.setItem("colorTheme", "light");
-  }
-  else {
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      colorTheme = "dark"
-    }
-    else {
-      colorTheme = "light"
-    }
-    localStorage.setItem("colorTheme", "auto");
-  }
-
-  if (colorTheme == "light") {
-    document.getElementsByTagName("html")[0].style.background = "#ffffff";
-    document.body.setAttribute("data-bs-theme", "light");
-    $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
-  }
-  else {
-    document.getElementsByTagName("html")[0].style.background = "#212529";
-    document.body.setAttribute("data-bs-theme", "dark");
-    $(`meta[name="theme-color"]`).attr("content", "#2b3035")
-  }
+  $(".register-error-insecure-password").addClass("d-none");
+  $(".register-error-insecure-password").removeClass("d-flex");
 }
 
 function checkUsername(username) {
@@ -217,48 +172,7 @@ function checkUsername(username) {
 }
 
 function checkSecurePassword(password) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"'<>,.?/-]).{8,}$/.test(password);
-}
-
-async function updateTeamSelectionList() {
-  await dataLoaded("joinedTeamsData");
-  await dataLoaded("teamsData");
-  
-  $("#team-list").empty()
-
-  teamsData.forEach((team, teamId) => {
-    let selected = joinedTeamsData.includes(teamId)
-    let template = `
-      <div class="form-check">
-        <input type="checkbox" class="form-check-input" data-id="${teamId}" id="team-selection-team-${teamId}" ${(selected) ? "checked" : ""}>
-        <label class="form-check-label" for="team-selection-team-${teamId}">
-          ${team.name}
-        </label>
-      </div>`;
-    $("#team-list").append(template)
-  })
-}
-
-let $navbarUi = {
-  lr: { // Login & Register related elements
-    modal: $("#login-register-modal"),
-    invalidUsername: $("#login-register-error-invalid-username"),
-    username: $("#login-register-username"),
-    nextBtn: $("#login-register-next-button"),
-    backBtn: $("#login-register-back-button"),
-  },
-  l: { // Login related elements
-    invalidPassword: $("#login-error-invalid-password"),
-  },
-  r: { // Register related elements
-    noMatchingPassword: $("#register-error-no-matching-passwords"),
-    insecurePassword: $("#register-error-insecure-password"),
-    invalidClasscode: $("#register-error-invalid-classcode"),
-    classcode: $("#register-classcode"),
-    password: $("#register-password"),
-    passwordRepeat: $("#register-password-repeat"),
-    btn: $("#register-button"),
-  },
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;""<>,.?/-]).{8,}$/.test(password);
 }
 
 let $navbarToasts = {
@@ -267,13 +181,18 @@ let $navbarToasts = {
   notLoggedIn: $("#not-logged-in-toast"),
 }
 
-$(document).ready(() => {
-  updateAllFunctions.push(() => {
-    updateTeamSelectionList();
-  })
-  
+$(async () => {
   updateAll();
-})
+
+  await userDataLoaded()
+  if (user.classJoined) {
+    $(".class-joined-content").removeClass("d-none")
+    $(".navbar-home-link").attr("href", "/main")
+  }
+  if (["/main/", "/homework/", "/events/"].includes(location.pathname)) {
+    $(".class-page-content").removeClass("d-none")
+  }
+});
 
 // Create the user object with a username variable and event listeners
 const user = $({})
@@ -306,16 +225,20 @@ user.on("logout", () => {
 });
 
 // Check if the user is logged in for the first time
-$.get('/account/auth', (response) => {
-  if (response.authenticated) {
+$.get("/account/auth", (response) => {
+  if (response.loggedIn) {
+    user.loggedIn = true;
     user.username = response.account.username;
   } else {
+    user.loggedIn = false;
     user.username = null;
   }
 
+  user.classJoined = response.classJoined;
+
   $(window).trigger("userDataLoaded");
 
-  if (response.authenticated) {
+  if (response.loggedIn) {
     user.trigger("login");
   } else {
     user.trigger("logout");
@@ -325,202 +248,126 @@ $.get('/account/auth', (response) => {
 //
 //LOGIN -- LOGOUT -- REGISTER
 //
-$("#login-button").on("click", () => {
-  let username = $navbarUi.lr.username.val();
-  let password = $("#login-password").val();
+$(".login-button").on("click", () => {
+  let username = $(".login-register-username").val();
+  let password = $(".login-password").val();
   loginAccount(username, password);
 });
 
-$navbarUi.r.btn.on("click", () => {
-  let username = $navbarUi.lr.username.val();
-  let password = $navbarUi.r.password.val();
-  let classcode = $navbarUi.r.classcode.val();
-  registerAccount(username, password, classcode);
+$(".register-button").on("click", () => {
+  let username = $(".login-register-username").val();
+  let password = $(".register-password").val();
+  registerAccount(username, password);
 });
 
 $("#logout-button").on("click", () => {
   logoutAccount();
 });
 
-let animations = JSON.parse(localStorage.getItem("animations"));
-if (animations == undefined) animations = true
-$("#animations input").prop("checked", animations);
-$("#animations input").on("click", function () {
-  animations = $(this).prop("checked");
-  localStorage.setItem("animations", animations)
-})
+$(".login-register-username").val("");
 
-let colorThemeSetting = localStorage.getItem("colorTheme") || "auto";
-document.body.setAttribute("data-bs-theme", colorTheme);
-$("#color-theme-auto").prop("checked", colorThemeSetting == "auto") 
-$("#color-theme-dark").prop("checked", colorThemeSetting == "dark") 
-$("#color-theme-light").prop("checked", colorThemeSetting == "light")
-
-$("#color-theme input").each(() => {
-  $(this).on("click", () => {
-    updateColorTheme();
-  });
-});
-
-window.matchMedia('(prefers-color-scheme: light)').addEventListener("change", updateColorTheme)
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener("change", updateColorTheme)
-
-$navbarUi.lr.username.val("");
-
-$navbarUi.lr.modal.on("show.bs.modal", () => {
+$("#login-register-modal").on("show.bs.modal", () => {
   resetLoginRegisterModal();
-  $navbarUi.lr.username.val("");
-  $navbarUi.lr.nextBtn.addClass("disabled");
+  $(".login-register-username").val("");
+  $(".login-register-next-button").addClass("disabled");
 });
-
 
 // Check username
+$(".login-register-username").on("input", function () {
+  // Sync multiple instances of login possibilites
+  $(".login-register-username").val($(this).val())
 
-$navbarUi.lr.username.on("input", () => {
-  if (checkUsername($navbarUi.lr.username.val())) {
-    $navbarUi.lr.nextBtn.removeClass("disabled");
-    $navbarUi.lr.invalidUsername.addClass("d-none");
-    $navbarUi.lr.invalidUsername.removeClass("d-flex");
+  if (checkUsername($(".login-register-username").val())) {
+    $(".login-register-next-button").removeClass("disabled");
+    $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
   }
 });
 
-$navbarUi.lr.username.on("change", () => {
-  if (! checkUsername($navbarUi.lr.username.val())) {
-    $navbarUi.lr.nextBtn.addClass("disabled");
-    $navbarUi.lr.invalidUsername.removeClass("d-none");
-    $navbarUi.lr.invalidUsername.addClass("d-flex");
+$(".login-register-username").on("change", function () {
+  // Sync multiple instances of login possibilites
+  $(".login-register-username").val($(this).val())
+
+  if (! checkUsername($(".login-register-username").val())) {
+    $(".login-register-next-button").addClass("disabled");
+    $(".login-register-error-invalid-username").removeClass("d-none").addClass("d-flex");
   }
 });
 
 
 // Check login password
+$(".login-password").on("input", function () {
+  // Sync multiple instances of login possibilites
+  $(".login-password").val($(this).val())
 
-$("#login-password").on("input", () => {
-  $navbarUi.l.invalidPassword.addClass("d-none");
-  $navbarUi.l.invalidPassword.removeClass("d-flex");
+  $(".login-error-invalid-password").addClass("d-none");
+  $(".login-error-invalid-password").removeClass("d-flex");
 });
-
 
 // Check register password
 
-$navbarUi.r.password.on("input", () => {
-  if (checkSecurePassword($navbarUi.r.password.val())) {
-    $navbarUi.r.insecurePassword.addClass("d-none");
-    $navbarUi.r.insecurePassword.removeClass("d-flex");
+$(".register-password").on("input", function () {
+  // Sync multiple instances of login possibilites
+  $(".register-password").val($(this).val())
+
+  if (checkSecurePassword($(".register-password").val())) {
+    $(".register-error-insecure-password").addClass("d-none");
+    $(".register-error-insecure-password").removeClass("d-flex");
   }
 });
 
-$navbarUi.r.password.on("change", () => {
-  if (! checkSecurePassword($navbarUi.r.password.val())) {
-    $navbarUi.r.insecurePassword.removeClass("d-none");
-    $navbarUi.r.insecurePassword.addClass("d-flex");
+$(".register-password").on("change", () => {
+  if (! checkSecurePassword($(".register-password").val())) {
+    $(".register-error-insecure-password").removeClass("d-none");
+    $(".register-error-insecure-password").addClass("d-flex");
   }
 });
 
 
 // Check repeated password
+$(".register-password-repeat").on("input", function () {
+  // Sync multiple instances of login possibilites
+  $(".register-password-repeat").val($(this).val())
 
-$navbarUi.r.passwordRepeat.on("input", () => {
-  if ($navbarUi.r.password.val() == $navbarUi.r.passwordRepeat.val()) {
-    $navbarUi.r.btn.removeClass("disabled");
-    $navbarUi.r.noMatchingPassword.addClass("d-none");
-    $navbarUi.r.noMatchingPassword.removeClass("d-flex");
+  if ($(".register-password").val() == $(".register-password-repeat").val()) {
+    $(".register-button").removeClass("disabled");
+    $(".register-error-no-matching-passwords").addClass("d-none");
+    $(".register-error-no-matching-passwords").removeClass("d-flex");
   }
 });
 
-$navbarUi.r.passwordRepeat.on("change", () => {
-  if ($navbarUi.r.password.val() != $navbarUi.r.passwordRepeat.val()) {
-    $navbarUi.r.btn.addClass("disabled");
-    $navbarUi.r.noMatchingPassword.removeClass("d-none");
-    $navbarUi.r.noMatchingPassword.addClass("d-flex");
+$(".register-password-repeat").on("change", () => {
+  if ($(".register-password").val() != $(".register-password-repeat").val()) {
+    $(".register-button").addClass("disabled");
+    $(".register-error-no-matching-passwords").removeClass("d-none");
+    $(".register-error-no-matching-passwords").addClass("d-flex");
   }
 });
 
- // Check classcode
+$(".login-register-next-button").on("click", async () => {
+  $(".login-register-back-button").removeClass("d-none");
 
- $navbarUi.r.classcode.on("input", () => {
-  $navbarUi.r.invalidClasscode.addClass("d-none");
-  $navbarUi.r.invalidClasscode.removeClass("d-flex");
-});
+  $(".login-register-element, .login-register-next-button").addClass("d-none");
 
-$navbarUi.lr.nextBtn.on("click", async () => {
-  $navbarUi.lr.backBtn.removeClass("d-none");
-
-  $("#login-register-title").addClass("d-none");
-  $("#login-register-content").addClass("d-none");
-  $navbarUi.lr.nextBtn.addClass("d-none");
-
-  checkExistingUsername($navbarUi.lr.username.val()).then(response => {
+  checkExistingUsername($(".login-register-username").val()).then(response => {
     if (response) {
-      $("#login-title").removeClass("d-none");
-      $("#login-content").removeClass("d-none");
-      $("#login-button").removeClass("d-none");
+      $(".login-element").removeClass("d-none");
     } else {
-      $("#register-title").removeClass("d-none");
-      $("#register-content").removeClass("d-none");
-      $navbarUi.r.btn.removeClass("d-none");
+      $(".register-element").removeClass("d-none");
     }
   })
 });
 
-$navbarUi.lr.backBtn.on("click", resetLoginRegisterModal);
+$(".login-register-back-button").on("click", resetLoginRegisterModal);
 
 
-user.on("login", () => {
-  $("#login-register-button").addClass("d-none");
-  $("#logout-button").removeClass("d-none");
-});
-
-user.on("logout", () => {
-  $("#login-register-button").removeClass("d-none");
-  $("#logout-button").addClass("d-none");
-});
-
-$("#team-selection-save").on("click", () => {
-  let newJoinedTeamsData = []
-  $("#team-list input").each(function () {
-    if ($(this).prop("checked")) {
-      newJoinedTeamsData.push(Number($(this).data("id")))
-    }
-  })
-  joinedTeamsData = newJoinedTeamsData;
-
-  if (user.loggedIn) {
-    let data = {
-      teams: joinedTeamsData,
-    };
-    let hasResponded = false;
-
-    $.ajax({
-      url: "/teams/set_joined_teams_data",
-      type: 'POST',
-      data: data,
-      error: (xhr) => {
-        if (xhr.status === 401) {
-          $navbarToasts.serverError.toast("show");
-        }
-        else if (xhr.status === 500) {
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        hasResponded = true;
-      }
-    });
-
-    setTimeout(() => {
-      if (!hasResponded) {
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 1000);
-  }
-  else {
-    localStorage.setItem("joinedTeamsData", JSON.stringify(joinedTeamsData))
-  }
+if (location.pathname != "/join/") {
+  user.on("login", () => {
+    $("#login-register-button").addClass("d-none");
+    $("#logout-button").removeClass("d-none");
+  });
   
-  $("#team-selection-modal").modal("hide")
-  updateAll()
-})
+  user.on("logout", () => {
+    $("#login-register-button").removeClass("d-none");
+    $("#logout-button").addClass("d-none");
+  });
+}

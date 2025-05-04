@@ -27,7 +27,7 @@ function getCalendarDayHtml(date, week, multiEventPositions) {
 
     if (event.endDate == null) {
       if (isSameDay(new Date(parseInt(event.startDate)), date)) {
-        singleDayEvents += `<div class="col"><div class="event event-${event.type}"></div></div>`
+        singleDayEvents += `<div class="col"><div class="event event-${event.eventTypeId}"></div></div>`
       }
     }
     else if (event.endDate != null) {
@@ -41,17 +41,17 @@ function getCalendarDayHtml(date, week, multiEventPositions) {
       }
       if (isSameDay(new Date(parseInt(event.startDate)), date)) {
         if (isSameDay(new Date(parseInt(event.endDate)), date)) {
-          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-single event-${event.type}"></div>`
+          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-single event-${event.eventTypeId}"></div>`
         }
         else {
-          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-start event-${event.type}"></div>`
+          multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-start event-${event.eventTypeId}"></div>`
         }
       }
       else if (isSameDay(new Date(parseInt(event.endDate)), date)) {
-        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-end event-${event.type}"></div>`
+        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-end event-${event.eventTypeId}"></div>`
       }
       else if (parseInt(event.startDate) < date.getTime() && parseInt(event.endDate) > date.getTime()) {
-        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-middle event-${event.type}"></div>`
+        multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-middle event-${event.eventTypeId}"></div>`
       }
       else if (multiEventPositions.indexOf(event.eventId) == multiEventPositions.length - 1) {
         multiEventPositions.pop()
@@ -255,7 +255,7 @@ async function updateHomeworkList() {
  for (let homework of homeworkData) {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = subjectData[homework.subjectId].name.long;
+    let subject = subjectData[homework.subjectId].subjectNameLong;
     let content = homework.content;
     let assignmentDate = new Date(Number(homework.assignmentDate));
     let submissionDate = new Date(Number(homework.submissionDate));
@@ -345,14 +345,14 @@ async function updateEventList() {
     }
 
     // Get the information for the event
-    let type = event.type;
+    let eventTypeId = event.eventTypeId;
     let name = event.name;
     let description = event.description;
-    let startDate = msToDisplayDate(event.startDate).split('.').slice(0, 2).join('.');
+    let startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
     let lesson = event.lesson;
     let endDate;
     if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate).split('.').slice(0, 2).join('.');
+      endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
     }
     else {
       endDate = null;
@@ -373,10 +373,10 @@ async function updateEventList() {
     // The template for an event
     let template = 
       `<div class="col p-2">
-        <div class="card event-${type} h-100">
+        <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column">
-              <span class="fw-bold event-${type}">${name}</span>
+              <span class="fw-bold event-${eventTypeId}">${name}</span>
               <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${lesson}. Stunde)` : ""}</b>
               <span>${description}</span>
             </div>
@@ -396,6 +396,15 @@ async function updateEventList() {
 updateEventList = runOnce(updateEventList);
 
 async function updateSubstitutionList() {
+  await dataLoaded("substitutionsData")
+  
+  if (JSON.stringify(substitutionsData) == "{}") {
+    $("#substitutions-table").addClass("d-none")
+    $("#substitutions-no-entry").addClass("d-none")
+    $("#substitutions-no-data").removeClass("d-none")
+    $("#substitutions-mode-wrapper").addClass("d-none");
+    return;
+  }
   let substitutionsMode = localStorage.getItem("substitutionsMode") || "class";
 
   let data;
@@ -531,14 +540,14 @@ async function updateTimetable() {
 
   for (let [timetableEntryId, timetableEntry] of timetableData[selectedDate.getDay() - 1].entries()) {
     function addLesson(lessonData) {
+      let subject = subjectData[lessonData.subjectId]
       let lesson = {};
-      lesson.subjectShort = subjectData[lessonData.subjectId].name.short;
-      lesson.subjectLong = subjectData[lessonData.subjectId].name.long;
-      lesson.substitutionSubjectName = subjectData[lessonData.subjectId].name.substitution || lesson.subjectLong;
+      lesson.subjectShort = subject.subjectNameShort;
+      lesson.subjectLong = subject.subjectNameLong;
+      lesson.substitutionSubjectName = subject.subjectNameSubstitution || lesson.subjectLong;
       lesson.room = lessonData.room;
-      let teacher = subjectData[lessonData.subjectId].teacher;
-      lesson.teacher = ((teacher.gender == "m") ? "Herr " : "Frau ") + teacher.long;
-      lesson.substitutionTeacherName = subjectData[lessonData.subjectId].teacher.substitution || [ teacher.short ];
+      lesson.teacher = ((subject.teacherGender == "m") ? "Herr " : "Frau ") + subject.teacherNameLong;
+      lesson.substitutionTeacherName = subject.teacherNameSubstitution || [ subject.teacherNameShort ];
 
       lessons.push(lesson);
     }
@@ -742,12 +751,12 @@ async function updateTimetable() {
         continue;
       }
 
-      let eventName = `<span class="event-${event.type} text-center fw-bold mt-2 d-block">${event.name}</span>`
+      let eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${event.name}</span>`
       thisLessLesson.find(".card-body").append(eventName)
       thisMoreLesson.find(".card-body").append(eventName)
 
       if (event.description != "") {
-        thisMoreLesson.find(".card-body").append(`<span class="event-${event.type} text-centerd-block">${event.description}</span>`)
+        thisMoreLesson.find(".card-body").append(`<span class="event-${event.eventTypeId} text-centerd-block">${event.description}</span>`)
       }
     }
 
@@ -872,6 +881,9 @@ $(function(){
 
   updateAll();
 })
+
+let animations = JSON.parse(localStorage.getItem("animations"));
+if (animations == undefined) animations = true
 
 $(".calendar-week-move-button").on("click", function () {
   // If the calendar is already moving, stop; else set it moving
@@ -1047,8 +1059,8 @@ let monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", 
 renameCalendarMonthYear()
 
 // Request checking the homework on clicking its checkbox
-$(document).on('click', '.homework-check', function () {
-  const homeworkId = $(this).data('id');
+$(document).on("click", ".homework-check", function () {
+  const homeworkId = $(this).data("id");
   checkHomework(homeworkId);
 });
 
@@ -1084,20 +1096,7 @@ $("#homework-mode input").each(function () {
 
 $("#homework-mode-" + (localStorage.getItem("homeworkMode") || "tomorrow")).prop("checked", true);
 
-if (localStorage.getItem("showTeamSelectionInfo") == undefined) {
-  localStorage.setItem("showTeamSelectionInfo", "true")
-}
-
-if (localStorage.getItem("showTeamSelectionInfo") == "true") {
-  $("#team-selection-info").addClass("d-flex").removeClass("d-none")
-}
-
-$("#team-selection-info-later").on("click", () => {
-  localStorage.setItem("showTeamSelectionInfo", "false")
-  $("#team-selection-info").removeClass("d-flex").addClass("d-none")
-})
-
-socket.on('updateHomeworkData', () => {
+socket.on("updateHomeworkData", () => {
   try {
     homeworkData = undefined;
     homeworkCheckedData = undefined;
@@ -1112,7 +1111,7 @@ socket.on('updateHomeworkData', () => {
 });
 
 
-socket.on('updateEventData', ()=>{
+socket.on("updateEventData", ()=>{
   try {
     eventData = undefined;
 

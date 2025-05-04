@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="Log in or create/join a class to synchronize homework events and more with your classmates!.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskMinder</title>
+  <script src="/init.js"></script>
+</head>
+
+<body data-url="settings" style="display: none;">
+  <div class="load-content" data-url="navbar" data-html data-js></div>
+  <div class="load-content" data-url="colorPicker" data-html data-css data-js></div>
+
+  <div class="container">
+    <div class="nav nav-tabs mb-3">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#nav-settings-app">App</button>
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-student">Schüler</button>
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-class">Klasse</button>
+    </div>
+    
+    <div class="tab-content container">
+      <div class="tab-pane fade show active" id="nav-settings-app">
+				<div class="d-flex align-items-center mb-2">
+					<label class="me-3" for="animations">Animationen</label>
+					<div class="form-check form-switch fs-5 mb-0" id="animations">
+						<input class="form-check-input mt-0" type="checkbox">
+					</div>
+				</div>
+        <div class="form-text mb-4">
+          Aktiviert / deaktiviert Animationen in der App wie zum Beispiel beim Kalender.
+        </div>
+        <div class="d-flex align-items-center mb-2">
+					<label class="me-3" for="color-theme">Farbthema</label>
+					<div class="btn-group" id="color-theme">
+						<input type="radio" class="btn-check" name="color-theme" id="color-theme-auto" checked>
+						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-auto">Automatisch</label>
+
+						<input type="radio" class="btn-check" name="color-theme" id="color-theme-light" checked>
+						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-light">Hell</label>
+
+						<input type="radio" class="btn-check" name="color-theme" id="color-theme-dark">
+						<label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-dark">Dunkel</label>
+					</div>
+				</div>
+        <div class="form-text mb-4">
+          Bestimmt das Farbthema der App. Bei Automatisch folgt das Farbthema dem deines Geräts.
+        </div>
+        <hr></hr>
+        <div>
+					<a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#credits">
+						Credits anzeigen
+					</a>
+					
+					<div class="collapse mt-2" id="credits">
+            Das Impressum finden sie <a href="/about#impressum">hier</a>.
+						<ul class="list-unstyled mb-2">
+							<li><b>Codylon Studios</b></li>
+							<li>Mingqi Li</li>
+							<li>Fabian Leonardi</li>
+						</ul>
+						<p class="mb-1">
+							<i class="fas fa-balance-scale me-2"></i>
+							Dieses Projekt steht unter einer  
+							<a href="https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE" target="_blank" class="text-primary">eigenen Lizenz</a>.
+						</p>
+						<p class="mb-1">
+							<i class="far fa-copyright me-2"></i>
+							Copyright © 2025 Codylon-Studios
+						</p>
+						<p class="mb-0">
+							<i class="fab fa-github me-2"></i>
+							GitHub: 
+							<a href="https://github.com/Codylon-Studios/TaskMinder" target="_blank" class="text-primary">Codylon-Studios/TaskMinder</a>
+						</p>
+					</div>
+				</div>
+      </div>
+      <div class="tab-pane fade" id="nav-settings-student">
+        <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
+          <i class="fa-solid fa-circle-xmark  mx-1"></i>
+          <div>
+            <div class="d-block">
+              Für diese Einstellungen musst du einer Klasse beigetreten sein.
+            </div>
+            <div class="d-block">
+              <a href="/join?action=join">Klasse beitreten</a>
+            </div>
+          </div>
+        </div>
+
+        <div id="settings-student" class="d-none">
+          <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
+            <i class="fa-solid fa-circle-info mx-1"></i>
+            <div class="d-block">
+              Wenn du einen Account hast, werden diese Einstellungen mit anderen angemeldeten Geräten synchronisiert.
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <h5 class="mb-2" for="team-selection-list">Teams auswählen</h5>
+            <div class="mb-2 ms-2 row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6" id="team-selection-list">
+              <!--Gets filled-->
+            </div>
+            <button class="btn btn-primary btn-sm fw-semibold" id="team-selection-save">Speichern</button>
+          </div>
+          <div class="form-text mb-1">
+            Teams sind Untergruppen deiner Klasse, zum Beispiel für verschiedene Sprachkurse. Du siehst dann nur die Hausaufgaben und
+            Ereignisse der Teams, die du hier ausgewählt hast.
+          </div>
+          <div class="form-text mb-4">
+            Du kannst die verfügbaren Teams deiner Klasse unter "Klasse" einstellen.
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="nav-settings-class">
+        <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
+          <i class="fa-solid fa-circle-xmark mx-1"></i>
+          <div>
+            <div class="d-block">
+              Für diese Einstellungen musst du einer Klasse beigetreten sein.
+            </div>
+            <div class="d-block">
+              <a href="/join?action=join">Klasse beitreten</a>
+            </div>
+          </div>
+        </div>
+
+        <div id="settings-class" class="d-none">
+          <div class="alert alert-warning p-2 d-flex align-items-center gap-2 width-fit-content">
+            <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+            <div>
+              <div class="d-block">
+                Diese Einstellungen betreffen die ganze Klasse!
+                <br>
+                Manche Änderungen können Informationen für immer löschen!
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <h5 class="mb-2" for="teams-list">Teams</h5>
+            <div class="mb-2" id="teams-list">
+              <!--Gets filled-->
+            </div>
+            <button class="btn btn-secondary btn-sm fw-semibold" id="teams-cancel">Abbrechen</button>
+            <button class="btn btn-success btn-sm fw-semibold" id="new-team">Neues Team</button>
+            <button class="btn btn-primary btn-sm fw-semibold" id="teams-save">Speichern</button>
+            <div class="my-2 d-none" id="teams-save-confirm-container">
+              <span class="fw-bold text-danger">Achtung!</span>
+              Es werden alle Hausaufgaben, Ereignisse und Stundenplaneinträge <span id="teams-save-confirm-list"></span> gelöscht!
+              Das kann nicht rückgängig gemacht werden!
+            </div>
+            <button class="btn btn-danger btn-sm fw-semibold d-none" id="teams-save-confirm">Fortfahren</button>
+          </div>
+          <div class="form-text mb-4">
+            Teams sind Untergruppen deiner Klasse, zum Beispiel für verschiedene Sprachkurse. Schülerinnen und Schüler sehen dann nur die
+            Hausaufgaben und Ereignisse der Teams, die sie unter "Schüler" ausgewählt haben.
+          </div>
+
+          <div class="mb-2">
+            <h5 class="mb-2" for="event-types-list">Ereignisarten</h5>
+            <div class="mb-2" id="event-types-list">
+              <!--Gets filled-->
+            </div>
+            <button class="btn btn-secondary btn-sm fw-semibold" id="event-types-cancel">Abbrechen</button>
+            <button class="btn btn-success btn-sm fw-semibold" id="new-event-type">Neue Art</button>
+            <button class="btn btn-primary btn-sm fw-semibold" id="event-types-save">Speichern</button>
+            <div class="my-2 d-none" id="event-types-save-confirm-container">
+              <span class="fw-bold text-danger">Achtung!</span>
+              Es werden alle Ereignisse <span id="event-types-save-confirm-list"></span> gelöscht!
+              Das kann nicht rückgängig gemacht werden!
+            </div>
+            <button class="btn btn-danger btn-sm fw-semibold d-none" id="event-types-save-confirm">Fortfahren</button>
+          </div>
+          <div class="form-text mb-4">
+            Mit Ereignisarten kannst du verschiedene Ereignisse gruppieren, zum Beispiel nach Prüfungen, Ausflügen oder Ferien.
+            Durch verschiedene Farben kannst du die Ereignisse besser unterscheiden.
+          </div>
+
+          <div class="mb-2">
+            <h5 class="mb-2" for="subjects-list">Fächer</h5>
+            <div class="mb-2" id="subjects-list">
+              <!--Gets filled-->
+            </div>
+            <button class="btn btn-secondary btn-sm fw-semibold" id="subjects-cancel">Abbrechen</button>
+            <button class="btn btn-success btn-sm fw-semibold" id="new-subject">Neues Fach</button>
+            <button class="btn btn-primary btn-sm fw-semibold" id="subjects-save">Speichern</button>
+            <div class="my-2 d-none" id="subjects-save-confirm-container">
+              <span class="fw-bold text-danger">Achtung!</span>
+              Es werden alle Hausaufgaben und Stundenplaneinträge <span id="subjects-save-confirm-list"></span> gelöscht!
+              Das kann nicht rückgängig gemacht werden!
+            </div>
+            <button class="btn btn-danger btn-sm fw-semibold d-none" id="subjects-save-confirm">Fortfahren</button>
+          </div>
+          <div class="form-text mb-4">
+            Jede Hausaufgabe und jeder Stundenplaneintrag muss einem Fach zugeordnet werden. Der kurze Fachname wird in der kleineren Stundenplanansicht
+            angezeigt, der lange in der größeren. Der lange Lehrername wird in der größeren Stundenplanansicht angezeigt. Wenn nicht angegeben, ist der
+            kurze Fachname die ersten drei Buchstaben des Langen, ebenso für den kurzen Lehrernamen.  Wenn DSBmobile verwendet wird, werden die
+            Vertretungen anhand den Angaben in der Zeile "Vertretung" gefiltert. Wenn nichts angegeben ist, ist der gefilterte Fachname der Lange und der
+            gefilterte Lehrername der Kurze. Mehrere Möglichkeiten können durch "," getrennt werden.
+          </div>
+          <div class="mb-2">
+            <h5 class="mb-2" id="timetable">Stundenplan</h5>
+          </div>
+          <div class="form-text mb-2">
+            Hier kann man den Stundenplan anpassen. Lade eine Datei im passenden Format (.json) hoch, um den Stundenplan zu importieren. Der Aufbau der Datei ist <a href="/docs">hier</a> beschrieben. Bitte stell sicher, dass die Datei korrekt formatiert ist.
+          </div>
+          <form action="/timetable/set_timetable_data" method="post" enctype="multipart/form-data" class="mb-2">
+            <div class="mb-2">
+              <input class="form-control" type="file" id="timetable" name="timetable" accept=".json">
+            </div>
+            <button type="submit" class="btn btn-primary">Hochladen</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
