@@ -14,7 +14,6 @@
     "build:frontend:copy": "node copyFiles.js frontend/src frontend/dist",
     "build:prepare": "npm run build:docs && npm run build:backend && npm run build:frontend && npm run build:server",
     "build": "npm run build:prepare && npm run build:server",
-    
     "dev:server": "nodemon backend/dist/server.js --watch backend/dist",
     "dev:docs": "chokidar 'docs/src/**/*' -c 'mkdocs build --config-file=docs/mkdocs.yml'",
     "dev:backend": "concurrently -n 'copy,tsc' \"npm run dev:backend:copy\" \"npm run dev:backend:tsc\"",
