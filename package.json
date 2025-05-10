@@ -17,7 +17,7 @@
     "build:prepare": "npm run build:docs && npm run build:be && npm run build:fe && npm run build:server",
     "build": "npm run build:prepare && npm run build:server",
     "dev:server": "nodemon backend/dist/server.js --watch backend/dist",
-    "dev:docs": "chokidar 'docs/src/**/*' -c 'mkdocs build --config-file=docs/mkdocs.yml'",
+    "dev:docs": "chokidar 'docs/src/**/*' -c 'source venv/bin/activate && mkdocs build --config-file=docs/mkdocs.yml'",
     "dev:be": "concurrently -n 'copy,tsc' \"npm run dev:be:copy\" \"npm run dev:be:tsc\"",
     "dev:be:tsc": "tsc -p backend --watch --incremental",
     "dev:be:copy": "chokidar 'backend/src/**/*' -c 'node copyFiles.js backend/src backend/dist'",

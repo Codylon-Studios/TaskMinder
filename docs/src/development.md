@@ -1,6 +1,6 @@
 # Development Setup Guide
 
-This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing NodeJS, npm, Python 3 (for documentation), Redis, and PostgreSQL.
+This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing nodeJS, npm, python3, mkdocs-material, redis, and PostgreSQL.
 
 !!! warning "License Notice"
     **Please make sure to review [our license](./license.md) before contributing to the project!**  
@@ -11,7 +11,7 @@ This guide outlines the steps necessary to set up your development environment f
     - Your project must use the same license terms
 
 !!! info
-    Although Windows setup instructions are provided, primary development and testing are done on Linux/macOS. Windows setups are not actively maintained or thoroughly tested, so you may encounter unexpected issues.
+    Windows is currently not supported, as the primary development and testing of this tool are carried out on Linux and macOS platforms. This may result in compatibility issues or unexpected behavior when attempting to run the server on Windows.
 
 ---
 
@@ -39,18 +39,6 @@ Recommended versions: PostgreSQL 14.0+ and Redis 7.x (Community Edition < v8).
     sudo systemctl enable postgresql
     sudo systemctl start postgresql
     ```
-
-=== "Windows"
-
-    Follow the installation guide for Redis CE (< v8): [Install Redis on Windows]. Return here once finished.
-
-    [Install Redis on Windows]: https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-windows/
-
-    Download PostgreSQL here: [Download page of PostgreSQL]. After installation, remember the superuser password (usually `postgres`).
-
-    [Download page of PostgreSQL]: https://www.postgresql.org/download/windows/
-
-    Instructions for starting the services are included in the installation guides.
 
 === "macOS"
 
@@ -158,14 +146,6 @@ Replace `your_db_name` with your actual database name.
     CREATE DATABASE your_db_name;
     ```
 
-=== "Windows"
-
-    Open the SQL Shell (psql):
-
-    ```sql
-    CREATE DATABASE your_db_name;
-    ```
-
 === "GitHub Codespaces"
 
     ```sh
@@ -185,7 +165,7 @@ To securely manage credentials, create a `.env` file in your project root direct
 
 ```env
 DB_USER=postgres
-DB_PASSWORD=your_postgres_password
+DB_PASSWORD=your_postgres_pwd
 DB_NAME=your_db_name
 DB_HOST=localhost
 NODE_ENV=DEVELOPMENT
@@ -193,62 +173,27 @@ REDIS_HOST=redis
 REDIS_PORT=6379
 SESSION_SECRET=your_session_secret
 DSB_USER=your_dsb_user
-DSB_PASSWORD=your_dsb_password
+DSB_PASSWORD=your_dsb_pwd
 CLASSCODE=your_classcode
+DSB_ACTIVATED=your_dsb_value
 ```
 
 - `SESSION_SECRET` and `CLASSCODE` should be secure, consistent passwords.
-- `DSB_USER` and `DSB_PASSWORD` are credentials for [DSBmobile](https://www.dsbmobile.de), used to fetch substitution data. If unavailable, you may use placeholders.
+- `DSB_USER` and `DSB_PASSWORD` are credentials for [DSBmobile](https://www.dsbmobile.de), used to fetch substitution data. If unavailable, you may use placeholders and set `DSB_ACTIVATED` to false.
+
+---
+
+###  Setup mkdocs
+Follow this video guide:  
+📺 [How to set up Material for MkDocs](https://www.youtube.com/watch?v=xlABhbnNrfI)  
+You only need the installation part (timestamp 3:49–5:53).
 
 ---
 
 ### Start the Server
 
-Use the following command to start the server with auto-reloading:
-
+Run this dommand to compile the typescript code and start the development server, run:
 ```zsh
-nodemon server.js
+npm run dev
 ```
-
-Alternatively, you can use:
-
-```zsh
-node menu.js
-```
-
-!!! info
-    The following steps describe initial table setup. This process will be replaced by an admin interface in future versions.
-
 ---
-
-### Initialize Tables
-
-Once the server is running, the `eventType` and `team` tables will exist but be empty. You can populate them with:
-
-```sh
-sudo -u postgres psql
-\c your_db_name
-```
-
-```sql
-INSERT INTO team (name) VALUES ('Team One');
-INSERT INTO team (name) VALUES ('Team Two');
-...
-INSERT INTO "eventType" (name, color) VALUES ('Event Type One', '#123456');
-INSERT INTO "eventType" (name, color) VALUES ('Event Type Two', '#abcdef');
-...
-```
-
----
-
-### Add Required Files
-
-Since the subject and timetable files are excluded from git (via `.gitignore`), you must recreate them manually. Refer to [File Structure](/docs/filestructure) for details.
-
----
-
-### Docs Development
-
-To work on documentation using `mkdocs`, follow this video guide:  
-📺 [How to set up Material for MkDocs](https://www.youtube.com/watch?v=xlABhbnNrfI)  
-You only need the installation part (timestamp 3:49–5:53).
