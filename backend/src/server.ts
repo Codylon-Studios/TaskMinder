@@ -102,7 +102,7 @@ const sessionPool = new Pool({
 
 const limiter = rateLimit({
   windowMs: 1000, // 1 second
-  limit: 40, // Max 40 requests per IP per second
+  limit: 70, // Max 70 requests per IP per second
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { status: 429, message: "Too many requests, please slow down." }
