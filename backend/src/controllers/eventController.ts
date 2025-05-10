@@ -18,7 +18,13 @@ export const addEvent = asyncHandler(async(req, res, next) => {
     description: z.string().nullable(),
     startDate: z.coerce.number(),
     lesson: z.string().nullable(),
-    endDate: z.coerce.number().nullable(),
+    endDate: z.preprocess(
+      val => {
+        if (val == "") return null
+        return val
+      },
+      z.coerce.number().nullable()
+    ),
     teamId: z.coerce.number()
   })
   const parseResult = addEventSchema.safeParse(req.body);

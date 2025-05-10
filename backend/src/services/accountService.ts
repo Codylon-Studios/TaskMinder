@@ -3,8 +3,6 @@ import Account from "../models/accountModel";
 import JoinedClass from "../models/joinedClassModel";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
-import * as dotenv from "dotenv";
-dotenv.config()
 
 
 const SALTROUNDS = 10;

@@ -1,19 +1,18 @@
-async function updateHomeworkList() {
-  await dataLoaded("subjectData")
-  await dataLoaded("homeworkData")
-  await dataLoaded("homeworkCheckedData")
-  await dataLoaded("joinedTeamsData")
+import { addUpdateAllFunction, dateToMs, getHomeworkCheckStatus, homeworkCheckedData, homeworkData, isSameDay, joinedTeamsData, loadHomeworkCheckedData,
+         loadHomeworkData, msToDisplayDate, msToInputDate, runOnce, subjectData, teamsData, updateAll, socket, 
+         reloadAll} from "../../global/global.js";
+import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
-  // Clear the list
-  $ui.homeworkList.empty();
+const updateHomeworkList = runOnce(async (): Promise<void> => {
+  let newContent = ""
   
   // Check if user is in edit mode
-  let editEnabled = $ui.editToggle.is(":checked");
+  let editEnabled = $("#edit-toggle").is(":checked");
 
-  for (let homework of homeworkData) {
+  for (let homework of await homeworkData()) {
     // Get the information for the homework
     let homeworkId = homework.homeworkId;
-    let subject = subjectData.find((s) => s.subjectId == homework.subjectId).subjectNameLong;
+    let subject = (await subjectData()).find((s) => s.subjectId == homework.subjectId)?.subjectNameLong;
     let content = homework.content;
     let assignmentDate = msToDisplayDate(homework.assignmentDate).split(".").slice(0, 2).join(".");
     let submissionDate = msToDisplayDate(homework.submissionDate).split(".").slice(0, 2).join(".");
@@ -37,22 +36,22 @@ async function updateHomeworkList() {
 
     // Filter by min. date
     if ($("#filter-date-from").val() != "") {
-      let filterDate = Date.parse($("#filter-date-from").val());
-      if (filterDate > parseInt(homework.submissionDate)) {
+      let filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
+      if (filterDate > homework.submissionDate) {
         continue;
       }
     }
 
     // Filter by max. date
     if ($("#filter-date-until").val() != "") {
-      let filterDate = Date.parse($("#filter-date-until").val());
-      if (filterDate < parseInt(homework.assignmentDate)) {
+      let filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "1.1.1970");
+      if (filterDate < homework.assignmentDate) {
         continue;
       }
     }
 
     // Filter by team
-    if (! joinedTeamsData.includes(homework.teamId) && homework.teamId != -1) {
+    if (! (await joinedTeamsData()).includes(homework.teamId) && homework.teamId != -1) {
       continue;
     }
 
@@ -75,39 +74,35 @@ async function updateHomeworkList() {
       </div>`;
 
     // Add this homework to the list
-    $ui.homeworkList.append(template);
+    newContent += template;
   };
 
   // If no homeworks match, add an explanation text
-  if ($ui.homeworkList.html() == "") {
-    $ui.homeworkList.html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>`)
+  if (newContent == "") {
+    newContent = `<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>`
   }
-}
-updateHomeworkList = runOnce(updateHomeworkList);
+  $("#homework-list").html(newContent)
+})
 
-async function updateSubjectList() {
-  await dataLoaded("subjectData")
-
+const  updateSubjectList = runOnce(async (): Promise<void> => {
   // Clear the select element in the add homework modal
-  $ui.addHomeworkSubject.empty();
-  $ui.addHomeworkSubject.append('<option value="" disabled selected>Fach</option>');
+  $("#add-homework-subject").empty();
+  $("#add-homework-subject").append('<option value="" disabled selected>Fach</option>');
   // Clear the select element in the edit homework modal
-  $ui.editHomeworkSubject.empty();
-  $ui.editHomeworkSubject.append('<option value="" disabled selected>Fach</option>');
+  $("#edit-homework-subject").empty();
+  $("#edit-homework-subject").append('<option value="" disabled selected>Fach</option>');
   // Clear the list for filtering by subject
   $("#filter-subject-list").empty();
 
-  let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
-  if (filterData.subject == undefined) {
-    filterData.subject = {}
-  }
+  let filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
+  filterData.subject ??= {};
 
-  subjectData.forEach(subject => {
+  (await subjectData()).forEach(subject => {
     // Get the subject data
     let subjectId = subject.subjectId;
     let subjectName = subject.subjectNameLong;
 
-    if (filterData.subject[subjectId] == undefined) filterData.subject[subjectId] = true
+    filterData.subject[subjectId] ??= true
     let checkedStatus = (filterData.subject[subjectId]) ? "checked" : ""
     if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none")
 
@@ -124,29 +119,24 @@ async function updateSubjectList() {
     // Add the template for the select elements
     let templateFormSelect =
       `<option value="${subjectId}">${subjectName}</option>`;
-    $ui.addHomeworkSubject.append(templateFormSelect);
-    $ui.editHomeworkSubject.append(templateFormSelect);
+    $("#add-homework-subject").append(templateFormSelect);
+    $("#edit-homework-subject").append(templateFormSelect);
   });
 
   // If any subject filter gets changed, update the shown homework
   $(".filter-subject-option").on("change", function () {
     updateHomeworkList();
-    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
-    if (filterData.subject == undefined) {
-      filterData.subject = {}
-    }
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {}
+    filterData.subject ??= {}
     filterData.subject[$(this).data("id")] = $(this).prop("checked")
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
   });
 
   localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
-}
-updateSubjectList = runOnce(updateSubjectList);
+})
 
-async function updateTeamList() {
-  await dataLoaded("teamsData");
-
+const  updateTeamList = runOnce(async (): Promise<void> => {
   // Clear the select element in the add homework modal
   $("#add-homework-team").empty();
   $("#add-homework-team").append('<option value="-1" selected>Alle</option>');
@@ -154,7 +144,7 @@ async function updateTeamList() {
   $("#edit-homework-team").empty();
   $("#edit-homework-team").append('<option value="-1" selected>Alle</option>');
 
-  teamsData.forEach(team => {
+  (await teamsData()).forEach(team => {
     // Get the team data
     let teamName = team.name;
 
@@ -164,8 +154,7 @@ async function updateTeamList() {
     $("#add-homework-team").append(templateFormSelect);
     $("#edit-homework-team").append(templateFormSelect);
   });
-}
-updateTeamList = runOnce(updateTeamList);
+})
 
 function addHomework() {
   //
@@ -173,26 +162,26 @@ function addHomework() {
   //
 
   // Reset the data inputs in the add homework modal
-  $ui.addHomeworkSubject.val("");
+  $("#add-homework-subject").val("");
   $("#add-homework-content").val("");
   $("#add-homework-date-assignment").val(msToInputDate(Date.now())); // But set the assignment date to the current date
   $("#add-homework-date-submission").val("");
   $("#add-homework-team").val("-1");
 
   // Disable the actual "add" button, because not all information is given
-  $ui.addHomeWorkButton.addClass("disabled");
+  $("#add-homework-button").addClass("disabled");
 
   // Show the add homework modal
   $("#add-homework-modal").modal("show");
 
   // Called when the user clicks the "add" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $ui.addHomeWorkButton.off("click").on("click", () => {
+  $("#add-homework-button").off("click").on("click", () => {
     // Save the given information in variables
-    const subject = $ui.addHomeworkSubject.val();
-    const content = $("#add-homework-content").val().trim();
-    const assignmentDate = $("#add-homework-date-assignment").val();
-    const submissionDate = $("#add-homework-date-submission").val();
+    const subject = $("#add-homework-subject").val();
+    const content = $("#add-homework-content").val()?.toString().trim();
+    const assignmentDate = $("#add-homework-date-assignment").val()?.toString() ?? "";
+    const submissionDate = $("#add-homework-date-submission").val()?.toString() ?? "";
     const team = $("#add-homework-team").val();
 
     // Prepare the POST request
@@ -214,7 +203,7 @@ function addHomework() {
       success: () => {
         // Show a success notification and update the shown homework
         $("#add-homework-success-toast").toast("show");
-        homeworkData = undefined;
+        homeworkData(null);
         loadHomeworkData();
         updateHomeworkList();
       },
@@ -247,41 +236,35 @@ function addHomework() {
   });
 }
 
-function editHomework(homeworkId) {
+async function editHomework(homeworkId: number) {
   //
   // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF A HOMEWORK, NOT WHEN USER ACTUALLY EDITS A HOMEWORK
   //
 
-  // Get the data of the homework
-  let data;
-  for (let homeworkEntry of homeworkData) {
-    if (homeworkEntry.homeworkId == homeworkId) {
-      data = homeworkEntry;
-      break;
-    }
-  }
+  let homework = (await homeworkData()).find((h) => h.homeworkId == homeworkId)
+  if (! homework) return
 
   // Set the inputs on the already saved information
-  $ui.editHomeworkSubject.val(data.subjectId);
-  $("#edit-homework-content").val(data.content);
-  $("#edit-homework-date-assignment").val(msToInputDate(data.assignmentDate));
-  $("#edit-homework-date-submission").val(msToInputDate(data.submissionDate));
-  $("#edit-homework-team").val(data.teamId);
+  $("#edit-homework-subject").val(homework.subjectId);
+  $("#edit-homework-content").val(homework.content);
+  $("#edit-homework-date-assignment").val(msToInputDate(homework.assignmentDate));
+  $("#edit-homework-date-submission").val(msToInputDate(homework.submissionDate));
+  $("#edit-homework-team").val(homework.teamId);
 
   // Enable the actual "edit" button, because all information is given
-  $ui.editHomeworkButton.removeClass("disabled");
+  $("#edit-homework-button").removeClass("disabled");
 
   // Show the edit homework modal
   $("#edit-homework-modal").modal("show");
 
   // Called when the user clicks the "edit" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $ui.editHomeworkButton.off("click").on("click", () => {
+  $("#edit-homework-button").off("click").on("click", () => {
     // Save the given information in variables>
-    const subject = $ui.editHomeworkSubject.val();
-    const content = $("#edit-homework-content").val().trim();
-    const assignmentDate = $("#edit-homework-date-assignment").val();
-    const submissionDate = $("#edit-homework-date-submission").val();
+    const subject = $("#edit-homework-subject").val();
+    const content = $("#edit-homework-content").val()?.toString().trim();
+    const assignmentDate = $("#edit-homework-date-assignment").val()?.toString() ?? "";
+    const submissionDate = $("#edit-homework-date-submission").val()?.toString() ?? "";
     const team = $("#edit-homework-team").val();
 
     let data = {
@@ -303,7 +286,7 @@ function editHomework(homeworkId) {
       success: () => {
         // Show a success notification and update the shown homework
         $("#edit-homework-success-toast").toast("show");
-        homeworkData = undefined;
+        homeworkData(null);
         loadHomeworkData();
         updateHomeworkList();
       },
@@ -335,7 +318,7 @@ function editHomework(homeworkId) {
   });
 }
 
-function deleteHomework(homeworkId) {
+function deleteHomework(homeworkId: number) {
   //
   // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF A HOMEWORK, NOT WHEN USER ACTUALLY DELETES A HOMEWORK
   //
@@ -363,7 +346,7 @@ function deleteHomework(homeworkId) {
       success: () => {
         // Show a success notification and update the shown homework
         $("#delete-homework-success-toast").toast("show");
-        homeworkData = undefined;
+        homeworkData(null);
         loadHomeworkData();
         updateHomeworkList();
       },
@@ -394,7 +377,7 @@ function deleteHomework(homeworkId) {
   });
 }
 
-function checkHomework(homeworkId) {
+function checkHomework(homeworkId: number) {
   // Save whether the user has checked or unchecked the homework
   let checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
 
@@ -465,7 +448,7 @@ function checkHomework(homeworkId) {
 function resetFilters() {
   $("#filter-changed").addClass("d-none")
 
-  let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+  let filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
 
   if (filterData.statusUnchecked == undefined) {
    $("#filter-status-unchecked").prop("checked", true)
@@ -506,26 +489,13 @@ function resetFilters() {
   updateSubjectList()
 }
 
-let $ui;
-
 $(function(){
-  updateAllFunctions.push(() => {
-    updateSubjectList();
-    updateHomeworkList();
-    updateTeamList();
-  })
-  
-  updateAll();
-  
-  // Initialize all jQuery variables
-  $ui = {
-    editToggle: $("#edit-toggle"),
-    addHomeworkSubject: $("#add-homework-subject"),
-    editHomeworkSubject: $("#edit-homework-subject"),
-    editHomeworkButton: $("#edit-homework-button"),
-    addHomeWorkButton: $("#add-homework-button"),
-    homeworkList: $("#homework-list"),
-  }
+  addUpdateAllFunction(
+    updateSubjectList,
+    updateHomeworkList,
+    updateTeamList
+  )
+  reloadAll();
 
   $(window).on("userDataLoaded", () => {
     // If user is logged in, show the edit toggle button
@@ -541,10 +511,10 @@ $(function(){
   });
 
   // Leave edit mode (if user entered it in a previous session)
-  $ui.editToggle.prop("checked", false);
+  $("#edit-toggle").prop("checked", false);
 
-  $ui.editToggle.on("click", function () {
-    if ($ui.editToggle.is(":checked")) {
+  $("#edit-toggle").on("click", function () {
+    if ($("#edit-toggle").is(":checked")) {
       // On checking the edit toggle, show the add button and edit options
       $("#show-add-homework-button").removeClass("d-none");
       $(".homework-edit-options").removeClass("d-none");
@@ -584,31 +554,31 @@ $(function(){
 
   // On changing any information in the add homework modal, disable the add button if any information is empty
   $(".add-homework-input").on("input", () => {
-    const subject = $ui.addHomeworkSubject.val();
-    const content = $("#add-homework-content").val().trim();
+    const subject = $("#add-homework-subject").val();
+    const content = $("#add-homework-content").val()?.toString().trim();
     const assignmentDate = $("#add-homework-date-assignment").val();
     const submissionDate = $("#add-homework-date-submission").val();
 
     if ([ content, assignmentDate, submissionDate ].includes("") || subject == null) {
-      $ui.addHomeWorkButton.addClass("disabled");
+      $("#add-homework-button").addClass("disabled");
     }
     else {
-      $ui.addHomeWorkButton.removeClass("disabled");
+      $("#add-homework-button").removeClass("disabled");
     }
   })
 
   // On changing any information in the edit homework modal, disable the edit button if any information is empty
   $(".edit-homework-input").on("input", () => {
-    const subject = $ui.editHomeworkSubject.val();
-    const content = $("#edit-homework-content").val().trim();
+    const subject = $("#edit-homework-subject").val();
+    const content = $("#edit-homework-content").val()?.toString().trim();
     const assignmentDate = $("#edit-homework-date-assignment").val();
     const submissionDate = $("#edit-homework-date-submission").val();
 
     if ([ content, assignmentDate, submissionDate ].includes("") || subject == null) {
-      $ui.editHomeworkButton.addClass("disabled");
+      $("#edit-homework-button").addClass("disabled");
     }
     else {
-      $ui.editHomeworkButton.removeClass("disabled");
+      $("#edit-homework-button").removeClass("disabled");
     }
   })
 
@@ -639,64 +609,64 @@ $(function(){
 
   // On changing the filter unchecked option, update the homework list & saved filters
   $("#filter-status-unchecked").on("change", () => {
-    updateHomeworkList();
-    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
     filterData.statusUnchecked = $("#filter-status-unchecked").prop("checked")
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
+    updateHomeworkList();
   });
 
   // On changing the filter checked option, update the homework list & saved filters
   $("#filter-status-checked").on("change", () => {
-    updateHomeworkList();
-    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
     filterData.statusChecked = $("#filter-status-checked").prop("checked")
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
+    updateHomeworkList();
   });
 
   // On clicking the all subjects option, check all and update the homework list
   $("#filter-subject-all").on("click", () => {
-    updateHomeworkList();
-    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
-    if (filterData.subject == undefined) filterData.subject = {}
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
+    filterData.subject ??= {}
     $(".filter-subject-option").prop("checked", true);
     $(".filter-subject-option").each(function () {
       filterData.subject[$(this).data("id")] = true
     })
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
+    updateHomeworkList();
   });
 
   // On clicking the none subjects option, uncheck all and update the homework list
   $("#filter-subject-none").on("click", () => {
-    updateHomeworkList();
-    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
-    if (filterData.subject == undefined) filterData.subject = {}
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
+    filterData.subject ??= {}
     $(".filter-subject-option").prop("checked", false);
     $(".filter-subject-option").each(function () {
       filterData.subject[$(this).data("id")] = false
     })
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
+    updateHomeworkList();
   });
 
   // On changing any filter date option, update the homework list
   $("#filter-date-from").on("change", () => {
-    updateHomeworkList();
-    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
     filterData.dateFrom = $("#filter-date-from").val()
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
+    updateHomeworkList();
   });
 
   // On changing any filter date option, update the homework list
   $("#filter-date-until").on("change", () => {
-    updateHomeworkList();
-    let filterData = JSON.parse(localStorage.getItem("homeworkFilter"))
+    let filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
     filterData.dateUntil = $("#filter-date-until").val()
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData))
     resetFilters();
+    updateHomeworkList();
   });
 
   $(document).on("click", "#show-add-homework-button", () => {
@@ -706,8 +676,8 @@ $(function(){
 
 socket.on("updateHomeworkData", () => {
   try {
-    homeworkData = undefined;
-    homeworkCheckedData = undefined;
+    homeworkData(null);
+    homeworkCheckedData(null);
 
     loadHomeworkData();
     loadHomeworkCheckedData();

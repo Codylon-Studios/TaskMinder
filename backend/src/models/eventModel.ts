@@ -1,5 +1,8 @@
 import { Model, DataTypes, InferAttributes, InferCreationAttributes, CreationOptional } from "sequelize";
 import sequelize from "../config/sequelize";
+import pg from 'pg';
+
+pg.types.setTypeParser(20, val => parseInt(val, 10)); // Output bigints as numbers not as strings
 
 import EventType from "./eventTypeModel";
 import Team from "./teamModel";

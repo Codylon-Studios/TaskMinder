@@ -6,7 +6,7 @@ export default class Subject extends Model<InferAttributes<Subject>, InferCreati
   declare subjectNameLong: string;
   declare subjectNameShort: string;
   declare subjectNameSubstitution: string[] | null;
-  declare teacherGender: string;
+  declare teacherGender: "d" | "w" | "m";
   declare teacherNameLong: string;
   declare teacherNameShort: string;
   declare teacherNameSubstitution: string[] | null;

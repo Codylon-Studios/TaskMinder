@@ -1,5 +1,5 @@
-const fs = require('fs-extra');
-const path = require('path');
+const fs = require("fs-extra");
+const path = require("path");
 
 const sourceDir = process.argv[2];
 const destDir = process.argv[3];
@@ -17,7 +17,7 @@ async function copyDirectory(src, dest) {
     if (stat.isDirectory()) {
       await copyDirectory(srcFile, destFile);
     }
-    else if (!file.endsWith('.scss') && !file.endsWith('.ts')) {
+    else if (!file.endsWith(".scss") && !file.endsWith(".ts") && !file.endsWith(".html")) {
       await fs.copy(srcFile, destFile);
     }
   }

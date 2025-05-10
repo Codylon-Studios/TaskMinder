@@ -5,8 +5,6 @@ import socketIO from "../config/socket";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../utils/logger";
-import * as dotenv from "dotenv";
-dotenv.config()
 
 connectRedis();
 

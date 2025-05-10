@@ -5,11 +5,10 @@
   <meta name="description" content="Synchronize homework events and more with your classmates!.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TaskMinder</title>
-  <script src="/init.js"></script>
-  <link href="/events/event_type_styles" rel="stylesheet">
+  <link rel="preload" href="/events/event_type_styles" as="style" onload="this.onload=null;this.rel='stylesheet'">
 </head>
-<body data-url="main" style="display: none;">
-  <div class="load-content" data-url="navbar" data-html data-js></div>
+<body>
+  <div class="load-snippet" data-target="navbar" data-html data-js></div>
 
   <div class="container">
     <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
@@ -97,7 +96,7 @@
         <!--Gets filled-->
       </div>
     </div>
-    <div class="container-fluid mb-3">
+    <div class="container-fluid mb-3" id="substitutions-container">
       <div class="mb-2 d-flex align-items-center">
         <div class="text-decoration-underline">
           Vertretungen
