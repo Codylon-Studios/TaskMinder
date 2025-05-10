@@ -1,29 +1,30 @@
-function hsvToRgb({hue: h, saturation: s, value: v}) {
+function hsvToRgb({ hue: h, saturation: s, value: v }: { hue: number, saturation: number, value: number }): { red: number, green: number, blue: number } {
   h /= 60;
   const c = v * s;
   const x = c * (1 - Math.abs(h % 2 - 1))
   const m = v - c
 
-  let [r, g, b] = 
-    h < 1 ? [c, x, 0] :
-    h < 2 ? [x, c, 0] :
-    h < 3 ? [0, c, x] :
-    h < 4 ? [0, x, c] :
-    h < 5 ? [x, 0, c] :
-            [c, 0, x] ;
+  let [r, g, b] = (() => {
+    if (h < 1) return [c, x, 0];
+    if (h < 2) return [x, c, 0];
+    if (h < 3) return [0, c, x];
+    if (h < 4) return [0, x, c];
+    if (h < 5) return [x, 0, c];
+    return [c, 0, x];
+  })();
 
   [r, g, b] = [r, g, b].map(val => Math.round((val + m) * 255.0))
 
   return {red: r, green: g, blue: b};
 }
 
-function rgbToHex({red: r, green: g, blue: b}) {
+function rgbToHex({ red: r, green: g, blue: b }: { red: number, green: number, blue: number}): string {
   return "#" + [r, g, b]
     .map(val => val.toString(16).padStart(2, "0"))
     .join("");
 }
 
-function hexToRgb(hexValue) {
+function hexToRgb(hexValue: string) {
   let r = parseInt(hexValue.substring(1,3), 16);
   let g = parseInt(hexValue.substring(3,5), 16);
   let b = parseInt(hexValue.substring(5), 16);
@@ -31,7 +32,7 @@ function hexToRgb(hexValue) {
   return {red: r, green: g, blue: b};
 }
 
-function rgbToHsv({red: r, green: g, blue: b}) {
+function rgbToHsv({ red: r, green: g, blue: b }: { red: number, green: number, blue: number}): { hue: number, saturation: number, value: number } {
   r /= 255; g /= 255; b /= 255
 
   const max = Math.max(r, g, b)
@@ -58,7 +59,7 @@ function rgbToHsv({red: r, green: g, blue: b}) {
 function replaceColorPickers() {
   $(".color-picker:not(.color-picker-replaced)").each(function () {
     let input = $(this);
-    let startColor = input.val();
+    let startColor = input.val()?.toString() ?? "#3bb9ca";
 
     let trigger = $(`<div class="rounded cursor-pointer color-picker-trigger">`).css("background-color", startColor);
     input.after(trigger).addClass("color-picker-replaced");
@@ -74,21 +75,21 @@ function replaceColorPickers() {
     trigger.on("click", function (ev) {
       ev.stopPropagation();
       $(".color-picker-popup").not(popup).hide();
-      let offset = trigger.offset();
-      let yBelow = offset.top + trigger.outerHeight() + 4;
-      let yAbove = offset.top - popup.outerHeight() - 4;
+      let offset = trigger.offset() ?? { left: 0, top: 0 };
+      let yBelow = offset.top + (trigger.outerHeight() ?? 0) + 4;
+      let yAbove = offset.top - (popup.outerHeight() ?? 0) - 4;
       let xLeft = offset.left;
-      let xRight = offset.left + trigger.outerWidth() - popup.outerWidth();
+      let xRight = offset.left + (trigger.outerWidth() ?? 0) - (popup.outerWidth() ?? 0);
 
       let positionY = "below"; // Standard position
-      if (yBelow + popup.outerHeight() - $(window).scrollTop() > $(window).height() && // Not enough space below
-         (yAbove - $(window).scrollTop() >= 0)) { // Enough space above
+      if (yBelow + (popup.outerHeight() ?? 0) - ($(window).scrollTop() ?? 0) > ($(window).height() ?? 0) && // Not enough space below
+         (yAbove - ($(window).scrollTop() ?? 0) >= 0)) { // Enough space above
         positionY = "above";
       }
 
       let positionX = "left"; // Standard position
-      if (xLeft + popup.outerWidth() > $(window).width() && // Not enough space on the left
-         (xRight - popup.outerWidth() < 0)) { // Enough space on the right
+      if (xLeft + (popup.outerWidth() ?? 0) > ($(window).width() ?? 0) && // Not enough space on the left
+         (xRight - (popup.outerWidth() ?? 0) < 0)) { // Enough space on the right
         positionX = "right";
       }
 
@@ -97,16 +98,16 @@ function replaceColorPickers() {
         left: (positionX == "left") ? xLeft : xRight,
       }).toggle();
 
-      setHslSelection(input.val());
+      setHslSelection(input.val() as string);
     });
 
-    function setHslSelection(hexColor) {
+    function setHslSelection(hexColor: string) {
       let hsvColor = rgbToHsv(hexToRgb(hexColor));
       selectedHslColor = hsvColor;
-      markerHue.css({top: hsvColor.hue / 360 * hueContainer.outerHeight()});
+      markerHue.css({top: hsvColor.hue / 360 * (hueContainer.outerHeight() ?? 0)});
       markerSaturationValue.css({
-        left: hsvColor.saturation * saturationValueContainer.outerWidth(),
-        top: (1 - hsvColor.value) * saturationValueContainer.outerHeight()
+        left: hsvColor.saturation * (saturationValueContainer.outerWidth() ?? 0),
+        top: (1 - hsvColor.value) * (saturationValueContainer.outerHeight() ?? 0)
       });
       let gradientColor = `hsl(${hsvColor.hue}, 100%, 50%)`;
       saturationValueContainer.css({background: `
@@ -123,10 +124,10 @@ function replaceColorPickers() {
     let markerSaturationValue = popup.find(".color-picker-marker-saturation-value");
     let saturationValueContainer = popup.find(".color-picker-saturation-value");
 
-    function moveMarkerSaturationValue(x, y) {
-      let containerOffset = saturationValueContainer.offset();
-      let containerWidth = saturationValueContainer.outerWidth();
-      let containerHeight = saturationValueContainer.outerHeight();
+    function moveMarkerSaturationValue(x: number, y: number) {
+      let containerOffset = saturationValueContainer.offset() ?? { left: 0, top: 0 };
+      let containerWidth = saturationValueContainer.outerWidth() ?? 0;
+      let containerHeight = saturationValueContainer.outerHeight() ?? 0;
 
       let newX = x - containerOffset.left;
       newX = Math.max(0, Math.min(newX, containerWidth));
@@ -158,8 +159,8 @@ function replaceColorPickers() {
     })
     .on("touchstart", function (ev) {
       markerSaturationValueDragging = true;
-      let position = ev.originalEvent.touches[0]
-      moveMarkerSaturationValue(position.pageX, position.pageY);
+      let position = ev.originalEvent?.touches[0]
+      moveMarkerSaturationValue(position?.pageX ?? 0, position?.pageY ?? 0);
       ev.preventDefault();
     });
 
@@ -172,8 +173,8 @@ function replaceColorPickers() {
     })
     .on("touchmove", function (ev) {
       if (markerSaturationValueDragging) {
-        let position = ev.originalEvent.touches[0]
-        moveMarkerSaturationValue(position.pageX, position.pageY);
+        let position = ev.originalEvent?.touches[0]
+        moveMarkerSaturationValue(position?.pageX ?? 0, position?.pageY ?? 0);
       }
     }).on("touchend touchcancel", function () {
       markerSaturationValueDragging = false;
@@ -184,9 +185,9 @@ function replaceColorPickers() {
     let markerHue = popup.find(".color-picker-marker-hue");
     let hueContainer = popup.find(".color-picker-hue");
 
-    function moveMarkerHue(y) {
-      let containerOffset = hueContainer.offset().top;
-      let containerHeight = hueContainer.outerHeight();
+    function moveMarkerHue(y: number) {
+      let containerOffset = hueContainer.offset()?.top ?? 0;
+      let containerHeight = hueContainer.outerHeight() ?? 0;
 
       let newY = y - containerOffset;
       newY = Math.max(0, Math.min(newY, containerHeight));
@@ -219,7 +220,7 @@ function replaceColorPickers() {
     })
     .on("touchstart", function (ev) {
       markerHueDragging = true;
-      moveMarkerHue(ev.originalEvent.touches[0].pageY);
+      moveMarkerHue(ev.originalEvent?.touches[0]?.pageY ?? 0);
       ev.preventDefault();
     });
 
@@ -232,14 +233,14 @@ function replaceColorPickers() {
     })
     .on("touchmove", function (ev) {
       if (markerHueDragging) {
-        moveMarkerHue(ev.originalEvent.touches[0].pageY);
+        moveMarkerHue(ev.originalEvent?.touches[0]?.pageY ?? 0);
       }
     }).on("touchend touchcancel", function () {
       markerHueDragging = false;
     });
 
     popup.find(".color-picker-hex").on("change", function () {
-      let color = $(this).val();
+      let color = $(this).val()?.toLocaleString() ?? "#3bb9ca";
       if (! /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) {
         $(this).addClass("is-invalid");
       }

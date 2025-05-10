@@ -1,3 +1,6 @@
+import { addUpdateAllFunction, reloadAll } from "../../global/global.js"
+import { $navbarToasts, user } from "../../snippets/navbar/navbar.js"
+
 $("#show-join-class-btn").on("click", () => {
   $("#decide-action-panel").addClass("d-none")
   $("#join-class-panel").removeClass("d-none")
@@ -44,6 +47,11 @@ function onLogin() {
   firstLogin = false
 }
 
+$(() => {
+  addUpdateAllFunction(() => {})
+  reloadAll();
+})
+
 $("#login-register-back-btn").on("click", () => {
   $(".login-register-element, .login-element, .register-element").addClass("d-none")
     if (user.classJoined) {
@@ -61,7 +69,7 @@ $(window).on("userDataLoaded", () => {
 })
 
 $("#join-class-btn").on("click", async () => {
-  const classcode = document.getElementById("join-class-classcode").value;
+  const classcode = $("#join-class-classcode").val();
 
   let data = {
       classcode: classcode,
@@ -83,7 +91,7 @@ $("#join-class-btn").on("click", async () => {
     },
     error: (xhr) => {
       if (xhr.status === 401) {
-        document.getElementById("error-invalid-classcode").classList.remove("d-none");
+        $("#error-invalid-classcode").removeClass("d-none");
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
@@ -110,17 +118,9 @@ if (urlParams.has("action")) {
 }
 
 if (urlParams.has("classcode")) {
-  $("#join-class-classcode").val(urlParams.get("classcode"))
+  $("#join-class-classcode").val(urlParams.get("classcode") ?? "")
   $("#join-class-btn").trigger("click");
 }
 else {
   $("#join-class-classcode").val("")
-}
-
-function checkUsername(username) {
-  return /^\w{4,20}$/.test(username);
-}
-
-function checkSecurePassword(password) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;""<>,.?/-]).{8,}$/.test(password);
 }

@@ -1,0 +1,492 @@
+import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
+import { user } from "../snippets/navbar/navbar.js"
+
+export function runOnce(fn: Function): Function {
+  async function wrapper(force: boolean = false, ...args: any) {
+    if (wrapper.running && ! force) return;
+    wrapper.running = true;
+    let res = await fn(...args);
+    wrapper.running = false;
+    return res;
+  }
+  wrapper.running = false;
+  return wrapper;
+}
+
+export function msToDisplayDate(ms: number | string): string {
+  const num = typeof ms === "string" ? Number(ms) : ms;
+  const date = new Date(num);
+  const day = String(date.getDate());
+  const month = String(date.getMonth() + 1);
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
+export function msToInputDate(ms: number | string): string {
+  const num = typeof ms === "string" ? Number(ms) : ms;
+  const date = new Date(num);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${year}-${month}-${day}`;
+}
+
+export function dateToMs(dateStr: string): number | undefined {
+  if (dateStr.includes("-")) {
+    let [year, month, day] = dateStr.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getTime();
+  }
+  else if (dateStr.includes(".")) {
+    let [day, month, year] = dateStr.split(".").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getTime();
+  }
+}
+
+export function isSameDay(date1: Date, date2: Date): boolean {
+  return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+  );
+}
+
+export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
+  return (await homeworkCheckedData() ?? []).includes(homeworkId)
+}
+
+function loadSubjectData() {
+  $.get("/subjects/get_subject_data", (data) => {
+    subjectData(data);
+  });
+}
+
+function loadTimetableData() {
+  $.get("/timetable/get_timetable_data", (data) => {
+    timetableData(data);
+  });
+}
+
+export function loadHomeworkData() {
+  $.get("/homework/get_homework_data", (data) => {
+    homeworkData(data);
+  });
+}
+
+export async function loadHomeworkCheckedData() {
+  await userDataLoaded();
+
+  if (user.loggedIn) {
+    // If the user is logged in, get the data from the server
+    $.get("/homework/get_homework_checked_data", (data) => {
+      homeworkCheckedData(data);
+    });
+  }
+  else {
+    // If the user is not logged in, get the data from the local storage
+    homeworkCheckedData(JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]"))
+  }
+}
+
+function loadSubstitutionsData() {
+  $.get("/substitutions/get_substitutions_data", (data) => {
+    substitutionsData(data);
+  });
+}
+
+async function loadClassSubstitutionsData() {
+  const currentSubstitutionsData = await substitutionsData()
+  if (currentSubstitutionsData === "No data") {
+    classSubstitutionsData(null);
+    return
+  }
+
+  let data = structuredClone(currentSubstitutionsData);
+  for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
+    const key = "plan" + planId as "plan1" | "plan2"
+    data[key].substitutions = data[key].substitutions.filter((entry: any) => /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class))
+  }
+  classSubstitutionsData(data);
+}
+
+async function loadJoinedTeamsData() {
+  await userDataLoaded();
+
+  if (user.loggedIn) {
+    $.get("/teams/get_joined_teams_data", (data) => {
+      joinedTeamsData(data);
+    });
+  }
+  else {
+    joinedTeamsData(JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]"));
+  }
+}
+
+function loadTeamsData() {
+  $.get("/teams/get_teams_data", (data) => {
+    teamsData(data);
+  });
+}
+
+export function loadEventData() {
+  $.get("/events/get_event_data", (data) => {
+    eventData(data);
+  });
+}
+
+function loadEventTypeData() {
+  $.get("/events/get_event_type_data", (data) => {
+    eventTypeData(data);
+  });
+}
+
+export function userDataLoaded(): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      if (user.loggedIn != undefined && user.loggedIn != null) {
+        resolve();
+        return;
+      }
+      $(window).on("userDataLoaded", () => {
+        $(window).off("userDataLoaded");
+        resolve();
+      });
+    }
+    catch {
+      $(window).on("userDataLoaded", () => {
+        $(window).off("userDataLoaded");
+        resolve();
+      });
+    }
+  });
+}
+
+export const reloadAll = (): Promise<void> => {
+  return new Promise((resolve) => {(async (resolve) => {
+    if (updateAllFunctions.length != 0) {
+      if (requiredData.includes("subjectData")) {subjectData(null); loadSubjectData()}
+      if (requiredData.includes("timetableData")) {timetableData(null); loadTimetableData()}
+      if (requiredData.includes("homeworkData")) {homeworkData(null); loadHomeworkData()}
+      if (requiredData.includes("homeworkCheckedData")) {homeworkCheckedData(null); loadHomeworkCheckedData()}
+      if (requiredData.includes("substitutionsData")) {substitutionsData(null); loadSubstitutionsData()}
+      if (requiredData.includes("classSubstitutionsData")) {classSubstitutionsData(null); loadClassSubstitutionsData()}
+      if (requiredData.includes("joinedTeamsData")) {joinedTeamsData(null); loadJoinedTeamsData()}
+      if (requiredData.includes("teamsData")) {teamsData(null); loadTeamsData()}
+      if (requiredData.includes("eventData")) {eventData(null); loadEventData()}
+      if (requiredData.includes("eventTypeData")) {eventTypeData(null); loadEventTypeData()}
+    
+      await updateAll()
+
+      let promises = [];
+
+      promises.push(userDataLoaded())
+      await Promise.all(promises);
+  
+      $("body").css({ display: "block" })
+    }
+    resolve()
+  })(resolve)})
+}
+
+export async function updateAll() {
+  for (const fn of updateAllFunctions) {
+    await fn()
+  }
+}
+
+export function addUpdateAllFunction(...fn: Function[]) {
+  updateAllFunctions.push(...fn)
+}
+
+let requiredData: string[] = []
+let updateAllFunctions: Function[] = []
+
+type ColorTheme = "dark" | "light"
+export const colorTheme = createDataAccessor<ColorTheme>("colorTheme")
+
+let themeColor = document.createElement("meta")
+themeColor.name = "theme-color"
+if (localStorage.getItem("colorTheme") == "dark") {
+  colorTheme("dark")
+}
+else if (localStorage.getItem("colorTheme") == "light") {
+  colorTheme("light")
+}
+else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+  colorTheme("dark")
+}
+else {
+  colorTheme("light")
+}
+if (await colorTheme() == "light") {
+  themeColor.content = "#f8f9fa"
+}
+else {
+  document.getElementsByTagName("html")[0].style.background = "#212529"
+  themeColor.content = "#2b3035"
+}
+
+// Global socket variable that can be accessed from any script
+export const socket: Socket = io();
+
+document.head.appendChild(themeColor);
+
+// DATA
+export function createDataAccessor<T>(name: string) {
+  const eventName = `dataLoaded:${name}`
+
+  let data: T | null = null;
+  return async (value?: T | null): Promise<T> => {
+    async function getNotNullValue(): Promise<T> {
+      if (data == null) {
+        await new Promise((resolve) => {
+          $(window).on(eventName, resolve);
+        })
+        return await getNotNullValue()
+      }
+      return data
+    }
+    if (value !== undefined) {
+      data = value;
+      if (value !== null) {
+        $(window).trigger(eventName);
+      }
+    }
+    return getNotNullValue()
+  };
+}
+
+// Subject Data
+export type SubjectData = {
+  subjectId: number,
+  subjectNameLong: string,
+  subjectNameShort: string,
+  subjectNameSubstitution: string[] | null,
+  teacherGender: "d" | "w" | "m",
+  teacherNameLong: string,
+  teacherNameShort: string,
+  teacherNameSubstitution: string[] | null
+}[]
+export const subjectData = createDataAccessor<SubjectData>("subjectData");
+
+// Timetable data
+type TimetableLessonData = (
+  | { lessonType: "normal", subjectId: number, room: string }
+  | { lessonType: "break" }
+  | { lessonType: "teamed", teams: { teamId: number, subjectId: number, room: string }[] }
+  | { lessonType: "rotating", variants: { subjectId: number, room: string }[] }
+) & {
+  start: string,
+  end: string
+}
+type TimetableDayData = TimetableLessonData[]
+type TimetableData = [ TimetableDayData, TimetableDayData, TimetableDayData, TimetableDayData, TimetableDayData]
+export const timetableData = createDataAccessor<TimetableData>("timetableData");
+
+// Homework data
+type HomeworkData = {
+  homeworkId: number,
+  content: string,
+  subjectId: number,
+  assignmentDate: number,
+  submissionDate: number,
+  teamId: number
+}[];
+export const homeworkData = createDataAccessor<HomeworkData>("homeworkData");
+
+type HomeworkCheckedData = number[];
+export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>("homeworkCheckedData");
+
+type SubstitutionPlan = {
+  date: string,
+  substitutions: Record<string, string>[]
+}
+export type SubstitutionsData = {
+  plan1: SubstitutionPlan,
+  plan2: SubstitutionPlan,
+  updated: string
+} | "No data";
+export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData");
+export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData");
+
+export type JoinedTeamsData = number[];
+export const joinedTeamsData = createDataAccessor<JoinedTeamsData>("joinedTeamsData");
+
+export type TeamsData = {
+  teamId: number,
+  name: string
+}[];
+export const teamsData = createDataAccessor<TeamsData>("teamsData");
+
+export type SingleEventData = {
+  eventId: number,
+  eventTypeId: number,
+  name: string,
+  description: string | null,
+  startDate: number,
+  endDate: number | null,
+  lesson: string | null,
+  teamId: number
+}
+type EventData = SingleEventData[];
+export const eventData = createDataAccessor<EventData>("eventData");
+
+export type EventTypeData = {
+  eventTypeId: number,
+  name: string,
+  color: string
+}[];
+export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData");
+
+$(async () => {
+  switch (location.pathname) {
+    case "/homework": case "/homework/":
+      requiredData = [
+        "subjectData",
+        "homeworkData",
+        "homeworkCheckedData",
+        "teamsData",
+        "joinedTeamsData"
+      ]
+      break;
+    case "/events": case "/events/":
+      requiredData = [
+        "eventData",
+        "eventTypeData",
+        "teamsData",
+        "joinedTeamsData"
+      ]
+      break;
+    case "/main": case "/main/":
+      requiredData = [
+        "subjectData",
+        "timetableData",
+        "homeworkData",
+        "homeworkCheckedData",
+        "substitutionsData",
+        "classSubstitutionsData",
+        "eventData",
+        "eventTypeData",
+        "joinedTeamsData"
+      ]
+      break;
+  }
+  
+  await reloadAll();
+  
+  let hash = window.location.hash;
+  if (hash) {
+    let $target = $(hash);
+    if ($target?.offset() != undefined) {
+      $("html").animate({
+        scrollTop: ($target.offset()?.top ?? 0) - 70
+      });
+    }
+  }
+
+  $(`[data-bs-toggle="tooltip"]`).tooltip();
+  new MutationObserver((mutationsList) => {
+    mutationsList.forEach((mutation) => {
+      $(mutation.addedNodes).each(function () {
+        $(this).find(`[data-bs-toggle="tooltip"]`).tooltip();
+        $(this).filter(`[data-bs-toggle="tooltip"]`).tooltip();
+      });
+    });
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+});
+
+// Update everything on clicking the reload button
+$(document).on("click", "#navbar-reload-button", () => {
+  if (requiredData && updateAllFunctions.length != 0) reloadAll();
+});
+
+$(window).on("userDataLoaded", () => {
+  if (user.classJoined && ["/settings", "/settings/"].includes(location.pathname)) {
+    requiredData = [
+      "teamsData",
+      "joinedTeamsData",
+      "eventTypeData",
+      "subjectData",
+      "substitutionsData",
+    ]
+    reloadAll();
+  }
+
+  let afterFirstEvent = false
+  user.on("login", () => {
+    if (afterFirstEvent) reloadAll()
+    afterFirstEvent = true
+  });
+
+  user.on("logout", () => {
+    if (afterFirstEvent) reloadAll()
+    afterFirstEvent = true
+  });
+});
+
+if (user.classJoined && ["/settings", "/settings/"].includes(location.pathname)) {
+  requiredData = [
+    "teamsData",
+    "joinedTeamsData",
+    "eventTypeData",
+    "subjectData",
+    "substitutionsData",
+  ]
+  reloadAll();
+}
+
+// Change btn group selections to vertical / horizontal
+const smallScreenQuery = window.matchMedia("(max-width: 575px)");
+
+function handleSmallScreenQueryChange() {
+  if (smallScreenQuery.matches) {
+    $(".btn-group-dynamic").removeClass("btn-group").addClass("btn-group-vertical")
+  } else {
+    $(".btn-group-dynamic").addClass("btn-group").removeClass("btn-group-vertical")
+  }
+}
+
+smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
+
+handleSmallScreenQueryChange();
+
+(async () => {if (await colorTheme() == "light") {
+    document.body.setAttribute("data-bs-theme", "light");
+}
+else {
+    document.body.setAttribute("data-bs-theme", "dark");
+}})()
+
+if (location.pathname != "/settings/") {
+  let colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
+
+  if (colorThemeSetting == "auto") {
+    function updateColorTheme() {
+      let colorTheme
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        colorTheme = "dark"
+      }
+      else {
+        colorTheme = "light"
+      }
+    
+      if (colorTheme == "light") {
+        document.getElementsByTagName("html")[0].style.background = "#ffffff";
+        document.body.setAttribute("data-bs-theme", "light");
+        $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
+      }
+      else {
+        document.getElementsByTagName("html")[0].style.background = "#212529";
+        document.body.setAttribute("data-bs-theme", "dark");
+        $(`meta[name="theme-color"]`).attr("content", "#2b3035")
+      }
+    }
+
+    window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme)
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme)
+  }
+}

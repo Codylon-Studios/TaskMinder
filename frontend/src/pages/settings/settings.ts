@@ -1,10 +1,14 @@
+import { addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedTeamsData, joinedTeamsData, reloadAll, SubjectData, subjectData,
+         substitutionsData, TeamsData, teamsData, updateAll, userDataLoaded } from "../../global/global.js";
+import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+
 function updateColorTheme() {
   let colorTheme
-  if ($("#color-theme-dark")[0].checked) {
+  if ($("#color-theme-dark").prop("checked")) {
     colorTheme = "dark"
     localStorage.setItem("colorTheme", "dark");
   }
-  else if ($("#color-theme-light")[0].checked) {
+  else if ($("#color-theme-light").prop("checked")) {
     colorTheme = "light"
     localStorage.setItem("colorTheme", "light");
   }
@@ -19,27 +23,26 @@ function updateColorTheme() {
   }
 
   if (colorTheme == "light") {
-    document.getElementsByTagName("html")[0].style.background = "#ffffff";
+    $("html").css({background: "#ffffff"});
     document.body.setAttribute("data-bs-theme", "light");
     $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
   }
   else {
-    document.getElementsByTagName("html")[0].style.background = "#212529";
+    $("html").css({background: "#212529"});
     document.body.setAttribute("data-bs-theme", "dark");
     $(`meta[name="theme-color"]`).attr("content", "#2b3035")
   }
 }
 
 async function updateTeamLists() {
-  await dataLoaded("joinedTeamsData");
-  await dataLoaded("teamsData");
-  
   $("#team-selection-list").empty()
-  $("#teams-list").empty()
+  $("#teams-list").empty();
 
-  teamsData.forEach(team => {
+  const currentTeamsData = await teamsData()
+
+  currentTeamsData.forEach(async team => {
     let teamId = team.teamId
-    let selected = joinedTeamsData.includes(teamId)
+    let selected = (await joinedTeamsData()).includes(teamId)
     let template = `
       <div class="form-check">
         <input type="checkbox" class="form-check-input" data-id="${teamId}" id="team-selection-team-${teamId}" ${(selected) ? "checked" : ""}>
@@ -74,7 +77,7 @@ async function updateTeamLists() {
     $("#teams-list").append(template)
   })
   
-  $(document).on("change", ".team-name-input", function () {
+  $(document).on("change", ".team-name-input", async function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
 
     if ($(this).val().trim() == "") {
@@ -85,7 +88,7 @@ async function updateTeamLists() {
     let teamId = $(this).data("id")
     if (teamId !== "") {
       let newName = $(this).val()
-      let oldName = teamsData.find(team => team.teamId == teamId).name
+      let oldName = (await teamsData()).find(team => team.teamId == teamId)?.name
       if (newName != oldName) {
         if ($(`.team-deleted[data-id="${teamId}"]`).hasClass("d-none")) {
           $(`.team-renamed[data-id="${teamId}"]`).removeClass("d-none").find("*").removeClass("d-none").find("b").text(newName)
@@ -128,11 +131,9 @@ async function updateTeamLists() {
 }
 
 async function updateEventTypeList() {
-  await dataLoaded("eventTypeData");
-  
-  $("#event-types-list").empty()
+  $("#event-types-list").empty();
 
-  eventTypeData.forEach(eventType => {
+  (await eventTypeData()).forEach(eventType => {
     let eventTypeId = eventType.eventTypeId
 
     let template = `
@@ -169,7 +170,7 @@ async function updateEventTypeList() {
     $("#event-types-list").append(template)
   })
   
-  $(document).on("change", ".event-type-name-input", function () {
+  $(document).on("change", ".event-type-name-input", async function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
 
     if ($(this).val().trim() == "") {
@@ -180,7 +181,7 @@ async function updateEventTypeList() {
     let eventTypeId = $(this).data("id")
     if (eventTypeId !== "") {
       let newName = $(this).val()
-      let oldName = eventTypeData.find(eventType => eventType.eventTypeId == eventTypeId).name
+      let oldName = (await eventTypeData()).find(eventType => eventType.eventTypeId == eventTypeId)?.name
       if (newName != oldName) {
         if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
           $(`.event-type-renamed[data-id="${eventTypeId}"]`).removeClass("d-none").find("*").removeClass("d-none").find("b").text(newName)
@@ -199,13 +200,13 @@ async function updateEventTypeList() {
     }
   })
 
-  $(document).on("change", ".event-type-color-input", function () {
+  $(document).on("change", ".event-type-color-input", async function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
 
     let eventTypeId = $(this).data("id")
     if (eventTypeId !== "") {
       let newColor = $(this).val()
-      let oldColor = eventTypeData.find(eventType => eventType.eventTypeId == eventTypeId).color
+      let oldColor = (await eventTypeData()).find(eventType => eventType.eventTypeId == eventTypeId)?.color ?? ""
       if (newColor != oldColor) {
         if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
           let $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`)
@@ -246,12 +247,9 @@ async function updateEventTypeList() {
 }
 
 async function updateSubjectList() {
-  await dataLoaded("subjectData");
-  await dataLoaded("substitutionsData");
-  
-  $("#subjects-list").empty()
+  $("#subjects-list").empty();
 
-  subjectData.forEach(subject => {
+  (await subjectData()).forEach(subject => {
     let subjectId = subject.subjectId
     let template = `
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
@@ -296,9 +294,9 @@ async function updateSubjectList() {
                 <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Vertretungsoptionen"><i class="fa-solid fa-circle-info"></i></a>
               </div>
               <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"
-                type="text" value="${subject.subjectNameSubstitution || ""}" placeholder="${subject.subjectNameSubstitution || "keine Angabe"}">
+                type="text" value="${subject.subjectNameSubstitution ?? ""}" placeholder="${subject.subjectNameSubstitution ?? "keine Angabe"}">
               <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id="${subjectId}"
-                type="text" value="${subject.teacherNameSubstitution || ""}" placeholder="${subject.teacherNameSubstitution || "keine Angabe"}">
+                type="text" value="${subject.teacherNameSubstitution ?? ""}" placeholder="${subject.teacherNameSubstitution ?? "keine Angabe"}">
             </div>
           </div>
           <div class="w-md-50">
@@ -306,11 +304,11 @@ async function updateSubjectList() {
               Geändert
               <span class="subject-changed-name-long">${subject.subjectNameLong} zu <b></b></span>
               <span class="subject-changed-name-short">${subject.subjectNameShort} zu <b></b></span>
-              <span class="subject-changed-name-substitution">${subject.subjectNameSubstitution || "keine Angabe"} zu <b></b></span>
+              <span class="subject-changed-name-substitution">${subject.subjectNameSubstitution ?? "keine Angabe"} zu <b></b></span>
               <span class="subject-changed-teacher-gender">${{"w": "Frau", "m": "Herr", "d": "Keine Anrede"}[subject.teacherGender]} zu <b></b></span>
               <span class="subject-changed-teacher-long">${subject.teacherNameLong} zu <b></b></span>
               <span class="subject-changed-teacher-short">${subject.teacherNameShort} zu <b></b></span>
-              <span class="subject-changed-teacher-substitution">${subject.teacherNameSubstitution || "keine Angabe"} zu <b></b></span>
+              <span class="subject-changed-teacher-substitution">${subject.teacherNameSubstitution ?? "keine Angabe"} zu <b></b></span>
             </span>
             <span class="text-danger fw-bold mt-2 mt-md-0 d-none subject-deleted" data-id="${subjectId}">Gelöscht</span>
           </div>
@@ -325,7 +323,7 @@ async function updateSubjectList() {
     $("#subjects-list").find(".subject-changed").last().find("span").addClass("d-none").attr("data-id", subjectId)
   })
   
-  $(document).on("change", ".subject-name-long-input", function () {
+  $(document).on("change", ".subject-name-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     if ($(this).val().trim() == "") {
@@ -336,7 +334,7 @@ async function updateSubjectList() {
     let subjectId = $(this).data("id")
     if (subjectId !== "") {
       let newName = $(this).val()
-      let oldName = subjectData.find(subject => subject.subjectId == subjectId).subjectNameLong
+      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameLong
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -359,13 +357,13 @@ async function updateSubjectList() {
     }
   })
   
-  $(document).on("change", ".subject-name-short-input", function () {
+  $(document).on("change", ".subject-name-short-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
     if (subjectId !== "") {
       let newName = $(this).val()
-      let oldName = subjectData.find(subject => subject.subjectId == subjectId).subjectNameShort
+      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameShort
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -381,18 +379,18 @@ async function updateSubjectList() {
     }
   })
   
-  $(document).on("change", ".subject-teacher-gender-input", function () {
+  $(document).on("change", ".subject-teacher-gender-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
     if (subjectId !== "") {
-      let newGender = $(this).val()
-      let oldGender = subjectData.find(subject => subject.subjectId == subjectId).teacherGender
+      let newGender = $(this).val() as "d" | "w" | "m"
+      let oldGender = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherGender
       if (newGender != oldGender) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
           $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`).removeClass("d-none").find("b")
-            .text({"w": "Frau", "m": "Herr", "d": "Keine Anrede"}[newGender])
+            .text({ "d": "Keine Anrede", "w": "Frau", "m": "Herr" }[newGender])
         }
       }
       else {
@@ -404,7 +402,7 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("change", ".subject-teacher-long-input", function () {
+  $(document).on("change", ".subject-teacher-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     if ($(this).val().trim() == "") {
@@ -415,7 +413,7 @@ async function updateSubjectList() {
     let subjectId = $(this).data("id")
     if (subjectId !== "") {
       let newName = $(this).val()
-      let oldName = subjectData.find(subject => subject.subjectId == subjectId).teacherNameLong
+      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameLong
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -438,13 +436,13 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("change", ".subject-teacher-short-input", function () {
+  $(document).on("change", ".subject-teacher-short-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
     if (subjectId !== "") {
       let newName = $(this).val()
-      let oldName = subjectData.find(subject => subject.subjectId == subjectId).teacherNameShort
+      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameShort
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -460,13 +458,13 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("change", ".subject-name-substitution-input", function () {
+  $(document).on("change", ".subject-name-substitution-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
     if (subjectId !== "") {
       let newName = $(this).val()
-      let oldName = subjectData.find(subject => subject.subjectId == subjectId).subjectNameSubstitution || "keine Angabe"
+      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameSubstitution ?? "keine Angabe"
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -482,13 +480,13 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("change", ".subject-teacher-substitution-input", function () {
+  $(document).on("change", ".subject-teacher-substitution-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
     if (subjectId !== "") {
       let newName = $(this).val()
-      let oldName = subjectData.find(subject => subject.subjectId == subjectId).subjectNameSubstitution || "keine Angabe"
+      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameSubstitution ?? "keine Angabe"
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -511,41 +509,40 @@ async function updateSubjectList() {
 
 let dsbActivated = false;
 
+$(() => {
+  addUpdateAllFunction(
+    updateTeamLists,
+    updateEventTypeList,
+    updateSubjectList
+  )
+  reloadAll();
+})
 $(async () => {
-  updateAllFunctions.push(() => {
-    updateTeamLists();
-    updateEventTypeList();
-    updateSubjectList();
-  });
-
-  
   await userDataLoaded()
   if (user.classJoined) {
     $(".not-joined-info").addClass("d-none")
     $("#settings-student, #settings-class").removeClass("d-none")
   }
 
-  await dataLoaded("substitutionsData");
-  if (JSON.stringify(substitutionsData) != "{}") {
+  if (JSON.stringify(await substitutionsData()) !== null) {
     dsbActivated = true
   }
 });
 
-let animations = JSON.parse(localStorage.getItem("animations"));
-if (animations == undefined) animations = true
+let animations = JSON.parse(localStorage.getItem("animations") ?? "true") ?? true;
 $("#animations input").prop("checked", animations);
 $("#animations input").on("click", function () {
   animations = $(this).prop("checked");
   localStorage.setItem("animations", animations)
 })
 
-let colorThemeSetting = localStorage.getItem("colorTheme") || "auto";
-document.body.setAttribute("data-bs-theme", colorTheme);
+let colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
+document.body.setAttribute("data-bs-theme", await colorTheme());
 $("#color-theme-auto").prop("checked", colorThemeSetting == "auto") 
 $("#color-theme-dark").prop("checked", colorThemeSetting == "dark") 
 $("#color-theme-light").prop("checked", colorThemeSetting == "light")
 
-$("#color-theme input").each(() => {
+$("#color-theme input").each(function () {
   $(this).on("click", () => {
     updateColorTheme();
   });
@@ -557,13 +554,13 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", upd
 // TEAM SELECTION
 
 $("#team-selection-save").on("click", () => {
-  let newJoinedTeamsData = []
+  let newJoinedTeamsData: JoinedTeamsData = []
   $("#team-selection-list input").each(function () {
     if ($(this).prop("checked")) {
       newJoinedTeamsData.push(Number($(this).data("id")))
     }
   })
-  joinedTeamsData = newJoinedTeamsData;
+  joinedTeamsData(newJoinedTeamsData);
 
   if (user.loggedIn) {
     let data = {
@@ -645,7 +642,7 @@ $("#new-team").on("click", () => {
   $(".team-name-input").last().trigger("focus")
 
   $(".team-name-input").last().on("focusout", function () {
-    if ($(this).val().trim() == "") {
+    if ($(this).val()?.toString().trim() == "") {
       $(this).addClass("is-invalid")
       $("#teams-save").addClass("disabled")
     }
@@ -666,12 +663,12 @@ $("#teams-cancel").on("click", () => {
 })
 
 function saveTeams() {
-  let newTeamsData = []
+  let newTeamsData: TeamsData = []
   $(".team-name-input").each(function () {
     if ($(this).parent().parent().find("~ .btn-success").length > 0) return
     newTeamsData.push({
       teamId: $(this).data("id"),
-      name: $(this).val()
+      name: $(this).val()?.toString() ?? ""
     })
   })
   
@@ -717,9 +714,9 @@ function saveTeams() {
 }
 
 $("#teams-save").on("click", () => {
-  let deleted = []
+  let deleted: string[] = []
   $(".team-deleted:not(.d-none)").each(function () {
-    deleted.push($(this).parent().find("input").attr("placeholder"))
+    deleted.push($(this).parent().find("input").attr("placeholder") ?? "")
   })
   
   if (deleted.length == 0) {
@@ -770,7 +767,7 @@ $("#new-event-type").on("click", () => {
   $(".event-type-name-input").last().trigger("focus")
 
   $(".event-type-name-input").last().on("focusout", function () {
-    if ($(this).val().trim() == "") {
+    if ($(this).val()?.toString().trim() == "") {
       $(this).addClass("is-invalid")
       $("#event-types-save").addClass("disabled")
     }
@@ -791,13 +788,13 @@ $("#event-types-cancel").on("click", () => {
 })
 
 function saveEventTypes() {
-  let newEventTypesData = []
+  let newEventTypesData: EventTypeData = []
   $("#event-types-list > div").each(function () {
     if ($(this).find(".btn-success").length > 0) return
     newEventTypesData.push({
       eventTypeId: $(this).data("id"),
-      name: $(this).find(".event-type-name-input").val(),
-      color: $(this).find(".event-type-color-input").val()
+      name: $(this).find(".event-type-name-input").val()?.toString() ?? "",
+      color: $(this).find(".event-type-color-input").val()?.toString() ?? ""
     })
   })
   
@@ -843,9 +840,9 @@ function saveEventTypes() {
 }
 
 $("#event-types-save").on("click", () => {
-  let deleted = []
+  let deleted: string[] = []
   $(".event-type-deleted:not(.d-none)").each(function () {
-    deleted.push($(this).parent().find("input").attr("placeholder"))
+    deleted.push($(this).parent().find("input").attr("placeholder") ?? "")
   })
   
   if (deleted.length == 0) {
@@ -934,7 +931,7 @@ $("#new-subject").on("click", () => {
   $(".subject-name-long-input").last().trigger("focus")
 
   $(".subject-name-long-input").last().on("focusout", function () {
-    if ($(this).val().trim() == "") {
+    if ($(this).val()?.toString().trim() == "") {
       $(this).addClass("is-invalid")
       $("#subjects-save").addClass("disabled")
     }
@@ -955,21 +952,25 @@ $("#subjects-cancel").on("click", () => {
 })
 
 function saveSubjects() {
-  let newSubjectData = []
+  let newSubjectData: SubjectData = []
   $("#subjects-list > div").each(function () {
     if ($(this).find(".btn-success").length > 0) return
 
-    let subjectNameLong = $(this).find(".subject-name-long-input").val().trim()
-    let teacherNameShort = $(this).find(".subject-teacher-short-input").val().trim() || $(this).find(".subject-teacher-long-input").val().trim().substring(0, 3)
+    let subjectNameLong = $(this).find(".subject-name-long-input").val()?.toString().trim() ?? ""
+    let subjectNameShort = $(this).find(".subject-name-short-input").val()?.toString().trim()
+    subjectNameShort ??= $(this).find(".subject-name-long-input").val()?.toString().trim().substring(0, 3)
+    let teacherNameShort = $(this).find(".subject-teacher-short-input").val()?.toString().trim()
+    teacherNameShort ??= $(this).find(".subject-teacher-long-input").val()?.toString().trim().substring(0, 3) ?? ""
+
     newSubjectData.push({
       subjectId: $(this).data("id"),
       subjectNameLong: subjectNameLong,
-      subjectNameShort: $(this).find(".subject-name-short-input").val().trim() || $(this).find(".subject-name-long-input").val().trim().substring(0, 3),
-      teacherGender: $(this).find(".subject-teacher-gender-input").val().trim(),
-      teacherNameLong: $(this).find(".subject-teacher-long-input").val().trim(),
+      subjectNameShort: subjectNameShort ?? "",
+      teacherGender: $(this).find(".subject-teacher-gender-input").val()?.toString() as "d" | "w" | "m" ?? "d",
+      teacherNameLong: $(this).find(".subject-teacher-long-input").val()?.toString().trim() ?? "",
       teacherNameShort: teacherNameShort,
-      subjectNameSubstitution: ($(this).find(".subject-name-substitution-input").val() || subjectNameLong).split(",").map(v => v.trim()),
-      teacherNameSubstitution: ($(this).find(".subject-teacher-substitution-input").val() || teacherNameShort).split(",").map(v => v.trim())
+      subjectNameSubstitution: ($(this).find(".subject-name-substitution-input").val()?.toString() ?? subjectNameLong).split(",").map(v => v.trim()),
+      teacherNameSubstitution: ($(this).find(".subject-teacher-substitution-input").val()?.toString() ?? teacherNameShort).split(",").map(v => v.trim())
     })
   })
   
@@ -1015,9 +1016,9 @@ function saveSubjects() {
 }
 
 $("#subjects-save").on("click", () => {
-  let deleted = []
+  let deleted: string[] = []
   $(".subjects-deleted:not(.d-none)").each(function () {
-    deleted.push($(this).parent().find("input").attr("placeholder"))
+    deleted.push($(this).parent().find("input").attr("placeholder") ?? "")
   })
   
   if (deleted.length == 0) {

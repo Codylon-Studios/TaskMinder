@@ -50,7 +50,7 @@ const timetableService = {
   },
 
   async getTimetableData(classId: number) {
-    return await Timetable.findOne({ where: { class: classId } });
+    return (await Timetable.findOne({ where: { class: classId } }))?.content ?? "No data";
   }
 }
 

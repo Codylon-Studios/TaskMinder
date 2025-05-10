@@ -1,15 +1,16 @@
-async function updateEventList() {
-  await dataLoaded("eventData")
-  await dataLoaded("eventTypeData")
-  await dataLoaded("joinedTeamsData")
+import { addUpdateAllFunction, dateToMs, eventData, eventTypeData, isSameDay, joinedTeamsData, loadEventData, msToDisplayDate, msToInputDate, runOnce,
+         teamsData, updateAll, socket, 
+         reloadAll} from "../../global/global.js";
+import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
+const updateEventList = runOnce(async (): Promise<void> => {
   // Clear the list
   $("#event-list").empty();
   
   // Check if user is in edit mode
   let editEnabled = $("#edit-toggle").is(":checked");
 
-  for (let event of eventData) {
+  for (let event of await eventData()) {
     // Get the information for the event
     let eventId = event.eventId;
     let eventTypeId = event.eventTypeId;
@@ -26,28 +27,29 @@ async function updateEventList() {
     }
 
     // Filter by type
+    console.log("Frage")
     if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
       continue;
     }
 
     // Filter by min. date
     if ($("#filter-date-from").val() != "") {
-      let filterDate = Date.parse($("#filter-date-from").val());
-      if (filterDate > parseInt(event.endDate || event.startDate)) {
+      let filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
+      if (filterDate > (event.endDate ?? event.startDate)) {
         continue;
       }
     }
 
     // Filter by max. date
     if ($("#filter-date-until").val() != "") {
-      let filterDate = Date.parse($("#filter-date-until").val());
-      if (filterDate < parseInt(event.startDate)) {
+      let filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
+      if (filterDate < event.startDate) {
         continue;
       }
     }
 
     // Filter by team
-    if (! joinedTeamsData.includes(event.teamId) && event.teamId != -1) {
+    if (! (await joinedTeamsData()).includes(event.teamId) && event.teamId != -1) {
       continue;
     }
 
@@ -81,12 +83,9 @@ async function updateEventList() {
   if ($("#event-list").html() == "") {
     $("#event-list").html(`<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>`)
   }
-}
-updateEventList = runOnce(updateEventList);
+})
 
-async function updateEventTypeList() {
-  await dataLoaded("eventTypeData")
-
+const updateEventTypeList = runOnce(async (): Promise<void> => {
   // Clear the select element in the add event modal
   $("#add-event-type").empty();
   $("#add-event-type").append('<option value="" disabled selected>Art</option>');
@@ -96,17 +95,15 @@ async function updateEventTypeList() {
   // Clear the list for filtering by type
   $("#filter-type-list").empty();
 
-  let filterData = JSON.parse(localStorage.getItem("eventFilter"))
-  if (filterData.type == undefined) {
-    filterData.type = {}
-  }
+  let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+  filterData.type ??= {};
 
-  eventTypeData.forEach(eventType => {
+  (await eventTypeData()).forEach(eventType => {
     // Get the event type data
     let eventTypeId = eventType.eventTypeId;
     let eventName = eventType.name;
 
-    if (filterData.type[eventTypeId] == undefined) filterData.type[eventTypeId] = true
+    filterData.type[eventTypeId] ??= true
     let checkedStatus = (filterData.type[eventTypeId]) ? "checked" : ""
     if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none")
 
@@ -130,22 +127,17 @@ async function updateEventTypeList() {
   // If any type filter gets changed, update the shown events
   $(".filter-type-option").on("change", function () {
     updateEventList();
-    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
-    if (filterData.type == undefined) {
-      filterData.type = {}
-    }
+    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    filterData.type ??= {}
     filterData.type[$(this).data("id")] = $(this).prop("checked")
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
   });
 
   localStorage.setItem("eventFilter", JSON.stringify(filterData))
-}
-updateEventTypeList = runOnce(updateEventTypeList);
+})
 
-async function updateTeamList() {
-  await dataLoaded("teamsData");
-
+const updateTeamList = runOnce(async (): Promise<void> => {
   // Clear the select element in the add event modal
   $("#add-event-team").empty();
   $("#add-event-team").append('<option value="-1" selected>Alle</option>');
@@ -153,7 +145,7 @@ async function updateTeamList() {
   $("#edit-event-team").empty();
   $("#edit-event-team").append('<option value="-1" selected>Alle</option>');
 
-  teamsData.forEach(team => {
+  (await teamsData()).forEach(team => {
     // Get the team data
     let teamName = team.name;
 
@@ -163,8 +155,7 @@ async function updateTeamList() {
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
   });
-}
-updateTeamList = runOnce(updateTeamList);
+})
 
 function addEvent() {
   //
@@ -191,11 +182,11 @@ function addEvent() {
   $("#add-event-button").off("click").on("click", () => {
     // Save the given information in variables
     const eventTypeId = $("#add-event-type").val();
-    const name = $("#add-event-name").val().trim();
-    const description = $("#add-event-description").val().trim();
-    const startDate = $("#add-event-start-date").val();
-    const lesson = $("#add-event-lesson").val().trim();
-    const endDate = $("#add-event-end-date").val();
+    const name = $("#add-event-name").val()?.toString().trim();
+    const description = $("#add-event-description").val()?.toString().trim();
+    const startDate = $("#add-event-start-date").val()?.toString() ?? "";
+    const lesson = $("#add-event-lesson").val()?.toString().trim();
+    const endDate = $("#add-event-end-date").val()?.toString() ?? "";
     const team = $("#add-event-team").val();
 
     // Prepare the POST request
@@ -205,7 +196,7 @@ function addEvent() {
       description: description,
       startDate: dateToMs(startDate),
       lesson: lesson,
-      endDate: dateToMs(endDate),
+      endDate: dateToMs(endDate) ?? null,
       teamId: team
     };
     // Save whether the server has responed
@@ -219,7 +210,7 @@ function addEvent() {
       success: () => {
         // Show a success notification and update the shown events
         $("#add-event-success-toast").toast("show");
-        eventData = undefined;
+        eventData(null);
         loadEventData();
         updateEventList();
       },
@@ -252,28 +243,23 @@ function addEvent() {
   });
 }
 
-function editEvent(eventId) {
+async function editEvent(eventId: number) {
   //
   // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY EDITS AN EVENT
   //
 
   // Get the data of the event
-  let data;
-  for (let event of eventData) {
-    if (event.eventId == eventId) {
-      data = event;
-      break;
-    }
-  }
+  let event = (await eventData()).find((e) => e.eventId == eventId)
+  if (! event) return
 
   // Set the inputs on the already saved information
-  $("#edit-event-type").val(data.eventTypeId);
-  $("#edit-event-name").val(data.name);
-  $("#edit-event-description").val(data.description);
-  $("#edit-event-start-date").val(msToInputDate(data.startDate));
-  $("#edit-event-lesson").val(data.lesson);
-  $("#edit-event-end-date").val(msToInputDate(data.endDate));
-  $("#edit-event-team").val(data.teamId);
+  $("#edit-event-type").val(event.eventTypeId);
+  $("#edit-event-name").val(event.name);
+  $("#edit-event-description").val(event.description ?? "");
+  $("#edit-event-start-date").val(msToInputDate(event.startDate));
+  $("#edit-event-lesson").val(event.lesson ?? "");
+  $("#edit-event-end-date").val(msToInputDate(event.endDate ?? ""));
+  $("#edit-event-team").val(event.teamId);
 
   // Enable the actual "edit" button, because all information is given
   $("#edit-event-button").removeClass("disabled");
@@ -288,9 +274,9 @@ function editEvent(eventId) {
     const eventTypeId = $("#edit-event-type").val();
     const name = $("#edit-event-name").val();
     const description = $("#edit-event-description").val();
-    const startDate = $("#edit-event-start-date").val();
-    const lesson = $("#edit-event-lesson").val().trim();
-    const endDate = $("#edit-event-end-date").val();
+    const startDate = $("#edit-event-start-date").val()?.toString() ?? "";
+    const lesson = $("#edit-event-lesson").val()?.toString().trim();
+    const endDate = $("#edit-event-end-date").val()?.toString() ?? "";
     const team = $("#edit-event-team").val();
 
     let data = {
@@ -314,7 +300,7 @@ function editEvent(eventId) {
       success: () => {
         // Show a success notification and update the shown events
         $("#edit-event-success-toast").toast("show");
-        eventData = undefined;
+        eventData(null);
         loadEventData();
         updateEventList();
       },
@@ -346,7 +332,7 @@ function editEvent(eventId) {
   });
 }
 
-function deleteEvent(eventId) {
+function deleteEvent(eventId: number) {
   //
   // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY DELETES AN EVENT
   //
@@ -374,7 +360,7 @@ function deleteEvent(eventId) {
       success: () => {
         // Show a success notification and update the shown events
         $("#delete-event-success-toast").toast("show");
-        eventData = undefined;
+        eventData(null);
         loadEventData();
         updateEventList();
       },
@@ -408,7 +394,7 @@ function deleteEvent(eventId) {
 function resetFilters() {
   $("#filter-changed").addClass("d-none")
 
-  let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+  let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
   
   if (filterData.dateFrom == undefined) {
     $("#filter-date-from").val(msToInputDate(Date.now()))
@@ -424,7 +410,7 @@ function resetFilters() {
     $("#filter-date-until").val(msToInputDate(nextMonth.getTime()))
   }
   else {
-    $("#filter-date-from").val(filterData.dateUntil)
+    $("#filter-date-until").val(filterData.dateUntil)
     let nextMonth = new Date(Date.now())
     nextMonth.setMonth(nextMonth.getMonth() + 1)
     if (! isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none")
@@ -433,16 +419,13 @@ function resetFilters() {
   updateEventTypeList()
 }
 
-let $ui;
-
 $(function(){
-  updateAllFunctions.push(() => {
-    updateEventTypeList();
-    updateEventList();
-    updateTeamList();
-  })
-  
-  updateAll();
+  addUpdateAllFunction(
+    updateEventTypeList,
+    updateEventList,
+    updateTeamList
+  )
+  reloadAll();
 
   $(window).on("userDataLoaded", () => {
     // If user is logged in, show the edit toggle button
@@ -502,7 +485,7 @@ $(function(){
   // On changing any information in the add event modal, disable the add button if any information is empty
   $(".add-event-input").on("input", function () {
     const type = $("#add-event-type").val();
-    const name = $("#add-event-name").val().trim();
+    const name = $("#add-event-name").val()?.toString().trim();
     const startDate = $("#add-event-start-date").val();
 
     if ([ name, startDate ].includes("") || type == null) {
@@ -523,7 +506,7 @@ $(function(){
   // On changing any information in the edit event modal, disable the edit button if any information is empty
   $(".edit-event-input").on("input", function () {
     const type = $("#edit-event-type").val();
-    const name = $("#edit-event-name").val().trim();
+    const name = $("#edit-event-name").val()?.toString().trim();
     const startDate = $("#edit-event-start-date").val();
 
     if ([ name, startDate ].includes("") || type == null) {
@@ -562,46 +545,45 @@ $(function(){
 
   // On clicking the all types option, check all and update the event list
   $("#filter-type-all").on("click", () => {
-    updateEventList();
-    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
-    if (filterData.type == undefined) filterData.type = {}
+    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     $(".filter-type-option").prop("checked", true);
     $(".filter-type-option").each(function () {
       filterData.type[$(this).data("id")] = true
     })
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
+    updateEventList();
   });
 
   // On clicking the none types option, uncheck all and update the event list
   $("#filter-type-none").on("click", () => {
-    updateEventList();
-    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
-    if (filterData.type == undefined) filterData.type = {}
+    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    filterData.type ??= {}
     $(".filter-type-option").prop("checked", false);
     $(".filter-type-option").each(function () {
       filterData.type[$(this).data("id")] = false
     })
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
+    updateEventList();
   });
 
   // On changing any filter date option, update the event list
   $("#filter-date-from").on("change", () => {
-    updateEventList();
-    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateFrom = $("#filter-date-from").val()
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
+    updateEventList();
   });
 
   // On changing any filter date option, update the event list
   $("#filter-date-until").on("change", () => {
-    updateEventList();
-    let filterData = JSON.parse(localStorage.getItem("eventFilter"))
+    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateUntil = $("#filter-date-until").val()
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
+    updateEventList();
   });
 
   $(document).on("click", "#show-add-event-button", () => {
@@ -611,7 +593,7 @@ $(function(){
 
 socket.on("updateEventData", ()=>{
   try {
-    eventData = undefined;
+    eventData(null);
 
     loadEventData();
 

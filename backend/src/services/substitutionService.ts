@@ -93,11 +93,7 @@ async function loadSubstitutionData(): Promise<void> {
   }
   catch {
     logger.error("Error fetching substitutions data!");
-    let substitutionsData = {
-      plan1: {substitutions: null, date: ""},
-      plan2: {substitutions: null, date: ""},
-      updated: ""
-    }
+    let substitutionsData = "No data"
     try {
       await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(substitutionsData), { EX: cacheExpiration });
     } catch (err) {
@@ -111,7 +107,7 @@ setInterval(loadSubstitutionData, 60000);
 
 export async function getSubstitutionData() {
   if (process.env.DSB_ACTIVATED != "true") {
-    return {}
+    return "No data"
   }
   let cachedData = await redisClient.get(cacheKeySubstitutionsData);
   if (cachedData) {
@@ -119,7 +115,7 @@ export async function getSubstitutionData() {
   }
   else {
     await loadSubstitutionData();
-    cachedData = await redisClient.get(cacheKeySubstitutionsData) ?? "{}";
+    cachedData = await redisClient.get(cacheKeySubstitutionsData) ?? "No data";
     return JSON.parse(cachedData);
   }
 }

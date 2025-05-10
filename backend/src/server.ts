@@ -117,26 +117,18 @@ if (process.env.NODE_ENV !== "DEVELOPMENT") {
       directives: {
         "default-src": ["'self'"],
         "script-src": [
-          "'self'",
-          "https://code.jquery.com",
-          "https://cdn.jsdelivr.net",
-          "https://kit.fontawesome.com",
+          '"self"',
         ],
         "connect-src": [
-          "'self'",
-          "https://ka-f.fontawesome.com",
+          '"self"',
           "wss://*"
         ],
         "style-src": [
-          "'self'",
-          "https://ka-f.fontawesome.com/",
-          "https://fonts.googleapis.com/",
-          "'unsafe-inline'"
+          '"self"',
+          '"unsafe-inline"'
         ],
         "font-src": [
-          "'self'",
-          "https://ka-f.fontawesome.com/",
-          "https://fonts.gstatic.com/"
+          '"self"',
         ],
         "img-src": ["'self'", "data:"],
         "object-src": ["'none'"],
@@ -235,7 +227,7 @@ app.get("/", (req: Request, res: Response) => {
   res.redirect(302, "/join");
 })
 
-let pagesPath = path.join(__dirname, "..", "..", "frontend", "src", "pages")
+let pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages")
 
 app.get("/join", (req, res) => {
   if (req.session.account && req.session.classJoined) {

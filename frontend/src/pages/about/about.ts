@@ -1,3 +1,5 @@
+import { addUpdateAllFunction, reloadAll } from "../../global/global.js";
+
 class LicenseDisplay extends HTMLElement {
   constructor() {
     super();
@@ -16,3 +18,8 @@ ${content}</pre>
   }
 }
 customElements.define("license-display", LicenseDisplay);
+
+$(() => {
+  addUpdateAllFunction(() => {})
+  reloadAll();
+})
