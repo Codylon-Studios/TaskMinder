@@ -20,7 +20,6 @@ import sequelize from "./config/sequelize";
 import account from "./routes/accountRoute";
 import homework from "./routes/homeworkRoute";
 import substitutions from "./routes/substitutionRoute";
-import schedules from "./routes/scheduleRoute";
 import teams from "./routes/teamRoute";
 import events from "./routes/eventRoute";
 import subjects from "./routes/subjectRoute";
@@ -196,7 +195,6 @@ app.use("/docs", express.static(path.join(__dirname, "..", "..", "docs", "dist")
 app.use("/account", account);
 app.use("/homework", homework);
 app.use("/substitutions", substitutions);
-app.use("/schedule", schedules);
 app.use("/teams", teams);
 app.use("/events", events);
 app.use("/subjects", subjects);
