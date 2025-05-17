@@ -136,27 +136,42 @@ if (process.env.NODE_ENV !== "DEVELOPMENT") {
       directives: {
         "default-src": ["'self'"],
         "script-src": [
-          '"self"',
+          "'self'",
         ],
         "connect-src": [
-          '"self"',
+          "'self'",
           "wss://*"
         ],
         "style-src": [
-          '"self"',
-          '"unsafe-inline"'
+          "'self'",
+          "'unsafe-inline'"
         ],
         "font-src": [
-          '"self"',
+          "'self'",
         ],
         "img-src": ["'self'", "data:"],
         "object-src": ["'none'"],
         "frame-ancestors": ["'self'"]
       },
     },
+    crossOriginOpenerPolicy: {
+      policy: "same-origin"
+    },
+    crossOriginResourcePolicy: {
+      policy: "same-origin"
+    },
     referrerPolicy: {
       policy: "strict-origin-when-cross-origin"
     },
+    noSniff: true,
+    dnsPrefetchControl: {
+      allow: false
+    },
+    frameguard: {
+      action: "deny"
+    },
+    hidePoweredBy: true,
+    originAgentCluster: true,
   }));
 }
 
