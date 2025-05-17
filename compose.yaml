@@ -16,6 +16,8 @@ services:
       - DB_HOST=postgres
       - REDIS_HOST=redis
     secrets:
+      - vapid_public
+      - vapid_private
       - db_user
       - db_password
       - db_name
@@ -41,6 +43,8 @@ services:
              export CLASSCODE=$(cat /run/secrets/classcode) &&
              export DSB_USER=$(cat /run/secrets/dsb_user) &&
              export DSB_PASSWORD=$(cat /run/secrets/dsb_password) &&
+             export VAPID_PUBLIC_KEY=$(cat /run/secrets/vapid_public) &&
+             export VAPID_PRIVATE_KEY=$(cat /run/secrets/vapid_private) &&
              redis-cli -h redis FLUSHALL &&
              node backend/dist/server.js"
 
@@ -154,6 +158,11 @@ secrets:
     file: ./docker_secrets/dsb_user.txt
   dsb_password:
     file: ./docker_secrets/dsb_password.txt
+  vapid_public:
+    file: ./docker-secrets/vapid_public.txt
+  vapid_private:
+    file: ./docker-secrets/vapid_private.txt
+
 
 volumes:
   postgres-data:
