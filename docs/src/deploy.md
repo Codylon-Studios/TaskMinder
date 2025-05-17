@@ -68,6 +68,37 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y git curl nginx ufw fail2ban openssl
 ```
 
+Later in this process, you will need to generate VAPID Keys for push notifications from the server. You have two options for accomplishing this:
+
+1.  **Use Node.js and npm:** This method uses standard tools and is generally reliable. However, it requires installing Node.js and npm, which can use significant disk space.
+2. **Use the provided shell script:** A key-generation script is included in the GitHub repository you will clone, and you will be advised to run it later in this guide. Please note that its reliability may vary across different operating systems due to dependencies on varying versions of OpenSSL.
+
+**Choose Your Approach:**
+
+*   If you prefer to use the **Node.js/npm** method, proceed with the installation steps below. **These steps only install the necessary tools; they do not generate the keys yet.**
+*   If you prefer to try the **shell script** first, you can skip the installation steps below for now. You will be advised to run it later in this guide. If the script does not work, return to this point and follow the installation steps for Node.js.
+
+---
+
+**Steps if you chose the Node.js/npm option:**
+
+If you chose to install Node.js and npm, execute the following commands:
+
+```bash
+# Install nvm (Node Version Manager) to easily manage Node.js versions.
+# This downloads and runs the nvm installation script.
+# nvm automatically installs npm along with Node.js.
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
+# IMPORTANT: After running the curl command, you may need to close and reopen your terminal
+# or run 'source ~/.bashrc' (or equivalent, depending on your shell configuration)
+# for the 'nvm' command to become available in your current session.
+
+# Use nvm to install Node.js version 20 (a recommended LTS version).
+# This command will install Node.js 20 and the corresponding npm.
+nvm install 20
+```
+
 ### Install Docker and Docker Compose:
 
 Follow the official Docker documentation to install Docker and Docker Compose:
@@ -219,11 +250,25 @@ mkdir docker_secrets
 mkdir db-backups
 ```
 
-Please run the one-time script below to generate and save the VAPID keys into the docker_secrets folder. These keys are required for push notifications using web-push:
+Please run the one-time script below to generate and save the VAPID keys into the `docker_secrets` folder. These keys are required for push notifications using **web-push**.
+
+**Skip this step if you have already installed Node.js and npm earlier in this guide.**
+If the script returns an error, you may need to go back and install Node.js and npm.
+
 ```bash
 sh ./vapid_gen.sh
 ```
 
+---
+
+If you have Node.js and npm installed (as instructed earlier), you can alternatively generate the keys by running the following commands.
+You can skip this step if the shell script ran successfully earlier.
+
+```bash
+npm install web-push typescript @types/node ts-node --save-dev
+npx ts-node backend/src/utils/generate-vapid-keys.ts
+npm uninstall web-push typescript @types/node ts-node
+```
 
 Before starting the application, create the following additional **text files inside the `docker_secrets/` folder**. These files are used as Docker secrets for configuration:
 
