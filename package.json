@@ -45,6 +45,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.11.14",
     "@types/socket.io": "^3.0.1",
+    "@types/web-push": "^3.6.4",
     "ajv": "^8.17.1",
     "axios": "^1.8.3",
     "bcrypt": "^5.1.1",
@@ -81,8 +82,5 @@
     "validator": "^13.15.0",
     "web-push": "^3.6.7",
     "zod": "^3.24.3"
-  },
-  "devDependencies": {
-    "@types/web-push": "^3.6.4"
   }
 }

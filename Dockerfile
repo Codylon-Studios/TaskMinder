@@ -28,19 +28,21 @@ WORKDIR /usr/src/app
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
     --mount=type=cache,target=/root/.npm \
-  npm ci --omit=dev
+    npm ci --omit=dev
 
 # Copy the rest of the source files into the image.
 COPY . .
 
 RUN npm install -g typescript
 
-# Start the container as node user
-USER node
-
-
 # Compile/Build everything needed for production
-RUN npm run build:backend && npm run build:frontend && npm run build:docs
+RUN npm run build:be && npm run build:fe && npm run build:docs
+
+# Change ownership of the app directory to node user, including dist
+RUN chown -R node:node /usr/src/app
+
+# Switch to node user for runtime
+USER node
 
 # Expose the port that the application listens on.
 EXPOSE 3000

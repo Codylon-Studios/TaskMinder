@@ -159,9 +159,9 @@ secrets:
   dsb_password:
     file: ./docker_secrets/dsb_password.txt
   vapid_public:
-    file: ./docker-secrets/vapid_public.txt
+    file: ./docker_secrets/vapid_public.txt
   vapid_private:
-    file: ./docker-secrets/vapid_private.txt
+    file: ./docker_secrets/vapid_private.txt
 
 
 volumes:
