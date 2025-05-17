@@ -197,3 +197,9 @@ Run this dommand to compile the typescript code and start the development server
 npm run dev
 ```
 ---
+
+### Add the missing .env values for the VAPID Keys:
+run:
+```zsh
+node backend/dist/utils/generate-vapid-keys-dev.ts
+```

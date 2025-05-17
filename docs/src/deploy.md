@@ -61,11 +61,11 @@ Once your domain resolves to your server’s IP, proceed to the next step.
 
 ### Update and install dependencies:
 
-This installs (if not already installed) Git, curl, NGINX, UFW, and Fail2Ban:
+This installs (if not already installed) Git, curl, NGINX, UFW, Fail2Ban and openssl:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl nginx ufw fail2ban
+sudo apt install -y git curl nginx ufw fail2ban openssl
 ```
 
 ### Install Docker and Docker Compose:
@@ -219,7 +219,13 @@ mkdir docker_secrets
 mkdir db-backups
 ```
 
-Before starting the application, create the following **text files inside the `docker_secrets/` folder**. These files are used as Docker secrets for configuration:
+Please run the one-time script below to generate and save the VAPID keys into the docker_secrets folder. These keys are required for push notifications using web-push:
+```bash
+sh ./vapid_gen.sh
+```
+
+
+Before starting the application, create the following additional **text files inside the `docker_secrets/` folder**. These files are used as Docker secrets for configuration:
 
 | **Filename**         | **Description**                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------- |
@@ -262,6 +268,6 @@ Your TaskMinder server should now be running at:
 run:
 ```bash
 cd /opt/Taskminder
-./deploy.sh
+sh ./deploy.sh
 ```
 to automatically pull the changes from the github repository, build and restart Docker containers.
