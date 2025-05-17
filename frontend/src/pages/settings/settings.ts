@@ -1035,4 +1035,141 @@ $("#subjects-save").on("click", () => {
   }
 })
 
-$("#subjects-save-confirm").on("click", saveSubjects)
+$("#subjects-save-confirm").on("click", saveSubjects);
+
+
+(async () => {
+  const toggle = document.getElementById('notificationToggle') as HTMLInputElement;
+
+  if (!toggle) {
+      console.error("Notification toggle element not found.");
+      return;
+  }
+
+  let publicVapidKey = '';
+  let swRegistration: ServiceWorkerRegistration | null = null;
+
+  if ('serviceWorker' in navigator) {
+    try {
+      swRegistration = await navigator.serviceWorker.register('../../../service-worker.js');
+
+      const response = await fetch('/vapidPublicKey');
+      publicVapidKey = await response.text();
+
+      const currentSubscription = await swRegistration.pushManager.getSubscription();
+      if (currentSubscription) {
+          toggle.checked = true;
+          localStorage.setItem('notificationsEnabled', 'true');
+      } else {
+          toggle.checked = false;
+          localStorage.setItem('notificationsEnabled', 'false');
+      }
+    } catch (error) {
+      console.error('Service Worker registration failed:', error);
+      toggle.disabled = true;
+      toggle.checked = false;
+      localStorage.setItem('notificationsEnabled', 'false');
+      return;
+    }
+  } else {
+    console.warn('Service Workers are not supported in this browser.');
+    toggle.disabled = true;
+    toggle.checked = false;
+    localStorage.setItem('notificationsEnabled', 'false');
+    return;
+  }
+
+
+  toggle.addEventListener('change', () => {
+    if (toggle.checked) {
+      subscribeUser().catch(err => {
+        console.error('Fehler beim Aktivieren:', err);
+        toggle.checked = false;
+        localStorage.setItem('notificationsEnabled', 'false');
+      });
+    } else {
+      unsubscribeUser().catch(err => {
+        console.error('Fehler beim Deaktivieren:', err);
+      });
+    }
+  });
+
+  async function subscribeUser(): Promise<void> {
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+      throw new Error('Notification permission not granted');
+    }
+
+     if (!swRegistration) {
+         console.error('Service Worker registration not available.');
+         throw new Error('SW registration missing');
+     }
+
+    const sub = await swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+    });
+
+    const response = await fetch('/notifications/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(sub),
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server subscribe error:', response.status, errorText);
+        throw new Error(`Server subscribe failed: ${response.status}`);
+    }
+
+    localStorage.setItem('notificationsEnabled', 'true');
+    console.log('Benachrichtigungen aktiviert');
+  }
+
+  async function unsubscribeUser(): Promise<void> {
+    if (!swRegistration) {
+       console.error('Service Worker registration not available.');
+       return;
+    }
+
+    const sub = await swRegistration.pushManager.getSubscription();
+
+    if (sub) {
+      const response = await fetch('/notifications/unsubscribe', {
+        method: 'POST',
+        body: JSON.stringify({ endpoint: sub.endpoint }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+       if (!response.ok) {
+           const errorText = await response.text();
+           console.error('Server unsubscribe error:', response.status, errorText);
+       }
+
+
+      await sub.unsubscribe();
+
+      localStorage.setItem('notificationsEnabled', 'false');
+      console.log('Benachrichtigungen deaktiviert');
+
+    } else {
+      console.log('No active subscription found.');
+      localStorage.setItem('notificationsEnabled', 'false');
+    }
+  }
+
+  function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+
+    return outputArray;
+  }
+})();

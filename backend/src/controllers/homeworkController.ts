@@ -1,5 +1,6 @@
 import homeworkService from "../services/homeworkService";
 import asyncHandler from "express-async-handler";
+import { sendPushNotification } from "../utils/sendNotification";
 import { z } from "zod";
 
 export const addHomework = asyncHandler(async(req, res, next) => {
@@ -31,6 +32,11 @@ export const addHomework = asyncHandler(async(req, res, next) => {
   try {
     await homeworkService.addHomework(parseResult.data, req.session);
     res.sendStatus(200);
+        // Send notification
+        await sendPushNotification({
+          title: 'Hausaufgabe hinzugefügt',
+          body: `${parseResult.data.content}`
+        });
   } catch (error) {
     next(error);
   }
@@ -121,6 +127,10 @@ export const editHomework = asyncHandler(async(req, res, next) => {
   try {
     await homeworkService.editHomework(parseResult.data, req.session);
     res.sendStatus(200);
+    await sendPushNotification({
+      title: 'Hausaufgabe geändert',
+      body: `${parseResult.data.content}`
+    });
   } catch (error) {
     next(error);
   }
