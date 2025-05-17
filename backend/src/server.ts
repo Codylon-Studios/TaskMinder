@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { createServer } from "http";
+import webpush from "web-push"
 import path from "path";
 import compression from "compression";
 import helmet from "helmet";
@@ -17,6 +18,7 @@ import cleanupOldHomework from "./utils/homeworkCleanup";
 import { createDBBackup } from "./utils/backupTable";
 import connectPgSimple from "connect-pg-simple";
 import sequelize from "./config/sequelize";
+import notification from "./routes/notificationRoute";
 import account from "./routes/accountRoute";
 import homework from "./routes/homeworkRoute";
 import substitutions from "./routes/substitutionRoute";
@@ -26,22 +28,16 @@ import subjects from "./routes/subjectRoute";
 import timetable from "./routes/timetableRoute";
 import client from 'prom-client';
 
-const register = new client.Registry();
-register.setDefaultLabels({
-  app: 'taskminder-nodejs'
-});
-
-client.collectDefaultMetrics({ register });
-
-const httpRequestDurationMicroseconds = new client.Histogram({
-  name: 'http_request_duration_ms',
-  help: 'Duration of HTTP requests in ms',
-  labelNames: ['method', 'route', 'code'],
-  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000]
-});
-register.registerMetric(httpRequestDurationMicroseconds);
-
 dotenv.config()
+
+const publicKey = process.env.VAPID_PUBLIC_KEY!;
+const privateKey = process.env.VAPID_PRIVATE_KEY!;
+
+webpush.setVapidDetails(
+  'mailto:codylon.studios@gmail.com', // CHANGE EMAIL IN PRODUCTION
+  publicKey,
+  privateKey
+);
 
 declare module 'express-session' {
   interface SessionData {
@@ -58,22 +54,46 @@ const app = express();
 const server = createServer(app);
 const io = socketIO.initialize(server);
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  if (
-    req.path === '/metrics' ||
-    req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)
-  ) {
-    return next();
-  }
+if (process.env.NODE_ENV !== "DEVELOPMENT") {
 
-  const end = httpRequestDurationMicroseconds.startTimer();
-  res.on('finish', () => {
-    const route = (req.route && req.route.path) ? req.route.path : req.path;
-    end({ route, code: res.statusCode, method: req.method });
+  const register = new client.Registry();
+  register.setDefaultLabels({
+    app: 'taskminder-nodejs'
   });
 
-  next();
-});
+  client.collectDefaultMetrics({ register });
+
+  const httpRequestDurationMicroseconds = new client.Histogram({
+    name: 'http_request_duration_ms',
+    help: 'Duration of HTTP requests in ms',
+    labelNames: ['method', 'route', 'code'],
+    buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000]
+  });
+  register.registerMetric(httpRequestDurationMicroseconds);
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (
+      req.path === '/metrics' ||
+      req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)
+    ) {
+      return next();
+    }
+
+    const end = httpRequestDurationMicroseconds.startTimer();
+    res.on('finish', () => {
+      const route = (req.route && req.route.path) ? req.route.path : req.path;
+      end({ route, code: res.statusCode, method: req.method });
+    });
+
+    next();
+  });
+
+  app.get('/metrics', async (req: Request, res: Response) => {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  });
+
+}
 
 server.listen(3000, () => {
   logger.success("Server running at http://localhost:3000");
@@ -134,24 +154,9 @@ if (process.env.NODE_ENV !== "DEVELOPMENT") {
         "frame-ancestors": ["'self'"]
       },
     },
-    crossOriginOpenerPolicy: {
-      policy: "same-origin"
-    },
-    crossOriginResourcePolicy: {
-      policy: "same-origin"
-    },
     referrerPolicy: {
       policy: "strict-origin-when-cross-origin"
     },
-    noSniff: true,
-    dnsPrefetchControl: {
-      allow: false
-    },
-    frameguard: {
-      action: "deny"
-    },
-    hidePoweredBy: true,
-    originAgentCluster: true,
   }));
 }
 
@@ -191,6 +196,7 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 app.use(RequestLogger);
+app.use("/notifications", notification);
 app.use("/docs", express.static(path.join(__dirname, "..", "..", "docs", "dist")));
 app.use("/account", account);
 app.use("/homework", homework);
@@ -213,9 +219,8 @@ sequelize.authenticate()
     }
   });
 
-app.get('/metrics', async (req: Request, res: Response) => {
-  res.set('Content-Type', register.contentType);
-  res.end(await register.metrics());
+app.get('/vapidPublicKey', (_req, res) => {
+  res.send(process.env.VAPID_PUBLIC_KEY);
 });
 
 app.get("/", (req: Request, res: Response) => {
