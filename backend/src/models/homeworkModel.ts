@@ -59,3 +59,15 @@ Homework10d.init({
   tableName: "homework10d",
   timestamps: false,
 });
+
+Team.addHook("afterBulkDestroy", async (options) => {
+  try {
+    await Homework10d.destroy({
+      where: { teamId: (options.where as Record<string, any>).teamId },
+      transaction: options.transaction
+    });
+  }
+  catch {
+    throw new Error("Couldn't read teamId on where attribute on bulk destroy options")
+  }
+});

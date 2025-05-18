@@ -80,3 +80,15 @@ Event.init({
     }
   }
 });
+
+Team.addHook("afterBulkDestroy", async (options) => {
+  try {
+    await Event.destroy({
+      where: { teamId: (options.where as Record<string, any>).teamId },
+      transaction: options.transaction
+    });
+  }
+  catch {
+    throw new Error("Couldn't read teamId on where attribute on bulk destroy options")
+  }
+});

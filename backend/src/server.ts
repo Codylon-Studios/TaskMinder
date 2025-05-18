@@ -23,7 +23,7 @@ import substitutions from "./routes/substitutionRoute";
 import teams from "./routes/teamRoute";
 import events from "./routes/eventRoute";
 import subjects from "./routes/subjectRoute";
-import timetable from "./routes/timetableRoute";
+import lessons from "./routes/lessonRoute";
 import client from 'prom-client';
 
 const register = new client.Registry();
@@ -198,7 +198,7 @@ app.use("/substitutions", substitutions);
 app.use("/teams", teams);
 app.use("/events", events);
 app.use("/subjects", subjects);
-app.use("/timetable", timetable);
+app.use("/lessons", lessons);
 app.use(ErrorHandler);
 
 // Sync models with the database

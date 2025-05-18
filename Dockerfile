@@ -2,16 +2,17 @@ ARG NODE_VERSION=20.19.1
 
 FROM node:${NODE_VERSION}-alpine
 
+# Update alpine packages
+RUN apk update && apk upgrade --no-cache && \
 # Install required packages: postgresql-client, redis, python3, py3-pip, and build tools
-RUN apk add --no-cache \
+    apk add --no-cache \
+    build-base \
     postgresql-client \
-    redis \
-    python3 \
     py3-pip \
-    build-base
-
+    python3 \
+    redis && \
 # Create a virtual environment and install mkdocs-material inside it
-RUN python3 -m venv /venv && \
+    python3 -m venv /venv && \
     . /venv/bin/activate && \
     pip install --upgrade pip && \
     pip install mkdocs-material
