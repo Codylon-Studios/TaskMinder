@@ -27,7 +27,6 @@ const updateEventList = runOnce(async (): Promise<void> => {
     }
 
     // Filter by type
-    console.log("Frage")
     if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
       continue;
     }
@@ -275,7 +274,7 @@ async function editEvent(eventId: number) {
     const name = $("#edit-event-name").val();
     const description = $("#edit-event-description").val();
     const startDate = $("#edit-event-start-date").val()?.toString() ?? "";
-    const lesson = $("#edit-event-lesson").val()?.toString().trim();
+    const lesson = $("#edit-event-lesson").val()?.toString().trim() ?? null;
     const endDate = $("#edit-event-end-date").val()?.toString() ?? "";
     const team = $("#edit-event-team").val();
 
@@ -296,7 +295,8 @@ async function editEvent(eventId: number) {
     $.ajax({
       url : "/events/edit_event",
       type: "POST",
-      data: data,
+      contentType: "application/json",
+      data: JSON.stringify(data),
       success: () => {
         // Show a success notification and update the shown events
         $("#edit-event-success-toast").toast("show");

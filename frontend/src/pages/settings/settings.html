@@ -200,18 +200,18 @@
             Vertretungen anhand den Angaben in der Zeile "Vertretung" gefiltert. Wenn nichts angegeben ist, ist der gefilterte Fachname der Lange und der
             gefilterte Lehrername der Kurze. Mehrere Möglichkeiten können durch "," getrennt werden.
           </div>
+
           <div class="mb-2">
-            <h5 class="mb-2" id="timetable">Stundenplan</h5>
-          </div>
-          <div class="form-text mb-2">
-            Hier kann man den Stundenplan anpassen. Lade eine Datei im passenden Format (.json) hoch, um den Stundenplan zu importieren. Der Aufbau der Datei ist <a href="/docs">hier</a> beschrieben. Bitte stell sicher, dass die Datei korrekt formatiert ist.
-          </div>
-          <form action="/timetable/set_timetable_data" method="post" enctype="multipart/form-data" class="mb-2">
-            <div class="mb-2">
-              <input class="form-control" type="file" id="timetable" name="timetable" accept=".json">
+            <h5 class="mb-2">Stundenplan</h5>
+            <div class="mb-2 row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 p-2" id="timetable">
+              <!--Gets filled-->
             </div>
-            <button type="submit" class="btn btn-primary">Hochladen</button>
-          </form>
+            <button class="btn btn-secondary btn-sm fw-semibold" id="timetable-cancel">Abbrechen</button>
+            <button class="btn btn-primary btn-sm fw-semibold" id="timetable-save">Speichern</button>
+          </div>
+          <div class="form-text mb-4">
+            Erklärung
+          </div>
         </div>
       </div>
     </div>

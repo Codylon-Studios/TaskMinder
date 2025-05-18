@@ -1,5 +1,6 @@
-import { addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedTeamsData, joinedTeamsData, reloadAll, SubjectData, subjectData,
-         substitutionsData, TeamsData, teamsData, updateAll, userDataLoaded } from "../../global/global.js";
+import { addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedTeamsData, joinedTeamsData, msToTime, reloadAll, SubjectData, subjectData,
+         substitutionsData, TeamsData, teamsData, lessonData, timeToMs, updateAll, userDataLoaded, 
+         LessonData} from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
 function updateColorTheme() {
@@ -40,7 +41,7 @@ async function updateTeamLists() {
 
   const currentTeamsData = await teamsData()
 
-  currentTeamsData.forEach(async team => {
+  for (const team of currentTeamsData) {
     let teamId = team.teamId
     let selected = (await joinedTeamsData()).includes(teamId)
     let template = `
@@ -75,7 +76,7 @@ async function updateTeamLists() {
         </div>
       </div>`
     $("#teams-list").append(template)
-  })
+  }
   
   $(document).on("change", ".team-name-input", async function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
@@ -125,7 +126,7 @@ async function updateTeamLists() {
     }
   })
 
-  if (teamsData.length == 0) {
+  if ((await teamsData()).length == 0) {
     $("#team-selection-list, #teams-list").append(`<span class="text-secondary no-teams">Keine Teams vorhanden</span>`)
   }
 }
@@ -133,7 +134,7 @@ async function updateTeamLists() {
 async function updateEventTypeList() {
   $("#event-types-list").empty();
 
-  (await eventTypeData()).forEach(eventType => {
+  for (const eventType of await eventTypeData()) {
     let eventTypeId = eventType.eventTypeId
 
     let template = `
@@ -168,7 +169,7 @@ async function updateEventTypeList() {
         </div>
       </div>`
     $("#event-types-list").append(template)
-  })
+  }
   
   $(document).on("change", ".event-type-name-input", async function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
@@ -241,15 +242,19 @@ async function updateEventTypeList() {
     }
   })
 
-  if (eventTypeData.length == 0) {
+  if ((await eventTypeData()).length == 0) {
     $("#event-types-list").append(`<span class="text-secondary no-event-types">Keine Ereignisarten vorhanden</span>`)
   }
 }
 
 async function updateSubjectList() {
+  if (await substitutionsData() !== "No data") {
+    dsbActivated = true
+  }
   $("#subjects-list").empty();
 
-  (await subjectData()).forEach(subject => {
+  const currentSubjectData = await subjectData()
+  for (const subject of currentSubjectData) {
     let subjectId = subject.subjectId
     let template = `
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
@@ -321,7 +326,7 @@ async function updateSubjectList() {
       </div>`
     $("#subjects-list").append(template)
     $("#subjects-list").find(".subject-changed").last().find("span").addClass("d-none").attr("data-id", subjectId)
-  })
+  }
   
   $(document).on("change", ".subject-name-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
@@ -486,7 +491,7 @@ async function updateSubjectList() {
     let subjectId = $(this).data("id")
     if (subjectId !== "") {
       let newName = $(this).val()
-      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameSubstitution ?? "keine Angabe"
+      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameSubstitution ?? "keine Angabe"
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -502,30 +507,199 @@ async function updateSubjectList() {
     }
   })
 
-  if (subjectData.length == 0) {
+  $(".subject-delete").on("click", function () {
+    $("#subjects-save-confirm-container, #subjectss-save-confirm").addClass("d-none")
+
+    let subjectId = $(this).data("id")
+    if ($(this).hasClass("btn-danger")) {
+      $(`.subject-deleted[data-id="${subjectId}"]`).removeClass("d-none")
+      $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none")
+
+      $(this).removeClass("btn-danger").addClass("btn-success").html(`<i class="fa-solid fa-undo"></i>`)
+    }
+    else {
+      $(`.subject-deleted[data-id="${subjectId}"]`).addClass("d-none")
+      $(`.subject-name-long-input[data-id="${subjectId}"]`).trigger("change")
+      $(`.subject-name-short-input[data-id="${subjectId}"]`).trigger("change")
+      $(`.subject-teacher-gender-input[data-id="${subjectId}"]`).trigger("change")
+      $(`.subject-teacher-long-input[data-id="${subjectId}"]`).trigger("change")
+      $(`.subject-teacher-short-input[data-id="${subjectId}"]`).trigger("change")
+      $(`.subject-name-substitution-input[data-id="${subjectId}"]`).trigger("change")
+      $(`.subject-teacher-substitution-input[data-id="${subjectId}"]`).trigger("change")
+
+      $(this).removeClass("btn-success").addClass("btn-danger").html(`<i class="fa-solid fa-trash"></i>`)
+    }
+  })
+
+  if ((await subjectData()).length == 0) {
     $("#subject-selection-list, #subjects-list").append(`<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>`)
   }
+}
+
+async function updateTimetable() {
+  $("#timetable").empty();
+
+  let subjectOptions: string = "";
+
+  (await subjectData()).forEach(subject => {
+    subjectOptions += `<option value="${subject.subjectId}">${subject.subjectNameLong}</option>`;
+  });
+
+  let teamOptions: string = "";
+
+  (await teamsData()).forEach(team => {
+    teamOptions += `<option value="${team.teamId}">${team.name}</option>`;
+  });
+
+  for (let dayId = 0; dayId < 5; dayId++) {
+    const dayTemplate = $(`
+      <div class="col p-1">
+        <div class="card p-2">
+          <div>${[ "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag" ][dayId]}</div>
+          <hr class="mt-2">
+          <div class="timetable-lesson-list">
+          </div>
+        </div>
+      </div>
+    `)
+    dayTemplate.find(".card").append(`<button class="btn btn-sm btn-success fw-semibold timetable-new-lesson">Neu</button>`)
+    $("#timetable").append(dayTemplate)
+  }
+
+  (await lessonData()).forEach(lesson => {
+    let lessonTemplate = $(`
+      <div class="timetable-lesson card p-2 mb-2">
+        <div class="d-flex mb-2 align-items-center">
+          <label class="form-label form-label-sm mb-0 me-2">
+            Stundennummer
+          </label>
+          <input class="timetable-lesson-number form-control form-control-sm me-2" type="text" value="${lesson.lessonNumber}">
+          <button class="btn btn-sm btn-danger timetable-lesson-delete"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <div class="d-flex mb-2 align-items-center">
+          <input class="timetable-start-time form-control form-control-sm me-4" type="time" value="${msToTime(lesson.startTime)}">
+          <input class="timetable-end-time form-control form-control-sm" type="time" value="${msToTime(lesson.endTime)}">
+        </div>
+        <div class="d-flex mb-2 align-items-center">
+          <label class="form-label form-label-sm mb-0 me-2">
+            Fach
+          </label>
+          <select class="timetable-subject-select form-select form-select-sm">
+            <option value="" disabled>Fach</option>
+            <option value="-1">Pause</option>
+            ${subjectOptions}
+          </select>
+        </div>
+        <div class="d-flex mb-2 align-items-center">
+          <label class="form-label form-label-sm mb-0 me-2">
+            Raum
+          </label>
+          <input class="timetable-room form-control form-control-sm" type="text" value="${lesson.room}">
+        </div>
+        <div class="d-flex align-items-center">
+          <label class="form-label form-label-sm mb-0 me-2">
+            Team
+          </label>
+          <select class="timetable-team-select form-select form-select-sm">
+            <option value="-1">Alle</option>
+            ${teamOptions}
+          </select>
+        </div>
+      </div>
+    `)
+    lessonTemplate.find(`.timetable-subject-select option[value=${lesson.subjectId}]`).prop("selected", true)
+    lessonTemplate.find(`.timetable-team-select option[value=${lesson.teamId}]`).prop("selected", true)
+    $(".timetable-lesson-list").eq(lesson.weekDay).append(lessonTemplate)
+  })
+
+  $(".timetable-new-lesson").on("click", function () {
+    let lessonTemplate = $(`
+      <div class="timetable-lesson card p-2 mb-2">
+        <div class="d-flex mb-2 align-items-center">
+          <label class="form-label form-label-sm mb-0 me-2">
+            Stundennummer
+          </label>
+          <input class="timetable-lesson-number form-control form-control-sm me-2" type="text">
+          <button class="btn btn-sm btn-danger timetable-lesson-delete"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <div class="d-flex mb-2 align-items-center">
+          <input class="timetable-start-time form-control form-control-sm me-4" type="time">
+          <input class="timetable-end-time form-control form-control-sm" type="time">
+        </div>
+        <div class="d-flex mb-2 align-items-center">
+          <label class="form-label form-label-sm mb-0 me-2">
+            Fach
+          </label>
+          <select class="timetable-subject-select form-select form-select-sm">
+            <option value="" disabled selected>Fach</option>
+            <option value="-1">Pause</option>
+            ${subjectOptions}
+          </select>
+        </div>
+        <div class="d-flex mb-2 align-items-center">
+          <label class="form-label form-label-sm mb-0 me-2">
+            Raum
+          </label>
+          <input class="timetable-room form-control form-control-sm" type="text">
+        </div>
+        <div class="d-flex align-items-center">
+          <label class="form-label form-label-sm mb-0 me-2">
+            Team
+          </label>
+          <select class="timetable-team-select form-select form-select-sm">
+            <option value="-1">Alle</option>
+            ${teamOptions}
+          </select>
+        </div>
+      </div>
+    `)
+    function updateTimeInputs(newBtn: JQuery<HTMLElement>) {
+      newBtn.parent().parent().parent().find(".timetable-lesson").each(function () {
+        if ($(this).find(".timetable-lesson-number").val() == lessonNumber.toString()) {
+          lessonTemplate.find(".timetable-start-time").val($(this).find(".timetable-start-time").val() ?? "--:--")
+          lessonTemplate.find(".timetable-end-time").val($(this).find(".timetable-end-time").val() ?? "--:--")
+        }
+      })
+    }
+
+    let lessonList = $(this).parent().find(".timetable-lesson-list")
+    let previousLesson = lessonList.find(".timetable-lesson").last()
+    let lessonNumber = parseInt(previousLesson.find(".timetable-lesson-number").val()?.toString() ?? "0") + 1
+    lessonTemplate.find(".timetable-lesson-number").val(lessonNumber)
+    lessonTemplate.find(".timetable-lesson-number").on("change", () => {
+      lessonNumber = parseInt(lessonTemplate.find(".timetable-lesson-number").val()?.toString() ?? "1")
+      updateTimeInputs($(this))
+    })
+    lessonTemplate.find(".timetable-start-time").val(previousLesson.find(".timetable-end-time").val() ?? "--:--")
+    updateTimeInputs($(this))
+    lessonList.append(lessonTemplate)
+  })
+  $(document).off("click", ".timetable-lesson-delete").on("click", ".timetable-lesson-delete", function () {
+    $(this).parent().parent().remove()
+  })
 }
 
 let dsbActivated = false;
 
 $(() => {
   addUpdateAllFunction(
-    updateTeamLists,
-    updateEventTypeList,
-    updateSubjectList
+    () => {}
   )
   reloadAll();
 })
+
 $(async () => {
   await userDataLoaded()
   if (user.classJoined) {
     $(".not-joined-info").addClass("d-none")
     $("#settings-student, #settings-class").removeClass("d-none")
-  }
-
-  if (JSON.stringify(await substitutionsData()) !== null) {
-    dsbActivated = true
+    addUpdateAllFunction(
+      updateTeamLists,
+      updateEventTypeList,
+      updateSubjectList,
+      updateTimetable
+    )
+    reloadAll();
   }
 });
 
@@ -560,11 +734,10 @@ $("#team-selection-save").on("click", () => {
       newJoinedTeamsData.push(Number($(this).data("id")))
     }
   })
-  joinedTeamsData(newJoinedTeamsData);
 
   if (user.loggedIn) {
     let data = {
-      teams: joinedTeamsData,
+      teams: newJoinedTeamsData,
     };
     let hasResponded = false;
 
@@ -574,6 +747,7 @@ $("#team-selection-save").on("click", () => {
       data: JSON.stringify(data),
       contentType: "application/json",
       success: () => {
+        reloadAll()
         $("#team-selection-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
         setTimeout(() => {
           $("#team-selection-save").html("Speichern").prop("disabled", false);
@@ -957,20 +1131,32 @@ function saveSubjects() {
     if ($(this).find(".btn-success").length > 0) return
 
     let subjectNameLong = $(this).find(".subject-name-long-input").val()?.toString().trim() ?? ""
+
     let subjectNameShort = $(this).find(".subject-name-short-input").val()?.toString().trim()
-    subjectNameShort ??= $(this).find(".subject-name-long-input").val()?.toString().trim().substring(0, 3)
+    if (subjectNameShort == "") subjectNameShort = undefined
+    subjectNameShort ??= $(this).find(".subject-name-long-input").val()?.toString().trim().substring(0, 3) ?? "???"
+
     let teacherNameShort = $(this).find(".subject-teacher-short-input").val()?.toString().trim()
-    teacherNameShort ??= $(this).find(".subject-teacher-long-input").val()?.toString().trim().substring(0, 3) ?? ""
+    if (teacherNameShort == "") teacherNameShort = undefined
+    teacherNameShort ??= $(this).find(".subject-teacher-long-input").val()?.toString().trim().substring(0, 3) ?? "???"
+
+    let subjectNameSubstitution = $(this).find(".subject-name-substitution-input").val()?.toString()
+    if (subjectNameSubstitution == "") subjectNameSubstitution = undefined
+    subjectNameSubstitution ??= subjectNameLong
+
+    let teacherNameSubstitution = $(this).find(".subject-teacher-substitution-input").val()?.toString()
+    if (teacherNameSubstitution == "") teacherNameSubstitution = undefined
+    teacherNameSubstitution ??= teacherNameShort
 
     newSubjectData.push({
       subjectId: $(this).data("id"),
       subjectNameLong: subjectNameLong,
-      subjectNameShort: subjectNameShort ?? "",
+      subjectNameShort: subjectNameShort ?? "???",
       teacherGender: $(this).find(".subject-teacher-gender-input").val()?.toString() as "d" | "w" | "m" ?? "d",
       teacherNameLong: $(this).find(".subject-teacher-long-input").val()?.toString().trim() ?? "",
-      teacherNameShort: teacherNameShort,
-      subjectNameSubstitution: ($(this).find(".subject-name-substitution-input").val()?.toString() ?? subjectNameLong).split(",").map(v => v.trim()),
-      teacherNameSubstitution: ($(this).find(".subject-teacher-substitution-input").val()?.toString() ?? teacherNameShort).split(",").map(v => v.trim())
+      teacherNameShort: teacherNameShort ?? "???",
+      subjectNameSubstitution: (subjectNameSubstitution).split(",").map(v => v.trim()),
+      teacherNameSubstitution: (teacherNameSubstitution).split(",").map(v => v.trim())
     })
   })
   
@@ -1036,3 +1222,63 @@ $("#subjects-save").on("click", () => {
 })
 
 $("#subjects-save-confirm").on("click", saveSubjects)
+
+// TIMETABLE
+
+$("#timetable-save").on("click", () => {
+  let newTimetableData: LessonData = []
+  $("#timetable > div").each(function (weekDay) {
+    $(this).find(".timetable-lesson").each(function () {
+      newTimetableData.push({
+        lessonId: -1,
+        lessonNumber: parseInt($(this).find(".timetable-lesson-number").val()?.toString() ?? "1"),
+        weekDay: weekDay as 0 | 1 | 2 | 3 | 4,
+        teamId: parseInt($(this).find(".timetable-team-select").val()?.toString() ?? "-1"),
+        subjectId: parseInt($(this).find(".timetable-subject-select").val()?.toString() ?? "-1"),
+        room: $(this).find(".timetable-room").val()?.toString() ?? "",
+        startTime: timeToMs($(this).find(".timetable-start-time").val()?.toString() ?? "0:0"),
+        endTime: timeToMs($(this).find(".timetable-end-time").val()?.toString() ?? "0:0")
+      })
+    })
+  })
+  
+  let data = {
+    lessons: newTimetableData,
+  };
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/lessons/set_lesson_data",
+    type: "POST",
+    data: JSON.stringify(data),
+    contentType: "application/json",
+    success: () => {
+      reloadAll()
+      $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none")
+      $("#timetable-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
+      setTimeout(() => {
+        $("#timetable-save").html("Speichern").prop("disabled", false);
+      }, 1000);
+    },
+    error: (xhr) => {
+      if (xhr.status === 401) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+})
