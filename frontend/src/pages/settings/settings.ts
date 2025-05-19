@@ -1,9 +1,7 @@
 import { addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedTeamsData, joinedTeamsData, msToTime, reloadAll, SubjectData, subjectData,
          substitutionsData, TeamsData, teamsData, lessonData, timeToMs, updateAll, userDataLoaded, 
-         LessonData, initCSRF, getCSRFToken } from "../../global/global.js";
+         LessonData, getCSRFToken } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
-
-await initCSRF();
 
 function updateColorTheme() {
   let colorTheme

@@ -1,31 +1,31 @@
-import express, { Request, Response, NextFunction } from "express";
-import session from "express-session";
 import { createServer } from "http";
 import path from "path";
+import client from 'prom-client';
 import compression from "compression";
-import helmet from "helmet";
+import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
-import { rateLimit } from "express-rate-limit";
-import { Pool } from "pg";
-import { csrfProtection, csrfSessionInit } from "./utils/csrfProtection";
-import socketIO from "./config/socket";
 import * as dotenv from "dotenv";
+import express, { Request, Response, NextFunction } from "express";
+import { rateLimit } from "express-rate-limit";
+import session from "express-session";
+import helmet from "helmet";
+import { Pool } from "pg";
+import sequelize from "./config/sequelize";
+import socketIO from "./config/socket";
+import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
-import checkAccess from "./middleware/accessMiddleware";
-import logger from "./utils/logger";
-import cleanupOldHomework from "./utils/homeworkCleanup";
 import { createDBBackup } from "./utils/backupTable";
-import connectPgSimple from "connect-pg-simple";
-import sequelize from "./config/sequelize";
+import cleanupOldHomework from "./utils/homeworkCleanup";
+import { csrfProtection, csrfSessionInit } from "./utils/csrfProtection";
+import logger from "./utils/logger";
 import account from "./routes/accountRoute";
-import homework from "./routes/homeworkRoute";
-import substitutions from "./routes/substitutionRoute";
-import teams from "./routes/teamRoute";
 import events from "./routes/eventRoute";
-import subjects from "./routes/subjectRoute";
+import homework from "./routes/homeworkRoute";
 import lessons from "./routes/lessonRoute";
-import client from 'prom-client';
+import substitutions from "./routes/substitutionRoute";
+import subjects from "./routes/subjectRoute";
+import teams from "./routes/teamRoute";
 
 dotenv.config()
 
@@ -189,6 +189,9 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 app.use(csrfSessionInit);
+app.get("/csrf-token", (req, res) => {
+  res.json({ csrfToken: req.session.csrfToken });
+});
 app.use(csrfProtection); 
 app.use(RequestLogger);
 app.use("/docs", express.static(path.join(__dirname, "..", "..", "docs", "dist")));
@@ -197,10 +200,6 @@ app.use("/docs", express.static(path.join(__dirname, "..", "..", "docs", "dist")
 app.get('/metrics', async (req: Request, res: Response) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
-});
-
-app.get("/csrf-token", (req, res) => {
-  res.json({ csrfToken: req.session.csrfToken });
 });
 
 app.get("/", (req: Request, res: Response) => {
@@ -267,13 +266,13 @@ app.use(ErrorHandler);
 // Schedule the cron job to run at midnight (00:00) every day
 cron.schedule("0 0 * * *", () => {
   logger.info("Starting scheduled homework cleanup");
-  cleanupOldHomework(); // Assuming cleanupOldHomework is defined elsewhere
+  cleanupOldHomework();
 });
 
 // Schedule PostgreSQL backup every hour every day
 cron.schedule("0 * * * *", () => {
   logger.info("Starting hourly PostgreSQL backup");
-  createDBBackup(); // Assuming createDBBackup is defined elsewhere
+  createDBBackup();
 });
 
 server.listen(3000, () => {

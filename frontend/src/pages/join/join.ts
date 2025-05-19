@@ -1,7 +1,5 @@
-import { addUpdateAllFunction, reloadAll, getCSRFToken, initCSRF } from "../../global/global.js"
+import { addUpdateAllFunction, reloadAll, getCSRFToken } from "../../global/global.js"
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js"
-
-await initCSRF();
 
 $("#show-join-class-btn").on("click", () => {
   $("#decide-action-panel").addClass("d-none")
