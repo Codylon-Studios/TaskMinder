@@ -1,8 +1,10 @@
 import { isSameDay, eventData, joinedTeamsData, createDataAccessor, homeworkData, subjectData, getHomeworkCheckStatus, runOnce, msToDisplayDate,
          substitutionsData, classSubstitutionsData, SubstitutionsData, dateToMs, lessonData, SingleEventData, updateAll, homeworkCheckedData,
          loadHomeworkData, loadHomeworkCheckedData, loadEventData, addUpdateAllFunction, socket, reloadAll,
-         msToTime} from "../../global/global.js"
+         msToTime, getCSRFToken, initCSRF } from "../../global/global.js"
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js"
+
+initCSRF();
 
 async function getCalendarDayHtml(date: Date, week: number, multiEventPositions: (number | null)[]) {
   // Any special classes of the day
@@ -189,6 +191,9 @@ function checkHomework(homeworkId: number) {
       url : "/homework/check",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       error: (xhr) => {
         if (xhr.status === 401) { // The user has to be logged in but isn't
           // Show an error notification

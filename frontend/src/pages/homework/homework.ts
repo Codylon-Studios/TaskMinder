@@ -1,7 +1,9 @@
 import { addUpdateAllFunction, dateToMs, getHomeworkCheckStatus, homeworkCheckedData, homeworkData, isSameDay, joinedTeamsData, loadHomeworkCheckedData,
          loadHomeworkData, msToDisplayDate, msToInputDate, runOnce, subjectData, teamsData, updateAll, socket, 
-         reloadAll} from "../../global/global.js";
+         reloadAll, getCSRFToken, initCSRF} from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+
+await initCSRF();
 
 const updateHomeworkList = runOnce(async (): Promise<void> => {
   let newContent = ""
@@ -200,6 +202,9 @@ function addHomework() {
       url : "/homework/add",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       success: () => {
         // Show a success notification and update the shown homework
         $("#add-homework-success-toast").toast("show");
@@ -283,6 +288,9 @@ async function editHomework(homeworkId: number) {
       url : "/homework/edit",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       success: () => {
         // Show a success notification and update the shown homework
         $("#edit-homework-success-toast").toast("show");
@@ -343,6 +351,9 @@ function deleteHomework(homeworkId: number) {
       url : "/homework/delete",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       success: () => {
         // Show a success notification and update the shown homework
         $("#delete-homework-success-toast").toast("show");
@@ -396,6 +407,9 @@ function checkHomework(homeworkId: number) {
       url : "/homework/check",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       error: (xhr) => {
         if (xhr.status === 401) { // The user has to be logged in but isn't
           // Show an error notification
