@@ -1,4 +1,6 @@
-import { updateAll, userDataLoaded } from "../../global/global.js"
+import { updateAll, userDataLoaded, initCSRF, getCSRFToken } from "../../global/global.js"
+
+await initCSRF();
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 function registerAccount(username: string, password: string) {
@@ -12,6 +14,9 @@ function registerAccount(username: string, password: string) {
     url: "/account/register",
     type: "POST",
     data: data,
+    headers: {
+      "X-CSRF-Token": getCSRFToken(),
+    },
     success: () => {
       $("#register-success-toast .username").text(username);
       $("#register-success-toast").toast("show");
@@ -51,6 +56,9 @@ function loginAccount(username: string, password: string) {
     url: "/account/login",
     type: "POST",
     data: data,
+    headers: {
+      "X-CSRF-Token": getCSRFToken(),
+    },
     success: () => {
       $("#login-success-toast .username").text(username);
       $("#login-success-toast").toast("show");
@@ -89,6 +97,9 @@ function logoutAccount() {
   $.ajax({
     url: "/account/logout",
     type: "POST",
+    headers: {
+      "X-CSRF-Token": getCSRFToken(),
+    },
     success: () => {
       $("#logout-success-toast").toast("show");
       user.trigger("logout");
@@ -122,6 +133,9 @@ function checkExistingUsername(username: string) {
       url: "/account/checkusername",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       success: (res) => {
         resolve(res);
       },

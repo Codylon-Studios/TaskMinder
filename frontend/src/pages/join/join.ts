@@ -1,5 +1,7 @@
-import { addUpdateAllFunction, reloadAll } from "../../global/global.js"
+import { addUpdateAllFunction, reloadAll, getCSRFToken, initCSRF } from "../../global/global.js"
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js"
+
+await initCSRF();
 
 $("#show-join-class-btn").on("click", () => {
   $("#decide-action-panel").addClass("d-none")
@@ -79,6 +81,9 @@ $("#join-class-btn").on("click", async () => {
     url: "/account/join",
     type: "POST",
     data: data,
+    headers: {
+      "X-CSRF-Token": getCSRFToken(),
+    },
     success: () => {
       $("#join-class-panel").addClass("d-none")
       $("#decide-account-panel").removeClass("d-none")

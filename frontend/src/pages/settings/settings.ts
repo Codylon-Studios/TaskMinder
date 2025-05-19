@@ -1,7 +1,9 @@
 import { addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedTeamsData, joinedTeamsData, msToTime, reloadAll, SubjectData, subjectData,
          substitutionsData, TeamsData, teamsData, lessonData, timeToMs, updateAll, userDataLoaded, 
-         LessonData} from "../../global/global.js";
+         LessonData, initCSRF, getCSRFToken } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+
+await initCSRF();
 
 function updateColorTheme() {
   let colorTheme
@@ -746,6 +748,9 @@ $("#team-selection-save").on("click", () => {
       type: "POST",
       data: JSON.stringify(data),
       contentType: "application/json",
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       success: () => {
         reloadAll()
         $("#team-selection-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
@@ -856,6 +861,9 @@ function saveTeams() {
     type: "POST",
     data: JSON.stringify(data),
     contentType: "application/json",
+    headers: {
+      "X-CSRF-Token": getCSRFToken(),
+    },
     success: () => {
       reloadAll()
       $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
@@ -982,6 +990,9 @@ function saveEventTypes() {
     type: "POST",
     data: JSON.stringify(data),
     contentType: "application/json",
+    headers: {
+      "X-CSRF-Token": getCSRFToken(),
+    },
     success: () => {
       reloadAll()
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
@@ -1170,6 +1181,9 @@ function saveSubjects() {
     type: "POST",
     data: JSON.stringify(data),
     contentType: "application/json",
+    headers: {
+      "X-CSRF-Token": getCSRFToken(),
+    },
     success: () => {
       reloadAll()
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
@@ -1252,6 +1266,9 @@ $("#timetable-save").on("click", () => {
     type: "POST",
     data: JSON.stringify(data),
     contentType: "application/json",
+    headers: {
+      "X-CSRF-Token": getCSRFToken(),
+    },
     success: () => {
       reloadAll()
       $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none")

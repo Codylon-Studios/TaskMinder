@@ -490,3 +490,15 @@ if (location.pathname != "/settings/") {
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme)
   }
 }
+
+var csrfToken: string;
+
+export async function initCSRF() {
+  const res = await fetch("/csrf-token");
+  const data = await res.json();
+  csrfToken = data.csrfToken;
+}
+
+export function getCSRFToken() {
+  return csrfToken;
+}

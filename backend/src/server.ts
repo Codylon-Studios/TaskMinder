@@ -7,6 +7,7 @@ import helmet from "helmet";
 import cron from "node-cron";
 import { rateLimit } from "express-rate-limit";
 import { Pool } from "pg";
+import { csrfProtection, csrfSessionInit } from "./utils/csrfProtection";
 import socketIO from "./config/socket";
 import * as dotenv from "dotenv";
 import { ErrorHandler } from "./middleware/errorMiddleware";
@@ -26,21 +27,6 @@ import subjects from "./routes/subjectRoute";
 import lessons from "./routes/lessonRoute";
 import client from 'prom-client';
 
-const register = new client.Registry();
-register.setDefaultLabels({
-  app: 'taskminder-nodejs'
-});
-
-client.collectDefaultMetrics({ register });
-
-const httpRequestDurationMicroseconds = new client.Histogram({
-  name: 'http_request_duration_ms',
-  help: 'Duration of HTTP requests in ms',
-  labelNames: ['method', 'route', 'code'],
-  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000]
-});
-register.registerMetric(httpRequestDurationMicroseconds);
-
 dotenv.config()
 
 declare module 'express-session' {
@@ -54,42 +40,33 @@ declare module 'express-session' {
   }
 }
 
-const app = express();
-const server = createServer(app);
-const io = socketIO.initialize(server);
+const register = new client.Registry();
+register.setDefaultLabels({
+  app: 'taskminder-nodejs'
+});
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  if (
-    req.path === '/metrics' ||
-    req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)
-  ) {
-    return next();
-  }
+const httpRequestDurationMicroseconds = new client.Histogram({
+  name: 'http_request_duration_ms',
+  help: 'Duration of HTTP requests in ms',
+  labelNames: ['method', 'route', 'code'],
+  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000]
+});
+register.registerMetric(httpRequestDurationMicroseconds);
 
-  const end = httpRequestDurationMicroseconds.startTimer();
-  res.on('finish', () => {
-    const route = (req.route && req.route.path) ? req.route.path : req.path;
-    end({ route, code: res.statusCode, method: req.method });
+client.collectDefaultMetrics({ register });
+
+
+sequelize.authenticate()
+  .then(() => logger.success("Connected to PostgreSQL"))
+  .catch((err: unknown) => {
+    if (err instanceof Error) {
+      logger.error("Unable to connect to PostgreSQL:", err.message)
+    }
   });
 
-  next();
-});
+sequelize.sync({ alter: true })
+  .then(() => logger.success("Database synced"));
 
-server.listen(3000, () => {
-  logger.success("Server running at http://localhost:3000");
-});
-
-// Schedule the cron job to run at midnight (00:00) every day
-cron.schedule("0 0 * * *", () => {
-  logger.info("Starting scheduled homework cleanup");
-  cleanupOldHomework();
-});
-
-// Schedule PostgreSQL backup every hour every day
-cron.schedule("0 * * * *", () => {
-  logger.info("Starting hourly PostgreSQL backup");
-  createDBBackup();
-});
 
 const sessionPool = new Pool({
   user: sequelize.config.username,
@@ -99,6 +76,19 @@ const sessionPool = new Pool({
   port: parseInt(sequelize.config.port ?? "0"),
 });
 
+
+const sessionSecret = process.env.SESSION_SECRET;
+
+if (!sessionSecret) {
+  logger.error("SESSION_SECRET is undefined! Please define in the .env file.");
+  process.exit(1);
+}
+
+const app = express();
+
+const server = createServer(app);
+const io = socketIO.initialize(server);
+
 const limiter = rateLimit({
   windowMs: 1000, // 1 second
   limit: 70, // Max 70 requests per IP per second
@@ -106,11 +96,10 @@ const limiter = rateLimit({
   legacyHeaders: false,
   message: { status: 429, message: "Too many requests, please slow down." }
 });
-
 app.use(limiter)
 
+// Content Security Policy
 if (process.env.NODE_ENV !== "DEVELOPMENT") {
-  // Content Security Policy
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -156,19 +145,28 @@ if (process.env.NODE_ENV !== "DEVELOPMENT") {
 }
 
 app.use(compression());
-// Middleware to parse request bodies
-app.use(express.urlencoded({ extended: true }));
 app.use(express.static("frontend/dist"));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const sessionSecret = process.env.SESSION_SECRET;
 
-if (!sessionSecret) {
-  logger.error("SESSION_SECRET is undefined! Please define in the .env file.");
-  process.exit(1);
-}
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (
+    req.path === '/metrics' ||
+    req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)
+  ) {
+    return next();
+  }
+  const end = httpRequestDurationMicroseconds.startTimer();
+  res.on('finish', () => {
+    const route = (req.route && req.route.path) ? req.route.path : req.path;
+    end({ route, code: res.statusCode, method: req.method });
+  });
+  next();
+});
 
-const PgSession = connectPgSimple(session);
+
+const PgSession = connectPgSimple(session); 
 
 const sessionMiddleware = session({
   store: new PgSession({
@@ -182,40 +180,27 @@ const sessionMiddleware = session({
   saveUninitialized: false,
   cookie: {
     sameSite: "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000,
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     httpOnly: true,
     secure: process.env.NODE_ENV !== "DEVELOPMENT",
-  }, //30 days
+  },
   name: "UserLogin",
 });
 
 app.use(sessionMiddleware);
+app.use(csrfSessionInit);
+app.use(csrfProtection); 
 app.use(RequestLogger);
 app.use("/docs", express.static(path.join(__dirname, "..", "..", "docs", "dist")));
-app.use("/account", account);
-app.use("/homework", homework);
-app.use("/substitutions", substitutions);
-app.use("/teams", teams);
-app.use("/events", events);
-app.use("/subjects", subjects);
-app.use("/lessons", lessons);
-app.use(ErrorHandler);
 
-// Sync models with the database
-sequelize.sync({ alter: true })
-  .then(() => logger.success("Database synced"));
-
-sequelize.authenticate()
-  .then(() => logger.success("Connected to PostgreSQL"))
-  .catch((err: unknown) => {
-    if (err instanceof Error) {
-      logger.error("Unable to connect to PostgreSQL:", err.message)
-    }
-  });
 
 app.get('/metrics', async (req: Request, res: Response) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
+});
+
+app.get("/csrf-token", (req, res) => {
+  res.json({ csrfToken: req.session.csrfToken });
 });
 
 app.get("/", (req: Request, res: Response) => {
@@ -250,6 +235,15 @@ app.get("/about", (req, res) => {
   res.sendFile(path.join(pagesPath, "about", "about.html"));
 });
 
+app.use("/account", account);
+app.use("/homework", homework);
+app.use("/substitutions", substitutions);
+app.use("/teams", teams);
+app.use("/events", events);
+app.use("/subjects", subjects);
+app.use("/lessons", lessons);
+
+
 //
 // Protected routes: Redirect to /join if not logged in
 //
@@ -263,4 +257,25 @@ app.get("/homework", checkAccess.elseRedirect, (req, res) => {
 
 app.get("/events", checkAccess.elseRedirect, (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
+});
+
+
+// Error Handler Middleware (Must be the last app.use)
+app.use(ErrorHandler);
+
+
+// Schedule the cron job to run at midnight (00:00) every day
+cron.schedule("0 0 * * *", () => {
+  logger.info("Starting scheduled homework cleanup");
+  cleanupOldHomework(); // Assuming cleanupOldHomework is defined elsewhere
+});
+
+// Schedule PostgreSQL backup every hour every day
+cron.schedule("0 * * * *", () => {
+  logger.info("Starting hourly PostgreSQL backup");
+  createDBBackup(); // Assuming createDBBackup is defined elsewhere
+});
+
+server.listen(3000, () => {
+  logger.success("Server running at http://localhost:3000");
 });

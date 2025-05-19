@@ -1,7 +1,9 @@
 import { addUpdateAllFunction, dateToMs, eventData, eventTypeData, isSameDay, joinedTeamsData, loadEventData, msToDisplayDate, msToInputDate, runOnce,
          teamsData, updateAll, socket, 
-         reloadAll} from "../../global/global.js";
+         reloadAll, initCSRF, getCSRFToken } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+
+await initCSRF();
 
 const updateEventList = runOnce(async (): Promise<void> => {
   // Clear the list
@@ -206,6 +208,9 @@ function addEvent() {
       url : "/events/add_event",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       success: () => {
         // Show a success notification and update the shown events
         $("#add-event-success-toast").toast("show");
@@ -297,6 +302,9 @@ async function editEvent(eventId: number) {
       type: "POST",
       contentType: "application/json",
       data: JSON.stringify(data),
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       success: () => {
         // Show a success notification and update the shown events
         $("#edit-event-success-toast").toast("show");
@@ -357,6 +365,9 @@ function deleteEvent(eventId: number) {
       url : "/events/delete_event",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": getCSRFToken(),
+      },
       success: () => {
         // Show a success notification and update the shown events
         $("#delete-event-success-toast").toast("show");
