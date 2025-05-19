@@ -1,6 +1,28 @@
 import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
 import { user } from "../snippets/navbar/navbar.js"
 
+var csrfToken: string;
+
+export async function initCSRF() {
+  try {
+    const res = await fetch("/csrf-token");
+    if (!res.ok) {
+         console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
+    }
+    const data = await res.json();
+    csrfToken = data.csrfToken;
+  } catch (error) {
+      console.error("initCSRF: Error fetching token:", error);
+  }
+}
+
+export function getCSRFToken() {
+  if (!csrfToken) {
+    console.error("getCSRFToken: Attempted to get token before it was initialized!");
+ }
+  return csrfToken;
+}
+
 export function runOnce(fn: Function): Function {
   async function wrapper(force: boolean = false, ...args: any) {
     if (wrapper.running && ! force) return;
@@ -489,16 +511,4 @@ if (location.pathname != "/settings/") {
     window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme)
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme)
   }
-}
-
-var csrfToken: string;
-
-export async function initCSRF() {
-  const res = await fetch("/csrf-token");
-  const data = await res.json();
-  csrfToken = data.csrfToken;
-}
-
-export function getCSRFToken() {
-  return csrfToken;
 }

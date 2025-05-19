@@ -1,9 +1,7 @@
 import { addUpdateAllFunction, dateToMs, eventData, eventTypeData, isSameDay, joinedTeamsData, loadEventData, msToDisplayDate, msToInputDate, runOnce,
          teamsData, updateAll, socket, 
-         reloadAll, initCSRF, getCSRFToken } from "../../global/global.js";
+         reloadAll, getCSRFToken } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
-
-await initCSRF();
 
 const updateEventList = runOnce(async (): Promise<void> => {
   // Clear the list

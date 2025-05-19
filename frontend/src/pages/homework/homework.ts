@@ -3,8 +3,6 @@ import { addUpdateAllFunction, dateToMs, getHomeworkCheckStatus, homeworkChecked
          reloadAll, getCSRFToken, initCSRF} from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
-await initCSRF();
-
 const updateHomeworkList = runOnce(async (): Promise<void> => {
   let newContent = ""
   
