@@ -1,4 +1,8 @@
-name: CI test for main
+name: "CI test for main"
+
+permissions:
+  contents: read
+  pull-requests: read
 
 on:
   push:
