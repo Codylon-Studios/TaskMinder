@@ -139,6 +139,21 @@
           </div>
 
           <div class="mb-2">
+            <label for="inviteLink" class="form-label fw-semibold">Einladung zur Klasse</label>
+            <div class="input-group">
+              <input id="inviteLink" type="text" class="form-control" value="" readonly>
+              <button id="copyBtn" class="btn btn-primary" type="button" aria-label="Einladungslink kopieren">
+                <span class="copy-text d-inline"> 
+                  <i class="fa-regular fa-copy me-1"></i> Einladungslink kopieren
+                </span>
+                <span class="copied-text d-none">
+                  <i class="fa-regular fa-check me-1"></i> Kopiert
+                </span>
+              </button>
+            </div>
+          </div>
+          
+          <div class="mb-2">
             <h5 class="mb-2" for="teams-list">Teams</h5>
             <div class="mb-2" id="teams-list">
               <!--Gets filled-->

@@ -26,6 +26,7 @@ import lessons from "./routes/lessonRoute";
 import substitutions from "./routes/substitutionRoute";
 import subjects from "./routes/subjectRoute";
 import teams from "./routes/teamRoute";
+import classes from "./routes/classRoute";
 
 dotenv.config()
 
@@ -241,6 +242,7 @@ app.use("/teams", teams);
 app.use("/events", events);
 app.use("/subjects", subjects);
 app.use("/lessons", lessons);
+app.use("/class", classes);
 
 
 //
