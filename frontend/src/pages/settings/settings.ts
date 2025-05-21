@@ -1,6 +1,8 @@
-import { addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedTeamsData, joinedTeamsData, msToTime, reloadAll, SubjectData, subjectData,
-         substitutionsData, TeamsData, teamsData, lessonData, timeToMs, updateAll, userDataLoaded, 
-         LessonData, getCSRFToken } from "../../global/global.js";
+import {
+  addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedTeamsData, joinedTeamsData, msToTime, reloadAll, SubjectData, subjectData,
+  substitutionsData, TeamsData, teamsData, lessonData, timeToMs, updateAll, userDataLoaded,
+  LessonData, getCSRFToken
+} from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
 function updateColorTheme() {
@@ -24,12 +26,12 @@ function updateColorTheme() {
   }
 
   if (colorTheme == "light") {
-    $("html").css({background: "#ffffff"});
+    $("html").css({ background: "#ffffff" });
     document.body.setAttribute("data-bs-theme", "light");
     $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
   }
   else {
-    $("html").css({background: "#212529"});
+    $("html").css({ background: "#212529" });
     document.body.setAttribute("data-bs-theme", "dark");
     $(`meta[name="theme-color"]`).attr("content", "#2b3035")
   }
@@ -77,7 +79,7 @@ async function updateTeamLists() {
       </div>`
     $("#teams-list").append(template)
   }
-  
+
   $(document).on("change", ".team-name-input", async function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
 
@@ -103,7 +105,7 @@ async function updateTeamLists() {
 
   $(document).on("input", ".team-name-input", function () {
     $(this).removeClass("is-invalid")
-    if (! $(".team-name-input").hasClass("is-invalid")) {
+    if (!$(".team-name-input").hasClass("is-invalid")) {
       $("#teams-save").removeClass("disabled")
     }
   })
@@ -170,7 +172,7 @@ async function updateEventTypeList() {
       </div>`
     $("#event-types-list").append(template)
   }
-  
+
   $(document).on("change", ".event-type-name-input", async function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
 
@@ -196,7 +198,7 @@ async function updateEventTypeList() {
 
   $(document).on("input", ".event-type-name-input", function () {
     $(this).removeClass("is-invalid")
-    if (! $(".event-type-name-input").hasClass("is-invalid")) {
+    if (!$(".event-type-name-input").hasClass("is-invalid")) {
       $("#event-types-save").removeClass("disabled")
     }
   })
@@ -280,9 +282,9 @@ async function updateSubjectList() {
               </div>
               <div class="d-inline-block">
                 <select class="form-control form-control-sm subject-teacher-gender-input" data-id="${subjectId}">
-                  <option value="d" ${subject.teacherGender == "d" ? "selected": ""}>-</option>
-                  <option value="w" ${subject.teacherGender == "w" ? "selected": ""}>Frau</option>
-                  <option value="m" ${subject.teacherGender == "m" ? "selected": ""}>Herr</option>
+                  <option value="d" ${subject.teacherGender == "d" ? "selected" : ""}>-</option>
+                  <option value="w" ${subject.teacherGender == "w" ? "selected" : ""}>Frau</option>
+                  <option value="m" ${subject.teacherGender == "m" ? "selected" : ""}>Herr</option>
                 </select>
               </div>
               <div class="d-inline-block">
@@ -310,7 +312,7 @@ async function updateSubjectList() {
               <span class="subject-changed-name-long">${subject.subjectNameLong} zu <b></b></span>
               <span class="subject-changed-name-short">${subject.subjectNameShort} zu <b></b></span>
               <span class="subject-changed-name-substitution">${subject.subjectNameSubstitution ?? "keine Angabe"} zu <b></b></span>
-              <span class="subject-changed-teacher-gender">${{"w": "Frau", "m": "Herr", "d": "Keine Anrede"}[subject.teacherGender]} zu <b></b></span>
+              <span class="subject-changed-teacher-gender">${{ "w": "Frau", "m": "Herr", "d": "Keine Anrede" }[subject.teacherGender]} zu <b></b></span>
               <span class="subject-changed-teacher-long">${subject.teacherNameLong} zu <b></b></span>
               <span class="subject-changed-teacher-short">${subject.teacherNameShort} zu <b></b></span>
               <span class="subject-changed-teacher-substitution">${subject.teacherNameSubstitution ?? "keine Angabe"} zu <b></b></span>
@@ -327,7 +329,7 @@ async function updateSubjectList() {
     $("#subjects-list").append(template)
     $("#subjects-list").find(".subject-changed").last().find("span").addClass("d-none").attr("data-id", subjectId)
   }
-  
+
   $(document).on("change", ".subject-name-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
@@ -357,11 +359,11 @@ async function updateSubjectList() {
 
   $(document).on("input", ".subject-name-long-input", function () {
     $(this).removeClass("is-invalid")
-    if (! $(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
+    if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
       $("#subjects-save").removeClass("disabled")
     }
   })
-  
+
   $(document).on("change", ".subject-name-short-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
@@ -383,7 +385,7 @@ async function updateSubjectList() {
       }
     }
   })
-  
+
   $(document).on("change", ".subject-teacher-gender-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
@@ -436,7 +438,7 @@ async function updateSubjectList() {
 
   $(document).on("input", ".subject-teacher-long-input", function () {
     $(this).removeClass("is-invalid")
-    if (! $(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
+    if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
       $("#subjects-save").removeClass("disabled")
     }
   })
@@ -555,7 +557,7 @@ async function updateTimetable() {
     const dayTemplate = $(`
       <div class="col p-1">
         <div class="card p-2">
-          <div>${[ "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag" ][dayId]}</div>
+          <div>${["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"][dayId]}</div>
           <hr class="mt-2">
           <div class="timetable-lesson-list">
           </div>
@@ -683,7 +685,7 @@ let dsbActivated = false;
 
 $(() => {
   addUpdateAllFunction(
-    () => {}
+    () => { }
   )
   reloadAll();
 })
@@ -712,8 +714,8 @@ $("#animations input").on("click", function () {
 
 let colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
 document.body.setAttribute("data-bs-theme", await colorTheme());
-$("#color-theme-auto").prop("checked", colorThemeSetting == "auto") 
-$("#color-theme-dark").prop("checked", colorThemeSetting == "dark") 
+$("#color-theme-auto").prop("checked", colorThemeSetting == "auto")
+$("#color-theme-dark").prop("checked", colorThemeSetting == "dark")
 $("#color-theme-light").prop("checked", colorThemeSetting == "light")
 
 $("#color-theme input").each(function () {
@@ -785,7 +787,7 @@ $("#team-selection-save").on("click", () => {
       $("#team-selection-save").html("Speichern").prop("disabled", false);
     }, 1000);
   }
-  
+
   $("#team-selection-modal").modal("hide")
   updateAll()
 })
@@ -848,7 +850,7 @@ function saveTeams() {
       name: $(this).val()?.toString() ?? ""
     })
   })
-  
+
   let data = {
     teams: newTeamsData,
   };
@@ -898,7 +900,7 @@ $("#teams-save").on("click", () => {
   $(".team-deleted:not(.d-none)").each(function () {
     deleted.push($(this).parent().find("input").attr("placeholder") ?? "")
   })
-  
+
   if (deleted.length == 0) {
     saveTeams()
   }
@@ -977,7 +979,7 @@ function saveEventTypes() {
       color: $(this).find(".event-type-color-input").val()?.toString() ?? ""
     })
   })
-  
+
   let data = {
     eventTypes: newEventTypesData,
   };
@@ -1027,7 +1029,7 @@ $("#event-types-save").on("click", () => {
   $(".event-type-deleted:not(.d-none)").each(function () {
     deleted.push($(this).parent().find("input").attr("placeholder") ?? "")
   })
-  
+
   if (deleted.length == 0) {
     saveEventTypes()
   }
@@ -1168,7 +1170,7 @@ function saveSubjects() {
       teacherNameSubstitution: (teacherNameSubstitution).split(",").map(v => v.trim())
     })
   })
-  
+
   let data = {
     subjects: newSubjectData,
   };
@@ -1218,7 +1220,7 @@ $("#subjects-save").on("click", () => {
   $(".subjects-deleted:not(.d-none)").each(function () {
     deleted.push($(this).parent().find("input").attr("placeholder") ?? "")
   })
-  
+
   if (deleted.length == 0) {
     saveSubjects()
   }
@@ -1253,7 +1255,7 @@ $("#timetable-save").on("click", () => {
       })
     })
   })
-  
+
   let data = {
     lessons: newTimetableData,
   };
@@ -1297,3 +1299,43 @@ $("#timetable-save").on("click", () => {
     }
   }, 1000);
 })
+
+$(() => {
+  const $copyBtn = $("#copyBtn");
+  const $inviteInput = $("#inviteLink");
+  const $copyText = $copyBtn.find(".copy-text");
+  const $copiedText = $copyBtn.find(".copied-text");
+
+
+  $.get("/class/get_classcode")
+    .done((classCode: string ) => {
+      const inviteUrl = `${classCode}`;
+      $inviteInput.val(inviteUrl);
+      $copyBtn.prop("disabled", false);
+    })
+    .fail(() => {
+      $inviteInput.val("Fehler beim Laden");
+      $copyBtn.prop("disabled", true);
+    });
+
+  $copyBtn.on("click", async () => {
+    const value = $inviteInput.val();
+    if (typeof value !== "string") return;
+
+    try {
+      await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
+
+      $copyText.addClass("d-none");
+      $copiedText.removeClass("d-none");
+      $copyBtn.prop("disabled", true);
+
+      setTimeout(() => {
+        $copyText.removeClass("d-none");
+        $copiedText.addClass("d-none");
+        $copyBtn.prop("disabled", false);
+      }, 2000);
+    } catch (err) {
+      console.error("Fehler beim Kopieren:", err);
+    }
+  });
+});
