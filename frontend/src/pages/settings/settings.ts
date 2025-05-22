@@ -688,41 +688,6 @@ $(() => {
     () => { }
   )
   reloadAll();
-
-  const $classcodeCopyLink = $("#classcode-copy-link");
-  const $classcode = $("#classcode");
-  const $classcodeCopyText = $("#classcode-copy-text");
-  const $classcodeCopiedText = $("#classcode-copied-text");
-
-  $.get("/class/get_classcode")
-    .done(( classCode: string ) => {
-      $classcode.val(classCode);
-      $classcodeCopyLink.prop("disabled", false);
-    })
-    .fail(() => {
-      $classcode.val("Fehler beim Laden");
-      $classcodeCopyLink.prop("disabled", true);
-    });
-
-  $classcodeCopyLink.on("click", async () => {
-    const value = $classcode.val();
-
-    try {
-      await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
-
-      $classcodeCopyText.addClass("d-none");
-      $classcodeCopiedText.removeClass("d-none");
-      $classcodeCopyLink.prop("disabled", true);
-
-      setTimeout(() => {
-        $classcodeCopyText.removeClass("d-none");
-        $classcodeCopiedText.addClass("d-none");
-        $classcodeCopyLink.prop("disabled", false);
-      }, 2000);
-    } catch (err) {
-      console.error("Fehler beim Kopieren:", err);
-    }
-  });
 })
 
 $(async () => {
@@ -737,6 +702,41 @@ $(async () => {
       updateTimetable
     )
     reloadAll();
+
+    const $classcodeCopyLink = $("#classcode-copy-link");
+    const $classcode = $("#classcode");
+    const $classcodeCopyText = $("#classcode-copy-text");
+    const $classcodeCopiedText = $("#classcode-copied-text");
+
+    $.get("/class/get_classcode")
+      .done(( classCode: string ) => {
+        $classcode.val(classCode);
+        $classcodeCopyLink.prop("disabled", false);
+      })
+      .fail(() => {
+        $classcode.val("Fehler beim Laden");
+        $classcodeCopyLink.prop("disabled", true);
+      });
+
+    $classcodeCopyLink.on("click", async () => {
+      const value = $classcode.val();
+
+      try {
+        await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
+
+        $classcodeCopyText.addClass("d-none");
+        $classcodeCopiedText.removeClass("d-none");
+        $classcodeCopyLink.prop("disabled", true);
+
+        setTimeout(() => {
+          $classcodeCopyText.removeClass("d-none");
+          $classcodeCopiedText.addClass("d-none");
+          $classcodeCopyLink.prop("disabled", false);
+        }, 2000);
+      } catch (err) {
+        console.error("Fehler beim Kopieren:", err);
+      }
+    });
   }
 });
 

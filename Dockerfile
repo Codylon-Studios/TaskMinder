@@ -34,14 +34,16 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 # Copy the rest of the source files into the image.
 COPY . .
 
-RUN npm install -g typescript
+RUN npm install -g typescript && \
+    # Compile/Build everything needed for production
+    #################npm run build:prepare && \
+    npm run build:be && npm run build:fe && npm run build:docs
 
-# Start the container as node user
-USER node
+    # Change ownership of the app directory to node user, including dist
+    #######################chown -R node:node /usr/src/app
 
-
-# Compile/Build everything needed for production
-RUN npm run build:backend && npm run build:frontend && npm run build:docs
+# Switch to node user for runtime
+#####################USER node
 
 # Expose the port that the application listens on.
 EXPOSE 3000
