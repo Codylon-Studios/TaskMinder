@@ -1,18 +1,17 @@
 # Server Setup in Production
-## First Time Setup
-## What you'll need:
+## What you'll need
 
 * A valid domain (e.g. `codylon.de`)
-* A server running Ubuntu (≥ 20.04.6 LTS) with sudo access
-* The repository to clone from [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)
+* A server running Ubuntu (≥ 20.04.6 LTS) with sudo or root access
+* The codebase of TaskMinder from [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)
 
 ---
 
-## 0. Set Up Domain Name (DNS Configuration)
+## 1. DNS Configuration
 
 Before proceeding with the server setup, configure your domain to point to your Ubuntu server.
 
-### Step 1: Get Your Server's Public IP Address
+### Get Your Server's Public IP Address
 
 On your server, run:
 
@@ -24,9 +23,9 @@ Copy the returned IP (e.g., `203.0.113.42`). Make sure the server is not behind 
 
 ---
 
-### Step 2: Configure DNS Records
+### Configure DNS Records
 
-Go to your domain registrar’s DNS management page (e.g., Namecheap, GoDaddy, Cloudflare) and add the following records:
+Go to your domain registrar’s DNS management page (e.g., Namecheap, GoDaddy, Cloudflare etc.) and add the following records:
 
 | **Type** | **Name** | **Value**      | **TTL**          |
 | -------- | -------- | -------------- | ---------------- |
@@ -37,7 +36,7 @@ Go to your domain registrar’s DNS management page (e.g., Namecheap, GoDaddy, C
 
 We also use a subdomain for monitoring (`monitoring.yourdomain.com`) and a subdomain for a status page.
 
-We recommend [https://betterstack.com/](https://betterstack.com/) as it offers custom subdomains for the status page. After setting up the status page, follow BetterStack’s instructions to configure the CNAME record.
+We use [https://betterstack.com/](https://betterstack.com/) as it offers custom subdomains for the status page, but you may choose another provider. After setting up the status page, follow BetterStack’s instructions to configure the CNAME record.
 
 For the monitoring page (`monitoring.yourdomain.com`), add the following record:
 
@@ -47,7 +46,7 @@ For the monitoring page (`monitoring.yourdomain.com`), add the following record:
 
 ---
 
-### Step 3: Wait for Propagation
+### Wait for Propagation
 
 DNS propagation can take a few minutes to several hours. Use tools like:
 
@@ -57,7 +56,7 @@ Once your domain resolves to your server’s IP, proceed to the next step.
 
 ---
 
-## 1. Install Required Packages
+## 2. Install Required Packages
 
 ### Update and install dependencies:
 
@@ -74,7 +73,7 @@ Follow the official Docker documentation to install Docker and Docker Compose:
 
 🔗 [https://docs.docker.com/engine/install/ubuntu/](https://docs.docker.com/engine/install/ubuntu/)
 
-### Enable and start Docker:
+### Enable and start Docker
 
 ```bash
 sudo systemctl enable docker
@@ -83,9 +82,7 @@ sudo systemctl start docker
 
 ---
 
-### Setup Firewall (UFW) and Fail2Ban
-
-#### Enable and configure firewall (UFW):
+### Enable and configure firewall (UFW)
 
 ```bash
 sudo ufw allow OpenSSH
@@ -93,7 +90,7 @@ sudo ufw allow 'Nginx Full'
 sudo ufw enable
 ```
 
-#### Secure SSH access:
+### Secure SSH access
 
 Edit `/etc/ssh/sshd_config`:
 
@@ -108,7 +105,7 @@ Then restart SSH:
 sudo systemctl restart ssh
 ```
 
-#### Configure Fail2Ban (basic defaults are enough to start):
+### Configure Fail2Ban
 
 ```bash
 sudo systemctl enable fail2ban
@@ -123,7 +120,7 @@ sudo fail2ban-client status
 
 ---
 
-## 2. Clone the Project from GitHub
+## 3. Clone the Project from GitHub
 
 ```bash
 cd /opt
@@ -135,10 +132,10 @@ cd TaskMinder
 
 ---
 
-## 3. Configure NGINX
+## 4. Configure NGINX
 
-### Modify and copy your NGINX config file:
-Modify the ngnix.config to replace codylon.de with your actual domain
+### Modify and copy your NGINX config file
+Modify the ngnix.config to replace codylon.de with your actual domain.
 
 ```bash
 vi nginx.config
@@ -152,13 +149,13 @@ Then copy/paste the file:
 sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
 ```
 
-### Enable the NGINX site:
+### Enable the NGINX site
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/taskminder /etc/nginx/sites-enabled/
 ```
 
-### Test and restart NGINX:
+### Test and restart NGINX
 
 ```bash
 sudo nginx -t
@@ -167,7 +164,7 @@ sudo systemctl restart nginx
 
 ---
 
-## 4. Secure with Let's Encrypt (SSL)
+## 5. Secure with Let's Encrypt (SSL)
 
 Don't forget to change `yourdomain.com` to your actual domain.
 
@@ -178,7 +175,7 @@ sudo certbot --nginx --redirect -d yourdomain.com -d www.yourdomain.com -d monit
 
 ---
 
-## 5. Set Up Non-Root User
+## 6. Set Up Non-Root User
 
 Running as root means a compromised container could gain full system access. It is highly recommended to run the server as a non-root user (least privilege). We’ll use the name `ubuntu` for this guide, but you may choose another name.
 
@@ -209,7 +206,7 @@ ssh ubuntu@<your-ip-address>
 
 ---
 
-## 6. Add Docker Secrets
+## 7. Add Docker Secrets
 
 Navigate back to the TaskMinder folder and create directories for secrets and backups:
 
@@ -237,7 +234,7 @@ Before starting the application, create the following **text files inside the `d
 
 ---
 
-## 7. Run Docker Compose
+## 8. Run Docker Compose
 
 Navigate to the project root and build/start the containers:
 
@@ -248,7 +245,7 @@ sudo docker compose up -d --build
 
 ---
 
-## TaskMinder Deployment Complete
+## 9. TaskMinder Deployment Complete
 
 Your TaskMinder server should now be running at:
 
@@ -258,7 +255,14 @@ Your TaskMinder server should now be running at:
 
 ---
 
-## Subsequent Updates
+## 10. What's Next?
+
+* Create an account to add your subjects, teams, and timetable.
+* Visit [https://monitoring.yourdomain.com](https://monitoring.yourdomain.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
+
+---
+
+## 11. Subsequent Updates
 run:
 ```bash
 cd /opt/Taskminder

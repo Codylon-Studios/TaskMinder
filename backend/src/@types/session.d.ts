@@ -8,5 +8,6 @@ declare module 'express-session' {
     };
     loggedIn: boolean;
     classJoined: boolean;
+    csrfToken?: string;
   }
 }
