@@ -207,7 +207,6 @@ export default {
         name: "Bad Request",
         status: 400,
         message: "Already joined class",
-        additionalInformation: "The requesting session has already joined a class!",
         expected: true,
       }
       throw err;
@@ -223,7 +222,7 @@ export default {
           });
         }
       }
-      return
+      return;
     }
     let err: RequestError = {
       name: "Unauthorized",
