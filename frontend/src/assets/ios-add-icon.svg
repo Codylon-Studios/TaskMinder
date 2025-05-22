@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- iOS Add-Icon mit exakt 20×20-Bereich – wie im Share-Icon -->
+<svg fill="#1375e3" width="800px" height="800px" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+  <!-- Abgerundetes Viereck: 20×20 Einheiten bei x=15, y=15 -->
+  <rect
+    x="13.5" y="13.5"
+    width="23" height="23"
+    rx="4" ry="4"
+    fill="none"
+    stroke="#1375e3"
+    stroke-width="2"
+  />
+  <!-- Plus-Zeichen mittig im Rahmen -->
+  <!-- vertikaler Balken: 2×12 Einheiten -->
+  <rect
+    x="24" y="19"
+    width="2" height="12"
+    fill="#1375e3"
+  />
+  <!-- horizontaler Balken: 12×2 Einheiten -->
+  <rect
+    x="19" y="24"
+    width="12" height="2"
+    fill="#1375e3"
+  />
+</svg>

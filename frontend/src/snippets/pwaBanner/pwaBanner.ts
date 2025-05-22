@@ -1,0 +1,19 @@
+function isIos() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function isInStandaloneMode() {
+  return window.matchMedia("(display-mode: standalone)").matches
+}
+
+$(() => {
+  if (isIos() && !isInStandaloneMode() && localStorage.getItem("showPwaBanner") !== "false") {
+    $(".pwa-banner").addClass("d-flex").removeClass("d-none");
+    $("body, .navbar").css({marginTop: "80px"});
+    $(".pwa-banner-close").on("click", () => {
+      $(".pwa-banner").removeClass("d-flex").addClass("d-none");
+      $("body, .navbar").css({marginTop: "0px"});
+      localStorage.setItem("showPwaBanner", "false");
+    });
+  }
+});

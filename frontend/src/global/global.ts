@@ -244,11 +244,21 @@ export const socket: Socket = io();
 document.head.appendChild(themeColor);
 
 // DATA
+type DataAccessorEventName = "update"
+type DataAccessorEventCallback = (...args: any[]) => void
 export function createDataAccessor<T>(name: string) {
   const eventName = `dataLoaded:${name}`
-
   let data: T | null = null;
-  return async (value?: T | null): Promise<T> => {
+  let _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>
+
+  const accessor = async (value?: T | null): Promise<T> => {
+    if (value !== undefined) {
+      accessor.set(value)
+    }
+    return accessor.get()
+  }
+
+  accessor.get = () => {
     async function getNotNullValue(): Promise<T> {
       if (data == null) {
         await new Promise((resolve) => {
@@ -258,14 +268,30 @@ export function createDataAccessor<T>(name: string) {
       }
       return data
     }
-    if (value !== undefined) {
-      data = value;
-      if (value !== null) {
-        $(window).trigger(eventName);
-      }
-    }
     return getNotNullValue()
-  };
+  }
+
+  accessor.set = (value: any) => {
+    data = value;
+    if (value !== null) {
+      $(window).trigger(eventName);
+    }
+    accessor.trigger("update")
+  }
+
+  accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback) => {
+    _eventListeners[event] ??= []
+    _eventListeners[event].push(callback)
+  }
+
+  accessor.trigger = (event: DataAccessorEventName, ...args: any[]) => {
+    const callbacks = _eventListeners[event];
+    if (callbacks) {
+      callbacks.forEach(cb => cb(...args));
+    }
+  }
+
+  return accessor
 }
 
 // Subject Data
@@ -461,20 +487,19 @@ else {
     document.body.setAttribute("data-bs-theme", "dark");
 }})()
 
-if (location.pathname != "/settings/") {
+if (! ["/settings/", "/settings"].includes(location.pathname)) {
   let colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
 
   if (colorThemeSetting == "auto") {
-    function updateColorTheme() {
-      let colorTheme
+    async function updateColorTheme() {
       if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        colorTheme = "dark"
+        colorTheme("dark")
       }
       else {
-        colorTheme = "light"
+        colorTheme("light")
       }
     
-      if (colorTheme == "light") {
+      if (await colorTheme() == "light") {
         document.getElementsByTagName("html")[0].style.background = "#ffffff";
         document.body.setAttribute("data-bs-theme", "light");
         $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
