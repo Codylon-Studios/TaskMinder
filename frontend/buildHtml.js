@@ -33,8 +33,15 @@ async function buildDirectory(src, dest) {
           <script src="/vendor/jquery/jquery.min.js" type="module" defer></script>
           <script src="/vendor/bootstrap/bootstrap.bundle.min.js" type="module" defer></script>
           <script src="/global/global.js" type="module" defer></script>
-          <link rel="preload" href="/pages/${fileName}/${fileName}.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+          <link class="preload-style" rel="preload" href="/pages/${fileName}/${fileName}.css" as="style">
           <script src="/pages/${fileName}/${fileName}.js" type="module" defer></script>
+          <script>
+            document.addEventListener("DOMContentLoaded", () => {
+              for (let pS of document.querySelectorAll(".preload-style")) {
+                pS.rel='stylesheet'
+              }
+            })
+          </script>
         `)
         // Color theme script
         $("head").append(`
@@ -66,6 +73,10 @@ async function buildDirectory(src, dest) {
           </script>
         `)
 
+        $("body").append(`
+          <div class="load-snippet" data-target="pwaBanner" data-html data-css data-js></div>
+        `)
+
         $("body").css({ display: "none" })
 
         let elements = $(".load-snippet").toArray()
@@ -77,7 +88,7 @@ async function buildDirectory(src, dest) {
             $(el).replaceWith($new.html())
           }
           if ($(el).data("css") != undefined) {
-            $("head").append(`<link rel="preload" href="/snippets/${target}/${target}.css" as="style" onload="this.onload=null;this.rel='stylesheet'">`)
+            $("head").append(`<link class="preload-style" rel="preload" href="/snippets/${target}/${target}.css" as="style">`)
           }
           if ($(el).data("js") != undefined) {
             $("head").append(`<script src="/snippets/${target}/${target}.js" type="module" defer></script>`)

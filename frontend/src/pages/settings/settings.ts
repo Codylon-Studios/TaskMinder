@@ -3,27 +3,26 @@ import { addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedT
          LessonData} from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
-function updateColorTheme() {
-  let colorTheme
+async function updateColorTheme() {
   if ($("#color-theme-dark").prop("checked")) {
-    colorTheme = "dark"
+    colorTheme("dark")
     localStorage.setItem("colorTheme", "dark");
   }
   else if ($("#color-theme-light").prop("checked")) {
-    colorTheme = "light"
+    colorTheme("light")
     localStorage.setItem("colorTheme", "light");
   }
   else {
     if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      colorTheme = "dark"
+      colorTheme("dark")
     }
     else {
-      colorTheme = "light"
+      colorTheme("light")
     }
     localStorage.setItem("colorTheme", "auto");
   }
 
-  if (colorTheme == "light") {
+  if (await colorTheme() == "light") {
     $("html").css({background: "#ffffff"});
     document.body.setAttribute("data-bs-theme", "light");
     $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")
@@ -562,7 +561,7 @@ async function updateTimetable() {
         </div>
       </div>
     `)
-    dayTemplate.find(".card").append(`<button class="btn btn-sm btn-success fw-semibold timetable-new-lesson">Neu</button>`)
+    dayTemplate.find(".card").append(`<button class="btn btn-sm btn-success fw-semibold timetable-new-lesson">Neue Stunde</button>`)
     $("#timetable").append(dayTemplate)
   }
 
@@ -710,6 +709,21 @@ $("#animations input").on("click", function () {
   localStorage.setItem("animations", animations)
 })
 
+let displayFooter = JSON.parse(localStorage.getItem("displayFooter") ?? "true") ?? true;
+$("#display-footer input").prop("checked", displayFooter);
+$("#display-footer input").on("click", function () {
+  displayFooter = $(this).prop("checked");
+  localStorage.setItem("displayFooter", displayFooter)
+  if (displayFooter) {
+    $("footer").show()
+    $("body").css({paddingBottom: 0})
+  }
+  else {
+    $("footer").hide()
+    $("body").css({paddingBottom: $("body").css("paddingTop")})
+  }
+})
+
 let colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
 document.body.setAttribute("data-bs-theme", await colorTheme());
 $("#color-theme-auto").prop("checked", colorThemeSetting == "auto") 
@@ -788,6 +802,11 @@ $("#team-selection-save").on("click", () => {
 })
 
 // TEAMS
+
+$("#teams-toggle").on("click", function () {
+  $("#teams-list").toggleClass("d-none")
+  $(this).toggleClass("rotate-90")
+})
 
 $("#new-team").on("click", () => {
   $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
@@ -910,6 +929,11 @@ $("#teams-save").on("click", () => {
 $("#teams-save-confirm").on("click", saveTeams)
 
 // EVENT TYPES
+
+$("#event-types-toggle").on("click", function () {
+  $("#event-types-list").toggleClass("d-none")
+  $(this).toggleClass("rotate-90")
+})
 
 $("#new-event-type").on("click", () => {
   $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
@@ -1036,6 +1060,11 @@ $("#event-types-save").on("click", () => {
 $("#event-types-save-confirm").on("click", saveEventTypes)
 
 // SUBJECTS
+
+$("#subjects-toggle").on("click", function () {
+  $("#subjects-list").toggleClass("d-none")
+  $(this).toggleClass("rotate-90")
+})
 
 $("#new-subject").on("click", () => {
   $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
@@ -1224,6 +1253,15 @@ $("#subjects-save").on("click", () => {
 $("#subjects-save-confirm").on("click", saveSubjects)
 
 // TIMETABLE
+
+$("#timetable-toggle").on("click", function () {
+  $("#timetable").toggleClass("d-none")
+  $(this).toggleClass("rotate-90")
+})
+
+$("#timetable-cancel").on("click", () => {
+  updateTimetable()
+})
 
 $("#timetable-save").on("click", () => {
   let newTimetableData: LessonData = []

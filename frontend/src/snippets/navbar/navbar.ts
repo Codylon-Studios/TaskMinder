@@ -229,7 +229,7 @@ user.on("logout", () => {
   user.username = null;
 });
 
-if (location.pathname != "/join/") {
+if (! ["/join/", "/join"].includes(location.pathname)) {
   user.on("login", () => {
     $("#login-register-button").addClass("d-none");
     $("#logout-button").removeClass("d-none");

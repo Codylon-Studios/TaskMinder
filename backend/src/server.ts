@@ -109,25 +109,27 @@ const limiter = rateLimit({
 
 app.use(limiter)
 
-if (process.env.NODE_ENV !== "DEVELOPMENT") {
+if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
   // Content Security Policy
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         "default-src": ["'self'"],
         "script-src": [
-          '"self"',
+          "'self'",
+          "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
+          "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='"
         ],
         "connect-src": [
-          '"self"',
+          "'self'",
           "wss://*"
         ],
         "style-src": [
-          '"self"',
-          '"unsafe-inline"'
+          "'self'",
+          "'unsafe-inline'"
         ],
         "font-src": [
-          '"self"',
+          "'self'",
         ],
         "img-src": ["'self'", "data:"],
         "object-src": ["'none'"],
@@ -153,6 +155,9 @@ if (process.env.NODE_ENV !== "DEVELOPMENT") {
     hidePoweredBy: true,
     originAgentCluster: true,
   }));
+}
+else {
+  logger.warn("Helmet and CSP is disabled! This is not recommended for production!");
 }
 
 app.use(compression());
