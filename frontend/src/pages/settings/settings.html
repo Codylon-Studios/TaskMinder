@@ -78,7 +78,7 @@
       </div>
       <div class="tab-pane fade" id="nav-settings-student">
         <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
-          <i class="fa-solid fa-circle-xmark  mx-1"></i>
+          <i class="fa-solid fa-circle-xmark mx-1"></i>
           <div>
             <div class="d-block">
               Für diese Einstellungen musst du einer Klasse beigetreten sein.
@@ -138,19 +138,27 @@
             </div>
           </div>
 
-          <div class="mb-2">
-            <label for="inviteLink" class="form-label fw-semibold">Einladung zur Klasse</label>
-            <div class="input-group">
-              <input id="inviteLink" type="text" class="form-control" value="" readonly>
-              <button id="copyBtn" class="btn btn-primary" type="button" aria-label="Einladungslink kopieren">
-                <span class="copy-text d-inline"> 
-                  <i class="fa-regular fa-copy me-1"></i> Einladungslink kopieren
-                </span>
-                <span class="copied-text d-none">
-                  <i class="fa-regular fa-check me-1"></i> Kopiert
-                </span>
-              </button>
+          <div class="row align-items-center mb-2">
+            <div class="col-auto">
+              <label for="classcode-container" class="col-form-label mb-0">Euer Klassencode</label>
             </div>
+            <div class="col" id="classcode-container">
+              <div class="input-group">
+                <input id="classcode" type="text" class="form-control" value="" readonly>
+                <button id="classcode-copy-link" class="btn btn-primary" type="button" aria-label="Einladungslink kopieren">
+                  <span class="d-inline" id="classcode-copy-text"> 
+                    <i class="fa-regular fa-copy me-1"></i> Einladungslink kopieren
+                  </span>
+                  <span class="classcode-copied-text d-none" id="classcode-copied-text">
+                    <i class="fa-solid fa-circle-check me-1"></i> Kopiert
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="form-text mb-4">
+            Um die Inhalte eurer Klasse zu sehen, müssen deine Mitschülerinnen und Mitschüler den Klassencode eingeben. Du kannst ihnen auch den Einladungslink
+            schicken.
           </div>
           
           <div class="mb-2">

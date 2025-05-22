@@ -1,7 +1,8 @@
 import {
   addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedTeamsData, joinedTeamsData, msToTime, reloadAll, SubjectData, subjectData,
   substitutionsData, TeamsData, teamsData, lessonData, timeToMs, updateAll, userDataLoaded,
-  LessonData, getCSRFToken
+  LessonData,
+  csrfToken
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
@@ -688,6 +689,41 @@ $(() => {
     () => { }
   )
   reloadAll();
+
+  const $classcodeCopyLink = $("#classcode-copy-link");
+  const $classcode = $("#classcode");
+  const $classcodeCopyText = $("#classcode-copy-text");
+  const $classcodeCopiedText = $("#classcode-copied-text");
+
+  $.get("/class/get_classcode")
+    .done(( classCode: string ) => {
+      $classcode.val(classCode);
+      $classcodeCopyLink.prop("disabled", false);
+    })
+    .fail(() => {
+      $classcode.val("Fehler beim Laden");
+      $classcodeCopyLink.prop("disabled", true);
+    });
+
+  $classcodeCopyLink.on("click", async () => {
+    const value = $classcode.val();
+
+    try {
+      await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
+
+      $classcodeCopyText.addClass("d-none");
+      $classcodeCopiedText.removeClass("d-none");
+      $classcodeCopyLink.prop("disabled", true);
+
+      setTimeout(() => {
+        $classcodeCopyText.removeClass("d-none");
+        $classcodeCopiedText.addClass("d-none");
+        $classcodeCopyLink.prop("disabled", false);
+      }, 2000);
+    } catch (err) {
+      console.error("Fehler beim Kopieren:", err);
+    }
+  });
 })
 
 $(async () => {
@@ -729,7 +765,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", upd
 
 // TEAM SELECTION
 
-$("#team-selection-save").on("click", () => {
+$("#team-selection-save").on("click", async () => {
   let newJoinedTeamsData: JoinedTeamsData = []
   $("#team-selection-list input").each(function () {
     if ($(this).prop("checked")) {
@@ -749,7 +785,7 @@ $("#team-selection-save").on("click", () => {
       data: JSON.stringify(data),
       contentType: "application/json",
       headers: {
-        "X-CSRF-Token": getCSRFToken(),
+        "X-CSRF-Token": await csrfToken(),
       },
       success: () => {
         reloadAll()
@@ -841,7 +877,7 @@ $("#teams-cancel").on("click", () => {
   $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
 })
 
-function saveTeams() {
+async function saveTeams() {
   let newTeamsData: TeamsData = []
   $(".team-name-input").each(function () {
     if ($(this).parent().parent().find("~ .btn-success").length > 0) return
@@ -862,7 +898,7 @@ function saveTeams() {
     data: JSON.stringify(data),
     contentType: "application/json",
     headers: {
-      "X-CSRF-Token": getCSRFToken(),
+      "X-CSRF-Token": await csrfToken(),
     },
     success: () => {
       reloadAll()
@@ -969,7 +1005,7 @@ $("#event-types-cancel").on("click", () => {
   $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
 })
 
-function saveEventTypes() {
+async function saveEventTypes() {
   let newEventTypesData: EventTypeData = []
   $("#event-types-list > div").each(function () {
     if ($(this).find(".btn-success").length > 0) return
@@ -991,7 +1027,7 @@ function saveEventTypes() {
     data: JSON.stringify(data),
     contentType: "application/json",
     headers: {
-      "X-CSRF-Token": getCSRFToken(),
+      "X-CSRF-Token": await csrfToken(),
     },
     success: () => {
       reloadAll()
@@ -1136,7 +1172,7 @@ $("#subjects-cancel").on("click", () => {
   $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 })
 
-function saveSubjects() {
+async function saveSubjects() {
   let newSubjectData: SubjectData = []
   $("#subjects-list > div").each(function () {
     if ($(this).find(".btn-success").length > 0) return
@@ -1182,7 +1218,7 @@ function saveSubjects() {
     data: JSON.stringify(data),
     contentType: "application/json",
     headers: {
-      "X-CSRF-Token": getCSRFToken(),
+      "X-CSRF-Token": await csrfToken(),
     },
     success: () => {
       reloadAll()
@@ -1239,7 +1275,7 @@ $("#subjects-save-confirm").on("click", saveSubjects)
 
 // TIMETABLE
 
-$("#timetable-save").on("click", () => {
+$("#timetable-save").on("click", async () => {
   let newTimetableData: LessonData = []
   $("#timetable > div").each(function (weekDay) {
     $(this).find(".timetable-lesson").each(function () {
@@ -1267,7 +1303,7 @@ $("#timetable-save").on("click", () => {
     data: JSON.stringify(data),
     contentType: "application/json",
     headers: {
-      "X-CSRF-Token": getCSRFToken(),
+      "X-CSRF-Token": await csrfToken(),
     },
     success: () => {
       reloadAll()
@@ -1299,43 +1335,3 @@ $("#timetable-save").on("click", () => {
     }
   }, 1000);
 })
-
-$(() => {
-  const $copyBtn = $("#copyBtn");
-  const $inviteInput = $("#inviteLink");
-  const $copyText = $copyBtn.find(".copy-text");
-  const $copiedText = $copyBtn.find(".copied-text");
-
-
-  $.get("/class/get_classcode")
-    .done((classCode: string ) => {
-      const inviteUrl = `${classCode}`;
-      $inviteInput.val(inviteUrl);
-      $copyBtn.prop("disabled", false);
-    })
-    .fail(() => {
-      $inviteInput.val("Fehler beim Laden");
-      $copyBtn.prop("disabled", true);
-    });
-
-  $copyBtn.on("click", async () => {
-    const value = $inviteInput.val();
-    if (typeof value !== "string") return;
-
-    try {
-      await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
-
-      $copyText.addClass("d-none");
-      $copiedText.removeClass("d-none");
-      $copyBtn.prop("disabled", true);
-
-      setTimeout(() => {
-        $copyText.removeClass("d-none");
-        $copiedText.addClass("d-none");
-        $copyBtn.prop("disabled", false);
-      }, 2000);
-    } catch (err) {
-      console.error("Fehler beim Kopieren:", err);
-    }
-  });
-});

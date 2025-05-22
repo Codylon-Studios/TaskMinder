@@ -213,14 +213,20 @@ app.get("/", (req: Request, res: Response) => {
 let pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages")
 
 app.get("/join", (req, res) => {
+  const action = req.query.action;
+
   if (req.session.account && req.session.classJoined) {
     return res.redirect(302, "/main");
   }
-  else if (!req.query.action) {
-    if (req.session.account) {
+
+  if (req.session.account && !req.session.classJoined) {
+    if (action !== "join") {
       return res.redirect(302, "/join?action=join");
     }
-    else if (req.session.classJoined) {
+  }
+
+  if (!req.session.account && req.session.classJoined) {
+    if (action !== "account") {
       return res.redirect(302, "/join?action=account");
     }
   }
