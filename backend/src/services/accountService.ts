@@ -203,7 +203,13 @@ export default {
   },
   async joinClass(classcode: string, session: Session & Partial<SessionData>) {
     if (session.classJoined) {
-      return;
+      let err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Already joined class",
+        expected: true,
+      }
+      throw err;
     }
     if (classcode == process.env.CLASSCODE) {
       session.classJoined = true;

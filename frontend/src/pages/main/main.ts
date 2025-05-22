@@ -1,7 +1,8 @@
 import { isSameDay, eventData, joinedTeamsData, createDataAccessor, homeworkData, subjectData, getHomeworkCheckStatus, runOnce, msToDisplayDate,
          substitutionsData, classSubstitutionsData, SubstitutionsData, dateToMs, lessonData, SingleEventData, updateAll, homeworkCheckedData,
          loadHomeworkData, loadHomeworkCheckedData, loadEventData, addUpdateAllFunction, socket, reloadAll,
-         msToTime, getCSRFToken } from "../../global/global.js"
+         msToTime, 
+         csrfToken} from "../../global/global.js"
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js"
 
 async function getCalendarDayHtml(date: Date, week: number, multiEventPositions: (number | null)[]) {
@@ -169,7 +170,7 @@ async function loadMonthDates(selectedDate: Date) {
   monthDates(monthDatesData)
 }
 
-function checkHomework(homeworkId: number) {
+async function checkHomework(homeworkId: number) {
   // Save whether the user has checked or unchecked the homework
   let checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
 
@@ -190,7 +191,7 @@ function checkHomework(homeworkId: number) {
       type: "POST",
       data: data,
       headers: {
-        "X-CSRF-Token": getCSRFToken(),
+        "X-CSRF-Token": await csrfToken(),
       },
       error: (xhr) => {
         if (xhr.status === 401) { // The user has to be logged in but isn't

@@ -1,6 +1,7 @@
 import { addUpdateAllFunction, dateToMs, getHomeworkCheckStatus, homeworkCheckedData, homeworkData, isSameDay, joinedTeamsData, loadHomeworkCheckedData,
          loadHomeworkData, msToDisplayDate, msToInputDate, runOnce, subjectData, teamsData, updateAll, socket, 
-         reloadAll, getCSRFToken, initCSRF} from "../../global/global.js";
+         reloadAll,
+         csrfToken} from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
 const updateHomeworkList = runOnce(async (): Promise<void> => {
@@ -176,7 +177,7 @@ function addHomework() {
 
   // Called when the user clicks the "add" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#add-homework-button").off("click").on("click", () => {
+  $("#add-homework-button").off("click").on("click", async () => {
     // Save the given information in variables
     const subject = $("#add-homework-subject").val();
     const content = $("#add-homework-content").val()?.toString().trim();
@@ -201,7 +202,7 @@ function addHomework() {
       type: "POST",
       data: data,
       headers: {
-        "X-CSRF-Token": getCSRFToken(),
+        "X-CSRF-Token": await csrfToken(),
       },
       success: () => {
         // Show a success notification and update the shown homework
@@ -262,7 +263,7 @@ async function editHomework(homeworkId: number) {
 
   // Called when the user clicks the "edit" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#edit-homework-button").off("click").on("click", () => {
+  $("#edit-homework-button").off("click").on("click", async () => {
     // Save the given information in variables>
     const subject = $("#edit-homework-subject").val();
     const content = $("#edit-homework-content").val()?.toString().trim();
@@ -287,7 +288,7 @@ async function editHomework(homeworkId: number) {
       type: "POST",
       data: data,
       headers: {
-        "X-CSRF-Token": getCSRFToken(),
+        "X-CSRF-Token": await csrfToken(),
       },
       success: () => {
         // Show a success notification and update the shown homework
@@ -334,7 +335,7 @@ function deleteHomework(homeworkId: number) {
 
   // Called when the user clicks the "confirm" button in the notification
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#delete-homework-confirm-toast-button").off("click").on("click", () => {
+  $("#delete-homework-confirm-toast-button").off("click").on("click", async () => {
     // Hide the confirmation toast
     $("#delete-homework-confirm-toast").toast("hide");
 
@@ -350,7 +351,7 @@ function deleteHomework(homeworkId: number) {
       type: "POST",
       data: data,
       headers: {
-        "X-CSRF-Token": getCSRFToken(),
+        "X-CSRF-Token": await csrfToken(),
       },
       success: () => {
         // Show a success notification and update the shown homework
@@ -386,7 +387,7 @@ function deleteHomework(homeworkId: number) {
   });
 }
 
-function checkHomework(homeworkId: number) {
+async function checkHomework(homeworkId: number) {
   // Save whether the user has checked or unchecked the homework
   let checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
 
@@ -406,7 +407,7 @@ function checkHomework(homeworkId: number) {
       type: "POST",
       data: data,
       headers: {
-        "X-CSRF-Token": getCSRFToken(),
+        "X-CSRF-Token": await csrfToken(),
       },
       error: (xhr) => {
         if (xhr.status === 401) { // The user has to be logged in but isn't

@@ -1,28 +1,6 @@
 import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
 import { user } from "../snippets/navbar/navbar.js"
 
-var csrfToken: string;
-
-export async function initCSRF() {
-  try {
-    const res = await fetch("/csrf-token");
-    if (!res.ok) {
-         console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
-    }
-    const data = await res.json();
-    csrfToken = data.csrfToken;
-  } catch (error) {
-      console.error("initCSRF: Error fetching token:", error);
-  }
-}
-
-export function getCSRFToken() {
-  if (!csrfToken) {
-    console.error("getCSRFToken: Attempted to get token before it was initialized!");
- }
-  return csrfToken;
-}
-
 export function runOnce(fn: Function): Function {
   async function wrapper(force: boolean = false, ...args: any) {
     if (wrapper.running && ! force) return;
@@ -327,9 +305,11 @@ type HomeworkData = {
 }[];
 export const homeworkData = createDataAccessor<HomeworkData>("homeworkData");
 
+// Homework checked data
 type HomeworkCheckedData = number[];
 export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>("homeworkCheckedData");
 
+// Substitutions data
 type SubstitutionPlan = {
   date: string,
   substitutions: Record<string, string>[]
@@ -342,15 +322,18 @@ export type SubstitutionsData = {
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData");
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData");
 
+// Joined teams data
 export type JoinedTeamsData = number[];
 export const joinedTeamsData = createDataAccessor<JoinedTeamsData>("joinedTeamsData");
 
+// Teams data
 export type TeamsData = {
   teamId: number,
   name: string
 }[];
 export const teamsData = createDataAccessor<TeamsData>("teamsData");
 
+// Event data
 export type SingleEventData = {
   eventId: number,
   eventTypeId: number,
@@ -364,12 +347,16 @@ export type SingleEventData = {
 type EventData = SingleEventData[];
 export const eventData = createDataAccessor<EventData>("eventData");
 
+// Event type data
 export type EventTypeData = {
   eventTypeId: number,
   name: string,
   color: string
 }[];
 export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData");
+
+// CSRF token
+export const csrfToken = createDataAccessor<string>("csrfToken");
 
 $(async () => {
   switch (location.pathname) {
@@ -429,6 +416,17 @@ $(async () => {
     childList: true,
     subtree: true
   });
+
+  try {
+    const res = await fetch("/csrf-token");
+    if (! res.ok) {
+      console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
+    }
+    const data = await res.json();
+    csrfToken(data.csrfToken);
+  } catch (error) {
+    console.error("initCSRF: Error fetching token:", error);
+  }
 });
 
 // Update everything on clicking the reload button
