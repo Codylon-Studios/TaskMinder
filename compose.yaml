@@ -1,7 +1,7 @@
 # Prometheus: 9090
 # Loki: 3100
 # Grafana: 3001
-# TaskMinder-app: 3000
+# TaskMinder-app: 3002
 # redis: redis_port.txt
 # postgres: 5432
 services:
@@ -10,7 +10,7 @@ services:
     container_name: taskminder-app
     restart: always
     ports:
-      - "3000:3000"
+      - "3002:3000"
     environment:
       - NODE_ENV=PRODUCTION
       - REDIS_HOST=redis
