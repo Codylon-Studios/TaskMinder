@@ -55,5 +55,3 @@ jobs:
 
       - name: Build Docker Compose
         run: docker compose build
-      - name: Start Docker Compose
-        run: docker compose up --build
