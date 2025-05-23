@@ -108,42 +108,38 @@ if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
         "script-src": [
           "'self'",
           "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
-          "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='"
+          "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='",
+
+          //required for mkdocs documentation
+          "'sha256-apoQPHefCNWjxbCm+HzVDOAW4CSVWhY7VylQjgOFyfk='",
+          "'sha256-DrEMJJ29sL7vIloQzly+VUGMxKcBTMII+OfW7Y8AkG4='",
+          "'sha256-10uztYJZm7OLYtHrFaYKCvTOAUfjM17+CoEWk5hLcc4='",
+          "'sha256-/8wPdzX9q0NNJXyA5lzsLojXFpkeaXVxhbfkUOQaWy8='",
+          "'sha256-/K9p2JtEqCycL2fSbEonMakkteWpAHv57x2wndLqMNo='",
+          "https://fonts.googleapis.com"
         ],
         "connect-src": [
           "'self'",
+          "https://api.github.com/repos/Codylon-Studios/TaskMinder",
           "wss://*"
         ],
         "style-src": [
           "'self'",
-          "'unsafe-inline'"
+          "'unsafe-inline'",
+          "https://fonts.googleapis.com"
         ],
         "font-src": [
           "'self'",
+          "https://fonts.gstatic.com"
         ],
         "img-src": ["'self'", "data:"],
         "object-src": ["'none'"],
         "frame-ancestors": ["'self'"]
       },
     },
-    crossOriginOpenerPolicy: {
-      policy: "same-origin"
-    },
-    crossOriginResourcePolicy: {
-      policy: "same-origin"
-    },
     referrerPolicy: {
       policy: "strict-origin-when-cross-origin"
     },
-    noSniff: true,
-    dnsPrefetchControl: {
-      allow: false
-    },
-    frameguard: {
-      action: "deny"
-    },
-    hidePoweredBy: true,
-    originAgentCluster: true,
   }));
 }
 else {
