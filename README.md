@@ -8,4 +8,4 @@
   &copy; 2025 Codylon Studios
 </p>
 
-[Notion notes](https://codylon-studios.notion.site/TaskMinder-zippdaeus-189777cc121c803ca67ed76a3e74847b)
+[Documentation](https://codylon.de/docs)

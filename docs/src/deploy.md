@@ -170,7 +170,7 @@ Don't forget to change `yourdomain.com` to your actual domain.
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx --redirect -d yourdomain.com -d www.yourdomain.com -d monitoring.yourdomain.com
+sudo certbot -d yourdomain.com -d www.yourdomain.com -d monitoring.yourdomain.com
 ```
 
 ---
@@ -223,12 +223,14 @@ Before starting the application, create the following **text files inside the `d
 | `classcode.txt`      | Custom class code required to access content.                                            |
 | `db_name.txt`        | Name of the PostgreSQL database.                                                         |
 | `db_password.txt`    | Password for the PostgreSQL database user.                                               |
+| `db_host.txt`        | Host for the database, usually postgres when running in docker.                          |
 | `db_user.txt`        | PostgreSQL database username.                                                            |
 | `dsb_activated.txt`  | Whether DSB is enabled (`true` or `false`). If `false`, the next two files can be dummy values. |
 | `dsb_password.txt`   | DSB login password.                                                                      |
 | `dsb_user.txt`       | DSB login username.                                                                      |
 | `redis_port.txt`     | Redis port (default is `6379`).                                                          |
 | `session_secret.txt` | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                   |
+| `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.    |
 
 > ⚠️ Make sure there are **no trailing newlines** in these files if your secrets are parsed line-by-line in containers.
 
