@@ -109,7 +109,7 @@ function loadSubstitutionsData() {
 async function loadClassSubstitutionsData() {
   const currentSubstitutionsData = await substitutionsData()
   if (currentSubstitutionsData === "No data") {
-    classSubstitutionsData(null);
+    classSubstitutionsData("No data");
     return
   }
 
