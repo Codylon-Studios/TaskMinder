@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="Log in or create/join a class to synchronize homework events and more with your classmates!.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskMinder</title>
+</head>
+
+<body>
+  <div class="load-snippet" data-target="navbar" data-html data-js></div>
+
+  <div class="container d-flex justify-content-center">
+    <div class="card p-4 shadow-sm mt-5 panel">
+      <div id="decide-action-panel">
+        <h2 class="text-center mb-4">Was möchtest du tun?</h2>
+        <button class="btn btn-primary w-100 fw-semibold mb-3 position-relative" id="show-login-register-btn">
+          Anmelden oder Registrieren
+          <i class="fa-solid fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none"></i>
+        </button>
+        <button class="btn btn-primary w-100 fw-semibold mb-3 position-relative" id="show-join-class-btn">
+          Klasse beitreten
+          <i class="fa-solid fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none"></i>
+        </button>
+        <button class="btn btn-primary w-100 fw-semibold" id="show-create-class-btn" disabled>
+          Klasse erstellen
+        </button>
+        <div class="form-text">Wir arbeiten gerade noch daran, TaskMinder für jeden verfügbar zu machen. Schau gerne
+          bald wieder vorbei!</div>
+      </div>
+
+      <div id="join-class-panel" class="d-none">
+        <div class="d-flex align-items-center mb-4">
+          <button class="btn-back" id="join-class-back-btn"></button>
+          <h2 class="text-center mb-0 flex-grow-1">Klasse beitreten</h2>
+        </div>
+        <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2" id="error-invalid-classcode">
+          <i class="fa-solid fa-circle-exclamation mx-1"></i>
+          <span class="d-block">
+            Der Klassencode ist ungültig!
+          </span>
+        </div>
+        <div class="mb-3">
+          <label for="join-class-classcode" class="form-label">
+            Gib den Klassencode ein
+          </label>
+          <input type="text" class="form-control" id="join-class-classcode">
+          <div class="form-text">Frag den Ersteller eurer Klasse, wenn du ihn vergessen hast</div>
+        </div>
+        <button class="btn btn-primary w-100 fw-semibold" id="join-class-btn">Beitreten</button>
+      </div>
+
+      <div id="decide-account-panel" class="d-none">
+        <div class="alert alert-success p-2 d-flex align-items-center gap-2">
+          <i class="fa-solid fa-circle-check mx-1"></i>
+          <span class="d-block">
+            Du bist der Klasse <b>10d</b> beigetreten!
+          </span>
+        </div>
+        <h2 class="text-center mb-4">Möchtest du einen Account nutzen?</h2>
+        <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-classcode-login-register-btn">Anmelden oder Registrieren</button>
+        <div class="text-center mb-3"><a href="/main">Ohne Account fortfahren</a></div>
+        <a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#decide-account-reasons">Was
+          bringt ein Account?</a>
+        <div class="collapse mt-2" id="decide-account-reasons">
+          <div class="align-items-center gap-2 d-flex">
+            <div class="fw-bold text-primary me-2">+</div>
+            <div>Möglichkeit zum Bearbeiten von Klassendaten (z.B. Hausaufgaben, Ereignisse, ...)</div>
+          </div>
+          <div class="align-items-center gap-2 d-flex">
+            <div class="fw-bold text-primary me-2">+</div>
+            <div>Synchronisation deiner Daten auf verschiedenen Geräten</div>
+          </div>
+        </div>
+      </div>
+      <div id="login-register-panel" class="d-none">
+        <!--LOGIN REGISTER CONTENT-->
+        <div class="d-none login-register-element">
+          <div class="d-flex align-items-center mb-4">
+            <button class="btn-back" id="login-register-back-btn"></button>
+            <h2 class="text-center mb-0 flex-grow-1">Anmelden oder Registrieren</h2>
+          </div>
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-register-error-invalid-username">
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block">
+              Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.
+            </span>
+          </div>
+          <label for="panel-login-register-username" class="form-label">
+            Gib deinen Benutzernamen ein
+          </label>
+          <input type="text" class="form-control login-register-username" id="panel-login-register-username">
+          <div class="form-text">Gib zum Registrieren deinen Wunschnamen ein</div>
+          <button class="btn btn-primary disabled w-100 fw-semibold mt-2 login-register-next-button" id="login-register-next-button">Weiter</button>
+        </div>
+        <!--LOGIN CONTENT-->
+        <div class="d-none login-element">
+          <div class="d-flex align-items-center mb-4">
+            <button class="btn-back login-register-back-button"></button>
+            <h2 class="text-center mb-0 flex-grow-1">Anmelden</h2>
+          </div>
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-error-invalid-password">
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block">
+              Das Passwort ist falsch!
+            </span>
+          </div>
+          <label for="panel-login-password" class="form-label">
+            Gib dein Passwort ein
+          </label>
+          <input type="password" class="form-control login-password" id="panel-login-password">
+          <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 login-element login-button" id="panel-login-button">Anmelden</button>
+        </div>
+        <!--REGISTER CONTENT-->
+        <div class="d-none register-element">
+          <div class="d-flex align-items-center mb-4">
+            <button class="btn-back login-register-back-button"></button>
+            <h2 class="text-center mb-0 flex-grow-1">Registrieren</h2>
+          </div>
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-no-matching-passwords">
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block">
+              Die Passwörter stimmen nicht überein!
+            </span>
+          </div>
+          <div class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password">
+            <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+            <span class="d-block">
+              Das Passwort ist nicht sicher!
+            </span>
+          </div>
+          <div class="mb-3">
+            <label for="panel-register-password" class="form-label">
+              Gib dein Passwort ein
+            </label>
+            <input type="password" class="form-control register-password" id="panel-register-password">
+            <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
+          </div>
+          <input type="password" class="form-control register-password-repeat">
+          <div class="form-text">Gib es noch mal ein</div>
+          <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 register-element register-button">Registrieren</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="load-snippet" data-target="footer" data-html data-js></div>
+</body>
+</html>

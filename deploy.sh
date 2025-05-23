@@ -1,29 +1,36 @@
 #!/bin/bash
 set -e
 
-# Ensure script runs as root
-if [ "$(id -u)" -ne 0 ]; then
-  echo "Switching to root user..."
-  exec sudo su -c "$0"
-fi
-
 # Configuration
-APP_DIR="/home/TaskMinder"
+APP_DIR="/opt/TaskMinder"
 REPO_URL="https://github.com/Codylon-Studios/taskminder.git"
 BRANCH="main"
 
 echo "Starting deployment process..."
 
+# Ensure running as correct user
+if [ ! -w "$APP_DIR" ]; then
+  echo "Error: No write permission to $APP_DIR. Run as a user with appropriate permissions."
+  exit 1
+fi
+
 # Navigate to application directory
-cd $APP_DIR
+cd "$APP_DIR"
 
 # Pull latest changes
 if [ -d ".git" ]; then
   echo "Git repository exists, pulling latest changes..."
-  git pull origin $BRANCH
+  git fetch origin
+  git reset --hard origin/"$BRANCH"
 else
   echo "Cloning repository..."
-  git clone -b $BRANCH $REPO_URL .
+  git clone -b "$BRANCH" "$REPO_URL" .
+fi
+
+# Check for docker-compose file
+if [ ! -f "docker-compose.yml" ]; then
+  echo "Error: docker-compose.yml not found."
+  exit 1
 fi
 
 # Build and restart Docker containers

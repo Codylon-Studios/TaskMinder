@@ -1,0 +1,100 @@
+@use "sass:color";
+@use "../../global/global" as *;
+
+#animations {
+  min-height: min-content;
+}
+
+.display-toggle {
+  @extend .btn, .btn-tertiary, .btn-sm-square, .d-inline-flex, .justify-content-center, .align-items-center;
+  span {
+    transition: transform 0.2s ease;
+  }
+  &.rotate-90 span {
+    transform: rotate(90deg);
+  }
+}
+
+#team-selection-save, #teams-save, #event-types-save, #subjects-save, #timetable-save {
+  width: 6rem;
+}
+
+.team-name-input, .team-name-new-input, .event-type-name-input, .event-type-name-new-input, .subject-name-long-input, .subject-name-long-new-input {
+  @extend .pe-2;
+}
+
+.event-type-color-input + .color-picker-trigger {
+  @extend .me-3;
+}
+
+.event-type-recolored-color-display {
+  @extend .rounded, .mx-1;
+  width: 1rem;
+  height: 1rem;
+  margin-bottom: -0.1rem;
+  display: inline-block;
+}
+
+.subject-inputs-label {
+  @extend .align-items-center;
+  width: 5%;
+
+  @include media-breakpoint-up(lg) {
+    width: 20% !important;
+  }
+
+  & a {
+    @extend .text-secondary;
+  }
+}
+
+div:has( > .subject-name-long-input) {
+  width: 50%;
+}
+
+.subject-name-short-input {
+  width: 25%;
+}
+
+div:has( > .subject-teacher-gender-input) {
+  width: 15%;
+}
+
+div:has( > .subject-teacher-long-input) {
+  width: 31.5%;
+}
+
+.subject-teacher-short-input {
+  width: 25%;
+}
+
+.subject-name-substitution-input {
+  width: 37.5%;
+}
+
+.subject-teacher-substitution-input {
+  width: 37.5%;
+}
+
+.subject-changed span {
+  @extend .text-secondary, .fw-normal;
+}
+
+.subject-changed span:not(.d-none) {
+  &::after {
+    content: ", ";
+  }
+  &:not(:has( ~ span:not(.d-none))) {
+    &::after {
+      content: ")";
+    }
+  }
+  &::before {
+    content: "(";
+  }
+  & ~ span:not(.d-none) {
+    &::before {
+      content: "";
+    }
+  }
+}

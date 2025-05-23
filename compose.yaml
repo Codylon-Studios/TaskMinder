@@ -1,47 +1,60 @@
+# Prometheus: 9090
+# Loki: 3100
+# Grafana: 3001
+# TaskMinder-app: 3000
+# redis: redis_port.txt
+# postgres: 5432
 services:
   app:
     build: .
-    container_name: taskminder
+    container_name: taskminder-app
     restart: always
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=PRODUCTION
+      - REDIS_HOST=redis
     secrets:
       - db_user
       - db_password
       - db_name
+      - db_host
       - redis_port
       - session_secret
       - classcode
       - dsb_user
       - dsb_password
+      - dsb_activated
+      - unsafe_deactivate_csp
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - .:/app
-      - /app/node_modules
+      - /usr/src/app/node_modules
+      - ./db-backups:/backups
     command: >
       sh -c "export DB_USER=$(cat /run/secrets/db_user) &&
-         export DB_PASSWORD=$(cat /run/secrets/db_password) &&
-         export DB_NAME=$(cat /run/secrets/db_name) &&
-         export DB_HOST=postgres &&
-         export REDIS_HOST=redis &&
-         export REDIS_PORT=$(cat /run/secrets/redis_port) &&
-         export SESSION_SECRET=$(cat /run/secrets/session_secret) &&
-         export CLASSCODE=$(cat /run/secrets/classcode) &&
-         export DSB_USER=$(cat /run/secrets/dsb_user) &&
-         export DSB_PASSWORD=$(cat /run/secrets/dsb_password) &&
-         redis-cli -h redis FLUSHALL &&
-         node server.js"
+             export DB_PASSWORD=$(cat /run/secrets/db_password) &&
+             export DB_NAME=$(cat /run/secrets/db_name) &&
+             export DB_HOST=$(cat /run/secrets/db_host) &&
+             export REDIS_PORT=$(cat /run/secrets/redis_port) &&
+             export SESSION_SECRET=$(cat /run/secrets/session_secret) &&
+             export CLASSCODE=$(cat /run/secrets/classcode) &&
+             export DSB_USER=$(cat /run/secrets/dsb_user) &&
+             export DSB_PASSWORD=$(cat /run/secrets/dsb_password) &&
+             export DSB_ACTIVATED=$(cat /run/secrets/dsb_activated) &&
+             export UNSAFE_DEACTIVATE_CSP=$(cat /run/secrets/unsafe_deactivate_csp) &&
+             redis-cli -h redis FLUSHALL &&
+             node backend/dist/server.js"
+
   postgres:
     image: postgres:14
     container_name: taskminder-postgres
+    restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $(cat /run/secrets/db_user) -d $(cat /run/secrets/db_name)"]
+      test: ["CMD-SHELL", "pg_isready -U $$(cat /run/secrets/db_user) -d $$(cat /run/secrets/db_name)"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -51,15 +64,16 @@ services:
       - db_password
       - db_name
     environment:
-      - POSTGRES_USER_FILE=/run/secrets/db_user
-      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
-      - POSTGRES_DB_FILE=/run/secrets/db_name
+      POSTGRES_USER_FILE: /run/secrets/db_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB_FILE: /run/secrets/db_name
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./db-backups:/backups
+
   redis:
     image: redis:6
     container_name: taskminder-redis
+    restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 1s
@@ -68,6 +82,66 @@ services:
     volumes:
       - redis-data:/data
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    depends_on:
+      - app
+
+  loki:
+    image: grafana/loki:3.4 # temp because errors: https://github.com/grafana/loki/issues/17371
+    container_name: loki
+    restart: always
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: always
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail-positions:/tmp
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/ 
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+    environment:
+      # TODO: This is the password and user at server startup, grafana will prompt to change this -> still change to docker secrets
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    depends_on:
+      - prometheus
+      - loki
+
 secrets:
   db_user:
     file: ./docker_secrets/db_user.txt
@@ -75,6 +149,8 @@ secrets:
     file: ./docker_secrets/db_password.txt
   db_name:
     file: ./docker_secrets/db_name.txt
+  db_host:
+    file: ./docker_secrets/db_host.txt
   redis_port:
     file: ./docker_secrets/redis_port.txt
   session_secret:
@@ -85,7 +161,15 @@ secrets:
     file: ./docker_secrets/dsb_user.txt
   dsb_password:
     file: ./docker_secrets/dsb_password.txt
-  
+  dsb_activated:
+    file: ./docker_secrets/dsb_activated.txt
+  unsafe_deactivate_csp:
+    file: ./docker_secrets/unsafe_deactivate_csp.txt
+
 volumes:
   postgres-data:
   redis-data:
+  prometheus-data:
+  loki-data:
+  promtail-positions:
+  grafana-data:

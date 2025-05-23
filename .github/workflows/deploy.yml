@@ -1,4 +1,8 @@
-name: CI/CD Pipeline
+name: "CI test for main"
+
+permissions:
+  contents: read
+  pull-requests: read
 
 on:
   push:
@@ -11,28 +15,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-        - uses: actions/checkout@v4
-        - name: Use Node.js
-          uses: actions/setup-node@v4
-          with:
-            node-version: '20'
-            cache: 'npm'
-        - run: npm ci
-        - run: npm run build --if-present
-        - run: npm test
+      - uses: actions/checkout@v4
 
-        - name: Build Docker Compose
-          run: docker compose build
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-#        - name: Set up SSH key
-#          uses: webfactory/ssh-agent@v0.7.0
-#          with:
-#            ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-#        - name: Add server to known hosts
-#          run: |
-#            mkdir -p ~/.ssh
-#            ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+      - run: npm ci
+      - run: npm run build:fe
+      - run: npm run build:be
 
-#        - name: Execute deployment script on remote server
-#          run: |
-#            ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} 'bash -s' < ./deploy.sh
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+    
+      - name: Install MkDocs and MkDocs Material
+        run: pip install mkdocs mkdocs-material
+    
+      - run: npm run build:docs
+      - run: npm test
+
+      - name: Write secrets to files for Docker Compose
+        run: |
+          mkdir -p docker_secrets
+          echo "${{ secrets.CLASSCODE }}" > docker_secrets/classcode.txt
+          echo "${{ secrets.DB_HOST }}" > docker_secrets/db_host.txt
+          echo "${{ secrets.DB_NAME }}" > docker_secrets/db_name.txt
+          echo "${{ secrets.DB_PASSWORD }}" > docker_secrets/db_password.txt
+          echo "${{ secrets.DB_USER }}" > docker_secrets/db_user.txt
+          echo "${{ secrets.DSB_ACTIVATED }}" > docker_secrets/dsb_activated.txt
+          echo "${{ secrets.DSB_PASSWORD }}" > docker_secrets/dsb_password.txt
+          echo "${{ secrets.DSB_USER }}" > docker_secrets/dsb_user.txt
+          echo "${{ secrets.REDIS_PORT }}" > docker_secrets/redis_port.txt
+          echo "${{ secrets.SESSION_SECRET }}" > docker_secrets/session_secret.txt
+          echo "${{ secrets.UNSAFE_DEACTIVATE_CSP }}" > docker_secrets/unsafe_deactivate_csp.txt
+
+      - name: Build Docker Compose
+        run: docker compose build
