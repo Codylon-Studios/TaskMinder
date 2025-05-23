@@ -1,6 +1,7 @@
 import { addUpdateAllFunction, dateToMs, eventData, eventTypeData, isSameDay, joinedTeamsData, loadEventData, msToDisplayDate, msToInputDate, runOnce,
          teamsData, updateAll, socket, 
-         reloadAll} from "../../global/global.js";
+         reloadAll, 
+         csrfToken} from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
 const updateEventList = runOnce(async (): Promise<void> => {
@@ -27,7 +28,6 @@ const updateEventList = runOnce(async (): Promise<void> => {
     }
 
     // Filter by type
-    console.log("Frage")
     if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
       continue;
     }
@@ -179,7 +179,7 @@ function addEvent() {
 
   // Called when the user clicks the "add" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#add-event-button").off("click").on("click", () => {
+  $("#add-event-button").off("click").on("click", async () => {
     // Save the given information in variables
     const eventTypeId = $("#add-event-type").val();
     const name = $("#add-event-name").val()?.toString().trim();
@@ -207,6 +207,9 @@ function addEvent() {
       url : "/events/add_event",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": await csrfToken(),
+      },
       success: () => {
         // Show a success notification and update the shown events
         $("#add-event-success-toast").toast("show");
@@ -269,13 +272,13 @@ async function editEvent(eventId: number) {
 
   // Called when the user clicks the "edit" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#edit-event-button").off("click").on("click", () => {
+  $("#edit-event-button").off("click").on("click", async () => {
     // Save the given information in variables
     const eventTypeId = $("#edit-event-type").val();
     const name = $("#edit-event-name").val();
     const description = $("#edit-event-description").val();
     const startDate = $("#edit-event-start-date").val()?.toString() ?? "";
-    const lesson = $("#edit-event-lesson").val()?.toString().trim();
+    const lesson = $("#edit-event-lesson").val()?.toString().trim() ?? null;
     const endDate = $("#edit-event-end-date").val()?.toString() ?? "";
     const team = $("#edit-event-team").val();
 
@@ -296,7 +299,11 @@ async function editEvent(eventId: number) {
     $.ajax({
       url : "/events/edit_event",
       type: "POST",
-      data: data,
+      contentType: "application/json",
+      data: JSON.stringify(data),
+      headers: {
+        "X-CSRF-Token": await csrfToken(),
+      },
       success: () => {
         // Show a success notification and update the shown events
         $("#edit-event-success-toast").toast("show");
@@ -342,7 +349,7 @@ function deleteEvent(eventId: number) {
 
   // Called when the user clicks the "confirm" button in the notification
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#delete-event-confirm-toast-button").off("click").on("click", () => {
+  $("#delete-event-confirm-toast-button").off("click").on("click", async () => {
     // Hide the confirmation toast
     $("#delete-event-confirm-toast").toast("hide");
 
@@ -357,6 +364,9 @@ function deleteEvent(eventId: number) {
       url : "/events/delete_event",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": await csrfToken(),
+      },
       success: () => {
         // Show a success notification and update the shown events
         $("#delete-event-success-toast").toast("show");

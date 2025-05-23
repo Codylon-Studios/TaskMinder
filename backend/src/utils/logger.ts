@@ -295,7 +295,7 @@ namespace logger {
     const prefixColors: {[key in PrefixType]: { color?: keyof typeof logger.colors, background?: keyof typeof logger.colors}} = {
       info: {color: "cyan"},
       success: {color: "green"},
-      warn: {color: "cyan"},
+      warn: {color: "yellow"},
       error: {color: "red"},
       highlightError: {background: "red"},
       highlight: {background: "blue"},

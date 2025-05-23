@@ -1,7 +1,8 @@
 import { isSameDay, eventData, joinedTeamsData, createDataAccessor, homeworkData, subjectData, getHomeworkCheckStatus, runOnce, msToDisplayDate,
-         substitutionsData, classSubstitutionsData, SubstitutionsData, dateToMs, timetableData, SingleEventData, updateAll, homeworkCheckedData,
-         loadHomeworkData, loadHomeworkCheckedData, loadEventData, addUpdateAllFunction, socket, 
-         reloadAll} from "../../global/global.js"
+         substitutionsData, classSubstitutionsData, SubstitutionsData, dateToMs, lessonData, SingleEventData, updateAll, homeworkCheckedData,
+         loadHomeworkData, loadHomeworkCheckedData, loadEventData, addUpdateAllFunction, socket, reloadAll,
+         msToTime, 
+         csrfToken} from "../../global/global.js"
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js"
 
 async function getCalendarDayHtml(date: Date, week: number, multiEventPositions: (number | null)[]) {
@@ -169,7 +170,7 @@ async function loadMonthDates(selectedDate: Date) {
   monthDates(monthDatesData)
 }
 
-function checkHomework(homeworkId: number) {
+async function checkHomework(homeworkId: number) {
   // Save whether the user has checked or unchecked the homework
   let checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
 
@@ -189,6 +190,9 @@ function checkHomework(homeworkId: number) {
       url : "/homework/check",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": await csrfToken(),
+      },
       error: (xhr) => {
         if (xhr.status === 401) { // The user has to be logged in but isn't
           // Show an error notification
@@ -518,89 +522,74 @@ const updateTimetable = runOnce(async (): Promise<void> => {
     }
   }
 
-  const currentTimetableData = await timetableData()
-  if (currentTimetableData[selectedDate.getDay() - 1] === undefined) {
+  const currentJoinedTeamsData = await joinedTeamsData()
+  const currentSubjectData = await subjectData()
+  let currentLessonData = await lessonData()
+  
+  if (currentLessonData[selectedDate.getDay() - 1] === undefined) {
     return
   }
-  const currentSubjectData = await subjectData()
-  for (let [timetableEntryId, timetableEntry] of currentTimetableData[selectedDate.getDay() - 1].entries()) {
-    async function addLesson(lessonData: { subjectId: number, room: string}) {
-      let subject = currentSubjectData.find(s => s.subjectId == lessonData.subjectId)
-      if (! subject) return
-      let lesson: LessonData = {};
-      lesson.subjectShort = subject.subjectNameShort;
-      lesson.subjectLong = subject.subjectNameLong;
-      lesson.substitutionSubjectName = subject.subjectNameSubstitution;
-      lesson.room = lessonData.room;
-      lesson.teacher = ((subject.teacherGender == "w") ? "Frau " : "") + ((subject.teacherGender == "m") ? "Herr " : "") + subject.teacherNameLong;
-      lesson.substitutionTeacherName = subject.teacherNameSubstitution || [ subject.teacherNameShort ];
+  currentLessonData = currentLessonData.filter(l => l.weekDay == selectedDate.getDay() - 1)
 
-      lessons.push(lesson);
-    }
-    let startTime = timetableEntry.start;
-    let endTime = timetableEntry.end;
-    type LessonData = {
-      subjectShort?: string,
-      subjectLong?: string,
-      substitutionSubjectName?: string[] | null,
-      room?: string,
-      teacher?: string,
-      substitutionTeacherName?: string[] | null
-    }
-    // This is a list in case the user hasn't selected a team or there are rotating subjects
-    let lessons: LessonData[] = []
+  type ProcessedLesson = {
+    lessonNumber: number;
+    subjectNameLong: string;
+    subjectNameShort: string;
+    subjectNameSubstitution: string[] | null;
+    teacherName: string;
+    teacherNameSubstitution: string[] | null;
+    room: string;
+    startTime: number;
+    endTime: number;
+  }
 
-    if (timetableEntry.lessonType == "break") {
-      continue;
-    }
-    else if (timetableEntry.lessonType == "teamed") {
-      let foundLesson = false;
-      for (let team of timetableEntry.teams) {
-        if (! (await joinedTeamsData()).includes(Number(team.teamId))) {
-          continue;
-        }
+  let processedLessonData: ProcessedLesson[] = []
+  for (let lesson of currentLessonData) {
+    let subject = currentSubjectData.find(s => s.subjectId == lesson.subjectId)
+    if (! subject || ! (currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId == -1)) continue
+    processedLessonData.push({
+      lessonNumber: lesson.lessonNumber,
+      subjectNameLong: subject.subjectNameLong,
+      subjectNameShort: subject.subjectNameShort,
+      subjectNameSubstitution: subject.subjectNameSubstitution,
+      teacherName: ((subject.teacherGender == "w") ? "Frau " : "") + ((subject.teacherGender == "m") ? "Herr " : "") + subject.teacherNameLong,
+      teacherNameSubstitution: subject.teacherNameSubstitution,
+      room: lesson.room,
+      startTime: lesson.startTime,
+      endTime: lesson.endTime
+    })
+  }
 
-        foundLesson = true;
+  type GroupedLessonData = {
+    lessonNumber: number,
+    startTime: number,
+    endTime: number,
+    lessons: ProcessedLesson[]
+  }[]
 
-        if (team.subjectId == -1) {
-          continue;
-        }
-
-        await addLesson(team);
-      }
-      if (! foundLesson) {
-        for (let team of timetableEntry.teams) {
-          if (team.subjectId == -1) {
-            lessons.push({ subjectShort: "-", subjectLong: "-", room: "-", teacher: "-"});
-            continue;
-          }
-  
-          await addLesson(team);
-        }
-      }
-    }
-    else if (timetableEntry.lessonType == "rotating") {
-      for (let variant of timetableEntry.variants) {
-        if (variant.subjectId == -1) {
-          continue;
-        }
-
-        await addLesson(variant);
-      }
+  let groupedLessonData: GroupedLessonData = []
+  for (let lesson of processedLessonData) {
+    let group = groupedLessonData.find(l => l.lessonNumber == lesson.lessonNumber)
+    if (group) {
+      group.lessons.push(lesson)
     }
     else {
-      await addLesson(timetableEntry);
+      groupedLessonData.push({
+        lessonNumber: lesson.lessonNumber,
+        startTime: lesson.startTime,
+        endTime: lesson.endTime,
+        lessons: [ lesson ]
+      })
     }
-
-    if (lessons.length == 0) {
-      continue;
-    }
-
+  }
+  groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber)
+  
+  for (let lessonGroup of groupedLessonData) {
     let templateModeLess = `
       <div class="card">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
           <span class="text-center timetable-less-subject">
-            ${lessons.map((lessonData) => {return `<span class="original">${lessonData.subjectShort}</span>`}).join(" / ")}
+            ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${lessonData.subjectNameShort}</span>`}).join(" / ")}
           </span>
         </div>
       </div>`;
@@ -610,18 +599,18 @@ const updateTimetable = runOnce(async (): Promise<void> => {
     let templateModeMore = `
       <div class="card">
         <div class="card-body pt-4 text-center">
-          <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start">${startTime}</div>
-          <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end">${endTime}</div>
+          <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start">${msToTime(lessonGroup.startTime)}</div>
+          <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end">${msToTime(lessonGroup.endTime)}</div>
           <div class="d-flex align-items-center justify-content-center flex-column">
             <span class="fw-semibold text-center timetable-more-subject">
-              ${lessons.map((lessonData) => {return `<span class="original">${lessonData.subjectLong}</span>`}).join(" / ")}
+              ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${lessonData.subjectNameLong}</span>`}).join(" / ")}
             </span>
             <span>
               <span class="text-center timetable-more-room">
-              ${lessons.map((lessonData) => {return `<span class="original">${lessonData.room}</span>`}).join(" / ")}
+              ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${lessonData.room}</span>`}).join(" / ")}
               </span>,
               <span class="text-center timetable-more-teacher">
-              ${lessons.map((lessonData) => {return `<span class="original">${lessonData.teacher}</span>`}).join(" / ")}
+              ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${lessonData.teacherName}</span>`}).join(" / ")}
               </span>
             </span>
           </div>
@@ -632,29 +621,28 @@ const updateTimetable = runOnce(async (): Promise<void> => {
     let thisMoreLesson = $(templateModeMore)
 
     if (substitutionPlanId != 0) {
-      for (let [lessonId, lesson] of lessons.entries()) {
-        function matchesLessonId(substitution: Record<string, string>, lessonId: number) {
+      for (let [lessonId, lesson] of lessonGroup.lessons.entries()) {
+        function matchesLessonNumber(substitution: Record<string, string>, lessonNumber: number) {
           if (substitution.lesson.includes("-")) {
             substitution.lesson = substitution.lesson.replace(" ", "")
             let start = parseInt(substitution.lesson.split("-")[0])
             let end = parseInt(substitution.lesson.split("-")[1])
-            if (start > lessonId + 1 || lessonId + 1 > end) {
+            if (start > lessonNumber || lessonNumber > end) {
               return false;
             }
           }
-          else if (Number(substitution.lesson) != lessonId + 1) {
+          else if (parseInt(substitution.lesson) != lessonNumber) {
             return false;
           }
           return true;
         }
-        function matchesTeacher(substitution: Record<string, string>, lesson: LessonData) {
-          return (lesson.substitutionTeacherName ?? []).includes(substitution.teacherOld);
+        function matchesTeacher(substitution: Record<string, string>, lesson: ProcessedLesson) {
+          return (lesson.teacherNameSubstitution ?? []).includes(substitution.teacherOld);
         }
 
-        const currentClassSubstitutionsData = await classSubstitutionsData()
         if (currentClassSubstitutionsData !== "No data") {
           for (let substitution of (currentClassSubstitutionsData)["plan" + substitutionPlanId as "plan1" | "plan2"].substitutions) {
-            if (! matchesLessonId(substitution, timetableEntryId)) {
+            if (! matchesLessonNumber(substitution, lessonGroup.lessonNumber)) {
               continue;
             }
             if (! matchesTeacher(substitution, lesson)) {
@@ -683,7 +671,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
             // Subject
             let lessSubjectElement = thisLessLesson.find(".timetable-less-subject .original").eq(lessonId)
             let moreSubjectElement = thisMoreLesson.find(".timetable-more-subject .original").eq(lessonId)
-            if ((lesson.substitutionSubjectName ?? []).includes(substitution.subject)) {
+            if (! (lesson.subjectNameSubstitution ?? []).includes(substitution.subject)) {
               moreSubjectElement.addClass("line-through-" + color)
               lessSubjectElement.addClass("line-through-" + color)
               if (substitution.subject != "-") {
@@ -707,7 +695,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
     
             // Teacher
             let teacherElement = thisMoreLesson.find(".timetable-more-teacher .original").eq(lessonId)
-            if (! (lesson.substitutionTeacherName ?? []).includes(substitution.teacher)) {
+            if (! (lesson.subjectNameSubstitution ?? []).includes(substitution.teacher)) {
               teacherElement.addClass("line-through-" + color)
               if (substitution.teacher != "-") {
                 teacherElement.after(` <span class="text-${color} fw-bold">${substitution.teacher}</span>`)
@@ -727,11 +715,11 @@ const updateTimetable = runOnce(async (): Promise<void> => {
           event.lesson = event.lesson.replace(" ", "")
           let start = parseInt(event.lesson.split("-")[0])
           let end = parseInt(event.lesson.split("-")[1])
-          if (start > lessonId + 1 || lessonId + 1 > end) {
+          if (start > lessonId || lessonId > end) {
             return false;
           }
         }
-        else if (Number(event.lesson) != lessonId + 1) {
+        else if (Number(event.lesson) != lessonId) {
           return false;
         }
         return true;
@@ -747,7 +735,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       if (! isSameDay(new Date(event.startDate), selectedDate)) {
         continue;
       }
-      if (! matchesLessonId(event, timetableEntryId)) {
+      if (! matchesLessonId(event, lessonGroup.lessonNumber)) {
         continue;
       }
 
@@ -788,7 +776,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
 
       if (lastLessonHtml == thisLessonHtml) {
         lastMoreLesson.addClass("wide")
-        lastMoreLesson.find(".card-body div:nth-child(2)").html(endTime)
+        lastMoreLesson.find(".card-body div:nth-child(2)").html(msToTime(lessonGroup.endTime))
       }
       else {
         $("#timetable-more").append(thisMoreLesson);

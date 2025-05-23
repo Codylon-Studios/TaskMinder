@@ -1,7 +1,7 @@
-import { updateAll, userDataLoaded } from "../../global/global.js"
+import { csrfToken, updateAll, userDataLoaded } from "../../global/global.js"
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
-function registerAccount(username: string, password: string) {
+async function registerAccount(username: string, password: string) {
   let data = {
       username: username,
       password: password
@@ -12,6 +12,9 @@ function registerAccount(username: string, password: string) {
     url: "/account/register",
     type: "POST",
     data: data,
+    headers: {
+      "X-CSRF-Token": await csrfToken(),
+    },
     success: () => {
       $("#register-success-toast .username").text(username);
       $("#register-success-toast").toast("show");
@@ -40,7 +43,7 @@ function registerAccount(username: string, password: string) {
 }
 
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
-function loginAccount(username: string, password: string) {
+async function loginAccount(username: string, password: string) {
   let data = {
       username: username,
       password: password
@@ -51,6 +54,9 @@ function loginAccount(username: string, password: string) {
     url: "/account/login",
     type: "POST",
     data: data,
+    headers: {
+      "X-CSRF-Token": await csrfToken(),
+    },
     success: () => {
       $("#login-success-toast .username").text(username);
       $("#login-success-toast").toast("show");
@@ -83,12 +89,15 @@ function loginAccount(username: string, password: string) {
 };
 
 //LOGOUT -- LOGOUT -- LOGOUT
-function logoutAccount() {
+async function logoutAccount() {
   let hasResponded = false;
 
   $.ajax({
     url: "/account/logout",
     type: "POST",
+    headers: {
+      "X-CSRF-Token": await csrfToken(),
+    },
     success: () => {
       $("#logout-success-toast").toast("show");
       user.trigger("logout");
@@ -117,11 +126,14 @@ function checkExistingUsername(username: string) {
   let data = { username: username };
   let hasResponded = false;
 
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     $.ajax({
       url: "/account/checkusername",
       type: "POST",
       data: data,
+      headers: {
+        "X-CSRF-Token": await csrfToken(),
+      },
       success: (res) => {
         resolve(res);
       },
@@ -229,7 +241,7 @@ user.on("logout", () => {
   user.username = null;
 });
 
-if (location.pathname != "/join/") {
+if (! ["/join/", "/join"].includes(location.pathname)) {
   user.on("login", () => {
     $("#login-register-button").addClass("d-none");
     $("#logout-button").removeClass("d-none");

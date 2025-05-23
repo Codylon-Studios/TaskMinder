@@ -1,4 +1,4 @@
-import { addUpdateAllFunction, reloadAll } from "../../global/global.js"
+import { addUpdateAllFunction, csrfToken, reloadAll } from "../../global/global.js"
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js"
 
 $("#show-join-class-btn").on("click", () => {
@@ -79,6 +79,9 @@ $("#join-class-btn").on("click", async () => {
     url: "/account/join",
     type: "POST",
     data: data,
+    headers: {
+      "X-CSRF-Token": await csrfToken(),
+    },
     success: () => {
       $("#join-class-panel").addClass("d-none")
       $("#decide-account-panel").removeClass("d-none")
