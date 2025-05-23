@@ -30,6 +30,7 @@
         <div class="form-text mb-4">
           Aktiviert / deaktiviert Animationen in der App wie zum Beispiel beim Kalender.
         </div>
+
         <div class="d-flex align-items-center mb-2">
 					<label class="me-3" for="color-theme">Farbthema</label>
 					<div class="btn-group" id="color-theme">
@@ -46,39 +47,20 @@
         <div class="form-text mb-4">
           Bestimmt das Farbthema der App. Bei Automatisch folgt das Farbthema dem deines Geräts.
         </div>
-        <hr></hr>
-        <div>
-					<a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#credits">
-						Credits anzeigen
-					</a>
-					
-					<div class="collapse mt-2" id="credits">
-            Das Impressum finden sie <a href="/about#impressum">hier</a>.
-						<ul class="list-unstyled mb-2">
-							<li><b>Codylon Studios</b></li>
-							<li>Mingqi Li</li>
-							<li>Fabian Leonardi</li>
-						</ul>
-						<p class="mb-1">
-							<i class="fas fa-balance-scale me-2"></i>
-							Dieses Projekt steht unter einer  
-							<a href="https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE" target="_blank" class="text-primary">eigenen Lizenz</a>.
-						</p>
-						<p class="mb-1">
-							<i class="far fa-copyright me-2"></i>
-							Copyright © 2025 Codylon-Studios
-						</p>
-						<p class="mb-0">
-							<i class="fab fa-github me-2"></i>
-							GitHub: 
-							<a href="https://github.com/Codylon-Studios/TaskMinder" target="_blank" class="text-primary">Codylon-Studios/TaskMinder</a>
-						</p>
+
+        <div class="d-flex align-items-center mb-2">
+					<label class="me-3" for="display-footer">Fußzeile</label>
+					<div class="form-check form-switch fs-5 mb-0" id="display-footer">
+						<input class="form-check-input mt-0" type="checkbox">
 					</div>
 				</div>
+        <div class="form-text mb-4">
+          Zeigt / Versteckt die Fußzeile, in der rechtliche Hinweise und ähnliches sind. Die Links finden sich auch unter "Über TaskMinder".
+        </div>
       </div>
       <div class="tab-pane fade" id="nav-settings-student">
         <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
-          <i class="fa-solid fa-circle-xmark  mx-1"></i>
+          <i class="fa-solid fa-circle-xmark mx-1"></i>
           <div>
             <div class="d-block">
               Für diese Einstellungen musst du einer Klasse beigetreten sein.
@@ -138,9 +120,35 @@
             </div>
           </div>
 
+          <div class="row align-items-center mb-2">
+            <div class="col-auto">
+              <label for="classcode-container" class="col-form-label mb-0">Euer Klassencode</label>
+            </div>
+            <div class="col" id="classcode-container">
+              <div class="input-group">
+                <input id="classcode" type="text" class="form-control" value="" readonly>
+                <button id="classcode-copy-link" class="btn btn-primary" type="button" aria-label="Einladungslink kopieren">
+                  <span class="d-inline" id="classcode-copy-text"> 
+                    <i class="fa-regular fa-copy me-1"></i> Einladungslink kopieren
+                  </span>
+                  <span class="classcode-copied-text d-none" id="classcode-copied-text">
+                    <i class="fa-solid fa-circle-check me-1"></i> Kopiert
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="form-text mb-4">
+            Um die Inhalte eurer Klasse zu sehen, müssen deine Mitschülerinnen und Mitschüler den Klassencode eingeben. Du kannst ihnen auch den Einladungslink
+            schicken.
+          </div>
+          
           <div class="mb-2">
-            <h5 class="mb-2" for="teams-list">Teams</h5>
-            <div class="mb-2" id="teams-list">
+            <h5 class="mb-2">
+              <span class="display-toggle" id="teams-toggle"><span class="fa fa-caret-right"></span></span>
+              Teams
+            </h5>
+            <div class="mb-2 d-none" id="teams-list">
               <!--Gets filled-->
             </div>
             <button class="btn btn-secondary btn-sm fw-semibold" id="teams-cancel">Abbrechen</button>
@@ -159,8 +167,11 @@
           </div>
 
           <div class="mb-2">
-            <h5 class="mb-2" for="event-types-list">Ereignisarten</h5>
-            <div class="mb-2" id="event-types-list">
+            <h5 class="mb-2">
+              <span class="display-toggle" id="event-types-toggle"><span class="fa fa-caret-right"></span></span>
+              Ereignisarten
+            </h5>
+            <div class="mb-2 d-none" id="event-types-list">
               <!--Gets filled-->
             </div>
             <button class="btn btn-secondary btn-sm fw-semibold" id="event-types-cancel">Abbrechen</button>
@@ -179,8 +190,11 @@
           </div>
 
           <div class="mb-2">
-            <h5 class="mb-2" for="subjects-list">Fächer</h5>
-            <div class="mb-2" id="subjects-list">
+            <h5 class="mb-2">
+              <span class="display-toggle" id="subjects-toggle"><span class="fa fa-caret-right"></span></span>
+              Fächer
+            </h5>
+            <div class="mb-2 d-none" id="subjects-list">
               <!--Gets filled-->
             </div>
             <button class="btn btn-secondary btn-sm fw-semibold" id="subjects-cancel">Abbrechen</button>
@@ -200,21 +214,28 @@
             Vertretungen anhand den Angaben in der Zeile "Vertretung" gefiltert. Wenn nichts angegeben ist, ist der gefilterte Fachname der Lange und der
             gefilterte Lehrername der Kurze. Mehrere Möglichkeiten können durch "," getrennt werden.
           </div>
+
           <div class="mb-2">
-            <h5 class="mb-2" id="timetable">Stundenplan</h5>
-          </div>
-          <div class="form-text mb-2">
-            Hier kann man den Stundenplan anpassen. Lade eine Datei im passenden Format (.json) hoch, um den Stundenplan zu importieren. Der Aufbau der Datei ist <a href="/docs">hier</a> beschrieben. Bitte stell sicher, dass die Datei korrekt formatiert ist.
-          </div>
-          <form action="/timetable/set_timetable_data" method="post" enctype="multipart/form-data" class="mb-2">
-            <div class="mb-2">
-              <input class="form-control" type="file" id="timetable" name="timetable" accept=".json">
+            <h5 class="mb-2">
+              <span class="display-toggle" id="timetable-toggle"><span class="fa fa-caret-right"></span></span>
+              Stundenplan
+            </h5>
+            <div class="mb-2 d-none row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 p-2" id="timetable">
+              <!--Gets filled-->
             </div>
-            <button type="submit" class="btn btn-primary">Hochladen</button>
-          </form>
+            <button class="btn btn-secondary btn-sm fw-semibold" id="timetable-cancel">Abbrechen</button>
+            <button class="btn btn-primary btn-sm fw-semibold" id="timetable-save">Speichern</button>
+          </div>
+          <div class="form-text mb-4">
+            Der Stundenplan besteht aus mehreren Stunden. Der Stundenplan wird auf der Hauptseite angezeigt. Jede Stunde hat eine Stundennummer, Ereignisse
+            und Vertretungen von DSBmobile können sich auf diese beziehen und werden dann passend angezeigt. Wenn ein Team ausgewählt ist, wird Mitgliedern des
+            Teams diese Unterrichtsstunde angezeigt. Wenn es je nach Team oder wöchentlich verschiedene Fächer in einer Stunde gibt, sollte einfach die
+            Stundennummer gleich sein, dann werden alle Optionen angezeigt.
+          </div>
         </div>
       </div>
     </div>
   </div>
+  <div class="load-snippet" data-target="footer" data-html data-js></div>
 </body>
 </html>

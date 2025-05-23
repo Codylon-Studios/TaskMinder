@@ -12,6 +12,8 @@ $navbar-top-offset: 70px;
 $fa-font-path: "/vendor/fontawesome/fonts";
 @import "../vendor/fontawesome/scss/fontawesome";
 @import "../vendor/fontawesome/scss/solid";
+@import "../vendor/fontawesome/scss/regular";
+@import "../vendor/fontawesome/scss/brands";
 
 @font-face {
   font-family: "Quicksand";
@@ -37,7 +39,7 @@ $tertiary-active-dark: rgba(white, 0.16);
 
 body {
   font-family: "Quicksand", Arial, Helvetica, sans-serif;
-  padding: $navbar-top-offset 0;
+  padding: $navbar-top-offset 0 $navbar-top-offset 0;
   font-weight: 500;
 
   --btn-color: #212529;
@@ -142,4 +144,14 @@ body {
 
 .nav-tabs .nav-link {
   color: var(--bsnav-link-color);
+}
+
+.link-subtle {
+  color: #cccccc;
+  text-decoration: none;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #ffffff;
+  }
 }

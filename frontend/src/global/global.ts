@@ -23,6 +23,7 @@ export function msToDisplayDate(ms: number | string): string {
 }
 
 export function msToInputDate(ms: number | string): string {
+  if (ms == "") return ""
   const num = typeof ms === "string" ? Number(ms) : ms;
   const date = new Date(num);
   const day = String(date.getDate()).padStart(2, "0");
@@ -31,7 +32,7 @@ export function msToInputDate(ms: number | string): string {
   return `${year}-${month}-${day}`;
 }
 
-export function dateToMs(dateStr: string): number | undefined {
+export function dateToMs(dateStr: string): number | null {
   if (dateStr.includes("-")) {
     let [year, month, day] = dateStr.split("-").map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
@@ -42,6 +43,16 @@ export function dateToMs(dateStr: string): number | undefined {
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.getTime();
   }
+  return null
+}
+
+export function timeToMs(timeStr: string): number {
+  let time = timeStr.split(":").map(v => parseInt(v))
+  return (time[0] * 60 + time[1]) * 60 * 1000
+}
+
+export function msToTime(ms: number): string {
+  return `${Math.trunc(ms / 1000 / 60 / 60).toString().padStart(2, "0")}:${(ms / 1000 / 60 % 60).toString().padStart(2, "0")}`
 }
 
 export function isSameDay(date1: Date, date2: Date): boolean {
@@ -62,9 +73,9 @@ function loadSubjectData() {
   });
 }
 
-function loadTimetableData() {
-  $.get("/timetable/get_timetable_data", (data) => {
-    timetableData(data);
+function loadLessonData() {
+  $.get("/lessons/get_lesson_data", (data) => {
+    lessonData(data);
   });
 }
 
@@ -166,7 +177,7 @@ export const reloadAll = (): Promise<void> => {
   return new Promise((resolve) => {(async (resolve) => {
     if (updateAllFunctions.length != 0) {
       if (requiredData.includes("subjectData")) {subjectData(null); loadSubjectData()}
-      if (requiredData.includes("timetableData")) {timetableData(null); loadTimetableData()}
+      if (requiredData.includes("lessonData")) {lessonData(null); loadLessonData()}
       if (requiredData.includes("homeworkData")) {homeworkData(null); loadHomeworkData()}
       if (requiredData.includes("homeworkCheckedData")) {homeworkCheckedData(null); loadHomeworkCheckedData()}
       if (requiredData.includes("substitutionsData")) {substitutionsData(null); loadSubstitutionsData()}
@@ -233,11 +244,21 @@ export const socket: Socket = io();
 document.head.appendChild(themeColor);
 
 // DATA
+type DataAccessorEventName = "update"
+type DataAccessorEventCallback = (...args: any[]) => void
 export function createDataAccessor<T>(name: string) {
   const eventName = `dataLoaded:${name}`
-
   let data: T | null = null;
-  return async (value?: T | null): Promise<T> => {
+  let _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>
+
+  const accessor = async (value?: T | null): Promise<T> => {
+    if (value !== undefined) {
+      accessor.set(value)
+    }
+    return accessor.get()
+  }
+
+  accessor.get = () => {
     async function getNotNullValue(): Promise<T> {
       if (data == null) {
         await new Promise((resolve) => {
@@ -247,14 +268,30 @@ export function createDataAccessor<T>(name: string) {
       }
       return data
     }
-    if (value !== undefined) {
-      data = value;
-      if (value !== null) {
-        $(window).trigger(eventName);
-      }
-    }
     return getNotNullValue()
-  };
+  }
+
+  accessor.set = (value: any) => {
+    data = value;
+    if (value !== null) {
+      $(window).trigger(eventName);
+    }
+    accessor.trigger("update")
+  }
+
+  accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback) => {
+    _eventListeners[event] ??= []
+    _eventListeners[event].push(callback)
+  }
+
+  accessor.trigger = (event: DataAccessorEventName, ...args: any[]) => {
+    const callbacks = _eventListeners[event];
+    if (callbacks) {
+      callbacks.forEach(cb => cb(...args));
+    }
+  }
+
+  return accessor
 }
 
 // Subject Data
@@ -271,18 +308,17 @@ export type SubjectData = {
 export const subjectData = createDataAccessor<SubjectData>("subjectData");
 
 // Timetable data
-type TimetableLessonData = (
-  | { lessonType: "normal", subjectId: number, room: string }
-  | { lessonType: "break" }
-  | { lessonType: "teamed", teams: { teamId: number, subjectId: number, room: string }[] }
-  | { lessonType: "rotating", variants: { subjectId: number, room: string }[] }
-) & {
-  start: string,
-  end: string
-}
-type TimetableDayData = TimetableLessonData[]
-type TimetableData = [ TimetableDayData, TimetableDayData, TimetableDayData, TimetableDayData, TimetableDayData]
-export const timetableData = createDataAccessor<TimetableData>("timetableData");
+export type LessonData = {
+  lessonId: number,
+  lessonNumber: number,
+  weekDay: 0 | 1 | 2 | 3 | 4,
+  teamId: number,
+  subjectId: number,
+  room: string,
+  startTime: number,
+  endTime: number
+}[]
+export const lessonData = createDataAccessor<LessonData>("lessonData");
 
 // Homework data
 type HomeworkData = {
@@ -295,9 +331,11 @@ type HomeworkData = {
 }[];
 export const homeworkData = createDataAccessor<HomeworkData>("homeworkData");
 
+// Homework checked data
 type HomeworkCheckedData = number[];
 export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>("homeworkCheckedData");
 
+// Substitutions data
 type SubstitutionPlan = {
   date: string,
   substitutions: Record<string, string>[]
@@ -310,15 +348,18 @@ export type SubstitutionsData = {
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData");
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData");
 
+// Joined teams data
 export type JoinedTeamsData = number[];
 export const joinedTeamsData = createDataAccessor<JoinedTeamsData>("joinedTeamsData");
 
+// Teams data
 export type TeamsData = {
   teamId: number,
   name: string
 }[];
 export const teamsData = createDataAccessor<TeamsData>("teamsData");
 
+// Event data
 export type SingleEventData = {
   eventId: number,
   eventTypeId: number,
@@ -332,12 +373,16 @@ export type SingleEventData = {
 type EventData = SingleEventData[];
 export const eventData = createDataAccessor<EventData>("eventData");
 
+// Event type data
 export type EventTypeData = {
   eventTypeId: number,
   name: string,
   color: string
 }[];
 export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData");
+
+// CSRF token
+export const csrfToken = createDataAccessor<string>("csrfToken");
 
 $(async () => {
   switch (location.pathname) {
@@ -361,7 +406,7 @@ $(async () => {
     case "/main": case "/main/":
       requiredData = [
         "subjectData",
-        "timetableData",
+        "lessonData",
         "homeworkData",
         "homeworkCheckedData",
         "substitutionsData",
@@ -397,6 +442,17 @@ $(async () => {
     childList: true,
     subtree: true
   });
+
+  try {
+    const res = await fetch("/csrf-token");
+    if (! res.ok) {
+      console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
+    }
+    const data = await res.json();
+    csrfToken(data.csrfToken);
+  } catch (error) {
+    console.error("initCSRF: Error fetching token:", error);
+  }
 });
 
 // Update everything on clicking the reload button
@@ -411,7 +467,8 @@ $(window).on("userDataLoaded", () => {
       "joinedTeamsData",
       "eventTypeData",
       "subjectData",
-      "substitutionsData",
+      "lessonData",
+      "substitutionsData"
     ]
     reloadAll();
   }
@@ -427,17 +484,6 @@ $(window).on("userDataLoaded", () => {
     afterFirstEvent = true
   });
 });
-
-if (user.classJoined && ["/settings", "/settings/"].includes(location.pathname)) {
-  requiredData = [
-    "teamsData",
-    "joinedTeamsData",
-    "eventTypeData",
-    "subjectData",
-    "substitutionsData",
-  ]
-  reloadAll();
-}
 
 // Change btn group selections to vertical / horizontal
 const smallScreenQuery = window.matchMedia("(max-width: 575px)");
@@ -461,20 +507,19 @@ else {
     document.body.setAttribute("data-bs-theme", "dark");
 }})()
 
-if (location.pathname != "/settings/") {
+if (! ["/settings/", "/settings"].includes(location.pathname)) {
   let colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
 
   if (colorThemeSetting == "auto") {
-    function updateColorTheme() {
-      let colorTheme
+    async function updateColorTheme() {
       if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        colorTheme = "dark"
+        colorTheme("dark")
       }
       else {
-        colorTheme = "light"
+        colorTheme("light")
       }
     
-      if (colorTheme == "light") {
+      if (await colorTheme() == "light") {
         document.getElementsByTagName("html")[0].style.background = "#ffffff";
         document.body.setAttribute("data-bs-theme", "light");
         $(`meta[name="theme-color"]`).attr("content", "#f8f9fa")

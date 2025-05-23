@@ -5,7 +5,17 @@
   min-height: min-content;
 }
 
-#team-selection-save, #teams-save, #event-types-save, #subjects-save {
+.display-toggle {
+  @extend .btn, .btn-tertiary, .btn-sm-square, .d-inline-flex, .justify-content-center, .align-items-center;
+  span {
+    transition: transform 0.2s ease;
+  }
+  &.rotate-90 span {
+    transform: rotate(90deg);
+  }
+}
+
+#team-selection-save, #teams-save, #event-types-save, #subjects-save, #timetable-save {
   width: 6rem;
 }
 

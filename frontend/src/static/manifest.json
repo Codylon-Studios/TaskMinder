@@ -4,7 +4,7 @@
   "display": "standalone",
   "icons": [
     {
-      "src": "/assets/TaskMinderAppIcon1024.png",
+      "src": "/assets/app-icon.png",
       "sizes": "1024x1024"
     }
   ],

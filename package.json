@@ -14,7 +14,7 @@
     "build:fe:scss": "sass frontend/src:frontend/dist",
     "build:fe:tsc": "tsc -p frontend",
     "build:fe:copy": "node copyFiles.js frontend/src frontend/dist",
-    "build:prepare": "npm run build:docs && npm run build:be && npm run build:fe && npm run build:server",
+    "build:prepare": "npm run build:docs && npm run build:be && npm run build:fe",
     "build": "npm run build:prepare && npm run build:server",
     "dev:server": "nodemon backend/dist/server.js --watch backend/dist",
     "dev:docs": "chokidar 'docs/src/**/*' -c 'source venv/bin/activate && mkdocs build --config-file=docs/mkdocs.yml'",

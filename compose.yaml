@@ -13,17 +13,19 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=PRODUCTION
-      - DB_HOST=postgres
       - REDIS_HOST=redis
     secrets:
       - db_user
       - db_password
       - db_name
+      - db_host
       - redis_port
       - session_secret
       - classcode
       - dsb_user
       - dsb_password
+      - dsb_activated
+      - unsafe_deactivate_csp
     depends_on:
       postgres:
         condition: service_healthy
@@ -36,11 +38,14 @@ services:
       sh -c "export DB_USER=$(cat /run/secrets/db_user) &&
              export DB_PASSWORD=$(cat /run/secrets/db_password) &&
              export DB_NAME=$(cat /run/secrets/db_name) &&
+             export DB_HOST=$(cat /run/secrets/db_host) &&
              export REDIS_PORT=$(cat /run/secrets/redis_port) &&
              export SESSION_SECRET=$(cat /run/secrets/session_secret) &&
              export CLASSCODE=$(cat /run/secrets/classcode) &&
              export DSB_USER=$(cat /run/secrets/dsb_user) &&
              export DSB_PASSWORD=$(cat /run/secrets/dsb_password) &&
+             export DSB_ACTIVATED=$(cat /run/secrets/dsb_activated) &&
+             export UNSAFE_DEACTIVATE_CSP=$(cat /run/secrets/unsafe_deactivate_csp) &&
              redis-cli -h redis FLUSHALL &&
              node backend/dist/server.js"
 
@@ -144,6 +149,8 @@ secrets:
     file: ./docker_secrets/db_password.txt
   db_name:
     file: ./docker_secrets/db_name.txt
+  db_host:
+    file: ./docker_secrets/db_host.txt
   redis_port:
     file: ./docker_secrets/redis_port.txt
   session_secret:
@@ -154,6 +161,10 @@ secrets:
     file: ./docker_secrets/dsb_user.txt
   dsb_password:
     file: ./docker_secrets/dsb_password.txt
+  dsb_activated:
+    file: ./docker_secrets/dsb_activated.txt
+  unsafe_deactivate_csp:
+    file: ./docker_secrets/unsafe_deactivate_csp.txt
 
 volumes:
   postgres-data:
