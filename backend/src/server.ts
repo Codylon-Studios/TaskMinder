@@ -198,6 +198,9 @@ app.use(csrfProtection);
 app.use(RequestLogger);
 app.use("/docs", express.static(path.join(__dirname, "..", "..", "docs", "dist")));
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ message: "service operational" });
+});
 
 app.get('/metrics', async (req: Request, res: Response) => {
   res.set('Content-Type', register.contentType);
