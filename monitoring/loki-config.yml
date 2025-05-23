@@ -1,0 +1,47 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+ingester:
+  chunk_idle_period: 3m           # flush chunks with no new logs after 3 minutes
+  max_chunk_age: 1h               # force flush any chunk older than 1 hour
+  chunk_retain_period: 30s        # hold flushed chunks in memory briefly (for late-arriving logs)
+  chunk_target_size: 1048576      # target 1MB per chunk
+
+limits_config:
+  retention_period: 72h           # store logs for 3 days
+  max_streams_per_user: 50000     # avoid stream explosion
+  max_entries_limit_per_query: 10000
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+ruler:
+  alertmanager_url: http://localhost:9093

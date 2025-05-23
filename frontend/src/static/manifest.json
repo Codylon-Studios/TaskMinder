@@ -1,0 +1,15 @@
+{
+  "categories": ["education", "productivity"],
+  "description": "Synchronize homework events and more with your classmates!",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "/assets/app-icon.png",
+      "sizes": "1024x1024"
+    }
+  ],
+  "name": "TaskMinder",
+  "orientation": "any",
+  "start_url": "/",
+  "theme-color": "#3bb9ca"
+}
