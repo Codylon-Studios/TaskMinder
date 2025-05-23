@@ -39,4 +39,5 @@ All changes are grouped by type and the latest version appears first.
 ### Removed
 
 * Previous license replaced with updated terms (see LICENSE file).
+
 ---
