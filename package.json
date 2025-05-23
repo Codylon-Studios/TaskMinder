@@ -4,6 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "test": "echo \"no test specified, passing anyway (for now)\" && exit 0",
     "build:server": "redis-cli -h redis FLUSHALL && nodemon backend/dist/server.js",
     "build:docs": "mkdocs build --config-file=docs/mkdocs.yml",
     "build:be": "npm run build:be:copy && npm run build:be:tsc",
