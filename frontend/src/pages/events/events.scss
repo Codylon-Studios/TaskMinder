@@ -1,2 +1,7 @@
 @use "sass:color";
 @use "../../global/global" as *;
+
+.event-description {
+  overflow: hidden;
+  white-space: pre-wrap;
+}

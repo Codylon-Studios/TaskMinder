@@ -61,7 +61,7 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
       `<div class="mb-1 form-check d-flex">
         <label class="form-check-label">
           <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkId}" ${(checked) ? "checked" : ""}>
-          <b>${subject}</b> ${content}
+          <b>${subject}</b> ${(/\n/.test(content) ? "<br>" : "") + content.replace(/\n/g, "<br>")}
           <span class="ms-4 d-block">Von ${assignmentDate} bis ${submissionDate}</span>
         </label>
         <div class="homework-edit-options ms-2 ${(editEnabled) ? "" : "d-none"}">
@@ -251,6 +251,7 @@ async function editHomework(homeworkId: number) {
   // Set the inputs on the already saved information
   $("#edit-homework-subject").val(homework.subjectId);
   $("#edit-homework-content").val(homework.content);
+  $("#edit-homework-content").css({ height: `${Math.min((homework.content.match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
   $("#edit-homework-date-assignment").val(msToInputDate(homework.assignmentDate));
   $("#edit-homework-date-submission").val(msToInputDate(homework.submissionDate));
   $("#edit-homework-team").val(homework.teamId);
@@ -580,6 +581,11 @@ $(function(){
     }
   })
 
+  $("#add-homework-content").css({ height: "38px" })
+  $("#add-homework-content").on("input", function () {
+    $(this).css({ height: `${Math.min((($(this).val() ?? "").toString().match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
+  })
+
   // On changing any information in the edit homework modal, disable the edit button if any information is empty
   $(".edit-homework-input").on("input", () => {
     const subject = $("#edit-homework-subject").val();
@@ -593,6 +599,11 @@ $(function(){
     else {
       $("#edit-homework-button").removeClass("disabled");
     }
+  })
+
+  $("#edit-homework-content").css({ height: "38px" })
+  $("#edit-homework-content").on("input", function () {
+    $(this).css({ height: `${Math.min((($(this).val() ?? "").toString().match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
   })
 
   // Don't close the dropdown when the user clicked inside of it

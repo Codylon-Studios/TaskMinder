@@ -92,7 +92,6 @@ const subjectService = {
     }
 
     const data = await Subject.findAll({ raw: true });
-    await redisClient.set("subject_data", JSON.stringify(data), { EX: cacheExpiration });
 
     try {
       await redisClient.set("subject_data", JSON.stringify(data), { EX: cacheExpiration });

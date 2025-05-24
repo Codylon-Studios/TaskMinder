@@ -24,7 +24,7 @@
         <label class="btn btn-outline-secondary position-relative" for="filter-toggle">
           <i class="fa-solid fa-filter"></i>
           Filtern
-          <span class="position-absolute top-0 start-100 translate-middle p-2 bg-primary border border-light border-1 rounded-circle" id="filter-changed"></span>
+          <span class="d-none filter-info-circle" id="filter-changed"></span>
         </label>
       </div>
       <div id="filter-content" class="d-flex align-items-center flex-column flex-md-row gap-2 d-contents d-none">
@@ -105,7 +105,7 @@
               <label for="add-event-description" class="form-label">
                 Füge eine Beschreibung für das Ereignis hinzu (optional)
               </label>
-              <input type="text" class="form-control add-event-input" id="add-event-description" placeholder='zum Beispiel "Kreativschulaufgabe"'>
+              <textarea type="text" class="form-control add-event-input" id="add-event-description" placeholder='zum Beispiel abgefragter Stoff'></textarea>
             </div>
 
             <div class="mb-3">
@@ -178,7 +178,7 @@
               <label for="edit-event-description" class="form-label">
                 Füge eine Beschreibung für das Ereignis hinzu (optional)
               </label>
-              <input type="text" class="form-control edit-event-input" id="edit-event-description" placeholder='zum Beispiel "Kreativschulaufgabe"'>
+              <textarea type="text" class="form-control edit-event-input" id="edit-event-description" placeholder='zum Beispiel abgefragter Stoff'></textarea>
             </div>
 
             <div class="mb-3">
