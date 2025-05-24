@@ -134,7 +134,6 @@ cd TaskMinder
 
 ## 4. Configure NGINX
 
-### Modify and copy your NGINX config file
 Modify the ngnix.config to replace codylon.de with your actual domain.
 
 ```bash
@@ -144,38 +143,26 @@ or
 ```bash
 nano nginx.config
 ```
-Then copy/paste the file:
+Then copy/paste the file, get the SSL certificates and activate/start the nginx config
 ```bash
+sudo apt install -y certbot python3-certbot-nginx
+# 
 sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
-```
 
-### Enable the NGINX site
+# 1. Get certificates first - Don't forget to change `yourdomain.com` to your actual domain.
+sudo certbot -d yourdomain.com -d www.yourdomain.com -d monitoring.yourdomain.com
 
-```bash
+# 2. Deploy your complete config
+sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
+
+# 3. Enable and activate
 sudo ln -s /etc/nginx/sites-available/taskminder /etc/nginx/sites-enabled/
-```
-
-### Test and restart NGINX
-
-```bash
 sudo nginx -t
 sudo systemctl restart nginx
 ```
-
 ---
 
-## 5. Secure with Let's Encrypt (SSL)
-
-Don't forget to change `yourdomain.com` to your actual domain.
-
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot -d yourdomain.com -d www.yourdomain.com -d monitoring.yourdomain.com
-```
-
----
-
-## 6. Set Up Non-Root User
+## 5. Set Up Non-Root User
 
 Running as root means a compromised container could gain full system access. It is highly recommended to run the server as a non-root user (least privilege). We’ll use the name `ubuntu` for this guide, but you may choose another name.
 
@@ -195,6 +182,8 @@ Give the user access to the project folder:
 
 ```bash
 sudo chown -R ubuntu:ubuntu /opt/TaskMinder
+# Set correct ownership for the Docker container (node user)
+sudo chown -R 1000:1000 ./db-backups
 ```
 
 Log out and reconnect as the `ubuntu` user:
@@ -206,7 +195,7 @@ ssh ubuntu@<your-ip-address>
 
 ---
 
-## 7. Add Docker Secrets
+## 6. Add Docker Secrets
 
 Navigate back to the TaskMinder folder and create directories for secrets and backups:
 
@@ -242,7 +231,7 @@ Navigate to the project root and build/start the containers:
 
 ```bash
 cd /opt/TaskMinder
-sudo docker compose up -d --build
+docker compose up -d --build
 ```
 
 ---
