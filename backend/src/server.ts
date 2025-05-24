@@ -15,7 +15,7 @@ import socketIO from "./config/socket";
 import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
-import { createDBBackup } from "./utils/backupTable";
+import { createDBBackupStreaming } from "./utils/backupTable";
 import cleanupOldHomework from "./utils/homeworkCleanup";
 import { csrfProtection, csrfSessionInit } from "./utils/csrfProtection";
 import logger from "./utils/logger";
@@ -86,7 +86,7 @@ if (!sessionSecret) {
 }
 
 const app = express();
-
+app.set('trust proxy', 1);
 const server = createServer(app);
 const io = socketIO.initialize(server);
 
@@ -284,7 +284,7 @@ cron.schedule("0 0 * * *", () => {
 // Schedule PostgreSQL backup every hour every day
 cron.schedule("0 * * * *", () => {
   logger.info("Starting hourly PostgreSQL backup");
-  createDBBackup();
+  createDBBackupStreaming();
 });
 
 server.listen(3000, () => {
