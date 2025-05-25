@@ -67,13 +67,13 @@ export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolea
   return (await homeworkCheckedData() ?? []).includes(homeworkId)
 }
 
-function loadSubjectData() {
+export function loadSubjectData() {
   $.get("/subjects/get_subject_data", (data) => {
     subjectData(data);
   });
 }
 
-function loadLessonData() {
+export function loadLessonData() {
   $.get("/lessons/get_lesson_data", (data) => {
     lessonData(data);
   });
@@ -121,7 +121,7 @@ async function loadClassSubstitutionsData() {
   classSubstitutionsData(data);
 }
 
-async function loadJoinedTeamsData() {
+export async function loadJoinedTeamsData() {
   await userDataLoaded();
 
   if (user.loggedIn) {
@@ -134,7 +134,7 @@ async function loadJoinedTeamsData() {
   }
 }
 
-function loadTeamsData() {
+export function loadTeamsData() {
   $.get("/teams/get_teams_data", (data) => {
     teamsData(data);
   });
@@ -146,7 +146,7 @@ export function loadEventData() {
   });
 }
 
-function loadEventTypeData() {
+export function loadEventTypeData() {
   $.get("/events/get_event_type_data", (data) => {
     eventTypeData(data);
   });

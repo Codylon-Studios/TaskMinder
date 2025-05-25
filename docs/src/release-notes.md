@@ -15,6 +15,7 @@ All changes are grouped by type and the latest version appears first.
   * User permission details.
   * Switched the order of NGINX and Certbot setup.
 * `trust proxy` enabled for Express Rate Limit compatibility ([source](https://express-rate-limit.mintlify.app/guides/troubleshooting-proxy-issues)).
+* HTML escaping
 
 ### Changed
 

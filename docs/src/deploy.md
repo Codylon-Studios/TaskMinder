@@ -32,13 +32,13 @@ Go to your domain registrar’s DNS management page (e.g., Namecheap, GoDaddy, C
 | A        | @        | `203.0.113.42` | Automatic / 3600 |
 | A        | www      | `203.0.113.42` | Automatic / 3600 |
 
-> This assumes you're using `yourdomain.com` and want `www.yourdomain.com` to also work.
+> This assumes you're using `example.com` and want `www.example.com` to also work.
 
-We also use a subdomain for monitoring (`monitoring.yourdomain.com`) and a subdomain for a status page.
+We also use a subdomain for monitoring (`monitoring.example.com`) and a subdomain for a status page.
 
 We use [https://betterstack.com/](https://betterstack.com/) as it offers custom subdomains for the status page, but you may choose another provider. After setting up the status page, follow BetterStack’s instructions to configure the CNAME record.
 
-For the monitoring page (`monitoring.yourdomain.com`), add the following record:
+For the monitoring page (`monitoring.example.com`), add the following record:
 
 | **Type** | **Name**   | **Value**      |
 | -------- | ---------- | -------------- |
@@ -149,8 +149,8 @@ sudo apt install -y certbot python3-certbot-nginx
 # 
 sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
 
-# 1. Get certificates first - Don't forget to change `yourdomain.com` to your actual domain.
-sudo certbot -d yourdomain.com -d www.yourdomain.com -d monitoring.yourdomain.com
+# 1. Get certificates first - Don't forget to change `example.com` to your actual domain.
+sudo certbot -d example.com -d www.example.com -d monitoring.example.com
 
 # 2. Deploy your complete config
 sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
@@ -240,16 +240,16 @@ docker compose up -d --build
 
 Your TaskMinder server should now be running at:
 
-* **[https://yourdomain.com](https://yourdomain.com)**
-* **[https://www.yourdomain.com](https://www.yourdomain.com)**
-* **[https://monitoring.yourdomain.com](https://monitoring.yourdomain.com)**
+* **[https://example.com](https://example.com)**
+* **[https://www.example.com](https://www.example.com)**
+* **[https://monitoring.example.com](https://monitoring.example.com)**
 
 ---
 
 ## 10. What's Next?
 
 * Create an account to add your subjects, teams, and timetable.
-* Visit [https://monitoring.yourdomain.com](https://monitoring.yourdomain.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
+* Visit [https://monitoring.example.com](https://monitoring.example.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
 
 ---
 
