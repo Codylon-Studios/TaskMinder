@@ -1,12 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-import { spawn, SpawnOptionsWithoutStdio } from "child_process";
 import fs from "fs";
 import path from "path";
 import logger from "./logger";
+import zlib from "node:zlib";
 
-const dbHost = 'taskminder-postgres';
-const dbPort = '5432';
+const DB_HOST = process.env.DB_HOST;
+const DB_PORT = '5432';
 const DB_USER = process.env.DB_USER;
 const DB_NAME = process.env.DB_NAME;
 const DB_PASSWORD = process.env.DB_PASSWORD;
@@ -14,123 +14,100 @@ const BACKUP_DIR = "/backups";
 const MAX_BACKUPS = 48;
 const IS_PRODUCTION = process.env.NODE_ENV === "PRODUCTION";
 
-function runSpawn(command: string, args: string[], logPrefix: string, options?: SpawnOptionsWithoutStdio): Promise<{ stdout: string; stderr: string }> {
-    return new Promise((resolve, reject) => {
-        const spawnOptions: SpawnOptionsWithoutStdio = {
-            shell: false,
-            ...options,
-            env: {
-                ...(globalThis.process?.env || {}),
-                ...(options?.env || {}),
-            }
-        };
-
-
-        const process = spawn(command, args, spawnOptions);
-
-        let stdoutData = '';
-        let stderrData = '';
-
-        process.stdout?.on('data', (data) => {
-            const strData = data.toString();
-            stdoutData += strData;
-        });
-
-        process.stderr?.on('data', (data) => {
-            const strData = data.toString();
-            stderrData += strData;
-             logger.info(`${logPrefix} stderr: ${strData.trim()}`);
-        });
-
-        process.on('error', (error) => {
-            logger.error(`${logPrefix}: Spawn error: ${error.message}`);
-            reject(error);
-        });
-
-        process.on('close', (code) => {
-            if (code !== 0) {
-                const errorMsg = `${logPrefix}: Process exited with non-zero code ${code}. Stderr: ${stderrData || 'N/A'}. Stdout: ${stdoutData || 'N/A'}`;
-                logger.error(errorMsg);
-                reject(new Error(errorMsg));
-            } else {
-                 if (stderrData) {
-                    logger.info(`${logPrefix}: Process stderr on success: ${stderrData.trim()}`);
-                 }
-                resolve({ stdout: stdoutData, stderr: stderrData });
-            }
-        });
-    });
+interface FileData {
+    file: string;
+    path: string;
+    size: string;
+    created: string;
+    timestamp: number;
 }
 
-export function createDBBackup(): Promise<string | null> {
+
+export function createDBBackupStreaming(): Promise<string | null> {
     return new Promise((resolve, reject) => {
         if (!IS_PRODUCTION) {
             logger.info("Skipping backup - not in production environment");
             resolve(null);
             return;
         }
-
-        if (!DB_PASSWORD || !DB_USER || !DB_NAME) {
-             logger.error("Backup failed: Missing required environment variables (DB_PASSWORD, DB_USER, DB_NAME)");
+        
+        if (!DB_PASSWORD || !DB_USER || !DB_NAME || !DB_HOST) {
+             logger.error("Backup failed: Missing required environment variables");
              return reject(new Error("Missing required environment variables for backup"));
         }
-
+        
         try {
             if (!fs.existsSync(BACKUP_DIR)) {
-                logger.info(`Backup directory ${BACKUP_DIR} does not exist. Creating...`);
                 fs.mkdirSync(BACKUP_DIR, { recursive: true });
             }
         } catch (dirErr: any) {
-             logger.error(`Failed to create backup directory ${BACKUP_DIR}: ${dirErr.message}`);
              return reject(new Error(`Failed to ensure backup directory exists: ${dirErr.message}`));
         }
-
+        
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        const backupFileName = `backup_${timestamp}.sql`;
+        const backupFileName = `backup_${timestamp}.sql.gz`;
         const finalBackupFilePath = path.join(BACKUP_DIR, backupFileName);
-
-        logger.info(`Creating backup: Running pg_dump directly`);
-        logger.info(`Backup file will be saved to: ${finalBackupFilePath}`);
-
+        
+        logger.info(`Creating streaming compressed backup to: ${finalBackupFilePath}`);
+        
         const pgDumpCommand = 'pg_dump';
         const pgDumpArgs = [
-          '-h', dbHost,
-          '-p', dbPort,
+          '-h', DB_HOST,
+          '-p', DB_PORT,
           '-U', DB_USER,
           '-d', DB_NAME,
-          '-f', finalBackupFilePath,
           '--no-password', 
-          '--format=custom',
-          '--blobs' 
+          '--format=plain',
+          '--blobs'
         ];
-
-        const spawnOptions: SpawnOptionsWithoutStdio = {
-            env: { PGPASSWORD: DB_PASSWORD }
-        };
-
-        runSpawn(pgDumpCommand, pgDumpArgs, '[Backup pg_dump]', spawnOptions)
-            .then(({ stderr }) => {
-                logger.info(`pg_dump process completed. Output file: ${finalBackupFilePath}`);
-                 if (stderr && !/dump complete/.test(stderr.toLowerCase())) {
-                     logger.warn(`pg_dump stderr might indicate non-critical issues: ${stderr.trim()}`);
-                 }
-                return cleanOldBackups();
-            })
-            .then(() => resolve(finalBackupFilePath))
-            .catch(err => {
-                logger.error("Error during backup process:", err.message);
-                 if (fs.existsSync(finalBackupFilePath)) {
-                    logger.info(`Attempting to clean up potentially incomplete backup file: ${finalBackupFilePath}`);
-                    fs.unlink(finalBackupFilePath, (unlinkErr) => {
-                        if (unlinkErr) {
-                            logger.warn(`Failed to delete incomplete backup file ${finalBackupFilePath}: ${unlinkErr.message}`);
-                        } else {
-                            logger.info(`Deleted incomplete backup file: ${finalBackupFilePath}`);
-                        }
-                    });
-                 }
-                reject(err);
-            });
+        
+        const { spawn } = require('child_process');
+        const pgDump = spawn(pgDumpCommand, pgDumpArgs, {
+            env: { ...process.env, PGPASSWORD: DB_PASSWORD }
+        });
+        
+        const writeStream = fs.createWriteStream(finalBackupFilePath);
+        const gzipStream = zlib.createGzip({ level: zlib.constants.Z_BEST_COMPRESSION });
+        
+        pgDump.stdout.pipe(gzipStream).pipe(writeStream);
+        
+        let stderrData = '';
+        pgDump.stderr.on('data', (data: Buffer) => {
+            stderrData += data.toString();
+        });
+        
+        pgDump.on('close', async (code: number | null) => {
+            if (code !== 0) {
+                logger.error(`pg_dump process exited with code ${code}: ${stderrData}`);
+                if (fs.existsSync(finalBackupFilePath)) {
+                    fs.unlinkSync(finalBackupFilePath);
+                }
+                return reject(new Error(`pg_dump failed with code ${code}`));
+            }
+            
+            if (stderrData && !/dump complete/.test(stderrData.toLowerCase())) {
+                logger.warn(`pg_dump stderr: ${stderrData.trim()}`);
+            }
+            
+            const stats = fs.statSync(finalBackupFilePath);
+            logger.info(`Streaming compressed backup completed. Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+            
+            try {
+                await cleanOldBackups();
+                resolve(finalBackupFilePath);
+            } catch (cleanupErr) {
+                logger.warn(`Backup created but cleanup failed: ${cleanupErr}`);
+                resolve(finalBackupFilePath);
+            }
+        });
+        
+        pgDump.on('error', (err: Error) => {
+            logger.error(`pg_dump process error: ${err.message}`);
+            if (fs.existsSync(finalBackupFilePath)) {
+                fs.unlinkSync(finalBackupFilePath);
+            }
+            reject(err);
+        });
     });
 }
 
@@ -159,7 +136,7 @@ export function cleanOldBackups(): Promise<void> {
 
             try {
                 const sqlFiles = files
-                    .filter(file => (file.endsWith(".sql") || file.endsWith(".backup")) && file.startsWith("backup_"))
+                    .filter(file => (file.endsWith(".sql") || file.endsWith(".backup") || file.endsWith(".sql.gz")) && file.startsWith("backup_"))
                     .map(file => {
                         const filePath = path.join(backupDirPath, file);
                         try {
@@ -205,71 +182,6 @@ export function cleanOldBackups(): Promise<void> {
     });
 }
 
-
-export function restoreDBFromBackup(backupFilePathOnHost: string): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-        if (!backupFilePathOnHost) {
-            return reject(new Error("No backup file specified"));
-        }
-
-        if (!IS_PRODUCTION) {
-             logger.warn("Skipping restore - not in production environment");
-             return reject(new Error("Restore skipped in non-production environment"));
-        }
-
-        if (!DB_PASSWORD || !DB_USER || !DB_NAME) {
-             logger.error("Restore failed: Missing required environment variables (DB_PASSWORD, DB_USER, DB_NAME)");
-             return reject(new Error("Missing required environment variables for restore"));
-        }
-
-        if (!fs.existsSync(backupFilePathOnHost)) {
-            logger.error(`Restore failed: Backup file not found at ${backupFilePathOnHost} (inside taskminder container)`);
-            return reject(new Error(`Backup file not found: ${backupFilePathOnHost}`));
-        }
-
-        logger.info(`Restoring database from ${backupFilePathOnHost}`);
-        logger.info(`Executing pg_restore directly, connecting to ${dbHost}:${dbPort}`);
-
-        const restoreCommand = 'pg_restore';
-        const restoreArgs = [
-          '-h', dbHost,
-          '-p', dbPort,
-          '-U', DB_USER,
-          '-d', DB_NAME,
-          '--no-password',
-          '--clean', 
-          '--if-exists', 
-          '--exit-on-error',
-          backupFilePathOnHost
-        ];
-
-        const spawnOptions: SpawnOptionsWithoutStdio = {
-            env: { PGPASSWORD: DB_PASSWORD }
-        };
-        runSpawn(restoreCommand, restoreArgs, '[Restore pg_restore/psql]', spawnOptions)
-            .then(({ stderr }) => {
-                // Restore tools often write progress/status to stderr
-                logger.info("Database restore command completed successfully.");
-                if (stderr) {
-                     logger.info(`Restore output (stderr): ${stderr.trim()}`);
-                }
-                resolve(true);
-            })
-            .catch(err => {
-                 logger.error("Error during database restore process:", err.message);
-                 reject(err);
-            });
-    });
-}
-
-interface FileData {
-    file: string;
-    path: string;
-    size: string;
-    created: string;
-    timestamp: number;
-}
-
 export function listAvailableBackups(): Promise<FileData[]> {
      return new Promise<FileData[]>((resolve, reject) => {
         const backupDirPath = BACKUP_DIR;
@@ -289,7 +201,7 @@ export function listAvailableBackups(): Promise<FileData[]> {
 
             try {
                 const backups: FileData[] = files
-                    .filter(file => (file.endsWith(".sql") || file.endsWith(".backup")) && file.startsWith("backup_"))
+                    .filter(file => (file.endsWith(".sql") || file.endsWith(".backup") || file.endsWith(".sql.gz")) && file.startsWith("backup_"))
                     .map((file) => {
                         const filePath = path.join(backupDirPath, file);
                          try {
@@ -321,8 +233,7 @@ export function listAvailableBackups(): Promise<FileData[]> {
 }
 
 export default {
-    createDBBackup,
+    createDBBackupStreaming,
     cleanOldBackups,
-    restoreDBFromBackup,
     listAvailableBackups
 };

@@ -55,13 +55,13 @@ const updateEventList = runOnce(async (): Promise<void> => {
 
     // The template for an event with edit options
     let template = 
-      `<div class="col p-2">
+      $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column me-3">
-              <span class="fw-bold event-${eventTypeId}">${name}</span>
-              <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${lesson}. Stunde)` : ""}</b>
-              <span>${description}</span>
+              <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
+              <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b>
+              <span class="event-description">${$.formatHtml(description ?? "")}</span>
             </div>
             <div class="event-edit-options ${(editEnabled) ? "" : "d-none"} position-absolute end-0 top-0 m-2">
               <button class="btn btn-sm btn-tertiary event-edit" data-id="${eventId}">
@@ -73,10 +73,25 @@ const updateEventList = runOnce(async (): Promise<void> => {
             </div>
           </div>
         </div>
-      </div>`;
+      </div>`);
 
     // Add this event to the list
     $("#event-list").append(template);
+
+    if ((template.find(".event-description").height() ?? 0) >= 120) {
+      template.find(".event-description").css({ maxHeight: "96px" }).after($(
+        `<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`
+      ).on("click", function () {
+        if ($(this).text() == "Mehr anzeigen") {
+          $(this).text("Weniger anzeigen");
+          template.find(".event-description").css({ maxHeight: "none" });
+        }
+        else {
+          $(this).text("Mehr anzeigen");
+          template.find(".event-description").css({ maxHeight: "96px" })
+        }
+      }))
+    }
   };
 
   // If no events match, add an explanation text
@@ -101,10 +116,10 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
   (await eventTypeData()).forEach(eventType => {
     // Get the event type data
     let eventTypeId = eventType.eventTypeId;
-    let eventName = eventType.name;
+    let eventTypeName = eventType.name;
 
     filterData.type[eventTypeId] ??= true
-    let checkedStatus = (filterData.type[eventTypeId]) ? "checked" : ""
+    let checkedStatus: "checked" | "" = (filterData.type[eventTypeId]) ? "checked" : ""
     if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none")
 
     // Add the template for filtering by type
@@ -112,14 +127,14 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
       `<div class="form-check">
         <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
         <label class="form-check-label" for="filter-type-${eventTypeId}">
-          ${eventName}
+          ${$.formatHtml(eventTypeName)}
         </label>
       </div>`;
     $("#filter-type-list").append(templateFilterType)
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${eventTypeId}">${eventName}</option>`;
+      `<option value="${eventTypeId}">${$.formatHtml(eventTypeName)}</option>`;
     $("#add-event-type").append(templateFormSelect);
     $("#edit-event-type").append(templateFormSelect);
   });
@@ -151,7 +166,7 @@ const updateTeamList = runOnce(async (): Promise<void> => {
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${team.teamId}">${teamName}</option>`;
+      `<option value="${team.teamId}">${$.formatHtml(teamName)}</option>`;
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
   });
@@ -259,6 +274,7 @@ async function editEvent(eventId: number) {
   $("#edit-event-type").val(event.eventTypeId);
   $("#edit-event-name").val(event.name);
   $("#edit-event-description").val(event.description ?? "");
+  $("#edit-event-description").css({ height: `${Math.min(((event.description ?? "").match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
   $("#edit-event-start-date").val(msToInputDate(event.startDate));
   $("#edit-event-lesson").val(event.lesson ?? "");
   $("#edit-event-end-date").val(msToInputDate(event.endDate ?? ""));
@@ -513,6 +529,11 @@ $(function(){
     }
   })
 
+  $("#add-event-description").css({ height: "38px" })
+  $("#add-event-description").on("input", function () {
+    $(this).css({ height: `${Math.min((($(this).val() ?? "").toString().match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
+  })
+
   // On changing any information in the edit event modal, disable the edit button if any information is empty
   $(".edit-event-input").on("input", function () {
     const type = $("#edit-event-type").val();
@@ -532,6 +553,11 @@ $(function(){
     if ($(this).is("#edit-event-lesson")) {
       $("#edit-event-end-date").val("")
     }
+  })
+
+  $("#edit-event-description").css({ height: "38px" })
+  $("#edit-event-description").on("input", function () {
+    $(this).css({ height: `${Math.min((($(this).val() ?? "").toString().match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
   })
 
   // Don't close the dropdown when the user clicked inside of it

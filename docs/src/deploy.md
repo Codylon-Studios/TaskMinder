@@ -32,13 +32,13 @@ Go to your domain registrar’s DNS management page (e.g., Namecheap, GoDaddy, C
 | A        | @        | `203.0.113.42` | Automatic / 3600 |
 | A        | www      | `203.0.113.42` | Automatic / 3600 |
 
-> This assumes you're using `yourdomain.com` and want `www.yourdomain.com` to also work.
+> This assumes you're using `example.com` and want `www.example.com` to also work.
 
-We also use a subdomain for monitoring (`monitoring.yourdomain.com`) and a subdomain for a status page.
+We also use a subdomain for monitoring (`monitoring.example.com`) and a subdomain for a status page.
 
 We use [https://betterstack.com/](https://betterstack.com/) as it offers custom subdomains for the status page, but you may choose another provider. After setting up the status page, follow BetterStack’s instructions to configure the CNAME record.
 
-For the monitoring page (`monitoring.yourdomain.com`), add the following record:
+For the monitoring page (`monitoring.example.com`), add the following record:
 
 | **Type** | **Name**   | **Value**      |
 | -------- | ---------- | -------------- |
@@ -134,7 +134,6 @@ cd TaskMinder
 
 ## 4. Configure NGINX
 
-### Modify and copy your NGINX config file
 Modify the ngnix.config to replace codylon.de with your actual domain.
 
 ```bash
@@ -144,38 +143,26 @@ or
 ```bash
 nano nginx.config
 ```
-Then copy/paste the file:
+Then copy/paste the file, get the SSL certificates and activate/start the nginx config
 ```bash
+sudo apt install -y certbot python3-certbot-nginx
+# 
 sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
-```
 
-### Enable the NGINX site
+# 1. Get certificates first - Don't forget to change `example.com` to your actual domain.
+sudo certbot -d example.com -d www.example.com -d monitoring.example.com
 
-```bash
+# 2. Deploy your complete config
+sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
+
+# 3. Enable and activate
 sudo ln -s /etc/nginx/sites-available/taskminder /etc/nginx/sites-enabled/
-```
-
-### Test and restart NGINX
-
-```bash
 sudo nginx -t
 sudo systemctl restart nginx
 ```
-
 ---
 
-## 5. Secure with Let's Encrypt (SSL)
-
-Don't forget to change `yourdomain.com` to your actual domain.
-
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx --redirect -d yourdomain.com -d www.yourdomain.com -d monitoring.yourdomain.com
-```
-
----
-
-## 6. Set Up Non-Root User
+## 5. Set Up Non-Root User
 
 Running as root means a compromised container could gain full system access. It is highly recommended to run the server as a non-root user (least privilege). We’ll use the name `ubuntu` for this guide, but you may choose another name.
 
@@ -195,6 +182,8 @@ Give the user access to the project folder:
 
 ```bash
 sudo chown -R ubuntu:ubuntu /opt/TaskMinder
+# Set correct ownership for the Docker container (node user)
+sudo chown -R 1000:1000 ./db-backups
 ```
 
 Log out and reconnect as the `ubuntu` user:
@@ -206,7 +195,7 @@ ssh ubuntu@<your-ip-address>
 
 ---
 
-## 7. Add Docker Secrets
+## 6. Add Docker Secrets
 
 Navigate back to the TaskMinder folder and create directories for secrets and backups:
 
@@ -223,12 +212,14 @@ Before starting the application, create the following **text files inside the `d
 | `classcode.txt`      | Custom class code required to access content.                                            |
 | `db_name.txt`        | Name of the PostgreSQL database.                                                         |
 | `db_password.txt`    | Password for the PostgreSQL database user.                                               |
+| `db_host.txt`        | Host for the database, usually postgres when running in docker.                          |
 | `db_user.txt`        | PostgreSQL database username.                                                            |
 | `dsb_activated.txt`  | Whether DSB is enabled (`true` or `false`). If `false`, the next two files can be dummy values. |
 | `dsb_password.txt`   | DSB login password.                                                                      |
 | `dsb_user.txt`       | DSB login username.                                                                      |
 | `redis_port.txt`     | Redis port (default is `6379`).                                                          |
 | `session_secret.txt` | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                   |
+| `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.    |
 
 > ⚠️ Make sure there are **no trailing newlines** in these files if your secrets are parsed line-by-line in containers.
 
@@ -240,7 +231,7 @@ Navigate to the project root and build/start the containers:
 
 ```bash
 cd /opt/TaskMinder
-sudo docker compose up -d --build
+docker compose up -d --build
 ```
 
 ---
@@ -249,16 +240,16 @@ sudo docker compose up -d --build
 
 Your TaskMinder server should now be running at:
 
-* **[https://yourdomain.com](https://yourdomain.com)**
-* **[https://www.yourdomain.com](https://www.yourdomain.com)**
-* **[https://monitoring.yourdomain.com](https://monitoring.yourdomain.com)**
+* **[https://example.com](https://example.com)**
+* **[https://www.example.com](https://www.example.com)**
+* **[https://monitoring.example.com](https://monitoring.example.com)**
 
 ---
 
 ## 10. What's Next?
 
 * Create an account to add your subjects, teams, and timetable.
-* Visit [https://monitoring.yourdomain.com](https://monitoring.yourdomain.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
+* Visit [https://monitoring.example.com](https://monitoring.example.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
 
 ---
 

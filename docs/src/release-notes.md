@@ -4,6 +4,36 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v1.0.1] - 2025-05-24
+
+### Added
+
+* Support for multiline event and homework descriptions.
+* `.sql` dump compression to reduce storage usage.
+* Collapsible long events to improve UI/UX.
+* Production documentation updates for:
+  * User permission details.
+  * Switched the order of NGINX and Certbot setup.
+* `trust proxy` enabled for Express Rate Limit compatibility ([source](https://express-rate-limit.mintlify.app/guides/troubleshooting-proxy-issues)).
+
+### Changed
+
+* Resized "Copy Classcode" button for better mobile experience.
+* Updated NGINX configuration for improved compatibility and performance.
+
+### Fixed
+
+* Timetable now properly displays when no substitutions are available.
+* Backup table issue resolved by referencing the correct `.env` variable.
+* Duplicate display issue corrected in UI.
+
+### Security
+
+* Bump packages to close securtity iusses.
+* Escaping html to reduce attack risks.
+
+---
+
 ## \[v1.0.0] – 2025-05-23
 
 ### Added
