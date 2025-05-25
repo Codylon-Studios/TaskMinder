@@ -83,7 +83,7 @@ services:
       - redis-data:/data
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.4.0
     container_name: prometheus
     restart: always
     ports:
@@ -101,7 +101,7 @@ services:
       - app
 
   loki:
-    image: grafana/loki:3.4 # temp because errors: https://github.com/grafana/loki/issues/17371
+    image: grafana/loki:3.5.1 # temp because errors: https://github.com/grafana/loki/issues/17371
     container_name: loki
     restart: always
     ports:
@@ -112,7 +112,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
 
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:3.5.1
     container_name: promtail
     restart: always
     volumes:
@@ -124,7 +124,7 @@ services:
       - loki
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.0.1
     container_name: grafana
     restart: always
     ports:
@@ -134,7 +134,7 @@ services:
       - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/ 
       - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
     environment:
-      # TODO: This is the password and user at server startup, grafana will prompt to change this -> still change to docker secrets
+      # This is the password and user at server startup, grafana will prompt to change this upon first login
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning

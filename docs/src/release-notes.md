@@ -4,7 +4,7 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[1.0.1] - 2025-05-24
+## \[v1.0.1] - 2025-05-24
 
 ### Added
 
@@ -26,6 +26,11 @@ All changes are grouped by type and the latest version appears first.
 * Timetable now properly displays when no substitutions are available.
 * Backup table issue resolved by referencing the correct `.env` variable.
 * Duplicate display issue corrected in UI.
+
+### Security
+
+* Bump packages to close securtity iusses.
+* Escaping html to reduce attack risks.
 
 ---
 
