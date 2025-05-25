@@ -66,7 +66,7 @@ function replaceColorPickers() {
 
     let popup = $($("#color-picker-template").html());
 
-    popup.find(`.color-picker-option[data-color="${startColor}"]`).addClass("selected");
+    popup.find(`.color-picker-option[data-color="${$.formatHtml(startColor)}"]`).addClass("selected");
     popup.find(".color-picker-hex").val(startColor);
 
     popup.hide();
@@ -145,7 +145,7 @@ function replaceColorPickers() {
       input.val(hexColor).trigger("change");
       trigger.css("background-color", hexColor);
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
-      popup.find(`.color-picker-option[data-color="${hexColor}"]`).addClass("selected");
+      popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
     }
 
     saturationValueContainer.on("click", function (ev) {
@@ -209,7 +209,7 @@ function replaceColorPickers() {
       input.val(hexColor).trigger("change");
       trigger.css("background-color", hexColor);
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
-      popup.find(`.color-picker-option[data-color="${hexColor}"]`).addClass("selected");
+      popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
     }
 
     hueContainer.on("mousedown", function (ev) {
@@ -257,7 +257,7 @@ function replaceColorPickers() {
         popup.find(".color-picker-option").removeClass("selected");
         trigger.css("background-color", color);
         input.val(color).trigger("change");
-        popup.find(`.color-picker-option[data-color="${color}"]`).addClass("selected");
+        popup.find(`.color-picker-option[data-color="${$.formatHtml(color)}"]`).addClass("selected");
         setHslSelection(color);
       }
     });

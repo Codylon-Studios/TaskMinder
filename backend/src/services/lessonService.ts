@@ -9,7 +9,6 @@ const lessonService = {
     await Lesson.destroy({ truncate: true });
 
     for (let lesson of lessons) {
-      console.log(lesson)
       try {
         if ([0, 1, 2, 3, 4].includes(lesson.weekDay)) {
           await Lesson.create({
@@ -23,8 +22,7 @@ const lessonService = {
           })
         }
       }
-      catch (e){
-        console.log(e)
+      catch {
         let err: RequestError = {
           name: "Bad Request",
           status: 400,
