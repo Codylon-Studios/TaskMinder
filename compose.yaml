@@ -101,7 +101,7 @@ services:
       - app
 
   loki:
-    image: grafana/loki:3.5.1 # temp because errors: https://github.com/grafana/loki/issues/17371
+    image: grafana/loki:3.5.1
     container_name: loki
     restart: always
     ports:
