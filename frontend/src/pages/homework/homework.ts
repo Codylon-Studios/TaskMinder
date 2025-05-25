@@ -61,7 +61,7 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
       `<div class="mb-1 form-check d-flex">
         <label class="form-check-label">
           <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkId}" ${(checked) ? "checked" : ""}>
-          <b>${subject}</b> ${(/\n/.test(content) ? "<br>" : "") + content.replace(/\n/g, "<br>")}
+          <b>${$.formatHtml(subject ?? "")}</b> ${$.formatHtml(content, { multiNewlineStartNewline: true })}
           <span class="ms-4 d-block">Von ${assignmentDate} bis ${submissionDate}</span>
         </label>
         <div class="homework-edit-options ms-2 ${(editEnabled) ? "" : "d-none"}">
@@ -112,14 +112,14 @@ const  updateSubjectList = runOnce(async (): Promise<void> => {
       `<div class="form-check">
         <input type="checkbox" class="form-check-input filter-subject-option" id="filter-subject-${subjectId}" data-id="${subjectId}" ${checkedStatus}>
         <label class="form-check-label" for="filter-subject-${subjectId}">
-          ${subjectName}
+          ${$.formatHtml(subjectName)}
         </label>
       </div>`;
     $("#filter-subject-list").append(templateFilterSubject)
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${subjectId}">${subjectName}</option>`;
+      `<option value="${subjectId}">${$.formatHtml(subjectName)}</option>`;
     $("#add-homework-subject").append(templateFormSelect);
     $("#edit-homework-subject").append(templateFormSelect);
   });
@@ -151,7 +151,7 @@ const  updateTeamList = runOnce(async (): Promise<void> => {
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${team.teamId}">${teamName}</option>`;
+      `<option value="${team.teamId}">${$.formatHtml(teamName)}</option>`;
     $("#add-homework-team").append(templateFormSelect);
     $("#edit-homework-team").append(templateFormSelect);
   });

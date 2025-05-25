@@ -535,3 +535,22 @@ if (! ["/settings/", "/settings"].includes(location.pathname)) {
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme)
   }
 }
+
+declare global {
+  interface JQueryStatic {
+    formatHtml(html: string, options?: 
+      {
+        multiNewlineStartNewline?: boolean
+      }
+    ): string;
+  }
+}
+
+$.formatHtml = (html, options?) => {
+  let escaped = $("<div>").text(html).html()
+  if (options?.multiNewlineStartNewline) {
+    if (/\n/.test(escaped)) escaped = "\n" + escaped;
+  }
+  const newlines = escaped.replace(/\n/g, "<br>")
+  return newlines;
+}

@@ -290,7 +290,7 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
       `<div class="mb-1 form-check d-flex">
         <label class="form-check-label">
           <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkId}" ${(checked) ? "checked" : ""}>
-          <b>${subject}</b> ${content}
+          <b>${$.formatHtml(subject ?? "")}</b> ${$.formatHtml(content, { multiNewlineStartNewline: true })}
         </label>
       </div>`;
 
@@ -370,9 +370,9 @@ const updateEventList = runOnce(async (): Promise<void> => {
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column">
-              <span class="fw-bold event-${eventTypeId}">${name}</span>
-              <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${lesson}. Stunde)` : ""}</b>
-              <span>${description}</span>
+              <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
+              <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b>
+              <span>${$.formatHtml(description ?? "")}</span>
             </div>
           </div>
         </div>
@@ -384,7 +384,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
 
   // If no events match, add an explanation text
   if ($("#event-list").html() == "") {
-    $("#event-list").html(`<div class="text-secondary">Keine Ereignisse heute.</div>`)
+    $("#event-list").html(`<div class="text-secondary">Keine Ereignisse an diesem Tag.</div>`)
   }
 })
 
@@ -409,7 +409,7 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
 
   let updatedDate = new Date(dateToMs(data.updated.split(" ")[0]) ?? 0)
   let updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][updatedDate.getDay()]
-  $("#substitutions-updated").html(updatedWeekDay + ", " + data.updated.split(" ")[1])
+  $("#substitutions-updated").text(updatedWeekDay + ", " + data.updated.split(" ")[1])
 
   if (substitutionsMode == "none") {
     $("#substitutions-table").addClass("d-none");
@@ -453,12 +453,12 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
     let template = `
       <tr>
         ${(substitutionsMode == "all") ? `<td>${substitution.class}</td>` : ""}
-        <td>${substitution.type}</td>
-        <td>${substitution.lesson}</td>
-        <td>${substitution.subject}</td>
-        <td>${substitution.text}</td>
-        <td>${substitution.teacher}&nbsp;(${substitution.teacherOld})</td>
-        <td>${substitution.room}</td>
+        <td>${$.formatHtml(substitution.type)}</td>
+        <td>${$.formatHtml(substitution.lesson)}</td>
+        <td>${$.formatHtml(substitution.subject)}</td>
+        <td>${$.formatHtml(substitution.text)}</td>
+        <td>${$.formatHtml(substitution.teacher)}&nbsp;(${$.formatHtml(substitution.teacherOld)})</td>
+        <td>${$.formatHtml(substitution.room)}</td>
       </tr>`
       $("#substitutions-list").append(template);
   }
@@ -466,7 +466,7 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
   $("tr:last td").addClass("border-bottom-0")
 
   $("td").each(function () {
-    if ($(this).html() == "-") {
+    if ($(this).text() == "-") {
       $(this).addClass("text-center align-middle")
     }
   })
@@ -589,7 +589,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       <div class="card">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
           <span class="text-center timetable-less-subject">
-            ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${lessonData.subjectNameShort}</span>`}).join(" / ")}
+            ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${$.formatHtml(lessonData.subjectNameShort)}</span>`}).join(" / ")}
           </span>
         </div>
       </div>`;
@@ -603,18 +603,17 @@ const updateTimetable = runOnce(async (): Promise<void> => {
           <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end">${msToTime(lessonGroup.endTime)}</div>
           <div class="d-flex align-items-center justify-content-center flex-column">
             <span class="fw-semibold text-center timetable-more-subject">
-              ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${lessonData.subjectNameLong}</span>`}).join(" / ")}
+              ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${$.formatHtml(lessonData.subjectNameLong)}</span>`}).join(" / ")}
             </span>
             <span>
               <span class="text-center timetable-more-room">
-              ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${lessonData.room}</span>`}).join(" / ")}
+              ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${$.formatHtml(lessonData.room)}</span>`}).join(" / ")}
               </span>,
               <span class="text-center timetable-more-teacher">
-              ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${lessonData.teacherName}</span>`}).join(" / ")}
+              ${lessonGroup.lessons.map((lessonData) => {return `<span class="original">${$.formatHtml(lessonData.teacherName)}</span>`}).join(" / ")}
               </span>
             </span>
           </div>
-          <!--<span class="event-orange fw-bold mt-2">Events oder ähnliches</span>-->
         </div>
       </div>`;
     
@@ -651,7 +650,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
   
             let color = (substitution.type == "Entfall") ? "red" : "yellow"
     
-            let substitutionTypeText = `<div class="text-${color} text-center fw-bold mt-2">${substitution.type}</div>`
+            let substitutionTypeText = `<div class="text-${color} text-center fw-bold mt-2">${$.formatHtml(substitution.type)}</div>`
             thisLessLesson.find(".card-body").append(substitutionTypeText)
             thisMoreLesson.find(".card-body").append(substitutionTypeText)
     
@@ -660,7 +659,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
               substitution.text = "-";
             }
             if (substitution.text != "-") {
-              thisMoreLesson.find(".card-body").append(`<div class="text-${color} text-center">${substitution.text}</div>`)
+              thisMoreLesson.find(".card-body").append(`<div class="text-${color} text-center">${$.formatHtml(substitution.text)}</div>`)
             }
     
             if (substitution.type == "Entfall") {
@@ -675,8 +674,8 @@ const updateTimetable = runOnce(async (): Promise<void> => {
               moreSubjectElement.addClass("line-through-" + color)
               lessSubjectElement.addClass("line-through-" + color)
               if (substitution.subject != "-") {
-                moreSubjectElement.after(` <span class="text-${color} fw-bold">${substitution.subject}</span>`)
-                lessSubjectElement.after(` <span class="text-${color} fw-bold">${substitution.subject}</span>`)
+                moreSubjectElement.after(` <span class="text-${color} fw-bold">${$.formatHtml(substitution.subject)}</span>`)
+                lessSubjectElement.after(` <span class="text-${color} fw-bold">${$.formatHtml(substitution.subject)}</span>`)
               }
             }
             else {
@@ -689,7 +688,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
             if (substitution.room != lesson.room) {
               roomElement.addClass("line-through-" + color)
               if (substitution.room != "-") {
-                roomElement.after(` <span class="text-${color} fw-bold">${substitution.room}</span>`)
+                roomElement.after(` <span class="text-${color} fw-bold">${$.formatHtml(substitution.room)}</span>`)
               }
             }
     
@@ -698,7 +697,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
             if (! (lesson.subjectNameSubstitution ?? []).includes(substitution.teacher)) {
               teacherElement.addClass("line-through-" + color)
               if (substitution.teacher != "-") {
-                teacherElement.after(` <span class="text-${color} fw-bold">${substitution.teacher}</span>`)
+                teacherElement.after(` <span class="text-${color} fw-bold">${$.formatHtml(substitution.teacher)}</span>`)
               }
             }
           }
@@ -739,12 +738,12 @@ const updateTimetable = runOnce(async (): Promise<void> => {
         continue;
       }
 
-      let eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${event.name}</span>`
+      let eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${$.formatHtml(event.name)}</span>`
       thisLessLesson.find(".card-body").append(eventName)
       thisMoreLesson.find(".card-body").append(eventName)
 
       if (event.description != "") {
-        thisMoreLesson.find(".card-body").append(`<span class="event-${event.eventTypeId} text-centerd-block">${event.description}</span>`)
+        thisMoreLesson.find(".card-body").append(`<span class="event-${event.eventTypeId} text-centerd-block">${$.formatHtml(event.description ?? "")}</span>`)
       }
     }
 
@@ -776,7 +775,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
 
       if (lastLessonHtml == thisLessonHtml) {
         lastMoreLesson.addClass("wide")
-        lastMoreLesson.find(".card-body div:nth-child(2)").html(msToTime(lessonGroup.endTime))
+        lastMoreLesson.find(".card-body div:nth-child(2)").text(msToTime(lessonGroup.endTime))
       }
       else {
         $("#timetable-more").append(thisMoreLesson);
@@ -811,7 +810,7 @@ function updateTimetableMode() {
 }
 
 async function renameCalendarMonthYear() {
-  $("#calendar-month-year").html(`${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`)
+  $("#calendar-month-year").text(`${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`)
 }
 
 function slideCalendar(direction: "l" | "r", transition: string, slideTime: number) {

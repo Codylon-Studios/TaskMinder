@@ -59,9 +59,9 @@ const updateEventList = runOnce(async (): Promise<void> => {
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column me-3">
-              <span class="fw-bold event-${eventTypeId}">${name}</span>
-              <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${lesson}. Stunde)` : ""}</b>
-              <span class="event-description">${description?.replace(/\n/g, "<br>") ?? ""}</span>
+              <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
+              <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b>
+              <span class="event-description">${$.formatHtml(description ?? "")}</span>
             </div>
             <div class="event-edit-options ${(editEnabled) ? "" : "d-none"} position-absolute end-0 top-0 m-2">
               <button class="btn btn-sm btn-tertiary event-edit" data-id="${eventId}">
@@ -78,7 +78,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
     // Add this event to the list
     $("#event-list").append(template);
 
-    if (template.find(".event-description").height() ?? 0 >= 120) {
+    if ((template.find(".event-description").height() ?? 0) >= 120) {
       template.find(".event-description").css({ maxHeight: "96px" }).after($(
         `<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`
       ).on("click", function () {
@@ -116,10 +116,10 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
   (await eventTypeData()).forEach(eventType => {
     // Get the event type data
     let eventTypeId = eventType.eventTypeId;
-    let eventName = eventType.name;
+    let eventTypeName = eventType.name;
 
     filterData.type[eventTypeId] ??= true
-    let checkedStatus = (filterData.type[eventTypeId]) ? "checked" : ""
+    let checkedStatus: "checked" | "" = (filterData.type[eventTypeId]) ? "checked" : ""
     if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none")
 
     // Add the template for filtering by type
@@ -127,14 +127,14 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
       `<div class="form-check">
         <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
         <label class="form-check-label" for="filter-type-${eventTypeId}">
-          ${eventName}
+          ${$.formatHtml(eventTypeName)}
         </label>
       </div>`;
     $("#filter-type-list").append(templateFilterType)
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${eventTypeId}">${eventName}</option>`;
+      `<option value="${eventTypeId}">${$.formatHtml(eventTypeName)}</option>`;
     $("#add-event-type").append(templateFormSelect);
     $("#edit-event-type").append(templateFormSelect);
   });
@@ -166,7 +166,7 @@ const updateTeamList = runOnce(async (): Promise<void> => {
 
     // Add the template for the select elements
     let templateFormSelect =
-      `<option value="${team.teamId}">${teamName}</option>`;
+      `<option value="${team.teamId}">${$.formatHtml(teamName)}</option>`;
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
   });

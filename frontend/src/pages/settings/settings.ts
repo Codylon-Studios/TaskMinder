@@ -50,7 +50,7 @@ async function updateTeamLists() {
       <div class="form-check">
         <input type="checkbox" class="form-check-input" data-id="${teamId}" id="team-selection-team-${teamId}" ${(selected) ? "checked" : ""}>
         <label class="form-check-label" for="team-selection-team-${teamId}">
-          ${team.name}
+          ${$.formatHtml(team.name)}
         </label>
       </div>`;
     $("#team-selection-list").append(template)
@@ -60,14 +60,14 @@ async function updateTeamLists() {
         <div class="d-flex flex-column flex-md-row align-items-md-center">
         <div>
           <input class="form-control form-control-sm d-inline w-fit-content me-3 team-name-input"
-            type="text" value="${team.name}" placeholder="${team.name}" data-id="${teamId}">
+            type="text" value="${$.formatHtml(team.name)}" placeholder="${$.formatHtml(team.name)}" data-id="${teamId}">
           <div class="invalid-feedback">
             Teamnamen dürfen nicht leer sein!
           </div>
         </div>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none team-renamed" data-id="${teamId}">
             Umbenannt
-            <span class="text-secondary fw-normal team-renamed-name" data-id="${teamId}">(${team.name} zu <b></b>)</span>
+            <span class="text-secondary fw-normal team-renamed-name" data-id="${teamId}">(${$.formatHtml(team.name)} zu <b></b>)</span>
           </span>
           <span class="text-danger fw-bold mt-2 mt-md-0 d-none team-deleted" data-id="${teamId}">Gelöscht</span>
         </div
@@ -145,14 +145,14 @@ async function updateEventTypeList() {
           <div class="d-flex">
             <div>
               <input class="form-control form-control-sm d-inline w-fit-content me-3 event-type-name-input"
-                type="text" value="${eventType.name}" placeholder="${eventType.name}" data-id="${eventTypeId}">
+                type="text" value="${$.formatHtml(eventType.name)}" placeholder="${$.formatHtml(eventType.name)}" data-id="${eventTypeId}">
               <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
             </div>
-            <input type="color" value="${eventType.color}" class="color-picker event-type-color-input" data-id="${eventTypeId}">
+            <input type="color" value="${$.formatHtml(eventType.color)}" class="color-picker event-type-color-input" data-id="${eventTypeId}">
           </div>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none me-2 event-type-renamed" data-id="${eventTypeId}">
             Umbenannt
-            <span class="text-secondary fw-normal event-type-renamed-name" data-id="${eventTypeId}">(${eventType.name} zu <b></b>)</span>
+            <span class="text-secondary fw-normal event-type-renamed-name" data-id="${eventTypeId}">(${$.formatHtml(eventType.name)} zu <b></b>)</span>
           </span>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none event-type-recolored" data-id="${eventTypeId}">
             Farbe gändert
@@ -269,11 +269,11 @@ async function updateSubjectList() {
               </div>
               <div class="d-inline-block">
                 <input class="form-control form-control-sm subject-name-long-input"
-                  type="text" value="${subject.subjectNameLong}" placeholder="${subject.subjectNameLong}" data-id="${subjectId}">
+                  type="text" value="${$.formatHtml(subject.subjectNameLong)}" placeholder="${$.formatHtml(subject.subjectNameLong)}" data-id="${subjectId}">
                 <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
               </div>
               <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input"
-                type="text" value="${subject.subjectNameShort}" placeholder="${subject.subjectNameShort}" data-id="${subjectId}">
+                type="text" value="${$.formatHtml(subject.subjectNameShort)}" placeholder="${$.formatHtml(subject.subjectNameShort)}" data-id="${subjectId}">
             </div>
             <div class="d-flex gap-3 ${dsbActivated ? "mb-2" : ""}">
               <div class="subject-inputs-label d-flex align-items-center">
@@ -289,11 +289,11 @@ async function updateSubjectList() {
               </div>
               <div class="d-inline-block">
                 <input class="form-control form-control-sm h-fit-content subject-teacher-long-input"
-                  type="text" value="${subject.teacherNameLong}" placeholder="${subject.teacherNameLong}" data-id="${subjectId}">
+                  type="text" value="${$.formatHtml(subject.teacherNameLong)}" placeholder="${$.formatHtml(subject.teacherNameLong)}" data-id="${subjectId}">
                 <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
               </div>
               <input class="form-control form-control-sm h-fit-content subject-teacher-short-input"
-                type="text" value="${subject.teacherNameShort}" placeholder="${subject.teacherNameShort}" data-id="${subjectId}">
+                type="text" value="${$.formatHtml(subject.teacherNameShort)}" placeholder="${$.formatHtml(subject.teacherNameShort)}" data-id="${subjectId}">
             </div>
             <div class="d-flex gap-3 ${dsbActivated ? "" : "d-none"}">
               <div class="subject-inputs-label d-flex align-items-center">
@@ -301,21 +301,23 @@ async function updateSubjectList() {
                 <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Vertretungsoptionen"><i class="fa-solid fa-circle-info"></i></a>
               </div>
               <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"
-                type="text" value="${subject.subjectNameSubstitution ?? ""}" placeholder="${subject.subjectNameSubstitution ?? "keine Angabe"}">
+                type="text" value="${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "")}"
+                placeholder="${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "keine Angabe")}">
               <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id="${subjectId}"
-                type="text" value="${subject.teacherNameSubstitution ?? ""}" placeholder="${subject.teacherNameSubstitution ?? "keine Angabe"}">
+                type="text" value="${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "")}"
+                placeholder="${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "keine Angabe")}">
             </div>
           </div>
           <div class="w-md-50">
             <span class="text-warning fw-bold mt-2 mt-md-0 d-none subject-changed" data-id="${subjectId}">
               Geändert
-              <span class="subject-changed-name-long">${subject.subjectNameLong} zu <b></b></span>
-              <span class="subject-changed-name-short">${subject.subjectNameShort} zu <b></b></span>
-              <span class="subject-changed-name-substitution">${subject.subjectNameSubstitution ?? "keine Angabe"} zu <b></b></span>
+              <span class="subject-changed-name-long">${$.formatHtml(subject.subjectNameLong)} zu <b></b></span>
+              <span class="subject-changed-name-short">${$.formatHtml(subject.subjectNameShort)} zu <b></b></span>
+              <span class="subject-changed-name-substitution">${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "keine Angabe")} zu <b></b></span>
               <span class="subject-changed-teacher-gender">${{ "w": "Frau", "m": "Herr", "d": "Keine Anrede" }[subject.teacherGender]} zu <b></b></span>
-              <span class="subject-changed-teacher-long">${subject.teacherNameLong} zu <b></b></span>
-              <span class="subject-changed-teacher-short">${subject.teacherNameShort} zu <b></b></span>
-              <span class="subject-changed-teacher-substitution">${subject.teacherNameSubstitution ?? "keine Angabe"} zu <b></b></span>
+              <span class="subject-changed-teacher-long">${$.formatHtml(subject.teacherNameLong)} zu <b></b></span>
+              <span class="subject-changed-teacher-short">${$.formatHtml(subject.teacherNameShort)} zu <b></b></span>
+              <span class="subject-changed-teacher-substitution">${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "keine Angabe")} zu <b></b></span>
             </span>
             <span class="text-danger fw-bold mt-2 mt-md-0 d-none subject-deleted" data-id="${subjectId}">Gelöscht</span>
           </div>
@@ -544,13 +546,13 @@ async function updateTimetable() {
   let subjectOptions: string = "";
 
   (await subjectData()).forEach(subject => {
-    subjectOptions += `<option value="${subject.subjectId}">${subject.subjectNameLong}</option>`;
+    subjectOptions += `<option value="${subject.subjectId}">${$.formatHtml(subject.subjectNameLong)}</option>`;
   });
 
   let teamOptions: string = "";
 
   (await teamsData()).forEach(team => {
-    teamOptions += `<option value="${team.teamId}">${team.name}</option>`;
+    teamOptions += `<option value="${team.teamId}">${$.formatHtml(team.name)}</option>`;
   });
 
   for (let dayId = 0; dayId < 5; dayId++) {
@@ -589,14 +591,14 @@ async function updateTimetable() {
           <select class="timetable-subject-select form-select form-select-sm">
             <option value="" disabled>Fach</option>
             <option value="-1">Pause</option>
-            ${subjectOptions}
+            ${$.formatHtml(subjectOptions)}
           </select>
         </div>
         <div class="d-flex mb-2 align-items-center">
           <label class="form-label form-label-sm mb-0 me-2">
             Raum
           </label>
-          <input class="timetable-room form-control form-control-sm" type="text" value="${lesson.room}">
+          <input class="timetable-room form-control form-control-sm" type="text" value="${$.formatHtml(lesson.room)}">
         </div>
         <div class="d-flex align-items-center">
           <label class="form-label form-label-sm mb-0 me-2">
@@ -604,7 +606,7 @@ async function updateTimetable() {
           </label>
           <select class="timetable-team-select form-select form-select-sm">
             <option value="-1">Alle</option>
-            ${teamOptions}
+            ${$.formatHtml(teamOptions)}
           </select>
         </div>
       </div>
@@ -635,7 +637,7 @@ async function updateTimetable() {
           <select class="timetable-subject-select form-select form-select-sm">
             <option value="" disabled selected>Fach</option>
             <option value="-1">Pause</option>
-            ${subjectOptions}
+            ${$.formatHtml(subjectOptions)}
           </select>
         </div>
         <div class="d-flex mb-2 align-items-center">
@@ -650,7 +652,7 @@ async function updateTimetable() {
           </label>
           <select class="timetable-team-select form-select form-select-sm">
             <option value="-1">Alle</option>
-            ${teamOptions}
+            ${$.formatHtml(teamOptions)}
           </select>
         </div>
       </div>
@@ -805,7 +807,7 @@ $("#team-selection-save").on("click", async () => {
         reloadAll()
         $("#team-selection-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
         setTimeout(() => {
-          $("#team-selection-save").html("Speichern").prop("disabled", false);
+          $("#team-selection-save").text("Speichern").prop("disabled", false);
         }, 1000);
       },
       error: (xhr) => {
@@ -834,7 +836,7 @@ $("#team-selection-save").on("click", async () => {
     localStorage.setItem("joinedTeamsData", JSON.stringify(joinedTeamsData))
     $("#team-selection-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
     setTimeout(() => {
-      $("#team-selection-save").html("Speichern").prop("disabled", false);
+      $("#team-selection-save").text("Speichern").prop("disabled", false);
     }, 1000);
   }
 
@@ -924,7 +926,7 @@ async function saveTeams() {
       $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
       $("#teams-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
       setTimeout(() => {
-        $("#teams-save").html("Speichern").prop("disabled", false);
+        $("#teams-save").text("Speichern").prop("disabled", false);
       }, 1000);
     },
     error: (xhr) => {
@@ -962,10 +964,10 @@ $("#teams-save").on("click", () => {
   else {
     $("#teams-save-confirm-container, #teams-save-confirm").removeClass("d-none")
     if (deleted.length == 1) {
-      $("#teams-save-confirm-list").html(`des Teams <b>${deleted[0]}</b>`)
+      $("#teams-save-confirm-list").html(`des Teams <b>${$.formatHtml(deleted[0])}</b>`)
     }
     else {
-      $("#teams-save-confirm-list").html("der Teams " + (deleted.map(e => `<b>${e}</b>`).join(", ").replace(/,(?!.*,)/, " und")))
+      $("#teams-save-confirm-list").html("der Teams " + (deleted.map(e => `<b>${$.formatHtml(e)}</b>`).join(", ").replace(/,(?!.*,)/, " und")))
     }
   }
 })
@@ -1058,7 +1060,7 @@ async function saveEventTypes() {
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
       $("#event-types-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
       setTimeout(() => {
-        $("#event-types-save").html("Speichern").prop("disabled", false);
+        $("#event-types-save").text("Speichern").prop("disabled", false);
       }, 1000);
     },
     error: (xhr) => {
@@ -1096,10 +1098,10 @@ $("#event-types-save").on("click", () => {
   else {
     $("#event-types-save-confirm-container, #event-types-save-confirm").removeClass("d-none")
     if (deleted.length == 1) {
-      $("#event-types-save-confirm-list").html(`der Art <b>${deleted[0]}</b>`)
+      $("#event-types-save-confirm-list").html(`der Art <b>${$.formatHtml(deleted[0])}</b>`)
     }
     else {
-      $("#event-types-save-confirm-list").html("der Arten " + (deleted.map(e => `<b>${e}</b>`).join(", ").replace(/,(?!.*,)/, " und")))
+      $("#event-types-save-confirm-list").html("der Arten " + (deleted.map(e => `<b>${$.formatHtml(e)}</b>`).join(", ").replace(/,(?!.*,)/, " und")))
     }
   }
 })
@@ -1254,7 +1256,7 @@ async function saveSubjects() {
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
       $("#subjects-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
       setTimeout(() => {
-        $("#subjects-save").html("Speichern").prop("disabled", false);
+        $("#subjects-save").text("Speichern").prop("disabled", false);
       }, 1000);
     },
     error: (xhr) => {
@@ -1292,10 +1294,10 @@ $("#subjects-save").on("click", () => {
   else {
     $("#subjects-save-confirm-container, #subjects-save-confirm").removeClass("d-none")
     if (deleted.length == 1) {
-      $("#subjects-save-confirm-list").html(`des Fachs <b>${deleted[0]}</b>`)
+      $("#subjects-save-confirm-list").html(`des Fachs <b>${$.formatHtml(deleted[0])}</b>`)
     }
     else {
-      $("#subjects-save-confirm-list").html("der Fächer " + (deleted.map(e => `<b>${e}</b>`).join(", ").replace(/,(?!.*,)/, " und")))
+      $("#subjects-save-confirm-list").html("der Fächer " + (deleted.map(e => `<b>${$.formatHtml(e)}</b>`).join(", ").replace(/,(?!.*,)/, " und")))
     }
   }
 })
@@ -1348,7 +1350,7 @@ $("#timetable-save").on("click", async () => {
       $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none")
       $("#timetable-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
       setTimeout(() => {
-        $("#timetable-save").html("Speichern").prop("disabled", false);
+        $("#timetable-save").text("Speichern").prop("disabled", false);
       }, 1000);
     },
     error: (xhr) => {
