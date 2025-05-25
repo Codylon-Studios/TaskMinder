@@ -2,7 +2,12 @@ import {
   addUpdateAllFunction, colorTheme, EventTypeData, eventTypeData, JoinedTeamsData, joinedTeamsData, msToTime, reloadAll, SubjectData, subjectData,
   substitutionsData, TeamsData, teamsData, lessonData, timeToMs, updateAll, userDataLoaded,
   LessonData,
-  csrfToken
+  csrfToken,
+  loadTeamsData,
+  loadJoinedTeamsData,
+  loadEventTypeData,
+  loadSubjectData,
+  loadLessonData
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
@@ -38,8 +43,8 @@ async function updateColorTheme() {
 }
 
 async function updateTeamLists() {
-  $("#team-selection-list").empty()
-  $("#teams-list").empty();
+  let newTeamSelectionContent = ""
+  let newTeamsContent = ""
 
   const currentTeamsData = await teamsData()
 
@@ -53,7 +58,7 @@ async function updateTeamLists() {
           ${$.formatHtml(team.name)}
         </label>
       </div>`;
-    $("#team-selection-list").append(template)
+    newTeamSelectionContent += template
 
     template = `
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center">
@@ -77,10 +82,17 @@ async function updateTeamLists() {
           </button>
         </div>
       </div>`
-    $("#teams-list").append(template)
+    newTeamsContent += template
   }
 
-  $(document).on("change", ".team-name-input", async function () {
+  if ((await teamsData()).length == 0) {
+    $("#team-selection-list, #teams-list").append(`<span class="text-secondary no-teams">Keine Teams vorhanden</span>`)
+  }
+
+  $("#team-selection-list").html(newTeamSelectionContent)
+  $("#teams-list").html(newTeamsContent);
+
+  $(document).off("change", ".team-name-input").on("change", ".team-name-input", async function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
 
     if ($(this).val().trim() == "") {
@@ -103,7 +115,7 @@ async function updateTeamLists() {
     }
   })
 
-  $(document).on("input", ".team-name-input", function () {
+  $(document).off("input", ".team-name-input").on("input", ".team-name-input", function () {
     $(this).removeClass("is-invalid")
     if (!$(".team-name-input").hasClass("is-invalid")) {
       $("#teams-save").removeClass("disabled")
@@ -127,14 +139,10 @@ async function updateTeamLists() {
       $(this).removeClass("btn-success").addClass("btn-danger").html(`<i class="fa-solid fa-trash"></i>`)
     }
   })
-
-  if ((await teamsData()).length == 0) {
-    $("#team-selection-list, #teams-list").append(`<span class="text-secondary no-teams">Keine Teams vorhanden</span>`)
-  }
 }
 
 async function updateEventTypeList() {
-  $("#event-types-list").empty();
+  let newEventTypesContent = ""
 
   for (const eventType of await eventTypeData()) {
     let eventTypeId = eventType.eventTypeId
@@ -170,10 +178,15 @@ async function updateEventTypeList() {
           </button>
         </div>
       </div>`
-    $("#event-types-list").append(template)
+      newEventTypesContent += template
   }
 
-  $(document).on("change", ".event-type-name-input", async function () {
+  if ((await eventTypeData()).length == 0) {
+    newEventTypesContent += `<span class="text-secondary no-event-types">Keine Ereignisarten vorhanden</span>`
+  }
+  $("#event-types-list").html(newEventTypesContent);
+
+  $(document).off("change", ".event-type-name-input").on("change", ".event-type-name-input", async function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
 
     if ($(this).val().trim() == "") {
@@ -196,14 +209,14 @@ async function updateEventTypeList() {
     }
   })
 
-  $(document).on("input", ".event-type-name-input", function () {
+  $(document).off("input", ".event-type-name-input").on("input", ".event-type-name-input", function () {
     $(this).removeClass("is-invalid")
     if (!$(".event-type-name-input").hasClass("is-invalid")) {
       $("#event-types-save").removeClass("disabled")
     }
   })
 
-  $(document).on("change", ".event-type-color-input", async function () {
+  $(document).off("change", ".event-type-color-input").on("change", ".event-type-color-input", async function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
 
     let eventTypeId = $(this).data("id")
@@ -243,22 +256,20 @@ async function updateEventTypeList() {
       $(this).removeClass("btn-success").addClass("btn-danger").html(`<i class="fa-solid fa-trash"></i>`)
     }
   })
-
-  if ((await eventTypeData()).length == 0) {
-    $("#event-types-list").append(`<span class="text-secondary no-event-types">Keine Ereignisarten vorhanden</span>`)
-  }
 }
 
 async function updateSubjectList() {
   if (await substitutionsData() !== "No data") {
     dsbActivated = true
   }
-  $("#subjects-list").empty();
+  
+  let newSubjectsContent = "";
 
-  const currentSubjectData = await subjectData()
+  let currentSubjectData = await subjectData()
+  currentSubjectData = currentSubjectData.sort((a, b) => a.subjectId - b.subjectId);
   for (const subject of currentSubjectData) {
     let subjectId = subject.subjectId
-    let template = `
+    let template = $(`
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
         <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
           <div class="me-3 w-md-50">
@@ -327,12 +338,17 @@ async function updateSubjectList() {
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
-      </div>`
-    $("#subjects-list").append(template)
-    $("#subjects-list").find(".subject-changed").last().find("span").addClass("d-none").attr("data-id", subjectId)
+      </div>`)
+    template.find(".subject-changed").last().find("span").addClass("d-none").attr("data-id", subjectId)
+    newSubjectsContent += template[0].outerHTML
   }
 
-  $(document).on("change", ".subject-name-long-input", async function () {
+  if ((await subjectData()).length == 0) {
+    newSubjectsContent += `<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>`
+  }
+  $("#subjects-list").html(newSubjectsContent);
+
+  $(document).off("change", ".subject-name-long-input").on("change", ".subject-name-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     if ($(this).val().trim() == "") {
@@ -359,14 +375,14 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("input", ".subject-name-long-input", function () {
+  $(document).off("input", ".subject-name-long-input").on("input", ".subject-name-long-input", function () {
     $(this).removeClass("is-invalid")
     if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
       $("#subjects-save").removeClass("disabled")
     }
   })
 
-  $(document).on("change", ".subject-name-short-input", async function () {
+  $(document).off("change", ".subject-name-short-input").on("change", ".subject-name-short-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
@@ -388,7 +404,7 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("change", ".subject-teacher-gender-input", async function () {
+  $(document).off("change", ".subject-teacher-gender-input").on("change", ".subject-teacher-gender-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
@@ -411,7 +427,7 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("change", ".subject-teacher-long-input", async function () {
+  $(document).off("change", ".subject-teacher-long-input").on("change", ".subject-teacher-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     if ($(this).val().trim() == "") {
@@ -438,14 +454,14 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("input", ".subject-teacher-long-input", function () {
+  $(document).off("input", ".subject-teacher-long-input").on("input", ".subject-teacher-long-input", function () {
     $(this).removeClass("is-invalid")
     if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
       $("#subjects-save").removeClass("disabled")
     }
   })
 
-  $(document).on("change", ".subject-teacher-short-input", async function () {
+  $(document).off("change", ".subject-teacher-short-input").on("change", ".subject-teacher-short-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
@@ -467,7 +483,7 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("change", ".subject-name-substitution-input", async function () {
+  $(document).off("change", ".subject-name-substitution-input").on("change", ".subject-name-substitution-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
@@ -489,7 +505,7 @@ async function updateSubjectList() {
     }
   })
 
-  $(document).on("change", ".subject-teacher-substitution-input", async function () {
+  $(document).off("change", ".subject-teacher-substitution-input").on("change", ".subject-teacher-substitution-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
     let subjectId = $(this).data("id")
@@ -534,14 +550,10 @@ async function updateSubjectList() {
       $(this).removeClass("btn-success").addClass("btn-danger").html(`<i class="fa-solid fa-trash"></i>`)
     }
   })
-
-  if ((await subjectData()).length == 0) {
-    $("#subject-selection-list, #subjects-list").append(`<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>`)
-  }
 }
 
 async function updateTimetable() {
-  $("#timetable").empty();
+  let newTimetableContent = $("<div></div>")
 
   let subjectOptions: string = "";
 
@@ -568,6 +580,7 @@ async function updateTimetable() {
     `)
     dayTemplate.find(".card").append(`<button class="btn btn-sm btn-success fw-semibold timetable-new-lesson">Neue Stunde</button>`)
     $("#timetable").append(dayTemplate)
+    newTimetableContent.append(dayTemplate);
   }
 
   (await lessonData()).forEach(lesson => {
@@ -591,7 +604,7 @@ async function updateTimetable() {
           <select class="timetable-subject-select form-select form-select-sm">
             <option value="" disabled>Fach</option>
             <option value="-1">Pause</option>
-            ${$.formatHtml(subjectOptions)}
+            ${subjectOptions}
           </select>
         </div>
         <div class="d-flex mb-2 align-items-center">
@@ -606,17 +619,17 @@ async function updateTimetable() {
           </label>
           <select class="timetable-team-select form-select form-select-sm">
             <option value="-1">Alle</option>
-            ${$.formatHtml(teamOptions)}
+            ${teamOptions}
           </select>
         </div>
       </div>
     `)
-    lessonTemplate.find(`.timetable-subject-select option[value=${lesson.subjectId}]`).prop("selected", true)
-    lessonTemplate.find(`.timetable-team-select option[value=${lesson.teamId}]`).prop("selected", true)
-    $(".timetable-lesson-list").eq(lesson.weekDay).append(lessonTemplate)
+    lessonTemplate.find(`.timetable-subject-select option[value=${lesson.subjectId}]`).attr("selected", "true")
+    lessonTemplate.find(`.timetable-team-select option[value=${lesson.teamId}]`).attr("selected", "true")
+    newTimetableContent.find(".timetable-lesson-list").eq(lesson.weekDay).append(lessonTemplate)
   })
 
-  $(".timetable-new-lesson").on("click", function () {
+  $(document).off("click", ".timetable-new-lesson").on("click", ".timetable-new-lesson", function () {
     let lessonTemplate = $(`
       <div class="timetable-lesson card p-2 mb-2">
         <div class="d-flex mb-2 align-items-center">
@@ -637,7 +650,7 @@ async function updateTimetable() {
           <select class="timetable-subject-select form-select form-select-sm">
             <option value="" disabled selected>Fach</option>
             <option value="-1">Pause</option>
-            ${$.formatHtml(subjectOptions)}
+            ${subjectOptions}
           </select>
         </div>
         <div class="d-flex mb-2 align-items-center">
@@ -652,7 +665,7 @@ async function updateTimetable() {
           </label>
           <select class="timetable-team-select form-select form-select-sm">
             <option value="-1">Alle</option>
-            ${$.formatHtml(teamOptions)}
+            ${teamOptions}
           </select>
         </div>
       </div>
@@ -678,6 +691,9 @@ async function updateTimetable() {
     updateTimeInputs($(this))
     lessonList.append(lessonTemplate)
   })
+
+  $("#timetable").html(newTimetableContent.html());
+
   $(document).off("click", ".timetable-lesson-delete").on("click", ".timetable-lesson-delete", function () {
     $(this).parent().parent().remove()
   })
@@ -804,7 +820,11 @@ $("#team-selection-save").on("click", async () => {
         "X-CSRF-Token": await csrfToken(),
       },
       success: () => {
-        reloadAll()
+        teamsData(null)
+        joinedTeamsData(null)
+        loadTeamsData()
+        loadJoinedTeamsData()
+        updateTeamLists()
         $("#team-selection-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
         setTimeout(() => {
           $("#team-selection-save").text("Speichern").prop("disabled", false);
@@ -922,7 +942,11 @@ async function saveTeams() {
       "X-CSRF-Token": await csrfToken(),
     },
     success: () => {
-      reloadAll()
+      teamsData(null)
+      joinedTeamsData(null)
+      loadTeamsData()
+      loadJoinedTeamsData()
+      updateTeamLists()
       $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
       $("#teams-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
       setTimeout(() => {
@@ -1056,7 +1080,9 @@ async function saveEventTypes() {
       "X-CSRF-Token": await csrfToken(),
     },
     success: () => {
-      reloadAll()
+      eventTypeData(null)
+      loadEventTypeData()
+      updateEventTypeList()
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
       $("#event-types-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
       setTimeout(() => {
@@ -1252,7 +1278,9 @@ async function saveSubjects() {
       "X-CSRF-Token": await csrfToken(),
     },
     success: () => {
-      reloadAll()
+      subjectData(null)
+      loadSubjectData()
+      updateSubjectList()
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
       $("#subjects-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
       setTimeout(() => {
@@ -1346,7 +1374,9 @@ $("#timetable-save").on("click", async () => {
       "X-CSRF-Token": await csrfToken(),
     },
     success: () => {
-      reloadAll()
+      lessonData(null)
+      loadLessonData()
+      updateTimetable()
       $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none")
       $("#timetable-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
       setTimeout(() => {
