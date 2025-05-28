@@ -1,4 +1,4 @@
-# Server Setup in Production
+# Server Setup in Production v1.0.1 - stable
 ## What you'll need
 
 * A valid domain (e.g. `codylon.de`)

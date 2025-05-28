@@ -1,17 +1,25 @@
 import { createClient } from "redis";
 import logger from "../utils/logger";
+
 export const cacheKeyHomeworkData = "homework_data";
 export const cacheKeySubstitutionsData = "substitutions_data";
+export const cacheKeyEventData = "event_data";
+export const cacheKeyLessonData = "lesson_data";
+export const cacheKeyEventTypeData = "event_type_data";
+export const cacheKeySubjectData = "subject_data";
+export const cacheKeyTeamData = "teams_data";
 export const cacheExpiration = 3600;
-const redisUrl = process.env.NODE_ENV === "DEVELOPMENT" 
-    ? `redis://localhost:6379`  // Use localhost for development (if running on host machine)
-    : `redis://redis:6379`;     // Use the Docker service name for production
+
+const redisHost = process.env.NODE_ENV === "DEVELOPMENT" ? "localhost" : "redis";
+const redisPort = process.env.REDIS_PORT || "6379";
+const redisUrl = `redis://${redisHost}:${redisPort}`;
+
 export const redisClient = createClient({
   url: redisUrl,
 });
 redisClient.on("error", (err: unknown) => (err instanceof Error) ? logger.error("Redis error:", err) : logger.error("Unknown Redis error!"));
 
-//REDIS Connect
+
 export const connectRedis = async (): Promise<void> => {
   try {
     if (!redisClient.isOpen) {
@@ -29,7 +37,6 @@ export const connectRedis = async (): Promise<void> => {
   }
 };
 
-//REDIS Disconnect
 export const disconnectRedis = async (): Promise<void> => {
   try {
     if (redisClient.isOpen) {
@@ -45,5 +52,3 @@ export const disconnectRedis = async (): Promise<void> => {
     throw new Error();
   }
 };
-
-export default {redisClient, connectRedis, disconnectRedis, cacheKeyHomeworkData, cacheKeySubstitutionsData, cacheExpiration};

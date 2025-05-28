@@ -1,11 +1,9 @@
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
-
+import prisma from "../config/prisma";
 import logger from "../utils/logger";
-import { redisClient, cacheExpiration } from "../config/constant";
-
-import JoinedTeam from "../models/joinedTeamModel";
-import Team from "../models/teamModel";
+import { redisClient, cacheKeyTeamData } from "../config/redis";
+import { updateCacheData } from "../utils/validateFunctions";
 
 const teamService = {
   async getTeamsData() {
@@ -20,11 +18,10 @@ const teamService = {
       }
     }
 
-    const data = await Team.findAll({ raw: true });
-    await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
+    const data = await prisma.team.findMany();
 
     try {
-      await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
+      await updateCacheData(data, cacheKeyTeamData);
     } catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
@@ -33,10 +30,23 @@ const teamService = {
     return data;
   },
   async setTeamsData(teams: { teamId: number | "", name: string }[]) {
-    let existingTeams = await Team.findAll({ raw: true });
+    let existingTeams = await prisma.team.findMany();
     await Promise.all(existingTeams.map(async (team: {teamId: number}) => {
       if (!teams.some((t) => t.teamId === team.teamId)) {
-        await Team.destroy({
+        // delete homework which were linked to team
+        await prisma.homework10d.deleteMany({
+          where: { teamId: team.teamId }
+        });
+        // delete events which were linked to team
+        await prisma.event.deleteMany({
+          where: { teamId: team.teamId }
+        });
+        // delete lessons which were linked to team
+        await prisma.lesson.deleteMany({
+          where: { teamId: team.teamId }
+        });
+        // delete team
+        await prisma.team.delete({
           where: { teamId: team.teamId }
         });
       }
@@ -54,19 +64,19 @@ const teamService = {
       }
       try {
         if (team.teamId == "") {
-          await Team.create({
-            name: team.name
+          await prisma.team.create({
+            data: {
+              name: team.name
+            }
           })
         }
         else {
-          await Team.update(
-            {
+          await prisma.team.update({
+            where: { teamId: team.teamId },
+            data: {
               name: team.name
             },
-            {
-              where: { teamId: team.teamId }
-            }
-          );
+          });
         }
       }
       catch {
@@ -80,11 +90,10 @@ const teamService = {
       }
     }
 
-    const data = await Team.findAll({ raw: true });
-    await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
+    const data = await prisma.team.findMany();
 
     try {
-      await redisClient.set("teams_data", JSON.stringify(data), { EX: cacheExpiration });
+      await updateCacheData(data, cacheKeyTeamData);
     } catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
@@ -105,7 +114,7 @@ const teamService = {
       accountId = session.account.accountId;
     }
 
-    const data = await JoinedTeam.findAll({
+    const data = await prisma.joinedTeams.findMany({
       where: { accountId: accountId }
     });
 
@@ -141,15 +150,17 @@ const teamService = {
       throw err;
     }
 
-    await JoinedTeam.destroy({
+    await prisma.joinedTeams.delete({
       where: { accountId: accountId }
     });
 
     for (let teamId of teams) {
       try {
-        await JoinedTeam.create({
-          teamId: teamId,
-          accountId: accountId
+        await prisma.joinedTeams.create({
+          data: {
+            teamId: teamId,
+            accountId: accountId
+          }
         })
       }
       catch {

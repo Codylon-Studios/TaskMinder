@@ -4,7 +4,7 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v1.0.1] - 2025-05-24
+## \[v1.0.1] - 2025-05-25
 
 ### Added
 

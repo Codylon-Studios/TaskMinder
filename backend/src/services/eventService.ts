@@ -1,10 +1,10 @@
 import logger from "../utils/logger";
-import { redisClient, cacheExpiration } from "../config/constant";
+import { redisClient, cacheExpiration, cacheKeyEventData, cacheKeyEventTypeData } from "../config/redis";
 import socketIO from "../config/socket";
 import sass from "sass";
 
-import EventType from "../models/eventTypeModel";
-import Event from "../models/eventModel";
+import prisma from "../config/prisma";
+import { isValidColor, isValidTeamId, lessonDateEventAtLeastOneNull, updateCacheData, BigIntreplacer } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 
@@ -21,19 +21,25 @@ export const eventService = {
       }
     }
 
-    const eventData = await Event.findAll({ raw: true, order: [["startDate", "ASC"]]});
+    const eventData = await prisma.event.findMany({
+      orderBy: {
+        startDate: 'asc'
+      }
+    });
 
     try {
-      await redisClient.set("event_data", JSON.stringify(eventData), { EX: cacheExpiration });
+      await updateCacheData(eventData, cacheKeyEventData);
     } catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
 
-    return eventData;
+    return JSON.stringify(eventData, BigIntreplacer);
   },
-  async addEvent(reqData: {eventTypeId: number, name: string, description: string | null, startDate: number, lesson: string | null,
-                           endDate: number | null, teamId: number}, session: Session & Partial<SessionData>) {
+  async addEvent(reqData: {
+    eventTypeId: number, name: string, description: string | null, startDate: number, lesson: string | null,
+    endDate: number | null, teamId: number
+  }, session: Session & Partial<SessionData>) {
     const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData
     if (!(session.account)) {
       let err: RequestError = {
@@ -44,15 +50,19 @@ export const eventService = {
       }
       throw err;
     }
+    lessonDateEventAtLeastOneNull(endDate, lesson);
+    isValidTeamId(teamId);
     try {
-      await Event.create({
-        eventTypeId: eventTypeId,
-        name: name,
-        description: description,
-        startDate: startDate,
-        lesson: lesson,
-        endDate: endDate,
-        teamId: teamId
+      await prisma.event.create({
+        data: {
+          eventTypeId: eventTypeId,
+          name: name,
+          description: description,
+          startDate: startDate,
+          lesson: lesson,
+          endDate: endDate,
+          teamId: teamId
+        }
       });
     }
     catch {
@@ -64,9 +74,13 @@ export const eventService = {
       }
       throw err;
     }
-    const eventData = await Event.findAll({ raw: true, order: [["startDate", "ASC"]] });
+    const eventData = await prisma.event.findMany({
+      orderBy: {
+        startDate: 'asc'
+      }
+    });
     try {
-      await redisClient.set("event_data", JSON.stringify(eventData), { EX: cacheExpiration });
+      await updateCacheData(eventData, cacheKeyEventData);
       const io = socketIO.getIO();
       io.emit("updateEventData");
     } catch (err) {
@@ -74,8 +88,10 @@ export const eventService = {
       throw new Error();
     }
   },
-  async editEvent(reqData: {eventId: number, eventTypeId: number, name: string, description: string | null, startDate: number, lesson: string | null,
-                  endDate: number | null, teamId: number}, session: Session & Partial<SessionData>) {
+  async editEvent(reqData: {
+    eventId: number, eventTypeId: number, name: string, description: string | null, startDate: number, lesson: string | null,
+    endDate: number | null, teamId: number
+  }, session: Session & Partial<SessionData>) {
     const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData
     if (!(session.account)) {
       let err: RequestError = {
@@ -86,9 +102,12 @@ export const eventService = {
       }
       throw err;
     }
+    lessonDateEventAtLeastOneNull(endDate, lesson);
+    isValidTeamId(teamId);
     try {
-      await Event.update(
-        {
+      await prisma.event.update({
+        where: { eventId: eventId },
+        data: {
           eventTypeId: eventTypeId,
           name: name,
           description: description,
@@ -97,10 +116,7 @@ export const eventService = {
           endDate: endDate,
           teamId: teamId
         },
-        {
-          where: { eventId: eventId }
-        }
-      );
+      });
     }
     catch {
       let err: RequestError = {
@@ -111,10 +127,14 @@ export const eventService = {
       }
       throw err;
     }
-    
-    const eventData = await Event.findAll({ raw: true, order: [["startDate", "ASC"]] });
+
+    const eventData = await prisma.event.findMany({
+      orderBy: {
+        startDate: 'asc'
+      }
+    });
     try {
-      await redisClient.set("event_data", JSON.stringify(eventData), { EX: cacheExpiration });
+      await updateCacheData(eventData, cacheKeyEventData);
       const io = socketIO.getIO();
       io.emit("updateEventData");
     } catch (err) {
@@ -141,15 +161,19 @@ export const eventService = {
       }
       throw err;
     }
-    await Event.destroy({
+    await prisma.event.delete({
       where: {
         eventId: eventId
       }
     });
-    
-    const eventData = await Event.findAll({ raw: true });
+
+    const eventData = await prisma.event.findMany({
+      orderBy: {
+        startDate: 'asc'
+      }
+    });
     try {
-      await redisClient.set("event_data", JSON.stringify(eventData), { EX: cacheExpiration });
+      await updateCacheData(eventData, cacheKeyEventData);
       const io = socketIO.getIO();
       io.emit("updateEventData");
     } catch (err) {
@@ -169,10 +193,10 @@ export const eventService = {
       }
     }
 
-    const eventTypeData = await EventType.findAll({ raw: true });
+    const eventTypeData = await prisma.eventType.findMany();
 
     try {
-      await redisClient.set("event_type_data", JSON.stringify(eventTypeData), { EX: cacheExpiration });
+      await updateCacheData(eventTypeData, cachedEventTypeData);
     } catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
@@ -180,17 +204,18 @@ export const eventService = {
 
     return eventTypeData;
   },
-  async setEventTypeData(eventTypes: {eventTypeId: number | "", name: string, color: string}[]) {
-    let existingEventTypes = await EventType.findAll({ raw: true });
+  async setEventTypeData(eventTypes: { eventTypeId: number | "", name: string, color: string }[]) {
+    let existingEventTypes = await prisma.eventType.findMany();
     await Promise.all(existingEventTypes.map(async (eventType) => {
       if (!eventTypes.some((e) => e.eventTypeId === eventType.eventTypeId)) {
-        await EventType.destroy({
+        await prisma.eventType.delete({
           where: { eventTypeId: eventType.eventTypeId }
         });
       }
     }));
 
     for (let eventType of eventTypes) {
+      isValidColor(eventType.color);
       if (eventType.name.trim() == "") {
         let err: RequestError = {
           name: "Bad Request",
@@ -202,21 +227,21 @@ export const eventService = {
       }
       try {
         if (eventType.eventTypeId == "") {
-          await EventType.create({
-            name: eventType.name,
-            color: eventType.color
+          await prisma.eventType.create({
+            data: {
+              name: eventType.name,
+              color: eventType.color
+            }
           })
         }
         else {
-          await EventType.update(
-            {
+          await prisma.eventType.update({
+            where: { eventTypeId: eventType.eventTypeId },
+            data: {
               name: eventType.name,
               color: eventType.color
             },
-            {
-              where: { eventTypeId: eventType.eventTypeId }
-            }
-          );
+          });
         }
       }
       catch {
@@ -230,11 +255,10 @@ export const eventService = {
       }
     }
 
-    const eventTypeData = await EventType.findAll({ raw: true });
-    await redisClient.set("event_type_data", JSON.stringify(eventTypeData), { EX: cacheExpiration });
+    const eventTypeData = await prisma.eventType.findMany();
 
     try {
-      await redisClient.set("event_type_data", JSON.stringify(eventTypeData), { EX: cacheExpiration });
+      await updateCacheData(eventTypeData, cacheKeyEventTypeData);
     } catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
@@ -252,7 +276,7 @@ export const eventService = {
         throw new Error();
       }
     }
-    
+
     const eventTypeStyles = await this.updateEventTypeStyles();
 
     return eventTypeStyles;
@@ -262,14 +286,14 @@ export const eventService = {
     let scss = `
       @use "sass:color";
 
-      ${eventTypeData.map((eventType: {eventTypeId: string, name: string, color: string}) => {
-        return `$event-${eventType.eventTypeId}: ${eventType.color};`
-      }).join("")}
+      ${eventTypeData.map((eventType: { eventTypeId: string, name: string, color: string }) => {
+      return `$event-${eventType.eventTypeId}: ${eventType.color};`
+    }).join("")}
 
       $event-colors: (
-        ${eventTypeData.map((eventType: {eventTypeId: string, name: string, color: string}) => {
-          return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`
-        }).join("")}
+        ${eventTypeData.map((eventType: { eventTypeId: string, name: string, color: string }) => {
+      return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`
+    }).join("")}
       );
 
       @each $name, $color in $event-colors {
