@@ -538,6 +538,7 @@ if (! ["/settings/", "/settings"].includes(location.pathname)) {
 
 declare global {
   interface JQueryStatic {
+    escapeHtml(html: string): string;
     formatHtml(html: string, options?: 
       {
         multiNewlineStartNewline?: boolean
@@ -546,8 +547,12 @@ declare global {
   }
 }
 
+$.escapeHtml = (html) => {
+  return $("<div>").text(html).html()
+}
+
 $.formatHtml = (html, options?) => {
-  let escaped = $("<div>").text(html).html()
+  let escaped = $.escapeHtml(html)
   if (options?.multiNewlineStartNewline) {
     if (/\n/.test(escaped)) escaped = "\n" + escaped;
   }

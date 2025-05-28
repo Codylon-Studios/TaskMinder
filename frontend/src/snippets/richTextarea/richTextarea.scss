@@ -1,0 +1,16 @@
+@use "../../global/global" as *;
+
+.rich-textarea-input {
+  @extend .form-control;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  height: 200px; // CHANGE
+  max-height: 158px;
+}
+
+textarea.rich-textarea {
+  //display: none; // CHANGE
+  width: 100%;
+  height: 200px;
+}
