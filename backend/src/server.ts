@@ -104,17 +104,9 @@ if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
           "'self'",
           "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
           "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='",
-
-          //required for mkdocs documentation
-          "'sha256-apoQPHefCNWjxbCm+HzVDOAW4CSVWhY7VylQjgOFyfk='",
-          "'sha256-DrEMJJ29sL7vIloQzly+VUGMxKcBTMII+OfW7Y8AkG4='",
-          "'sha256-10uztYJZm7OLYtHrFaYKCvTOAUfjM17+CoEWk5hLcc4='",
-          "'sha256-/8wPdzX9q0NNJXyA5lzsLojXFpkeaXVxhbfkUOQaWy8='",
-          "'sha256-/K9p2JtEqCycL2fSbEonMakkteWpAHv57x2wndLqMNo='"
         ],
         "connect-src": [
           "'self'",
-          "https://api.github.com/repos/Codylon-Studios/TaskMinder",
           "wss://*"
         ],
         "style-src": [
@@ -176,7 +168,7 @@ const sessionMiddleware = session({
     sameSite: "lax",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     httpOnly: true,
-    secure: process.env.NODE_ENV !== "DEVELOPMENT",
+    // secure: process.env.NODE_ENV !== "DEVELOPMENT",
   },
   name: "UserLogin",
 });
