@@ -3,7 +3,7 @@ import { cacheExpiration, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
 import logger from "./logger";
 
-async function updateCacheData<T>(data: T[], key: any) {
+async function updateCacheData<T>(data: T[], key: string) {
   try {
     await redisClient.set(key, JSON.stringify(data, BigIntreplacer), { EX: cacheExpiration });
   } catch (err) {
