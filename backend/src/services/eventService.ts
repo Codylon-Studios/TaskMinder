@@ -196,7 +196,7 @@ export const eventService = {
     const eventTypeData = await prisma.eventType.findMany();
 
     try {
-      await updateCacheData(eventTypeData, cachedEventTypeData);
+      await updateCacheData(eventTypeData, cacheKeyEventTypeData);
     } catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
