@@ -10,14 +10,14 @@ import { rateLimit } from "express-rate-limit";
 import session from "express-session";
 import helmet from "helmet";
 import { Pool } from "pg";
-import sequelize from "./config/sequelize";
+import prisma from "./config/prisma";
 import socketIO from "./config/socket";
 import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
 import { createDBBackupStreaming } from "./utils/backupTable";
 import cleanupOldHomework from "./utils/homeworkCleanup";
-import { csrfProtection, csrfSessionInit } from "./utils/csrfProtection";
+import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
 import events from "./routes/eventRoute";
@@ -56,27 +56,22 @@ register.registerMetric(httpRequestDurationMicroseconds);
 
 client.collectDefaultMetrics({ register });
 
-
-sequelize.authenticate()
-  .then(() => logger.success("Connected to PostgreSQL"))
-  .catch((err: unknown) => {
-    if (err instanceof Error) {
-      logger.error("Unable to connect to PostgreSQL:", err.message)
-    }
+prisma.$connect()
+  .then(() => {
+    logger.info('Connected to Database');
+  })
+  .catch((err) => {
+    logger.error('DB connection failed:', err);
+    process.exit(1);
   });
 
-sequelize.sync({ alter: true })
-  .then(() => logger.success("Database synced"));
-
-
 const sessionPool = new Pool({
-  user: sequelize.config.username,
-  host: sequelize.config.host,
-  database: sequelize.config.database,
-  password: sequelize.config.password ?? "secret",
-  port: parseInt(sequelize.config.port ?? "0"),
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: 5432,
 });
-
 
 const sessionSecret = process.env.SESSION_SECRET;
 
@@ -109,28 +104,17 @@ if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
           "'self'",
           "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
           "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='",
-
-          //required for mkdocs documentation
-          "'sha256-apoQPHefCNWjxbCm+HzVDOAW4CSVWhY7VylQjgOFyfk='",
-          "'sha256-DrEMJJ29sL7vIloQzly+VUGMxKcBTMII+OfW7Y8AkG4='",
-          "'sha256-10uztYJZm7OLYtHrFaYKCvTOAUfjM17+CoEWk5hLcc4='",
-          "'sha256-/8wPdzX9q0NNJXyA5lzsLojXFpkeaXVxhbfkUOQaWy8='",
-          "'sha256-/K9p2JtEqCycL2fSbEonMakkteWpAHv57x2wndLqMNo='",
-          "https://fonts.googleapis.com"
         ],
         "connect-src": [
           "'self'",
-          "https://api.github.com/repos/Codylon-Studios/TaskMinder",
           "wss://*"
         ],
         "style-src": [
           "'self'",
-          "'unsafe-inline'",
-          "https://fonts.googleapis.com"
+          "'unsafe-inline'"
         ],
         "font-src": [
-          "'self'",
-          "https://fonts.gstatic.com"
+          "'self'"
         ],
         "img-src": ["'self'", "data:"],
         "object-src": ["'none'"],
@@ -184,7 +168,7 @@ const sessionMiddleware = session({
     sameSite: "lax",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     httpOnly: true,
-    secure: process.env.NODE_ENV !== "DEVELOPMENT",
+    // secure: process.env.NODE_ENV !== "DEVELOPMENT",
   },
   name: "UserLogin",
 });
@@ -196,7 +180,6 @@ app.get("/csrf-token", (req, res) => {
 });
 app.use(csrfProtection); 
 app.use(RequestLogger);
-app.use("/docs", express.static(path.join(__dirname, "..", "..", "docs", "dist")));
 
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "service operational" });

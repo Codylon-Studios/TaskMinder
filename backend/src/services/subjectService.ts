@@ -1,9 +1,8 @@
 import { RequestError } from "../@types/requestError";
-
 import logger from "../utils/logger";
-import { redisClient, cacheExpiration } from "../config/constant";
-
-import Subject from "../models/subjectModel";
+import { redisClient, cacheKeySubjectData } from "../config/redis";
+import prisma from "../config/prisma";
+import { isValidGender, updateCacheData } from "../utils/validateFunctions";
 
 const subjectService = {
   async getSubjectData() {
@@ -18,10 +17,10 @@ const subjectService = {
       }
     }
 
-    const data = await Subject.findAll({ raw: true });
+    const data = await prisma.subjects.findMany();
 
     try {
-      await redisClient.set("subject_data", JSON.stringify(data), { EX: cacheExpiration });
+      await updateCacheData(data, cacheKeySubjectData);
     } catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
@@ -31,10 +30,14 @@ const subjectService = {
   }, 
   async setSubjectData(subjects: {subjectId: number | "", subjectNameLong: string, subjectNameShort: string, subjectNameSubstitution: string[] | null,
                                   teacherGender: "d" | "w" | "m", teacherNameLong: string, teacherNameShort: string, teacherNameSubstitution: string[] | null}[]) {
-    let existingSubjects = await Subject.findAll({ raw: true });
+    let existingSubjects = await prisma.subjects.findMany();
     await Promise.all(existingSubjects.map(async (subject) => {
       if (!subjects.some((s) => s.subjectId === subject.subjectId)) {
-        await Subject.destroy({
+        // delete lessons which where linked to subject
+        await prisma.lesson.deleteMany({
+          where: { subjectId: subject.subjectId }
+        });
+        await prisma.subjects.delete({
           where: { subjectId: subject.subjectId }
         });
       }
@@ -51,33 +54,34 @@ const subjectService = {
           }
           throw err;
         }
+        isValidGender(subject.teacherGender);
         try {
           if (subject.subjectId == "") {
-            await Subject.create({
-              subjectNameLong: subject.subjectNameLong,
-              subjectNameShort: subject.subjectNameShort,
-              subjectNameSubstitution: subject.subjectNameSubstitution,
-              teacherGender: subject.teacherGender,
-              teacherNameLong: subject.teacherNameLong,
-              teacherNameShort: subject.teacherNameShort,
-              teacherNameSubstitution: subject.teacherNameSubstitution,
-            })
-          }
-          else {
-            await Subject.update(
-              {
+            await prisma.subjects.create({
+              data: {
                 subjectNameLong: subject.subjectNameLong,
                 subjectNameShort: subject.subjectNameShort,
-                subjectNameSubstitution: subject.subjectNameSubstitution,
+                subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
                 teacherGender: subject.teacherGender,
                 teacherNameLong: subject.teacherNameLong,
                 teacherNameShort: subject.teacherNameShort,
-                teacherNameSubstitution: subject.teacherNameSubstitution,
-              },
-              {
-                where: { subjectId: subject.subjectId }
+                teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
               }
-            );
+            })
+          }
+          else {
+            await prisma.subjects.update({
+              where: { subjectId: subject.subjectId },
+              data: {
+                subjectNameLong: subject.subjectNameLong,
+                subjectNameShort: subject.subjectNameShort,
+                subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
+                teacherGender: subject.teacherGender,
+                teacherNameLong: subject.teacherNameLong,
+                teacherNameShort: subject.teacherNameShort,
+                teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
+              }
+            });
           }
         }
         catch {
@@ -91,10 +95,10 @@ const subjectService = {
         }
     }
 
-    const data = await Subject.findAll({ raw: true });
+    const data = await prisma.subjects.findMany();
 
     try {
-      await redisClient.set("subject_data", JSON.stringify(data), { EX: cacheExpiration });
+      await updateCacheData(data, cacheKeySubjectData);
     } catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();

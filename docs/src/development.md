@@ -1,5 +1,8 @@
 # Development Setup Guide
 
+!!! warning "Docs for develop branch"
+    This guide outlines the current development process and is intended for contributing to the develop branch. It may differ from the steps used in the latest stable release.
+
 This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing nodeJS, npm, python3, mkdocs-material, redis, and PostgreSQL.
 
 !!! warning "License Notice"
@@ -162,28 +165,14 @@ Replace `your_db_name` with your actual database name.
 ### Create the `.env` File
 
 To securely manage credentials, create a `.env` file in your project root directory. Replace placeholders (`your_*`) with your actual values.
-
-```env
-DB_USER=postgres
-DB_PASSWORD=your_postgres_pwd
-DB_NAME=your_db_name
-DB_HOST=localhost
-NODE_ENV=DEVELOPMENT
-REDIS_HOST=redis
-REDIS_PORT=6379
-SESSION_SECRET=your_session_secret
-DSB_USER=your_dsb_user
-DSB_PASSWORD=your_dsb_pwd
-CLASSCODE=your_classcode
-DSB_ACTIVATED=your_dsb_value
-```
+You will find an .env example file in .env.example in the root folder.
 
 - `SESSION_SECRET` and `CLASSCODE` should be secure, consistent passwords.
 - `DSB_USER` and `DSB_PASSWORD` are credentials for [DSBmobile](https://www.dsbmobile.de), used to fetch substitution data. If unavailable, you may use placeholders and set `DSB_ACTIVATED` to false.
 
 ---
 
-###  Setup mkdocs
+###  Setup mkdocs-material (documentation)
 Follow this video guide:  
 📺 [How to set up Material for MkDocs](https://www.youtube.com/watch?v=xlABhbnNrfI)  
 You only need the installation part (timestamp 3:49–5:53).
@@ -194,6 +183,6 @@ You only need the installation part (timestamp 3:49–5:53).
 
 Run this dommand to compile the typescript code and start the development server, run:
 ```zsh
-npm run dev
+npm run dev-build
 ```
 ---

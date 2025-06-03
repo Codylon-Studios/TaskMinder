@@ -7,6 +7,8 @@
 # Ignore sensitive data
 /src/subjects.json
 /src/timetable.json
+# Ignore DS Store files
+.DS_Store
 # Ignore Docker Secrets (/docker_secrets folder)
 /docker_secrets
 # Logs

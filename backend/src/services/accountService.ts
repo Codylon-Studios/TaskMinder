@@ -1,6 +1,5 @@
 import bcrypt from "bcrypt";
-import Account from "../models/accountModel";
-import JoinedClass from "../models/joinedClassModel";
+import prisma from "../config/prisma";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 
@@ -64,7 +63,7 @@ export default {
       throw err;
     }
 
-    const accountExists = await Account.findOne({
+    const accountExists = await prisma.account.findUnique({
       where: { username: username },
     });
     if (accountExists) {
@@ -78,17 +77,21 @@ export default {
       throw err;
     }
     const hashedPassword = await bcrypt.hash(password, SALTROUNDS);
-    const account = await Account.create({
-      username: username,
-      password: hashedPassword
+    const account = await prisma.account.create({
+      data: {
+        username: username,
+        password: hashedPassword
+      }
     });
     const accountId = account.accountId;
     session.account = { username, accountId };
 
     if (session.classJoined) {
       let accountId = session.account.accountId
-      JoinedClass.create({
-        accountId: accountId
+      await prisma.joinedClass.create({
+        data: {
+          accountId: accountId
+        }
       });
     }
   },
@@ -125,7 +128,11 @@ export default {
       }
       throw err;
     }
-    const account = await Account.findOne({ where: { username: username } });
+    const account = await prisma.account.findUnique({ 
+      where: { 
+        username: username 
+      } 
+    });
     if (!account) {
       let err: RequestError = {
         name: "Unauthorized",
@@ -149,10 +156,16 @@ export default {
     const accountId = account.accountId;
     session.account = { username, accountId };
 
-    const joinedClassExists = await JoinedClass.findOne({ where: { accountId: accountId } });
+    const joinedClassExists = await prisma.joinedClass.findUnique({
+        where: { 
+          accountId: accountId 
+        }
+    });
     if (joinedClassExists == null && session.classJoined) {
-      JoinedClass.create({
-        accountId: accountId
+      prisma.joinedClass.create({
+        data: {
+          accountId: accountId
+        }
       });
     }
     else if (joinedClassExists != null) {
@@ -171,7 +184,11 @@ export default {
       throw err;
     }
     const username = session.account.username;
-    const account = await Account.findOne({ where: { username: username } });
+    const account = await prisma.account.findUnique({ 
+      where: { 
+        username: username 
+      } 
+    });
     if (! account) {
       let err: RequestError = {
         name: "Bad Request",
@@ -192,13 +209,19 @@ export default {
       }
       throw err;
     }
-    await account.destroy();
+    await prisma.account.delete({
+      where: { 
+        username: username 
+      } 
+    });
     session.destroy((err: unknown) => {
       if (err) throw (err instanceof Error) ? err : new Error("Error destroying session during account deletion");
     });
   },
   async checkUsername(username: string) {
-    const accountExists = await Account.findOne({ where: { username: username } });
+    const accountExists = await prisma.account.findUnique({ 
+      where: { username: username } 
+    });
     return accountExists != null;
   },
   async joinClass(classcode: string, session: Session & Partial<SessionData>) {
@@ -215,10 +238,16 @@ export default {
       session.classJoined = true;
       if (session.account) {
         let accountId = session.account.accountId
-        const joinedClassExists = await JoinedClass.findOne({ where: { accountId: accountId } });
+        const joinedClassExists = await prisma.joinedClass.findUnique({ 
+          where: { 
+            accountId: accountId 
+          } 
+        });
         if (joinedClassExists == null) {
-          JoinedClass.create({
-            accountId: accountId
+          prisma.joinedClass.create({
+            data: {
+              accountId: accountId
+            }
           });
         }
       }

@@ -1,5 +1,4 @@
-import { Op } from "sequelize";
-import Homework from "../models/homeworkModel";
+import prisma from "../config/prisma";
 import logger from "./logger";
 
 /**
@@ -8,28 +7,30 @@ import logger from "./logger";
 export default async function cleanupOldHomework() {
   try {
     logger.setStandardPrefix("[CronJob]");
+    
     // Calculate the timestamp for 60 days ago (in milliseconds)
-    const thirtyDaysAgo = Date.now() - (60 * 24 * 60 * 60 * 1000);
-    
-    // Find and count records to be deleted
-    const count = await Homework.count({
+    const sixtyDaysAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
+
+
+    // Count records to be deleted
+    const count = await prisma.homework10d.count({
       where: {
         submissionDate: {
-          [Op.lt]: thirtyDaysAgo
-        }
-      }
+          lt: sixtyDaysAgo,
+        },
+      },
     });
-    
-    // Delete records older than 30 days
-    const result = await Homework.destroy({
+
+    // Delete the records
+    const deleted = await prisma.homework10d.deleteMany({
       where: {
         submissionDate: {
-          [Op.lt]: thirtyDaysAgo
-        }
-      }
+          lt: sixtyDaysAgo,
+        },
+      },
     });
-    
-    logger.info("Homework cleanup completed: ", result, "records deleted out of ", count, " found");
+
+    logger.info("Homework cleanup completed:", deleted.count, "records deleted out of", count, "found");
   } catch (error) {
     logger.error("Error during homework cleanup:", error);
   }

@@ -8,4 +8,4 @@
   &copy; 2025 Codylon Studios
 </p>
 
-[Documentation](https://codylon.de/docs)
+[Documentation](https://docs.codylon.de)

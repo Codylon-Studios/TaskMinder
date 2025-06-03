@@ -1,4 +1,4 @@
-import { redisClient, cacheKeySubstitutionsData, cacheExpiration } from "../config/constant";
+import { redisClient, cacheKeySubstitutionsData, cacheExpiration } from "../config/redis";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import iconv from "iconv-lite";

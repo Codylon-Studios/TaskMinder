@@ -3,7 +3,7 @@ docs_dir: src
 site_dir: dist
 # Project information
 site_name: TaskMinder Docs
-site_url: https://codylon.de/docs
+site_url: https://docs.codylon.de
 site_author: Codylon Studios
 site_description: >-
   You can search for different projects and install guides to see what Codylon Studios has done so far.
@@ -40,7 +40,9 @@ theme:
 nav:
   - Home: index.md
   - Development: development.md
-  - Production: deploy.md
+  - Production (v1-stable-v1.0.1): deploy-v1.md
+  - Production (v2-unstable): deploy-v2.md
+  - Migrations (preview): migrations.md
   - About:
     - License: license.md
     - Release Notes: release-notes.md

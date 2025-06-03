@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  accountId        Int                @id @unique(map: "account_account_id") @default(autoincrement()) @map("accountId")
+  username         String             @unique
+  password         String
+  isAdmin          Boolean?
+  Homework10dCheck Homework10dCheck[]
+  JoinedClass      JoinedClass[]
+  JoinedTeams      JoinedTeams[]
+
+  @@map("account")
+}
+
+model AccountSessions {
+  sid    String   @id(map: "session_pkey") @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+  @@map("account_sessions")
+}
+
+model Event {
+  eventId     Int       @id @default(autoincrement()) @map("eventId")
+  eventTypeId Int
+  name        String
+  description String?
+  startDate   BigInt
+  endDate     BigInt?
+  lesson      String?
+  teamId      Int
+  EventType   EventType @relation(fields: [eventTypeId], references: [eventTypeId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("event")
+}
+
+model EventType {
+  eventTypeId Int     @id @default(autoincrement()) @map("eventTypeId")
+  name        String
+  color       String?
+  Event       Event[]
+
+  @@map("eventType")
+}
+
+model Homework10d {
+  homeworkId       Int                @id @default(autoincrement()) @map("homeworkId")
+  content          String
+  subjectId        Int
+  assignmentDate   BigInt
+  submissionDate   BigInt
+  teamId           Int
+  Subjects         Subjects           @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade, onUpdate: NoAction)
+  Homework10dCheck Homework10dCheck[]
+
+  @@map("homework10d")
+}
+
+model Homework10dCheck {
+  checkId     Int         @id @default(autoincrement()) @map("checkId")
+  accountId   Int         @unique
+  homeworkId  Int
+  Account     Account     @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
+  Homework10d Homework10d @relation(fields: [homeworkId], references: [homeworkId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([accountId, homeworkId], map: "homework10d_check_account_id_homework_id")
+  @@map("homework10dCheck")
+}
+
+model JoinedClass {
+  joinedClassId Int     @id @default(autoincrement()) @map("joinedClassId")
+  accountId     Int     @unique
+  Account       Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("joinedClass")
+}
+
+model JoinedTeams {
+  joinedTeamId Int     @id @default(autoincrement()) @map("joinedTeamId")
+  teamId       Int
+  accountId    Int     @unique
+  Account      Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
+  Team         Team    @relation(fields: [teamId], references: [teamId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([teamId, accountId], map: "joined_teams_team_id_account_id")
+  @@map("joinedTeams")
+}
+
+model Lesson {
+  lessonId     Int    @id @default(autoincrement()) @map("lessonId")
+  lessonNumber Int
+  weekDay      Int
+  teamId       Int
+  subjectId    Int
+  room         String
+  startTime    BigInt
+  endTime      BigInt
+
+  @@map("lesson")
+}
+
+model Subjects {
+  subjectId               Int           @id @default(autoincrement()) @map("subjectId")
+  subjectNameLong         String
+  subjectNameShort        String
+  subjectNameSubstitution String[]
+  teacherGender           String
+  teacherNameLong         String
+  teacherNameShort        String
+  teacherNameSubstitution String[]
+  Homework10d             Homework10d[]
+
+  @@map("subjects")
+}
+
+model Team {
+  teamId      Int           @id @default(autoincrement()) @map("teamId")
+  name        String
+  JoinedTeams JoinedTeams[]
+
+  @@map("team")
+}
+
+model Timetable {
+  timetableId Int    @id @default(autoincrement()) @map("timetableId")
+  class       Int
+  content     Json   @db.Json
+  lastUpdated BigInt
+
+  @@map("timetable")
+}

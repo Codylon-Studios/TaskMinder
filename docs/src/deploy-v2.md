@@ -1,4 +1,6 @@
-# Server Setup in Production
+# Server Setup in Production v2 - unstable
+!!! warning
+    This guide is based on non-final decisions and is subject to frequent changes as it reflects the current state of the develop branch. It serves only as a preview of the upcoming documentation version.
 ## What you'll need
 
 * A valid domain (e.g. `codylon.de`)
@@ -122,13 +124,13 @@ sudo fail2ban-client status
 
 ## 3. Clone the Project from GitHub
 
+!!! info
+    Change this to pull from the develop branch
 ```bash
 cd /opt
 sudo git clone https://github.com/Codylon-Studios/TaskMinder.git
 cd TaskMinder
 ```
-
-> Note: This folder will be used later for Docker secrets and configuration.
 
 ---
 
@@ -220,8 +222,7 @@ Before starting the application, create the following **text files inside the `d
 | `redis_port.txt`     | Redis port (default is `6379`).                                                          |
 | `session_secret.txt` | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                   |
 | `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.    |
-
-> ⚠️ Make sure there are **no trailing newlines** in these files if your secrets are parsed line-by-line in containers.
+| `database_url.txt` | Provides the database URL for Prisma ORM:  `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`   |
 
 ---
 

@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
 import { RequestError } from "../@types/requestError";
-import logger from "./logger";
+import logger from "../utils/logger";
 
 function generateCSRFToken(): string {
 	return crypto.randomBytes(32).toString("hex");

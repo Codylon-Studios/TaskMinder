@@ -1,20 +1,12 @@
-import { connectRedis, redisClient, cacheKeyHomeworkData, cacheExpiration } from "../config/constant";
-import Homework10d from "../models/homeworkModel";
-import Homework10dCheck from "../models/homeworkCheck";
+import { connectRedis, redisClient, cacheKeyHomeworkData } from "../config/redis";
 import socketIO from "../config/socket";
+import prisma from "../config/prisma";
+import { isValidTeamId, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../utils/logger";
 
 connectRedis();
-
-async function updateCacheHomeworkData(data: Homework10d[]) {
-  try {
-    await redisClient.set(cacheKeyHomeworkData, JSON.stringify(data), { EX: cacheExpiration });
-  } catch (err) {
-    logger.error("Error updating Redis cache:", err);
-  }
-};
 
 const homeworkService = {
   async addHomework(reqData: {subjectId: number, content: string, assignmentDate: number, submissionDate: number,
@@ -29,13 +21,16 @@ const homeworkService = {
       }
       throw err;
     }
+    isValidTeamId(teamId);
     try {
-      await Homework10d.create({
-        content: content,
-        subjectId: subjectId,
-        assignmentDate: assignmentDate,
-        submissionDate: submissionDate,
-        teamId: teamId
+      await prisma.homework10d.create({
+        data: {
+          content: content,
+          subjectId: subjectId,
+          assignmentDate: assignmentDate,
+          submissionDate: submissionDate,
+          teamId: teamId
+        }
       });
     }
     catch {
@@ -47,8 +42,12 @@ const homeworkService = {
       }
       throw err;
     }
-    const data = await Homework10d.findAll({ raw: true, order: [["submissionDate", "ASC"]] });
-    await updateCacheHomeworkData(data);
+    const data = await prisma.homework10d.findMany({
+      orderBy: {
+        submissionDate: 'asc'
+      }
+    });
+    await updateCacheData(data, cacheKeyHomeworkData);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
@@ -68,13 +67,16 @@ const homeworkService = {
       accountId = session.account.accountId;
     }
     if (checkStatus == "true") {
-      await Homework10dCheck.findOrCreate({
+      await prisma.homework10dCheck.upsert({
         where: { accountId, homeworkId },
-        defaults: { accountId, homeworkId },
+        update: {},
+        create: {
+          accountId, homeworkId
+        }
       });
     }
     else {
-      await Homework10dCheck.destroy({
+      await prisma.homework10dCheck.delete({
         where: {
           accountId: accountId,
           homeworkId: homeworkId,
@@ -104,13 +106,17 @@ const homeworkService = {
       }
       throw err;
     }
-    await Homework10d.destroy({
+    await prisma.homework10d.delete({
       where: {
         homeworkId: homeworkId
       }
     });
-    const data = await Homework10d.findAll({ raw: true, order: [["submissionDate", "ASC"]] });
-    await updateCacheHomeworkData(data);
+    const data = await prisma.homework10d.findMany({
+      orderBy: {
+        submissionDate: 'asc'
+      }
+    });
+    await updateCacheData(data, cacheKeyHomeworkData);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
@@ -126,20 +132,19 @@ const homeworkService = {
           expected: true,
         }
       throw err;
-    }
+      }
+      isValidTeamId(teamId);
     try {
-      await Homework10d.update(
-        {
+      await prisma.homework10d.update({
+        where: {homeworkId: homeworkId},
+        data: {
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
           submissionDate: submissionDate,
           teamId: teamId
-        },
-        {
-          where: { homeworkId: homeworkId }
         }
-      );
+    });
     }
     catch {
       let err: RequestError = {
@@ -151,8 +156,12 @@ const homeworkService = {
       throw err;
     }
     
-    const data = await Homework10d.findAll({ raw: true, order: [["submissionDate", "ASC"]] });
-    await updateCacheHomeworkData(data);
+    const data = await prisma.homework10d.findMany({
+      orderBy: {
+        submissionDate: 'asc'
+      }
+    });
+    await updateCacheData(data, cacheKeyHomeworkData);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
@@ -169,11 +178,15 @@ const homeworkService = {
       }
     }
 
-    const data = await Homework10d.findAll({ raw: true, order: [["submissionDate", "ASC"]] });
+    const data = await prisma.homework10d.findMany({
+      orderBy: {
+        submissionDate: 'asc'
+      }
+    });
 
-    await updateCacheHomeworkData(data);
+    await updateCacheData(data, cacheKeyHomeworkData);
 
-    return data;
+    return JSON.stringify(data, BigIntreplacer);
   },
 
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {
@@ -189,10 +202,11 @@ const homeworkService = {
     } else {
       accountId = session.account.accountId;
     }
-    let homework = await Homework10dCheck.findAll({
+    let homework = await prisma.homework10dCheck.findMany({
       where: { accountId: accountId },
-      attributes: [ "homeworkId" ],
-      raw: true
+      select: {
+        homeworkId: true
+      },
     });
 
     let homeworkIds = homework.map((homework) => {return homework.homeworkId})
