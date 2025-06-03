@@ -4,6 +4,24 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v1.1.0] - 2025-06-03
+
+### Added
+
+* .env.example file
+
+### Changed
+
+* Moved docs to host on readthedocs
+* Migrate to prisma ORM, add migrations
+
+### Fixed
+
+* wrong joinedTeamsData saved locally
+* edit toggle btn doesn't always show up when logged in
+
+---
+
 ## \[v1.0.1] - 2025-05-25
 
 ### Added
