@@ -453,18 +453,25 @@ $(function(){
   )
   reloadAll();
 
-  $(window).on("userDataLoaded", () => {
-    // If user is logged in, show the edit toggle button
-    user.on("login", () => {
-      $("#edit-toggle-label").removeClass("d-none");
-    });
-
-    user.on("logout", () => {
-      $("#edit-toggle-label").addClass("d-none")
-      $("#show-add-event-button").addClass("d-none");
-      $(".event-edit-options").addClass("d-none");
-    });
+  // If user is logged in, show the edit toggle button
+  user.on("login", () => {
+    $("#edit-toggle-label").removeClass("d-none");
   });
+
+  user.on("logout", () => {
+    $("#edit-toggle-label").addClass("d-none")
+    $("#show-add-event-button").addClass("d-none");
+    $(".event-edit-options").addClass("d-none");
+  });
+
+  if (user.loggedIn) {
+    $("#edit-toggle-label").removeClass("d-none");
+  }
+  else {
+    $("#edit-toggle-label").addClass("d-none")
+    $("#show-add-event-button").addClass("d-none");
+    $(".event-edit-options").addClass("d-none");
+  }
 
   // Leave edit mode (if user entered it in a previous session)
   $("#edit-toggle").prop("checked", false);
