@@ -127,9 +127,6 @@ cd /opt
 sudo git clone https://github.com/Codylon-Studios/TaskMinder.git
 cd TaskMinder
 ```
-
-> Note: This folder will be used later for Docker secrets and configuration.
-
 ---
 
 ## 4. Configure NGINX
@@ -220,8 +217,7 @@ Before starting the application, create the following **text files inside the `d
 | `redis_port.txt`     | Redis port (default is `6379`).                                                          |
 | `session_secret.txt` | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                   |
 | `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.    |
-
-> ⚠️ Make sure there are **no trailing newlines** in these files if your secrets are parsed line-by-line in containers.
+| `database_url.txt` | Provides the database URL for Prisma ORM:  `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`. |
 
 ---
 

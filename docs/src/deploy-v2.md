@@ -1,5 +1,5 @@
 # Server Setup in Production v2 - unstable
-!!! info
+!!! warning
     This guide is based on non-final decisions and is subject to frequent changes as it reflects the current state of the develop branch. It serves only as a preview of the upcoming documentation version.
 ## What you'll need
 
