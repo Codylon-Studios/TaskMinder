@@ -11,9 +11,9 @@ $fa-font-path: "/assets/fonts/fontawesome";
 .color-picker-popup {
   @extend .position-absolute, .rounded, .p-2, .shadow, .flex-column;
   background: var(--bs-body-bg);
-  border: 1px solid var(--btn-tertiary-active);
+  border: 1px solid $card-border-color;
   display: flex;
-  z-index: 1;
+  z-index: 1055;
 }
 
 .color-picker-hsl-wrapper {

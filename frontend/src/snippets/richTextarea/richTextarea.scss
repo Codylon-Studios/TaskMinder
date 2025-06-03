@@ -1,3 +1,4 @@
+@use "sass:color";
 @use "../../global/global" as *;
 
 .rich-textarea-input {
@@ -5,12 +6,51 @@
   overflow-y: auto;
   white-space: pre-wrap;
   word-wrap: break-word;
-  height: 200px; // CHANGE
   max-height: 158px;
+
+  &.rich-textarea-empty::before {
+    content: "Text eingeben...";
+    color: var(--bs-secondary-color)
+  }
 }
 
 textarea.rich-textarea {
-  //display: none; // CHANGE
+  display: none;
   width: 100%;
   height: 200px;
+}
+
+.rich-textarea-font-size span {
+  font-size: 0.7em;
+}
+
+.sub {
+  vertical-align: sub
+}
+
+.sup {
+  vertical-align: super
+}
+
+.rich-textarea-color svg {
+  fill: #3bb9ca;
+  width: 1.2rem;
+  height: 1.15rem;
+  margin-top: -0.25rem;
+  stroke: var(--bs-body-color)
+}
+
+.rich-textarea-color-picker ~ .color-picker-trigger {
+  visibility: hidden;
+  margin-right: -26px;
+  transform: translateX(-26px);
+  width: 26px;
+}
+
+.rich-textarea-toolbar button.enabled {
+  color: #3bb9ca !important;
+}
+
+.rich-textarea-span-link-enabled {
+  background: color.change($color: #3bb9ca, $alpha: 0.2)
 }

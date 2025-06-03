@@ -12,6 +12,7 @@
 <body>
   <div class="load-snippet" data-target="navbar" data-html data-js></div>
   <div class="load-snippet" data-target="richTextarea" data-html data-css data-js></div>
+  <div class="load-snippet" data-target="colorPicker" data-html data-css data-js></div>
 
   <div class="container">
     <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
@@ -78,8 +79,6 @@
       <!--Gets filled-->
     </div>
 
-    <textarea class="rich-textarea"></textarea>
-
     <div class="modal fade" id="add-event-modal">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -109,7 +108,7 @@
               <label for="add-event-description" class="form-label">
                 Füge eine Beschreibung für das Ereignis hinzu (optional)
               </label>
-              <textarea type="text" class="form-control add-event-input" id="add-event-description" placeholder='zum Beispiel abgefragter Stoff'></textarea>
+              <textarea type="text" class="rich-textarea add-event-input" id="add-event-description" placeholder='zum Beispiel abgefragter Stoff'></textarea>
             </div>
 
             <div class="mb-3">
@@ -182,7 +181,7 @@
               <label for="edit-event-description" class="form-label">
                 Füge eine Beschreibung für das Ereignis hinzu (optional)
               </label>
-              <textarea type="text" class="form-control edit-event-input" id="edit-event-description" placeholder='zum Beispiel abgefragter Stoff'></textarea>
+              <textarea type="text" class="rich-textarea edit-event-input" id="edit-event-description" placeholder='zum Beispiel abgefragter Stoff'></textarea>
             </div>
 
             <div class="mb-3">
@@ -271,7 +270,7 @@
                 <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" id="delete-event-confirm-toast-button">Löschen</button>
               </div>
             </div>
-        </div>
+          </div>
         </div>
       </div>
     </div>

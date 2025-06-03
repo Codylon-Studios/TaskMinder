@@ -3,9 +3,11 @@ import { addUpdateAllFunction, dateToMs, getHomeworkCheckStatus, homeworkChecked
          reloadAll,
          csrfToken} from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js"
 
 const updateHomeworkList = runOnce(async (): Promise<void> => {
-  let newContent = ""
+  let newContent = $("<div></div>")
+  let addedElements: JQuery<HTMLElement> = $();
   
   // Check if user is in edit mode
   let editEnabled = $("#edit-toggle").is(":checked");
@@ -58,31 +60,37 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
 
     // The template for a homework with checkbox and edit options
     let template = 
-      `<div class="mb-1 form-check d-flex">
+      $(`<div class="mb-1 form-check">
         <label class="form-check-label">
           <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkId}" ${(checked) ? "checked" : ""}>
-          <b>${$.formatHtml(subject ?? "")}</b> ${$.formatHtml(content, { multiNewlineStartNewline: true })}
-          <span class="ms-4 d-block">Von ${assignmentDate} bis ${submissionDate}</span>
+          <b>${$.formatHtml(subject ?? "")}</b>
         </label>
+        <span class="homework-content"></span>
+        <span class="ms-4 d-block">Von ${assignmentDate} bis ${submissionDate}</span>
+
         <div class="homework-edit-options ms-2 ${(editEnabled) ? "" : "d-none"}">
-          <button class="btn btn-sm btn-tertiary homework-edit" data-id="${homeworkId}">
-            <i class="fa-solid fa-edit opacity-50"></i>
+          <button class="btn btn-sm btn-semivisible homework-edit" data-id="${homeworkId}">
+            <i class="fa-solid fa-edit opacity-75"></i>
           </button>
-          <button class="btn btn-sm btn-tertiary homework-delete" data-id="${homeworkId}">
-            <i class="fa-solid fa-trash opacity-50"></i>
+          <button class="btn btn-sm btn-semivisible homework-delete" data-id="${homeworkId}">
+            <i class="fa-solid fa-trash opacity-75"></i>
           </button>
         </div>
-      </div>`;
+      </div>`);
 
     // Add this homework to the list
-    newContent += template;
+    newContent.append(template);
+
+    richTextToHtml(content, template.find(".homework-content"), { showMoreButton: true, parseLinks: true, displayBlockIfNewline: true })
+    addedElements = addedElements.add(template.find(".homework-content"))
   };
 
   // If no homeworks match, add an explanation text
-  if (newContent == "") {
-    newContent = `<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>`
+  if (newContent.html() == "") {
+    newContent.html(`<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>`)
   }
-  $("#homework-list").html(newContent)
+  $("#homework-list").empty().append(newContent.children())
+  addedElements.trigger("addedToDom")
 })
 
 const  updateSubjectList = runOnce(async (): Promise<void> => {
@@ -165,6 +173,7 @@ function addHomework() {
   // Reset the data inputs in the add homework modal
   $("#add-homework-subject").val("");
   $("#add-homework-content").val("");
+  $("#add-homework-content").trigger("change")
   $("#add-homework-date-assignment").val(msToInputDate(Date.now())); // But set the assignment date to the current date
   $("#add-homework-date-submission").val("");
   $("#add-homework-team").val("-1");
@@ -250,8 +259,7 @@ async function editHomework(homeworkId: number) {
 
   // Set the inputs on the already saved information
   $("#edit-homework-subject").val(homework.subjectId);
-  $("#edit-homework-content").val(homework.content);
-  $("#edit-homework-content").css({ height: `${Math.min((homework.content.match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
+  $("#edit-homework-content").val(homework.content).trigger("change")
   $("#edit-homework-date-assignment").val(msToInputDate(homework.assignmentDate));
   $("#edit-homework-date-submission").val(msToInputDate(homework.submissionDate));
   $("#edit-homework-team").val(homework.teamId);
@@ -265,7 +273,7 @@ async function editHomework(homeworkId: number) {
   // Called when the user clicks the "edit" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
   $("#edit-homework-button").off("click").on("click", async () => {
-    // Save the given information in variables>
+    // Save the given information in variables
     const subject = $("#edit-homework-subject").val();
     const content = $("#edit-homework-content").val()?.toString().trim();
     const assignmentDate = $("#edit-homework-date-assignment").val()?.toString() ?? "";
@@ -587,11 +595,6 @@ $(function(){
     }
   })
 
-  $("#add-homework-content").css({ height: "38px" })
-  $("#add-homework-content").on("input", function () {
-    $(this).css({ height: `${Math.min((($(this).val() ?? "").toString().match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
-  })
-
   // On changing any information in the edit homework modal, disable the edit button if any information is empty
   $(".edit-homework-input").on("input", () => {
     const subject = $("#edit-homework-subject").val();
@@ -605,11 +608,6 @@ $(function(){
     else {
       $("#edit-homework-button").removeClass("disabled");
     }
-  })
-
-  $("#edit-homework-content").css({ height: "38px" })
-  $("#edit-homework-content").on("input", function () {
-    $(this).css({ height: `${Math.min((($(this).val() ?? "").toString().match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
   })
 
   // Don't close the dropdown when the user clicked inside of it

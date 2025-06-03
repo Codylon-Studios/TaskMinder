@@ -78,8 +78,8 @@ function replaceColorPickers() {
       let offset = trigger.offset() ?? { left: 0, top: 0 };
       let yBelow = offset.top + (trigger.outerHeight() ?? 0) + 4;
       let yAbove = offset.top - (popup.outerHeight() ?? 0) - 4;
-      let xLeft = offset.left;
-      let xRight = offset.left + (trigger.outerWidth() ?? 0) - (popup.outerWidth() ?? 0);
+      let xRight = offset.left;
+      let xLeft = offset.left + (trigger.outerWidth() ?? 0) - (popup.outerWidth() ?? 0);
 
       let positionY = "below"; // Standard position
       if (yBelow + (popup.outerHeight() ?? 0) - ($(window).scrollTop() ?? 0) > ($(window).height() ?? 0) && // Not enough space below
@@ -87,15 +87,15 @@ function replaceColorPickers() {
         positionY = "above";
       }
 
-      let positionX = "left"; // Standard position
-      if (xLeft + (popup.outerWidth() ?? 0) > ($(window).width() ?? 0) && // Not enough space on the left
-         (xRight - (popup.outerWidth() ?? 0) < 0)) { // Enough space on the right
-        positionX = "right";
+      let positionX = "right"; // Standard position
+      if (xRight + (popup.outerWidth() ?? 0) > ($(window).width() ?? 0) && // Not enough space on the right
+         (xLeft > 0)) { // Enough space on the left
+        positionX = "left";
       }
 
       popup.css({
         top: (positionY == "below") ? yBelow : yAbove,
-        left: (positionX == "left") ? xLeft : xRight,
+        left: (positionX == "right") ? xRight : xLeft,
       }).toggle();
 
       setHslSelection(input.val() as string);
