@@ -853,7 +853,12 @@ $("#team-selection-save").on("click", async () => {
     }, 1000);
   }
   else {
-    localStorage.setItem("joinedTeamsData", JSON.stringify(joinedTeamsData))
+    localStorage.setItem("joinedTeamsData", JSON.stringify(newJoinedTeamsData))
+    teamsData(null)
+    joinedTeamsData(null)
+    loadTeamsData()
+    loadJoinedTeamsData()
+    updateTeamLists()
     $("#team-selection-save").html(`<i class="fa-solid fa-circle-check"></i>`).prop("disabled", true);
     setTimeout(() => {
       $("#team-selection-save").text("Speichern").prop("disabled", false);

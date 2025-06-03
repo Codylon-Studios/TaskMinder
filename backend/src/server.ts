@@ -110,8 +110,7 @@ if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
           "'sha256-DrEMJJ29sL7vIloQzly+VUGMxKcBTMII+OfW7Y8AkG4='",
           "'sha256-10uztYJZm7OLYtHrFaYKCvTOAUfjM17+CoEWk5hLcc4='",
           "'sha256-/8wPdzX9q0NNJXyA5lzsLojXFpkeaXVxhbfkUOQaWy8='",
-          "'sha256-/K9p2JtEqCycL2fSbEonMakkteWpAHv57x2wndLqMNo='",
-          "https://fonts.googleapis.com"
+          "'sha256-/K9p2JtEqCycL2fSbEonMakkteWpAHv57x2wndLqMNo='"
         ],
         "connect-src": [
           "'self'",
@@ -120,12 +119,10 @@ if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
         ],
         "style-src": [
           "'self'",
-          "'unsafe-inline'",
-          "https://fonts.googleapis.com"
+          "'unsafe-inline'"
         ],
         "font-src": [
-          "'self'",
-          "https://fonts.gstatic.com"
+          "'self'"
         ],
         "img-src": ["'self'", "data:"],
         "object-src": ["'none'"],
