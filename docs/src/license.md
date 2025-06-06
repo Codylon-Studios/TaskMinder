@@ -34,4 +34,4 @@ The software is provided "as is", without warranties of any kind, express or imp
 
 ### Contact  
 For commercial licensing or other inquiries, please contact:
-[codylon.studios@gmail.com](mailto:codylon.studios@gmail.com)
+[contact@codylon.de](mailto:contact@codylon.de)

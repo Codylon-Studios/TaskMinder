@@ -27,72 +27,86 @@ const subjectService = {
     }
 
     return data;
-  }, 
-  async setSubjectData(subjects: {subjectId: number | "", subjectNameLong: string, subjectNameShort: string, subjectNameSubstitution: string[] | null,
-                                  teacherGender: "d" | "w" | "m", teacherNameLong: string, teacherNameShort: string, teacherNameSubstitution: string[] | null}[]) {
-    let existingSubjects = await prisma.subjects.findMany();
-    await Promise.all(existingSubjects.map(async (subject) => {
-      if (!subjects.some((s) => s.subjectId === subject.subjectId)) {
-        // delete lessons which where linked to subject
-        await prisma.lesson.deleteMany({
-          where: { subjectId: subject.subjectId }
-        });
-        await prisma.subjects.delete({
-          where: { subjectId: subject.subjectId }
-        });
-      }
-    }));
+  },
+  async setSubjectData(
+    subjects: {
+      subjectId: number | "";
+      subjectNameLong: string;
+      subjectNameShort: string;
+      subjectNameSubstitution: string[] | null;
+      teacherGender: "d" | "w" | "m";
+      teacherNameLong: string;
+      teacherNameShort: string;
+      teacherNameSubstitution: string[] | null;
+    }[]
+  ) {
+    const existingSubjects = await prisma.subjects.findMany();
+    await Promise.all(
+      existingSubjects.map(async subject => {
+        if (!subjects.some(s => s.subjectId === subject.subjectId)) {
+          // delete lessons which where linked to subject
+          await prisma.lesson.deleteMany({
+            where: { subjectId: subject.subjectId },
+          });
+          await prisma.subjects.delete({
+            where: { subjectId: subject.subjectId },
+          });
+        }
+      })
+    );
 
-    for (let subject of subjects) {
-        if (subject.subjectNameLong.trim() == "" || subject.subjectNameShort.trim() == "" ||
-            subject.teacherNameLong.trim() == "" || subject.teacherNameShort.trim() == "") {
-          let err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data format",
-            expected: true,
-          }
-          throw err;
+    for (const subject of subjects) {
+      if (
+        subject.subjectNameLong.trim() == "" ||
+        subject.subjectNameShort.trim() == "" ||
+        subject.teacherNameLong.trim() == "" ||
+        subject.teacherNameShort.trim() == ""
+      ) {
+        const err: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid data format",
+          expected: true,
+        };
+        throw err;
+      }
+      isValidGender(subject.teacherGender);
+      try {
+        if (subject.subjectId == "") {
+          await prisma.subjects.create({
+            data: {
+              subjectNameLong: subject.subjectNameLong,
+              subjectNameShort: subject.subjectNameShort,
+              subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
+              teacherGender: subject.teacherGender,
+              teacherNameLong: subject.teacherNameLong,
+              teacherNameShort: subject.teacherNameShort,
+              teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
+            },
+          });
+        } else {
+          await prisma.subjects.update({
+            where: { subjectId: subject.subjectId },
+            data: {
+              subjectNameLong: subject.subjectNameLong,
+              subjectNameShort: subject.subjectNameShort,
+              subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
+              teacherGender: subject.teacherGender,
+              teacherNameLong: subject.teacherNameLong,
+              teacherNameShort: subject.teacherNameShort,
+              teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
+            },
+          });
         }
-        isValidGender(subject.teacherGender);
-        try {
-          if (subject.subjectId == "") {
-            await prisma.subjects.create({
-              data: {
-                subjectNameLong: subject.subjectNameLong,
-                subjectNameShort: subject.subjectNameShort,
-                subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
-                teacherGender: subject.teacherGender,
-                teacherNameLong: subject.teacherNameLong,
-                teacherNameShort: subject.teacherNameShort,
-                teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
-              }
-            })
-          }
-          else {
-            await prisma.subjects.update({
-              where: { subjectId: subject.subjectId },
-              data: {
-                subjectNameLong: subject.subjectNameLong,
-                subjectNameShort: subject.subjectNameShort,
-                subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
-                teacherGender: subject.teacherGender,
-                teacherNameLong: subject.teacherNameLong,
-                teacherNameShort: subject.teacherNameShort,
-                teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
-              }
-            });
-          }
-        }
-        catch {
-          let err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data format",
-            expected: true,
-          }
-          throw err;
-        }
+      } catch {
+        const err: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid data format",
+          expected: true,
+        };
+        throw err;
+      }
     }
 
     const data = await prisma.subjects.findMany();
@@ -104,6 +118,6 @@ const subjectService = {
       throw new Error();
     }
   },
-}
+};
 
 export default subjectService;

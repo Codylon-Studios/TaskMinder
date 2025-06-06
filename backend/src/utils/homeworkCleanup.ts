@@ -7,10 +7,9 @@ import logger from "./logger";
 export default async function cleanupOldHomework() {
   try {
     logger.setStandardPrefix("[CronJob]");
-    
+
     // Calculate the timestamp for 60 days ago (in milliseconds)
     const sixtyDaysAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
-
 
     // Count records to be deleted
     const count = await prisma.homework10d.count({
@@ -30,7 +29,13 @@ export default async function cleanupOldHomework() {
       },
     });
 
-    logger.info("Homework cleanup completed:", deleted.count, "records deleted out of", count, "found");
+    logger.info(
+      "Homework cleanup completed:",
+      deleted.count,
+      "records deleted out of",
+      count,
+      "found"
+    );
   } catch (error) {
     logger.error("Error during homework cleanup:", error);
   }

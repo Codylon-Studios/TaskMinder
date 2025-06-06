@@ -11,7 +11,7 @@ const schema = {
       properties: {
         lessonType: {
           type: "string",
-          enum: ["normal", "teamed", "rotating", "break"]
+          enum: ["normal", "teamed", "rotating", "break"],
         },
         start: { type: "string", pattern: "^[0-2]?\\d:[0-5]\\d$" },
         end: { type: "string", pattern: "^[0-2]?\\d:[0-5]\\d$" },
@@ -27,9 +27,9 @@ const schema = {
             properties: {
               teamId: { type: "integer" },
               subjectId: { type: "integer" },
-              room: { type: "string" }
-            }
-          }
+              room: { type: "string" },
+            },
+          },
         },
 
         variants: {
@@ -39,31 +39,31 @@ const schema = {
             required: ["subjectId", "room"],
             properties: {
               subjectId: { type: "integer" },
-              room: { type: "string" }
-            }
-          }
-        }
+              room: { type: "string" },
+            },
+          },
+        },
       },
       allOf: [
         {
           if: { properties: { lessonType: { const: "normal" } } },
-          then: { required: ["subjectId", "room"] }
+          then: { required: ["subjectId", "room"] },
         },
         {
           if: { properties: { lessonType: { const: "teamed" } } },
-          then: { required: ["teams"] }
+          then: { required: ["teams"] },
         },
         {
           if: { properties: { lessonType: { const: "rotating" } } },
-          then: { required: ["variants"] }
+          then: { required: ["variants"] },
         },
         {
           if: { properties: { lessonType: { const: "break" } } },
-          then: { required: ["subjectId", "room"] }
-        }
-      ]
-    }
-  }
+          then: { required: ["subjectId", "room"] },
+        },
+      ],
+    },
+  },
 };
 
 const validate = ajv.compile(schema);
@@ -72,7 +72,7 @@ export const validateTimetableJSON = (data: any) => {
   const valid = validate(data);
   return {
     valid,
-    errors: validate.errors
+    errors: validate.errors,
   };
 };
 
