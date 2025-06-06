@@ -150,7 +150,7 @@ const teamService = {
       throw err;
     }
 
-    await prisma.joinedTeams.delete({
+    await prisma.joinedTeams.deleteMany({
       where: { accountId: accountId }
     });
 

@@ -8,13 +8,17 @@ All changes are grouped by type and the latest version appears first.
 
 ### Added
 
-* Rich text support in homework and events
+* Rich text support in homework and events.
 * Added release notes for v.1.1.1 and v1.1.2
 
 ### Changed
 
 * Impressum and DSGVO updates
 * UI improvements
+
+### Fixed
+
+* Resolved an issue where logged-in users were unable to join multiple teams within the same class.
 
 ### Security
 
