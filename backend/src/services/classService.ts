@@ -4,10 +4,10 @@ import { Session, SessionData } from "express-session";
 const classService = {
   async getClassCode(session: Session & Partial<SessionData>) {
     if (!(session.classJoined)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
-        message: "User not logged in",
+        message: "User not logged into class",
         expected: true,
       }
       throw err;

@@ -13,7 +13,7 @@ const homeworkService = {
                     teamId: number}, session: Session & Partial<SessionData>) {
     const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
     if (!(session.account)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
@@ -34,7 +34,7 @@ const homeworkService = {
       });
     }
     catch {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
@@ -56,7 +56,7 @@ const homeworkService = {
     const { homeworkId, checkStatus } = reqData;
     let accountId;
     if (!(session.account)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
@@ -89,7 +89,7 @@ const homeworkService = {
 
   async deleteHomework(homeworkId: number, session: Session & Partial<SessionData>) {
     if (!(session.account)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
@@ -98,7 +98,7 @@ const homeworkService = {
       throw err;
     }
     if (!homeworkId) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
@@ -125,7 +125,7 @@ const homeworkService = {
                      teamId: number}, session: Session & Partial<SessionData>) {
       const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
       if (!(session.account)) {
-        let err: RequestError = {
+        const err: RequestError = {
           name: "Unauthorized",
           status: 401,
           message: "User not logged in",
@@ -147,7 +147,7 @@ const homeworkService = {
     });
     }
     catch {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
@@ -192,7 +192,7 @@ const homeworkService = {
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {
     let accountId;
     if (!(session.account)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
@@ -202,14 +202,14 @@ const homeworkService = {
     } else {
       accountId = session.account.accountId;
     }
-    let homework = await prisma.homework10dCheck.findMany({
+    const homework = await prisma.homework10dCheck.findMany({
       where: { accountId: accountId },
       select: {
         homeworkId: true
       },
     });
 
-    let homeworkIds = homework.map((homework) => {return homework.homeworkId})
+    const homeworkIds = homework.map((homework) => {return homework.homeworkId})
 
     return homeworkIds;
   }

@@ -1,4 +1,3 @@
-const fs = require("fs").promises;
 import { RequestError } from "../@types/requestError";
 import { cacheKeyLessonData, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
@@ -8,11 +7,11 @@ import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/valida
 
 const lessonService = {
   async setLessonData(lessons: { lessonNumber: number, weekDay:number, teamId: number, subjectId: number, room: string, startTime: number, endTime: number}[]) {
-    for (let lesson of lessons) {
+    for (const lesson of lessons) {
       isValidweekDay(lesson.weekDay);
     }
     await prisma.$executeRaw`TRUNCATE TABLE "lesson" RESTART IDENTITY;`;
-    for (let lesson of lessons) {
+    for (const lesson of lessons) {
       try {
           await prisma.lesson.create({
             data: {
@@ -27,7 +26,7 @@ const lessonService = {
           })
         }
       catch {
-        let err: RequestError = {
+        const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",

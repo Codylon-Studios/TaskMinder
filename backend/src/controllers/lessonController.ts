@@ -24,7 +24,7 @@ export const setLessonData = asyncHandler(async (req, res, next) => {
       })
     )
   })
-  let parseResult = setEventTypesSchema.safeParse(req.body);
+  const parseResult = setEventTypesSchema.safeParse(req.body);
   if (! parseResult.success || parseResult.data.lessons.map(l => [0, 1, 2, 3, 4].includes(l.weekDay)).includes(false)) {
     res.status(400).json({
       error: "Invalid request format",

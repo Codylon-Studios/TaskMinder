@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import logger from "./logger";
 import zlib from "node:zlib";
+import { spawn } from "child_process";
 
 const DB_HOST = process.env.DB_HOST;
 const DB_PORT = '5432';
@@ -61,7 +62,6 @@ export function createDBBackupStreaming(): Promise<string | null> {
           '--blobs'
         ];
         
-        const { spawn } = require('child_process');
         const pgDump = spawn(pgDumpCommand, pgDumpArgs, {
             env: { ...process.env, PGPASSWORD: DB_PASSWORD }
         });

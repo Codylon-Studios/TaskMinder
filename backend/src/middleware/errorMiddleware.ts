@@ -1,9 +1,9 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { RequestError } from "../@types/requestError";
 
 import logger from "../utils/logger";
 
-export function ErrorHandler(err: RequestError, req: Request, res: Response, next: NextFunction): void {
+export function ErrorHandler(err: RequestError, req: Request, res: Response): void {
   try {
     if (err.additionalInformation) {
       logger.write()

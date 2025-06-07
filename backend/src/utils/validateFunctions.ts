@@ -23,7 +23,7 @@ async function isValidTeamId(teamId: number) {
       }
     });
     if (!teamExists) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Not Found",
         status: 404,
         message: "Invalid teamId (Team does not exist): " + teamId,
@@ -44,7 +44,7 @@ async function isValidSubjectId(subjectId: number) {
       }
     });
     if (!subjectExists) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Not Found",
         status: 404,
         message: "Invalid subjectId (Subject does not exist): " + subjectId,
@@ -59,7 +59,7 @@ async function isValidSubjectId(subjectId: number) {
 
 async function isValidweekDay(weekDay: number) {
   if ([0, 1, 2, 3, 4].includes(weekDay)) return;
-  let err: RequestError = {
+  const err: RequestError = {
     name: "Not Found",
     status: 404,
     message: "Invalid weekday: " + weekDay,
@@ -70,7 +70,7 @@ async function isValidweekDay(weekDay: number) {
 
 async function isValidGender(gender: string) {
   if (["d", "w", "m"].includes(gender)) return;
-  let err: RequestError = {
+  const err: RequestError = {
     name: "Not Found",
     status: 404,
     message: "The provided gender is not valid: " + gender,
@@ -83,7 +83,7 @@ function isValidColor(color: string) {
   const hexColorRegex = /^#[0-9a-f]{6}$/i;
   const colorValid = hexColorRegex.test(color);
   if (!colorValid){
-    let err: RequestError = {
+    const err: RequestError = {
       name: "Bad Request",
       status: 400,
       message: "Color must be a 6-digit hex code",
@@ -98,7 +98,7 @@ function isValidColor(color: string) {
 function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | null) {
   if (!(["", undefined, null].includes(endDate as string | null | undefined) ||
     ["", undefined, null].includes(lesson as string | null | undefined))) {
-    let err: RequestError = {
+    const err: RequestError = {
       name: "Unprocessable Entity",
       status: 422,
       message: "Only one entry (lesson or endDate) are allowed",

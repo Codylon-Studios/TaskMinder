@@ -30,7 +30,7 @@ const teamService = {
     return data;
   },
   async setTeamsData(teams: { teamId: number | "", name: string }[]) {
-    let existingTeams = await prisma.team.findMany();
+    const existingTeams = await prisma.team.findMany();
     await Promise.all(existingTeams.map(async (team: {teamId: number}) => {
       if (!teams.some((t) => t.teamId === team.teamId)) {
         // delete homework which were linked to team
@@ -52,9 +52,9 @@ const teamService = {
       }
     }));
 
-    for (let team of teams) {
+    for (const team of teams) {
       if (team.name.trim() == "") {
-        let err: RequestError = {
+        const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data (Team name cannot be empty)",
@@ -80,7 +80,7 @@ const teamService = {
         }
       }
       catch {
-        let err: RequestError = {
+        const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
@@ -102,7 +102,7 @@ const teamService = {
   async getJoinedTeamsData(session: Session & Partial<SessionData>) {
     let accountId
     if (!(session.account)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
@@ -118,9 +118,9 @@ const teamService = {
       where: { accountId: accountId }
     });
 
-    let teams = []
+    const teams = []
 
-    for (let entry of data) {
+    for (const entry of data) {
       teams.push(entry.teamId);
     };
 
@@ -129,7 +129,7 @@ const teamService = {
   async setJoinedTeamsData(teams: number[], session: Session & Partial<SessionData>) {
     let accountId
     if (!(session.account)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
@@ -141,7 +141,7 @@ const teamService = {
     }
 
     if (! Array.isArray(teams)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
@@ -154,7 +154,7 @@ const teamService = {
       where: { accountId: accountId }
     });
 
-    for (let teamId of teams) {
+    for (const teamId of teams) {
       try {
         await prisma.joinedTeams.create({
           data: {
@@ -164,7 +164,7 @@ const teamService = {
         })
       }
       catch {
-        let err: RequestError = {
+        const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",

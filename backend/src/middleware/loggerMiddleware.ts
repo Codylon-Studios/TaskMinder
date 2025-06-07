@@ -12,14 +12,14 @@ const loggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
     try {
       let loggedBody = body
       if (isJSON(body)) {
-        let json = JSON.parse(body)
+        const json = JSON.parse(body)
         if (json.error == "Invalid request format" && json.expectedFormat != undefined && json.expectedFormat != null) {
           loggedBody = "Invalid request format"
         }
       }
 
       const d = new Date()
-      let dateStr = `[${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${(d.getDate()).toString().padStart(2, "0")} ` +
+      const dateStr = `[${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${(d.getDate()).toString().padStart(2, "0")} ` +
         `${(d.getHours()).toString().padStart(2, "0")}:${(d.getMinutes()).toString().padStart(2, "0")}]`
 
       const duration = Date.now() - start;

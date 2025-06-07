@@ -24,7 +24,7 @@ namespace logger {
     }
     apply(styles: Styles): void {
       function deepMerge(target: Styles, source: Styles) {
-        for (let [key, value] of Object.entries(source) as [keyof Styles, any][]) {
+        for (const [key, value] of Object.entries(source) as [keyof Styles, any][]) {
           if (Array.isArray(value)) {
             if (!(key in target)) {
               target[key] = [] as any
@@ -49,16 +49,16 @@ namespace logger {
       let paddingRightCharacters = ""
 
       if (this.styles.padding) {
-        let paddingStyles = this.styles.padding
+        const paddingStyles = this.styles.padding
 
-        let fillStyledText = new logger.StyledText(paddingStyles.fillCharacter ?? " ")
-        let { padding, ...otherStyles } = this.styles
+        const fillStyledText = new logger.StyledText(paddingStyles.fillCharacter ?? " ")
+        const { padding, ...otherStyles } = this.styles
         fillStyledText.apply(otherStyles)
 
         let remainingCharacters = (paddingStyles.totalWidth ?? 0) - logger.printableLength(this.content)
         if (remainingCharacters < 0) remainingCharacters = 0;
 
-        let alignment = paddingStyles.alignment ?? "left";
+        const alignment = paddingStyles.alignment ?? "left";
 
         if (alignment == "left") {
           paddingRightCharacters = fillStyledText.toString().repeat(remainingCharacters)
@@ -72,8 +72,8 @@ namespace logger {
         }
       }
 
-      let startEscapeCodes = logger.findEscapeCodes(this.styles);
-      let endEscapeCodes = (startEscapeCodes != "") ? "\x1b[0m" : "";
+      const startEscapeCodes = logger.findEscapeCodes(this.styles);
+      const endEscapeCodes = (startEscapeCodes != "") ? "\x1b[0m" : "";
       return paddingLeftCharacters + startEscapeCodes + this.content + endEscapeCodes + paddingRightCharacters;
     }
   }
@@ -82,23 +82,23 @@ namespace logger {
     constructor(texts: any) {
       this.components = []
       if (Object.prototype.toString.call(texts) == "[object Array]") {
-        for (let text of texts) {
-          let styledText = new logger.StyledText(text)
-          for (let styledTextComponent of styledText.components) {
+        for (const text of texts) {
+          const styledText = new logger.StyledText(text)
+          for (const styledTextComponent of styledText.components) {
             this.components.push(styledTextComponent)
           }
         }
       }
       else if (Object.prototype.toString.call(texts) == "[object Object]") {
         if (texts.disableParsing) {
-          let { text, ...styles } = texts
+          const { text, ...styles } = texts
           this.components.push(new logger.StyledTextComponent(styles, text))
         }
         else {
-          let { text, ...styles } = texts
-          let styledText = new logger.StyledText(text)
+          const { text, ...styles } = texts
+          const styledText = new logger.StyledText(text)
           styledText.apply(styles)
-          for (let styledTextComponent of styledText.components) {
+          for (const styledTextComponent of styledText.components) {
             this.components.push(styledTextComponent)
           }
         }
@@ -114,7 +114,7 @@ namespace logger {
     }
     toString(): string {
       let result = ""
-      for (let [ styledTextComponentId, styledTextComponent ] of Object.entries(this.components)) {
+      for (const [ styledTextComponentId, styledTextComponent ] of Object.entries(this.components)) {
         result += styledTextComponent.toString()
         let space = true
         if (parseInt(styledTextComponentId) == this.components.length - 1) space = false
@@ -126,13 +126,13 @@ namespace logger {
   }
   export function convertToString(obj: any, disableParsing: boolean, depth: number = 0): string {
     function parseError(err: Error): string {
-      let errArray = (err.stack ?? "").split("\n")
+      const errArray = (err.stack ?? "").split("\n")
       errArray[0] = logger.colors.red.fg + "\x1b[1m" + err.name + "\x1b[0m: " + logger.colors.red.fg + err.message + "\x1b[0m"
       return errArray.join("\n")
     }
 
     if (depth == 3) depth = 0
-    let color = [logger.colors.blue.fg, logger.colors.magenta.fg, logger.colors.yellow.fg][depth]
+    const color = [logger.colors.blue.fg, logger.colors.magenta.fg, logger.colors.yellow.fg][depth]
 
     if (disableParsing) {
       let res;
@@ -217,7 +217,7 @@ namespace logger {
     return printableStr.length;
   }
   export function printableSubstring(str: string, start: number, end?: number): string {
-    let length = logger.printableLength(str)
+    const length = logger.printableLength(str)
     end ??= length;
     let charsFound = 0;
     let charsAdded = 0;
@@ -276,17 +276,17 @@ namespace logger {
     return res
   }
   export function write(...data: any[]): void {
-    let styledText = new logger.StyledText(data)
+    const styledText = new logger.StyledText(data)
     process.stdout.write(styledText.toString())
     process.stdout.write("\n");
   }
   export function writeError(...data: any[]): void {
-    let styledTextsArray = new logger.StyledText(data)
+    const styledTextsArray = new logger.StyledText(data)
     process.stderr.write(styledTextsArray.toString())
     process.stderr.write("\n");
   }
   export function toString(...data: any[]): string {
-    let styledText = new logger.StyledText(data)
+    const styledText = new logger.StyledText(data)
     return styledText.toString()
   }
 
@@ -301,7 +301,7 @@ namespace logger {
       highlight: {background: "blue"},
     }
 
-    let { color, background } = prefixColors[level]
+    const { color, background } = prefixColors[level]
     logger.write(
       { color, background, text: logger.getStandardPrefix()},
       ...texts

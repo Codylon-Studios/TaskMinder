@@ -30,7 +30,7 @@ const subjectService = {
   }, 
   async setSubjectData(subjects: {subjectId: number | "", subjectNameLong: string, subjectNameShort: string, subjectNameSubstitution: string[] | null,
                                   teacherGender: "d" | "w" | "m", teacherNameLong: string, teacherNameShort: string, teacherNameSubstitution: string[] | null}[]) {
-    let existingSubjects = await prisma.subjects.findMany();
+    const existingSubjects = await prisma.subjects.findMany();
     await Promise.all(existingSubjects.map(async (subject) => {
       if (!subjects.some((s) => s.subjectId === subject.subjectId)) {
         // delete lessons which where linked to subject
@@ -43,10 +43,10 @@ const subjectService = {
       }
     }));
 
-    for (let subject of subjects) {
+    for (const subject of subjects) {
         if (subject.subjectNameLong.trim() == "" || subject.subjectNameShort.trim() == "" ||
             subject.teacherNameLong.trim() == "" || subject.teacherNameShort.trim() == "") {
-          let err: RequestError = {
+          const err: RequestError = {
             name: "Bad Request",
             status: 400,
             message: "Invalid data format",
@@ -85,7 +85,7 @@ const subjectService = {
           }
         }
         catch {
-          let err: RequestError = {
+          const err: RequestError = {
             name: "Bad Request",
             status: 400,
             message: "Invalid data format",

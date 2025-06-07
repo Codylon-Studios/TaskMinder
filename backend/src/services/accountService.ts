@@ -20,7 +20,7 @@ export default {
       }
     }
     
-    let res: AuthResponse = {}
+    const res: AuthResponse = {}
     if (! session) {
       res.loggedIn = false
       res.classJoined = false
@@ -44,7 +44,7 @@ export default {
   async registerAccount(reqData: {username: string, password: string}, session: Session & Partial<SessionData>) {
     const { username, password } = reqData
     if (session.account) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Already logged in",
@@ -54,7 +54,7 @@ export default {
       throw err;
     }
     if (! checkUsername(username)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "The username does not comply with the rules!",
@@ -67,7 +67,7 @@ export default {
       where: { username: username },
     });
     if (accountExists) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "The requested username is already registered!",
@@ -87,7 +87,7 @@ export default {
     session.account = { username, accountId };
 
     if (session.classJoined) {
-      let accountId = session.account.accountId
+      const accountId = session.account.accountId
       await prisma.joinedClass.create({
         data: {
           accountId: accountId
@@ -97,7 +97,7 @@ export default {
   },
   async logoutAccount(session: Session & Partial<SessionData>) {
       if (!session.account) {
-        let err: RequestError = {
+        const err: RequestError = {
           name: "OK",
           status: 200,
           message: "User not logged in",
@@ -119,7 +119,7 @@ export default {
   async loginAccount(reqData: {username: string, password: string}, session: Session & Partial<SessionData>) {
     const { username, password } = reqData
     if (session.account) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Already logged in",
@@ -134,7 +134,7 @@ export default {
       } 
     });
     if (!account) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "Invalid credentials",
@@ -145,7 +145,7 @@ export default {
     }
     const isPasswordValid = await bcrypt.compare(password, account.password);
     if (!isPasswordValid) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "Invalid credentials",
@@ -174,7 +174,7 @@ export default {
   },
   async deleteAccount(password: string, session: Session & Partial<SessionData>){
     if (! session.account) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Not logged in",
@@ -190,7 +190,7 @@ export default {
       } 
     });
     if (! account) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Not logged in",
@@ -201,7 +201,7 @@ export default {
     }
     const isPasswordValid = await bcrypt.compare(password, account.password);
     if (! isPasswordValid) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "Invalid credentials",
@@ -226,7 +226,7 @@ export default {
   },
   async joinClass(classcode: string, session: Session & Partial<SessionData>) {
     if (session.classJoined) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Already joined class",
@@ -237,7 +237,7 @@ export default {
     if (classcode == process.env.CLASSCODE) {
       session.classJoined = true;
       if (session.account) {
-        let accountId = session.account.accountId
+        const accountId = session.account.accountId
         const joinedClassExists = await prisma.joinedClass.findUnique({ 
           where: { 
             accountId: accountId 
@@ -253,7 +253,7 @@ export default {
       }
       return;
     }
-    let err: RequestError = {
+    const err: RequestError = {
       name: "Unauthorized",
       status: 401,
       message: "Invalid classcode",

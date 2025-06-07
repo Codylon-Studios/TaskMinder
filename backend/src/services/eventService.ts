@@ -42,7 +42,7 @@ export const eventService = {
   }, session: Session & Partial<SessionData>) {
     const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData
     if (!(session.account)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
@@ -66,7 +66,7 @@ export const eventService = {
       });
     }
     catch {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
@@ -94,7 +94,7 @@ export const eventService = {
   }, session: Session & Partial<SessionData>) {
     const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData
     if (!(session.account)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
@@ -119,7 +119,7 @@ export const eventService = {
       });
     }
     catch {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
@@ -144,7 +144,7 @@ export const eventService = {
   },
   async deleteEvent(eventId: number, session: Session & Partial<SessionData>) {
     if (!(session.account)) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
@@ -153,7 +153,7 @@ export const eventService = {
       throw err;
     }
     if (!eventId) {
-      let err: RequestError = {
+      const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
@@ -205,7 +205,7 @@ export const eventService = {
     return eventTypeData;
   },
   async setEventTypeData(eventTypes: { eventTypeId: number | "", name: string, color: string }[]) {
-    let existingEventTypes = await prisma.eventType.findMany();
+    const existingEventTypes = await prisma.eventType.findMany();
     await Promise.all(existingEventTypes.map(async (eventType) => {
       if (!eventTypes.some((e) => e.eventTypeId === eventType.eventTypeId)) {
         await prisma.eventType.delete({
@@ -214,10 +214,10 @@ export const eventService = {
       }
     }));
 
-    for (let eventType of eventTypes) {
+    for (const eventType of eventTypes) {
       isValidColor(eventType.color);
       if (eventType.name.trim() == "") {
-        let err: RequestError = {
+        const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
@@ -245,7 +245,7 @@ export const eventService = {
         }
       }
       catch {
-        let err: RequestError = {
+        const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
@@ -282,8 +282,8 @@ export const eventService = {
     return eventTypeStyles;
   },
   async updateEventTypeStyles() {
-    let eventTypeData = await this.getEventTypeData();
-    let scss = `
+    const eventTypeData = await this.getEventTypeData();
+    const scss = `
       @use "sass:color";
 
       ${eventTypeData.map((eventType: { eventTypeId: string, name: string, color: string }) => {
@@ -322,7 +322,7 @@ export const eventService = {
           }
         }
       }`
-    let css = sass.compileString(scss).css;
+    const css = sass.compileString(scss).css;
 
     try {
       await redisClient.set("event_type_styles", css, { EX: cacheExpiration });

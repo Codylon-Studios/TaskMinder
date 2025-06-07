@@ -83,7 +83,7 @@ if (!sessionSecret) {
 const app = express();
 app.set('trust proxy', 1);
 const server = createServer(app);
-const io = socketIO.initialize(server);
+socketIO.initialize(server);
 
 const limiter = rateLimit({
   windowMs: 1000, // 1 second
@@ -197,7 +197,7 @@ app.get("/", (req: Request, res: Response) => {
   res.redirect(302, "/join");
 })
 
-let pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages")
+const pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages")
 
 app.get("/join", (req, res) => {
   const action = req.query.action;

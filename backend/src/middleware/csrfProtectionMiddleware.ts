@@ -28,7 +28,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
 
 	if (!providedToken || typeof providedToken !== 'string' || !tokenFromSession || typeof tokenFromSession !== 'string') {
 			logger.warn("CSRF Check: Validation failed - Token missing or invalid type");
-			let err: RequestError = {
+			const err: RequestError = {
 				name: "Unauthorized",
 				status: 401,
 				message: "CSRF Check: Validation failed - Token missing or invalid type",
@@ -44,7 +44,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
 
 			if (providedTokenBuffer.length !== sessionTokenBuffer.length) {
 					logger.warn("CSRF Check: Validation failed - Token length mismatch");
-					let err: RequestError = {
+					const err: RequestError = {
 						name: "Unauthorized",
 						status: 401,
 						message: "CSRF Check: Validation failed - Token missing or invalid type",
@@ -57,7 +57,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
 					next(); // Tokens match, proceed
 			} else {
 					logger.warn("CSRF Check: Validation failed - Tokens do not match");
-					let err: RequestError = {
+					const err: RequestError = {
 						name: "Unauthorized",
 						status: 401,
 						message: "CSRF Check: Validation failed - Token missing or invalid type",
@@ -67,7 +67,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
 			}
 	} catch(e) {
 			logger.error("CSRF Check: Error during comparison:", e);
-			let err: RequestError = {
+			const err: RequestError = {
 				name: "Unauthorized",
 				status: 401,
 				message: "CSRF Check: Validation failed - Token missing or invalid type",
