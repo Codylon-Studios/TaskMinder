@@ -164,11 +164,13 @@ Replace `your_db_name` with your actual database name.
 
 ### Create the `.env` File
 
-To securely manage credentials, create a `.env` file in your project root directory. Replace placeholders (`your_*`) with your actual values.
-You will find an .env example file in .env.example in the root folder.
+To securely manage credentials, create a `.env` file in the root directory of your project. Replace all placeholder values (e.g., `your_*`) with your actual credentials.
 
-- `SESSION_SECRET` and `CLASSCODE` should be secure, consistent passwords.
-- `DSB_USER` and `DSB_PASSWORD` are credentials for [DSBmobile](https://www.dsbmobile.de), used to fetch substitution data. If unavailable, you may use placeholders and set `DSB_ACTIVATED` to false.
+You can use the `.env.example` file located in the root folder as a reference.
+
+* `SESSION_SECRET` and `CLASSCODE` should be secure and consistent values. For local development, you can use simpler values if needed.
+* `DSB_USER` and `DSB_PASSWORD` are the login credentials for [DSBmobile](https://www.dsbmobile.de), used to fetch substitution plan data and integrate it into the timetable.
+  If you don’t have valid credentials, you can leave placeholders and set `DSB_ACTIVATED=false` to disable this feature.
 
 ---
 
@@ -179,10 +181,30 @@ You only need the installation part (timestamp 3:49–5:53).
 
 ---
 
+### Applying databse changes
+
+Run `npx prisma migrate dev` to apply schema changes from previously pulled commits to your local database.
+You should also run this command during development if the schema has been modified.
+
+If you make changes to the schema while developing—especially on a feature branch—don’t forget to generate a migration file. Otherwise, your changes might be lost or overwritten when switching branches (e.g., to `develop` or `main`).
+
+
 ### Start the Server
 
-Run this dommand to compile the typescript code and start the development server, run:
+Run this command to compile the typescript code and start the development server, ru
 ```zsh
 npm run dev-build
 ```
+
+*Notes*:
+
+* You can manually compile the code by running `npm run build`, or use `npm run build:fe` and `npm run build:be` to compile the frontend and backend separately. After building, start the server with `npm run dev`.
+
+* We recommend using linting tools to maintain code quality. To use ESLint on this project, simply run: `npx eslint .`.
+
+* As a best practice, format your code using Prettier. You can run `npx prettier --write PATH/TO/FILE_OR_FOLDER` to format specific files or directories, or use `npx prettier . --write` to format the entire project.
+
+* When updating the Prisma schema, remember to run `npx prisma generate` to regenerate the client and TypeScript types in `node_modules/`.
+  Before committing your changes, make sure to run `npx prisma migrate dev` to create and apply the necessary migration files to your local database—skipping this step may result in broken or inconsistent code.
+
 ---

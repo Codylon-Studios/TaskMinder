@@ -1,27 +1,27 @@
 import teamService from "../services/teamService";
 import asyncHandler from "express-async-handler";
-import { z } from "zod"
+import { z } from "zod";
 
-export const getTeams = asyncHandler(async(req, res, next) => {
+export const getTeams = asyncHandler(async (req, res, next) => {
   try {
     const teamsData = await teamService.getTeamsData();
     res.status(200).json(teamsData);
   } catch (error) {
     next(error);
   }
-})
+});
 
-export const setTeams = asyncHandler(async(req, res, next) => {
+export const setTeams = asyncHandler(async (req, res, next) => {
   const setTeamsSchema = z.object({
     teams: z.array(
       z.object({
         teamId: z.union([z.coerce.number(), z.literal("")]),
-        name: z.string()
+        name: z.string(),
       })
-    )
-  })
+    ),
+  });
   const parseResult = setTeamsSchema.safeParse(req.body);
-  if (! parseResult.success) {
+  if (!parseResult.success) {
     res.status(400).json({
       error: "Invalid request format",
       expectedFormat: {
@@ -32,17 +32,17 @@ export const setTeams = asyncHandler(async(req, res, next) => {
             items: {
               type: "object",
               properties: {
-                teamId: { anyOf: [ { type: "number"}, { const: "" }] },
-                name: { type: "string" }
+                teamId: { anyOf: [{ type: "number" }, { const: "" }] },
+                name: { type: "string" },
               },
-              required: ["teamId", "name"]
-            }
-          }
+              required: ["teamId", "name"],
+            },
+          },
         },
-        required: ["teams"]
-      }
+        required: ["teams"],
+      },
     });
-    return
+    return;
   }
   try {
     await teamService.setTeamsData(parseResult.data.teams);
@@ -50,25 +50,23 @@ export const setTeams = asyncHandler(async(req, res, next) => {
   } catch (error) {
     next(error);
   }
-})
+});
 
-export const getJoinedTeams = asyncHandler(async(req, res, next) => {
+export const getJoinedTeams = asyncHandler(async (req, res, next) => {
   try {
     const joinedTeamsData = await teamService.getJoinedTeamsData(req.session);
     res.status(200).json(joinedTeamsData);
   } catch (error) {
     next(error);
   }
-})
+});
 
-export const setJoinedTeams = asyncHandler(async(req, res, next) => {
+export const setJoinedTeams = asyncHandler(async (req, res, next) => {
   const setTeamsSchema = z.object({
-    teams: z.array(
-      z.number()
-    )
-  })
+    teams: z.array(z.number()),
+  });
   const parseResult = setTeamsSchema.safeParse(req.body);
-  if (! parseResult.success) {
+  if (!parseResult.success) {
     res.status(400).json({
       error: "Invalid request format",
       expectedFormat: {
@@ -76,13 +74,13 @@ export const setJoinedTeams = asyncHandler(async(req, res, next) => {
         properties: {
           teams: {
             type: "array",
-            items: { type: "number" }
-          }
+            items: { type: "number" },
+          },
         },
-        required: ["teams"]
-      }
+        required: ["teams"],
+      },
     });
-    return
+    return;
   }
   try {
     await teamService.setJoinedTeamsData(parseResult.data.teams, req.session);
@@ -90,7 +88,7 @@ export const setJoinedTeams = asyncHandler(async(req, res, next) => {
   } catch (error) {
     next(error);
   }
-})
+});
 
 export default {
   getTeams,

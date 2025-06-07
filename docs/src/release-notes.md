@@ -4,6 +4,37 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v1.1.2] - 2025-06-07
+
+### Added
+
+* Rich text support in homework and events.
+* Added release notes for v.1.1.1 and v1.1.2
+* Linting and Formatting tools -  ESLint and Prettier.
+
+### Changed
+
+* Impressum and DSGVO updates
+* UI improvements
+
+### Fixed
+
+* Resolved an issue where logged-in users were unable to join multiple teams within the same class.
+
+### Security
+
+* Bump packages to close security iusses.
+
+---
+
+## \[v1.1.1] - 2025-06-04
+
+### Fixed
+
+* fix redis cache not working correctly
+
+---
+
 ## \[v1.1.0] - 2025-06-03
 
 ### Added

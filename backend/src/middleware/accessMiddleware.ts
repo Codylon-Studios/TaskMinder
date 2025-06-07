@@ -13,14 +13,14 @@ const checkAccess = {
     if (req.session.classJoined) {
       return next();
     }
-    let err: RequestError = {
+    const err: RequestError = {
       name: "Unauthorized",
       status: 401,
       message: "User hasn't joined class",
       expected: true,
-    }
+    };
     throw err;
-  }
-}
+  },
+};
 
 export default checkAccess;

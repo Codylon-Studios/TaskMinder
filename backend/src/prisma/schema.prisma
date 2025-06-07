@@ -86,7 +86,7 @@ model JoinedClass {
 model JoinedTeams {
   joinedTeamId Int     @id @default(autoincrement()) @map("joinedTeamId")
   teamId       Int
-  accountId    Int     @unique
+  accountId    Int
   Account      Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
   Team         Team    @relation(fields: [teamId], references: [teamId], onDelete: Cascade, onUpdate: NoAction)
 

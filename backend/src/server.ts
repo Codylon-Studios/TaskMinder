@@ -1,6 +1,6 @@
 import { createServer } from "http";
 import path from "path";
-import client from 'prom-client';
+import client from "prom-client";
 import compression from "compression";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
@@ -17,7 +17,10 @@ import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
 import { createDBBackupStreaming } from "./utils/backupTable";
 import cleanupOldHomework from "./utils/homeworkCleanup";
-import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
+import {
+  csrfProtection,
+  csrfSessionInit,
+} from "./middleware/csrfProtectionMiddleware";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
 import events from "./routes/eventRoute";
@@ -28,9 +31,9 @@ import subjects from "./routes/subjectRoute";
 import teams from "./routes/teamRoute";
 import classes from "./routes/classRoute";
 
-dotenv.config()
+dotenv.config();
 
-declare module 'express-session' {
+declare module "express-session" {
   interface SessionData {
     account?: {
       accountId: number;
@@ -43,25 +46,26 @@ declare module 'express-session' {
 
 const register = new client.Registry();
 register.setDefaultLabels({
-  app: 'taskminder-nodejs'
+  app: "taskminder-nodejs",
 });
 
 const httpRequestDurationMicroseconds = new client.Histogram({
-  name: 'http_request_duration_ms',
-  help: 'Duration of HTTP requests in ms',
-  labelNames: ['method', 'route', 'code'],
-  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000]
+  name: "http_request_duration_ms",
+  help: "Duration of HTTP requests in ms",
+  labelNames: ["method", "route", "code"],
+  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000],
 });
 register.registerMetric(httpRequestDurationMicroseconds);
 
 client.collectDefaultMetrics({ register });
 
-prisma.$connect()
+prisma
+  .$connect()
   .then(() => {
-    logger.info('Connected to Database');
+    logger.info("Connected to Database");
   })
-  .catch((err) => {
-    logger.error('DB connection failed:', err);
+  .catch(err => {
+    logger.error("DB connection failed:", err);
     process.exit(1);
   });
 
@@ -81,53 +85,48 @@ if (!sessionSecret) {
 }
 
 const app = express();
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 const server = createServer(app);
-const io = socketIO.initialize(server);
+socketIO.initialize(server);
 
 const limiter = rateLimit({
   windowMs: 1000, // 1 second
   limit: 70, // Max 70 requests per IP per second
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: { status: 429, message: "Too many requests, please slow down." }
+  message: { status: 429, message: "Too many requests, please slow down." },
 });
-app.use(limiter)
+app.use(limiter);
 
 // Content Security Policy
 if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        "default-src": ["'self'"],
-        "script-src": [
-          "'self'",
-          "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
-          "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='",
-        ],
-        "connect-src": [
-          "'self'",
-          "wss://*"
-        ],
-        "style-src": [
-          "'self'",
-          "'unsafe-inline'"
-        ],
-        "font-src": [
-          "'self'"
-        ],
-        "img-src": ["'self'", "data:"],
-        "object-src": ["'none'"],
-        "frame-ancestors": ["'self'"]
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          "default-src": ["'self'"],
+          "script-src": [
+            "'self'",
+            "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
+            "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='",
+          ],
+          "connect-src": ["'self'", "wss://*"],
+          "style-src": ["'self'", "'unsafe-inline'"],
+          "font-src": ["'self'"],
+          "img-src": ["'self'", "data:"],
+          "object-src": ["'none'"],
+          "frame-ancestors": ["'self'"],
+        },
       },
-    },
-    referrerPolicy: {
-      policy: "strict-origin-when-cross-origin"
-    },
-  }));
-}
-else {
-  logger.warn("Helmet and CSP is disabled! This is not recommended for production!");
+      referrerPolicy: {
+        policy: "strict-origin-when-cross-origin",
+      },
+    })
+  );
+} else {
+  logger.warn(
+    "Helmet and CSP is disabled! This is not recommended for production!"
+  );
 }
 
 app.use(compression());
@@ -135,30 +134,28 @@ app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (
-    req.path === '/metrics' ||
+    req.path === "/metrics" ||
     req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)
   ) {
     return next();
   }
   const end = httpRequestDurationMicroseconds.startTimer();
-  res.on('finish', () => {
-    const route = (req.route && req.route.path) ? req.route.path : req.path;
+  res.on("finish", () => {
+    const route = req.route && req.route.path ? req.route.path : req.path;
     end({ route, code: res.statusCode, method: req.method });
   });
   next();
 });
 
-
-const PgSession = connectPgSimple(session); 
+const PgSession = connectPgSimple(session);
 
 const sessionMiddleware = session({
   store: new PgSession({
     pool: sessionPool,
     tableName: "account_sessions",
-    createTableIfMissing: true
+    createTableIfMissing: true,
   }),
   proxy: process.env.NODE_ENV !== "DEVELOPMENT",
   secret: sessionSecret,
@@ -178,15 +175,15 @@ app.use(csrfSessionInit);
 app.get("/csrf-token", (req, res) => {
   res.json({ csrfToken: req.session.csrfToken });
 });
-app.use(csrfProtection); 
+app.use(csrfProtection);
 app.use(RequestLogger);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "service operational" });
 });
 
-app.get('/metrics', async (req: Request, res: Response) => {
-  res.set('Content-Type', register.contentType);
+app.get("/metrics", async (req: Request, res: Response) => {
+  res.set("Content-Type", register.contentType);
   res.end(await register.metrics());
 });
 
@@ -195,9 +192,9 @@ app.get("/", (req: Request, res: Response) => {
     return res.redirect(302, "/main");
   }
   res.redirect(302, "/join");
-})
+});
 
-let pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages")
+const pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages");
 
 app.get("/join", (req, res) => {
   const action = req.query.action;
@@ -237,7 +234,6 @@ app.use("/subjects", subjects);
 app.use("/lessons", lessons);
 app.use("/class", classes);
 
-
 //
 // Protected routes: Redirect to /join if not logged in
 //
@@ -253,10 +249,8 @@ app.get("/events", checkAccess.elseRedirect, (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
 });
 
-
 // Error Handler Middleware (Must be the last app.use)
 app.use(ErrorHandler);
-
 
 // Schedule the cron job to run at midnight (00:00) every day
 cron.schedule("0 0 * * *", () => {
