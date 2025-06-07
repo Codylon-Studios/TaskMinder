@@ -4,12 +4,13 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v1.1.2] - 2025-06-06
+## \[v1.1.2] - 2025-06-07
 
 ### Added
 
 * Rich text support in homework and events.
 * Added release notes for v.1.1.1 and v1.1.2
+* Linting and Formatting tools -  ESLint and Prettier.
 
 ### Changed
 

@@ -1,10 +1,21 @@
 import logger from "../utils/logger";
-import { redisClient, cacheExpiration, cacheKeyEventData, cacheKeyEventTypeData } from "../config/redis";
+import {
+  redisClient,
+  cacheExpiration,
+  cacheKeyEventData,
+  cacheKeyEventTypeData,
+} from "../config/redis";
 import socketIO from "../config/socket";
 import sass from "sass";
 
 import prisma from "../config/prisma";
-import { isValidColor, isValidTeamId, lessonDateEventAtLeastOneNull, updateCacheData, BigIntreplacer } from "../utils/validateFunctions";
+import {
+  isValidColor,
+  isValidTeamId,
+  lessonDateEventAtLeastOneNull,
+  updateCacheData,
+  BigIntreplacer,
+} from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 
@@ -23,8 +34,8 @@ export const eventService = {
 
     const eventData = await prisma.event.findMany({
       orderBy: {
-        startDate: 'asc'
-      }
+        startDate: "asc",
+      },
     });
 
     try {
@@ -36,18 +47,34 @@ export const eventService = {
 
     return JSON.stringify(eventData, BigIntreplacer);
   },
-  async addEvent(reqData: {
-    eventTypeId: number, name: string, description: string | null, startDate: number, lesson: string | null,
-    endDate: number | null, teamId: number
-  }, session: Session & Partial<SessionData>) {
-    const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData
-    if (!(session.account)) {
+  async addEvent(
+    reqData: {
+      eventTypeId: number;
+      name: string;
+      description: string | null;
+      startDate: number;
+      lesson: string | null;
+      endDate: number | null;
+      teamId: number;
+    },
+    session: Session & Partial<SessionData>
+  ) {
+    const {
+      eventTypeId,
+      name,
+      description,
+      startDate,
+      lesson,
+      endDate,
+      teamId,
+    } = reqData;
+    if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
         expected: true,
-      }
+      };
       throw err;
     }
     lessonDateEventAtLeastOneNull(endDate, lesson);
@@ -61,23 +88,22 @@ export const eventService = {
           startDate: startDate,
           lesson: lesson,
           endDate: endDate,
-          teamId: teamId
-        }
+          teamId: teamId,
+        },
       });
-    }
-    catch {
+    } catch {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
         expected: true,
-      }
+      };
       throw err;
     }
     const eventData = await prisma.event.findMany({
       orderBy: {
-        startDate: 'asc'
-      }
+        startDate: "asc",
+      },
     });
     try {
       await updateCacheData(eventData, cacheKeyEventData);
@@ -88,18 +114,36 @@ export const eventService = {
       throw new Error();
     }
   },
-  async editEvent(reqData: {
-    eventId: number, eventTypeId: number, name: string, description: string | null, startDate: number, lesson: string | null,
-    endDate: number | null, teamId: number
-  }, session: Session & Partial<SessionData>) {
-    const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData
-    if (!(session.account)) {
+  async editEvent(
+    reqData: {
+      eventId: number;
+      eventTypeId: number;
+      name: string;
+      description: string | null;
+      startDate: number;
+      lesson: string | null;
+      endDate: number | null;
+      teamId: number;
+    },
+    session: Session & Partial<SessionData>
+  ) {
+    const {
+      eventId,
+      eventTypeId,
+      name,
+      description,
+      startDate,
+      lesson,
+      endDate,
+      teamId,
+    } = reqData;
+    if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
         expected: true,
-      }
+      };
       throw err;
     }
     lessonDateEventAtLeastOneNull(endDate, lesson);
@@ -114,24 +158,23 @@ export const eventService = {
           startDate: startDate,
           lesson: lesson,
           endDate: endDate,
-          teamId: teamId
+          teamId: teamId,
         },
       });
-    }
-    catch {
+    } catch {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
         expected: true,
-      }
+      };
       throw err;
     }
 
     const eventData = await prisma.event.findMany({
       orderBy: {
-        startDate: 'asc'
-      }
+        startDate: "asc",
+      },
     });
     try {
       await updateCacheData(eventData, cacheKeyEventData);
@@ -143,13 +186,13 @@ export const eventService = {
     }
   },
   async deleteEvent(eventId: number, session: Session & Partial<SessionData>) {
-    if (!(session.account)) {
+    if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
         expected: true,
-      }
+      };
       throw err;
     }
     if (!eventId) {
@@ -158,19 +201,19 @@ export const eventService = {
         status: 400,
         message: "Invalid data format",
         expected: true,
-      }
+      };
       throw err;
     }
     await prisma.event.delete({
       where: {
-        eventId: eventId
-      }
+        eventId: eventId,
+      },
     });
 
     const eventData = await prisma.event.findMany({
       orderBy: {
-        startDate: 'asc'
-      }
+        startDate: "asc",
+      },
     });
     try {
       await updateCacheData(eventData, cacheKeyEventData);
@@ -204,15 +247,19 @@ export const eventService = {
 
     return eventTypeData;
   },
-  async setEventTypeData(eventTypes: { eventTypeId: number | "", name: string, color: string }[]) {
+  async setEventTypeData(
+    eventTypes: { eventTypeId: number | ""; name: string; color: string }[]
+  ) {
     const existingEventTypes = await prisma.eventType.findMany();
-    await Promise.all(existingEventTypes.map(async (eventType) => {
-      if (!eventTypes.some((e) => e.eventTypeId === eventType.eventTypeId)) {
-        await prisma.eventType.delete({
-          where: { eventTypeId: eventType.eventTypeId }
-        });
-      }
-    }));
+    await Promise.all(
+      existingEventTypes.map(async eventType => {
+        if (!eventTypes.some(e => e.eventTypeId === eventType.eventTypeId)) {
+          await prisma.eventType.delete({
+            where: { eventTypeId: eventType.eventTypeId },
+          });
+        }
+      })
+    );
 
     for (const eventType of eventTypes) {
       isValidColor(eventType.color);
@@ -222,7 +269,7 @@ export const eventService = {
           status: 400,
           message: "Invalid data format",
           expected: true,
-        }
+        };
         throw err;
       }
       try {
@@ -230,27 +277,25 @@ export const eventService = {
           await prisma.eventType.create({
             data: {
               name: eventType.name,
-              color: eventType.color
-            }
-          })
-        }
-        else {
+              color: eventType.color,
+            },
+          });
+        } else {
           await prisma.eventType.update({
             where: { eventTypeId: eventType.eventTypeId },
             data: {
               name: eventType.name,
-              color: eventType.color
+              color: eventType.color,
             },
           });
         }
-      }
-      catch {
+      } catch {
         const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
           expected: true,
-        }
+        };
         throw err;
       }
     }
@@ -286,14 +331,26 @@ export const eventService = {
     const scss = `
       @use "sass:color";
 
-      ${eventTypeData.map((eventType: { eventTypeId: string, name: string, color: string }) => {
-      return `$event-${eventType.eventTypeId}: ${eventType.color};`
-    }).join("")}
+      ${eventTypeData
+        .map(
+          (eventType: { eventTypeId: string; name: string; color: string }) => {
+            return `$event-${eventType.eventTypeId}: ${eventType.color};`;
+          }
+        )
+        .join("")}
 
       $event-colors: (
-        ${eventTypeData.map((eventType: { eventTypeId: string, name: string, color: string }) => {
-      return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`
-    }).join("")}
+        ${eventTypeData
+          .map(
+            (eventType: {
+              eventTypeId: string;
+              name: string;
+              color: string;
+            }) => {
+              return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`;
+            }
+          )
+          .join("")}
       );
 
       @each $name, $color in $event-colors {
@@ -321,7 +378,7 @@ export const eventService = {
             }
           }
         }
-      }`
+      }`;
     const css = sass.compileString(scss).css;
 
     try {
@@ -332,7 +389,7 @@ export const eventService = {
     }
 
     return css;
-  }
-}
+  },
+};
 
 export default eventService;

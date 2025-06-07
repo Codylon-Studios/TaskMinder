@@ -202,6 +202,8 @@ npm run dev-build
 
 * We recommend using linting tools to maintain code quality. To use ESLint on this project, simply run: `npx eslint .`.
 
+* As a best practice, format your code using Prettier. You can run `npx prettier --write PATH/TO/FILE_OR_FOLDER` to format specific files or directories, or use `npx prettier . --write` to format the entire project.
+
 * When updating the Prisma schema, remember to run `npx prisma generate` to regenerate the client and TypeScript types in `node_modules/`.
   Before committing your changes, make sure to run `npx prisma migrate dev` to create and apply the necessary migration files to your local database—skipping this step may result in broken or inconsistent code.
 

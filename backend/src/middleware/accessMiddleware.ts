@@ -18,9 +18,9 @@ const checkAccess = {
       status: 401,
       message: "User hasn't joined class",
       expected: true,
-    }
+    };
     throw err;
-  }
-}
+  },
+};
 
 export default checkAccess;
