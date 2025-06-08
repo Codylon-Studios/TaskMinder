@@ -12,11 +12,19 @@ export function richTextToHtml(val: string, targetElement?: JQuery<HTMLElement>,
       parsedText.find("span[data-link-url]").each(function () {
         const url = $(this).attr("data-link-url")?.replaceAll("\\\\", "\\").replaceAll("\\«", "<").replaceAll("\\»", ">").replaceAll("\\;", ";")
         if (url && url != "") {
+          let neighbourLinkElements = $(this)
+            .add($(this).prevUntil(`:not([data-link-url="${$(this).attr("data-link-url")?.replaceAll("\\", "\\\\")}"])`))
+            .add($(this).nextUntil(`:not([data-link-url="${$(this).attr("data-link-url")?.replaceAll("\\", "\\\\")}"])`))
+
           $(this).css("cursor", "pointer").on("click", (ev) => {
             $("#rich-textarea-unsafe-link").toast("show").find("b").text(url)
             $("#rich-textarea-unsafe-link-confirm").off("click").on("click", () => {
               window.open(url, '_blank', 'noopener,noreferrer');
             })
+          }).on("mouseenter", function () {
+            neighbourLinkElements.addClass("rich-textarea-link-enabled")
+          }).on("mouseleave", function () {
+            neighbourLinkElements.removeClass("rich-textarea-link-enabled")
           })
         }
       })
@@ -30,7 +38,7 @@ export function richTextToHtml(val: string, targetElement?: JQuery<HTMLElement>,
     targetElement.on("addedToDom", () => {
       if ((targetElement.height() ?? 0) >= 120) {
         targetElement.css({ maxHeight: "96px", overflow: "hidden", display: "block" }).after(showMoreButton.on("click", function (ev) {
-          ev.stopPropagation();
+          ev.preventDefault()
           if ($(this).text() == "Mehr anzeigen") {
             $(this).text("Weniger anzeigen");
             targetElement.css({ maxHeight: "none" });
@@ -48,7 +56,7 @@ export function richTextToHtml(val: string, targetElement?: JQuery<HTMLElement>,
     if (activeTags.some(tag => tag.tagName == "b")) span.css("font-weight", "700")
     if (activeTags.some(tag => tag.tagName == "u")) span.css("text-decoration", "underline")
     if (activeTags.some(tag => tag.tagName == "i")) span.css("font-style", "italic")
-    const fsMatch = activeTags.find(tag => tag.tagName == "fs")
+    let fsMatch = activeTags.find(tag => tag.tagName == "fs")
     if (fsMatch) {
       span.attr("data-font-size", fsMatch.args[0])
       span.css("font-size", fsMatch.args[0] + "px")
@@ -253,10 +261,33 @@ function replaceRichTextareas() {
 
     textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
     textarea.toggleClass("rich-textarea-empty", textarea.html() == "")
+    textarea.css("height", "auto")
+    textarea.css("height", textarea[0].scrollHeight + 2 + "px")
+
+    let currentStyles = {
+      bold: false,
+      underline: false,
+      italic: false,
+      fontSize: { enabled: false, value: 16 },
+      sub: false,
+      sup: false,
+      color: { enabled: false, value: "Automatisch" }
+    }
+
+    richTextarea.find(".rich-textarea-color svg").hide()
+    richTextarea.find(".rich-textarea-color-enabled").hide()
+    richTextarea.find(".rich-textarea-color-picker").val("Automatisch")
+
+    richTextarea.find(".rich-textarea-toolbar").hide()
+    richTextarea.find(".rich-textarea-input-toggle").on("click", function () {
+      richTextarea.find(".rich-textarea-toolbar").toggle()
+    })
 
     input.on("input change", () => {
       textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
       textarea.toggleClass("rich-textarea-empty", textarea.html() == "")
+      textarea.css("height", "auto")
+      textarea.css("height", Math.max(textarea[0].scrollHeight, 36) + 2 + "px")
     })
 
     function findReplacement(direction: "old" | "new", val: string) {
@@ -276,27 +307,48 @@ function replaceRichTextareas() {
     ]
 
     textarea.on("beforeinput", (e) => {
+      function copyStyles(node: JQuery<HTMLElement>) {
+        for (let styleToggle of styleToggles) {
+          if (currentStyles[styleToggle.styleName]) {
+            node.css(styleToggle.cssPropName, styleToggle.cssPropNewVal)
+          }
+        }
+        if (currentStyles.fontSize.enabled) {
+          node.attr("data-font-size", currentStyles.fontSize.value)
+          node.css("font-size", currentStyles.fontSize.value)
+        }
+        if (currentStyles.sub) {
+          node.addClass("sub")
+          node.css("font-size", (parseInt(node.attr("data-font-size") ?? "16")) * 0.83 + "px")
+        }
+        if (currentStyles.sup) {
+          node.addClass("sup")
+          node.css("font-size", (parseInt(node.attr("data-font-size") ?? "16")) * 0.83 + "px")
+        }
+        if (currentStyles.color.enabled && currentStyles.color.value != "Automatisch") {
+          node.attr("data-color", currentStyles.color.value)
+          node.css("color", currentStyles.color.value)
+        }
+      }
       function insertAtRange(insertion: string, options?: { copyStyles?: boolean, replace?: boolean }) {
+
         deleteSelectedRanges()
 
         const range = ranges[0];
         if (! range) return
         let newNode = $(insertion)
+        if (options?.copyStyles) {
+          copyStyles(newNode)
+        }
 
         if (textarea.find("span, br").length == 0) {
           textarea.append(newNode)
         }
         else if (range.startOffset == 0) {
-          textarea.find("span, br").eq(0).before(newNode)
+          textarea.prepend(newNode)
         }
         else {
           const previous = textarea.find("span, br").eq(range.startOffset - 1)
-          if (options?.copyStyles) {
-            newNode[0].style.cssText = previous[0].style.cssText
-            newNode.attr("data-font-size", previous.attr("data-font-size") ?? "16")
-            newNode.attr("data-color", previous.attr("data-color") ?? "")
-            $(newNode).attr("class", previous.attr("class") ?? "").removeClass("newline")
-          }
           previous.after(newNode)
           
           if (options?.replace) {
@@ -393,14 +445,19 @@ function replaceRichTextareas() {
       textarea.toggleClass("rich-textarea-empty", textarea.html() == "")
     })
 
-    let styleToggles = [
-      { btnName: ".rich-textarea-bold", cssPropName: "font-weight", cssPropBaseVal: "400", cssPropNewVal: "700" },
-      { btnName: ".rich-textarea-underline", cssPropName: "text-decoration", cssPropBaseVal: "none", cssPropNewVal: "underline" },
-      { btnName: ".rich-textarea-italic", cssPropName: "font-style", cssPropBaseVal: "normal", cssPropNewVal: "italic" },
+    let styleToggles : {
+      styleName: "bold" | "underline" | "italic", btnName: string, cssPropName: string, cssPropBaseVal: string, cssPropNewVal: string
+    }[] = [
+      { styleName: "bold", btnName: ".rich-textarea-bold", cssPropName: "font-weight", cssPropBaseVal: "400", cssPropNewVal: "700" },
+      { styleName: "underline", btnName: ".rich-textarea-underline", cssPropName: "text-decoration", cssPropBaseVal: "none", cssPropNewVal: "underline" },
+      { styleName: "italic", btnName: ".rich-textarea-italic", cssPropName: "font-style", cssPropBaseVal: "normal", cssPropNewVal: "italic" },
     ]
 
     for (let styleToggle of styleToggles) {
-      richTextarea.find(styleToggle.btnName).on("click", () => {
+      richTextarea.find(styleToggle.btnName).on("click", function () {
+        currentStyles[styleToggle.styleName] = ! currentStyles[styleToggle.styleName]
+        $(this).toggleClass("enabled")
+
         forEachSelectedSpan(span => {
           if (span.css(styleToggle.cssPropName).includes(styleToggle.cssPropNewVal)) {
             span.css(styleToggle.cssPropName, styleToggle.cssPropBaseVal)
@@ -414,11 +471,15 @@ function replaceRichTextareas() {
 
     richTextarea.find(".rich-textarea-font-size-dropdown input").on("input", function () {
       richTextarea.find(".rich-textarea-font-size span").text(`(${$(this).val()})`)
+      currentStyles.fontSize.value = parseInt($(this).val()?.toString() ?? "16")
     })
 
-    richTextarea.find(".rich-textarea-font-size").on("click", () => {
+    richTextarea.find(".rich-textarea-font-size").on("click", function () {
       const newFontSize = parseInt(richTextarea.find(".rich-textarea-font-size-dropdown input").val()?.toString() ?? "16")
       if (! newFontSize) return
+      currentStyles.fontSize.enabled = ! currentStyles.fontSize.enabled
+      currentStyles.fontSize.value = newFontSize
+      $(this).toggleClass("enabled")
       forEachSelectedSpan(span => {
         if (parseInt(span.attr("data-font-size") ?? "16") == newFontSize) {
           span.attr("data-font-size", 16)
@@ -441,7 +502,12 @@ function replaceRichTextareas() {
       })
     })
 
-    richTextarea.find(".rich-textarea-sub").on("click", () => {
+    richTextarea.find(".rich-textarea-sub").on("click", function () {
+      currentStyles.sub = ! currentStyles.sub
+      currentStyles.sup = false
+      $(this).toggleClass("enabled")
+      richTextarea.find(".rich-textarea-sup").removeClass("enabled")
+
       forEachSelectedSpan(span => {
         if (span.hasClass("sub")) {
           span.removeClass("sub")
@@ -455,7 +521,12 @@ function replaceRichTextareas() {
       })
     })
 
-    richTextarea.find(".rich-textarea-sup").on("click", () => {
+    richTextarea.find(".rich-textarea-sup").on("click", function () {
+      currentStyles.sup = ! currentStyles.sup
+      currentStyles.sub = false
+      $(this).toggleClass("enabled")
+      richTextarea.find(".rich-textarea-sub").removeClass("enabled")
+
       forEachSelectedSpan(span => {
           if (span.hasClass("sup")) {
           span.removeClass("sup")
@@ -475,13 +546,28 @@ function replaceRichTextareas() {
     })
 
     richTextarea.find(".rich-textarea-color-picker").on("change", function () {
-      richTextarea.find(".rich-textarea-color svg").css("fill", $(this).val()?.toString() ?? "#3bb9ca")
+      const color = $(this).val()?.toString() ?? "#3bb9ca"
+      currentStyles.color.value = color
+      if (color == "Automatisch") {
+        richTextarea.find(".rich-textarea-color svg").hide().find("~ span").show()
+        richTextarea.find(".rich-textarea-color-enabled").hide()
+      }
+      else {
+        richTextarea.find(".rich-textarea-color svg").css("fill", color).show().find("~ span").hide()
+        richTextarea.find(".rich-textarea-color-enabled").toggle(currentStyles.color.enabled)
+      }
     })
 
-    richTextarea.find(".rich-textarea-color").on("click", () => {
+    richTextarea.find(".rich-textarea-color").on("click", function () {
       const newColor = richTextarea.find(".rich-textarea-color-picker").val()?.toString() ?? "#3bb9ca"
+      currentStyles.color.enabled = ! currentStyles.color.enabled
+      currentStyles.color.value = newColor
+      $(this).toggleClass("enabled")
+      if (newColor != "Automatisch") {
+        $(this).find(".rich-textarea-color-enabled").toggle()
+      }
       forEachSelectedSpan(span => {
-        if (span.attr("data-color") == newColor) {
+        if (span.attr("data-color") == newColor || newColor == "Automatisch") {
           span.css("color", "")
           span.attr("data-color", "")
         }
@@ -518,6 +604,8 @@ function replaceRichTextareas() {
       })
     })
 
+    richTextarea.find(".rich-textarea-link-dropdown span").hide()
+
     $(document).on("selectionchange", () => {
       let selectedSpans: JQuery<HTMLElement> = $();
 
@@ -533,45 +621,9 @@ function replaceRichTextareas() {
         }
       }
 
-      const baseVal = selectedSpans.length > 0
-      const settingsEnabled = {
-        bold: baseVal,
-        underline: baseVal,
-        italic: baseVal,
-        fontSize: baseVal,
-        sub: baseVal,
-        sup: baseVal,
-      }
-      selectedSpans.each(function () {
-        if (! $(this).css("font-weight").includes("700")) {
-          settingsEnabled.bold = false;
-        }
-        if (! $(this).css("text-decoration").includes("underline")) {
-          settingsEnabled.underline = false;
-        }
-        if (! $(this).css("font-style").includes("italic")) {
-          settingsEnabled.italic = false;
-        }
-        if (["", "16"].includes($(this).attr("data-font-size") ?? "")) {
-          settingsEnabled.fontSize = false;
-        }
-        if (! $(this).hasClass("sub")) {
-          settingsEnabled.sub = false;
-        }
-        if (! $(this).hasClass("sup")) {
-          settingsEnabled.sup = false;
-        }
-      })
-
-      richTextarea.find(".rich-textarea-bold").toggleClass("enabled", settingsEnabled.bold)
-      richTextarea.find(".rich-textarea-underline").toggleClass("enabled", settingsEnabled.underline)
-      richTextarea.find(".rich-textarea-italic").toggleClass("enabled", settingsEnabled.italic)
-      richTextarea.find(".rich-textarea-font-size").toggleClass("enabled", settingsEnabled.fontSize)
-      richTextarea.find(".rich-textarea-sub").toggleClass("enabled", settingsEnabled.sub)
-      richTextarea.find(".rich-textarea-sup").toggleClass("enabled", settingsEnabled.sup)
-
-      textarea.find("span").removeClass("rich-textarea-span-link-enabled")
+      textarea.find("span").removeClass("rich-textarea-link-enabled")
       richTextarea.find(".rich-textarea-link").removeClass("enabled")
+      richTextarea.find(".rich-textarea-link-dropdown span").hide()
       if (ranges.length == 1) {
         let commonLinkUrl: string | undefined | null;
         selectedSpans.each(function () {
@@ -586,8 +638,10 @@ function replaceRichTextareas() {
           selectedSpans
             .add(selectedSpans.prevUntil(`:not([data-link-url="${commonLinkUrl}"])`))
             .add(selectedSpans.nextUntil(`:not([data-link-url="${commonLinkUrl}"])`))
-            .addClass("rich-textarea-span-link-enabled")
+            .addClass("rich-textarea-link-enabled")
           richTextarea.find(".rich-textarea-link").addClass("enabled")
+          const displayedUrl = commonLinkUrl.replaceAll("\\\\", "\\").replaceAll("\\«", "<").replaceAll("\\»", ">").replaceAll("\\;", ";")
+          richTextarea.find(".rich-textarea-link-dropdown span").show().find("b").text(displayedUrl)
         }
       }
     })

@@ -36,7 +36,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
     // Filter by min. date
     if ($("#filter-date-from").val() != "") {
       let filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-      if (filterDate > (event.endDate ?? event.startDate)) {
+      if (filterDate > parseInt(event.endDate ?? event.startDate)) {
         continue;
       }
     }
@@ -44,7 +44,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
     // Filter by max. date
     if ($("#filter-date-until").val() != "") {
       let filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
-      if (filterDate < event.startDate) {
+      if (filterDate < parseInt(event.startDate)) {
         continue;
       }
     }

@@ -4,6 +4,7 @@ import { isSameDay, eventData, joinedTeamsData, createDataAccessor, homeworkData
          msToTime, 
          csrfToken} from "../../global/global.js"
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js"
+import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js"
 
 async function getCalendarDayHtml(date: Date, week: number, multiEventPositions: (number | null)[]) {
   // Any special classes of the day
@@ -33,7 +34,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
     }
 
     if (event.endDate == null) {
-      if (isSameDay(new Date(event.startDate), date)) {
+      if (isSameDay(new Date(parseInt(event.startDate)), date)) {
         singleDayEvents += `<div class="col"><div class="event event-${event.eventTypeId}"></div></div>`
       }
     }
@@ -46,18 +47,18 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
           multiEventPositions.splice(multiEventPositions.indexOf(null), 1, event.eventId)
         }
       }
-      if (isSameDay(new Date(event.startDate), date)) {
-        if (isSameDay(new Date(event.endDate), date)) {
+      if (isSameDay(new Date(parseInt(event.startDate)), date)) {
+        if (isSameDay(new Date(parseInt(event.endDate)), date)) {
           multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-single event-${event.eventTypeId}"></div>`
         }
         else {
           multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-start event-${event.eventTypeId}"></div>`
         }
       }
-      else if (isSameDay(new Date(event.endDate), date)) {
+      else if (isSameDay(new Date(parseInt(event.endDate)), date)) {
         multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-end event-${event.eventTypeId}"></div>`
       }
-      else if (event.startDate < date.getTime() && event.endDate > date.getTime()) {
+      else if (parseInt(event.startDate) < date.getTime() && parseInt(event.endDate) > date.getTime()) {
         multiDayEventsA[multiEventPositions.indexOf(event.eventId)] = `<div class="event event-middle event-${event.eventTypeId}"></div>`
       }
       else if (multiEventPositions.indexOf(event.eventId) == multiEventPositions.length - 1) {
@@ -246,7 +247,8 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
   const currentSubjectData = await subjectData()
   const currentJoinedTeams = await joinedTeamsData()
 
-  let newContent = ""
+  let newContent = $("<div></div>")
+  let addedElements: JQuery<HTMLElement> = $();
   
   for (let homework of await homeworkData()) {
     if (currentSubjectData.find(s => s.subjectId == homework.subjectId) === undefined) {
@@ -256,8 +258,8 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     let homeworkId = homework.homeworkId;
     let subject = currentSubjectData.find(s => s.subjectId == homework.subjectId)?.subjectNameLong;
     let content = homework.content;
-    let assignmentDate = new Date(Number(homework.assignmentDate));
-    let submissionDate = new Date(Number(homework.submissionDate));
+    let assignmentDate = new Date(parseInt(homework.assignmentDate));
+    let submissionDate = new Date(parseInt(homework.submissionDate));
     let checked = await getHomeworkCheckStatus(homeworkId);
 
     if ($("#homework-mode-tomorrow").prop("checked")) {
@@ -287,19 +289,23 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
 
     // The template for a homework with checkbox and edit options
     let template = 
-      `<div class="mb-1 form-check d-flex">
+      $(`<div class="mb-1 form-check">
         <label class="form-check-label">
           <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkId}" ${(checked) ? "checked" : ""}>
-          <b>${$.formatHtml(subject ?? "")}</b> ${$.formatHtml(content, { multiNewlineStartNewline: true })}
+          <b>${$.formatHtml(subject ?? "")}</b>
         </label>
-      </div>`;
+        <span class="homework-content"></span>
+      </div>`);
 
     // Add this homework to the list
-    newContent += template;
+    newContent.append(template);
+    
+    richTextToHtml(content, template.find(".homework-content"), { showMoreButton: true, parseLinks: true, displayBlockIfNewline: true })
+    addedElements = addedElements.add(template.find(".homework-content"))
   };
 
   // If no homeworks match, add an explanation text
-  if (newContent == "") {
+  if (newContent.html() == "") {
     let text
     if ($("#homework-mode-tomorrow").prop("checked")) {
       text = "auf den nächsten"
@@ -310,9 +316,10 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     else if ($("#homework-mode-assignment").prop("checked")) {
       text = "von diesem"
     }
-    newContent = `<div class="text-secondary">Keine Hausaufgaben ${text} Tag.</div>`
+    newContent.html(`<div class="text-secondary">Keine Hausaufgaben ${text} Tag.</div>`)
   }
-  $("#homework-list").html(newContent)
+  $("#homework-list").empty().append(newContent.children())
+  addedElements.trigger("addedToDom")
 })
 
 function updateHomeworkMode() {
@@ -351,8 +358,8 @@ const updateEventList = runOnce(async (): Promise<void> => {
     else {
       endDate = null;
     }
-    let msStartDate = event.startDate
-    let msEndDate = event.endDate ?? event.startDate
+    let msStartDate = parseInt(event.startDate)
+    let msEndDate = parseInt(event.endDate ?? event.startDate)
 
     // Filter by start date
     if (selectedDate.getTime() < msStartDate && ! isSameDay(selectedDate, new Date(msStartDate))) {
@@ -366,20 +373,26 @@ const updateEventList = runOnce(async (): Promise<void> => {
 
     // The template for an event
     let template = 
-      `<div class="col p-2">
+      $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column">
               <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
               <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b>
-              <span>${$.formatHtml(description ?? "")}</span>
+              <span class="event-description"></span>
             </div>
           </div>
         </div>
-      </div>`;
+      </div>`);
 
     // Add this event to the list
     $("#event-list").append(template);
+
+    richTextToHtml(description ?? "", template.find(".event-description"), {
+      showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
+      parseLinks: true
+    })
+    template.find(".event-description").trigger("addedToDom")
   };
 
   // If no events match, add an explanation text
@@ -585,6 +598,8 @@ const updateTimetable = runOnce(async (): Promise<void> => {
   groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber)
   
   for (let lessonGroup of groupedLessonData) {
+    let addedDescriptionTemplates = $()
+
     let templateModeLess = `
       <div class="card">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
@@ -718,7 +733,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
             return false;
           }
         }
-        else if (Number(event.lesson) != lessonId) {
+        else if (parseInt(event.lesson) != lessonId) {
           return false;
         }
         return true;
@@ -731,7 +746,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       if (event.lesson == "") {
         continue;
       }
-      if (! isSameDay(new Date(event.startDate), selectedDate)) {
+      if (! isSameDay(new Date(parseInt(event.startDate)), selectedDate)) {
         continue;
       }
       if (! matchesLessonId(event, lessonGroup.lessonNumber)) {
@@ -743,7 +758,15 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       thisMoreLesson.find(".card-body").append(eventName)
 
       if (event.description != "") {
-        thisMoreLesson.find(".card-body").append(`<span class="event-${event.eventTypeId} text-centerd-block">${$.formatHtml(event.description ?? "")}</span>`)
+        let descriptionTemplate = $(`<span class="event-${event.eventTypeId} text-centered-block"></span>`)
+
+        thisMoreLesson.find(".card-body").append(descriptionTemplate)
+
+        richTextToHtml(event.description ?? "", descriptionTemplate, {
+          showMoreButton: $(`<a class="event-${event.eventTypeId}" href="#">Mehr anzeigen</a>`),
+          parseLinks: true
+        })
+        addedDescriptionTemplates = addedDescriptionTemplates.add(descriptionTemplate)
       }
     }
 
@@ -784,6 +807,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
     else {
       $("#timetable-more").append(thisMoreLesson);
     }
+    addedDescriptionTemplates.trigger("addedToDom")
   }
 })
 

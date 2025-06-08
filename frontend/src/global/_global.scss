@@ -139,7 +139,9 @@ body {
 
 @each $name, $color in $colors {
   .line-through-#{$name} {
-    text-decoration: line-through solid $color 0.25em;
+    text-decoration-line: line-through;
+    text-decoration-color: $color;
+    text-decoration-thickness: 0.25em;
   }
   .text-#{$name} {
     color: $color;

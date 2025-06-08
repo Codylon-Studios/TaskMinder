@@ -17,8 +17,8 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     let homeworkId = homework.homeworkId;
     let subject = (await subjectData()).find((s) => s.subjectId == homework.subjectId)?.subjectNameLong;
     let content = homework.content;
-    let assignmentDate = msToDisplayDate(homework.assignmentDate).split(".").slice(0, 2).join(".");
-    let submissionDate = msToDisplayDate(homework.submissionDate).split(".").slice(0, 2).join(".");
+    let assignmentDate = msToDisplayDate(parseInt(homework.assignmentDate)).split(".").slice(0, 2).join(".");
+    let submissionDate = msToDisplayDate(parseInt(homework.submissionDate)).split(".").slice(0, 2).join(".");
 
     let checked = await getHomeworkCheckStatus(homeworkId);
 
@@ -40,7 +40,7 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     // Filter by min. date
     if ($("#filter-date-from").val() != "") {
       let filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-      if (filterDate > homework.submissionDate) {
+      if (filterDate > parseInt(homework.submissionDate)) {
         continue;
       }
     }
@@ -48,7 +48,7 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     // Filter by max. date
     if ($("#filter-date-until").val() != "") {
       let filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "1.1.1970");
-      if (filterDate < homework.assignmentDate) {
+      if (filterDate < parseInt(homework.assignmentDate)) {
         continue;
       }
     }

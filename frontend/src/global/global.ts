@@ -14,7 +14,7 @@ export function runOnce(fn: Function): Function {
 }
 
 export function msToDisplayDate(ms: number | string): string {
-  const num = typeof ms === "string" ? Number(ms) : ms;
+  const num = typeof ms === "string" ? parseInt(ms) : ms;
   const date = new Date(num);
   const day = String(date.getDate());
   const month = String(date.getMonth() + 1);
@@ -24,7 +24,7 @@ export function msToDisplayDate(ms: number | string): string {
 
 export function msToInputDate(ms: number | string): string {
   if (ms == "") return ""
-  const num = typeof ms === "string" ? Number(ms) : ms;
+  const num = typeof ms === "string" ? parseInt(ms) : ms;
   const date = new Date(num);
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -335,8 +335,8 @@ type HomeworkData = {
   homeworkId: number,
   content: string,
   subjectId: number,
-  assignmentDate: number,
-  submissionDate: number,
+  assignmentDate: string,
+  submissionDate: string,
   teamId: number
 }[];
 export const homeworkData = createDataAccessor<HomeworkData>("homeworkData");
@@ -375,8 +375,8 @@ export type SingleEventData = {
   eventTypeId: number,
   name: string,
   description: string | null,
-  startDate: number,
-  endDate: number | null,
+  startDate: string,
+  endDate: string | null,
   lesson: string | null,
   teamId: number
 }
