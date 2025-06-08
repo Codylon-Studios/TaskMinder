@@ -1,0 +1,25 @@
+.bottombar {
+  border: 0 solid var(--bs-secondary-bg);
+  border-top-width: 0.3rem;
+}
+
+.bottombar-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19%;
+  border-radius: 0;
+
+  &:nth-child(3) {
+    width: 24%;
+  }
+
+  &.bottombar-current-link {
+    color: #3bb9ca !important;
+  }
+
+  & i {
+    font-size: calc(1.3rem + 0.6vw);
+    margin: 1rem;
+  }
+}

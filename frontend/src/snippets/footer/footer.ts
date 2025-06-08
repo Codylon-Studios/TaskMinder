@@ -2,14 +2,19 @@ import { colorTheme } from "../../global/global.js"
 
 if (localStorage.getItem("displayFooter") == "false") {
   $("footer").hide()
+  $(() => {
+    $("body").css({paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + 70 + "px"})
+  })
 }
 else {
-  $("body").css({paddingBottom: 0})
+  $(() => {
+    $("body").css({paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + "px"})
+  })
 }
 
 $("#footer-close").on("click", () => {
   localStorage.setItem("displayFooter", "false")
-  $("body").css({paddingBottom: $("body").css("paddingTop")})
+  $("body").css({paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + 70 + "px"})
   $("footer").hide()
   if (["/settings", "/settings/"].includes(location.pathname)) {
     $("#display-footer input").prop("checked", false)
