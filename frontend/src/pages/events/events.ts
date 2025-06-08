@@ -59,8 +59,8 @@ const updateEventList = runOnce(async (): Promise<void> => {
       $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
-            <div class="d-flex flex-column me-3">
-              <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
+            <div class="d-flex flex-column me-3 event-content-wrapper">
+              <span class="fw-bold event-${eventTypeId} event-title" ${(editEnabled) ? "" : "style='margin-right: 0'"}>${$.formatHtml(name)}</span>
               <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b>
               <span class="event-description"></span>
             </div>
@@ -449,21 +449,24 @@ $(function(){
   // If user is logged in, show the edit toggle button
   user.on("login", () => {
     $("#edit-toggle-label").removeClass("d-none");
+    $("#show-add-event-button").removeClass("d-none");
   });
-
   user.on("logout", () => {
     $("#edit-toggle-label").addClass("d-none")
     $("#show-add-event-button").addClass("d-none");
     $(".event-edit-options").addClass("d-none");
+    $(".event-title").css("margin-right", "0rem")
   });
 
   if (user.loggedIn) {
     $("#edit-toggle-label").removeClass("d-none");
+    $("#show-add-event-button").removeClass("d-none");
   }
   else {
     $("#edit-toggle-label").addClass("d-none")
     $("#show-add-event-button").addClass("d-none");
     $(".event-edit-options").addClass("d-none");
+    $(".event-title").css("margin-right", "0rem")
   }
 
   // Leave edit mode (if user entered it in a previous session)
@@ -472,13 +475,13 @@ $(function(){
   $("#edit-toggle").on("click", function () {
     if ($("#edit-toggle").is(":checked")) {
       // On checking the edit toggle, show the add button and edit options
-      $("#show-add-event-button").removeClass("d-none");
       $(".event-edit-options").removeClass("d-none");
+      $(".event-title").css("margin-right", "3.75rem")
     }
     else {
       // On unchecking the edit toggle, hide the add button and edit options
-      $("#show-add-event-button").addClass("d-none");
       $(".event-edit-options").addClass("d-none");
+      $(".event-title").css("margin-right", "0rem")
     }
   });
 

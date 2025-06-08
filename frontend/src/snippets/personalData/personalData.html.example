@@ -1,0 +1,5 @@
+<address>
+  <strong>Your name</strong><br>
+  Your address<br>
+  E-Mail: <a href="mailto:example@example.com">example@example.com</a>
+</address>

@@ -1,11 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 
 <head>
-  <meta charset="utf-8">
   <meta name="description" content="See and edit your homework here .">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TaskMinder</title>
 </head>
 
 <body>
@@ -16,6 +13,10 @@
   <div class="container">
     <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
       <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary d-none" id="show-add-homework-button">
+          <i class="fa-solid fa-plus"></i>
+          Neu
+        </button>
         <input type="checkbox" class="btn-check" id="edit-toggle">
         <label class="btn btn-outline-secondary d-none" for="edit-toggle" id="edit-toggle-label">
           <i class="fa-solid fa-edit"></i>
@@ -75,11 +76,6 @@
         Zurücksetzen
       </button>
     </div>
-
-    <button type="button" class="btn btn-primary d-none" id="show-add-homework-button">
-      <i class="fa-solid fa-plus"></i>
-      Neu
-    </button>
 
     <div class="container-fluid mt-3" id="homework-list">
       <!--Gets filled-->

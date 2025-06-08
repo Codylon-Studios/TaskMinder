@@ -1,6 +1,15 @@
 @use "sass:color";
 @use "../../global/global" as *;
 
+.event-content-wrapper {
+  width: 100%;
+}
+
+.event-title {
+  margin-right: 3.75rem;
+  word-wrap: break-word;
+}
+
 .event-description {
   overflow: hidden;
   white-space: pre-wrap;

@@ -60,23 +60,27 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
 
     // The template for a homework with checkbox and edit options
     let template = 
-      $(`<div class="mb-1 form-check">
-        <label class="form-check-label">
-          <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkId}" ${(checked) ? "checked" : ""}>
-          <b>${$.formatHtml(subject ?? "")}</b>
-        </label>
-        <span class="homework-content"></span>
-        <span class="ms-4 d-block">Von ${assignmentDate} bis ${submissionDate}</span>
+      $(`
+        <div class="mb-1 d-flex">
+          <div class="form-check mt-1">
+            <label class="form-check-label">
+              <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkId}" ${(checked) ? "checked" : ""}>
+              <span class="fw-bold">${$.formatHtml(subject ?? "")}</span>
+            </label>
+            <span class="homework-content"></span>
+            <span class="ms-4 d-block">Von ${assignmentDate} bis ${submissionDate}</span>
+          </div>
 
-        <div class="homework-edit-options ms-2 ${(editEnabled) ? "" : "d-none"}">
-          <button class="btn btn-sm btn-semivisible homework-edit" data-id="${homeworkId}">
-            <i class="fa-solid fa-edit opacity-75"></i>
-          </button>
-          <button class="btn btn-sm btn-semivisible homework-delete" data-id="${homeworkId}">
-            <i class="fa-solid fa-trash opacity-75"></i>
-          </button>
+          <div class="homework-edit-options ms-2 text-nowrap ${(editEnabled) ? "" : "d-none"}">
+            <button class="btn btn-sm btn-semivisible homework-edit" data-id="${homeworkId}">
+              <i class="fa-solid fa-edit opacity-75"></i>
+            </button>
+            <button class="btn btn-sm btn-semivisible homework-delete" data-id="${homeworkId}">
+              <i class="fa-solid fa-trash opacity-75"></i>
+            </button>
+          </div>
         </div>
-      </div>`);
+      `);
 
     // Add this homework to the list
     newContent.append(template);
@@ -522,15 +526,17 @@ $(function(){
   // If user is logged in, show the edit toggle button
   user.on("login", () => {
     $("#edit-toggle-label").removeClass("d-none");
+    $("#show-add-homework-button").removeClass("d-none");
   });
-
   user.on("logout", () => {
     $("#edit-toggle-label").addClass("d-none")
     $("#show-add-homework-button").addClass("d-none");
     $(".homework-edit-options").addClass("d-none");
   });
+
   if (user.loggedIn) {
     $("#edit-toggle-label").removeClass("d-none");
+    $("#show-add-homework-button").removeClass("d-none");
   }
   else {
     $("#edit-toggle-label").addClass("d-none")
@@ -544,12 +550,10 @@ $(function(){
   $("#edit-toggle").on("click", function () {
     if ($("#edit-toggle").is(":checked")) {
       // On checking the edit toggle, show the add button and edit options
-      $("#show-add-homework-button").removeClass("d-none");
       $(".homework-edit-options").removeClass("d-none");
     }
     else {
       // On unchecking the edit toggle, hide the add button and edit options
-      $("#show-add-homework-button").addClass("d-none");
       $(".homework-edit-options").addClass("d-none");
     }
   });
