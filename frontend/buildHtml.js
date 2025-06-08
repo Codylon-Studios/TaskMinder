@@ -86,26 +86,37 @@ async function buildDirectory(src, dest) {
         `)
 
         $("body").append(`
-          <div class="load-snippet" data-target="pwaBanner" data-html data-css data-js></div>
+          <div class="load-snippet" data-target="pwaBanner"></div>
+          <div class="load-snippet" data-target="navbar"></div>
+          <div class="load-snippet" data-target="footer"></div>
         `)
 
         $("body").css({ display: "none" })
 
-        let elements = $(".load-snippet").toArray()
-        for (const el of elements) {
-          const target = $(el).data("target")
-          if ($(el).data("html") != undefined) {
-            const snippetPath = path.join(srcFile, "..", "..", "..", "snippets", target, target + ".html")
-            const $new = cheerio.load(await fs.readFile(snippetPath))
-            $(el).replaceWith($new.html())
-          }
-          if ($(el).data("css") != undefined) {
-            $("head").append(`<link class="preload-style" rel="preload" href="/snippets/${target}/${target}.css" as="style">`)
-          }
-          if ($(el).data("js") != undefined) {
-            $("head").append(`<script src="/snippets/${target}/${target}.js" type="module" defer></script>`)
+        let elements;
+        do {
+          elements = $(".load-snippet").toArray()
+          for (const el of elements) {
+            const target = $(el).data("target")
+            const folder = path.join(srcFile, "..", "..", "..", "snippets", target)
+            if (await fs.exists(path.join(folder, target + ".html"))) {
+              const $new = cheerio.load(await fs.readFile(path.join(folder, target + ".html")))
+              if ($(el).data("target-id")) {
+                $(el).replaceWith($new("#" + $(el).data("target-id")).html())
+              }
+              else {
+                $(el).replaceWith($new.html())
+              }
+            }
+            if (await fs.exists(path.join(folder, target + ".scss"))) {
+              $("head").append(`<link class="preload-style" rel="preload" href="/snippets/${target}/${target}.css" as="style">`)
+            }
+            if (await fs.exists(path.join(folder, target + ".ts"))) {
+              $("head").append(`<script src="/snippets/${target}/${target}.js" type="module" defer></script>`)
+            }
           }
         }
+        while (elements.length > 0)
 
         fs.writeFile(destFile, $.html())
       }

@@ -772,11 +772,11 @@ $("#display-footer input").on("click", function () {
   localStorage.setItem("displayFooter", displayFooter)
   if (displayFooter) {
     $("footer").show()
-    $("body").css({paddingBottom: 0})
+    $("body").css({paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + "px"})
   }
   else {
     $("footer").hide()
-    $("body").css({paddingBottom: $("body").css("paddingTop")})
+    $("body").css({paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + 70 + "px"})
   }
 })
 
