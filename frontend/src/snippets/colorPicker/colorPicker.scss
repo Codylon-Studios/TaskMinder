@@ -26,9 +26,10 @@ $fa-font-path: "/assets/fonts/fontawesome";
 
 .color-picker-saturation-value {
   @extend .rounded;
-  background: linear-gradient(transparent 0%, black 100%),
-              linear-gradient(90deg, white 0%, transparent 100%),
-              linear-gradient(red 0%, red 100%);
+  background:
+    linear-gradient(transparent 0%, black 100%),
+    linear-gradient(90deg, white 0%, transparent 100%),
+    linear-gradient(red 0%, red 100%);
   margin-right: 0.5rem;
   width: 8.5rem;
   position: relative;
@@ -48,7 +49,15 @@ $fa-font-path: "/assets/fonts/fontawesome";
 
 .color-picker-hue {
   @extend .rounded;
-  background: linear-gradient(#f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%,  #f0f 83%,  #f00 100%);
+  background: linear-gradient(
+    #f00 0%,
+    #ff0 17%,
+    #0f0 33%,
+    #0ff 50%,
+    #00f 67%,
+    #f0f 83%,
+    #f00 100%
+  );
   width: 1.75rem;
   position: relative;
 }
@@ -98,9 +107,8 @@ $color-picker-colors: (
   #44ddee,
   #44dd33,
   #449933,
-  #888888,
+  #888888
 );
-
 
 @each $color in $color-picker-colors {
   .color-picker-option[data-color="#{$color}"] {

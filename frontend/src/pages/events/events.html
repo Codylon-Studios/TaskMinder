@@ -1,275 +1,424 @@
 <!doctype html>
 <html lang="de">
+  <head>
+    <meta name="description" content="See and edit your events." />
+    <link
+      class="preload-style"
+      rel="preload"
+      href="/events/event_type_styles"
+      as="style"
+    />
+  </head>
 
-<head>
-  <meta name="description" content="See and edit your events.">
-  <link class="preload-style" rel="preload" href="/events/event_type_styles" as="style">
-</head>
+  <body>
+    <div class="load-snippet" data-target="richTextarea"></div>
+    <div class="load-snippet" data-target="colorPicker"></div>
 
-<body>
-  <div class="load-snippet" data-target="richTextarea"></div>
-  <div class="load-snippet" data-target="colorPicker"></div>
+    <div class="container">
+      <div
+        class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2"
+      >
+        <div class="d-flex gap-2">
+          <button
+            type="button"
+            class="btn btn-primary d-none"
+            id="show-add-event-button"
+          >
+            <i class="fa-solid fa-plus"></i>
+            Neu
+          </button>
+          <input type="checkbox" class="btn-check" id="edit-toggle" />
+          <label
+            class="btn btn-outline-secondary d-none"
+            for="edit-toggle"
+            id="edit-toggle-label"
+          >
+            <i class="fa-solid fa-edit"></i>
+            Bearbeiten
+          </label>
 
-  <div class="container">
-    <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
-      <div class="d-flex gap-2">
-        <button type="button" class="btn btn-primary d-none" id="show-add-event-button">
-          <i class="fa-solid fa-plus"></i>
-          Neu
+          <input type="checkbox" class="btn-check" id="filter-toggle" />
+          <label
+            class="btn btn-outline-secondary position-relative"
+            for="filter-toggle"
+          >
+            <i class="fa-solid fa-filter"></i>
+            Filtern
+            <span class="d-none filter-info-circle" id="filter-changed"></span>
+          </label>
+        </div>
+        <div
+          id="filter-content"
+          class="d-flex align-items-center flex-column flex-md-row gap-2 d-contents d-none"
+        >
+          <div class="dropdown">
+            <button
+              class="btn btn-sm btn-outline-secondary dropdown-toggle"
+              data-bs-toggle="dropdown"
+            >
+              Art
+            </button>
+            <div class="dropdown-menu" id="filter-type-dropwdown">
+              <div class="px-2 py-0">
+                <button
+                  class="btn btn-outline-secondary btn-sm"
+                  id="filter-type-all"
+                >
+                  Alle
+                </button>
+                <button
+                  class="btn btn-outline-secondary btn-sm"
+                  id="filter-type-none"
+                >
+                  Keine
+                </button>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="px-2 py-0" id="filter-type-list">
+                <!--Gets filled-->
+              </div>
+            </div>
+          </div>
+          <div class="dropdown">
+            <button
+              class="btn btn-sm btn-outline-secondary dropdown-toggle"
+              data-bs-toggle="dropdown"
+            >
+              Datum
+            </button>
+            <div class="dropdown-menu" id="filter-date-dropwdown">
+              <div class="px-2 py-1">
+                <div class="d-flex align-items-center mb-3">
+                  <label class="mb-0 me-2 text-nowrap" for="filter-date-from"
+                    >Von</label
+                  >
+                  <input
+                    type="date"
+                    class="form-control form-control-sm filter-date"
+                    id="filter-date-from"
+                  />
+                </div>
+                <div class="d-flex align-items-center">
+                  <label class="mb-0 me-2 text-nowrap" for="filter-date-until"
+                    >Bis</label
+                  >
+                  <input
+                    type="date"
+                    class="form-control form-control-sm filter-date"
+                    id="filter-date-until"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-secondary d-none" id="filter-reset">
+          <i class="fa-solid fa-trash"></i>
+          Zurücksetzen
         </button>
-        <input type="checkbox" class="btn-check" id="edit-toggle">
-        <label class="btn btn-outline-secondary d-none" for="edit-toggle" id="edit-toggle-label">
-          <i class="fa-solid fa-edit"></i>
-          Bearbeiten
-        </label>
-  
-        <input type="checkbox" class="btn-check" id="filter-toggle">
-        <label class="btn btn-outline-secondary position-relative" for="filter-toggle">
-          <i class="fa-solid fa-filter"></i>
-          Filtern
-          <span class="d-none filter-info-circle" id="filter-changed"></span>
-        </label>
       </div>
-      <div id="filter-content" class="d-flex align-items-center flex-column flex-md-row gap-2 d-contents d-none">
-        <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            Art
-          </button>
-          <div class="dropdown-menu" id="filter-type-dropwdown">
-            <div class="px-2 py-0">
-              <button class="btn btn-outline-secondary btn-sm" id="filter-type-all">Alle</button>
-              <button class="btn btn-outline-secondary btn-sm" id="filter-type-none">Keine</button>
-            </div>
-            <div class="dropdown-divider"></div>
-            <div class="px-2 py-0" id="filter-type-list">
-              <!--Gets filled-->
-            </div>
-          </div>
-        </div>
-        <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            Datum
-          </button>
-          <div class="dropdown-menu" id="filter-date-dropwdown">
-            <div class="px-2 py-1">
-              <div class="d-flex align-items-center mb-3">
-                <label class="mb-0 me-2 text-nowrap" for="filter-date-from">Von</label>
-                <input type="date" class="form-control form-control-sm filter-date" id="filter-date-from">
-              </div>
-              <div class="d-flex align-items-center">
-                <label class="mb-0 me-2 text-nowrap" for="filter-date-until">Bis</label>
-                <input type="date" class="form-control form-control-sm filter-date" id="filter-date-until">
-              </div>
-            </div>
-          </div>
-        </div>
+
+      <div
+        class="container-fluid mt-3 row row-cols-1 row-cols-sm-2 row-cols-md-3 mx-0"
+        id="event-list"
+      >
+        <!--Gets filled-->
       </div>
-      <button class="btn btn-secondary d-none" id="filter-reset">
-        <i class="fa-solid fa-trash"></i>
-        Zurücksetzen
-      </button>
-    </div>
 
-    <div class="container-fluid mt-3 row row-cols-1 row-cols-sm-2 row-cols-md-3 mx-0" id="event-list">
-      <!--Gets filled-->
-    </div>
+      <div class="modal fade" id="add-event-modal">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="add-event-modal-label">
+                Ereignis hinzufügen
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="add-event-type" class="form-label">
+                  Wähle die Art des Ereignisses aus
+                </label>
+                <select class="form-select add-event-input" id="add-event-type">
+                  <option value="" disabled selected>Art</option>
+                  <!-- Gets filled -->
+                </select>
+              </div>
 
-    <div class="modal fade" id="add-event-modal">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="add-event-modal-label">Ereignis hinzufügen</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="add-event-type" class="form-label">
-                Wähle die Art des Ereignisses aus
+              <div class="mb-3">
+                <label for="add-event-name" class="form-label">
+                  Bennene das Ereignis
+                </label>
+                <input
+                  type="text"
+                  class="form-control add-event-input"
+                  id="add-event-name"
+                  placeholder='zum Beispiel "Schulaufgabe Latein" '
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="add-event-description" class="form-label">
+                  Füge eine Beschreibung für das Ereignis hinzu (optional)
+                </label>
+                <textarea
+                  type="text"
+                  class="rich-textarea add-event-input"
+                  id="add-event-description"
+                  placeholder="zum Beispiel abgefragter Stoff"
+                ></textarea>
+              </div>
+
+              <div class="mb-3">
+                <label for="add-event-start-date" class="form-label">
+                  Gib ein, wann das Ereignis stattfindet
+                </label>
+                <input
+                  type="date"
+                  class="form-control add-event-input"
+                  id="add-event-start-date"
+                />
+              </div>
+
+              <div class="row mb-3">
+                <div class="col">
+                  <label for="add-event-lesson" class="form-label">
+                    Gib eine Unterrichtsstunde an (optional)
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control add-event-input"
+                    id="add-event-lesson"
+                    placeholder='zum Beispiel "2" oder "1 - 3"'
+                  />
+                  <div class="form-text">zum Beispiel für Schulaufgaben</div>
+                </div>
+
+                <div class="col">
+                  <label for="add-event-end-date" class="form-label">
+                    Gib ein Enddatum an (optional)
+                  </label>
+                  <input
+                    type="date"
+                    class="form-control add-event-input"
+                    id="add-event-end-date"
+                  />
+                  <div class="form-text">zum Beispiel für Ferien</div>
+                </div>
+              </div>
+
+              <label for="add-event-team" class="form-label">
+                Wähle ein Team für das Ereignis aus (optional)
               </label>
-              <select class="form-select add-event-input" id="add-event-type">
-                <option value="" disabled selected>Art</option>
+              <select class="form-select add-event-input" id="add-event-team">
+                <option value="-1" selected>Alle</option>
                 <!-- Gets filled -->
               </select>
             </div>
-
-            <div class="mb-3">
-              <label for="add-event-name" class="form-label">
-                Bennene das Ereignis
-              </label>
-              <input type="text" class="form-control add-event-input" id="add-event-name" placeholder='zum Beispiel "Schulaufgabe Latein" '>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal">
+                Abbrechen
+              </button>
+              <button class="btn btn-primary disabled" id="add-event-button">
+                Hinzufügen
+              </button>
             </div>
-
-            <div class="mb-3">
-              <label for="add-event-description" class="form-label">
-                Füge eine Beschreibung für das Ereignis hinzu (optional)
-              </label>
-              <textarea type="text" class="rich-textarea add-event-input" id="add-event-description" placeholder='zum Beispiel abgefragter Stoff'></textarea>
-            </div>
-
-            <div class="mb-3">
-              <label for="add-event-start-date" class="form-label">
-                Gib ein, wann das Ereignis stattfindet
-              </label>
-              <input type="date" class="form-control add-event-input" id="add-event-start-date">
-            </div>
-
-            <div class="row mb-3">
-              <div class="col">
-                <label for="add-event-lesson" class="form-label">
-                  Gib eine Unterrichtsstunde an (optional)
-                </label>
-                <input type="text" class="form-control add-event-input" id="add-event-lesson" placeholder='zum Beispiel "2" oder "1 - 3"'>
-                <div class="form-text">zum Beispiel für Schulaufgaben</div>
-              </div>
-
-              <div class="col">
-                <label for="add-event-end-date" class="form-label">
-                  Gib ein Enddatum an (optional)
-                </label>
-                <input type="date" class="form-control add-event-input" id="add-event-end-date">
-                <div class="form-text">zum Beispiel für Ferien</div>
-              </div>
-            </div>
-
-            <label for="add-event-team" class="form-label">
-              Wähle ein Team für das Ereignis aus (optional)
-            </label>
-            <select class="form-select add-event-input" id="add-event-team">
-              <option value="-1" selected>Alle</option>
-              <!-- Gets filled -->
-            </select>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-            <button class="btn btn-primary disabled" id="add-event-button">Hinzufügen</button>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="modal fade" id="edit-event-modal">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="edit-event-modal-label">Ereignis bearbeiten</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label for="edit-event-type" class="form-label">
-                Wähle die Art des Ereignisses aus
+      <div class="modal fade" id="edit-event-modal">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="edit-event-modal-label">
+                Ereignis bearbeiten
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="edit-event-type" class="form-label">
+                  Wähle die Art des Ereignisses aus
+                </label>
+                <select
+                  class="form-select edit-event-input"
+                  id="edit-event-type"
+                >
+                  <option value="" disabled selected>Art</option>
+                  <!-- Gets filled -->
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="edit-event-name" class="form-label">
+                  Bennene das Ereignis
+                </label>
+                <input
+                  type="text"
+                  class="form-control edit-event-input"
+                  id="edit-event-name"
+                  placeholder='zum Beispiel "Schulaufgabe Latein"'
+                />
+              </div>
+
+              <div class="mb-3">
+                <label for="edit-event-description" class="form-label">
+                  Füge eine Beschreibung für das Ereignis hinzu (optional)
+                </label>
+                <textarea
+                  type="text"
+                  class="rich-textarea edit-event-input"
+                  id="edit-event-description"
+                  placeholder="zum Beispiel abgefragter Stoff"
+                ></textarea>
+              </div>
+
+              <div class="mb-3">
+                <label for="edit-event-start-date" class="form-label">
+                  Gib ein, wann das Ereignis stattfindet
+                </label>
+                <input
+                  type="date"
+                  class="form-control edit-event-input"
+                  id="edit-event-start-date"
+                />
+              </div>
+
+              <div class="row mb-3">
+                <div class="col">
+                  <label for="edit-event-lesson" class="form-label">
+                    Gib eine Unterrichtsstunde an (optional)
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control edit-event-input"
+                    id="edit-event-lesson"
+                    placeholder='zum Beispiel "2" oder "1-3"'
+                  />
+                  <div class="form-text">zum Beispiel für Schulaufgaben</div>
+                </div>
+
+                <div class="col">
+                  <label for="edit-event-end-date" class="form-label">
+                    Gib ein Enddatum an (optional)
+                  </label>
+                  <input
+                    type="date"
+                    class="form-control edit-event-input"
+                    id="edit-event-end-date"
+                  />
+                  <div class="form-text">zum Beispiel für Ferien</div>
+                </div>
+              </div>
+
+              <label for="edit-event-team" class="form-label">
+                Wähle ein Team für das Ereignis aus (optional)
               </label>
-              <select class="form-select edit-event-input" id="edit-event-type">
-                <option value="" disabled selected>Art</option>
+              <select class="form-select edit-event-input" id="edit-event-team">
+                <option value="-1" selected>Alle</option>
                 <!-- Gets filled -->
               </select>
             </div>
-
-            <div class="mb-3">
-              <label for="edit-event-name" class="form-label">
-                Bennene das Ereignis
-              </label>
-              <input type="text" class="form-control edit-event-input" id="edit-event-name" placeholder='zum Beispiel "Schulaufgabe Latein"'>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal">
+                Abbrechen
+              </button>
+              <button class="btn btn-primary disabled" id="edit-event-button">
+                Speichern
+              </button>
             </div>
-
-            <div class="mb-3">
-              <label for="edit-event-description" class="form-label">
-                Füge eine Beschreibung für das Ereignis hinzu (optional)
-              </label>
-              <textarea type="text" class="rich-textarea edit-event-input" id="edit-event-description" placeholder='zum Beispiel abgefragter Stoff'></textarea>
-            </div>
-
-            <div class="mb-3">
-              <label for="edit-event-start-date" class="form-label">
-                Gib ein, wann das Ereignis stattfindet
-              </label>
-              <input type="date" class="form-control edit-event-input" id="edit-event-start-date">
-            </div>
-
-            <div class="row mb-3">
-              <div class="col">
-                <label for="edit-event-lesson" class="form-label">
-                  Gib eine Unterrichtsstunde an (optional)
-                </label>
-                <input type="text" class="form-control edit-event-input" id="edit-event-lesson" placeholder='zum Beispiel "2" oder "1-3"'>
-                <div class="form-text">zum Beispiel für Schulaufgaben</div>
-              </div>
-
-              <div class="col">
-                <label for="edit-event-end-date" class="form-label">
-                  Gib ein Enddatum an (optional)
-                </label>
-                <input type="date" class="form-control edit-event-input" id="edit-event-end-date">
-                <div class="form-text">zum Beispiel für Ferien</div>
-              </div>
-            </div>
-
-
-            <label for="edit-event-team" class="form-label">
-              Wähle ein Team für das Ereignis aus (optional)
-            </label>
-            <select class="form-select edit-event-input" id="edit-event-team">
-              <option value="-1" selected>Alle</option>
-              <!-- Gets filled -->
-            </select>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-            <button class="btn btn-primary disabled" id="edit-event-button">Speichern</button>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="toast-container position-fixed top-0 end-0 p-3">
-      <div id="add-event-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
-          <b class="me-auto">Erfolgreich hinzugefügt</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="add-event-success-toast" class="toast">
+          <div class="toast-header bg-success text-white">
+            <b class="me-auto">Erfolgreich hinzugefügt</b>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="toast"
+            ></button>
+          </div>
+          <div class="toast-body">
+            Das Ereignis wurde erfolgreich hinzugefügt.
+          </div>
         </div>
-        <div class="toast-body">
-          Das Ereignis wurde erfolgreich hinzugefügt.
+        <div id="edit-event-success-toast" class="toast">
+          <div class="toast-header bg-success text-white">
+            <b class="me-auto">Erfolgreich geändert</b>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="toast"
+            ></button>
+          </div>
+          <div class="toast-body">Das Ereignis wurde erfolgreich geändert.</div>
         </div>
-      </div>
-      <div id="edit-event-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
-          <b class="me-auto">Erfolgreich geändert</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        <div id="delete-event-success-toast" class="toast">
+          <div class="toast-header bg-success text-white">
+            <b class="me-auto">Erfolgreich gelöscht</b>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="toast"
+            ></button>
+          </div>
+          <div class="toast-body">Das Ereignis wurde erfolgreich gelöscht.</div>
         </div>
-        <div class="toast-body">
-          Das Ereignis wurde erfolgreich geändert.
-        </div>
-      </div>
-      <div id="delete-event-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
-          <b class="me-auto">Erfolgreich gelöscht</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">
-          Das Ereignis wurde erfolgreich gelöscht.
-        </div>
-      </div>
-      <div id="delete-event-confirm-toast" class="toast" data-bs-autohide="false">
-        <div class="toast-header bg-primary text-white">
-          <b class="me-auto">Bitte bestätigen</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">
-          Möchtest du das Ereignis wirklich löschen?
-          <div class="mt-2 pt-2 border-top">
-            <div class="row g-2 justify-content-end">
-              <div class="col-auto">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
-              </div>
-              <div class="col-auto">
-                <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" id="delete-event-confirm-toast-button">Löschen</button>
+        <div
+          id="delete-event-confirm-toast"
+          class="toast"
+          data-bs-autohide="false"
+        >
+          <div class="toast-header bg-primary text-white">
+            <b class="me-auto">Bitte bestätigen</b>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="toast"
+            ></button>
+          </div>
+          <div class="toast-body">
+            Möchtest du das Ereignis wirklich löschen?
+            <div class="mt-2 pt-2 border-top">
+              <div class="row g-2 justify-content-end">
+                <div class="col-auto">
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    data-bs-dismiss="toast"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+                <div class="col-auto">
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    data-bs-dismiss="toast"
+                    id="delete-event-confirm-toast-button"
+                  >
+                    Löschen
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="load-snippet" data-target="bottombar"></div>
-</body>
+    <div class="load-snippet" data-target="bottombar"></div>
+  </body>
 </html>

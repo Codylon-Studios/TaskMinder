@@ -1,141 +1,224 @@
 <nav class="navbar bg-body-tertiary fixed-top">
-	<div class="container-fluid">
-		<div class="d-flex justify-content-between align-items-center flex-grow-1">
-			<div class="d-md-none text-center flex-grow-1">
-				<a class="navbar-text fs-5 text-decoration-none navbar-home-link" href="/">TaskMinder</a>
-			</div>
-			<a class="d-none d-md-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link" href="/">
-				TaskMinder
-			</a>
-			<ul class="navbar-nav d-none d-md-flex flex-row me-auto">
-				<li class="nav-item me-3 class-joined-content d-none">
-					<a class="nav-link" href="/homework">Hausaufgaben</a>
-				</li>
-				<li class="nav-item me-3 class-joined-content d-none">
-					<a class="nav-link" href="/events">Ereignisse</a>
-				</li>
-				<li class="nav-item me-3">
-					<a class="nav-link" href="/settings">Einstellungen</a>
-				</li>
-				<li class="nav-item me-3">
-					<a class="nav-link" href="/about">Über TaskMinder</a>
-				</li>
-			</ul>
-		</div>
-		<button class="btn btn-semivisible d-none" id="login-register-button" data-bs-toggle="modal" data-bs-target="#login-register-modal">
-			<i class="fa-solid fa-right-to-bracket"></i>
-		</button>
-		<button class="btn btn-semivisible d-none" id="logout-button">
-			<i class="fa-solid fa-right-from-bracket"></i>
-		</button>
-		<button class="btn btn-semivisible class-page-content d-none" id="navbar-reload-button">
-			<i class="fas fa-rotate"></i>
-		</button>
-	</div>
+  <div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center flex-grow-1">
+      <div class="d-md-none text-center flex-grow-1">
+        <a
+          class="navbar-text fs-5 text-decoration-none navbar-home-link"
+          href="/"
+          >TaskMinder</a
+        >
+      </div>
+      <a
+        class="d-none d-md-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link"
+        href="/"
+      >
+        TaskMinder
+      </a>
+      <ul class="navbar-nav d-none d-md-flex flex-row me-auto">
+        <li class="nav-item me-3 class-joined-content d-none">
+          <a class="nav-link" href="/homework">Hausaufgaben</a>
+        </li>
+        <li class="nav-item me-3 class-joined-content d-none">
+          <a class="nav-link" href="/events">Ereignisse</a>
+        </li>
+        <li class="nav-item me-3">
+          <a class="nav-link" href="/settings">Einstellungen</a>
+        </li>
+        <li class="nav-item me-3">
+          <a class="nav-link" href="/about">Über TaskMinder</a>
+        </li>
+      </ul>
+    </div>
+    <button
+      class="btn btn-semivisible d-none"
+      id="login-register-button"
+      data-bs-toggle="modal"
+      data-bs-target="#login-register-modal"
+    >
+      <i class="fa-solid fa-right-to-bracket"></i>
+    </button>
+    <button class="btn btn-semivisible d-none" id="logout-button">
+      <i class="fa-solid fa-right-from-bracket"></i>
+    </button>
+    <button
+      class="btn btn-semivisible class-page-content d-none"
+      id="navbar-reload-button"
+    >
+      <i class="fas fa-rotate"></i>
+    </button>
+  </div>
 </nav>
 
 <div class="modal fade" id="login-register-modal">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h1 class="modal-title fs-5 login-register-element">Anmelden oder Registrieren</h1>
-				<h1 class="modal-title fs-5 d-none login-element">Willkommen zurück!</h1>
-				<h1 class="modal-title fs-5 d-none register-element">Registriere dich!</h1>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-			</div>
-			<div class="modal-body">
-				<div id="login-register-content" class="login-register-element">
-					<div class="alert alert-danger p-2 d-none align-items-center gap-2 login-register-error-invalid-username">
-						<i class="fa-solid fa-circle-exclamation mx-1"></i>
-						<span class="d-block">
-							Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.
-						</span>
-					</div>
-					<label for="navbar-login-register-username" class="form-label">
-						Gib deinen Benutzernamen ein
-					</label>
-					<input type="text" class="form-control login-register-username" id="navbar-login-register-username">
-					<div class="form-text">Gib zum Registrieren deinen Wunschnamen ein</div>
-				</div>
-				<div id="login-content" class="d-none login-element">
-					<div class="alert alert-danger p-2 d-none align-items-center gap-2 login-error-invalid-password">
-						<i class="fa-solid fa-circle-exclamation mx-1"></i>
-						<span class="d-block">
-							Das Passwort ist falsch!
-						</span>
-					</div>
-					<label for="navbar-login-password" class="form-label">
-						Gib dein Passwort ein
-					</label>
-					<input type="password" class="form-control login-password" id="navbar-login-password">
-				</div>
-				<div id="register-content" class="d-none register-element">
-					<div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-no-matching-passwords">
-						<i class="fa-solid fa-circle-exclamation mx-1"></i>
-						<span class="d-block">
-							Die Passwörter stimmen nicht überein!
-						</span>
-					</div>
-					<div class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password">
-						<i class="fa-solid fa-triangle-exclamation mx-1"></i>
-						<span class="d-block">
-							Das Passwort ist nicht sehr sicher!
-						</span>
-					</div>
-					<div class="mb-3">
-						<label for="navbar-register-password" class="form-label">
-							Gib dein Passwort ein
-						</label>
-						<input type="password" class="form-control register-password" id="navbar-register-password">
-						<div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
-					</div>
-					<input type="password" class="form-control register-password-repeat">
-					<div class="form-text">Gib es noch mal ein</div>
-				</div>
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary d-none login-register-back-button">Zurück</button>
-				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-				<button type="button" class="btn btn-primary disabled login-register-next-button" id="navbar-login-register-next-button">Weiter</button>
-				<button type="button" class="btn btn-primary d-none login-element login-button">Anmelden</button>
-				<button type="button" class="btn btn-primary d-none register-element register-button">Registrieren</button>
-			</div>
-		</div>
-	</div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5 login-register-element">
+          Anmelden oder Registrieren
+        </h1>
+        <h1 class="modal-title fs-5 d-none login-element">
+          Willkommen zurück!
+        </h1>
+        <h1 class="modal-title fs-5 d-none register-element">
+          Registriere dich!
+        </h1>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div id="login-register-content" class="login-register-element">
+          <div
+            class="alert alert-danger p-2 d-none align-items-center gap-2 login-register-error-invalid-username"
+          >
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block">
+              Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20
+              Buchstaben, Zahlen oder Unterstriche.
+            </span>
+          </div>
+          <label for="navbar-login-register-username" class="form-label">
+            Gib deinen Benutzernamen ein
+          </label>
+          <input
+            type="text"
+            class="form-control login-register-username"
+            id="navbar-login-register-username"
+          />
+          <div class="form-text">
+            Gib zum Registrieren deinen Wunschnamen ein
+          </div>
+        </div>
+        <div id="login-content" class="d-none login-element">
+          <div
+            class="alert alert-danger p-2 d-none align-items-center gap-2 login-error-invalid-password"
+          >
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block"> Das Passwort ist falsch! </span>
+          </div>
+          <label for="navbar-login-password" class="form-label">
+            Gib dein Passwort ein
+          </label>
+          <input
+            type="password"
+            class="form-control login-password"
+            id="navbar-login-password"
+          />
+        </div>
+        <div id="register-content" class="d-none register-element">
+          <div
+            class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-no-matching-passwords"
+          >
+            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <span class="d-block"> Die Passwörter stimmen nicht überein! </span>
+          </div>
+          <div
+            class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password"
+          >
+            <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+            <span class="d-block"> Das Passwort ist nicht sehr sicher! </span>
+          </div>
+          <div class="mb-3">
+            <label for="navbar-register-password" class="form-label">
+              Gib dein Passwort ein
+            </label>
+            <input
+              type="password"
+              class="form-control register-password"
+              id="navbar-register-password"
+            />
+            <div class="form-text">
+              Denk daran, ein sicheres Passwort zu nehmen
+            </div>
+          </div>
+          <input
+            type="password"
+            class="form-control register-password-repeat"
+          />
+          <div class="form-text">Gib es noch mal ein</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary d-none login-register-back-button"
+        >
+          Zurück
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary disabled login-register-next-button"
+          id="navbar-login-register-next-button"
+        >
+          Weiter
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary d-none login-element login-button"
+        >
+          Anmelden
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary d-none register-element register-button"
+        >
+          Registrieren
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="toast-container position-fixed top-0 end-0 p-3">
-	<div id="error-server-toast" class="toast">
-		<div class="toast-header bg-danger text-white">
-		<b class="me-auto">Serverproblem</b>
-		<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-		</div>
-		<div class="toast-body">
-			Unser Server hat gerade Probleme. Bitte versuche es später erneut.
-		</div>
-	</div>
-	<div id="unknown-error-toast" class="toast">
-		<div class="toast-header bg-danger text-white">
-		<b class="me-auto">Unerwarteter Fehler</b>
-		<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-		</div>
-		<div class="toast-body">
-			Ein unbekannter Fehler ist aufgetreten.
-		</div>
-	</div>
-	<div id="not-logged-in-toast" class="toast">
-		<div class="toast-header bg-danger text-white">
-		<b class="me-auto">Nicht angemeldet</b>
-		<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-		</div>
-		<div class="toast-body">
-			Du musst dafür angemeldet sein.
-		</div>
-	</div>
+  <div id="error-server-toast" class="toast">
+    <div class="toast-header bg-danger text-white">
+      <b class="me-auto">Serverproblem</b>
+      <button
+        type="button"
+        class="btn-close btn-close-white"
+        data-bs-dismiss="toast"
+      ></button>
+    </div>
+    <div class="toast-body">
+      Unser Server hat gerade Probleme. Bitte versuche es später erneut.
+    </div>
+  </div>
+  <div id="unknown-error-toast" class="toast">
+    <div class="toast-header bg-danger text-white">
+      <b class="me-auto">Unerwarteter Fehler</b>
+      <button
+        type="button"
+        class="btn-close btn-close-white"
+        data-bs-dismiss="toast"
+      ></button>
+    </div>
+    <div class="toast-body">Ein unbekannter Fehler ist aufgetreten.</div>
+  </div>
+  <div id="not-logged-in-toast" class="toast">
+    <div class="toast-header bg-danger text-white">
+      <b class="me-auto">Nicht angemeldet</b>
+      <button
+        type="button"
+        class="btn-close btn-close-white"
+        data-bs-dismiss="toast"
+      ></button>
+    </div>
+    <div class="toast-body">Du musst dafür angemeldet sein.</div>
+  </div>
   <div id="login-success-toast" class="toast">
     <div class="toast-header bg-success text-white">
       <b class="me-auto">Erfolgreich eingeloggt</b>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      <button
+        type="button"
+        class="btn-close btn-close-white"
+        data-bs-dismiss="toast"
+      ></button>
     </div>
     <div class="toast-body">
       Willkommen zurück <b class="username">User</b>!
@@ -144,19 +227,23 @@
   <div id="register-success-toast" class="toast">
     <div class="toast-header bg-success text-white">
       <b class="me-auto">Erfolgreich registriert</b>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      <button
+        type="button"
+        class="btn-close btn-close-white"
+        data-bs-dismiss="toast"
+      ></button>
     </div>
-    <div class="toast-body">
-      Willkommen <b class="username">User</b>!
-    </div>
+    <div class="toast-body">Willkommen <b class="username">User</b>!</div>
   </div>
   <div id="logout-success-toast" class="toast">
     <div class="toast-header bg-success text-white">
       <b class="me-auto">Erfolgreich ausgeloggt</b>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      <button
+        type="button"
+        class="btn-close btn-close-white"
+        data-bs-dismiss="toast"
+      ></button>
     </div>
-    <div class="toast-body">
-      Auf Wiedersehen!
-    </div>
+    <div class="toast-body">Auf Wiedersehen!</div>
   </div>
 </div>

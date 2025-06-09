@@ -34,11 +34,11 @@ textarea.rich-textarea {
 }
 
 .sub {
-  vertical-align: sub
+  vertical-align: sub;
 }
 
 .sup {
-  vertical-align: super
+  vertical-align: super;
 }
 
 .rich-textarea-color svg {
@@ -47,7 +47,7 @@ textarea.rich-textarea {
   height: 1.15rem;
   stroke: var(--bs-body-color);
   & path {
-    transform: translate(50px,50px);
+    transform: translate(50px, 50px);
   }
 }
 
@@ -83,5 +83,5 @@ textarea.rich-textarea {
 }
 
 .rich-textarea-link-enabled {
-  background: color.change($color: #3bb9ca, $alpha: 0.2)
+  background: color.change($color: #3bb9ca, $alpha: 0.2);
 }

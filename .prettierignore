@@ -4,6 +4,8 @@
 # Ignore /dist folders (compiled ts code)
 /backend/dist
 /frontend/dist
+# Ignore vendor files
+/frontend/src/vendor/**
 # Ignore docker, github workflows and deploy.sh
 .github/
 .dockerignore

@@ -3,7 +3,7 @@ import { addUpdateAllFunction, reloadAll } from "../../global/global.js";
 class LicenseDisplay extends HTMLElement {
   constructor() {
     super();
-    const content = this.innerHTML
+    const content = this.innerHTML;
     this.innerHTML = `
       <div class="license-wrapper position-relative my-3 mb-4">
         <div class="license-fade-wrapper">
@@ -20,6 +20,6 @@ ${content}</pre>
 customElements.define("license-display", LicenseDisplay);
 
 $(() => {
-  addUpdateAllFunction(() => {})
+  addUpdateAllFunction(() => {});
   reloadAll();
-})
+});
