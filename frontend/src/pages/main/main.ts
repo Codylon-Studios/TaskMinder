@@ -26,9 +26,9 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
 
   // Single day events
   let singleDayEvents = ""
-  let multiDayEventsA = []
+  const multiDayEventsA = []
 
-  for (let event of await eventData()) {
+  for (const event of await eventData()) {
     if (! (await joinedTeamsData()).includes(event.teamId) && event.teamId != -1) {
       continue;
     }
@@ -73,7 +73,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
   // Multi day events
   let multiDayEvents = ""
 
-  for (let event of multiDayEventsA) {
+  for (const event of multiDayEventsA) {
     if (! event) {
       multiDayEvents += `<div class="event"></div>`
     }
@@ -82,7 +82,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
     }
   }
   
-  let weekday = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][date.getDay()]
+  const weekday = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][date.getDay()]
 
   // Append the days (All days will be added into and .calendar-week element)
   return `
@@ -105,13 +105,13 @@ async function getNewCalendarWeekContent() {
   monthDates(null);
   loadMonthDates(selectedDate)
   // Save the vertical positions of the multi events (in case two events intersect)
-  let multiEventPositions: (number | null)[] = []
+  const multiEventPositions: (number | null)[] = []
 
   let newCalendarWeekContent = ""
 
   if (calendarMode == "week") {
     newCalendarWeekContent += `<div class="d-flex position-relative">`
-    let weekDates = (await monthDates())[selectedWeek]
+    const weekDates = (await monthDates())[selectedWeek]
     for (let i = 0; i < 7; i++) {
       newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], selectedWeek, multiEventPositions)
     }
@@ -120,11 +120,11 @@ async function getNewCalendarWeekContent() {
   }
   else {
     newCalendarWeekContent += `<div class="d-flex weekdays">`
-    let weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+    const weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
     newCalendarWeekContent += weekdays.map((e) => {return `<div>${e}</div>`}).join("")
     newCalendarWeekContent += "</div>"
-    for (let week in await monthDates()) {
-      let weekDates = (await monthDates())[week]
+    for (const week in await monthDates()) {
+      const weekDates = (await monthDates())[week]
       newCalendarWeekContent += `<div class="d-flex position-relative mb-4">`
       for (let i = 0; i < 7; i++) {
         newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], parseInt(week), multiEventPositions)
@@ -136,25 +136,25 @@ async function getNewCalendarWeekContent() {
 }
 
 async function updateCalendarWeekContent(targetCalendar: "#calendar-week-old" | "#calendar-week-new") {
-  let content = await getNewCalendarWeekContent();
+  const content = await getNewCalendarWeekContent();
   $(targetCalendar).html(content);
 }
 
 async function loadMonthDates(selectedDate: Date) {
   // monthDates will be a list of all the dates in the currently selected week
   monthDates([])
-  let monthDatesData: MonthDates = []
+  const monthDatesData: MonthDates = []
 
-  let firstDate = new Date(selectedDate)
+  const firstDate = new Date(selectedDate)
   firstDate.setDate(1)
 
   let firstDateDay = firstDate.getDay()
   firstDateDay = (firstDateDay == 0) ? 7 : firstDateDay;
 
-  let firstMonday = new Date(firstDate)
+  const firstMonday = new Date(firstDate)
   firstMonday.setDate(firstMonday.getDate() - firstDateDay + 1)
 
-  let iteratorDate = new Date(firstMonday)
+  const iteratorDate = new Date(firstMonday)
   let weekId = 0
   let firstWeek = true
   while (firstWeek || iteratorDate.getMonth() == selectedDate.getMonth()) {
@@ -173,13 +173,13 @@ async function loadMonthDates(selectedDate: Date) {
 
 async function checkHomework(homeworkId: number) {
   // Save whether the user has checked or unchecked the homework
-  let checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
+  const checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
 
   // Check whether the user is logged in
   if (user.loggedIn) {
     // The user is logged in
 
-    let data = {
+    const data = {
       homeworkId: homeworkId,
       checkStatus: checkStatus
     };
@@ -247,23 +247,23 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
   const currentSubjectData = await subjectData()
   const currentJoinedTeams = await joinedTeamsData()
 
-  let newContent = $("<div></div>")
+  const newContent = $("<div></div>")
   let addedElements: JQuery<HTMLElement> = $();
   
-  for (let homework of await homeworkData()) {
+  for (const homework of await homeworkData()) {
     if (currentSubjectData.find(s => s.subjectId == homework.subjectId) === undefined) {
       continue
     }
     // Get the information for the homework
-    let homeworkId = homework.homeworkId;
-    let subject = currentSubjectData.find(s => s.subjectId == homework.subjectId)?.subjectNameLong;
-    let content = homework.content;
-    let assignmentDate = new Date(parseInt(homework.assignmentDate));
-    let submissionDate = new Date(parseInt(homework.submissionDate));
-    let checked = await getHomeworkCheckStatus(homeworkId);
+    const homeworkId = homework.homeworkId;
+    const subject = currentSubjectData.find(s => s.subjectId == homework.subjectId)?.subjectNameLong;
+    const content = homework.content;
+    const assignmentDate = new Date(parseInt(homework.assignmentDate));
+    const submissionDate = new Date(parseInt(homework.submissionDate));
+    const checked = await getHomeworkCheckStatus(homeworkId);
 
     if ($("#homework-mode-tomorrow").prop("checked")) {
-      let tomorrow = new Date(selectedDate);
+      const tomorrow = new Date(selectedDate);
       tomorrow.setDate(tomorrow.getDate() + 1)
       if (! isSameDay(tomorrow, submissionDate)) {
         continue
@@ -288,7 +288,7 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     }
 
     // The template for a homework with checkbox and edit options
-    let template = 
+    const template = 
       $(`<div class="mb-1 form-check">
         <label class="form-check-label">
           <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkId}" ${(checked) ? "checked" : ""}>
@@ -340,17 +340,17 @@ const updateEventList = runOnce(async (): Promise<void> => {
   // Clear the list
   $("#event-list").empty();
 
-  for (let event of (await eventData())) {
+  for (const event of (await eventData())) {
     if (! (await joinedTeamsData()).includes(event.teamId) && event.teamId != -1) {
       continue;
     }
 
     // Get the information for the event
-    let eventTypeId = event.eventTypeId;
-    let name = event.name;
-    let description = event.description;
-    let startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
-    let lesson = event.lesson;
+    const eventTypeId = event.eventTypeId;
+    const name = event.name;
+    const description = event.description;
+    const startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
+    const lesson = event.lesson;
     let endDate;
     if (event.endDate) {
       endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
@@ -358,8 +358,8 @@ const updateEventList = runOnce(async (): Promise<void> => {
     else {
       endDate = null;
     }
-    let msStartDate = parseInt(event.startDate)
-    let msEndDate = parseInt(event.endDate ?? event.startDate)
+    const msStartDate = parseInt(event.startDate)
+    const msEndDate = parseInt(event.endDate ?? event.startDate)
 
     // Filter by start date
     if (selectedDate.getTime() < msStartDate && ! isSameDay(selectedDate, new Date(msStartDate))) {
@@ -372,7 +372,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
     }
 
     // The template for an event
-    let template = 
+    const template = 
       $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
@@ -402,7 +402,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
 })
 
 const updateSubstitutionList = runOnce(async (): Promise<void> => {
-  let substitutionsMode = localStorage.getItem("substitutionsMode") ?? "class";
+  const substitutionsMode = localStorage.getItem("substitutionsMode") ?? "class";
 
   let data: SubstitutionsData;
 
@@ -420,8 +420,8 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
     $("#substitutions-container").removeClass("d-none")
   }
 
-  let updatedDate = new Date(dateToMs(data.updated.split(" ")[0]) ?? 0)
-  let updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][updatedDate.getDay()]
+  const updatedDate = new Date(dateToMs(data.updated.split(" ")[0]) ?? 0)
+  const updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][updatedDate.getDay()]
   $("#substitutions-updated").text(updatedWeekDay + ", " + data.updated.split(" ")[1])
 
   if (substitutionsMode == "none") {
@@ -462,8 +462,8 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
     $("#substitutions-table th:first()").addClass("d-none")
   }
 
-  for (let substitution of data["plan" + planId as "plan1" | "plan2"]["substitutions"]) {
-    let template = `
+  for (const substitution of data["plan" + planId as "plan1" | "plan2"]["substitutions"]) {
+    const template = `
       <tr>
         ${(substitutionsMode == "all") ? `<td>${substitution.class}</td>` : ""}
         <td>${$.formatHtml(substitution.type)}</td>
@@ -522,7 +522,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
 
   let substitutionPlanId;
 
-  let currentClassSubstitutionsData = await classSubstitutionsData()
+  const currentClassSubstitutionsData = await classSubstitutionsData()
   if (currentClassSubstitutionsData != "No data") {
     if (isSameDay(selectedDate, new Date(dateToMs(currentClassSubstitutionsData.plan1.date) ?? 0))) {
       substitutionPlanId = 1;
@@ -556,9 +556,9 @@ const updateTimetable = runOnce(async (): Promise<void> => {
     endTime: number;
   }
 
-  let processedLessonData: ProcessedLesson[] = []
-  for (let lesson of currentLessonData) {
-    let subject = currentSubjectData.find(s => s.subjectId == lesson.subjectId)
+  const processedLessonData: ProcessedLesson[] = []
+  for (const lesson of currentLessonData) {
+    const subject = currentSubjectData.find(s => s.subjectId == lesson.subjectId)
     if (! subject || ! (currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId == -1)) continue
     processedLessonData.push({
       lessonNumber: lesson.lessonNumber,
@@ -581,8 +581,8 @@ const updateTimetable = runOnce(async (): Promise<void> => {
   }[]
 
   let groupedLessonData: GroupedLessonData = []
-  for (let lesson of processedLessonData) {
-    let group = groupedLessonData.find(l => l.lessonNumber == lesson.lessonNumber)
+  for (const lesson of processedLessonData) {
+    const group = groupedLessonData.find(l => l.lessonNumber == lesson.lessonNumber)
     if (group) {
       group.lessons.push(lesson)
     }
@@ -597,10 +597,10 @@ const updateTimetable = runOnce(async (): Promise<void> => {
   }
   groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber)
   
-  for (let lessonGroup of groupedLessonData) {
+  for (const lessonGroup of groupedLessonData) {
     let addedDescriptionTemplates = $()
 
-    let templateModeLess = `
+    const templateModeLess = `
       <div class="card">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
           <span class="text-center timetable-less-subject">
@@ -609,9 +609,9 @@ const updateTimetable = runOnce(async (): Promise<void> => {
         </div>
       </div>`;
     
-    let thisLessLesson = $(templateModeLess)
+    const thisLessLesson = $(templateModeLess)
 
-    let templateModeMore = `
+    const templateModeMore = `
       <div class="card">
         <div class="card-body pt-4 text-center">
           <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start">${msToTime(lessonGroup.startTime)}</div>
@@ -632,15 +632,15 @@ const updateTimetable = runOnce(async (): Promise<void> => {
         </div>
       </div>`;
     
-    let thisMoreLesson = $(templateModeMore)
+    const thisMoreLesson = $(templateModeMore)
 
     if (substitutionPlanId != 0) {
-      for (let [lessonId, lesson] of lessonGroup.lessons.entries()) {
+      for (const [lessonId, lesson] of lessonGroup.lessons.entries()) {
         function matchesLessonNumber(substitution: Record<string, string>, lessonNumber: number) {
           if (substitution.lesson.includes("-")) {
             substitution.lesson = substitution.lesson.replace(" ", "")
-            let start = parseInt(substitution.lesson.split("-")[0])
-            let end = parseInt(substitution.lesson.split("-")[1])
+            const start = parseInt(substitution.lesson.split("-")[0])
+            const end = parseInt(substitution.lesson.split("-")[1])
             if (start > lessonNumber || lessonNumber > end) {
               return false;
             }
@@ -655,7 +655,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
         }
 
         if (currentClassSubstitutionsData !== "No data") {
-          for (let substitution of (currentClassSubstitutionsData)["plan" + substitutionPlanId as "plan1" | "plan2"].substitutions) {
+          for (const substitution of (currentClassSubstitutionsData)["plan" + substitutionPlanId as "plan1" | "plan2"].substitutions) {
             if (! matchesLessonNumber(substitution, lessonGroup.lessonNumber)) {
               continue;
             }
@@ -663,9 +663,9 @@ const updateTimetable = runOnce(async (): Promise<void> => {
               continue;
             }
   
-            let color = (substitution.type == "Entfall") ? "red" : "yellow"
+            const color = (substitution.type == "Entfall") ? "red" : "yellow"
     
-            let substitutionTypeText = `<div class="text-${color} text-center fw-bold mt-2">${$.formatHtml(substitution.type)}</div>`
+            const substitutionTypeText = `<div class="text-${color} text-center fw-bold mt-2">${$.formatHtml(substitution.type)}</div>`
             thisLessLesson.find(".card-body").append(substitutionTypeText)
             thisMoreLesson.find(".card-body").append(substitutionTypeText)
     
@@ -683,8 +683,8 @@ const updateTimetable = runOnce(async (): Promise<void> => {
             }
     
             // Subject
-            let lessSubjectElement = thisLessLesson.find(".timetable-less-subject .original").eq(lessonId)
-            let moreSubjectElement = thisMoreLesson.find(".timetable-more-subject .original").eq(lessonId)
+            const lessSubjectElement = thisLessLesson.find(".timetable-less-subject .original").eq(lessonId)
+            const moreSubjectElement = thisMoreLesson.find(".timetable-more-subject .original").eq(lessonId)
             if (! (lesson.subjectNameSubstitution ?? []).includes(substitution.subject)) {
               moreSubjectElement.addClass("line-through-" + color)
               lessSubjectElement.addClass("line-through-" + color)
@@ -699,7 +699,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
             }
     
             // Room
-            let roomElement = thisMoreLesson.find(".timetable-more-room .original").eq(lessonId)
+            const roomElement = thisMoreLesson.find(".timetable-more-room .original").eq(lessonId)
             if (substitution.room != lesson.room) {
               roomElement.addClass("line-through-" + color)
               if (substitution.room != "-") {
@@ -708,7 +708,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
             }
     
             // Teacher
-            let teacherElement = thisMoreLesson.find(".timetable-more-teacher .original").eq(lessonId)
+            const teacherElement = thisMoreLesson.find(".timetable-more-teacher .original").eq(lessonId)
             if (! (lesson.subjectNameSubstitution ?? []).includes(substitution.teacher)) {
               teacherElement.addClass("line-through-" + color)
               if (substitution.teacher != "-") {
@@ -720,15 +720,15 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       }
     }
 
-    for (let event of await eventData()) {
+    for (const event of await eventData()) {
       function matchesLessonId(event: SingleEventData, lessonId: number) {
         if (event.lesson === null) {
           return true
         }
         if (event.lesson.includes("-")) {
           event.lesson = event.lesson.replace(" ", "")
-          let start = parseInt(event.lesson.split("-")[0])
-          let end = parseInt(event.lesson.split("-")[1])
+          const start = parseInt(event.lesson.split("-")[0])
+          const end = parseInt(event.lesson.split("-")[1])
           if (start > lessonId || lessonId > end) {
             return false;
           }
@@ -753,12 +753,12 @@ const updateTimetable = runOnce(async (): Promise<void> => {
         continue;
       }
 
-      let eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${$.formatHtml(event.name)}</span>`
+      const eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${$.formatHtml(event.name)}</span>`
       thisLessLesson.find(".card-body").append(eventName)
       thisMoreLesson.find(".card-body").append(eventName)
 
       if (event.description != "") {
-        let descriptionTemplate = $(`<span class="event-${event.eventTypeId} text-centered-block"></span>`)
+        const descriptionTemplate = $(`<span class="event-${event.eventTypeId} text-centered-block"></span>`)
 
         thisMoreLesson.find(".card-body").append(descriptionTemplate)
 
@@ -770,10 +770,10 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       }
     }
 
-    let lastLessLesson = $("#timetable-less").find(".card:last()")
+    const lastLessLesson = $("#timetable-less").find(".card:last()")
     if (lastLessLesson.length > 0) {
-      let lastLessonHtml = lastLessLesson[0].outerHTML.replace(/\s+/g, "")
-      let thisLessonHtml = thisLessLesson[0].outerHTML.replace(/\s+/g, "")
+      const lastLessonHtml = lastLessLesson[0].outerHTML.replace(/\s+/g, "")
+      const thisLessonHtml = thisLessLesson[0].outerHTML.replace(/\s+/g, "")
       if (lastLessonHtml == thisLessonHtml) {
         lastLessLesson.addClass("wide")
       }
@@ -785,16 +785,16 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       $("#timetable-less").append(thisLessLesson);
     }
 
-    let lastMoreLesson = $("#timetable-more").find(".card:last()")
+    const lastMoreLesson = $("#timetable-more").find(".card:last()")
     if (lastMoreLesson.length > 0) {
       // Remove the times
-      let lastLessonCopy = $(lastMoreLesson[0].outerHTML);
+      const lastLessonCopy = $(lastMoreLesson[0].outerHTML);
       lastLessonCopy.find(".timetable-more-time").html("");
-      let lastLessonHtml = lastLessonCopy[0].outerHTML.replace(/\s+/g, "");
+      const lastLessonHtml = lastLessonCopy[0].outerHTML.replace(/\s+/g, "");
 
-      let thisLessonCopy = $(thisMoreLesson[0].outerHTML);
+      const thisLessonCopy = $(thisMoreLesson[0].outerHTML);
       thisLessonCopy.find(".timetable-more-time").html("");
-      let thisLessonHtml = thisLessonCopy[0].outerHTML.replace(/\s+/g, "");
+      const thisLessonHtml = thisLessonCopy[0].outerHTML.replace(/\s+/g, "");
 
       if (lastLessonHtml == thisLessonHtml) {
         lastMoreLesson.addClass("wide")
@@ -889,7 +889,7 @@ $(() => {
   )
   reloadAll();
 })
-let animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
+const animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
 
 $(".calendar-week-move-button").on("click", function () {
   // If the calendar is already moving, stop; else set it moving
@@ -993,7 +993,7 @@ $("#calendar-week-wrapper").on("touchmove", (ev) => {
     ev.originalEvent?.preventDefault()
   }
 })
-$("#calendar-week-wrapper").on("touchend", (ev) => {
+$("#calendar-week-wrapper").on("touchend", () => {
   swipe()
 })
 
@@ -1004,7 +1004,7 @@ $("#calendar-week-wrapper").on("mousedown", (ev) => {
 $("#calendar-week-wrapper").on("mousemove", (ev) => {
   swipeXEnd = ev.originalEvent?.clientX ?? 0;
 })
-$("#calendar-week-wrapper").on("mouseup", (ev) => {
+$("#calendar-week-wrapper").on("mouseup", () => {
   swipe()
 })
 
@@ -1039,7 +1039,7 @@ $("#calendar-week-btn").on("click", () => {
 })
 
 $(document).on("click", ".days-overview-day", async function () {
-  let day = parseInt($(this).data("day"))
+  const day = parseInt($(this).data("day"))
   selectedDate = (await monthDates())[parseInt($(this).data("week"))][(day == 0) ? 6 : day - 1]
   $("#calendar-week-old").find(".days-overview-selected").removeClass("days-overview-selected")
   $(this).addClass("days-overview-selected")
@@ -1061,7 +1061,7 @@ let selectedWeek: number;
 // Set the visible content of the calendar to today's week
 updateCalendarWeekContent("#calendar-week-old")
 
-let monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
+const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 renameCalendarMonthYear()
 
 // Request checking the homework on clicking its checkbox

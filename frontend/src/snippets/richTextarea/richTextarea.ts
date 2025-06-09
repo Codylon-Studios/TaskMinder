@@ -12,11 +12,11 @@ export function richTextToHtml(val: string, targetElement?: JQuery<HTMLElement>,
       parsedText.find("span[data-link-url]").each(function () {
         const url = $(this).attr("data-link-url")?.replaceAll("\\\\", "\\").replaceAll("\\«", "<").replaceAll("\\»", ">").replaceAll("\\;", ";")
         if (url && url != "") {
-          let neighbourLinkElements = $(this)
+          const neighbourLinkElements = $(this)
             .add($(this).prevUntil(`:not([data-link-url="${$(this).attr("data-link-url")?.replaceAll("\\", "\\\\")}"])`))
             .add($(this).nextUntil(`:not([data-link-url="${$(this).attr("data-link-url")?.replaceAll("\\", "\\\\")}"])`))
 
-          $(this).css("cursor", "pointer").on("click", (ev) => {
+          $(this).css("cursor", "pointer").on("click", () => {
             $("#rich-textarea-unsafe-link").toast("show").find("b").text(url)
             $("#rich-textarea-unsafe-link-confirm").off("click").on("click", () => {
               window.open(url, '_blank', 'noopener,noreferrer');
@@ -52,11 +52,11 @@ export function richTextToHtml(val: string, targetElement?: JQuery<HTMLElement>,
     })
   }
   function parseNormalChar(char: string) {
-    let span = $(`<span>${char}</span>`)
+    const span = $(`<span>${char}</span>`)
     if (activeTags.some(tag => tag.tagName == "b")) span.css("font-weight", "700")
     if (activeTags.some(tag => tag.tagName == "u")) span.css("text-decoration", "underline")
     if (activeTags.some(tag => tag.tagName == "i")) span.css("font-style", "italic")
-    let fsMatch = activeTags.find(tag => tag.tagName == "fs")
+    const fsMatch = activeTags.find(tag => tag.tagName == "fs")
     if (fsMatch) {
       span.attr("data-font-size", fsMatch.args[0])
       span.css("font-size", fsMatch.args[0] + "px")
@@ -82,9 +82,9 @@ export function richTextToHtml(val: string, targetElement?: JQuery<HTMLElement>,
   }
 
   if (! val) return ""
-  let length = val.length
+  const length = val.length
 
-  let parsedText = $("<div></div>")
+  const parsedText = $("<div></div>")
   let escaped = false
   let activeTags: { tagName: string, args: string[]}[] = []
   let inTag = false
@@ -164,7 +164,7 @@ function replaceRichTextareas() {
       const selection = document.getSelection()
       if (! selection) return []
 
-      let ranges: Range[] = []
+      const ranges: Range[] = []
       for (let rangeId = 0; rangeId < selection.rangeCount; rangeId++) {
         const range = selection.getRangeAt(rangeId).cloneRange()
 
@@ -255,16 +255,16 @@ function replaceRichTextareas() {
       }
     }
 
-    let input = $(this);
-    let richTextarea = $($("#rich-textarea-template").html());
-    let textarea = richTextarea.find(".rich-textarea-input");
+    const input = $(this);
+    const richTextarea = $($("#rich-textarea-template").html());
+    const textarea = richTextarea.find(".rich-textarea-input");
 
     textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
     textarea.toggleClass("rich-textarea-empty", textarea.html() == "")
     textarea.css("height", "auto")
     textarea.css("height", textarea[0].scrollHeight + 2 + "px")
 
-    let currentStyles = {
+    const currentStyles = {
       bold: false,
       underline: false,
       italic: false,
@@ -308,7 +308,7 @@ function replaceRichTextareas() {
 
     textarea.on("beforeinput", (e) => {
       function copyStyles(node: JQuery<HTMLElement>) {
-        for (let styleToggle of styleToggles) {
+        for (const styleToggle of styleToggles) {
           if (currentStyles[styleToggle.styleName]) {
             node.css(styleToggle.cssPropName, styleToggle.cssPropNewVal)
           }
@@ -336,7 +336,7 @@ function replaceRichTextareas() {
 
         const range = ranges[0];
         if (! range) return
-        let newNode = $(insertion)
+        const newNode = $(insertion)
         if (options?.copyStyles) {
           copyStyles(newNode)
         }
@@ -354,7 +354,7 @@ function replaceRichTextareas() {
           if (options?.replace) {
             let oldVal = newNode.text()
             for (let length = 1; length <= maxReplacementLength; length++) {
-              let match = findReplacement("old", oldVal)
+              const match = findReplacement("old", oldVal)
               if (match) {
                 newNode.prevAll().slice(0, length - 1).remove()
                 newNode.text(match.new)
@@ -397,9 +397,9 @@ function replaceRichTextareas() {
         if (firstRangeCollapsed && firstRange.startOffset != 0) {
           let target: JQuery<HTMLElement>;
           target = textarea.find("span, br").eq(firstRange.startOffset - 1)
-          let match = findReplacement("new", target.text())
+          const match = findReplacement("new", target.text())
           if (match) {
-            for (let char of match.old.split("")) {
+            for (const char of match.old.split("")) {
               insertAtRange(`<span>${char}</span>`, { copyStyles: true })
             }
             target.remove()
@@ -417,7 +417,7 @@ function replaceRichTextareas() {
         }
       }
 
-      let ev = e.originalEvent as InputEvent;
+      const ev = e.originalEvent as InputEvent;
       if (! ev) return
       
       const ranges = extractSelectedRanges()
@@ -445,7 +445,7 @@ function replaceRichTextareas() {
       textarea.toggleClass("rich-textarea-empty", textarea.html() == "")
     })
 
-    let styleToggles : {
+    const styleToggles : {
       styleName: "bold" | "underline" | "italic", btnName: string, cssPropName: string, cssPropBaseVal: string, cssPropNewVal: string
     }[] = [
       { styleName: "bold", btnName: ".rich-textarea-bold", cssPropName: "font-weight", cssPropBaseVal: "400", cssPropNewVal: "700" },
@@ -453,7 +453,7 @@ function replaceRichTextareas() {
       { styleName: "italic", btnName: ".rich-textarea-italic", cssPropName: "font-style", cssPropBaseVal: "normal", cssPropNewVal: "italic" },
     ]
 
-    for (let styleToggle of styleToggles) {
+    for (const styleToggle of styleToggles) {
       richTextarea.find(styleToggle.btnName).on("click", function () {
         currentStyles[styleToggle.styleName] = ! currentStyles[styleToggle.styleName]
         $(this).toggleClass("enabled")

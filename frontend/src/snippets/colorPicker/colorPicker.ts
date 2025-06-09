@@ -25,9 +25,9 @@ function rgbToHex({ red: r, green: g, blue: b }: { red: number, green: number, b
 }
 
 function hexToRgb(hexValue: string) {
-  let r = parseInt(hexValue.substring(1,3), 16);
-  let g = parseInt(hexValue.substring(3,5), 16);
-  let b = parseInt(hexValue.substring(5), 16);
+  const r = parseInt(hexValue.substring(1,3), 16);
+  const g = parseInt(hexValue.substring(3,5), 16);
+  const b = parseInt(hexValue.substring(5), 16);
 
   return {red: r, green: g, blue: b};
 }
@@ -58,13 +58,13 @@ function rgbToHsv({ red: r, green: g, blue: b }: { red: number, green: number, b
 
 function replaceColorPickers() {
   $(".color-picker:not(.color-picker-replaced)").each(function () {
-    let input = $(this);
-    let startColor = input.val()?.toString() ?? "#3bb9ca";
+    const input = $(this);
+    const startColor = input.val()?.toString() ?? "#3bb9ca";
 
-    let trigger = $(`<div class="rounded cursor-pointer color-picker-trigger">`).css("background-color", startColor);
+    const trigger = $(`<div class="rounded cursor-pointer color-picker-trigger">`).css("background-color", startColor);
     input.after(trigger).addClass("color-picker-replaced");
 
-    let popup = $($("#color-picker-template").html());
+    const popup = $($("#color-picker-template").html());
 
     popup.find(`.color-picker-option[data-color="${$.formatHtml(startColor)}"]`).addClass("selected");
     popup.find(".color-picker-hex").val(startColor);
@@ -80,11 +80,11 @@ function replaceColorPickers() {
     trigger.on("click", function (ev) {
       ev.stopPropagation();
       $(".color-picker-popup").not(popup).hide();
-      let offset = trigger.offset() ?? { left: 0, top: 0 };
-      let yBelow = (trigger.outerHeight() ?? 0) + 4;
-      let yAbove = - (popup.outerHeight() ?? 0) - 4;
-      let xRight = 0;
-      let xLeft = (trigger.outerWidth() ?? 0) - (popup.outerWidth() ?? 0);
+      const offset = trigger.offset() ?? { left: 0, top: 0 };
+      const yBelow = (trigger.outerHeight() ?? 0) + 4;
+      const yAbove = - (popup.outerHeight() ?? 0) - 4;
+      const xRight = 0;
+      const xLeft = (trigger.outerWidth() ?? 0) - (popup.outerWidth() ?? 0);
 
       let positionY = "below"; // Standard position
       if (yBelow + offset.top + (popup.outerHeight() ?? 0) - ($(window).scrollTop() ?? 0) > ($(window).height() ?? 0) && // Not enough space below
@@ -110,14 +110,14 @@ function replaceColorPickers() {
 
     function setHslSelection(hexColor: string) {
       if (hexColor == "Automatisch") return
-      let hsvColor = rgbToHsv(hexToRgb(hexColor));
+      const hsvColor = rgbToHsv(hexToRgb(hexColor));
       selectedHslColor = hsvColor;
       markerHue.css({top: hsvColor.hue / 360 * (hueContainer.outerHeight() ?? 0)});
       markerSaturationValue.css({
         left: hsvColor.saturation * (saturationValueContainer.outerWidth() ?? 0),
         top: (1 - hsvColor.value) * (saturationValueContainer.outerHeight() ?? 0)
       });
-      let gradientColor = `hsl(${hsvColor.hue}, 100%, 50%)`;
+      const gradientColor = `hsl(${hsvColor.hue}, 100%, 50%)`;
       saturationValueContainer.css({background: `
         linear-gradient(transparent 0%, black 100%),
         linear-gradient(90deg, white 0%, transparent 100%),
@@ -129,13 +129,13 @@ function replaceColorPickers() {
     let suppressClick = false;
 
     let markerSaturationValueDragging = false;
-    let markerSaturationValue = popup.find(".color-picker-marker-saturation-value");
-    let saturationValueContainer = popup.find(".color-picker-saturation-value");
+    const markerSaturationValue = popup.find(".color-picker-marker-saturation-value");
+    const saturationValueContainer = popup.find(".color-picker-saturation-value");
 
     function moveMarkerSaturationValue(x: number, y: number) {
-      let containerOffset = saturationValueContainer.offset() ?? { left: 0, top: 0 };
-      let containerWidth = saturationValueContainer.outerWidth() ?? 0;
-      let containerHeight = saturationValueContainer.outerHeight() ?? 0;
+      const containerOffset = saturationValueContainer.offset() ?? { left: 0, top: 0 };
+      const containerWidth = saturationValueContainer.outerWidth() ?? 0;
+      const containerHeight = saturationValueContainer.outerHeight() ?? 0;
 
       let newX = x - containerOffset.left;
       newX = Math.max(0, Math.min(newX, containerWidth));
@@ -148,7 +148,7 @@ function replaceColorPickers() {
       selectedHslColor.saturation = newX / containerWidth;
       selectedHslColor.value = 1 - newY / containerHeight;
 
-      let hexColor = rgbToHex(hsvToRgb(selectedHslColor));
+      const hexColor = rgbToHex(hsvToRgb(selectedHslColor));
       popup.find(".color-picker-option").removeClass("selected");
       input.val(hexColor).trigger("change");
       trigger.css("background-color", hexColor);
@@ -167,7 +167,7 @@ function replaceColorPickers() {
     })
     .on("touchstart", function (ev) {
       markerSaturationValueDragging = true;
-      let position = ev.originalEvent?.touches[0]
+      const position = ev.originalEvent?.touches[0]
       moveMarkerSaturationValue(position?.pageX ?? 0, position?.pageY ?? 0);
       ev.preventDefault();
     });
@@ -181,7 +181,7 @@ function replaceColorPickers() {
     })
     .on("touchmove", function (ev) {
       if (markerSaturationValueDragging) {
-        let position = ev.originalEvent?.touches[0]
+        const position = ev.originalEvent?.touches[0]
         moveMarkerSaturationValue(position?.pageX ?? 0, position?.pageY ?? 0);
       }
     }).on("touchend touchcancel", function () {
@@ -190,12 +190,12 @@ function replaceColorPickers() {
 
 
     let markerHueDragging = false;
-    let markerHue = popup.find(".color-picker-marker-hue");
-    let hueContainer = popup.find(".color-picker-hue");
+    const markerHue = popup.find(".color-picker-marker-hue");
+    const hueContainer = popup.find(".color-picker-hue");
 
     function moveMarkerHue(y: number) {
-      let containerOffset = hueContainer.offset()?.top ?? 0;
-      let containerHeight = hueContainer.outerHeight() ?? 0;
+      const containerOffset = hueContainer.offset()?.top ?? 0;
+      const containerHeight = hueContainer.outerHeight() ?? 0;
 
       let newY = y - containerOffset;
       newY = Math.max(0, Math.min(newY, containerHeight));
@@ -204,15 +204,15 @@ function replaceColorPickers() {
 
       selectedHslColor.hue = newY / containerHeight * 360
 
-      let hue = selectedHslColor.hue;
-      let color = `hsl(${hue}, 100%, 50%)`;
+      const hue = selectedHslColor.hue;
+      const color = `hsl(${hue}, 100%, 50%)`;
 
       saturationValueContainer.css({background: `
         linear-gradient(transparent 0%, black 100%),
         linear-gradient(90deg, white 0%, transparent 100%),
         linear-gradient(${color} 0%, ${color} 100%)`})
 
-      let hexColor = rgbToHex(hsvToRgb(selectedHslColor));
+      const hexColor = rgbToHex(hsvToRgb(selectedHslColor));
       popup.find(".color-picker-option").removeClass("selected");
       input.val(hexColor).trigger("change");
       trigger.css("background-color", hexColor);
@@ -272,7 +272,7 @@ function replaceColorPickers() {
     });
 
     popup.find(".color-picker-option").on("click", function () {
-      let color = $(this).data("color");
+      const color = $(this).data("color");
       popup.find(".color-picker-option").removeClass("selected");
       $(this).addClass("selected");
       input.val(color).trigger("change");

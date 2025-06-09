@@ -2,7 +2,7 @@ import { csrfToken, updateAll, userDataLoaded } from "../../global/global.js"
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 async function registerAccount(username: string, password: string) {
-  let data = {
+  const data = {
       username: username,
       password: password
   };
@@ -44,7 +44,7 @@ async function registerAccount(username: string, password: string) {
 
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
 async function loginAccount(username: string, password: string) {
-  let data = {
+  const data = {
       username: username,
       password: password
   };
@@ -123,7 +123,7 @@ async function logoutAccount() {
 }
 
 function checkExistingUsername(username: string) {
-  let data = { username: username };
+  const data = { username: username };
   let hasResponded = false;
 
   return new Promise(async (resolve) => {
@@ -279,14 +279,14 @@ $(() => {
   //LOGIN -- LOGOUT -- REGISTER
   //
   $(".login-button").on("click", () => {
-    let username = $(".login-register-username").val()?.toString() ?? "";
-    let password = $(".login-password").val()?.toString() ?? "";
+    const username = $(".login-register-username").val()?.toString() ?? "";
+    const password = $(".login-password").val()?.toString() ?? "";
     loginAccount(username, password);
   });
 
   $(".register-button").on("click", () => {
-    let username = $(".login-register-username").val()?.toString() ?? "";
-    let password = $(".register-password").val()?.toString() ?? "";
+    const username = $(".login-register-username").val()?.toString() ?? "";
+    const password = $(".register-password").val()?.toString() ?? "";
     registerAccount(username, password);
   });
 

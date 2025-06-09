@@ -3,7 +3,7 @@ import { addUpdateAllFunction, reloadAll } from "../../global/global.js";
 class LicenseDisplay extends HTMLElement {
   constructor() {
     super();
-    let content = this.innerHTML
+    const content = this.innerHTML
     this.innerHTML = `
       <div class="license-wrapper position-relative my-3 mb-4">
         <div class="license-fade-wrapper">

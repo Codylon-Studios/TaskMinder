@@ -49,8 +49,8 @@ async function updateTeamLists() {
   const currentTeamsData = await teamsData()
 
   for (const team of currentTeamsData) {
-    let teamId = team.teamId
-    let selected = (await joinedTeamsData()).includes(teamId)
+    const teamId = team.teamId
+    const selected = (await joinedTeamsData()).includes(teamId)
     let template = `
       <div class="form-check">
         <input type="checkbox" class="form-check-input" data-id="${teamId}" id="team-selection-team-${teamId}" ${(selected) ? "checked" : ""}>
@@ -100,10 +100,10 @@ async function updateTeamLists() {
       $("#teams-save").addClass("disabled")
     }
 
-    let teamId = $(this).data("id")
+    const teamId = $(this).data("id")
     if (teamId !== "") {
-      let newName = $(this).val()
-      let oldName = (await teamsData()).find(team => team.teamId == teamId)?.name
+      const newName = $(this).val()
+      const oldName = (await teamsData()).find(team => team.teamId == teamId)?.name
       if (newName != oldName) {
         if ($(`.team-deleted[data-id="${teamId}"]`).hasClass("d-none")) {
           $(`.team-renamed[data-id="${teamId}"]`).removeClass("d-none").find("*").removeClass("d-none").find("b").text(newName)
@@ -125,7 +125,7 @@ async function updateTeamLists() {
   $(".team-delete").on("click", function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none")
 
-    let teamId = $(this).data("id")
+    const teamId = $(this).data("id")
     if ($(this).hasClass("btn-danger")) {
       $(`.team-deleted[data-id="${teamId}"]`).removeClass("d-none")
       $(`.team-renamed[data-id="${teamId}"]`).addClass("d-none").find("*").addClass("d-none")
@@ -145,9 +145,9 @@ async function updateEventTypeList() {
   let newEventTypesContent = ""
 
   for (const eventType of await eventTypeData()) {
-    let eventTypeId = eventType.eventTypeId
+    const eventTypeId = eventType.eventTypeId
 
-    let template = `
+    const template = `
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${eventTypeId}">
         <div class="d-flex flex-column flex-lg-row align-items-lg-center">
           <div class="d-flex">
@@ -194,10 +194,10 @@ async function updateEventTypeList() {
       $("#event-types-save").addClass("disabled")
     }
 
-    let eventTypeId = $(this).data("id")
+    const eventTypeId = $(this).data("id")
     if (eventTypeId !== "") {
-      let newName = $(this).val()
-      let oldName = (await eventTypeData()).find(eventType => eventType.eventTypeId == eventTypeId)?.name
+      const newName = $(this).val()
+      const oldName = (await eventTypeData()).find(eventType => eventType.eventTypeId == eventTypeId)?.name
       if (newName != oldName) {
         if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
           $(`.event-type-renamed[data-id="${eventTypeId}"]`).removeClass("d-none").find("*").removeClass("d-none").find("b").text(newName)
@@ -219,13 +219,13 @@ async function updateEventTypeList() {
   $(document).off("change", ".event-type-color-input").on("change", ".event-type-color-input", async function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
 
-    let eventTypeId = $(this).data("id")
+    const eventTypeId = $(this).data("id")
     if (eventTypeId !== "") {
-      let newColor = $(this).val()
-      let oldColor = (await eventTypeData()).find(eventType => eventType.eventTypeId == eventTypeId)?.color ?? ""
+      const newColor = $(this).val()
+      const oldColor = (await eventTypeData()).find(eventType => eventType.eventTypeId == eventTypeId)?.color ?? ""
       if (newColor != oldColor) {
         if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
-          let $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`)
+          const $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`)
           $recoloredElement.removeClass("d-none").find("*").removeClass("d-none")
           $recoloredElement.find(".event-type-recolored-color-display").first().css("background-color", oldColor)
           $recoloredElement.find(".event-type-recolored-color-display").last().css("background-color", newColor)
@@ -240,7 +240,7 @@ async function updateEventTypeList() {
   $(".event-type-delete").on("click", function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none")
 
-    let eventTypeId = $(this).data("id")
+    const eventTypeId = $(this).data("id")
     if ($(this).hasClass("btn-danger")) {
       $(`.event-type-deleted[data-id="${eventTypeId}"]`).removeClass("d-none")
       $(`.event-type-renamed[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none")
@@ -268,8 +268,8 @@ async function updateSubjectList() {
   let currentSubjectData = await subjectData()
   currentSubjectData = currentSubjectData.sort((a, b) => a.subjectId - b.subjectId);
   for (const subject of currentSubjectData) {
-    let subjectId = subject.subjectId
-    let template = $(`
+    const subjectId = subject.subjectId
+    const template = $(`
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
         <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
           <div class="me-3 w-md-50">
@@ -356,10 +356,10 @@ async function updateSubjectList() {
       $("#subjects-save").addClass("disabled")
     }
 
-    let subjectId = $(this).data("id")
+    const subjectId = $(this).data("id")
     if (subjectId !== "") {
-      let newName = $(this).val()
-      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameLong
+      const newName = $(this).val()
+      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameLong
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -385,10 +385,10 @@ async function updateSubjectList() {
   $(document).off("change", ".subject-name-short-input").on("change", ".subject-name-short-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
-    let subjectId = $(this).data("id")
+    const subjectId = $(this).data("id")
     if (subjectId !== "") {
-      let newName = $(this).val()
-      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameShort
+      const newName = $(this).val()
+      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameShort
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -407,10 +407,10 @@ async function updateSubjectList() {
   $(document).off("change", ".subject-teacher-gender-input").on("change", ".subject-teacher-gender-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
-    let subjectId = $(this).data("id")
+    const subjectId = $(this).data("id")
     if (subjectId !== "") {
-      let newGender = $(this).val() as "d" | "w" | "m"
-      let oldGender = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherGender
+      const newGender = $(this).val() as "d" | "w" | "m"
+      const oldGender = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherGender
       if (newGender != oldGender) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -435,10 +435,10 @@ async function updateSubjectList() {
       $("#subjects-save").addClass("disabled")
     }
 
-    let subjectId = $(this).data("id")
+    const subjectId = $(this).data("id")
     if (subjectId !== "") {
-      let newName = $(this).val()
-      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameLong
+      const newName = $(this).val()
+      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameLong
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -464,10 +464,10 @@ async function updateSubjectList() {
   $(document).off("change", ".subject-teacher-short-input").on("change", ".subject-teacher-short-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
-    let subjectId = $(this).data("id")
+    const subjectId = $(this).data("id")
     if (subjectId !== "") {
-      let newName = $(this).val()
-      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameShort
+      const newName = $(this).val()
+      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameShort
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -486,10 +486,10 @@ async function updateSubjectList() {
   $(document).off("change", ".subject-name-substitution-input").on("change", ".subject-name-substitution-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
-    let subjectId = $(this).data("id")
+    const subjectId = $(this).data("id")
     if (subjectId !== "") {
-      let newName = $(this).val()
-      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameSubstitution ?? "keine Angabe"
+      const newName = $(this).val()
+      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameSubstitution ?? "keine Angabe"
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -508,10 +508,10 @@ async function updateSubjectList() {
   $(document).off("change", ".subject-teacher-substitution-input").on("change", ".subject-teacher-substitution-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none")
 
-    let subjectId = $(this).data("id")
+    const subjectId = $(this).data("id")
     if (subjectId !== "") {
-      let newName = $(this).val()
-      let oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameSubstitution ?? "keine Angabe"
+      const newName = $(this).val()
+      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameSubstitution ?? "keine Angabe"
       if (newName != oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none")
@@ -530,7 +530,7 @@ async function updateSubjectList() {
   $(".subject-delete").on("click", function () {
     $("#subjects-save-confirm-container, #subjectss-save-confirm").addClass("d-none")
 
-    let subjectId = $(this).data("id")
+    const subjectId = $(this).data("id")
     if ($(this).hasClass("btn-danger")) {
       $(`.subject-deleted[data-id="${subjectId}"]`).removeClass("d-none")
       $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none")
@@ -553,7 +553,7 @@ async function updateSubjectList() {
 }
 
 async function updateTimetable() {
-  let newTimetableContent = $("<div></div>")
+  const newTimetableContent = $("<div></div>")
 
   let subjectOptions: string = "";
 
@@ -584,7 +584,7 @@ async function updateTimetable() {
   }
 
   (await lessonData()).forEach(lesson => {
-    let lessonTemplate = $(`
+    const lessonTemplate = $(`
       <div class="timetable-lesson card p-2 mb-2">
         <div class="d-flex mb-2 align-items-center">
           <label class="form-label form-label-sm mb-0 me-2">
@@ -630,7 +630,7 @@ async function updateTimetable() {
   })
 
   $(document).off("click", ".timetable-new-lesson").on("click", ".timetable-new-lesson", function () {
-    let lessonTemplate = $(`
+    const lessonTemplate = $(`
       <div class="timetable-lesson card p-2 mb-2">
         <div class="d-flex mb-2 align-items-center">
           <label class="form-label form-label-sm mb-0 me-2">
@@ -679,8 +679,8 @@ async function updateTimetable() {
       })
     }
 
-    let lessonList = $(this).parent().find(".timetable-lesson-list")
-    let previousLesson = lessonList.find(".timetable-lesson").last()
+    const lessonList = $(this).parent().find(".timetable-lesson-list")
+    const previousLesson = lessonList.find(".timetable-lesson").last()
     let lessonNumber = parseInt(previousLesson.find(".timetable-lesson-number").val()?.toString() ?? "0") + 1
     lessonTemplate.find(".timetable-lesson-number").val(lessonNumber)
     lessonTemplate.find(".timetable-lesson-number").on("change", () => {
@@ -780,7 +780,7 @@ $("#display-footer input").on("click", function () {
   }
 })
 
-let colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
+const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
 document.body.setAttribute("data-bs-theme", await colorTheme());
 $("#color-theme-auto").prop("checked", colorThemeSetting == "auto")
 $("#color-theme-dark").prop("checked", colorThemeSetting == "dark")
@@ -798,7 +798,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", upd
 // TEAM SELECTION
 
 $("#team-selection-save").on("click", async () => {
-  let newJoinedTeamsData: JoinedTeamsData = []
+  const newJoinedTeamsData: JoinedTeamsData = []
   $("#team-selection-list input").each(function () {
     if ($(this).prop("checked")) {
       newJoinedTeamsData.push(parseInt($(this).data("id")))
@@ -806,7 +806,7 @@ $("#team-selection-save").on("click", async () => {
   })
 
   if (user.loggedIn) {
-    let data = {
+    const data = {
       teams: newJoinedTeamsData,
     };
     let hasResponded = false;
@@ -881,7 +881,7 @@ $("#new-team").on("click", () => {
 
   $("#teams-list .no-teams").remove()
 
-  let template = `
+  const template = `
     <div class="card m-2 p-2 flex-row justify-content-between align-items-center">
       <div class="d-flex flex-column flex-md-row align-items-md-center">
         <div>
@@ -924,7 +924,7 @@ $("#teams-cancel").on("click", () => {
 })
 
 async function saveTeams() {
-  let newTeamsData: TeamsData = []
+  const newTeamsData: TeamsData = []
   $(".team-name-input").each(function () {
     if ($(this).parent().parent().find("~ .btn-success").length > 0) return
     newTeamsData.push({
@@ -933,7 +933,7 @@ async function saveTeams() {
     })
   })
 
-  let data = {
+  const data = {
     teams: newTeamsData,
   };
   let hasResponded = false;
@@ -982,7 +982,7 @@ async function saveTeams() {
 }
 
 $("#teams-save").on("click", () => {
-  let deleted: string[] = []
+  const deleted: string[] = []
   $(".team-deleted:not(.d-none)").each(function () {
     deleted.push($(this).parent().find("input").attr("placeholder") ?? "")
   })
@@ -1015,7 +1015,7 @@ $("#new-event-type").on("click", () => {
 
   $("#event-types-list .no-event-types").remove()
 
-  let template = `
+  const template = `
     <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="">
       <div class="d-flex flex-column flex-md-row align-items-md-center">
         <div class="d-flex">
@@ -1061,7 +1061,7 @@ $("#event-types-cancel").on("click", () => {
 })
 
 async function saveEventTypes() {
-  let newEventTypesData: EventTypeData = []
+  const newEventTypesData: EventTypeData = []
   $("#event-types-list > div").each(function () {
     if ($(this).find(".btn-success").length > 0) return
     newEventTypesData.push({
@@ -1071,7 +1071,7 @@ async function saveEventTypes() {
     })
   })
 
-  let data = {
+  const data = {
     eventTypes: newEventTypesData,
   };
   let hasResponded = false;
@@ -1118,7 +1118,7 @@ async function saveEventTypes() {
 }
 
 $("#event-types-save").on("click", () => {
-  let deleted: string[] = []
+  const deleted: string[] = []
   $(".event-type-deleted:not(.d-none)").each(function () {
     deleted.push($(this).parent().find("input").attr("placeholder") ?? "")
   })
@@ -1151,7 +1151,7 @@ $("#new-subject").on("click", () => {
 
   $("#subjects-list .no-subjects").remove()
 
-  let template = `
+  const template = `
     <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="">
         <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
           <div class="me-3 w-md-50">
@@ -1235,11 +1235,11 @@ $("#subjects-cancel").on("click", () => {
 })
 
 async function saveSubjects() {
-  let newSubjectData: SubjectData = []
+  const newSubjectData: SubjectData = []
   $("#subjects-list > div").each(function () {
     if ($(this).find(".btn-success").length > 0) return
 
-    let subjectNameLong = $(this).find(".subject-name-long-input").val()?.toString().trim() ?? ""
+    const subjectNameLong = $(this).find(".subject-name-long-input").val()?.toString().trim() ?? ""
 
     let subjectNameShort = $(this).find(".subject-name-short-input").val()?.toString().trim()
     if (subjectNameShort == "") subjectNameShort = undefined
@@ -1269,7 +1269,7 @@ async function saveSubjects() {
     })
   })
 
-  let data = {
+  const data = {
     subjects: newSubjectData,
   };
   let hasResponded = false;
@@ -1316,7 +1316,7 @@ async function saveSubjects() {
 }
 
 $("#subjects-save").on("click", () => {
-  let deleted: string[] = []
+  const deleted: string[] = []
   $(".subjects-deleted:not(.d-none)").each(function () {
     deleted.push($(this).parent().find("input").attr("placeholder") ?? "")
   })
@@ -1349,7 +1349,7 @@ $("#timetable-cancel").on("click", () => {
 })
 
 $("#timetable-save").on("click", async () => {
-  let newTimetableData: LessonData = []
+  const newTimetableData: LessonData = []
   $("#timetable > div").each(function (weekDay) {
     $(this).find(".timetable-lesson").each(function () {
       newTimetableData.push({
@@ -1365,7 +1365,7 @@ $("#timetable-save").on("click", async () => {
     })
   })
 
-  let data = {
+  const data = {
     lessons: newTimetableData,
   };
   let hasResponded = false;

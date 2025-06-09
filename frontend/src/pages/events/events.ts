@@ -10,16 +10,16 @@ const updateEventList = runOnce(async (): Promise<void> => {
   $("#event-list").empty();
   
   // Check if user is in edit mode
-  let editEnabled = $("#edit-toggle").is(":checked");
+  const editEnabled = $("#edit-toggle").is(":checked");
 
-  for (let event of await eventData()) {
+  for (const event of await eventData()) {
     // Get the information for the event
-    let eventId = event.eventId;
-    let eventTypeId = event.eventTypeId;
-    let name = event.name;
-    let description = event.description;
-    let startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
-    let lesson = event.lesson;
+    const eventId = event.eventId;
+    const eventTypeId = event.eventTypeId;
+    const name = event.name;
+    const description = event.description;
+    const startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
+    const lesson = event.lesson;
     let endDate;
     if (event.endDate) {
       endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
@@ -35,7 +35,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
 
     // Filter by min. date
     if ($("#filter-date-from").val() != "") {
-      let filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
+      const filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
       if (filterDate > parseInt(event.endDate ?? event.startDate)) {
         continue;
       }
@@ -43,7 +43,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
 
     // Filter by max. date
     if ($("#filter-date-until").val() != "") {
-      let filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
+      const filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
       if (filterDate < parseInt(event.startDate)) {
         continue;
       }
@@ -55,7 +55,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
     }
 
     // The template for an event with edit options
-    let template = 
+    const template = 
       $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
@@ -102,20 +102,20 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
   // Clear the list for filtering by type
   $("#filter-type-list").empty();
 
-  let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+  const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
   filterData.type ??= {};
 
   (await eventTypeData()).forEach(eventType => {
     // Get the event type data
-    let eventTypeId = eventType.eventTypeId;
-    let eventTypeName = eventType.name;
+    const eventTypeId = eventType.eventTypeId;
+    const eventTypeName = eventType.name;
 
     filterData.type[eventTypeId] ??= true
-    let checkedStatus: "checked" | "" = (filterData.type[eventTypeId]) ? "checked" : ""
+    const checkedStatus: "checked" | "" = (filterData.type[eventTypeId]) ? "checked" : ""
     if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none")
 
     // Add the template for filtering by type
-    let templateFilterType =
+    const templateFilterType =
       `<div class="form-check">
         <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
         <label class="form-check-label" for="filter-type-${eventTypeId}">
@@ -125,7 +125,7 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
     $("#filter-type-list").append(templateFilterType)
 
     // Add the template for the select elements
-    let templateFormSelect =
+    const templateFormSelect =
       `<option value="${eventTypeId}">${$.formatHtml(eventTypeName)}</option>`;
     $("#add-event-type").append(templateFormSelect);
     $("#edit-event-type").append(templateFormSelect);
@@ -134,7 +134,7 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
   // If any type filter gets changed, update the shown events
   $(".filter-type-option").on("change", function () {
     updateEventList();
-    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.type ??= {}
     filterData.type[$(this).data("id")] = $(this).prop("checked")
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
@@ -154,10 +154,10 @@ const updateTeamList = runOnce(async (): Promise<void> => {
 
   (await teamsData()).forEach(team => {
     // Get the team data
-    let teamName = team.name;
+    const teamName = team.name;
 
     // Add the template for the select elements
-    let templateFormSelect =
+    const templateFormSelect =
       `<option value="${team.teamId}">${$.formatHtml(teamName)}</option>`;
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
@@ -198,7 +198,7 @@ function addEvent() {
     const team = $("#add-event-team").val();
 
     // Prepare the POST request
-    let data = {
+    const data = {
       eventTypeId: eventTypeId,
       name: name,
       description: description,
@@ -260,7 +260,7 @@ async function editEvent(eventId: number) {
   //
 
   // Get the data of the event
-  let event = (await eventData()).find((e) => e.eventId == eventId)
+  const event = (await eventData()).find((e) => e.eventId == eventId)
   if (! event) return
 
   // Set the inputs on the already saved information
@@ -291,7 +291,7 @@ async function editEvent(eventId: number) {
     const endDate = $("#edit-event-end-date").val()?.toString() ?? "";
     const team = $("#edit-event-team").val();
 
-    let data = {
+    const data = {
       eventId: eventId,
       eventTypeId: eventTypeId,
       name: name,
@@ -362,7 +362,7 @@ function deleteEvent(eventId: number) {
     // Hide the confirmation toast
     $("#delete-event-confirm-toast").toast("hide");
 
-    let data = {
+  const data = {
       eventId: eventId
     };
     // Save whether the server has responed
@@ -413,7 +413,7 @@ function deleteEvent(eventId: number) {
 function resetFilters() {
   $("#filter-changed").addClass("d-none")
 
-  let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+  const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
   
   if (filterData.dateFrom == undefined) {
     $("#filter-date-from").val(msToInputDate(Date.now()))
@@ -424,13 +424,13 @@ function resetFilters() {
   }
 
   if (filterData.dateUntil == undefined) {
-    let nextMonth = new Date(Date.now())
+    const nextMonth = new Date(Date.now())
     nextMonth.setMonth(nextMonth.getMonth() + 1)
     $("#filter-date-until").val(msToInputDate(nextMonth.getTime()))
   }
   else {
     $("#filter-date-until").val(filterData.dateUntil)
-    let nextMonth = new Date(Date.now())
+    const nextMonth = new Date(Date.now())
     nextMonth.setMonth(nextMonth.getMonth() + 1)
     if (! isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none")
   }
@@ -574,7 +574,7 @@ $(function(){
 
   // On clicking the all types option, check all and update the event list
   $("#filter-type-all").on("click", () => {
-    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     $(".filter-type-option").prop("checked", true);
     $(".filter-type-option").each(function () {
       filterData.type[$(this).data("id")] = true
@@ -586,7 +586,7 @@ $(function(){
 
   // On clicking the none types option, uncheck all and update the event list
   $("#filter-type-none").on("click", () => {
-    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.type ??= {}
     $(".filter-type-option").prop("checked", false);
     $(".filter-type-option").each(function () {
@@ -599,7 +599,7 @@ $(function(){
 
   // On changing any filter date option, update the event list
   $("#filter-date-from").on("change", () => {
-    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateFrom = $("#filter-date-from").val()
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();
@@ -608,7 +608,7 @@ $(function(){
 
   // On changing any filter date option, update the event list
   $("#filter-date-until").on("change", () => {
-    let filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateUntil = $("#filter-date-until").val()
     localStorage.setItem("eventFilter", JSON.stringify(filterData))
     resetFilters();

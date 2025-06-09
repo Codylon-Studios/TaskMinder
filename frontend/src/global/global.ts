@@ -5,7 +5,7 @@ export function runOnce(fn: Function): Function {
   async function wrapper(force: boolean = false, ...args: any) {
     if (wrapper.running && ! force) return;
     wrapper.running = true;
-    let res = await fn(...args);
+    const res = await fn(...args);
     wrapper.running = false;
     return res;
   }
@@ -34,12 +34,12 @@ export function msToInputDate(ms: number | string): string {
 
 export function dateToMs(dateStr: string): number | null {
   if (dateStr.includes("-")) {
-    let [year, month, day] = dateStr.split("-").map(Number);
+    const [year, month, day] = dateStr.split("-").map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.getTime();
   }
   else if (dateStr.includes(".")) {
-    let [day, month, year] = dateStr.split(".").map(Number);
+    const [day, month, year] = dateStr.split(".").map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.getTime();
   }
@@ -47,7 +47,7 @@ export function dateToMs(dateStr: string): number | null {
 }
 
 export function timeToMs(timeStr: string): number {
-  let time = timeStr.split(":").map(v => parseInt(v))
+  const time = timeStr.split(":").map(v => parseInt(v))
   return (time[0] * 60 + time[1]) * 60 * 1000
 }
 
@@ -118,7 +118,7 @@ async function loadClassSubstitutionsData() {
     return
   }
 
-  let data = structuredClone(currentSubstitutionsData);
+  const data = structuredClone(currentSubstitutionsData);
   for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
     const key = "plan" + planId as "plan1" | "plan2"
     data[key].substitutions = data[key].substitutions.filter((entry: any) => /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class))
@@ -199,7 +199,7 @@ export const reloadAll = (): Promise<void> => {
     
       await updateAll()
 
-      let promises = [];
+      const promises = [];
 
       promises.push(userDataLoaded())
       await Promise.all(promises);
@@ -221,12 +221,12 @@ export function addUpdateAllFunction(...fn: Function[]) {
 }
 
 let requiredData: string[] = []
-let updateAllFunctions: Function[] = []
+const updateAllFunctions: Function[] = []
 
 type ColorTheme = "dark" | "light"
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme")
 
-let themeColor = document.createElement("meta")
+const themeColor = document.createElement("meta")
 themeColor.name = "theme-color"
 if (localStorage.getItem("colorTheme") == "dark") {
   colorTheme("dark")
@@ -259,7 +259,7 @@ type DataAccessorEventCallback = (...args: any[]) => void
 export function createDataAccessor<T>(name: string) {
   const eventName = `dataLoaded:${name}`
   let data: T | null = null;
-  let _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>
+  const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>
 
   const accessor = async (value?: T | null): Promise<T> => {
     if (value !== undefined) {
@@ -430,9 +430,9 @@ $(async () => {
   
   await reloadAll();
   
-  let hash = window.location.hash;
+  const hash = window.location.hash;
   if (hash) {
-    let $target = $(hash);
+    const $target = $(hash);
     if ($target?.offset() != undefined) {
       $("html").animate({
         scrollTop: ($target.offset()?.top ?? 0) - 70
@@ -518,7 +518,7 @@ else {
 }})()
 
 if (! ["/settings/", "/settings"].includes(location.pathname)) {
-  let colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
+  const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
 
   if (colorThemeSetting == "auto") {
     async function updateColorTheme() {

@@ -71,7 +71,7 @@ $(window).on("userDataLoaded", () => {
 $("#join-class-btn").on("click", async () => {
   const classcode = $("#join-class-classcode").val();
 
-  let data = {
+  const data = {
       classcode: classcode,
     };
 
@@ -107,7 +107,7 @@ $("#join-class-classcode").on("input", () => {
   $("#error-invalid-classcode").addClass("d-none")
 })
 
-let urlParams = new URLSearchParams(window.location.search)
+const urlParams = new URLSearchParams(window.location.search)
 
 if (urlParams.has("action")) {
   if (urlParams.get("action") == "join") {
