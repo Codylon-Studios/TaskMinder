@@ -1,4 +1,4 @@
-# Server Setup in Production v1.0.1 - stable
+# Server Setup in Production v1.2.0 - stable
 ## What you'll need
 
 * A valid domain (e.g. `codylon.de`)
@@ -179,7 +179,7 @@ Give the user access to the project folder:
 
 ```bash
 sudo chown -R ubuntu:ubuntu /opt/TaskMinder
-# Set correct ownership for the Docker container (node user)
+# Set correct ownership for the Docker container (bun user)
 sudo chown -R 1000:1000 ./db-backups
 ```
 

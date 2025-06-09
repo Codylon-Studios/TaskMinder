@@ -3,7 +3,7 @@
 !!! warning "Docs for develop branch"
     This guide outlines the current development process and is intended for contributing to the develop branch. It may differ from the steps used in the latest stable release.
 
-This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing nodeJS, npm, python3, mkdocs-material, redis, and PostgreSQL.
+This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing bun, python3, mkdocs-material, redis, and PostgreSQL.
 
 !!! warning "License Notice"
     **Please make sure to review [our license](./license.md) before contributing to the project!**  
@@ -78,31 +78,27 @@ Recommended versions: PostgreSQL 14.0+ and Redis 7.x (Community Edition < v8).
 
 ---
 
-### Installing NodeJS and npm
+### Installing Bun
 
-NodeJS and npm are required. *(Skip this step in GitHub Codespaces, as they are pre-installed.)*
+Bun is required for this project.
 
-To check if they're already installed, run:
-
-```zsh
-node --version
-```
+To check if it's already installed, run:
 
 ```zsh
-npm --version
+bun --version
 ```
 
-You should see at least Node v20.19.0 and npm v10.8.2. Refer to [NodeJS Versions] for compatibility details.
+You should see at least Bun 1.2.15 (May 28, 2025). 
 
-[NodeJS Versions]: https://nodejs.org/en/about/previous-releases
+[Bun Versions]: https://bun.sh/blog
 
-If not installed, download from [NodeJS Download].
+If not installed, retrieve the download instuctions from the [Bun Download Page]. For Github Codespaces, follow the `npm`instrcution under the Mac/Linux Tab.
 
-[NodeJS Download]: https://nodejs.org/en/download
+[Bun Download Page]: https://bun.sh/docs/installation
 
 ---
 
-### Clone Repository and Install npm Packages
+### Clone Repository and Install Bun Packages
 
 Visit the repo at [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder) and fork it.
 
@@ -118,7 +114,7 @@ Replace `YOUR_GITHUB_USERNAME` with your actual GitHub username.
 Install all dependencies:
 
 ```zsh
-npm install
+bun install
 ```
 
 ---
@@ -183,7 +179,7 @@ You only need the installation part (timestamp 3:49–5:53).
 
 ### Applying databse changes
 
-Run `npx prisma migrate dev` to apply schema changes from previously pulled commits to your local database.
+Run `bunx prisma migrate dev` to apply schema changes from previously pulled commits to your local database.
 You should also run this command during development if the schema has been modified.
 
 If you make changes to the schema while developing—especially on a feature branch—don’t forget to generate a migration file. Otherwise, your changes might be lost or overwritten when switching branches (e.g., to `develop` or `main`).
@@ -193,18 +189,18 @@ If you make changes to the schema while developing—especially on a feature bra
 
 Run this command to compile the typescript code and start the development server, ru
 ```zsh
-npm run dev-build
+bun run dev-build
 ```
 
 *Notes*:
 
-* You can manually compile the code by running `npm run build`, or use `npm run build:fe` and `npm run build:be` to compile the frontend and backend separately. After building, start the server with `npm run dev`.
+* You can manually compile the code by running `bun run build`, or use `bun run build:fe` and `bun run build:be` to compile the frontend and backend separately. After building, start the server with `bun run dev`.
 
-* We recommend using linting tools to maintain code quality. To use ESLint on this project, simply run: `npx eslint .`.
+* We recommend using linting tools to maintain code quality. To use ESLint on this project, simply run: `bunx eslint .`.
 
-* As a best practice, format your code using Prettier. You can run `npx prettier --write PATH/TO/FILE_OR_FOLDER` to format specific files or directories, or use `npx prettier . --write` to format the entire project.
+* As a best practice, format your code using Prettier. You can run `bunx prettier --write PATH/TO/FILE_OR_FOLDER` to format specific files or directories, or use `bunx prettier . --write` to format the entire project.
 
-* When updating the Prisma schema, remember to run `npx prisma generate` to regenerate the client and TypeScript types in `node_modules/`.
-  Before committing your changes, make sure to run `npx prisma migrate dev` to create and apply the necessary migration files to your local database—skipping this step may result in broken or inconsistent code.
+* When updating the Prisma schema, remember to run `bunx prisma generate` to regenerate the client and TypeScript types in `node_modules/`.
+  Before committing your changes, make sure to run `bunx prisma migrate dev` to create and apply the necessary migration files to your local database—skipping this step may result in broken or inconsistent code.
 
 ---

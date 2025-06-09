@@ -1,33 +1,34 @@
-ARG NODE_VERSION=22.16.0
+# Use official Bun image
+FROM oven/bun:1.2-alpine
 
-FROM node:${NODE_VERSION}-alpine
-
-# Update alpine packages
+# Update Alpine packages and install system dependencies
 RUN apk update && apk upgrade --no-cache && \
     apk add --no-cache \
     build-base \
     postgresql-client \
     redis
 
+# Set working directory
 WORKDIR /usr/src/app
 
-# Install production dependencies with caching
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
+# Copy package files
+COPY bun.lock ./
+COPY package.json ./
 
-# Copy all source code into the image
+# Install production dependencies with caching
+RUN --mount=type=cache,target=/root/.bun \
+    bun install --production
+
+# Copy source files
 COPY . .
 
-# Global TypeScript install and build steps
-RUN npm install -g typescript && \
-    npx prisma generate && \
-    npm run build && \
-    chown -R node:node /usr/src/app
+# Prisma and build steps
+RUN bunx prisma generate && \
+    bun run build && \
+    chown -R bun:bun /usr/src/app
 
-# Switch to node user for runtime
-USER node
+# Switch to bun user for runtime (Bun's base image uses `bun` user)
+USER bun
 
 # Expose application port
 EXPOSE 3000

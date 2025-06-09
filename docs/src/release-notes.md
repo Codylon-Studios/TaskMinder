@@ -4,7 +4,26 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v1.1.2] - 2025-06-07
+## \[v1.2.0] - 2025-06-10
+
+### Added
+
+* Migrated runtime environment from Node.js to [Bun](https://bun.sh) for improved performance and native support for TypeScript.
+* Updated all scripts and tooling to be compatible with Bun.
+
+### Changed
+
+* Replaced `npm` scripts with `bun` equivalents.
+* Adjusted build and deployment pipelines to support Bun.
+* run linting and formatting tools in frontend
+
+### Removed
+
+* Removed `package-lock.json` in favor of Bun’s dependency manager.
+
+--
+
+## \[v1.1.2] - 2025-06-08
 
 ### Added
 

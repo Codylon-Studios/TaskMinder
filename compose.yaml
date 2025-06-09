@@ -49,8 +49,8 @@ services:
         export UNSAFE_DEACTIVATE_CSP=$(cat /run/secrets/unsafe_deactivate_csp) && \
         export DATABASE_URL=$(cat /run/secrets/database_url) && \
         redis-cli -h redis FLUSHALL && \
-        npx prisma migrate deploy && \
-        node backend/dist/server.js'
+        bunx prisma migrate deploy && \
+        bun backend/dist/server.js'
 
   postgres:
     image: postgres:14
