@@ -1,0 +1,87 @@
+@use "sass:color";
+@use "../../global/global" as *;
+
+.rich-textarea-input-wrapper {
+  position: relative;
+  & button {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+.rich-textarea-input {
+  @extend .form-control;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 158px;
+
+  &.rich-textarea-empty::before {
+    content: "Text eingeben...";
+    color: var(--bs-secondary-color);
+    cursor: text;
+  }
+}
+
+textarea.rich-textarea {
+  display: none;
+  width: 100%;
+  height: 200px;
+}
+
+.rich-textarea-font-size span {
+  font-size: 0.7em;
+}
+
+.sub {
+  vertical-align: sub;
+}
+
+.sup {
+  vertical-align: super;
+}
+
+.rich-textarea-color svg {
+  fill: #3bb9ca;
+  width: 1.2rem;
+  height: 1.15rem;
+  stroke: var(--bs-body-color);
+  & path {
+    transform: translate(50px, 50px);
+  }
+}
+
+.rich-textarea-color-enabled {
+  color: #3bb9ca;
+  translate: -0.5rem 0.2rem;
+  margin-right: -0.75rem;
+  font-size: 0.75rem;
+}
+
+.rich-textarea-color span {
+  width: 1.2rem;
+  height: 1.15rem;
+  & i {
+    margin-top: -0.4rem;
+  }
+}
+
+.rich-textarea-color-picker ~ .color-picker-trigger {
+  visibility: hidden;
+  margin-right: -26px;
+  transform: translateX(-26px);
+  width: 26px;
+  height: 36px;
+
+  & .color-picker-popup {
+    visibility: visible;
+  }
+}
+
+.rich-textarea-toolbar button.enabled {
+  color: #3bb9ca !important;
+}
+
+.rich-textarea-link-enabled {
+  background: color.change($color: #3bb9ca, $alpha: 0.2);
+}

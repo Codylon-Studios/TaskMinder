@@ -6,14 +6,16 @@ $fa-font-path: "/assets/fonts/fontawesome";
 .color-picker-trigger {
   width: 2rem;
   height: 2rem;
+  position: relative;
 }
 
 .color-picker-popup {
   @extend .position-absolute, .rounded, .p-2, .shadow, .flex-column;
+  cursor: auto;
   background: var(--bs-body-bg);
-  border: 1px solid var(--btn-tertiary-active);
+  border: 1px solid $card-border-color;
   display: flex;
-  z-index: 1;
+  z-index: 1100;
 }
 
 .color-picker-hsl-wrapper {
@@ -24,9 +26,10 @@ $fa-font-path: "/assets/fonts/fontawesome";
 
 .color-picker-saturation-value {
   @extend .rounded;
-  background: linear-gradient(transparent 0%, black 100%),
-              linear-gradient(90deg, white 0%, transparent 100%),
-              linear-gradient(red 0%, red 100%);
+  background:
+    linear-gradient(transparent 0%, black 100%),
+    linear-gradient(90deg, white 0%, transparent 100%),
+    linear-gradient(red 0%, red 100%);
   margin-right: 0.5rem;
   width: 8.5rem;
   position: relative;
@@ -46,7 +49,15 @@ $fa-font-path: "/assets/fonts/fontawesome";
 
 .color-picker-hue {
   @extend .rounded;
-  background: linear-gradient(#f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%,  #f0f 83%,  #f00 100%);
+  background: linear-gradient(
+    #f00 0%,
+    #ff0 17%,
+    #0f0 33%,
+    #0ff 50%,
+    #00f 67%,
+    #f0f 83%,
+    #f00 100%
+  );
   width: 1.75rem;
   position: relative;
 }
@@ -75,7 +86,7 @@ $fa-font-path: "/assets/fonts/fontawesome";
   display: flex !important;
   justify-content: center;
 
-  &.selected {
+  &:not(.color-picker-auto-option).selected {
     @extend .fa-solid;
     color: #fff;
     --fa: "\f00c";
@@ -96,9 +107,8 @@ $color-picker-colors: (
   #44ddee,
   #44dd33,
   #449933,
-  #888888,
+  #888888
 );
-
 
 @each $color in $color-picker-colors {
   .color-picker-option[data-color="#{$color}"] {
@@ -106,6 +116,20 @@ $color-picker-colors: (
   }
 }
 
-input[type="color"].color-picker {
+.color-picker-auto-option-wrapper {
+  justify-content: center;
+
+  & .color-picker-auto-option {
+    width: 6.25rem;
+    font-size: 0.9rem;
+    line-height: 1.75rem;
+
+    &.selected {
+      font-weight: 900;
+    }
+  }
+}
+
+input[type="text"].color-picker {
   display: none;
 }

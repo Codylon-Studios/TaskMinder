@@ -4,6 +4,61 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v1.2.0] - 2025-06-10
+
+### Breaking Change - License
+
+Users must review and comply with the updated license terms before updating or continuing use.
+
+### Added
+
+* Migrated runtime environment from Node.js to [Bun](https://bun.sh) for improved performance and native support for TypeScript.
+* Updated all scripts and tooling to be compatible with Bun.
+
+### Changed
+
+* Replaced `npm` scripts with `bun` equivalents.
+* Adjusted build and deployment pipelines to support Bun.
+* run linting and formatting tools in frontend
+* LICENSE changes to clarify ownership and permissions
+
+### Removed
+
+* Removed `package-lock.json` in favor of Bun’s dependency manager.
+
+---
+
+## \[v1.1.2] - 2025-06-08
+
+### Added
+
+* Rich text support in homework and events.
+* Added release notes for v.1.1.1 and v1.1.2
+* Linting and Formatting tools -  ESLint and Prettier.
+
+### Changed
+
+* Impressum and DSGVO updates
+* UI improvements
+
+### Fixed
+
+* Resolved an issue where logged-in users were unable to join multiple teams within the same class.
+
+### Security
+
+* Bump packages to close security iusses.
+
+---
+
+## \[v1.1.1] - 2025-06-04
+
+### Fixed
+
+* fix redis cache not working correctly
+
+---
+
 ## \[v1.1.0] - 2025-06-03
 
 ### Added

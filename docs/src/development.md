@@ -3,7 +3,7 @@
 !!! warning "Docs for develop branch"
     This guide outlines the current development process and is intended for contributing to the develop branch. It may differ from the steps used in the latest stable release.
 
-This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing nodeJS, npm, python3, mkdocs-material, redis, and PostgreSQL.
+This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing bun, python3, mkdocs-material, redis, and PostgreSQL.
 
 !!! warning "License Notice"
     **Please make sure to review [our license](./license.md) before contributing to the project!**  
@@ -20,13 +20,13 @@ This guide outlines the steps necessary to set up your development environment f
 
 ### Installing Redis and PostgreSQL
 
-Recommended versions: PostgreSQL 14.0+ and Redis 7.x (Community Edition < v8).
+Recommended versions: PostgreSQL 14.0+ and Redis v8+ (Redis Open Source).
 
 === "Linux (Ubuntu/Debian)"
 
-    Follow this guide to install Redis CE (< v8): [Install Redis on Linux]. Return here once complete.
+    Follow this guide to install Redis Open Source: [Install Redis on Linux]. Return here once complete.
 
-    [Install Redis on Linux]: https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-linux/
+    [Install Redis on Linux]: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/apt/
 
     Download PostgreSQL here: [Download page of PostgreSQL]. Return here once installed.
 
@@ -45,9 +45,9 @@ Recommended versions: PostgreSQL 14.0+ and Redis 7.x (Community Edition < v8).
 
 === "macOS"
 
-    Follow this guide to install Redis CE (< v8): [Install Redis on MacOS]. Return here once finished.
+    Follow this guide to install Redis Open Source: [Install Redis on MacOS]. Return here once finished.
 
-    [Install Redis on MacOS]: https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-mac-os/
+    [Install Redis on MacOS]: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/homebrew/
 
     Download PostgreSQL here: [Download page of PostgreSQL]. Return here once finished.
 
@@ -78,31 +78,27 @@ Recommended versions: PostgreSQL 14.0+ and Redis 7.x (Community Edition < v8).
 
 ---
 
-### Installing NodeJS and npm
+### Installing Bun
 
-NodeJS and npm are required. *(Skip this step in GitHub Codespaces, as they are pre-installed.)*
+Bun is required for this project.
 
-To check if they're already installed, run:
-
-```zsh
-node --version
-```
+To check if it's already installed, run:
 
 ```zsh
-npm --version
+bun --version
 ```
 
-You should see at least Node v20.19.0 and npm v10.8.2. Refer to [NodeJS Versions] for compatibility details.
+You should see at least Bun 1.2.15 (May 28, 2025). 
 
-[NodeJS Versions]: https://nodejs.org/en/about/previous-releases
+[Bun Versions]: https://bun.sh/blog
 
-If not installed, download from [NodeJS Download].
+If not installed, retrieve the download instuctions from the [Bun Download Page]. For Github Codespaces, follow the `npm`instrcution under the Mac/Linux Tab.
 
-[NodeJS Download]: https://nodejs.org/en/download
+[Bun Download Page]: https://bun.sh/docs/installation
 
 ---
 
-### Clone Repository and Install npm Packages
+### Clone Repository and Install Bun Packages
 
 Visit the repo at [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder) and fork it.
 
@@ -118,7 +114,7 @@ Replace `YOUR_GITHUB_USERNAME` with your actual GitHub username.
 Install all dependencies:
 
 ```zsh
-npm install
+bun install
 ```
 
 ---
@@ -164,11 +160,13 @@ Replace `your_db_name` with your actual database name.
 
 ### Create the `.env` File
 
-To securely manage credentials, create a `.env` file in your project root directory. Replace placeholders (`your_*`) with your actual values.
-You will find an .env example file in .env.example in the root folder.
+To securely manage credentials, create a `.env` file in the root directory of your project. Replace all placeholder values (e.g., `your_*`) with your actual credentials.
 
-- `SESSION_SECRET` and `CLASSCODE` should be secure, consistent passwords.
-- `DSB_USER` and `DSB_PASSWORD` are credentials for [DSBmobile](https://www.dsbmobile.de), used to fetch substitution data. If unavailable, you may use placeholders and set `DSB_ACTIVATED` to false.
+You can use the `.env.example` file located in the root folder as a reference.
+
+* `SESSION_SECRET` and `CLASSCODE` should be secure and consistent values. For local development, you can use simpler values if needed.
+* `DSB_USER` and `DSB_PASSWORD` are the login credentials for [DSBmobile](https://www.dsbmobile.de), used to fetch substitution plan data and integrate it into the timetable.
+  If you don’t have valid credentials, you can leave placeholders and set `DSB_ACTIVATED=false` to disable this feature.
 
 ---
 
@@ -179,10 +177,39 @@ You only need the installation part (timestamp 3:49–5:53).
 
 ---
 
+### Set Up `personalData.html` File
+
+From the project root, navigate to `frontend/src/snippets/personalData/personalData.html.example`. This file provides a template for personal data that will be dynamically injected into frontend pages like the privacy policy or imprint.
+
+Create a new file in the same directory named `personalData.html` (i.e., `frontend/src/snippets/personalData/personalData.html`). Copy the contents of the `.example` file into it, and modify the data as needed. Accurate data isn't required during development, but it's recommended to keep it roughly aligned with production.
+
+---
+
+### Applying databse changes
+
+Run `bunx prisma migrate dev` to apply schema changes from previously pulled commits to your local database.
+You should also run this command during development if the schema has been modified.
+
+If you make changes to the schema while developing—especially on a feature branch—don’t forget to generate a migration file. Otherwise, your changes might be lost or overwritten when switching branches (e.g., to `develop` or `main`).
+
+---
+
 ### Start the Server
 
-Run this dommand to compile the typescript code and start the development server, run:
+Run this command to compile the typescript code and start the development server, ru
 ```zsh
-npm run dev-build
+bun run dev-build
 ```
+
+*Notes*:
+
+* You can manually compile the code by running `bun run build`, or use `bun run build:fe` and `bun run build:be` to compile the frontend and backend separately. After building, start the server with `bun run dev`.
+
+* We recommend using linting tools to maintain code quality. To use ESLint on this project, simply run: `bunx eslint .`.
+
+* As a best practice, format your code using Prettier. You can run `bunx prettier --write PATH/TO/FILE_OR_FOLDER` to format specific files or directories, or use `bunx prettier . --write` to format the entire project.
+
+* When updating the Prisma schema, remember to run `bunx prisma generate` to regenerate the client and TypeScript types in `node_modules/`.
+  Before committing your changes, make sure to run `bunx prisma migrate dev` to create and apply the necessary migration files to your local database—skipping this step may result in broken or inconsistent code.
+
 ---

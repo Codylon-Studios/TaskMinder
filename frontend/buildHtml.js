@@ -27,6 +27,15 @@ async function buildDirectory(src, dest) {
         const html = await fs.readFile(srcFile)
         const $ = cheerio.load(html)
 
+        const titleMap = {
+          about: "Über",
+          events: "Ereignisse",
+          homework: "Hausaufgaben",
+          join: "Beitreten",
+          main: "Übersicht",
+          settings: "Einstellungen",
+        }
+
         $("head").append(`
           <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
           <link rel="manifest" href="/static/manifest.json">
@@ -35,6 +44,9 @@ async function buildDirectory(src, dest) {
           <script src="/global/global.js" type="module" defer></script>
           <link class="preload-style" rel="preload" href="/pages/${fileName}/${fileName}.css" as="style">
           <script src="/pages/${fileName}/${fileName}.js" type="module" defer></script>
+          <title>${titleMap[fileName]} · TaskMinder</title>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
           <script>
             document.addEventListener("DOMContentLoaded", () => {
               for (let pS of document.querySelectorAll(".preload-style")) {
@@ -74,28 +86,39 @@ async function buildDirectory(src, dest) {
         `)
 
         $("body").append(`
-          <div class="load-snippet" data-target="pwaBanner" data-html data-css data-js></div>
+          <div class="load-snippet" data-target="pwaBanner"></div>
+          <div class="load-snippet" data-target="navbar"></div>
+          <div class="load-snippet" data-target="footer"></div>
         `)
 
         $("body").css({ display: "none" })
 
-        let elements = $(".load-snippet").toArray()
-        for (const el of elements) {
-          const target = $(el).data("target")
-          if ($(el).data("html") != undefined) {
-            const snippetPath = path.join(srcFile, "..", "..", "..", "snippets", target, target + ".html")
-            const $new = cheerio.load(await fs.readFile(snippetPath))
-            $(el).replaceWith($new.html())
-          }
-          if ($(el).data("css") != undefined) {
-            $("head").append(`<link class="preload-style" rel="preload" href="/snippets/${target}/${target}.css" as="style">`)
-          }
-          if ($(el).data("js") != undefined) {
-            $("head").append(`<script src="/snippets/${target}/${target}.js" type="module" defer></script>`)
+        let elements;
+        do {
+          elements = $(".load-snippet").toArray()
+          for (const el of elements) {
+            const target = $(el).data("target")
+            const folder = path.join(srcFile, "..", "..", "..", "snippets", target)
+            if (await fs.exists(path.join(folder, target + ".html"))) {
+              const $new = cheerio.load(await fs.readFile(path.join(folder, target + ".html")))
+              if ($(el).data("target-id")) {
+                $(el).replaceWith($new("#" + $(el).data("target-id")).html())
+              }
+              else {
+                $(el).replaceWith($new.html())
+              }
+            }
+            if (await fs.exists(path.join(folder, target + ".scss"))) {
+              $("head").append(`<link class="preload-style" rel="preload" href="/snippets/${target}/${target}.css" as="style">`)
+            }
+            if (await fs.exists(path.join(folder, target + ".ts"))) {
+              $("head").append(`<script src="/snippets/${target}/${target}.js" type="module" defer></script>`)
+            }
           }
         }
+        while (elements.length > 0)
 
-        fs.writeFile(destFile, $.html())
+        await fs.writeFile(destFile, $.html());
       }
       else {
         await fs.copy(srcFile, destFile);

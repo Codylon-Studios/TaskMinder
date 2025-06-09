@@ -2,13 +2,13 @@ import accountService from "../services/accountService";
 import asyncHandler from "express-async-handler";
 import { z } from "zod";
 
-export const registerAccount = asyncHandler(async(req, res, next) => {
+export const registerAccount = asyncHandler(async (req, res, next) => {
   const registerAccountSchema = z.object({
     username: z.string(),
-    password: z.string()
-  })
+    password: z.string(),
+  });
   const parseResult = registerAccountSchema.safeParse(req.body);
-  if (! parseResult.success) {
+  if (!parseResult.success) {
     res.status(400).json({
       error: "Invalid request format",
       expectedFormat: {
@@ -17,10 +17,10 @@ export const registerAccount = asyncHandler(async(req, res, next) => {
           username: { type: "string", pattern: "/^\w{4,20}$/" },
           password: { type: "string" },
         },
-        required: ["username", "password"]
-      }
+        required: ["username", "password"],
+      },
     });
-    return
+    return;
   }
   try {
     await accountService.registerAccount(parseResult.data, req.session);
@@ -28,14 +28,14 @@ export const registerAccount = asyncHandler(async(req, res, next) => {
   } catch (error) {
     next(error);
   }
-})
+});
 
-export const joinClass = asyncHandler(async(req, res, next) => {
+export const joinClass = asyncHandler(async (req, res, next) => {
   const joinClassSchema = z.object({
-    classcode: z.string()
-  })
+    classcode: z.string(),
+  });
   const parseResult = joinClassSchema.safeParse(req.body);
-  if (! parseResult.success) {
+  if (!parseResult.success) {
     res.status(400).json({
       error: "Invalid request format",
       expectedFormat: {
@@ -43,10 +43,10 @@ export const joinClass = asyncHandler(async(req, res, next) => {
         properties: {
           classcode: { type: "string" },
         },
-        required: ["classcode"]
-      }
+        required: ["classcode"],
+      },
     });
-    return
+    return;
   }
   try {
     await accountService.joinClass(parseResult.data.classcode, req.session);
@@ -54,15 +54,15 @@ export const joinClass = asyncHandler(async(req, res, next) => {
   } catch (error) {
     next(error);
   }
-})
+});
 
-export const loginAccount = asyncHandler(async(req, res, next) => {
+export const loginAccount = asyncHandler(async (req, res, next) => {
   const loginAccountSchema = z.object({
     username: z.string(),
-    password: z.string()
-  })
+    password: z.string(),
+  });
   const parseResult = loginAccountSchema.safeParse(req.body);
-  if (! parseResult.success) {
+  if (!parseResult.success) {
     res.status(400).json({
       error: "Invalid request format",
       expectedFormat: {
@@ -71,10 +71,10 @@ export const loginAccount = asyncHandler(async(req, res, next) => {
           username: { type: "string", pattern: "/^\w{4,20}$/" },
           password: { type: "string" },
         },
-        required: ["username", "password"]
-      }
+        required: ["username", "password"],
+      },
     });
-    return
+    return;
   }
   try {
     await accountService.loginAccount(parseResult.data, req.session);
@@ -82,7 +82,7 @@ export const loginAccount = asyncHandler(async(req, res, next) => {
   } catch (error) {
     next(error);
   }
-})
+});
 
 export const logoutAccount = asyncHandler(async (req, res, next) => {
   try {
@@ -92,14 +92,14 @@ export const logoutAccount = asyncHandler(async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-})
+});
 
-export const deleteAccount = asyncHandler(async(req, res, next) => {
+export const deleteAccount = asyncHandler(async (req, res, next) => {
   const deleteAccountSchema = z.object({
-    password: z.string()
-  })
+    password: z.string(),
+  });
   const parseResult = deleteAccountSchema.safeParse(req.body);
-  if (! parseResult.success) {
+  if (!parseResult.success) {
     res.status(400).json({
       error: "Invalid request format",
       expectedFormat: {
@@ -107,10 +107,10 @@ export const deleteAccount = asyncHandler(async(req, res, next) => {
         properties: {
           password: { type: "string" },
         },
-        required: ["password"]
-      }
+        required: ["password"],
+      },
     });
-    return
+    return;
   }
   try {
     await accountService.deleteAccount(parseResult.data.password, req.session);
@@ -119,42 +119,44 @@ export const deleteAccount = asyncHandler(async(req, res, next) => {
   } catch (error) {
     next(error);
   }
-})
+});
 
-export const getAuth = asyncHandler(async(req, res, next) => {
+export const getAuth = asyncHandler(async (req, res, next) => {
   try {
     const response = await accountService.getAuth(req.session);
     res.status(200).json(response);
   } catch (error) {
     next(error);
   }
-})
+});
 
-export const checkUsername = asyncHandler(async(req, res, next) => {
+export const checkUsername = asyncHandler(async (req, res, next) => {
   const checkUsernameSchema = z.object({
-    username: z.string()
-  })
+    username: z.string(),
+  });
   const parseResult = checkUsernameSchema.safeParse(req.body);
-  if (! parseResult.success) {
+  if (!parseResult.success) {
     res.status(400).json({
       error: "Invalid request format",
       expectedFormat: {
         type: "object",
         properties: {
-          username: { type: "string", pattern: "/^\w{4,20}$/" }
+          username: { type: "string", pattern: "/^\w{4,20}$/" },
         },
-        required: ["username"]
-      }
+        required: ["username"],
+      },
     });
-    return
+    return;
   }
   try {
-    const response = await accountService.checkUsername(parseResult.data.username);
+    const response = await accountService.checkUsername(
+      parseResult.data.username
+    );
     res.status(200).json(response);
   } catch (error) {
-    next(error)
+    next(error);
   }
-})
+});
 
 export default {
   registerAccount,
@@ -163,5 +165,5 @@ export default {
   logoutAccount,
   deleteAccount,
   getAuth,
-  checkUsername
+  checkUsername,
 };

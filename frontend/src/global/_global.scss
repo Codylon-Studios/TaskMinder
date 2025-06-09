@@ -22,20 +22,21 @@ $fa-font-path: "/vendor/fontawesome/fonts";
 
 @import "btn-back";
 
-$custom-btn-variants: (
-  semivisible,
-  tertiary,
-);
+$custom-btn-variants: (semivisible, tertiary);
 
-$semivisible-hover-light: rgba(black, 0.074);
+$semivisible-normal-light: transparent;
+$semivisible-hover-light: rgba(black, 0.11);
 $semivisible-active-light: rgba(black, 0.16);
-$tertiary-hover-light: rgba(black, 0.148);
-$tertiary-active-light: rgba(black, 0.2);
+$tertiary-normal-light: #eee; //#eee;//TODO
+$tertiary-hover-light: #d9d9d9; // #d9d9d9;//TODO
+$tertiary-active-light: #cccccc; // #cccccc;//TODO
 
-$semivisible-hover-dark: rgba(white, 0.08);
+$semivisible-normal-dark: transparent;
+$semivisible-hover-dark: rgba(white, 0.1);
 $semivisible-active-dark: rgba(white, 0.15);
-$tertiary-hover-dark: rgba(white, 0.11);
-$tertiary-active-dark: rgba(white, 0.16);
+$tertiary-normal-dark: #2b3035;
+$tertiary-hover-dark: #393d41; //TODO
+$tertiary-active-dark: #45484b; //TODO
 
 body {
   font-family: "Quicksand", Arial, Helvetica, sans-serif;
@@ -43,15 +44,19 @@ body {
   font-weight: 500;
 
   --btn-color: #212529;
+  --btn-semivisible-normal: #{$semivisible-normal-light};
   --btn-semivisible-hover: #{$semivisible-hover-light};
   --btn-semivisible-active: #{$semivisible-active-light};
+  --btn-tertiary-normal: #{$tertiary-normal-light};
   --btn-tertiary-hover: #{$tertiary-hover-light};
   --btn-tertiary-active: #{$tertiary-active-light};
 
   &[data-bs-theme="dark"] {
     --btn-color: #dee2e6;
+    --btn-tertiary-normal: #{$semivisible-normal-dark};
     --btn-semivisible-hover: #{$semivisible-hover-dark};
     --btn-semivisible-active: #{$semivisible-active-dark};
+    --btn-tertiary-normal: #{$tertiary-normal-dark};
     --btn-tertiary-hover: #{$tertiary-hover-dark};
     --btn-tertiary-active: #{$tertiary-active-dark};
   }
@@ -87,7 +92,7 @@ body {
   .btn-#{$variant} {
     @include button-variant(white, $primary);
     border: none;
-    background-color: transparent;
+    background-color: var(--btn-#{$variant}-normal);
     color: var(--btn-color) !important;
 
     &:hover {
@@ -99,15 +104,15 @@ body {
     }
 
     &.active {
-      background-color: transparent;
+      background-color: var(--btn-#{$variant}-normal);
     }
 
     &.show {
-      background-color: transparent;
+      background-color: var(--btn-#{$variant}-normal);
     }
 
     &:focus {
-      background-color: transparent;
+      background-color: var(--btn-#{$variant}-normal);
     }
 
     &:focus-visible {
@@ -131,7 +136,9 @@ body {
 
 @each $name, $color in $colors {
   .line-through-#{$name} {
-    text-decoration: line-through solid $color 0.25em;
+    text-decoration-line: line-through;
+    text-decoration-color: $color;
+    text-decoration-thickness: 0.25em;
   }
   .text-#{$name} {
     color: $color;
@@ -156,13 +163,28 @@ body {
   }
 }
 
+footer a {
+  @extend .link-subtle;
+}
+
 .filter-info-circle {
-  @extend .position-absolute, .top-0, .start-100, .translate-middle, .p-2, .bg-primary, .border, .border-light, .border-1, .rounded-circle;
+  @extend .position-absolute,
+    .top-0,
+    .start-100,
+    .translate-middle,
+    .p-2,
+    .bg-primary,
+    .border,
+    .border-light,
+    .border-1,
+    .rounded-circle;
 }
 
 // Styles exclusively for iOS devices
 @supports (-webkit-touch-callout: none) {
-  b, .fw-semibold, .fw-bold {
+  b,
+  .fw-semibold,
+  .fw-bold {
     letter-spacing: -1px;
   }
 }

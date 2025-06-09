@@ -2,15 +2,15 @@ import subjectService from "../services/subjectService";
 import asyncHandler from "express-async-handler";
 import { z } from "zod";
 
-export const getSubjectData = asyncHandler(async(req, res, next) => {
+export const getSubjectData = asyncHandler(async (req, res, next) => {
   try {
     const timetableData = await subjectService.getSubjectData();
     res.status(200).json(timetableData);
   } catch (error) {
     next(error);
   }
-})
-export const setSubjectData = asyncHandler(async(req, res, next) => {
+});
+export const setSubjectData = asyncHandler(async (req, res, next) => {
   const setSubjectsSchema = z.object({
     subjects: z.array(
       z.object({
@@ -23,10 +23,10 @@ export const setSubjectData = asyncHandler(async(req, res, next) => {
         teacherNameShort: z.string(),
         teacherNameSubstitution: z.array(z.string()).nullable(),
       })
-    )
-  })
+    ),
+  });
   const parseResult = setSubjectsSchema.safeParse(req.body);
-  if (! parseResult.success) {
+  if (!parseResult.success) {
     res.status(400).json({
       error: "Invalid request format",
       expectedFormat: {
@@ -37,29 +37,36 @@ export const setSubjectData = asyncHandler(async(req, res, next) => {
             items: {
               type: "object",
               properties: {
-                subjectId: { anyOf: [ { type: "number"}, { const: "" }] },
+                subjectId: { anyOf: [{ type: "number" }, { const: "" }] },
                 subjectNameLong: { type: "string" },
                 subjectNameShort: { type: "string" },
                 subjectNameSubstitution: {
                   type: ["array", "null"],
-                  items: { type: "string" }
+                  items: { type: "string" },
                 },
-                teacherGender: { enum: [ "d", "w", "m" ] },
+                teacherGender: { enum: ["d", "w", "m"] },
                 teacherNameLong: { type: "string" },
                 teacherNameShort: { type: "string" },
                 teacherNameSubstitution: {
                   type: ["array", "null"],
-                  items: { type: "string" }
+                  items: { type: "string" },
                 },
               },
-              required: ["subjectId", "subjectNameLong", "subjectNameShort", "teacherGender", "teacherNameLong", "teacherNameShort"]
-            }
-          }
+              required: [
+                "subjectId",
+                "subjectNameLong",
+                "subjectNameShort",
+                "teacherGender",
+                "teacherNameLong",
+                "teacherNameShort",
+              ],
+            },
+          },
         },
-        required: ["subjects"]
-      }
+        required: ["subjects"],
+      },
     });
-    return
+    return;
   }
   try {
     await subjectService.setSubjectData(parseResult.data.subjects);
@@ -67,9 +74,9 @@ export const setSubjectData = asyncHandler(async(req, res, next) => {
   } catch (error) {
     next(error);
   }
-})
+});
 
 export default {
   getSubjectData,
-  setSubjectData
+  setSubjectData,
 };

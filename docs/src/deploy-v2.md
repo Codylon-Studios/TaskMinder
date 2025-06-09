@@ -4,7 +4,7 @@
 ## What you'll need
 
 * A valid domain (e.g. `codylon.de`)
-* A server running Ubuntu (≥ 20.04.6 LTS) with sudo or root access
+* A server running Ubuntu (≥ 24.04 LTS) with sudo or root access
 * The codebase of TaskMinder from [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)
 
 ---
@@ -184,7 +184,7 @@ Give the user access to the project folder:
 
 ```bash
 sudo chown -R ubuntu:ubuntu /opt/TaskMinder
-# Set correct ownership for the Docker container (node user)
+# Set correct ownership for the Docker container (bun user)
 sudo chown -R 1000:1000 ./db-backups
 ```
 
@@ -224,6 +224,28 @@ Before starting the application, create the following **text files inside the `d
 | `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.    |
 | `database_url.txt` | Provides the database URL for Prisma ORM:  `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`   |
 
+---
+
+## 7. Setup `personalData.html`
+
+1. **Navigate to the directory** where the example file is located:
+
+   ```bash
+   cd /path/to/project/frontend/src/snippets/personalData/
+   ```
+
+2. **Copy the example file to create the production file:**
+
+   ```bash
+   sudo cp personalData.html.example personalData.html
+   ```
+
+3. **Edit the new file with `vi` to update the personal data:**
+
+   ```bash
+   sudo vi personalData.html
+   ```
+   
 ---
 
 ## 8. Run Docker Compose

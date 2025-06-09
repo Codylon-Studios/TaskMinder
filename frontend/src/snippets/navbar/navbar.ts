@@ -1,10 +1,10 @@
-import { csrfToken, updateAll, userDataLoaded } from "../../global/global.js"
+import { csrfToken, updateAll, userDataLoaded } from "../../global/global.js";
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 async function registerAccount(username: string, password: string) {
-  let data = {
-      username: username,
-      password: password
+  const data = {
+    username: username,
+    password: password,
   };
   let hasResponded = false;
 
@@ -22,17 +22,16 @@ async function registerAccount(username: string, password: string) {
       user.trigger("login");
       user.username = username;
     },
-    error: (xhr) => {
+    error: xhr => {
       if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
-      }
-      else {
+      } else {
         $navbarToasts.unknownError.toast("show");
       }
     },
     complete: () => {
       hasResponded = true;
-    }
+    },
   });
 
   setTimeout(() => {
@@ -44,9 +43,9 @@ async function registerAccount(username: string, password: string) {
 
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
 async function loginAccount(username: string, password: string) {
-  let data = {
-      username: username,
-      password: password
+  const data = {
+    username: username,
+    password: password,
   };
   let hasResponded = false;
 
@@ -64,21 +63,19 @@ async function loginAccount(username: string, password: string) {
       user.trigger("login");
       user.username = username;
     },
-    error: (xhr) => {
+    error: xhr => {
       if (xhr.status === 401) {
         $(".login-error-invalid-password").removeClass("d-none");
         $(".login-error-invalid-password").addClass("d-flex");
-      }
-      else if (xhr.status === 500) {
+      } else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
-      }
-      else {
+      } else {
         $navbarToasts.unknownError.toast("show");
       }
     },
     complete: () => {
       hasResponded = true;
-    }
+    },
   });
 
   setTimeout(() => {
@@ -86,7 +83,7 @@ async function loginAccount(username: string, password: string) {
       $navbarToasts.serverError.toast("show");
     }
   }, 1000);
-};
+}
 
 //LOGOUT -- LOGOUT -- LOGOUT
 async function logoutAccount() {
@@ -102,17 +99,16 @@ async function logoutAccount() {
       $("#logout-success-toast").toast("show");
       user.trigger("logout");
     },
-    error: (xhr) => {
+    error: xhr => {
       if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
-      }
-      else {
+      } else {
         $navbarToasts.unknownError.toast("show");
       }
     },
     complete: () => {
       hasResponded = true;
-    }
+    },
   });
 
   setTimeout(() => {
@@ -123,10 +119,10 @@ async function logoutAccount() {
 }
 
 function checkExistingUsername(username: string) {
-  let data = { username: username };
+  const data = { username: username };
   let hasResponded = false;
 
-  return new Promise(async (resolve) => {
+  return new Promise(async resolve => {
     $.ajax({
       url: "/account/checkusername",
       type: "POST",
@@ -134,28 +130,27 @@ function checkExistingUsername(username: string) {
       headers: {
         "X-CSRF-Token": await csrfToken(),
       },
-      success: (res) => {
+      success: res => {
         resolve(res);
       },
-      error: (xhr) => {
+      error: xhr => {
         if (xhr.status === 500) {
           $navbarToasts.serverError.toast("show");
-        }
-        else {
+        } else {
           $navbarToasts.unknownError.toast("show");
         }
       },
       complete: () => {
         hasResponded = true;
-      }
+      },
     });
-  
+
     setTimeout(() => {
       if (!hasResponded) {
         $navbarToasts.serverError.toast("show");
       }
     }, 1000);
-  })
+  });
 }
 
 function resetLoginRegisterModal() {
@@ -166,13 +161,15 @@ function resetLoginRegisterModal() {
   $(".login-password").val("");
   $(".register-password").val("");
   $(".register-password").val("");
-  
+
   $(".login-register-next-button").removeClass("d-none");
   $(".login-register-back-button").addClass("d-none");
   $(".login-button").addClass("d-none");
   $(".register-button").addClass("d-none");
 
-  $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
+  $(".login-register-error-invalid-username")
+    .addClass("d-none")
+    .removeClass("d-flex");
 
   $(".login-error-invalid-password").addClass("d-none");
   $(".login-error-invalid-password").removeClass("d-flex");
@@ -186,29 +183,40 @@ function checkUsername(username: string) {
 }
 
 function checkSecurePassword(password: string) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(
+    password
+  );
 }
 
 export const $navbarToasts = {
   serverError: $("#error-server-toast"),
   unknownError: $("#unknown-error-toast"),
   notLoggedIn: $("#not-logged-in-toast"),
-}
+};
 
 $(async () => {
   updateAll();
 
-  await userDataLoaded()
+  await userDataLoaded();
   if (user.classJoined) {
-    $(".class-joined-content").removeClass("d-none")
-    $(".navbar-home-link").attr("href", "/main")
+    $(".class-joined-content").removeClass("d-none");
+    $(".navbar-home-link").attr("href", "/main");
   }
-  if (["/main/", "/main", "/homework/", "/homework", "/events/", "/events"].includes(location.pathname)) {
-    $(".class-page-content").removeClass("d-none")
+  if (
+    [
+      "/main/",
+      "/main",
+      "/homework/",
+      "/homework",
+      "/events/",
+      "/events",
+    ].includes(location.pathname)
+  ) {
+    $(".class-page-content").removeClass("d-none");
   }
 });
 
-type UserEventName = "login" | "logout"
+type UserEventName = "login" | "logout";
 type UserEventCallback = (...args: any[]) => void;
 
 export const user = {
@@ -218,10 +226,10 @@ export const user = {
   _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
 
   on(event: UserEventName, callback: UserEventCallback) {
-    if (! this._eventListeners[event]) {
+    if (!this._eventListeners[event]) {
       this._eventListeners[event] = [];
     }
-    this._eventListeners[event].push(callback)
+    this._eventListeners[event].push(callback);
   },
 
   trigger(event: UserEventName, ...args: any[]) {
@@ -229,8 +237,8 @@ export const user = {
     if (callbacks) {
       callbacks.forEach(cb => cb(...args));
     }
-  }
-}
+  },
+};
 
 user.on("login", () => {
   user.loggedIn = true;
@@ -241,12 +249,12 @@ user.on("logout", () => {
   user.username = null;
 });
 
-if (! ["/join/", "/join"].includes(location.pathname)) {
+if (!["/join/", "/join"].includes(location.pathname)) {
   user.on("login", () => {
     $("#login-register-button").addClass("d-none");
     $("#logout-button").removeClass("d-none");
   });
-  
+
   user.on("logout", () => {
     $("#login-register-button").removeClass("d-none");
     $("#logout-button").addClass("d-none");
@@ -254,7 +262,7 @@ if (! ["/join/", "/join"].includes(location.pathname)) {
 }
 
 // Check if the user is logged in for the first time
-$.get("/account/auth", (response) => {
+$.get("/account/auth", response => {
   if (response.loggedIn) {
     user.loggedIn = true;
     user.username = response.account.username;
@@ -279,14 +287,14 @@ $(() => {
   //LOGIN -- LOGOUT -- REGISTER
   //
   $(".login-button").on("click", () => {
-    let username = $(".login-register-username").val()?.toString() ?? "";
-    let password = $(".login-password").val()?.toString() ?? "";
+    const username = $(".login-register-username").val()?.toString() ?? "";
+    const password = $(".login-password").val()?.toString() ?? "";
     loginAccount(username, password);
   });
 
   $(".register-button").on("click", () => {
-    let username = $(".login-register-username").val()?.toString() ?? "";
-    let password = $(".register-password").val()?.toString() ?? "";
+    const username = $(".login-register-username").val()?.toString() ?? "";
+    const password = $(".register-password").val()?.toString() ?? "";
     registerAccount(username, password);
   });
 
@@ -305,29 +313,32 @@ $(() => {
   // Check username
   $(".login-register-username").on("input", function () {
     // Sync multiple instances of login possibilites
-    $(".login-register-username").val($(this).val() ?? "")
+    $(".login-register-username").val($(this).val() ?? "");
 
     if (checkUsername($(".login-register-username").val()?.toString() ?? "")) {
       $(".login-register-next-button").removeClass("disabled");
-      $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
+      $(".login-register-error-invalid-username")
+        .addClass("d-none")
+        .removeClass("d-flex");
     }
   });
 
   $(".login-register-username").on("change", function () {
     // Sync multiple instances of login possibilites
-    $(".login-register-username").val($(this).val() ?? "")
+    $(".login-register-username").val($(this).val() ?? "");
 
-    if (! checkUsername($(".login-register-username").val()?.toString() ?? "")) {
+    if (!checkUsername($(".login-register-username").val()?.toString() ?? "")) {
       $(".login-register-next-button").addClass("disabled");
-      $(".login-register-error-invalid-username").removeClass("d-none").addClass("d-flex");
+      $(".login-register-error-invalid-username")
+        .removeClass("d-none")
+        .addClass("d-flex");
     }
   });
-
 
   // Check login password
   $(".login-password").on("input", function () {
     // Sync multiple instances of login possibilites
-    $(".login-password").val($(this).val() ?? "")
+    $(".login-password").val($(this).val() ?? "");
 
     $(".login-error-invalid-password").addClass("d-none");
     $(".login-error-invalid-password").removeClass("d-flex");
@@ -337,7 +348,7 @@ $(() => {
 
   $(".register-password").on("input", function () {
     // Sync multiple instances of login possibilites
-    $(".register-password").val($(this).val() ?? "")
+    $(".register-password").val($(this).val() ?? "");
 
     if (checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
       $(".register-error-insecure-password").addClass("d-none");
@@ -346,17 +357,16 @@ $(() => {
   });
 
   $(".register-password").on("change", () => {
-    if (! checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
+    if (!checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
       $(".register-error-insecure-password").removeClass("d-none");
       $(".register-error-insecure-password").addClass("d-flex");
     }
   });
 
-
   // Check repeated password
   $(".register-password-repeat").on("input", function () {
     // Sync multiple instances of login possibilites
-    $(".register-password-repeat").val($(this).val() ?? "")
+    $(".register-password-repeat").val($(this).val() ?? "");
 
     if ($(".register-password").val() == $(".register-password-repeat").val()) {
       $(".register-button").removeClass("disabled");
@@ -376,16 +386,20 @@ $(() => {
   $(".login-register-next-button").on("click", async () => {
     $(".login-register-back-button").removeClass("d-none");
 
-    $(".login-register-element, .login-register-next-button").addClass("d-none");
+    $(".login-register-element, .login-register-next-button").addClass(
+      "d-none"
+    );
 
-    checkExistingUsername($(".login-register-username").val()?.toString() ?? "").then(response => {
+    checkExistingUsername(
+      $(".login-register-username").val()?.toString() ?? ""
+    ).then(response => {
       if (response) {
         $(".login-element").removeClass("d-none");
       } else {
         $(".register-element").removeClass("d-none");
       }
-    })
+    });
   });
 
   $(".login-register-back-button").on("click", resetLoginRegisterModal);
-})
+});

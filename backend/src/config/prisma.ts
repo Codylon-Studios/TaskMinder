@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 import pg from "pg";
 
 // Make PostgreSQL BIGINT (OID 20) return a JS number instead of a string

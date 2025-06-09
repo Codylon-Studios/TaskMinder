@@ -34,7 +34,8 @@
     opacity: 30%;
   }
 
-  &.text-body-tertiary:not(.days-overview-today):not(.days-overview-other-month) span {
+  &.text-body-tertiary:not(.days-overview-today):not(.days-overview-other-month)
+    span {
     opacity: 60%;
   }
 
@@ -138,5 +139,5 @@
 }
 
 #filter-homework-mode {
-  padding: .2rem 2rem .2rem .5rem;
+  padding: 0.2rem 2rem 0.2rem 0.5rem;
 }
