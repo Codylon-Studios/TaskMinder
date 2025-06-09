@@ -1,18 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 
 <head>
-  <meta charset="utf-8">
   <meta name="description" content="See and edit your homework here .">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TaskMinder</title>
 </head>
 
 <body>
-  <div class="load-snippet" data-target="navbar" data-html data-js></div>
+  <div class="load-snippet" data-target="richTextarea"></div>
+  <div class="load-snippet" data-target="colorPicker"></div>
+
   <div class="container">
     <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
       <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary d-none" id="show-add-homework-button">
+          <i class="fa-solid fa-plus"></i>
+          Neu
+        </button>
         <input type="checkbox" class="btn-check" id="edit-toggle">
         <label class="btn btn-outline-secondary d-none" for="edit-toggle" id="edit-toggle-label">
           <i class="fa-solid fa-edit"></i>
@@ -73,11 +76,6 @@
       </button>
     </div>
 
-    <button type="button" class="btn btn-primary d-none" id="show-add-homework-button">
-      <i class="fa-solid fa-plus"></i>
-      Neu
-    </button>
-
     <div class="container-fluid mt-3" id="homework-list">
       <!--Gets filled-->
     </div>
@@ -104,7 +102,7 @@
               <label for="add-homework-content" class="form-label">
                 Füge eine Beschreibung für die Hausaufgabe hinzu
               </label>
-              <textarea class="form-control add-homework-input" id="add-homework-content" placeholder="Deine Beschreibung"></textarea>
+              <textarea class="rich-textarea add-homework-input" id="add-homework-content"></textarea>
             </div>
 
             <div class="mb-3">
@@ -159,7 +157,7 @@
               <label for="edit-homework-content" class="form-label">
                 Füge eine Beschreibung für die Hausaufgabe hinzu
               </label>
-              <textarea type="text" class="form-control edit-homework-input" id="edit-homework-content" placeholder="Deine Beschreibung"></textarea>
+              <textarea type="text" class="rich-textarea edit-homework-input" id="edit-homework-content" placeholder="Deine Beschreibung"></textarea>
             </div>
 
             <div class="mb-3">
@@ -241,6 +239,6 @@
       </div>
     </div>
   </div>
-  <div class="load-snippet" data-target="footer" data-html data-js></div>
+  <div class="load-snippet" data-target="bottombar"></div>
 </body>
 </html>

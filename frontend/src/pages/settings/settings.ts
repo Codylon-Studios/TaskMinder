@@ -156,7 +156,7 @@ async function updateEventTypeList() {
                 type="text" value="${$.formatHtml(eventType.name)}" placeholder="${$.formatHtml(eventType.name)}" data-id="${eventTypeId}">
               <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
             </div>
-            <input type="color" value="${$.formatHtml(eventType.color)}" class="color-picker event-type-color-input" data-id="${eventTypeId}">
+            <input type="text" value="${$.formatHtml(eventType.color)}" class="color-picker event-type-color-input" data-id="${eventTypeId}">
           </div>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none me-2 event-type-renamed" data-id="${eventTypeId}">
             Umbenannt
@@ -772,11 +772,11 @@ $("#display-footer input").on("click", function () {
   localStorage.setItem("displayFooter", displayFooter)
   if (displayFooter) {
     $("footer").show()
-    $("body").css({paddingBottom: 0})
+    $("body").css({paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + "px"})
   }
   else {
     $("footer").hide()
-    $("body").css({paddingBottom: $("body").css("paddingTop")})
+    $("body").css({paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + 70 + "px"})
   }
 })
 
@@ -801,7 +801,7 @@ $("#team-selection-save").on("click", async () => {
   let newJoinedTeamsData: JoinedTeamsData = []
   $("#team-selection-list input").each(function () {
     if ($(this).prop("checked")) {
-      newJoinedTeamsData.push(Number($(this).data("id")))
+      newJoinedTeamsData.push(parseInt($(this).data("id")))
     }
   })
 
@@ -1026,7 +1026,7 @@ $("#new-event-type").on("click", () => {
               Der Name darf nicht leer sein!
             </div>
           </div>
-          <input type="color" value="#3bb9ca" class="color-picker event-type-color-input" data-id="">
+          <input type="text" value="#3bb9ca" class="color-picker event-type-color-input" data-id="">
         </div>
         <span class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</span>
       </div

@@ -69,39 +69,47 @@ function replaceColorPickers() {
     popup.find(`.color-picker-option[data-color="${$.formatHtml(startColor)}"]`).addClass("selected");
     popup.find(".color-picker-hex").val(startColor);
 
+    if ($(this).attr("data-show-auto-option") == "true") {
+      popup.find(".color-picker-auto-option-wrapper").addClass("d-flex").removeClass("d-none")
+    }
+
     popup.hide();
-    $("body").append(popup);
+    trigger.css({ zIndex: 0 });
+    trigger.append(popup);
 
     trigger.on("click", function (ev) {
       ev.stopPropagation();
       $(".color-picker-popup").not(popup).hide();
       let offset = trigger.offset() ?? { left: 0, top: 0 };
-      let yBelow = offset.top + (trigger.outerHeight() ?? 0) + 4;
-      let yAbove = offset.top - (popup.outerHeight() ?? 0) - 4;
-      let xLeft = offset.left;
-      let xRight = offset.left + (trigger.outerWidth() ?? 0) - (popup.outerWidth() ?? 0);
+      let yBelow = (trigger.outerHeight() ?? 0) + 4;
+      let yAbove = - (popup.outerHeight() ?? 0) - 4;
+      let xRight = 0;
+      let xLeft = (trigger.outerWidth() ?? 0) - (popup.outerWidth() ?? 0);
 
       let positionY = "below"; // Standard position
-      if (yBelow + (popup.outerHeight() ?? 0) - ($(window).scrollTop() ?? 0) > ($(window).height() ?? 0) && // Not enough space below
-         (yAbove - ($(window).scrollTop() ?? 0) >= 0)) { // Enough space above
+      if (yBelow + offset.top + (popup.outerHeight() ?? 0) - ($(window).scrollTop() ?? 0) > ($(window).height() ?? 0) && // Not enough space below
+         (yAbove + offset.top - ($(window).scrollTop() ?? 0) >= 0)) { // Enough space above
         positionY = "above";
       }
 
-      let positionX = "left"; // Standard position
-      if (xLeft + (popup.outerWidth() ?? 0) > ($(window).width() ?? 0) && // Not enough space on the left
-         (xRight - (popup.outerWidth() ?? 0) < 0)) { // Enough space on the right
-        positionX = "right";
+      let positionX = "right"; // Standard position
+      if (xRight + offset.left + (popup.outerWidth() ?? 0) > ($(window).width() ?? 0) && // Not enough space on the right
+         (xLeft + offset.left > 0)) { // Enough space on the left
+        positionX = "left";
       }
 
+      $(".color-picker-trigger").css({ zIndex: 0 });
+      trigger.css({ zIndex: "1" });
       popup.css({
         top: (positionY == "below") ? yBelow : yAbove,
-        left: (positionX == "left") ? xLeft : xRight,
+        left: (positionX == "right") ? xRight : xLeft,
       }).toggle();
 
       setHslSelection(input.val() as string);
     });
 
     function setHslSelection(hexColor: string) {
+      if (hexColor == "Automatisch") return
       let hsvColor = rgbToHsv(hexToRgb(hexColor));
       selectedHslColor = hsvColor;
       markerHue.css({top: hsvColor.hue / 360 * (hueContainer.outerHeight() ?? 0)});
@@ -241,24 +249,25 @@ function replaceColorPickers() {
 
     popup.find(".color-picker-hex").on("change", function () {
       let color = $(this).val()?.toLocaleString() ?? "#3bb9ca";
-      if (! /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) {
-        $(this).addClass("is-invalid");
-      }
-      else {
+      if (/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) || (color == "Automatisch" && input.attr("data-show-auto-option") == "true")) {
         $(this).removeClass("is-invalid");
         if (/^([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) {
           color = "#" + color;
+          color = color.toLowerCase();
         }
         if (/^#[0-9a-fA-F]{3}$/.test(color)) {
           color = "#" + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
+          color = color.toLowerCase();
         }
-        color = color.toLowerCase();
         $(this).val(color);
         popup.find(".color-picker-option").removeClass("selected");
         trigger.css("background-color", color);
         input.val(color).trigger("change");
         popup.find(`.color-picker-option[data-color="${$.formatHtml(color)}"]`).addClass("selected");
         setHslSelection(color);
+      }
+      else {
+        $(this).addClass("is-invalid");
       }
     });
 
@@ -272,10 +281,15 @@ function replaceColorPickers() {
       setHslSelection(color);
     });
 
+    popup.on("click", (ev) => {
+      ev.stopPropagation();
+      suppressClick = false;
+    });
+
     $(document).on("click", (ev) => {
-      if (! $(ev.target).closest(".color-picker-popup").length &&
-         ! suppressClick) {
+      if (! $(ev.target).closest(".color-picker-popup").length && ! suppressClick) {
         popup.hide();
+        trigger.css({ zIndex: 0 });
       }
       suppressClick = false;
     });

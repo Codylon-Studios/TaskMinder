@@ -368,12 +368,12 @@ export const eventService = {
         }
 
         body {
-          span.event-#{"" + $name}, a.event-#{"" + $name} {
+          span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
             color: $color-darker;
           }
 
           &[data-bs-theme="dark"] {
-            span.event-#{"" + $name}, a.event-#{"" + $name} {
+            span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
               color: $color-lighter;
             }
           }

@@ -6,14 +6,16 @@ $fa-font-path: "/assets/fonts/fontawesome";
 .color-picker-trigger {
   width: 2rem;
   height: 2rem;
+  position: relative;
 }
 
 .color-picker-popup {
   @extend .position-absolute, .rounded, .p-2, .shadow, .flex-column;
+  cursor: auto;
   background: var(--bs-body-bg);
-  border: 1px solid var(--btn-tertiary-active);
+  border: 1px solid $card-border-color;
   display: flex;
-  z-index: 1;
+  z-index: 1100;
 }
 
 .color-picker-hsl-wrapper {
@@ -75,7 +77,7 @@ $fa-font-path: "/assets/fonts/fontawesome";
   display: flex !important;
   justify-content: center;
 
-  &.selected {
+  &:not(.color-picker-auto-option).selected {
     @extend .fa-solid;
     color: #fff;
     --fa: "\f00c";
@@ -106,6 +108,20 @@ $color-picker-colors: (
   }
 }
 
-input[type="color"].color-picker {
+.color-picker-auto-option-wrapper {
+  justify-content: center;
+
+  & .color-picker-auto-option {
+    width: 6.25rem;
+    font-size: 0.9rem;
+    line-height: 1.75rem;
+
+    &.selected {
+      font-weight: 900;
+    }
+  }
+}
+
+input[type="text"].color-picker {
   display: none;
 }

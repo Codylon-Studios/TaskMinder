@@ -1,0 +1,51 @@
+<div id="about-list">
+  <div class="mb-1">
+    <i class="fas fa-balance-scale me-1"></i>
+    This project is licensed under
+    <a href="https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE" target="_blank" class="text-primary">this license</a>.
+  </div>
+  <div class="mb-1">
+    <i class="far fa-copyright me-2"></i>
+    Copyright © 2025 Codylon-Studios
+  </div>
+  <div class="mb-1">
+    <i class="fa-brands fa-github me-2"></i>
+    GitHub: 
+    <a href="https://github.com/Codylon-Studios/TaskMinder" target="_blank" class="text-primary">Codylon-Studios/TaskMinder</a>
+  </div>
+  <div>
+    <i class="fa-regular fa-envelope me-2"></i>
+    Kontakt: 
+    <a href="mailto:codylon.studios@gmail.com">codylon.studios@gmail.com</a>
+  </div>
+</div>
+
+<div id="copyright">
+  © 2025 Your Company
+</div>
+
+<div id="impressum">
+  <address>
+  <strong>Your name</strong><br>
+  Your address<br>
+  E-Mail: <a href="mailto:example@example.com">example@example.com</a>
+</address>
+</div>
+
+<div id="privacy-policy">
+  <address>
+  <strong>Your name</strong><br>
+  Your address<br>
+  E-Mail: <a href="mailto:example@example.com">example@example.com</a>
+</address>
+</div>
+
+<div id="email-address">
+  <a href="mailto:codylon.studios@gmail.com">codylon.studios@gmail.com</a>
+</div>
+
+<div id="sourcecode-links">
+  <a href="https://github.com/Codylon-Studios/TaskMinder" target="_blank">Github Repository</a>
+  <br>
+  <a href="https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE" target="_blank">Lizenz</a>
+</div>

@@ -3,6 +3,7 @@ import { addUpdateAllFunction, dateToMs, eventData, eventTypeData, isSameDay, jo
          reloadAll, 
          csrfToken} from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 const updateEventList = runOnce(async (): Promise<void> => {
   // Clear the list
@@ -35,7 +36,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
     // Filter by min. date
     if ($("#filter-date-from").val() != "") {
       let filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-      if (filterDate > (event.endDate ?? event.startDate)) {
+      if (filterDate > parseInt(event.endDate ?? event.startDate)) {
         continue;
       }
     }
@@ -43,7 +44,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
     // Filter by max. date
     if ($("#filter-date-until").val() != "") {
       let filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
-      if (filterDate < event.startDate) {
+      if (filterDate < parseInt(event.startDate)) {
         continue;
       }
     }
@@ -58,17 +59,17 @@ const updateEventList = runOnce(async (): Promise<void> => {
       $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
-            <div class="d-flex flex-column me-3">
-              <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
+            <div class="d-flex flex-column me-3 event-content-wrapper">
+              <span class="fw-bold event-${eventTypeId} event-title" ${(editEnabled) ? "" : "style='margin-right: 0'"}>${$.formatHtml(name)}</span>
               <b>${startDate}${(endDate) ? ` - ${endDate}` : ""}${(lesson) ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b>
-              <span class="event-description">${$.formatHtml(description ?? "")}</span>
+              <span class="event-description"></span>
             </div>
             <div class="event-edit-options ${(editEnabled) ? "" : "d-none"} position-absolute end-0 top-0 m-2">
-              <button class="btn btn-sm btn-tertiary event-edit" data-id="${eventId}">
-                <i class="fa-solid fa-edit opacity-50"></i>
+              <button class="btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
+                <i class="fa-solid fa-edit event-${eventTypeId} opacity-75"></i>
               </button>
-              <button class="btn btn-sm btn-tertiary event-delete" data-id="${eventId}">
-                <i class="fa-solid fa-trash opacity-50"></i>
+              <button class="btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
+                <i class="fa-solid fa-trash event-${eventTypeId} opacity-75"></i>
               </button>
             </div>
           </div>
@@ -78,20 +79,11 @@ const updateEventList = runOnce(async (): Promise<void> => {
     // Add this event to the list
     $("#event-list").append(template);
 
-    if ((template.find(".event-description").height() ?? 0) >= 120) {
-      template.find(".event-description").css({ maxHeight: "96px" }).after($(
-        `<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`
-      ).on("click", function () {
-        if ($(this).text() == "Mehr anzeigen") {
-          $(this).text("Weniger anzeigen");
-          template.find(".event-description").css({ maxHeight: "none" });
-        }
-        else {
-          $(this).text("Mehr anzeigen");
-          template.find(".event-description").css({ maxHeight: "96px" })
-        }
-      }))
-    }
+    richTextToHtml(description ?? "", template.find(".event-description"), {
+      showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
+      parseLinks: true
+    })
+    template.find(".event-description").trigger("addedToDom")
   };
 
   // If no events match, add an explanation text
@@ -181,6 +173,7 @@ function addEvent() {
   $("#add-event-type").val("");
   $("#add-event-name").val("");
   $("#add-event-description").val("");
+  $("#add-event-description").trigger("change")
   $("#add-event-start-date").val("");
   $("#add-event-lesson").val("");
   $("#add-event-end-date").val("");
@@ -274,7 +267,7 @@ async function editEvent(eventId: number) {
   $("#edit-event-type").val(event.eventTypeId);
   $("#edit-event-name").val(event.name);
   $("#edit-event-description").val(event.description ?? "");
-  $("#edit-event-description").css({ height: `${Math.min(((event.description ?? "").match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
+  $("#edit-event-description").trigger("change")
   $("#edit-event-start-date").val(msToInputDate(event.startDate));
   $("#edit-event-lesson").val(event.lesson ?? "");
   $("#edit-event-end-date").val(msToInputDate(event.endDate ?? ""));
@@ -456,21 +449,24 @@ $(function(){
   // If user is logged in, show the edit toggle button
   user.on("login", () => {
     $("#edit-toggle-label").removeClass("d-none");
+    $("#show-add-event-button").removeClass("d-none");
   });
-
   user.on("logout", () => {
     $("#edit-toggle-label").addClass("d-none")
     $("#show-add-event-button").addClass("d-none");
     $(".event-edit-options").addClass("d-none");
+    $(".event-title").css("margin-right", "0rem")
   });
 
   if (user.loggedIn) {
     $("#edit-toggle-label").removeClass("d-none");
+    $("#show-add-event-button").removeClass("d-none");
   }
   else {
     $("#edit-toggle-label").addClass("d-none")
     $("#show-add-event-button").addClass("d-none");
     $(".event-edit-options").addClass("d-none");
+    $(".event-title").css("margin-right", "0rem")
   }
 
   // Leave edit mode (if user entered it in a previous session)
@@ -479,13 +475,13 @@ $(function(){
   $("#edit-toggle").on("click", function () {
     if ($("#edit-toggle").is(":checked")) {
       // On checking the edit toggle, show the add button and edit options
-      $("#show-add-event-button").removeClass("d-none");
       $(".event-edit-options").removeClass("d-none");
+      $(".event-title").css("margin-right", "3.75rem")
     }
     else {
       // On unchecking the edit toggle, hide the add button and edit options
-      $("#show-add-event-button").addClass("d-none");
       $(".event-edit-options").addClass("d-none");
+      $(".event-title").css("margin-right", "0rem")
     }
   });
 
@@ -536,11 +532,6 @@ $(function(){
     }
   })
 
-  $("#add-event-description").css({ height: "38px" })
-  $("#add-event-description").on("input", function () {
-    $(this).css({ height: `${Math.min((($(this).val() ?? "").toString().match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
-  })
-
   // On changing any information in the edit event modal, disable the edit button if any information is empty
   $(".edit-event-input").on("input", function () {
     const type = $("#edit-event-type").val();
@@ -560,11 +551,6 @@ $(function(){
     if ($(this).is("#edit-event-lesson")) {
       $("#edit-event-end-date").val("")
     }
-  })
-
-  $("#edit-event-description").css({ height: "38px" })
-  $("#edit-event-description").on("input", function () {
-    $(this).css({ height: `${Math.min((($(this).val() ?? "").toString().match(/\n/g) ?? []).length * 24 + 38, 158)}px` })
   })
 
   // Don't close the dropdown when the user clicked inside of it

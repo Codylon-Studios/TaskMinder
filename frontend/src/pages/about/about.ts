@@ -10,7 +10,7 @@ class LicenseDisplay extends HTMLElement {
           <pre class="p-3 rounded border small bg-body-tertiary text-body"><span class="license-toggle-placeholder"></span>
 ${content}</pre>
         </div>
-        <button class="license-toggle fa-solid btn btn-sm btn-tertiary position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center"
+        <button class="license-toggle fa-solid btn btn-sm btn-semivisible position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center"
           data-bs-toggle="button">
         </button>
       </div>

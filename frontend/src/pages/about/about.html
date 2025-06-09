@@ -1,17 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 
 <head>
-  <meta charset="utf-8">
   <meta name="description"
     content="Log in or create/join a class to synchronize homework events and more with your classmates!.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TaskMinder</title>
 </head>
 
 <body>
-  <div class="load-snippet" data-target="navbar" data-html data-js></div>
-
   <div class="container">
     <div class="mb-4" id="contents">
       <h1>Über TaskMinder</h1>
@@ -26,25 +21,7 @@
     <div class="mb-4" id="about-us">
       <h2>Über uns</h2>
       
-      <div class="mb-1">
-        <i class="fas fa-balance-scale me-1"></i>
-        Dieses Projekt steht unter einer
-        <a href="https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE" target="_blank" class="text-primary">eigenen Lizenz</a>.
-      </div>
-      <div class="mb-1">
-        <i class="far fa-copyright me-2"></i>
-        Copyright © 2025 Codylon-Studios
-      </div>
-      <div class="mb-1">
-        <i class="fa-brands fa-github me-2"></i>
-        GitHub: 
-        <a href="https://github.com/Codylon-Studios/TaskMinder" target="_blank" class="text-primary">Codylon-Studios/TaskMinder</a>
-      </div>
-      <div>
-        <i class="fa-regular fa-envelope me-2"></i>
-        Kontakt: 
-        <a href="mailto:contact@codylon.de">contact@codylon.de</a>
-      </div>
+      <div class="load-snippet" data-target="personalData" data-target-id="about-list"></div>
     </div>
     <div class="mb-4" id="impressum">
       <h2>Impressum</h2>
@@ -54,12 +31,7 @@
 
       <p>Verantwortlich für den Inhalt dieser Website:</p>
 
-      <address>
-        <strong>Hongzhi Li</strong><br>
-        Wehrlestraße 37<br>
-        81679 München<br>
-        E-Mail: <a href="mailto:contact@codylon.de">contact@codylon.de</a>
-      </address>
+      <div class="load-snippet" data-target="personalData" data-target-id="impressum"></div>
 
       <p><strong>Haftungsausschluss</strong></p>
 
@@ -110,12 +82,7 @@
 
       <p>Gemeinsam Verantwortliche gemäß Art. 26 DSGVO für die Datenverarbeitung auf dieser Website sind:</p>
 
-      <address>
-        <strong>Hongzhi Li</strong><br>
-        Wehrlestraße 37<br>
-        81679 München<br>
-        E-Mail: <a href="mailto:contact@codylon.de">contact@codylon.de</a>
-      </address>
+      <div class="load-snippet" data-target="personalData" data-target-id="privacy-policy"></div>
 
       <h3>2. Zugriffsdaten und Hosting</h3>
 
@@ -163,7 +130,7 @@
         <li>Widerspruch gegen die Verarbeitung (Art. 21 DSGVO)</li>
       </ul>
 
-      <p>Wenden Sie sich dazu bitte an: <a href="mailto:contact@codylon.de">contact@codylon.de</a></p>
+      <p>Wenden Sie sich dazu bitte an: <div class="load-snippet" data-target="personalData" data-target-id="email-address"></div></p>
 
       <h3>7. Beschwerderecht bei der Aufsichtsbehörde</h3>
 
@@ -556,6 +523,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</license-display>
       </a>
     </div>
   </div>
-  <div class="load-snippet" data-target="footer" data-html data-js></div>
+  <div class="load-snippet" data-target="bottombar"></div>
 </body>
 </html>

@@ -1,14 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="description" content="Synchronize homework events and more with your classmates!.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TaskMinder</title>
+  <meta name="description" content="Synchronize homework, events and more with your classmates!">
   <link class="preload-style" rel="preload" href="/events/event_type_styles" as="style">
 </head>
 <body>
-  <div class="load-snippet" data-target="navbar" data-html data-js></div>
 
   <div class="container">
     <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
@@ -36,7 +32,7 @@
       <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-l-btn">
         <i class="fa-solid fa-chevron-left"></i>
       </button>
-      <div class="mx-2" id="calendar-week-wrapper">
+      <div class="mx-1" id="calendar-week-wrapper">
         <div class="calendar-week calendar-old" id="calendar-week-old"></div>
         <div class="d-none calendar-week calendar-new" id="calendar-week-new"></div>
       </div>
@@ -64,9 +60,7 @@
     
     <div class="container-fluid mb-3">
       <div class="mb-2 d-flex align-items-center">
-        <div class="text-decoration-underline">
-          Ereignisse
-        </div>
+        <h5>Ereignisse</h5>
       </div>
       <div class="ms-3" id="event-list">
         <!--Gets filled-->
@@ -75,12 +69,9 @@
 
     <div class="container-fluid mb-3">
       <div class="mb-2 d-flex align-items-center">
-        <div class="text-decoration-underline">
-          Hausaufgaben
-        </div>
+        <h5>Hausaufgaben</h5>
       </div>
       <div class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row" id="homework-mode-wrapper">
-        <label class="text-nowrap" for="homework-mode">Hausaufgabenart</label>
         <div class="btn-group btn-group-dynamic" id="homework-mode">
           <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-tomorrow">
           <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-tomorrow">Auf den nächsten Tag</label>
@@ -98,9 +89,7 @@
     </div>
     <div class="container-fluid mb-3" id="substitutions-container">
       <div class="mb-2 d-flex align-items-center">
-        <div class="text-decoration-underline">
-          Vertretungen
-        </div>
+        <h5 class="mb-1">Vertretungen</h5>
         <div class="ms-2 text-secondary">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span id="substitutions-updated">Keine Daten empfangen</span>
@@ -144,6 +133,6 @@
       </div>
     </div>
   </div>
-  <div class="load-snippet" data-target="footer" data-html data-js></div>
+  <div class="load-snippet" data-target="bottombar"></div>
 </body>
 </html> 
