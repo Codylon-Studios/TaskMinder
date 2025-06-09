@@ -118,7 +118,7 @@ async function buildDirectory(src, dest) {
         }
         while (elements.length > 0)
 
-        fs.writeFile(destFile, $.html())
+        await fs.writeFile(destFile, $.html());
       }
       else {
         await fs.copy(srcFile, destFile);

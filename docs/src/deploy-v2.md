@@ -226,6 +226,28 @@ Before starting the application, create the following **text files inside the `d
 
 ---
 
+## 7. Setup `personalData.html`
+
+1. **Navigate to the directory** where the example file is located:
+
+   ```bash
+   cd /path/to/project/frontend/src/snippets/personalData/
+   ```
+
+2. **Copy the example file to create the production file:**
+
+   ```bash
+   sudo cp personalData.html.example personalData.html
+   ```
+
+3. **Edit the new file with `vi` to update the personal data:**
+
+   ```bash
+   sudo vi personalData.html
+   ```
+   
+---
+
 ## 8. Run Docker Compose
 
 Navigate to the project root and build/start the containers:

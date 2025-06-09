@@ -7,41 +7,54 @@ export function richTextToHtml(
     displayBlockIfNewline?: boolean;
   }
 ) {
+  // Addressing double escaping/unescaping and DOM text reinterpreted as HTML
+  function sanitizeHtml(html: string) {
+    const tempDiv = document.createElement("div");
+    tempDiv.textContent = html;
+    return tempDiv.innerHTML;
+  }
+
   function handleOptions() {
     if (targetElement) {
       if (options?.showMoreButton) insertShowMoreButton(targetElement);
-      if (options?.displayBlockIfNewline && parsedText.html().includes("<br>"))
+      if (options?.displayBlockIfNewline && parsedText.html().includes("<br>")) {
         targetElement.css({ display: "block" });
+      }
     }
     if (options?.parseLinks) {
       parsedText.find("span[data-link-url]").each(function () {
         const url = $(this)
           .attr("data-link-url")
-          ?.replaceAll("\\\\", "\\")
-          .replaceAll("\\«", "<")
+          ?.replaceAll("\\«", "<")
           .replaceAll("\\»", ">")
-          .replaceAll("\\;", ";");
-        if (url && url != "") {
+          .replaceAll("\\;", ";")
+          .replaceAll("\\\\", "\\");
+        if (url && url !== "") {
+          const sanitizedUrl = sanitizeHtml(url);
           const neighbourLinkElements = $(this)
             .add(
               $(this).prevUntil(
-                `:not([data-link-url="${$(this).attr("data-link-url")?.replaceAll("\\", "\\\\")}"])`
+                `:not([data-link-url="${$(this)
+                  .attr("data-link-url")
+                  ?.replaceAll("\\", "\\\\")}"])`
               )
             )
             .add(
               $(this).nextUntil(
-                `:not([data-link-url="${$(this).attr("data-link-url")?.replaceAll("\\", "\\\\")}"])`
+                `:not([data-link-url="${$(this)
+                  .attr("data-link-url")
+                  ?.replaceAll("\\", "\\\\")}"])`
               )
             );
 
           $(this)
             .css("cursor", "pointer")
             .on("click", () => {
-              $("#rich-textarea-unsafe-link").toast("show").find("b").text(url);
+              $("#rich-textarea-unsafe-link").toast("show").find("b").text(sanitizedUrl);
               $("#rich-textarea-unsafe-link-confirm")
                 .off("click")
                 .on("click", () => {
-                  window.open(url, "_blank", "noopener,noreferrer");
+                  window.open(sanitizedUrl, "_blank", "noopener,noreferrer");
                 });
             })
             .on("mouseenter", function () {
@@ -80,32 +93,35 @@ export function richTextToHtml(
     });
   }
   function parseNormalChar(char: string) {
-    const span = $(`<span>${char}</span>`);
-    if (activeTags.some(tag => tag.tagName == "b"))
+    const span = $(`<span>${sanitizeHtml(char)}</span>`);
+    if (activeTags.some(tag => tag.tagName === "b")) {
       span.css("font-weight", "700");
-    if (activeTags.some(tag => tag.tagName == "u"))
+    }
+    if (activeTags.some(tag => tag.tagName === "u")) {
       span.css("text-decoration", "underline");
-    if (activeTags.some(tag => tag.tagName == "i"))
+    }
+    if (activeTags.some(tag => tag.tagName === "i")) {
       span.css("font-style", "italic");
-    const fsMatch = activeTags.find(tag => tag.tagName == "fs");
+    }
+    const fsMatch = activeTags.find(tag => tag.tagName === "fs");
     if (fsMatch) {
       span.attr("data-font-size", fsMatch.args[0]);
       span.css("font-size", fsMatch.args[0] + "px");
     }
-    if (activeTags.some(tag => tag.tagName == "sub")) {
+    if (activeTags.some(tag => tag.tagName === "sub")) {
       span.css("font-size", parseInt(fsMatch?.args[0] ?? "16") * 0.83);
       span.addClass("sub");
     }
-    if (activeTags.some(tag => tag.tagName == "sup")) {
+    if (activeTags.some(tag => tag.tagName === "sup")) {
       span.css("font-size", parseInt(fsMatch?.args[0] ?? "16") * 0.83);
       span.addClass("sup");
     }
-    const cMatch = activeTags.find(tag => tag.tagName == "c");
+    const cMatch = activeTags.find(tag => tag.tagName === "c");
     if (cMatch) {
       span.attr("data-color", cMatch.args[0]);
       span.css("color", cMatch.args[0]);
     }
-    const aMatch = activeTags.find(tag => tag.tagName == "a");
+    const aMatch = activeTags.find(tag => tag.tagName === "a");
     if (aMatch) {
       span.attr(
         "data-link-url",
@@ -795,10 +811,10 @@ function replaceRichTextareas() {
             .addClass("rich-textarea-link-enabled");
           richTextarea.find(".rich-textarea-link").addClass("enabled");
           const displayedUrl = commonLinkUrl
-            .replaceAll("\\\\", "\\")
             .replaceAll("\\«", "<")
             .replaceAll("\\»", ">")
-            .replaceAll("\\;", ";");
+            .replaceAll("\\;", ";")
+            .replaceAll("\\\\", "\\")
           richTextarea
             .find(".rich-textarea-link-dropdown span")
             .show()
