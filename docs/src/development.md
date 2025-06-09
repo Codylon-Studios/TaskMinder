@@ -20,13 +20,13 @@ This guide outlines the steps necessary to set up your development environment f
 
 ### Installing Redis and PostgreSQL
 
-Recommended versions: PostgreSQL 14.0+ and Redis 7.x (Community Edition < v8).
+Recommended versions: PostgreSQL 14.0+ and Redis v8+ (Redis Open Source).
 
 === "Linux (Ubuntu/Debian)"
 
-    Follow this guide to install Redis CE (< v8): [Install Redis on Linux]. Return here once complete.
+    Follow this guide to install Redis Open Source: [Install Redis on Linux]. Return here once complete.
 
-    [Install Redis on Linux]: https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-linux/
+    [Install Redis on Linux]: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/apt/
 
     Download PostgreSQL here: [Download page of PostgreSQL]. Return here once installed.
 
@@ -45,9 +45,9 @@ Recommended versions: PostgreSQL 14.0+ and Redis 7.x (Community Edition < v8).
 
 === "macOS"
 
-    Follow this guide to install Redis CE (< v8): [Install Redis on MacOS]. Return here once finished.
+    Follow this guide to install Redis Open Source: [Install Redis on MacOS]. Return here once finished.
 
-    [Install Redis on MacOS]: https://redis.io/docs/latest/operate/oss_and_stack/install/archive/install-redis/install-redis-on-mac-os/
+    [Install Redis on MacOS]: https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/homebrew/
 
     Download PostgreSQL here: [Download page of PostgreSQL]. Return here once finished.
 

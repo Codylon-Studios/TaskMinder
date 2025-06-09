@@ -204,7 +204,7 @@ Time-series data across multiple tables could reveal:
 ---
 
 * **Document Version:** 1.0
-* **Stable Version Alignment:** v1.1.2
-* **Last Updated:** June 6, 2025
+* **Stable Version Alignment:** v1.2.0
+* **Last Updated:** June 9, 2025
 * **Next Scheduled Review:** Quarterly – September 1, 2025
 * **Technical Contact:** [contact@codylon.de](mailto:contact@codylon.de)

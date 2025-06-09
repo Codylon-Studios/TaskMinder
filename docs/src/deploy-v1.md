@@ -2,7 +2,7 @@
 ## What you'll need
 
 * A valid domain (e.g. `codylon.de`)
-* A server running Ubuntu (≥ 20.04.6 LTS) with sudo or root access
+* A server running Ubuntu (≥ 24.04 LTS) with sudo or root access
 * The codebase of TaskMinder from [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)
 
 ---

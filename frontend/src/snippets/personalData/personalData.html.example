@@ -6,7 +6,7 @@
   </div>
   <div class="mb-1">
     <i class="far fa-copyright me-2"></i>
-    Copyright © 2025 Codylon-Studios
+    Copyright (c) 2025 Mingqi Li and Fabian Leonardi
   </div>
   <div class="mb-1">
     <i class="fa-brands fa-github me-2"></i>
@@ -16,12 +16,12 @@
   <div>
     <i class="fa-regular fa-envelope me-2"></i>
     Kontakt: 
-    <a href="mailto:codylon.studios@gmail.com">codylon.studios@gmail.com</a>
+    <a href="mailto:example@example.com">example@example.com</a>
   </div>
 </div>
 
 <div id="copyright">
-  © 2025 Your Company
+  Copyright (c) 2025 Mingqi Li and Fabian Leonardi
 </div>
 
 <div id="impressum">

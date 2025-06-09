@@ -6,6 +6,10 @@ All changes are grouped by type and the latest version appears first.
 
 ## \[v1.2.0] - 2025-06-10
 
+### Breaking Change - License
+
+Users must review and comply with the updated license terms before updating or continuing use.
+
 ### Added
 
 * Migrated runtime environment from Node.js to [Bun](https://bun.sh) for improved performance and native support for TypeScript.
@@ -16,12 +20,13 @@ All changes are grouped by type and the latest version appears first.
 * Replaced `npm` scripts with `bun` equivalents.
 * Adjusted build and deployment pipelines to support Bun.
 * run linting and formatting tools in frontend
+* LICENSE changes to clarify ownership and permissions
 
 ### Removed
 
 * Removed `package-lock.json` in favor of Bun’s dependency manager.
 
---
+---
 
 ## \[v1.1.2] - 2025-06-08
 
