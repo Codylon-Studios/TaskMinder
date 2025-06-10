@@ -131,7 +131,6 @@ cd /opt
 sudo git clone https://github.com/Codylon-Studios/TaskMinder.git
 cd TaskMinder
 ```
-
 ---
 
 ## 4. Configure NGINX
@@ -184,8 +183,6 @@ Give the user access to the project folder:
 
 ```bash
 sudo chown -R ubuntu:ubuntu /opt/TaskMinder
-# Set correct ownership for the Docker container (bun user)
-sudo chown -R 1000:1000 ./db-backups
 ```
 
 Log out and reconnect as the `ubuntu` user:
@@ -197,7 +194,42 @@ ssh ubuntu@<your-ip-address>
 
 ---
 
-## 6. Add Docker Secrets
+
+## 6. Automated Backup Setup (via Cron)
+
+### Make the Backup Script Executable
+
+The `cron` service needs permission to run the script. You only need to do this once.
+
+```bash
+chmod +x /opt/TaskMinder/db_backup.sh
+```
+
+### Add the Job to Crontab
+
+This will schedule the script to run automatically.
+
+Open the crontab editor for the current user:
+```bash
+   crontab -e
+```
+
+Add the following line to the bottom of the file, then save and exit:
+```bash
+   0 * * * * /opt/TaskMinder/db_backup.sh >> /var/log/backup.log 2>&1
+```
+
+### Verify the Setup
+
+Confirm the job was added successfully by listing the active cron jobs:
+```bash
+   crontab -l
+```
+You should see the line you just added.
+
+---
+
+## 7. Add Docker Secrets
 
 Navigate back to the TaskMinder folder and create directories for secrets and backups:
 
@@ -222,11 +254,11 @@ Before starting the application, create the following **text files inside the `d
 | `redis_port.txt`     | Redis port (default is `6379`).                                                          |
 | `session_secret.txt` | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                   |
 | `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.    |
-| `database_url.txt` | Provides the database URL for Prisma ORM:  `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`   |
+| `database_url.txt` | Provides the database URL for Prisma ORM:  `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`. |
 
 ---
 
-## 7. Setup `personalData.html`
+## 8. Setup `personalData.html`
 
 1. **Navigate to the directory** where the example file is located:
 
@@ -248,7 +280,7 @@ Before starting the application, create the following **text files inside the `d
    
 ---
 
-## 8. Run Docker Compose
+## 9. Run Docker Compose
 
 Navigate to the project root and build/start the containers:
 
@@ -259,7 +291,7 @@ docker compose up -d --build
 
 ---
 
-## 9. TaskMinder Deployment Complete
+## 10. TaskMinder Deployment Complete
 
 Your TaskMinder server should now be running at:
 
@@ -269,17 +301,52 @@ Your TaskMinder server should now be running at:
 
 ---
 
-## 10. What's Next?
+## 11. What's Next?
 
 * Create an account to add your subjects, teams, and timetable.
 * Visit [https://monitoring.example.com](https://monitoring.example.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
 
 ---
 
-## 11. Subsequent Updates
+## 12. Subsequent Updates
 run:
 ```bash
 cd /opt/Taskminder
 ./deploy.sh
 ```
 to automatically pull the changes from the github repository, build and restart Docker containers.
+
+--- 
+
+## Database Restoration Procedure
+
+Use this procedure to restore the database to a specific point in time from an existing backup file.
+
+> **CAUTION:** Restoring the database is a destructive operation. It will **overwrite all current data** in the database with the data from the backup file. Proceed with caution and ensure you are restoring the correct file.
+
+### List Available Backups
+
+Identify the backup file you wish to restore from. The files are located in `/opt/TaskMinder/db-backups/`.
+
+To see the most recent backups first, run:
+```bash
+ls -lt /opt/TaskMinder/db-backups/
+```
+
+### Run the Restore Script
+
+Execute the `db_restore.sh` script with `sudo` and provide the backup file you chose.
+
+```bash
+sudo /opt/TaskMinder/db_restore.sh <backup-filename>
+```
+
+**Example:**
+If you want to restore a file named `backup-2023-10-27_15-00-00.sql.gz`, you would run:
+```bash
+sudo /opt/TaskMinder/db_restore.sh backup-2023-10-27_15-00-00.sql.gz
+```
+
+### Verify the Restoration
+
+After the script completes, connect to the application or database and verify that the data has been restored to the expected state.

@@ -4,15 +4,15 @@ site_dir: dist
 # Project information
 site_name: TaskMinder Docs
 site_url: https://docs.codylon.de
-site_author: Codylon Studios
+site_author: Mingqi Li, Fabian Leonardi
 site_description: >-
-  You can search for different projects and install guides to see what Codylon Studios has done so far.
+  Technical Documentation for TaskMinder.
 # Repository
 repo_name: TaskMinder
 repo_url: https://github.com/Codylon-Studios/TaskMinder
 
 # Copyright
-copyright: Copyright &copy; 2025 Codylon Studios
+copyright: Copyright &copy; 2025 Mingqi Li, Fabian Leonardi
 
 theme:
   features:
@@ -40,7 +40,7 @@ theme:
 nav:
   - Home: index.md
   - Development: development.md
-  - Production (v1-stable-v1.1.2): deploy-v1.md
+  - Production (v1-stable-v1.2.0): deploy-v1.md
   - Production (v2-unstable): deploy-v2.md
   - Migrations (preview): migrations.md
   - Data Processing: data-processing.md

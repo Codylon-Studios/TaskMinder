@@ -185,7 +185,7 @@ Create a new file in the same directory named `personalData.html` (i.e., `fronte
 
 ---
 
-### Applying databse changes
+### Applying database changes
 
 Run `bunx prisma migrate dev` to apply schema changes from previously pulled commits to your local database.
 You should also run this command during development if the schema has been modified.
