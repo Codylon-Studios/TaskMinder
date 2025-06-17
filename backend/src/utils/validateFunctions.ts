@@ -6,14 +6,15 @@ import logger from "./logger";
 async function updateCacheData<T>(data: T[], key: string) {
   try {
     await redisClient.set(key, JSON.stringify(data, BigIntreplacer), {
-      EX: cacheExpiration,
+      EX: cacheExpiration
     });
-  } catch (err) {
+  }
+  catch (err) {
     logger.error("Error updating Redis" + key + "cache:", err);
   }
 }
 
-function BigIntreplacer(key: string, value: any) {
+function BigIntreplacer(key: string, value: unknown) {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
@@ -21,19 +22,20 @@ async function isValidTeamId(teamId: number) {
   if (teamId !== -1) {
     const teamExists = await prisma.team.findUnique({
       where: {
-        teamId: 1,
-      },
+        teamId: 1
+      }
     });
     if (!teamExists) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
         message: "Invalid teamId (Team does not exist): " + teamId,
-        expected: true,
+        expected: true
       };
       throw err;
     }
-  } else {
+  }
+  else {
     return;
   }
 }
@@ -42,19 +44,20 @@ async function isValidSubjectId(subjectId: number) {
   if (subjectId !== -1) {
     const subjectExists = await prisma.subjects.findUnique({
       where: {
-        subjectId: 1,
-      },
+        subjectId: 1
+      }
     });
     if (!subjectExists) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
         message: "Invalid subjectId (Subject does not exist): " + subjectId,
-        expected: true,
+        expected: true
       };
       throw err;
     }
-  } else {
+  }
+  else {
     return;
   }
 }
@@ -65,7 +68,7 @@ async function isValidweekDay(weekDay: number) {
     name: "Not Found",
     status: 404,
     message: "Invalid weekday: " + weekDay,
-    expected: true,
+    expected: true
   };
   throw err;
 }
@@ -76,7 +79,7 @@ async function isValidGender(gender: string) {
     name: "Not Found",
     status: 404,
     message: "The provided gender is not valid: " + gender,
-    expected: true,
+    expected: true
   };
   throw err;
 }
@@ -89,18 +92,16 @@ function isValidColor(color: string) {
       name: "Bad Request",
       status: 400,
       message: "Color must be a 6-digit hex code",
-      expected: true,
+      expected: true
     };
     throw err;
-  } else {
+  }
+  else {
     return;
   }
 }
 
-function lessonDateEventAtLeastOneNull(
-  endDate: number | null,
-  lesson: string | null
-) {
+function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | null) {
   if (
     !(
       ["", undefined, null].includes(endDate as string | null | undefined) ||
@@ -111,7 +112,7 @@ function lessonDateEventAtLeastOneNull(
       name: "Unprocessable Entity",
       status: 422,
       message: "Only one entry (lesson or endDate) are allowed",
-      expected: true,
+      expected: true
     };
     throw err;
   }
@@ -125,5 +126,5 @@ export {
   lessonDateEventAtLeastOneNull,
   isValidGender,
   BigIntreplacer,
-  updateCacheData,
+  updateCacheData
 };

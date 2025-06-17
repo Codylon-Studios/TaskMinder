@@ -57,7 +57,11 @@ services:
     container_name: taskminder-postgres
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$(cat /run/secrets/db_user) -d $$(cat /run/secrets/db_name)"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $$(cat /run/secrets/db_user) -d $$(cat /run/secrets/db_name)",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -95,11 +99,11 @@ services:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
     depends_on:
       - app
 
@@ -134,7 +138,7 @@ services:
       - "3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/ 
+      - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/
       - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
     environment:
       # This is the password and user at server startup, grafana will prompt to change this upon first login

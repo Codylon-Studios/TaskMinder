@@ -23,16 +23,12 @@ import {
   socket,
   reloadAll,
   msToTime,
-  csrfToken,
+  csrfToken
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-async function getCalendarDayHtml(
-  date: Date,
-  week: number,
-  multiEventPositions: (number | null)[]
-) {
+async function getCalendarDayHtml(date: Date, week: number, multiEventPositions: (number | null)[]) {
   // Any special classes of the day
   let specialClasses = "";
   // If the day is today, add the days-overview-today class
@@ -55,10 +51,7 @@ async function getCalendarDayHtml(
   const multiDayEventsA = [];
 
   for (const event of await eventData()) {
-    if (
-      !(await joinedTeamsData()).includes(event.teamId) &&
-      event.teamId != -1
-    ) {
+    if (!(await joinedTeamsData()).includes(event.teamId) && event.teamId != -1) {
       continue;
     }
 
@@ -66,41 +59,38 @@ async function getCalendarDayHtml(
       if (isSameDay(new Date(parseInt(event.startDate)), date)) {
         singleDayEvents += `<div class="col"><div class="event event-${event.eventTypeId}"></div></div>`;
       }
-    } else if (event.endDate != null) {
+    }
+    else if (event.endDate != null) {
       if (!multiEventPositions.includes(event.eventId)) {
         if (multiEventPositions.indexOf(null) == -1) {
           multiEventPositions.push(event.eventId);
-        } else {
-          multiEventPositions.splice(
-            multiEventPositions.indexOf(null),
-            1,
-            event.eventId
-          );
+        }
+        else {
+          multiEventPositions.splice(multiEventPositions.indexOf(null), 1, event.eventId);
         }
       }
       if (isSameDay(new Date(parseInt(event.startDate)), date)) {
         if (isSameDay(new Date(parseInt(event.endDate)), date)) {
           multiDayEventsA[multiEventPositions.indexOf(event.eventId)] =
             `<div class="event event-single event-${event.eventTypeId}"></div>`;
-        } else {
+        }
+        else {
           multiDayEventsA[multiEventPositions.indexOf(event.eventId)] =
             `<div class="event event-start event-${event.eventTypeId}"></div>`;
         }
-      } else if (isSameDay(new Date(parseInt(event.endDate)), date)) {
+      }
+      else if (isSameDay(new Date(parseInt(event.endDate)), date)) {
         multiDayEventsA[multiEventPositions.indexOf(event.eventId)] =
           `<div class="event event-end event-${event.eventTypeId}"></div>`;
-      } else if (
-        parseInt(event.startDate) < date.getTime() &&
-        parseInt(event.endDate) > date.getTime()
-      ) {
+      }
+      else if (parseInt(event.startDate) < date.getTime() && parseInt(event.endDate) > date.getTime()) {
         multiDayEventsA[multiEventPositions.indexOf(event.eventId)] =
           `<div class="event event-middle event-${event.eventTypeId}"></div>`;
-      } else if (
-        multiEventPositions.indexOf(event.eventId) ==
-        multiEventPositions.length - 1
-      ) {
+      }
+      else if (multiEventPositions.indexOf(event.eventId) == multiEventPositions.length - 1) {
         multiEventPositions.pop();
-      } else {
+      }
+      else {
         multiEventPositions[multiEventPositions.indexOf(event.eventId)] = null;
       }
     }
@@ -111,8 +101,9 @@ async function getCalendarDayHtml(
 
   for (const event of multiDayEventsA) {
     if (!event) {
-      multiDayEvents += `<div class="event"></div>`;
-    } else {
+      multiDayEvents += '<div class="event"></div>';
+    }
+    else {
       multiDayEvents += event;
     }
   }
@@ -145,19 +136,16 @@ async function getNewCalendarWeekContent() {
   let newCalendarWeekContent = "";
 
   if (calendarMode == "week") {
-    newCalendarWeekContent += `<div class="d-flex position-relative">`;
+    newCalendarWeekContent += '<div class="d-flex position-relative">';
     const weekDates = (await monthDates())[selectedWeek];
     for (let i = 0; i < 7; i++) {
-      newCalendarWeekContent += await getCalendarDayHtml(
-        weekDates[i],
-        selectedWeek,
-        multiEventPositions
-      );
+      newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], selectedWeek, multiEventPositions);
     }
     newCalendarWeekContent += "</div>";
     return newCalendarWeekContent;
-  } else {
-    newCalendarWeekContent += `<div class="d-flex weekdays">`;
+  }
+  else {
+    newCalendarWeekContent += '<div class="d-flex weekdays">';
     const weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
     newCalendarWeekContent += weekdays
       .map(e => {
@@ -167,13 +155,9 @@ async function getNewCalendarWeekContent() {
     newCalendarWeekContent += "</div>";
     for (const week in await monthDates()) {
       const weekDates = (await monthDates())[week];
-      newCalendarWeekContent += `<div class="d-flex position-relative mb-4">`;
+      newCalendarWeekContent += '<div class="d-flex position-relative mb-4">';
       for (let i = 0; i < 7; i++) {
-        newCalendarWeekContent += await getCalendarDayHtml(
-          weekDates[i],
-          parseInt(week),
-          multiEventPositions
-        );
+        newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], parseInt(week), multiEventPositions);
       }
       newCalendarWeekContent += "</div>";
     }
@@ -181,9 +165,7 @@ async function getNewCalendarWeekContent() {
   }
 }
 
-async function updateCalendarWeekContent(
-  targetCalendar: "#calendar-week-old" | "#calendar-week-new"
-) {
+async function updateCalendarWeekContent(targetCalendar: "#calendar-week-old" | "#calendar-week-new") {
   const content = await getNewCalendarWeekContent();
   $(targetCalendar).html(content);
 }
@@ -221,9 +203,7 @@ async function loadMonthDates(selectedDate: Date) {
 
 async function checkHomework(homeworkId: number) {
   // Save whether the user has checked or unchecked the homework
-  const checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop(
-    "checked"
-  );
+  const checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
 
   // Check whether the user is logged in
   if (user.loggedIn) {
@@ -231,7 +211,7 @@ async function checkHomework(homeworkId: number) {
 
     const data = {
       homeworkId: homeworkId,
-      checkStatus: checkStatus,
+      checkStatus: checkStatus
     };
     // Save whether the server has responed
     let hasResponded = false;
@@ -242,24 +222,26 @@ async function checkHomework(homeworkId: number) {
       type: "POST",
       data: data,
       headers: {
-        "X-CSRF-Token": await csrfToken(),
+        "X-CSRF-Token": await csrfToken()
       },
       error: xhr => {
         if (xhr.status === 401) {
           // The user has to be logged in but isn't
           // Show an error notification
           $navbarToasts.notLoggedIn.toast("show");
-        } else if (xhr.status === 500) {
+        }
+        else if (xhr.status === 500) {
           // An internal server error occurred
           $navbarToasts.serverError.toast("show");
-        } else {
+        }
+        else {
           $navbarToasts.unknownError.toast("show");
         }
       },
       complete: () => {
         // The server has responded
         hasResponded = true;
-      },
+      }
     });
     setTimeout(() => {
       // Wait for 1s
@@ -268,7 +250,8 @@ async function checkHomework(homeworkId: number) {
         $navbarToasts.serverError.toast("show");
       }
     }, 1000);
-  } else {
+  }
+  else {
     // The user is not logged in
 
     // Get the already saved data
@@ -281,7 +264,8 @@ async function checkHomework(homeworkId: number) {
 
     if (checkStatus) {
       data.push(homeworkId);
-    } else {
+    }
+    else {
       data.splice(data.indexOf(homeworkId), 1);
     }
 
@@ -299,17 +283,12 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
   let addedElements: JQuery<HTMLElement> = $();
 
   for (const homework of await homeworkData()) {
-    if (
-      currentSubjectData.find(s => s.subjectId == homework.subjectId) ===
-      undefined
-    ) {
+    if (currentSubjectData.find(s => s.subjectId == homework.subjectId) === undefined) {
       continue;
     }
     // Get the information for the homework
     const homeworkId = homework.homeworkId;
-    const subject = currentSubjectData.find(
-      s => s.subjectId == homework.subjectId
-    )?.subjectNameLong;
+    const subject = currentSubjectData.find(s => s.subjectId == homework.subjectId)?.subjectNameLong;
     const content = homework.content;
     const assignmentDate = new Date(parseInt(homework.assignmentDate));
     const submissionDate = new Date(parseInt(homework.submissionDate));
@@ -336,10 +315,7 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     }
 
     // Filter by team
-    if (
-      !currentJoinedTeams.includes(homework.teamId) &&
-      homework.teamId != -1
-    ) {
+    if (!currentJoinedTeams.includes(homework.teamId) && homework.teamId != -1) {
       continue;
     }
 
@@ -358,7 +334,7 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     richTextToHtml(content, template.find(".homework-content"), {
       showMoreButton: true,
       parseLinks: true,
-      displayBlockIfNewline: true,
+      displayBlockIfNewline: true
     });
     addedElements = addedElements.add(template.find(".homework-content"));
   }
@@ -368,14 +344,14 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     let text;
     if ($("#homework-mode-tomorrow").prop("checked")) {
       text = "auf den nächsten";
-    } else if ($("#homework-mode-submission").prop("checked")) {
+    }
+    else if ($("#homework-mode-submission").prop("checked")) {
       text = "auf diesen";
-    } else if ($("#homework-mode-assignment").prop("checked")) {
+    }
+    else if ($("#homework-mode-assignment").prop("checked")) {
       text = "von diesem";
     }
-    newContent.html(
-      `<div class="text-secondary">Keine Hausaufgaben ${text} Tag.</div>`
-    );
+    newContent.html(`<div class="text-secondary">Keine Hausaufgaben ${text} Tag.</div>`);
   }
   $("#homework-list").empty().append(newContent.children());
   addedElements.trigger("addedToDom");
@@ -384,9 +360,11 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
 function updateHomeworkMode() {
   if ($("#homework-mode-tomorrow").prop("checked")) {
     localStorage.setItem("homeworkMode", "tomorrow");
-  } else if ($("#homework-mode-assignment").prop("checked")) {
+  }
+  else if ($("#homework-mode-assignment").prop("checked")) {
     localStorage.setItem("homeworkMode", "assignment");
-  } else {
+  }
+  else {
     localStorage.setItem("homeworkMode", "submission");
   }
 
@@ -398,10 +376,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
   $("#event-list").empty();
 
   for (const event of await eventData()) {
-    if (
-      !(await joinedTeamsData()).includes(event.teamId) &&
-      event.teamId != -1
-    ) {
+    if (!(await joinedTeamsData()).includes(event.teamId) && event.teamId != -1) {
       continue;
     }
 
@@ -409,33 +384,25 @@ const updateEventList = runOnce(async (): Promise<void> => {
     const eventTypeId = event.eventTypeId;
     const name = event.name;
     const description = event.description;
-    const startDate = msToDisplayDate(event.startDate)
-      .split(".")
-      .slice(0, 2)
-      .join(".");
+    const startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
     const lesson = event.lesson;
     let endDate;
     if (event.endDate) {
       endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
-    } else {
+    }
+    else {
       endDate = null;
     }
     const msStartDate = parseInt(event.startDate);
     const msEndDate = parseInt(event.endDate ?? event.startDate);
 
     // Filter by start date
-    if (
-      selectedDate.getTime() < msStartDate &&
-      !isSameDay(selectedDate, new Date(msStartDate))
-    ) {
+    if (selectedDate.getTime() < msStartDate && !isSameDay(selectedDate, new Date(msStartDate))) {
       continue;
     }
 
     // Filter by end date
-    if (
-      selectedDate.getTime() > msEndDate &&
-      !isSameDay(selectedDate, new Date(msEndDate))
-    ) {
+    if (selectedDate.getTime() > msEndDate && !isSameDay(selectedDate, new Date(msEndDate))) {
       continue;
     }
 
@@ -456,47 +423,40 @@ const updateEventList = runOnce(async (): Promise<void> => {
     $("#event-list").append(template);
 
     richTextToHtml(description ?? "", template.find(".event-description"), {
-      showMoreButton: $(
-        `<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`
-      ),
-      parseLinks: true,
+      showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
+      parseLinks: true
     });
     template.find(".event-description").trigger("addedToDom");
   }
 
   // If no events match, add an explanation text
   if ($("#event-list").html() == "") {
-    $("#event-list").html(
-      `<div class="text-secondary">Keine Ereignisse an diesem Tag.</div>`
-    );
+    $("#event-list").html('<div class="text-secondary">Keine Ereignisse an diesem Tag.</div>');
   }
 });
 
 const updateSubstitutionList = runOnce(async (): Promise<void> => {
-  const substitutionsMode =
-    localStorage.getItem("substitutionsMode") ?? "class";
+  const substitutionsMode = localStorage.getItem("substitutionsMode") ?? "class";
 
   let data: SubstitutionsData;
 
   if (substitutionsMode == "class") {
     data = await classSubstitutionsData();
-  } else {
+  }
+  else {
     data = await substitutionsData();
   }
   if (data === "No data") {
     $("#substitutions-container").addClass("d-none");
     return;
-  } else {
+  }
+  else {
     $("#substitutions-container").removeClass("d-none");
   }
 
   const updatedDate = new Date(dateToMs(data.updated.split(" ")[0]) ?? 0);
-  const updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][
-    updatedDate.getDay()
-  ];
-  $("#substitutions-updated").text(
-    updatedWeekDay + ", " + data.updated.split(" ")[1]
-  );
+  const updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][updatedDate.getDay()];
+  $("#substitutions-updated").text(updatedWeekDay + ", " + data.updated.split(" ")[1]);
 
   if (substitutionsMode == "none") {
     $("#substitutions-table").addClass("d-none");
@@ -507,11 +467,11 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
 
   if (isSameDay(selectedDate, new Date(dateToMs(data["plan1"].date) ?? 0))) {
     planId = 1;
-  } else if (
-    isSameDay(selectedDate, new Date(dateToMs(data["plan2"].date) ?? 0))
-  ) {
+  }
+  else if (isSameDay(selectedDate, new Date(dateToMs(data["plan2"].date) ?? 0))) {
     planId = 2;
-  } else {
+  }
+  else {
     $("#substitutions-table").addClass("d-none");
     $("#substitutions-no-entry").addClass("d-none");
     $("#substitutions-no-data").removeClass("d-none");
@@ -519,9 +479,7 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
     return;
   }
 
-  if (
-    data[("plan" + planId) as "plan1" | "plan2"]["substitutions"].length == 0
-  ) {
+  if (data[("plan" + planId) as "plan1" | "plan2"]["substitutions"].length == 0) {
     $("#substitutions-table").addClass("d-none");
     $("#substitutions-no-entry").removeClass("d-none");
     $("#substitutions-no-data").addClass("d-none");
@@ -533,13 +491,12 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
 
   if (substitutionsMode == "all") {
     $("#substitutions-table th:first()").removeClass("d-none");
-  } else {
+  }
+  else {
     $("#substitutions-table th:first()").addClass("d-none");
   }
 
-  for (const substitution of data[("plan" + planId) as "plan1" | "plan2"][
-    "substitutions"
-  ]) {
+  for (const substitution of data[("plan" + planId) as "plan1" | "plan2"]["substitutions"]) {
     const template = `
       <tr>
         ${substitutionsMode == "all" ? `<td>${substitution.class}</td>` : ""}
@@ -570,9 +527,11 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
 function updateSubstitutionsMode() {
   if ($("#substitutions-mode-class").prop("checked")) {
     localStorage.setItem("substitutionsMode", "class");
-  } else if ($("#substitutions-mode-all").prop("checked")) {
+  }
+  else if ($("#substitutions-mode-all").prop("checked")) {
     localStorage.setItem("substitutionsMode", "all");
-  } else {
+  }
+  else {
     localStorage.setItem("substitutionsMode", "none");
   }
 
@@ -599,21 +558,13 @@ const updateTimetable = runOnce(async (): Promise<void> => {
 
   const currentClassSubstitutionsData = await classSubstitutionsData();
   if (currentClassSubstitutionsData != "No data") {
-    if (
-      isSameDay(
-        selectedDate,
-        new Date(dateToMs(currentClassSubstitutionsData.plan1.date) ?? 0)
-      )
-    ) {
+    if (isSameDay(selectedDate, new Date(dateToMs(currentClassSubstitutionsData.plan1.date) ?? 0))) {
       substitutionPlanId = 1;
-    } else if (
-      isSameDay(
-        selectedDate,
-        new Date(dateToMs(currentClassSubstitutionsData.plan2.date) ?? 0)
-      )
-    ) {
+    }
+    else if (isSameDay(selectedDate, new Date(dateToMs(currentClassSubstitutionsData.plan2.date) ?? 0))) {
       substitutionPlanId = 2;
-    } else {
+    }
+    else {
       substitutionPlanId = 0;
     }
   }
@@ -625,9 +576,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
   if (currentLessonData[selectedDate.getDay() - 1] === undefined) {
     return;
   }
-  currentLessonData = currentLessonData.filter(
-    l => l.weekDay == selectedDate.getDay() - 1
-  );
+  currentLessonData = currentLessonData.filter(l => l.weekDay == selectedDate.getDay() - 1);
 
   type ProcessedLesson = {
     lessonNumber: number;
@@ -643,14 +592,8 @@ const updateTimetable = runOnce(async (): Promise<void> => {
 
   const processedLessonData: ProcessedLesson[] = [];
   for (const lesson of currentLessonData) {
-    const subject = currentSubjectData.find(
-      s => s.subjectId == lesson.subjectId
-    );
-    if (
-      !subject ||
-      !(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId == -1)
-    )
-      continue;
+    const subject = currentSubjectData.find(s => s.subjectId == lesson.subjectId);
+    if (!subject || !(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId == -1)) continue;
     processedLessonData.push({
       lessonNumber: lesson.lessonNumber,
       subjectNameLong: subject.subjectNameLong,
@@ -663,7 +606,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       teacherNameSubstitution: subject.teacherNameSubstitution,
       room: lesson.room,
       startTime: lesson.startTime,
-      endTime: lesson.endTime,
+      endTime: lesson.endTime
     });
   }
 
@@ -676,23 +619,20 @@ const updateTimetable = runOnce(async (): Promise<void> => {
 
   let groupedLessonData: GroupedLessonData = [];
   for (const lesson of processedLessonData) {
-    const group = groupedLessonData.find(
-      l => l.lessonNumber == lesson.lessonNumber
-    );
+    const group = groupedLessonData.find(l => l.lessonNumber == lesson.lessonNumber);
     if (group) {
       group.lessons.push(lesson);
-    } else {
+    }
+    else {
       groupedLessonData.push({
         lessonNumber: lesson.lessonNumber,
         startTime: lesson.startTime,
         endTime: lesson.endTime,
-        lessons: [lesson],
+        lessons: [lesson]
       });
     }
   }
-  groupedLessonData = groupedLessonData.sort(
-    (group1, group2) => group1.lessonNumber - group2.lessonNumber
-  );
+  groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
 
   for (const lessonGroup of groupedLessonData) {
     let addedDescriptionTemplates = $();
@@ -702,10 +642,10 @@ const updateTimetable = runOnce(async (): Promise<void> => {
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
           <span class="text-center timetable-less-subject">
             ${lessonGroup.lessons
-              .map(lessonData => {
-                return `<span class="original">${$.formatHtml(lessonData.subjectNameShort)}</span>`;
-              })
-              .join(" / ")}
+    .map(lessonData => {
+      return `<span class="original">${$.formatHtml(lessonData.subjectNameShort)}</span>`;
+    })
+    .join(" / ")}
           </span>
         </div>
       </div>`;
@@ -715,30 +655,34 @@ const updateTimetable = runOnce(async (): Promise<void> => {
     const templateModeMore = `
       <div class="card">
         <div class="card-body pt-4 text-center">
-          <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start">${msToTime(lessonGroup.startTime)}</div>
-          <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end">${msToTime(lessonGroup.endTime)}</div>
+          <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start">
+            ${msToTime(lessonGroup.startTime)}
+          </div>
+          <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end">
+            ${msToTime(lessonGroup.endTime)}
+          </div>
           <div class="d-flex align-items-center justify-content-center flex-column">
             <span class="fw-semibold text-center timetable-more-subject">
               ${lessonGroup.lessons
-                .map(lessonData => {
-                  return `<span class="original">${$.formatHtml(lessonData.subjectNameLong)}</span>`;
-                })
-                .join(" / ")}
+    .map(lessonData => {
+      return `<span class="original">${$.formatHtml(lessonData.subjectNameLong)}</span>`;
+    })
+    .join(" / ")}
             </span>
             <span>
               <span class="text-center timetable-more-room">
               ${lessonGroup.lessons
-                .map(lessonData => {
-                  return `<span class="original">${$.formatHtml(lessonData.room)}</span>`;
-                })
-                .join(" / ")}
+    .map(lessonData => {
+      return `<span class="original">${$.formatHtml(lessonData.room)}</span>`;
+    })
+    .join(" / ")}
               </span>,
               <span class="text-center timetable-more-teacher">
               ${lessonGroup.lessons
-                .map(lessonData => {
-                  return `<span class="original">${$.formatHtml(lessonData.teacherName)}</span>`;
-                })
-                .join(" / ")}
+    .map(lessonData => {
+      return `<span class="original">${$.formatHtml(lessonData.teacherName)}</span>`;
+    })
+    .join(" / ")}
               </span>
             </span>
           </div>
@@ -749,10 +693,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
 
     if (substitutionPlanId != 0) {
       for (const [lessonId, lesson] of lessonGroup.lessons.entries()) {
-        function matchesLessonNumber(
-          substitution: Record<string, string>,
-          lessonNumber: number
-        ) {
+        function matchesLessonNumber(substitution: Record<string, string>, lessonNumber: number) {
           if (substitution.lesson.includes("-")) {
             substitution.lesson = substitution.lesson.replace(" ", "");
             const start = parseInt(substitution.lesson.split("-")[0]);
@@ -760,24 +701,19 @@ const updateTimetable = runOnce(async (): Promise<void> => {
             if (start > lessonNumber || lessonNumber > end) {
               return false;
             }
-          } else if (parseInt(substitution.lesson) != lessonNumber) {
+          }
+          else if (parseInt(substitution.lesson) != lessonNumber) {
             return false;
           }
           return true;
         }
-        function matchesTeacher(
-          substitution: Record<string, string>,
-          lesson: ProcessedLesson
-        ) {
-          return (lesson.teacherNameSubstitution ?? []).includes(
-            substitution.teacherOld
-          );
+        function matchesTeacher(substitution: Record<string, string>, lesson: ProcessedLesson) {
+          return (lesson.teacherNameSubstitution ?? []).includes(substitution.teacherOld);
         }
 
         if (currentClassSubstitutionsData !== "No data") {
-          for (const substitution of currentClassSubstitutionsData[
-            ("plan" + substitutionPlanId) as "plan1" | "plan2"
-          ].substitutions) {
+          for (const substitution of currentClassSubstitutionsData[("plan" + substitutionPlanId) as "plan1" | "plan2"]
+            .substitutions) {
             if (!matchesLessonNumber(substitution, lessonGroup.lessonNumber)) {
               continue;
             }
@@ -797,30 +733,18 @@ const updateTimetable = runOnce(async (): Promise<void> => {
             if (substitution.text != "-") {
               thisMoreLesson
                 .find(".card-body")
-                .append(
-                  `<div class="text-${color} text-center">${$.formatHtml(substitution.text)}</div>`
-                );
+                .append(`<div class="text-${color} text-center">${$.formatHtml(substitution.text)}</div>`);
             }
 
             if (substitution.type == "Entfall") {
               // Times
-              thisMoreLesson
-                .find(".timetable-more-time")
-                .addClass("line-through-" + color);
+              thisMoreLesson.find(".timetable-more-time").addClass("line-through-" + color);
             }
 
             // Subject
-            const lessSubjectElement = thisLessLesson
-              .find(".timetable-less-subject .original")
-              .eq(lessonId);
-            const moreSubjectElement = thisMoreLesson
-              .find(".timetable-more-subject .original")
-              .eq(lessonId);
-            if (
-              !(lesson.subjectNameSubstitution ?? []).includes(
-                substitution.subject
-              )
-            ) {
+            const lessSubjectElement = thisLessLesson.find(".timetable-less-subject .original").eq(lessonId);
+            const moreSubjectElement = thisMoreLesson.find(".timetable-more-subject .original").eq(lessonId);
+            if (!(lesson.subjectNameSubstitution ?? []).includes(substitution.subject)) {
               moreSubjectElement.addClass("line-through-" + color);
               lessSubjectElement.addClass("line-through-" + color);
               if (substitution.subject != "-") {
@@ -831,33 +755,24 @@ const updateTimetable = runOnce(async (): Promise<void> => {
                   ` <span class="text-${color} fw-bold">${$.formatHtml(substitution.subject)}</span>`
                 );
               }
-            } else {
+            }
+            else {
               lessSubjectElement.addClass("fst-italic fw-semibold");
               moreSubjectElement.addClass("fst-italic fw-bold");
             }
 
             // Room
-            const roomElement = thisMoreLesson
-              .find(".timetable-more-room .original")
-              .eq(lessonId);
+            const roomElement = thisMoreLesson.find(".timetable-more-room .original").eq(lessonId);
             if (substitution.room != lesson.room) {
               roomElement.addClass("line-through-" + color);
               if (substitution.room != "-") {
-                roomElement.after(
-                  ` <span class="text-${color} fw-bold">${$.formatHtml(substitution.room)}</span>`
-                );
+                roomElement.after(` <span class="text-${color} fw-bold">${$.formatHtml(substitution.room)}</span>`);
               }
             }
 
             // Teacher
-            const teacherElement = thisMoreLesson
-              .find(".timetable-more-teacher .original")
-              .eq(lessonId);
-            if (
-              !(lesson.subjectNameSubstitution ?? []).includes(
-                substitution.teacher
-              )
-            ) {
+            const teacherElement = thisMoreLesson.find(".timetable-more-teacher .original").eq(lessonId);
+            if (!(lesson.subjectNameSubstitution ?? []).includes(substitution.teacher)) {
               teacherElement.addClass("line-through-" + color);
               if (substitution.teacher != "-") {
                 teacherElement.after(
@@ -882,16 +797,14 @@ const updateTimetable = runOnce(async (): Promise<void> => {
           if (start > lessonId || lessonId > end) {
             return false;
           }
-        } else if (parseInt(event.lesson) != lessonId) {
+        }
+        else if (parseInt(event.lesson) != lessonId) {
           return false;
         }
         return true;
       }
 
-      if (
-        !(await joinedTeamsData()).includes(event.teamId) &&
-        event.teamId != -1
-      ) {
+      if (!(await joinedTeamsData()).includes(event.teamId) && event.teamId != -1) {
         continue;
       }
 
@@ -910,20 +823,15 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       thisMoreLesson.find(".card-body").append(eventName);
 
       if (event.description != "") {
-        const descriptionTemplate = $(
-          `<span class="event-${event.eventTypeId} text-centered-block"></span>`
-        );
+        const descriptionTemplate = $(`<span class="event-${event.eventTypeId} text-centered-block"></span>`);
 
         thisMoreLesson.find(".card-body").append(descriptionTemplate);
 
         richTextToHtml(event.description ?? "", descriptionTemplate, {
-          showMoreButton: $(
-            `<a class="event-${event.eventTypeId}" href="#">Mehr anzeigen</a>`
-          ),
-          parseLinks: true,
+          showMoreButton: $(`<a class="event-${event.eventTypeId}" href="#">Mehr anzeigen</a>`),
+          parseLinks: true
         });
-        addedDescriptionTemplates =
-          addedDescriptionTemplates.add(descriptionTemplate);
+        addedDescriptionTemplates = addedDescriptionTemplates.add(descriptionTemplate);
       }
     }
 
@@ -933,10 +841,12 @@ const updateTimetable = runOnce(async (): Promise<void> => {
       const thisLessonHtml = thisLessLesson[0].outerHTML.replace(/\s+/g, "");
       if (lastLessonHtml == thisLessonHtml) {
         lastLessLesson.addClass("wide");
-      } else {
+      }
+      else {
         $("#timetable-less").append(thisLessLesson);
       }
-    } else {
+    }
+    else {
       $("#timetable-less").append(thisLessLesson);
     }
 
@@ -953,13 +863,13 @@ const updateTimetable = runOnce(async (): Promise<void> => {
 
       if (lastLessonHtml == thisLessonHtml) {
         lastMoreLesson.addClass("wide");
-        lastMoreLesson
-          .find(".card-body div:nth-child(2)")
-          .text(msToTime(lessonGroup.endTime));
-      } else {
+        lastMoreLesson.find(".card-body div:nth-child(2)").text(msToTime(lessonGroup.endTime));
+      }
+      else {
         $("#timetable-more").append(thisMoreLesson);
       }
-    } else {
+    }
+    else {
       $("#timetable-more").append(thisMoreLesson);
     }
     addedDescriptionTemplates.trigger("addedToDom");
@@ -970,15 +880,18 @@ function updateTimetableMode() {
   if ([0, 6].includes(selectedDate.getDay())) {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
-  } else if ($("#timetable-mode-less").prop("checked")) {
+  }
+  else if ($("#timetable-mode-less").prop("checked")) {
     $("#timetable-less").removeClass("d-none");
     $("#timetable-more").addClass("d-none");
     localStorage.setItem("timetableMode", "less");
-  } else if ($("#timetable-mode-more").prop("checked")) {
+  }
+  else if ($("#timetable-mode-more").prop("checked")) {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").removeClass("d-none");
     localStorage.setItem("timetableMode", "more");
-  } else {
+  }
+  else {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
     localStorage.setItem("timetableMode", "none");
@@ -986,16 +899,10 @@ function updateTimetableMode() {
 }
 
 async function renameCalendarMonthYear() {
-  $("#calendar-month-year").text(
-    `${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`
-  );
+  $("#calendar-month-year").text(`${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`);
 }
 
-function slideCalendar(
-  direction: "l" | "r",
-  transition: string,
-  slideTime: number
-) {
+function slideCalendar(direction: "l" | "r", transition: string, slideTime: number) {
   return new Promise<void>(resolve => {
     if (!animations) {
       transition = "";
@@ -1007,20 +914,14 @@ function slideCalendar(
 
     // Position the calendar left / right of the visible spot
     $(".calendar-week").css("transition", "");
-    $("#calendar-week-new").css(
-      "transform",
-      `translateX(${direction == "r" ? "100%" : "-100%"})`
-    );
+    $("#calendar-week-new").css("transform", `translateX(${direction == "r" ? "100%" : "-100%"})`);
     $("#calendar-week-new").removeClass("d-none");
 
     // Wait shortly, so the styles can apply
     setTimeout(() => {
       // Slide the old calendar out and the new one in
       $(".calendar-week").css("transition", transition);
-      $("#calendar-week-old").css(
-        "transform",
-        `translateX(${direction == "r" ? "-100%" : "100%"})`
-      );
+      $("#calendar-week-old").css("transform", `translateX(${direction == "r" ? "-100%" : "100%"})`);
       $("#calendar-week-new").css("transform", "translateX(0%)");
 
       renameCalendarMonthYear();
@@ -1045,17 +946,10 @@ function slideCalendar(
 }
 
 $(() => {
-  addUpdateAllFunction(
-    updateHomeworkList,
-    updateEventList,
-    updateSubstitutionList,
-    updateTimetable
-  );
+  addUpdateAllFunction(updateHomeworkList, updateEventList, updateSubstitutionList, updateTimetable);
   reloadAll();
 });
-const animations = JSON.parse(
-  localStorage.getItem("animations") ?? "true"
-) as boolean;
+const animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
 
 $(".calendar-week-move-button").on("click", function () {
   // If the calendar is already moving, stop; else set it moving
@@ -1068,14 +962,16 @@ $(".calendar-week-move-button").on("click", function () {
   let direction: "l" | "r";
   if ($(this).attr("id") == "calendar-week-r-btn") {
     direction = "r";
-  } else {
+  }
+  else {
     direction = "l";
   }
 
   if (calendarMode == "week") {
     if (direction == "r") selectedDate.setDate(selectedDate.getDate() + 7);
     if (direction == "l") selectedDate.setDate(selectedDate.getDate() - 7);
-  } else {
+  }
+  else {
     if (direction == "r") selectedDate.setMonth(selectedDate.getMonth() + 1);
     if (direction == "l") selectedDate.setMonth(selectedDate.getMonth() - 1);
   }
@@ -1094,18 +990,18 @@ $(".calendar-month-year-move-button").on("click", function () {
   let direction;
   if ($(this).attr("id") == "calendar-month-year-r-btn") {
     direction = "r";
-  } else {
+  }
+  else {
     direction = "l";
   }
 
   if (calendarMode == "week") {
     if (direction == "r") selectedDate.setMonth(selectedDate.getMonth() + 1);
     if (direction == "l") selectedDate.setMonth(selectedDate.getMonth() - 1);
-  } else {
-    if (direction == "r")
-      selectedDate.setFullYear(selectedDate.getFullYear() + 1);
-    if (direction == "l")
-      selectedDate.setFullYear(selectedDate.getFullYear() - 1);
+  }
+  else {
+    if (direction == "r") selectedDate.setFullYear(selectedDate.getFullYear() + 1);
+    if (direction == "l") selectedDate.setFullYear(selectedDate.getFullYear() - 1);
   }
   updateCalendarWeekContent("#calendar-week-old");
   renameCalendarMonthYear();
@@ -1126,14 +1022,17 @@ function swipe() {
       if (swipeXEnd - swipeXStart < 0) {
         direction = "r";
         selectedDate.setDate(selectedDate.getDate() + 7);
-      } else {
+      }
+      else {
         direction = "l";
         selectedDate.setDate(selectedDate.getDate() - 7);
       }
-    } else if (swipeXEnd - swipeXStart < 0) {
+    }
+    else if (swipeXEnd - swipeXStart < 0) {
       direction = "r";
       selectedDate.setMonth(selectedDate.getMonth() + 1);
-    } else {
+    }
+    else {
       direction = "l";
       selectedDate.setMonth(selectedDate.getMonth() - 1);
     }
@@ -1208,12 +1107,8 @@ $("#calendar-week-btn").on("click", () => {
 
 $(document).on("click", ".days-overview-day", async function () {
   const day = parseInt($(this).data("day"));
-  selectedDate = (await monthDates())[parseInt($(this).data("week"))][
-    day == 0 ? 6 : day - 1
-  ];
-  $("#calendar-week-old")
-    .find(".days-overview-selected")
-    .removeClass("days-overview-selected");
+  selectedDate = (await monthDates())[parseInt($(this).data("week"))][day == 0 ? 6 : day - 1];
+  $("#calendar-week-old").find(".days-overview-selected").removeClass("days-overview-selected");
   $(this).addClass("days-overview-selected");
   updateCalendarWeekContent("#calendar-week-old");
   renameCalendarMonthYear();
@@ -1245,7 +1140,7 @@ const monthNames = [
   "September",
   "Oktober",
   "November",
-  "Dezember",
+  "Dezember"
 ];
 renameCalendarMonthYear();
 
@@ -1267,10 +1162,7 @@ $("#timetable-mode input").each(function () {
   $(this).prop("checked", false);
 });
 
-$("#timetable-mode-" + (localStorage.getItem("timetableMode") ?? "less")).prop(
-  "checked",
-  true
-);
+$("#timetable-mode-" + (localStorage.getItem("timetableMode") ?? "less")).prop("checked", true);
 
 $("#substitutions-mode input").each(function () {
   $(this).on("click", () => {
@@ -1279,10 +1171,7 @@ $("#substitutions-mode input").each(function () {
   $(this).prop("checked", false);
 });
 
-$(
-  "#substitutions-mode-" +
-    (localStorage.getItem("substitutionsMode") ?? "class")
-).prop("checked", true);
+$("#substitutions-mode-" + (localStorage.getItem("substitutionsMode") ?? "class")).prop("checked", true);
 
 $("#homework-mode input").each(function () {
   $(this).on("click", () => {
@@ -1291,9 +1180,7 @@ $("#homework-mode input").each(function () {
   $(this).prop("checked", false);
 });
 
-$(
-  "#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")
-).prop("checked", true);
+$("#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")).prop("checked", true);
 
 socket.on("updateHomeworkData", () => {
   try {
@@ -1304,7 +1191,8 @@ socket.on("updateHomeworkData", () => {
     loadHomeworkCheckedData();
 
     updateHomeworkList();
-  } catch (error) {
+  }
+  catch (error) {
     console.error("Error handling updateHomeworkData:", error);
   }
 });
@@ -1318,7 +1206,8 @@ socket.on("updateEventData", () => {
     updateEventList();
     updateCalendarWeekContent("#calendar-week-old");
     updateTimetable();
-  } catch (error) {
+  }
+  catch (error) {
     console.error("Error handling updateEventData:", error);
   }
 });

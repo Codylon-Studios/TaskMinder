@@ -1,31 +1,39 @@
-const fs = require("fs-extra");
-const path = require("path");
-const cheerio = require("cheerio");
+import {
+  readdir,
+  ensureDir,
+  stat as _stat,
+  readFile,
+  exists,
+  writeFile,
+  copy
+} from "fs-extra";
+import { join as _join, relative, sep, extname } from "path";
+import { load } from "cheerio";
 
 const sourceDir = process.argv[2];
 const destDir = process.argv[3];
 
 async function buildDirectory(src, dest) {
-  const files = await fs.readdir(src);
-  await fs.ensureDir(dest);
+  const files = await readdir(src);
+  await ensureDir(dest);
 
   for (const file of files) {
-    const srcFile = path.join(src, file);
-    const destFile = path.join(dest, file);
+    const srcFile = _join(src, file);
+    const destFile = _join(dest, file);
 
-    const stat = await fs.stat(srcFile);
+    const stat = await _stat(srcFile);
 
     if (stat.isDirectory()) {
       await buildDirectory(srcFile, destFile);
     }
     else if (file.endsWith("html")) {
-      const relativePath = path.relative(sourceDir, srcFile);
-      const pathSegments = relativePath.split(path.sep);
+      const relativePath = relative(sourceDir, srcFile);
+      const pathSegments = relativePath.split(sep);
 
       if (pathSegments[0] === "pages") {
-        const fileName = file.slice(0, - path.extname(file).length)
-        const html = await fs.readFile(srcFile)
-        const $ = cheerio.load(html)
+        const fileName = file.slice(0, -extname(file).length);
+        const html = await readFile(srcFile);
+        const $ = load(html);
 
         const titleMap = {
           about: "Über",
@@ -33,8 +41,8 @@ async function buildDirectory(src, dest) {
           homework: "Hausaufgaben",
           join: "Beitreten",
           main: "Übersicht",
-          settings: "Einstellungen",
-        }
+          settings: "Einstellungen"
+        };
 
         $("head").append(`
           <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
@@ -54,7 +62,7 @@ async function buildDirectory(src, dest) {
               }
             })
           </script>
-        `)
+        `);
         // Color theme script
         $("head").append(`
           <script>
@@ -83,45 +91,50 @@ async function buildDirectory(src, dest) {
               }
             })();
           </script>
-        `)
+        `);
 
         $("body").append(`
           <div class="load-snippet" data-target="pwaBanner"></div>
           <div class="load-snippet" data-target="navbar"></div>
           <div class="load-snippet" data-target="footer"></div>
-        `)
+        `);
 
-        $("body").css({ display: "none" })
+        $("body").css({ display: "none" });
 
         let elements;
         do {
-          elements = $(".load-snippet").toArray()
+          elements = $(".load-snippet").toArray();
           for (const el of elements) {
-            const target = $(el).data("target")
-            const folder = path.join(srcFile, "..", "..", "..", "snippets", target)
-            if (await fs.exists(path.join(folder, target + ".html"))) {
-              const $new = cheerio.load(await fs.readFile(path.join(folder, target + ".html")))
+            const target = $(el).data("target");
+            const folder = _join(srcFile, "..", "..", "..", "snippets", target);
+            if (await exists(_join(folder, target + ".html"))) {
+              const $new = load(
+                await readFile(_join(folder, target + ".html"))
+              );
               if ($(el).data("target-id")) {
-                $(el).replaceWith($new("#" + $(el).data("target-id")).html())
+                $(el).replaceWith($new("#" + $(el).data("target-id")).html());
               }
               else {
-                $(el).replaceWith($new.html())
+                $(el).replaceWith($new.html());
               }
             }
-            if (await fs.exists(path.join(folder, target + ".scss"))) {
-              $("head").append(`<link class="preload-style" rel="preload" href="/snippets/${target}/${target}.css" as="style">`)
+            if (await exists(_join(folder, target + ".scss"))) {
+              $("head").append(
+                `<link class="preload-style" rel="preload" href="/snippets/${target}/${target}.css" as="style">`
+              );
             }
-            if (await fs.exists(path.join(folder, target + ".ts"))) {
-              $("head").append(`<script src="/snippets/${target}/${target}.js" type="module" defer></script>`)
+            if (await exists(_join(folder, target + ".ts"))) {
+              $("head").append(
+                `<script src="/snippets/${target}/${target}.js" type="module" defer></script>`
+              );
             }
           }
-        }
-        while (elements.length > 0)
+        } while (elements.length > 0);
 
-        await fs.writeFile(destFile, $.html());
+        await writeFile(destFile, $.html());
       }
       else {
-        await fs.copy(srcFile, destFile);
+        await copy(srcFile, destFile);
       }
     }
   }

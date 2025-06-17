@@ -33,18 +33,10 @@ export function richTextToHtml(
           const sanitizedUrl = sanitizeHtml(url);
           const neighbourLinkElements = $(this)
             .add(
-              $(this).prevUntil(
-                `:not([data-link-url="${$(this)
-                  .attr("data-link-url")
-                  ?.replaceAll("\\", "\\\\")}"])`
-              )
+              $(this).prevUntil(`:not([data-link-url="${$(this).attr("data-link-url")?.replaceAll("\\", "\\\\")}"])`)
             )
             .add(
-              $(this).nextUntil(
-                `:not([data-link-url="${$(this)
-                  .attr("data-link-url")
-                  ?.replaceAll("\\", "\\\\")}"])`
-              )
+              $(this).nextUntil(`:not([data-link-url="${$(this).attr("data-link-url")?.replaceAll("\\", "\\\\")}"])`)
             );
 
           $(this)
@@ -69,26 +61,25 @@ export function richTextToHtml(
     targetElement?.empty().append(parsedText.children());
   }
   function insertShowMoreButton(targetElement: JQuery<HTMLElement>) {
-    let showMoreButton = $(`<a href="#">Mehr anzeigen</a>`);
+    let showMoreButton = $('<a href="#">Mehr anzeigen</a>');
     if (options?.showMoreButton && typeof options?.showMoreButton != "boolean")
       showMoreButton = options?.showMoreButton;
 
     targetElement.on("addedToDom", () => {
       if ((targetElement.height() ?? 0) >= 120) {
-        targetElement
-          .css({ maxHeight: "96px", overflow: "hidden", display: "block" })
-          .after(
-            showMoreButton.on("click", function (ev) {
-              ev.preventDefault();
-              if ($(this).text() == "Mehr anzeigen") {
-                $(this).text("Weniger anzeigen");
-                targetElement.css({ maxHeight: "none" });
-              } else {
-                $(this).text("Mehr anzeigen");
-                targetElement.css({ maxHeight: "96px" });
-              }
-            })
-          );
+        targetElement.css({ maxHeight: "96px", overflow: "hidden", display: "block" }).after(
+          showMoreButton.on("click", function (ev) {
+            ev.preventDefault();
+            if ($(this).text() == "Mehr anzeigen") {
+              $(this).text("Weniger anzeigen");
+              targetElement.css({ maxHeight: "none" });
+            }
+            else {
+              $(this).text("Mehr anzeigen");
+              targetElement.css({ maxHeight: "96px" });
+            }
+          })
+        );
       }
     });
   }
@@ -125,11 +116,7 @@ export function richTextToHtml(
     if (aMatch) {
       span.attr(
         "data-link-url",
-        aMatch.args[0]
-          .replaceAll("\\", "\\\\")
-          .replaceAll(";", "\\;")
-          .replaceAll("<", "\\«")
-          .replaceAll(">", "\\»")
+        aMatch.args[0].replaceAll("\\", "\\\\").replaceAll(";", "\\;").replaceAll("<", "\\«").replaceAll(">", "\\»")
       );
     }
     parsedText.append(span[0].outerHTML);
@@ -178,10 +165,9 @@ export function richTextToHtml(
       if (char == ">") {
         inTag = false;
         if (activeTagName.startsWith("/")) {
-          activeTags = activeTags.filter(
-            t => t.tagName != activeTagName.substring(1)
-          );
-        } else {
+          activeTags = activeTags.filter(t => t.tagName != activeTagName.substring(1));
+        }
+        else {
           activeTags.push({ tagName: activeTagName, args: activeTagArgs });
         }
         return true;
@@ -194,12 +180,15 @@ export function richTextToHtml(
     if (inTag) {
       if (activeArgsId == -1) {
         activeTagName += char;
-      } else {
+      }
+      else {
         activeTagArgs[activeArgsId] += char;
       }
-    } else if (char == "\n") {
-      parsedText.append(`<br><span class="newline">&#8203;</span>`);
-    } else {
+    }
+    else if (char == "\n") {
+      parsedText.append('<br><span class="newline">&#8203;</span>');
+    }
+    else {
       parseNormalChar(char);
     }
   }
@@ -220,26 +209,16 @@ function replaceRichTextareas() {
       for (let rangeId = 0; rangeId < selection.rangeCount; rangeId++) {
         const range = selection.getRangeAt(rangeId).cloneRange();
 
-        if (
-          textarea[0].contains(range.startContainer) &&
-          textarea[0].contains(range.endContainer)
-        ) {
+        if (textarea[0].contains(range.startContainer) && textarea[0].contains(range.endContainer)) {
           if (range.startContainer.nodeType == range.startContainer.TEXT_NODE) {
             const startSpan = range.startContainer.parentNode;
             const startOffset =
-              Array.prototype.indexOf.call(
-                startSpan?.parentNode?.children,
-                startSpan
-              ) + range.startOffset;
+              Array.prototype.indexOf.call(startSpan?.parentNode?.children, startSpan) + range.startOffset;
             range.setStart(textarea[0], startOffset);
           }
           if (range.endContainer.nodeType == range.endContainer.TEXT_NODE) {
             const endSpan = range.endContainer.parentNode;
-            const endOffset =
-              Array.prototype.indexOf.call(
-                endSpan?.parentNode?.children,
-                endSpan
-              ) + range.endOffset;
+            const endOffset = Array.prototype.indexOf.call(endSpan?.parentNode?.children, endSpan) + range.endOffset;
             range.setEnd(textarea[0], endOffset);
           }
         }
@@ -263,11 +242,7 @@ function replaceRichTextareas() {
         if ($(this).is(".newline")) {
           return;
         }
-        let singleValue = $(this)
-          .text()
-          .replaceAll("\\", "\\\\")
-          .replaceAll("<", "\\«")
-          .replaceAll(">", "\\»");
+        let singleValue = $(this).text().replaceAll("\\", "\\\\").replaceAll("<", "\\«").replaceAll(">", "\\»");
         if ($(this).css("font-weight") == "700") {
           singleValue = `<b>${singleValue}</b>`;
         }
@@ -310,13 +285,8 @@ function replaceRichTextareas() {
       const ranges = extractSelectedRanges();
       window.getSelection()?.removeAllRanges();
       for (const range of ranges) {
-        if (
-          textarea[0].contains(range.startContainer) &&
-          textarea[0].contains(range.endContainer)
-        ) {
-          const selectedSpans = textarea
-            .find("span, br")
-            .slice(range.startOffset, range.endOffset);
+        if (textarea[0].contains(range.startContainer) && textarea[0].contains(range.endContainer)) {
+          const selectedSpans = textarea.find("span, br").slice(range.startOffset, range.endOffset);
           selectedSpans.each(function () {
             func($(this));
           });
@@ -343,7 +313,7 @@ function replaceRichTextareas() {
       fontSize: { enabled: false, value: 16 },
       sub: false,
       sup: false,
-      color: { enabled: false, value: "Automatisch" },
+      color: { enabled: false, value: "Automatisch" }
     };
 
     richTextarea.find(".rich-textarea-color svg").hide();
@@ -365,7 +335,8 @@ function replaceRichTextareas() {
     function findReplacement(direction: "old" | "new", val: string) {
       if (direction == "old") {
         return replacements.find(r => r.old == val);
-      } else {
+      }
+      else {
         return replacements.find(r => r.new == val);
       }
     }
@@ -374,7 +345,7 @@ function replaceRichTextareas() {
       { old: "-->", new: "⭢" },
       { old: "<--", new: "⭠" },
       { old: "<->", new: "⭤" },
-      { old: "...", new: "…" },
+      { old: "...", new: "…" }
     ];
 
     textarea.on("beforeinput", e => {
@@ -390,30 +361,18 @@ function replaceRichTextareas() {
         }
         if (currentStyles.sub) {
           node.addClass("sub");
-          node.css(
-            "font-size",
-            parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px"
-          );
+          node.css("font-size", parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
         }
         if (currentStyles.sup) {
           node.addClass("sup");
-          node.css(
-            "font-size",
-            parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px"
-          );
+          node.css("font-size", parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
         }
-        if (
-          currentStyles.color.enabled &&
-          currentStyles.color.value != "Automatisch"
-        ) {
+        if (currentStyles.color.enabled && currentStyles.color.value != "Automatisch") {
           node.attr("data-color", currentStyles.color.value);
           node.css("color", currentStyles.color.value);
         }
       }
-      function insertAtRange(
-        insertion: string,
-        options?: { copyStyles?: boolean; replace?: boolean }
-      ) {
+      function insertAtRange(insertion: string, options?: { copyStyles?: boolean; replace?: boolean }) {
         deleteSelectedRanges();
 
         const range = ranges[0];
@@ -425,9 +384,11 @@ function replaceRichTextareas() {
 
         if (textarea.find("span, br").length == 0) {
           textarea.append(newNode);
-        } else if (range.startOffset == 0) {
+        }
+        else if (range.startOffset == 0) {
           textarea.prepend(newNode);
-        } else {
+        }
+        else {
           const previous = textarea.find("span, br").eq(range.startOffset - 1);
           previous.after(newNode);
 
@@ -461,10 +422,9 @@ function replaceRichTextareas() {
         for (const range of ranges) {
           let toRemove: JQuery<HTMLElement>;
           if (range.startOffset != range.endOffset) {
-            toRemove = textarea
-              .find("span, br")
-              .slice(range.startOffset, range.endOffset);
-          } else {
+            toRemove = textarea.find("span, br").slice(range.startOffset, range.endOffset);
+          }
+          else {
             continue;
           }
           const additional = toRemove.filter("span.newline").prev();
@@ -490,7 +450,8 @@ function replaceRichTextareas() {
               insertAtRange(`<span>${char}</span>`, { copyStyles: true });
             }
             target.remove();
-          } else {
+          }
+          else {
             const additional = target.filter("span.newline").prev();
             target = target.add(additional);
             target.remove();
@@ -512,24 +473,22 @@ function replaceRichTextareas() {
         e.preventDefault();
         insertAtRange(`<span>${ev.data}</span>`, {
           copyStyles: true,
-          replace: true,
+          replace: true
         });
-      } else if (
-        ["insertParagraph", "insertLineBreak"].includes(ev.inputType)
-      ) {
+      }
+      else if (["insertParagraph", "insertLineBreak"].includes(ev.inputType)) {
         e.preventDefault();
-        insertAtRange(`<br>`);
-        insertAtRange(`<span class="newline">&#8203;</span>`); // You need this zero-width-character to select an empty line
-      } else if (ev.inputType === "deleteContentBackward") {
+        insertAtRange("<br>");
+        // You need this zero-width-character to select an empty line
+        insertAtRange('<span class="newline">&#8203;</span>');
+      }
+      else if (ev.inputType === "deleteContentBackward") {
         e.preventDefault();
         deleteAtRange();
-      } else {
+      }
+      else {
         e.preventDefault();
-        $("#rich-textarea-unsupported-input-type")
-          .toast("show")
-          .find("i")
-          .eq(1)
-          .text(ev.inputType);
+        $("#rich-textarea-unsupported-input-type").toast("show").find("i").eq(1).text(ev.inputType);
       }
 
       updateInput();
@@ -549,61 +508,48 @@ function replaceRichTextareas() {
         btnName: ".rich-textarea-bold",
         cssPropName: "font-weight",
         cssPropBaseVal: "400",
-        cssPropNewVal: "700",
+        cssPropNewVal: "700"
       },
       {
         styleName: "underline",
         btnName: ".rich-textarea-underline",
         cssPropName: "text-decoration",
         cssPropBaseVal: "none",
-        cssPropNewVal: "underline",
+        cssPropNewVal: "underline"
       },
       {
         styleName: "italic",
         btnName: ".rich-textarea-italic",
         cssPropName: "font-style",
         cssPropBaseVal: "normal",
-        cssPropNewVal: "italic",
-      },
+        cssPropNewVal: "italic"
+      }
     ];
 
     for (const styleToggle of styleToggles) {
       richTextarea.find(styleToggle.btnName).on("click", function () {
-        currentStyles[styleToggle.styleName] =
-          !currentStyles[styleToggle.styleName];
+        currentStyles[styleToggle.styleName] = !currentStyles[styleToggle.styleName];
         $(this).toggleClass("enabled");
 
         forEachSelectedSpan(span => {
-          if (
-            span
-              .css(styleToggle.cssPropName)
-              .includes(styleToggle.cssPropNewVal)
-          ) {
+          if (span.css(styleToggle.cssPropName).includes(styleToggle.cssPropNewVal)) {
             span.css(styleToggle.cssPropName, styleToggle.cssPropBaseVal);
-          } else {
+          }
+          else {
             span.css(styleToggle.cssPropName, styleToggle.cssPropNewVal);
           }
         });
       });
     }
 
-    richTextarea
-      .find(".rich-textarea-font-size-dropdown input")
-      .on("input", function () {
-        richTextarea
-          .find(".rich-textarea-font-size span")
-          .text(`(${$(this).val()})`);
-        currentStyles.fontSize.value = parseInt(
-          $(this).val()?.toString() ?? "16"
-        );
-      });
+    richTextarea.find(".rich-textarea-font-size-dropdown input").on("input", function () {
+      richTextarea.find(".rich-textarea-font-size span").text(`(${$(this).val()})`);
+      currentStyles.fontSize.value = parseInt($(this).val()?.toString() ?? "16");
+    });
 
     richTextarea.find(".rich-textarea-font-size").on("click", function () {
       const newFontSize = parseInt(
-        richTextarea
-          .find(".rich-textarea-font-size-dropdown input")
-          .val()
-          ?.toString() ?? "16"
+        richTextarea.find(".rich-textarea-font-size-dropdown input").val()?.toString() ?? "16"
       );
       if (!newFontSize) return;
       currentStyles.fontSize.enabled = !currentStyles.fontSize.enabled;
@@ -614,14 +560,17 @@ function replaceRichTextareas() {
           span.attr("data-font-size", 16);
           if (span.hasClass("sub") || span.hasClass("sup")) {
             span.css("font-size", 16 * 0.83);
-          } else {
+          }
+          else {
             span.css("font-size", 16);
           }
-        } else {
+        }
+        else {
           span.attr("data-font-size", newFontSize);
           if (span.hasClass("sub") || span.hasClass("sup")) {
             span.css("font-size", newFontSize * 0.83);
-          } else {
+          }
+          else {
             span.css("font-size", newFontSize);
           }
         }
@@ -638,13 +587,11 @@ function replaceRichTextareas() {
         if (span.hasClass("sub")) {
           span.removeClass("sub");
           span.css("font-size", (span.attr("data-font-size") ?? 16) + "px");
-        } else {
+        }
+        else {
           span.addClass("sub");
           span.removeClass("sup");
-          span.css(
-            "font-size",
-            parseInt(span.attr("data-font-size") ?? "16") * 0.83 + "px"
-          );
+          span.css("font-size", parseInt(span.attr("data-font-size") ?? "16") * 0.83 + "px");
         }
       });
     });
@@ -659,51 +606,35 @@ function replaceRichTextareas() {
         if (span.hasClass("sup")) {
           span.removeClass("sup");
           span.css("font-size", (span.attr("data-font-size") ?? 16) + "px");
-        } else {
+        }
+        else {
           span.addClass("sup");
           span.removeClass("sub");
-          span.css(
-            "font-size",
-            parseInt(span.attr("data-font-size") ?? "16") * 0.83 + "px"
-          );
+          span.css("font-size", parseInt(span.attr("data-font-size") ?? "16") * 0.83 + "px");
         }
       });
     });
 
     richTextarea.find(".rich-textarea-color-picker-toggle").on("click", ev => {
       ev.stopPropagation();
-      richTextarea
-        .find(".rich-textarea-color-picker ~ .color-picker-trigger")
-        .trigger("click");
+      richTextarea.find(".rich-textarea-color-picker ~ .color-picker-trigger").trigger("click");
     });
 
     richTextarea.find(".rich-textarea-color-picker").on("change", function () {
       const color = $(this).val()?.toString() ?? "#3bb9ca";
       currentStyles.color.value = color;
       if (color == "Automatisch") {
-        richTextarea
-          .find(".rich-textarea-color svg")
-          .hide()
-          .find("~ span")
-          .show();
+        richTextarea.find(".rich-textarea-color svg").hide().find("~ span").show();
         richTextarea.find(".rich-textarea-color-enabled").hide();
-      } else {
-        richTextarea
-          .find(".rich-textarea-color svg")
-          .css("fill", color)
-          .show()
-          .find("~ span")
-          .hide();
-        richTextarea
-          .find(".rich-textarea-color-enabled")
-          .toggle(currentStyles.color.enabled);
+      }
+      else {
+        richTextarea.find(".rich-textarea-color svg").css("fill", color).show().find("~ span").hide();
+        richTextarea.find(".rich-textarea-color-enabled").toggle(currentStyles.color.enabled);
       }
     });
 
     richTextarea.find(".rich-textarea-color").on("click", function () {
-      const newColor =
-        richTextarea.find(".rich-textarea-color-picker").val()?.toString() ??
-        "#3bb9ca";
+      const newColor = richTextarea.find(".rich-textarea-color-picker").val()?.toString() ?? "#3bb9ca";
       currentStyles.color.enabled = !currentStyles.color.enabled;
       currentStyles.color.value = newColor;
       $(this).toggleClass("enabled");
@@ -714,7 +645,8 @@ function replaceRichTextareas() {
         if (span.attr("data-color") == newColor || newColor == "Automatisch") {
           span.css("color", "");
           span.attr("data-color", "");
-        } else {
+        }
+        else {
           span.css("color", newColor);
           span.attr("data-color", newColor);
         }
@@ -722,21 +654,14 @@ function replaceRichTextareas() {
     });
 
     richTextarea.find(".rich-textarea-link").on("click", () => {
-      let newUrl =
-        richTextarea
-          .find(".rich-textarea-link-dropdown input")
-          .val()
-          ?.toString() ?? "";
-      newUrl = newUrl
-        .replaceAll("\\", "\\\\")
-        .replaceAll(";", "\\;")
-        .replaceAll("<", "\\«")
-        .replaceAll(">", "\\»");
+      let newUrl = richTextarea.find(".rich-textarea-link-dropdown input").val()?.toString() ?? "";
+      newUrl = newUrl.replaceAll("\\", "\\\\").replaceAll(";", "\\;").replaceAll("<", "\\«").replaceAll(">", "\\»");
       forEachSelectedSpan(span => {
         if (span.attr("data-link-url") == newUrl || newUrl == "") {
           span.css("link-url", "");
           span.attr("data-link-url");
-        } else {
+        }
+        else {
           span.css("link-url", newUrl);
           span.css("font-weight", "700");
           span.css("text-decoration", "underline");
@@ -749,11 +674,7 @@ function replaceRichTextareas() {
 
     richTextarea.find(".rich-textarea-clear").on("click", () => {
       forEachSelectedSpan(span => {
-        span
-          .removeAttr("style")
-          .removeAttr("data-font-size")
-          .removeAttr("data-color")
-          .removeAttr("data-link-url");
+        span.removeAttr("style").removeAttr("data-font-size").removeAttr("data-color").removeAttr("data-link-url");
         span.removeClass("sub").removeClass("sup");
       });
     });
@@ -765,16 +686,12 @@ function replaceRichTextareas() {
 
       const ranges = extractSelectedRanges();
       for (const range of ranges) {
-        if (
-          textarea[0].contains(range.startContainer) &&
-          textarea[0].contains(range.endContainer)
-        ) {
+        if (textarea[0].contains(range.startContainer) && textarea[0].contains(range.endContainer)) {
           if (range.collapsed && range.startOffset != 0) {
             selectedSpans = textarea.find("span, br").eq(range.startOffset - 1);
-          } else {
-            selectedSpans = textarea
-              .find("span, br")
-              .slice(range.startOffset, range.endOffset);
+          }
+          else {
+            selectedSpans = textarea.find("span, br").slice(range.startOffset, range.endOffset);
           }
         }
       }
@@ -786,40 +703,24 @@ function replaceRichTextareas() {
         let commonLinkUrl: string | undefined | null;
         selectedSpans.each(function () {
           if (commonLinkUrl === undefined) {
-            commonLinkUrl = $(this)
-              .attr("data-link-url")
-              ?.replaceAll("\\", "\\\\");
-          } else if (
-            commonLinkUrl !=
-            $(this).attr("data-link-url")?.replaceAll("\\", "\\\\")
-          ) {
+            commonLinkUrl = $(this).attr("data-link-url")?.replaceAll("\\", "\\\\");
+          }
+          else if (commonLinkUrl != $(this).attr("data-link-url")?.replaceAll("\\", "\\\\")) {
             commonLinkUrl = null;
           }
         });
         if (typeof commonLinkUrl == "string" && commonLinkUrl != "") {
           selectedSpans
-            .add(
-              selectedSpans.prevUntil(
-                `:not([data-link-url="${commonLinkUrl}"])`
-              )
-            )
-            .add(
-              selectedSpans.nextUntil(
-                `:not([data-link-url="${commonLinkUrl}"])`
-              )
-            )
+            .add(selectedSpans.prevUntil(`:not([data-link-url="${commonLinkUrl}"])`))
+            .add(selectedSpans.nextUntil(`:not([data-link-url="${commonLinkUrl}"])`))
             .addClass("rich-textarea-link-enabled");
           richTextarea.find(".rich-textarea-link").addClass("enabled");
           const displayedUrl = commonLinkUrl
             .replaceAll("\\«", "<")
             .replaceAll("\\»", ">")
             .replaceAll("\\;", ";")
-            .replaceAll("\\\\", "\\")
-          richTextarea
-            .find(".rich-textarea-link-dropdown span")
-            .show()
-            .find("b")
-            .text(displayedUrl);
+            .replaceAll("\\\\", "\\");
+          richTextarea.find(".rich-textarea-link-dropdown span").show().find("b").text(displayedUrl);
         }
       }
     });
@@ -839,7 +740,7 @@ $(() => {
     });
   }).observe(document.body, {
     childList: true,
-    subtree: true,
+    subtree: true
   });
 
   replaceRichTextareas();
@@ -866,14 +767,18 @@ $(() => {
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
       </div>
       <div class="toast-body">
-        Achtung, dieser Link führt auf eine andere Website (<b></b>). Klicke nur auf öffnen, wenn du diese Website kennst.
+        Achtung, dieser Link führt auf eine andere Website (<b></b>).
+        Klicke nur auf öffnen, wenn du diese Website kennst.
         <div class="mt-2 pt-2 border-top">
           <div class="row g-2 justify-content-end">
             <div class="col-auto">
               <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
             </div>
             <div class="col-auto">
-              <button type="button" class="btn btn-warning btn-sm" data-bs-dismiss="toast" id="rich-textarea-unsafe-link-confirm">Öffnen</button>
+              <button type="button" class="btn btn-warning btn-sm" data-bs-dismiss="toast"
+                id="rich-textarea-unsafe-link-confirm">
+                Öffnen
+              </button>
             </div>
           </div>
         </div>

@@ -13,7 +13,7 @@ import {
   updateAll,
   socket,
   reloadAll,
-  csrfToken,
+  csrfToken
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -31,15 +31,13 @@ const updateEventList = runOnce(async (): Promise<void> => {
     const eventTypeId = event.eventTypeId;
     const name = event.name;
     const description = event.description;
-    const startDate = msToDisplayDate(event.startDate)
-      .split(".")
-      .slice(0, 2)
-      .join(".");
+    const startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
     const lesson = event.lesson;
     let endDate;
     if (event.endDate) {
       endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
-    } else {
+    }
+    else {
       endDate = null;
     }
 
@@ -50,9 +48,7 @@ const updateEventList = runOnce(async (): Promise<void> => {
 
     // Filter by min. date
     if ($("#filter-date-from").val() != "") {
-      const filterDate = Date.parse(
-        $("#filter-date-from").val()?.toString() ?? ""
-      );
+      const filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
       if (filterDate > parseInt(event.endDate ?? event.startDate)) {
         continue;
       }
@@ -60,19 +56,14 @@ const updateEventList = runOnce(async (): Promise<void> => {
 
     // Filter by max. date
     if ($("#filter-date-until").val() != "") {
-      const filterDate = Date.parse(
-        $("#filter-date-until").val()?.toString() ?? ""
-      );
+      const filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
       if (filterDate < parseInt(event.startDate)) {
         continue;
       }
     }
 
     // Filter by team
-    if (
-      !(await joinedTeamsData()).includes(event.teamId) &&
-      event.teamId != -1
-    ) {
+    if (!(await joinedTeamsData()).includes(event.teamId) && event.teamId != -1) {
       continue;
     }
 
@@ -101,38 +92,29 @@ const updateEventList = runOnce(async (): Promise<void> => {
     $("#event-list").append(template);
 
     richTextToHtml(description ?? "", template.find(".event-description"), {
-      showMoreButton: $(
-        `<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`
-      ),
-      parseLinks: true,
+      showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
+      parseLinks: true
     });
     template.find(".event-description").trigger("addedToDom");
   }
 
   // If no events match, add an explanation text
   if ($("#event-list").html() == "") {
-    $("#event-list").html(
-      `<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>`
-    );
+    $("#event-list").html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
   }
 });
 
 const updateEventTypeList = runOnce(async (): Promise<void> => {
   // Clear the select element in the add event modal
   $("#add-event-type").empty();
-  $("#add-event-type").append(
-    '<option value="" disabled selected>Art</option>'
-  );
+  $("#add-event-type").append('<option value="" disabled selected>Art</option>');
   // Clear the select element in the edit event modal
   $("#edit-event-type").empty();
-  $("#edit-event-type").append(
-    '<option value="" disabled selected>Art</option>'
-  );
+  $("#edit-event-type").append('<option value="" disabled selected>Art</option>');
   // Clear the list for filtering by type
   $("#filter-type-list").empty();
 
-  const filterData =
-    JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+  const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
   filterData.type ??= {};
 
   (await eventTypeData()).forEach(eventType => {
@@ -141,9 +123,7 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
     const eventTypeName = eventType.name;
 
     filterData.type[eventTypeId] ??= true;
-    const checkedStatus: "checked" | "" = filterData.type[eventTypeId]
-      ? "checked"
-      : "";
+    const checkedStatus: "checked" | "" = filterData.type[eventTypeId] ? "checked" : "";
     if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none");
 
     // Add the template for filtering by type
@@ -164,8 +144,7 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
   // If any type filter gets changed, update the shown events
   $(".filter-type-option").on("change", function () {
     updateEventList();
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.type ??= {};
     filterData.type[$(this).data("id")] = $(this).prop("checked");
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
@@ -237,7 +216,7 @@ function addEvent() {
         startDate: dateToMs(startDate),
         lesson: lesson,
         endDate: dateToMs(endDate) ?? null,
-        teamId: team,
+        teamId: team
       };
       // Save whether the server has responed
       let hasResponded = false;
@@ -248,7 +227,7 @@ function addEvent() {
         type: "POST",
         data: data,
         headers: {
-          "X-CSRF-Token": await csrfToken(),
+          "X-CSRF-Token": await csrfToken()
         },
         success: () => {
           // Show a success notification and update the shown events
@@ -262,10 +241,12 @@ function addEvent() {
             // The user has to be logged in but isn't
             // Show an error notification
             $navbarToasts.notLoggedIn.toast("show");
-          } else if (xhr.status === 500) {
+          }
+          else if (xhr.status === 500) {
             // An internal server error occurred
             $navbarToasts.serverError.toast("show");
-          } else {
+          }
+          else {
             $navbarToasts.unknownError.toast("show");
           }
         },
@@ -274,7 +255,7 @@ function addEvent() {
           hasResponded = true;
           // Hide the add event modal
           $("#add-event-modal").modal("hide");
-        },
+        }
       });
       setTimeout(() => {
         // Wait for 1s
@@ -333,7 +314,7 @@ async function editEvent(eventId: number) {
         startDate: dateToMs(startDate),
         lesson: lesson,
         endDate: dateToMs(endDate),
-        teamId: team,
+        teamId: team
       };
       // Save whether the server has responed
       let hasResponded = false;
@@ -345,7 +326,7 @@ async function editEvent(eventId: number) {
         contentType: "application/json",
         data: JSON.stringify(data),
         headers: {
-          "X-CSRF-Token": await csrfToken(),
+          "X-CSRF-Token": await csrfToken()
         },
         success: () => {
           // Show a success notification and update the shown events
@@ -359,10 +340,12 @@ async function editEvent(eventId: number) {
             // The user has to be logged in but isn't
             // Show an error notification
             $navbarToasts.notLoggedIn.toast("show");
-          } else if (xhr.status === 500) {
+          }
+          else if (xhr.status === 500) {
             // An internal server error occurred
             $navbarToasts.serverError.toast("show");
-          } else {
+          }
+          else {
             $navbarToasts.unknownError.toast("show");
           }
         },
@@ -370,7 +353,7 @@ async function editEvent(eventId: number) {
           // The server has responded
           hasResponded = true;
           $("#edit-event-modal").modal("hide");
-        },
+        }
       });
       setTimeout(() => {
         // Wait for 1s
@@ -399,7 +382,7 @@ function deleteEvent(eventId: number) {
       $("#delete-event-confirm-toast").toast("hide");
 
       const data = {
-        eventId: eventId,
+        eventId: eventId
       };
       // Save whether the server has responed
       let hasResponded = false;
@@ -410,7 +393,7 @@ function deleteEvent(eventId: number) {
         type: "POST",
         data: data,
         headers: {
-          "X-CSRF-Token": await csrfToken(),
+          "X-CSRF-Token": await csrfToken()
         },
         success: () => {
           // Show a success notification and update the shown events
@@ -424,17 +407,19 @@ function deleteEvent(eventId: number) {
             // The user has to be logged in but isn't
             // Show an error notification
             $navbarToasts.notLoggedIn.toast("show");
-          } else if (xhr.status === 500) {
+          }
+          else if (xhr.status === 500) {
             // An internal server error occurred
             $navbarToasts.serverError.toast("show");
-          } else {
+          }
+          else {
             $navbarToasts.unknownError.toast("show");
           }
         },
         complete: () => {
           // The server has responded
           hasResponded = true;
-        },
+        }
       });
       setTimeout(() => {
         // Wait for 1s
@@ -449,27 +434,26 @@ function deleteEvent(eventId: number) {
 function resetFilters() {
   $("#filter-changed").addClass("d-none");
 
-  const filterData =
-    JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+  const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
 
   if (filterData.dateFrom == undefined) {
     $("#filter-date-from").val(msToInputDate(Date.now()));
-  } else {
+  }
+  else {
     $("#filter-date-from").val(filterData.dateFrom);
-    if (!isSameDay(new Date(filterData.dateFrom), new Date()))
-      $("#filter-changed").removeClass("d-none");
+    if (!isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none");
   }
 
   if (filterData.dateUntil == undefined) {
     const nextMonth = new Date(Date.now());
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
-  } else {
+  }
+  else {
     $("#filter-date-until").val(filterData.dateUntil);
     const nextMonth = new Date(Date.now());
     nextMonth.setMonth(nextMonth.getMonth() + 1);
-    if (!isSameDay(new Date(filterData.dateUntil), nextMonth))
-      $("#filter-changed").removeClass("d-none");
+    if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
   }
 
   updateEventTypeList();
@@ -494,7 +478,8 @@ $(function () {
   if (user.loggedIn) {
     $("#edit-toggle-label").removeClass("d-none");
     $("#show-add-event-button").removeClass("d-none");
-  } else {
+  }
+  else {
     $("#edit-toggle-label").addClass("d-none");
     $("#show-add-event-button").addClass("d-none");
     $(".event-edit-options").addClass("d-none");
@@ -509,7 +494,8 @@ $(function () {
       // On checking the edit toggle, show the add button and edit options
       $(".event-edit-options").removeClass("d-none");
       $(".event-title").css("margin-right", "3.75rem");
-    } else {
+    }
+    else {
       // On unchecking the edit toggle, hide the add button and edit options
       $(".event-edit-options").addClass("d-none");
       $(".event-title").css("margin-right", "0rem");
@@ -524,7 +510,8 @@ $(function () {
       // On checking the filter toggle, show the filter options
       $("#filter-content").removeClass("d-none");
       $("#filter-reset").removeClass("d-none");
-    } else {
+    }
+    else {
       // On checking the filter toggle, hide the filter options
       $("#filter-content").addClass("d-none");
       $("#filter-reset").addClass("d-none");
@@ -532,11 +519,11 @@ $(function () {
   });
 
   if (!localStorage.getItem("eventFilter")) {
-    localStorage.setItem("eventFilter", `{}`);
+    localStorage.setItem("eventFilter", "{}");
   }
   resetFilters();
   $("#filter-reset").on("click", () => {
-    localStorage.setItem("eventFilter", `{}`);
+    localStorage.setItem("eventFilter", "{}");
     resetFilters();
     updateAll();
   });
@@ -549,7 +536,8 @@ $(function () {
 
     if ([name, startDate].includes("") || type == null) {
       $("#add-event-button").addClass("disabled");
-    } else {
+    }
+    else {
       $("#add-event-button").removeClass("disabled");
     }
 
@@ -569,7 +557,8 @@ $(function () {
 
     if ([name, startDate].includes("") || type == null) {
       $("#edit-event-button").addClass("disabled");
-    } else {
+    }
+    else {
       $("#edit-event-button").removeClass("disabled");
     }
 
@@ -602,8 +591,7 @@ $(function () {
 
   // On clicking the all types option, check all and update the event list
   $("#filter-type-all").on("click", () => {
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     $(".filter-type-option").prop("checked", true);
     $(".filter-type-option").each(function () {
       filterData.type[$(this).data("id")] = true;
@@ -615,8 +603,7 @@ $(function () {
 
   // On clicking the none types option, uncheck all and update the event list
   $("#filter-type-none").on("click", () => {
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.type ??= {};
     $(".filter-type-option").prop("checked", false);
     $(".filter-type-option").each(function () {
@@ -629,8 +616,7 @@ $(function () {
 
   // On changing any filter date option, update the event list
   $("#filter-date-from").on("change", () => {
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateFrom = $("#filter-date-from").val();
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
     resetFilters();
@@ -639,8 +625,7 @@ $(function () {
 
   // On changing any filter date option, update the event list
   $("#filter-date-until").on("change", () => {
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateUntil = $("#filter-date-until").val();
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
     resetFilters();
@@ -659,7 +644,8 @@ socket.on("updateEventData", () => {
     loadEventData();
 
     updateEventList();
-  } catch (error) {
+  }
+  catch (error) {
     console.error("Error handling updateEventData:", error);
   }
 });

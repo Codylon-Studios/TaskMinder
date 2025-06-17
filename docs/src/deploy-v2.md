@@ -1,11 +1,13 @@
 # Server Setup in Production v2 - unstable
+
 !!! warning
-    This guide is based on non-final decisions and is subject to frequent changes as it reflects the current state of the develop branch. It serves only as a preview of the upcoming documentation version.
+This guide is based on non-final decisions and is subject to frequent changes as it reflects the current state of the develop branch. It serves only as a preview of the upcoming documentation version.
+
 ## What you'll need
 
-* A valid domain (e.g. `codylon.de`)
-* A server running Ubuntu (≥ 24.04 LTS) with sudo or root access
-* The codebase of TaskMinder from [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)
+- A valid domain (e.g. `codylon.de`)
+- A server running Ubuntu (≥ 24.04 LTS) with sudo or root access
+- The codebase of TaskMinder from [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)
 
 ---
 
@@ -52,7 +54,7 @@ For the monitoring page (`monitoring.example.com`), add the following record:
 
 DNS propagation can take a few minutes to several hours. Use tools like:
 
-* [https://dnschecker.org](https://dnschecker.org)
+- [https://dnschecker.org](https://dnschecker.org)
 
 Once your domain resolves to your server’s IP, proceed to the next step.
 
@@ -125,12 +127,14 @@ sudo fail2ban-client status
 ## 3. Clone the Project from GitHub
 
 !!! info
-    Change this to pull from the develop branch
+Change this to pull from the develop branch
+
 ```bash
 cd /opt
 sudo git clone https://github.com/Codylon-Studios/TaskMinder.git
 cd TaskMinder
 ```
+
 ---
 
 ## 4. Configure NGINX
@@ -140,14 +144,18 @@ Modify the ngnix.config to replace codylon.de with your actual domain.
 ```bash
 vi nginx.config
 ```
+
 or
+
 ```bash
 nano nginx.config
 ```
+
 Then copy/paste the file, get the SSL certificates and activate/start the nginx config
+
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-# 
+#
 sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
 
 # 1. Get certificates first - Don't forget to change `example.com` to your actual domain.
@@ -161,6 +169,7 @@ sudo ln -s /etc/nginx/sites-available/taskminder /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
+
 ---
 
 ## 5. Set Up Non-Root User
@@ -194,7 +203,6 @@ ssh ubuntu@<your-ip-address>
 
 ---
 
-
 ## 6. Automated Backup Setup (via Cron)
 
 ### Make the Backup Script Executable
@@ -210,11 +218,13 @@ chmod +x /opt/TaskMinder/db_backup.sh
 This will schedule the script to run automatically.
 
 Open the crontab editor for the current user:
+
 ```bash
    crontab -e
 ```
 
 Add the following line to the bottom of the file, then save and exit:
+
 ```bash
    0 * * * * /opt/TaskMinder/db_backup.sh >> /var/log/backup.log 2>&1
 ```
@@ -222,9 +232,11 @@ Add the following line to the bottom of the file, then save and exit:
 ### Verify the Setup
 
 Confirm the job was added successfully by listing the active cron jobs:
+
 ```bash
    crontab -l
 ```
+
 You should see the line you just added.
 
 ---
@@ -241,20 +253,20 @@ mkdir db-backups
 
 Before starting the application, create the following **text files inside the `docker_secrets/` folder**. These files are used as Docker secrets for configuration:
 
-| **Filename**         | **Description**                                                                          |
-| -------------------- | ---------------------------------------------------------------------------------------- |
-| `classcode.txt`      | Custom class code required to access content.                                            |
-| `db_name.txt`        | Name of the PostgreSQL database.                                                         |
-| `db_password.txt`    | Password for the PostgreSQL database user.                                               |
-| `db_host.txt`        | Host for the database, usually postgres when running in docker.                          |
-| `db_user.txt`        | PostgreSQL database username.                                                            |
-| `dsb_activated.txt`  | Whether DSB is enabled (`true` or `false`). If `false`, the next two files can be dummy values. |
-| `dsb_password.txt`   | DSB login password.                                                                      |
-| `dsb_user.txt`       | DSB login username.                                                                      |
-| `redis_port.txt`     | Redis port (default is `6379`).                                                          |
-| `session_secret.txt` | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                   |
-| `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.    |
-| `database_url.txt` | Provides the database URL for Prisma ORM:  `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`. |
+| **Filename**                | **Description**                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `classcode.txt`             | Custom class code required to access content.                                                                  |
+| `db_name.txt`               | Name of the PostgreSQL database.                                                                               |
+| `db_password.txt`           | Password for the PostgreSQL database user.                                                                     |
+| `db_host.txt`               | Host for the database, usually postgres when running in docker.                                                |
+| `db_user.txt`               | PostgreSQL database username.                                                                                  |
+| `dsb_activated.txt`         | Whether DSB is enabled (`true` or `false`). If `false`, the next two files can be dummy values.                |
+| `dsb_password.txt`          | DSB login password.                                                                                            |
+| `dsb_user.txt`              | DSB login username.                                                                                            |
+| `redis_port.txt`            | Redis port (default is `6379`).                                                                                |
+| `session_secret.txt`        | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                                         |
+| `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.                                 |
+| `database_url.txt`          | Provides the database URL for Prisma ORM: `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`. |
 
 ---
 
@@ -277,7 +289,7 @@ Before starting the application, create the following **text files inside the `d
    ```bash
    sudo vi personalData.html
    ```
-   
+
 ---
 
 ## 9. Run Docker Compose
@@ -295,28 +307,31 @@ docker compose up -d --build
 
 Your TaskMinder server should now be running at:
 
-* **[https://example.com](https://example.com)**
-* **[https://www.example.com](https://www.example.com)**
-* **[https://monitoring.example.com](https://monitoring.example.com)**
+- **[https://example.com](https://example.com)**
+- **[https://www.example.com](https://www.example.com)**
+- **[https://monitoring.example.com](https://monitoring.example.com)**
 
 ---
 
 ## 11. What's Next?
 
-* Create an account to add your subjects, teams, and timetable.
-* Visit [https://monitoring.example.com](https://monitoring.example.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
+- Create an account to add your subjects, teams, and timetable.
+- Visit [https://monitoring.example.com](https://monitoring.example.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
 
 ---
 
 ## 12. Subsequent Updates
+
 run:
+
 ```bash
 cd /opt/Taskminder
 ./deploy.sh
 ```
+
 to automatically pull the changes from the github repository, build and restart Docker containers.
 
---- 
+---
 
 ## Database Restoration Procedure
 
@@ -329,6 +344,7 @@ Use this procedure to restore the database to a specific point in time from an e
 Identify the backup file you wish to restore from. The files are located in `/opt/TaskMinder/db-backups/`.
 
 To see the most recent backups first, run:
+
 ```bash
 ls -lt /opt/TaskMinder/db-backups/
 ```
@@ -343,6 +359,7 @@ sudo /opt/TaskMinder/db_restore.sh <backup-filename>
 
 **Example:**
 If you want to restore a file named `backup-2023-10-27_15-00-00.sql.gz`, you would run:
+
 ```bash
 sudo /opt/TaskMinder/db_restore.sh backup-2023-10-27_15-00-00.sql.gz
 ```

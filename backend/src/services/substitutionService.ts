@@ -1,8 +1,4 @@
-import {
-  redisClient,
-  cacheKeySubstitutionsData,
-  cacheExpiration,
-} from "../config/redis";
+import { redisClient, cacheKeySubstitutionsData, cacheExpiration } from "../config/redis";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
@@ -14,15 +10,11 @@ async function loadSubstitutionData(): Promise<void> {
   }
   try {
     if (typeof process.env.DSB_USER != "string") {
-      logger.error(
-        "DSB user not defined! Either define it in the .env file or set DSB_AVTIVATED to false!"
-      );
+      logger.error("DSB user not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
       return;
     }
     if (typeof process.env.DSB_PASSWORD != "string") {
-      logger.error(
-        "DSB password not defined! Either define it in the .env file or set DSB_AVTIVATED to false!"
-      );
+      logger.error("DSB password not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
       return;
     }
     const username = process.env.DSB_USER;
@@ -39,7 +31,8 @@ async function loadSubstitutionData(): Promise<void> {
         );
         return;
       }
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error getting DSBmobile AuthId: ", err);
       return;
     }
@@ -47,11 +40,11 @@ async function loadSubstitutionData(): Promise<void> {
     let plan1Url: string, plan2Url: string;
     try {
       const url = `https://mobileapi.dsbcontrol.de/dsbtimetables?authid=${authId}`;
-      const timetablesRes =
-        await axios.get<{ Childs: { Detail: string }[] }[]>(url);
+      const timetablesRes = await axios.get<{ Childs: { Detail: string }[] }[]>(url);
       plan1Url = timetablesRes.data[0].Childs[0].Detail;
       plan2Url = timetablesRes.data[2].Childs[0].Detail;
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error getting DSBmobile data: ", err);
       return;
     }
@@ -65,18 +58,17 @@ async function loadSubstitutionData(): Promise<void> {
       "teacher",
       "teacherOld",
       "room",
-      "type",
+      "type"
     ];
 
     type Plan = {
-      substitutions: any;
+      substitutions: unknown;
       date: string;
     };
-    let substitutionsData: { plan1: Plan; plan2: Plan; updated: string };
-    substitutionsData = {
+    const substitutionsData: { plan1: Plan; plan2: Plan; updated: string } = {
       plan1: { substitutions: null, date: "" },
       plan2: { substitutions: null, date: "" },
-      updated: "",
+      updated: ""
     };
 
     for (let id: 1 | 2 = 1; id <= 2; id++) {
@@ -99,39 +91,27 @@ async function loadSubstitutionData(): Promise<void> {
         planData.push(data);
       });
 
-      substitutionsData[("plan" + id) as "plan1" | "plan2"]["substitutions"] =
-        planData;
+      substitutionsData[("plan" + id) as "plan1" | "plan2"]["substitutions"] = planData;
 
-      substitutionsData[("plan" + id) as "plan1" | "plan2"]["date"] = $(
-        ".mon_title"
-      )
-        .text()
-        .split(" ")[0];
-      substitutionsData["updated"] = $(".mon_head p")
-        .text()
-        .split("Stand: ")[1];
+      substitutionsData[("plan" + id) as "plan1" | "plan2"]["date"] = $(".mon_title").text().split(" ")[0];
+      substitutionsData["updated"] = $(".mon_head p").text().split("Stand: ")[1];
     }
 
     try {
-      await redisClient.set(
-        cacheKeySubstitutionsData,
-        JSON.stringify(substitutionsData),
-        { EX: cacheExpiration }
-      );
-    } catch (err) {
+      await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(substitutionsData), { EX: cacheExpiration });
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
-  } catch {
+  }
+  catch {
     logger.error("Error fetching substitutions data!");
     const substitutionsData = "No data";
     try {
-      await redisClient.set(
-        cacheKeySubstitutionsData,
-        JSON.stringify(substitutionsData),
-        { EX: cacheExpiration }
-      );
-    } catch (err) {
+      await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(substitutionsData), { EX: cacheExpiration });
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -147,10 +127,10 @@ export async function getSubstitutionData() {
   let cachedData = await redisClient.get(cacheKeySubstitutionsData);
   if (cachedData) {
     return JSON.parse(cachedData);
-  } else {
+  }
+  else {
     await loadSubstitutionData();
-    cachedData =
-      (await redisClient.get(cacheKeySubstitutionsData)) ?? "No data";
+    cachedData = (await redisClient.get(cacheKeySubstitutionsData)) ?? "No data";
     return JSON.parse(cachedData);
   }
 }

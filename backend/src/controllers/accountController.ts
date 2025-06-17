@@ -5,7 +5,7 @@ import { z } from "zod";
 export const registerAccount = asyncHandler(async (req, res, next) => {
   const registerAccountSchema = z.object({
     username: z.string(),
-    password: z.string(),
+    password: z.string()
   });
   const parseResult = registerAccountSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -14,25 +14,26 @@ export const registerAccount = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          username: { type: "string", pattern: "/^\w{4,20}$/" },
-          password: { type: "string" },
+          username: { type: "string", pattern: "/^\\w{4,20}$/" },
+          password: { type: "string" }
         },
-        required: ["username", "password"],
-      },
+        required: ["username", "password"]
+      }
     });
     return;
   }
   try {
     await accountService.registerAccount(parseResult.data, req.session);
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export const joinClass = asyncHandler(async (req, res, next) => {
   const joinClassSchema = z.object({
-    classcode: z.string(),
+    classcode: z.string()
   });
   const parseResult = joinClassSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -41,17 +42,18 @@ export const joinClass = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          classcode: { type: "string" },
+          classcode: { type: "string" }
         },
-        required: ["classcode"],
-      },
+        required: ["classcode"]
+      }
     });
     return;
   }
   try {
     await accountService.joinClass(parseResult.data.classcode, req.session);
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
@@ -59,7 +61,7 @@ export const joinClass = asyncHandler(async (req, res, next) => {
 export const loginAccount = asyncHandler(async (req, res, next) => {
   const loginAccountSchema = z.object({
     username: z.string(),
-    password: z.string(),
+    password: z.string()
   });
   const parseResult = loginAccountSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -68,18 +70,19 @@ export const loginAccount = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          username: { type: "string", pattern: "/^\w{4,20}$/" },
-          password: { type: "string" },
+          username: { type: "string", pattern: "/^\\w{4,20}$/" },
+          password: { type: "string" }
         },
-        required: ["username", "password"],
-      },
+        required: ["username", "password"]
+      }
     });
     return;
   }
   try {
     await accountService.loginAccount(parseResult.data, req.session);
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
@@ -89,14 +92,15 @@ export const logoutAccount = asyncHandler(async (req, res, next) => {
     await accountService.logoutAccount(req.session);
     res.clearCookie("UserLogin");
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export const deleteAccount = asyncHandler(async (req, res, next) => {
   const deleteAccountSchema = z.object({
-    password: z.string(),
+    password: z.string()
   });
   const parseResult = deleteAccountSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -105,10 +109,10 @@ export const deleteAccount = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          password: { type: "string" },
+          password: { type: "string" }
         },
-        required: ["password"],
-      },
+        required: ["password"]
+      }
     });
     return;
   }
@@ -116,7 +120,8 @@ export const deleteAccount = asyncHandler(async (req, res, next) => {
     await accountService.deleteAccount(parseResult.data.password, req.session);
     res.clearCookie("UserLogin");
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
@@ -125,14 +130,15 @@ export const getAuth = asyncHandler(async (req, res, next) => {
   try {
     const response = await accountService.getAuth(req.session);
     res.status(200).json(response);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export const checkUsername = asyncHandler(async (req, res, next) => {
   const checkUsernameSchema = z.object({
-    username: z.string(),
+    username: z.string()
   });
   const parseResult = checkUsernameSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -141,19 +147,18 @@ export const checkUsername = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          username: { type: "string", pattern: "/^\w{4,20}$/" },
+          username: { type: "string", pattern: "/^\\w{4,20}$/" }
         },
-        required: ["username"],
-      },
+        required: ["username"]
+      }
     });
     return;
   }
   try {
-    const response = await accountService.checkUsername(
-      parseResult.data.username
-    );
+    const response = await accountService.checkUsername(parseResult.data.username);
     res.status(200).json(response);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
@@ -165,5 +170,5 @@ export default {
   logoutAccount,
   deleteAccount,
   getAuth,
-  checkUsername,
+  checkUsername
 };

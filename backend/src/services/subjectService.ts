@@ -11,7 +11,8 @@ const subjectService = {
     if (cachedSubjectata) {
       try {
         return JSON.parse(cachedSubjectata);
-      } catch (error) {
+      }
+      catch (error) {
         logger.error("Error parsing Redis data:", error);
         throw new Error();
       }
@@ -21,7 +22,8 @@ const subjectService = {
 
     try {
       await updateCacheData(data, cacheKeySubjectData);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -46,10 +48,10 @@ const subjectService = {
         if (!subjects.some(s => s.subjectId === subject.subjectId)) {
           // delete lessons which where linked to subject
           await prisma.lesson.deleteMany({
-            where: { subjectId: subject.subjectId },
+            where: { subjectId: subject.subjectId }
           });
           await prisma.subjects.delete({
-            where: { subjectId: subject.subjectId },
+            where: { subjectId: subject.subjectId }
           });
         }
       })
@@ -66,7 +68,7 @@ const subjectService = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
-          expected: true,
+          expected: true
         };
         throw err;
       }
@@ -81,10 +83,11 @@ const subjectService = {
               teacherGender: subject.teacherGender,
               teacherNameLong: subject.teacherNameLong,
               teacherNameShort: subject.teacherNameShort,
-              teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
-            },
+              teacherNameSubstitution: subject.teacherNameSubstitution ?? []
+            }
           });
-        } else {
+        }
+        else {
           await prisma.subjects.update({
             where: { subjectId: subject.subjectId },
             data: {
@@ -94,16 +97,17 @@ const subjectService = {
               teacherGender: subject.teacherGender,
               teacherNameLong: subject.teacherNameLong,
               teacherNameShort: subject.teacherNameShort,
-              teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
-            },
+              teacherNameSubstitution: subject.teacherNameSubstitution ?? []
+            }
           });
         }
-      } catch {
+      }
+      catch {
         const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
-          expected: true,
+          expected: true
         };
         throw err;
       }
@@ -113,11 +117,12 @@ const subjectService = {
 
     try {
       await updateCacheData(data, cacheKeySubjectData);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
-  },
+  }
 };
 
 export default subjectService;

@@ -4,7 +4,7 @@ import { csrfToken, updateAll, userDataLoaded } from "../../global/global.js";
 async function registerAccount(username: string, password: string) {
   const data = {
     username: username,
-    password: password,
+    password: password
   };
   let hasResponded = false;
 
@@ -13,7 +13,7 @@ async function registerAccount(username: string, password: string) {
     type: "POST",
     data: data,
     headers: {
-      "X-CSRF-Token": await csrfToken(),
+      "X-CSRF-Token": await csrfToken()
     },
     success: () => {
       $("#register-success-toast .username").text(username);
@@ -25,13 +25,14 @@ async function registerAccount(username: string, password: string) {
     error: xhr => {
       if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
-      } else {
+      }
+      else {
         $navbarToasts.unknownError.toast("show");
       }
     },
     complete: () => {
       hasResponded = true;
-    },
+    }
   });
 
   setTimeout(() => {
@@ -45,7 +46,7 @@ async function registerAccount(username: string, password: string) {
 async function loginAccount(username: string, password: string) {
   const data = {
     username: username,
-    password: password,
+    password: password
   };
   let hasResponded = false;
 
@@ -54,7 +55,7 @@ async function loginAccount(username: string, password: string) {
     type: "POST",
     data: data,
     headers: {
-      "X-CSRF-Token": await csrfToken(),
+      "X-CSRF-Token": await csrfToken()
     },
     success: () => {
       $("#login-success-toast .username").text(username);
@@ -67,15 +68,17 @@ async function loginAccount(username: string, password: string) {
       if (xhr.status === 401) {
         $(".login-error-invalid-password").removeClass("d-none");
         $(".login-error-invalid-password").addClass("d-flex");
-      } else if (xhr.status === 500) {
+      }
+      else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
-      } else {
+      }
+      else {
         $navbarToasts.unknownError.toast("show");
       }
     },
     complete: () => {
       hasResponded = true;
-    },
+    }
   });
 
   setTimeout(() => {
@@ -93,7 +96,7 @@ async function logoutAccount() {
     url: "/account/logout",
     type: "POST",
     headers: {
-      "X-CSRF-Token": await csrfToken(),
+      "X-CSRF-Token": await csrfToken()
     },
     success: () => {
       $("#logout-success-toast").toast("show");
@@ -102,13 +105,14 @@ async function logoutAccount() {
     error: xhr => {
       if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
-      } else {
+      }
+      else {
         $navbarToasts.unknownError.toast("show");
       }
     },
     complete: () => {
       hasResponded = true;
-    },
+    }
   });
 
   setTimeout(() => {
@@ -118,17 +122,18 @@ async function logoutAccount() {
   }, 1000);
 }
 
-function checkExistingUsername(username: string) {
+async function checkExistingUsername(username: string) {
   const data = { username: username };
+  const token = await csrfToken();
   let hasResponded = false;
 
-  return new Promise(async resolve => {
+  return new Promise(resolve => {
     $.ajax({
       url: "/account/checkusername",
       type: "POST",
       data: data,
       headers: {
-        "X-CSRF-Token": await csrfToken(),
+        "X-CSRF-Token": token
       },
       success: res => {
         resolve(res);
@@ -136,13 +141,14 @@ function checkExistingUsername(username: string) {
       error: xhr => {
         if (xhr.status === 500) {
           $navbarToasts.serverError.toast("show");
-        } else {
+        }
+        else {
           $navbarToasts.unknownError.toast("show");
         }
       },
       complete: () => {
         hasResponded = true;
-      },
+      }
     });
 
     setTimeout(() => {
@@ -167,9 +173,7 @@ function resetLoginRegisterModal() {
   $(".login-button").addClass("d-none");
   $(".register-button").addClass("d-none");
 
-  $(".login-register-error-invalid-username")
-    .addClass("d-none")
-    .removeClass("d-flex");
+  $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
 
   $(".login-error-invalid-password").addClass("d-none");
   $(".login-error-invalid-password").removeClass("d-flex");
@@ -183,15 +187,13 @@ function checkUsername(username: string) {
 }
 
 function checkSecurePassword(password: string) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(
-    password
-  );
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
 export const $navbarToasts = {
   serverError: $("#error-server-toast"),
   unknownError: $("#unknown-error-toast"),
-  notLoggedIn: $("#not-logged-in-toast"),
+  notLoggedIn: $("#not-logged-in-toast")
 };
 
 $(async () => {
@@ -202,22 +204,13 @@ $(async () => {
     $(".class-joined-content").removeClass("d-none");
     $(".navbar-home-link").attr("href", "/main");
   }
-  if (
-    [
-      "/main/",
-      "/main",
-      "/homework/",
-      "/homework",
-      "/events/",
-      "/events",
-    ].includes(location.pathname)
-  ) {
+  if (["/main/", "/main", "/homework/", "/homework", "/events/", "/events"].includes(location.pathname)) {
     $(".class-page-content").removeClass("d-none");
   }
 });
 
 type UserEventName = "login" | "logout";
-type UserEventCallback = (...args: any[]) => void;
+type UserEventCallback = (...args: unknown[]) => void;
 
 export const user = {
   loggedIn: null as boolean | null,
@@ -232,12 +225,12 @@ export const user = {
     this._eventListeners[event].push(callback);
   },
 
-  trigger(event: UserEventName, ...args: any[]) {
+  trigger(event: UserEventName, ...args: unknown[]) {
     const callbacks = this._eventListeners[event];
     if (callbacks) {
       callbacks.forEach(cb => cb(...args));
     }
-  },
+  }
 };
 
 user.on("login", () => {
@@ -266,7 +259,8 @@ $.get("/account/auth", response => {
   if (response.loggedIn) {
     user.loggedIn = true;
     user.username = response.account.username;
-  } else {
+  }
+  else {
     user.loggedIn = false;
     user.username = null;
   }
@@ -277,7 +271,8 @@ $.get("/account/auth", response => {
 
   if (response.loggedIn) {
     user.trigger("login");
-  } else {
+  }
+  else {
     user.trigger("logout");
   }
 });
@@ -317,9 +312,7 @@ $(() => {
 
     if (checkUsername($(".login-register-username").val()?.toString() ?? "")) {
       $(".login-register-next-button").removeClass("disabled");
-      $(".login-register-error-invalid-username")
-        .addClass("d-none")
-        .removeClass("d-flex");
+      $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
     }
   });
 
@@ -329,9 +322,7 @@ $(() => {
 
     if (!checkUsername($(".login-register-username").val()?.toString() ?? "")) {
       $(".login-register-next-button").addClass("disabled");
-      $(".login-register-error-invalid-username")
-        .removeClass("d-none")
-        .addClass("d-flex");
+      $(".login-register-error-invalid-username").removeClass("d-none").addClass("d-flex");
     }
   });
 
@@ -386,16 +377,13 @@ $(() => {
   $(".login-register-next-button").on("click", async () => {
     $(".login-register-back-button").removeClass("d-none");
 
-    $(".login-register-element, .login-register-next-button").addClass(
-      "d-none"
-    );
+    $(".login-register-element, .login-register-next-button").addClass("d-none");
 
-    checkExistingUsername(
-      $(".login-register-username").val()?.toString() ?? ""
-    ).then(response => {
+    checkExistingUsername($(".login-register-username").val()?.toString() ?? "").then(response => {
       if (response) {
         $(".login-element").removeClass("d-none");
-      } else {
+      }
+      else {
         $(".register-element").removeClass("d-none");
       }
     });

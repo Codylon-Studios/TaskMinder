@@ -1,15 +1,7 @@
-import {
-  connectRedis,
-  redisClient,
-  cacheKeyHomeworkData,
-} from "../config/redis";
+import { connectRedis, redisClient, cacheKeyHomeworkData } from "../config/redis";
 import socketIO from "../config/socket";
 import prisma from "../config/prisma";
-import {
-  isValidTeamId,
-  BigIntreplacer,
-  updateCacheData,
-} from "../utils/validateFunctions";
+import { isValidTeamId, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../utils/logger";
@@ -27,14 +19,13 @@ const homeworkService = {
     },
     session: Session & Partial<SessionData>
   ) {
-    const { subjectId, content, assignmentDate, submissionDate, teamId } =
-      reqData;
+    const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
     if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
     }
@@ -46,32 +37,30 @@ const homeworkService = {
           subjectId: subjectId,
           assignmentDate: assignmentDate,
           submissionDate: submissionDate,
-          teamId: teamId,
-        },
+          teamId: teamId
+        }
       });
-    } catch {
+    }
+    catch {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
-        expected: true,
+        expected: true
       };
       throw err;
     }
     const data = await prisma.homework10d.findMany({
       orderBy: {
-        submissionDate: "asc",
-      },
+        submissionDate: "asc"
+      }
     });
     await updateCacheData(data, cacheKeyHomeworkData);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
 
-  async checkHomework(
-    reqData: { homeworkId: number; checkStatus: string },
-    session: Session & Partial<SessionData>
-  ) {
+  async checkHomework(reqData: { homeworkId: number; checkStatus: string }, session: Session & Partial<SessionData>) {
     const { homeworkId, checkStatus } = reqData;
     let accountId;
     if (!session.account) {
@@ -79,10 +68,11 @@ const homeworkService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
-    } else {
+    }
+    else {
       accountId = session.account.accountId;
     }
     if (checkStatus == "true") {
@@ -91,31 +81,29 @@ const homeworkService = {
         update: {},
         create: {
           accountId,
-          homeworkId,
-        },
+          homeworkId
+        }
       });
-    } else {
+    }
+    else {
       await prisma.homework10dCheck.delete({
         where: {
           accountId: accountId,
-          homeworkId: homeworkId,
-        },
+          homeworkId: homeworkId
+        }
       });
     }
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
 
-  async deleteHomework(
-    homeworkId: number,
-    session: Session & Partial<SessionData>
-  ) {
+  async deleteHomework(homeworkId: number, session: Session & Partial<SessionData>) {
     if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
     }
@@ -124,19 +112,19 @@ const homeworkService = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
-        expected: true,
+        expected: true
       };
       throw err;
     }
     await prisma.homework10d.delete({
       where: {
-        homeworkId: homeworkId,
-      },
+        homeworkId: homeworkId
+      }
     });
     const data = await prisma.homework10d.findMany({
       orderBy: {
-        submissionDate: "asc",
-      },
+        submissionDate: "asc"
+      }
     });
     await updateCacheData(data, cacheKeyHomeworkData);
     const io = socketIO.getIO();
@@ -154,20 +142,13 @@ const homeworkService = {
     },
     session: Session & Partial<SessionData>
   ) {
-    const {
-      homeworkId,
-      subjectId,
-      content,
-      assignmentDate,
-      submissionDate,
-      teamId,
-    } = reqData;
+    const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
     if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
     }
@@ -180,23 +161,24 @@ const homeworkService = {
           subjectId: subjectId,
           assignmentDate: assignmentDate,
           submissionDate: submissionDate,
-          teamId: teamId,
-        },
+          teamId: teamId
+        }
       });
-    } catch {
+    }
+    catch {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
-        expected: true,
+        expected: true
       };
       throw err;
     }
 
     const data = await prisma.homework10d.findMany({
       orderBy: {
-        submissionDate: "asc",
-      },
+        submissionDate: "asc"
+      }
     });
     await updateCacheData(data, cacheKeyHomeworkData);
     const io = socketIO.getIO();
@@ -209,7 +191,8 @@ const homeworkService = {
     if (cachedHomeworkData) {
       try {
         return JSON.parse(cachedHomeworkData);
-      } catch (error) {
+      }
+      catch (error) {
         logger.error("Error parsing Redis data:", error);
         throw new Error();
       }
@@ -217,8 +200,8 @@ const homeworkService = {
 
     const data = await prisma.homework10d.findMany({
       orderBy: {
-        submissionDate: "asc",
-      },
+        submissionDate: "asc"
+      }
     });
 
     await updateCacheData(data, cacheKeyHomeworkData);
@@ -233,17 +216,18 @@ const homeworkService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
-    } else {
+    }
+    else {
       accountId = session.account.accountId;
     }
     const homework = await prisma.homework10dCheck.findMany({
       where: { accountId: accountId },
       select: {
-        homeworkId: true,
-      },
+        homeworkId: true
+      }
     });
 
     const homeworkIds = homework.map(homework => {
@@ -251,7 +235,7 @@ const homeworkService = {
     });
 
     return homeworkIds;
-  },
+  }
 };
 
 export default homeworkService;

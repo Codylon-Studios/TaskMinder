@@ -1,12 +1,8 @@
-function hsvToRgb({
-  hue: h,
-  saturation: s,
-  value: v,
-}: {
-  hue: number;
-  saturation: number;
-  value: number;
-}): { red: number; green: number; blue: number } {
+function hsvToRgb({ hue: h, saturation: s, value: v }: { hue: number; saturation: number; value: number }): {
+  red: number;
+  green: number;
+  blue: number;
+} {
   h /= 60;
   const c = v * s;
   const x = c * (1 - Math.abs((h % 2) - 1));
@@ -26,15 +22,7 @@ function hsvToRgb({
   return { red: r, green: g, blue: b };
 }
 
-function rgbToHex({
-  red: r,
-  green: g,
-  blue: b,
-}: {
-  red: number;
-  green: number;
-  blue: number;
-}): string {
+function rgbToHex({ red: r, green: g, blue: b }: { red: number; green: number; blue: number }): string {
   return "#" + [r, g, b].map(val => val.toString(16).padStart(2, "0")).join("");
 }
 
@@ -46,15 +34,11 @@ function hexToRgb(hexValue: string) {
   return { red: r, green: g, blue: b };
 }
 
-function rgbToHsv({
-  red: r,
-  green: g,
-  blue: b,
-}: {
-  red: number;
-  green: number;
-  blue: number;
-}): { hue: number; saturation: number; value: number } {
+function rgbToHsv({ red: r, green: g, blue: b }: { red: number; green: number; blue: number }): {
+  hue: number;
+  saturation: number;
+  value: number;
+} {
   r /= 255;
   g /= 255;
   b /= 255;
@@ -66,15 +50,15 @@ function rgbToHsv({
   let h = 0;
   if (diff != 0) {
     switch (max) {
-      case r:
-        h = ((g - b) / diff) % 6;
-        break;
-      case g:
-        h = (b - r) / diff + 2;
-        break;
-      case b:
-        h = (r - g) / diff + 4;
-        break;
+    case r:
+      h = ((g - b) / diff) % 6;
+      break;
+    case g:
+      h = (b - r) / diff + 2;
+      break;
+    case b:
+      h = (r - g) / diff + 4;
+      break;
     }
     h = Math.round(h * 60);
     if (h < 0) h += 360;
@@ -91,23 +75,16 @@ function replaceColorPickers() {
     const input = $(this);
     const startColor = input.val()?.toString() ?? "#3bb9ca";
 
-    const trigger = $(
-      `<div class="rounded cursor-pointer color-picker-trigger">`
-    ).css("background-color", startColor);
+    const trigger = $('<div class="rounded cursor-pointer color-picker-trigger">').css("background-color", startColor);
     input.after(trigger).addClass("color-picker-replaced");
 
     const popup = $($("#color-picker-template").html());
 
-    popup
-      .find(`.color-picker-option[data-color="${$.formatHtml(startColor)}"]`)
-      .addClass("selected");
+    popup.find(`.color-picker-option[data-color="${$.formatHtml(startColor)}"]`).addClass("selected");
     popup.find(".color-picker-hex").val(startColor);
 
     if ($(this).attr("data-show-auto-option") == "true") {
-      popup
-        .find(".color-picker-auto-option-wrapper")
-        .addClass("d-flex")
-        .removeClass("d-none");
+      popup.find(".color-picker-auto-option-wrapper").addClass("d-flex").removeClass("d-none");
     }
 
     popup.hide();
@@ -125,24 +102,21 @@ function replaceColorPickers() {
 
       let positionY = "below"; // Standard position
       if (
-        yBelow +
-          offset.top +
-          (popup.outerHeight() ?? 0) -
-          ($(window).scrollTop() ?? 0) >
-          ($(window).height() ?? 0) && // Not enough space below
+        // Not enough space below
+        yBelow + offset.top + (popup.outerHeight() ?? 0) - ($(window).scrollTop() ?? 0) > ($(window).height() ?? 0) &&
+        // Enough space above
         yAbove + offset.top - ($(window).scrollTop() ?? 0) >= 0
       ) {
-        // Enough space above
         positionY = "above";
       }
 
       let positionX = "right"; // Standard position
       if (
-        xRight + offset.left + (popup.outerWidth() ?? 0) >
-          ($(window).width() ?? 0) && // Not enough space on the right
+        // Not enough space on the right
+        xRight + offset.left + (popup.outerWidth() ?? 0) > ($(window).width() ?? 0) &&
+        // Enough space on the left
         xLeft + offset.left > 0
       ) {
-        // Enough space on the left
         positionX = "left";
       }
 
@@ -151,7 +125,7 @@ function replaceColorPickers() {
       popup
         .css({
           top: positionY == "below" ? yBelow : yAbove,
-          left: positionX == "right" ? xRight : xLeft,
+          left: positionX == "right" ? xRight : xLeft
         })
         .toggle();
 
@@ -163,20 +137,18 @@ function replaceColorPickers() {
       const hsvColor = rgbToHsv(hexToRgb(hexColor));
       selectedHslColor = hsvColor;
       markerHue.css({
-        top: (hsvColor.hue / 360) * (hueContainer.outerHeight() ?? 0),
+        top: (hsvColor.hue / 360) * (hueContainer.outerHeight() ?? 0)
       });
       markerSaturationValue.css({
-        left:
-          hsvColor.saturation * (saturationValueContainer.outerWidth() ?? 0),
-        top:
-          (1 - hsvColor.value) * (saturationValueContainer.outerHeight() ?? 0),
+        left: hsvColor.saturation * (saturationValueContainer.outerWidth() ?? 0),
+        top: (1 - hsvColor.value) * (saturationValueContainer.outerHeight() ?? 0)
       });
       const gradientColor = `hsl(${hsvColor.hue}, 100%, 50%)`;
       saturationValueContainer.css({
         background: `
         linear-gradient(transparent 0%, black 100%),
         linear-gradient(90deg, white 0%, transparent 100%),
-        linear-gradient(${gradientColor} 0%, ${gradientColor} 100%)`,
+        linear-gradient(${gradientColor} 0%, ${gradientColor} 100%)`
       });
     }
 
@@ -185,17 +157,13 @@ function replaceColorPickers() {
     let suppressClick = false;
 
     let markerSaturationValueDragging = false;
-    const markerSaturationValue = popup.find(
-      ".color-picker-marker-saturation-value"
-    );
-    const saturationValueContainer = popup.find(
-      ".color-picker-saturation-value"
-    );
+    const markerSaturationValue = popup.find(".color-picker-marker-saturation-value");
+    const saturationValueContainer = popup.find(".color-picker-saturation-value");
 
     function moveMarkerSaturationValue(x: number, y: number) {
       const containerOffset = saturationValueContainer.offset() ?? {
         left: 0,
-        top: 0,
+        top: 0
       };
       const containerWidth = saturationValueContainer.outerWidth() ?? 0;
       const containerHeight = saturationValueContainer.outerHeight() ?? 0;
@@ -216,9 +184,7 @@ function replaceColorPickers() {
       input.val(hexColor).trigger("change");
       trigger.css("background-color", hexColor);
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
-      popup
-        .find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`)
-        .addClass("selected");
+      popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
     }
 
     saturationValueContainer
@@ -279,7 +245,7 @@ function replaceColorPickers() {
         background: `
         linear-gradient(transparent 0%, black 100%),
         linear-gradient(90deg, white 0%, transparent 100%),
-        linear-gradient(${color} 0%, ${color} 100%)`,
+        linear-gradient(${color} 0%, ${color} 100%)`
       });
 
       const hexColor = rgbToHex(hsvToRgb(selectedHslColor));
@@ -287,9 +253,7 @@ function replaceColorPickers() {
       input.val(hexColor).trigger("change");
       trigger.css("background-color", hexColor);
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
-      popup
-        .find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`)
-        .addClass("selected");
+      popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
     }
 
     hueContainer
@@ -327,8 +291,7 @@ function replaceColorPickers() {
       let color = $(this).val()?.toLocaleString() ?? "#3bb9ca";
       if (
         /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ||
-        (color == "Automatisch" &&
-          input.attr("data-show-auto-option") == "true")
+        (color == "Automatisch" && input.attr("data-show-auto-option") == "true")
       ) {
         $(this).removeClass("is-invalid");
         if (/^([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) {
@@ -336,25 +299,17 @@ function replaceColorPickers() {
           color = color.toLowerCase();
         }
         if (/^#[0-9a-fA-F]{3}$/.test(color)) {
-          color =
-            "#" +
-            color[1] +
-            color[1] +
-            color[2] +
-            color[2] +
-            color[3] +
-            color[3];
+          color = "#" + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
           color = color.toLowerCase();
         }
         $(this).val(color);
         popup.find(".color-picker-option").removeClass("selected");
         trigger.css("background-color", color);
         input.val(color).trigger("change");
-        popup
-          .find(`.color-picker-option[data-color="${$.formatHtml(color)}"]`)
-          .addClass("selected");
+        popup.find(`.color-picker-option[data-color="${$.formatHtml(color)}"]`).addClass("selected");
         setHslSelection(color);
-      } else {
+      }
+      else {
         $(this).addClass("is-invalid");
       }
     });
@@ -375,10 +330,7 @@ function replaceColorPickers() {
     });
 
     $(document).on("click", ev => {
-      if (
-        !$(ev.target).closest(".color-picker-popup").length &&
-        !suppressClick
-      ) {
+      if (!$(ev.target).closest(".color-picker-popup").length && !suppressClick) {
         popup.hide();
         trigger.css({ zIndex: 0 });
       }
@@ -398,7 +350,7 @@ $(() => {
     });
   }).observe(document.body, {
     childList: true,
-    subtree: true,
+    subtree: true
   });
 
   replaceColorPickers();

@@ -2,11 +2,7 @@ import { RequestError } from "../@types/requestError";
 import { cacheKeyLessonData, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
 import logger from "../utils/logger";
-import {
-  isValidweekDay,
-  BigIntreplacer,
-  updateCacheData,
-} from "../utils/validateFunctions";
+import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
 
 const lessonService = {
   async setLessonData(
@@ -34,15 +30,16 @@ const lessonService = {
             subjectId: lesson.subjectId,
             room: lesson.room,
             startTime: lesson.startTime,
-            endTime: lesson.endTime,
-          },
+            endTime: lesson.endTime
+          }
         });
-      } catch {
+      }
+      catch {
         const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
-          expected: true,
+          expected: true
         };
         throw err;
       }
@@ -51,7 +48,8 @@ const lessonService = {
 
     try {
       await updateCacheData(lessonData, cacheKeyLessonData);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -62,7 +60,8 @@ const lessonService = {
     if (cachedLessonData) {
       try {
         return JSON.parse(cachedLessonData);
-      } catch (error) {
+      }
+      catch (error) {
         logger.error("Error parsing Redis data:", error);
         throw new Error();
       }
@@ -72,13 +71,14 @@ const lessonService = {
 
     try {
       await updateCacheData(lessonData, cacheKeyLessonData);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
 
     return JSON.stringify(lessonData, BigIntreplacer);
-  },
+  }
 };
 
 export default lessonService;

@@ -12,7 +12,8 @@ const teamService = {
     if (cachedTeamsData) {
       try {
         return JSON.parse(cachedTeamsData);
-      } catch (error) {
+      }
+      catch (error) {
         logger.error("Error parsing Redis data:", error);
         throw new Error();
       }
@@ -22,7 +23,8 @@ const teamService = {
 
     try {
       await updateCacheData(data, cacheKeyTeamData);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -36,19 +38,19 @@ const teamService = {
         if (!teams.some(t => t.teamId === team.teamId)) {
           // delete homework which were linked to team
           await prisma.homework10d.deleteMany({
-            where: { teamId: team.teamId },
+            where: { teamId: team.teamId }
           });
           // delete events which were linked to team
           await prisma.event.deleteMany({
-            where: { teamId: team.teamId },
+            where: { teamId: team.teamId }
           });
           // delete lessons which were linked to team
           await prisma.lesson.deleteMany({
-            where: { teamId: team.teamId },
+            where: { teamId: team.teamId }
           });
           // delete team
           await prisma.team.delete({
-            where: { teamId: team.teamId },
+            where: { teamId: team.teamId }
           });
         }
       })
@@ -60,7 +62,7 @@ const teamService = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data (Team name cannot be empty)",
-          expected: true,
+          expected: true
         };
         throw err;
       }
@@ -68,23 +70,25 @@ const teamService = {
         if (team.teamId == "") {
           await prisma.team.create({
             data: {
-              name: team.name,
-            },
+              name: team.name
+            }
           });
-        } else {
+        }
+        else {
           await prisma.team.update({
             where: { teamId: team.teamId },
             data: {
-              name: team.name,
-            },
+              name: team.name
+            }
           });
         }
-      } catch {
+      }
+      catch {
         const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
-          expected: true,
+          expected: true
         };
         throw err;
       }
@@ -94,7 +98,8 @@ const teamService = {
 
     try {
       await updateCacheData(data, cacheKeyTeamData);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -106,15 +111,16 @@ const teamService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
-    } else {
+    }
+    else {
       accountId = session.account.accountId;
     }
 
     const data = await prisma.joinedTeams.findMany({
-      where: { accountId: accountId },
+      where: { accountId: accountId }
     });
 
     const teams = [];
@@ -125,20 +131,18 @@ const teamService = {
 
     return teams;
   },
-  async setJoinedTeamsData(
-    teams: number[],
-    session: Session & Partial<SessionData>
-  ) {
+  async setJoinedTeamsData(teams: number[], session: Session & Partial<SessionData>) {
     let accountId;
     if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
-    } else {
+    }
+    else {
       accountId = session.account.accountId;
     }
 
@@ -147,13 +151,13 @@ const teamService = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
-        expected: true,
+        expected: true
       };
       throw err;
     }
 
     await prisma.joinedTeams.deleteMany({
-      where: { accountId: accountId },
+      where: { accountId: accountId }
     });
 
     for (const teamId of teams) {
@@ -161,20 +165,21 @@ const teamService = {
         await prisma.joinedTeams.create({
           data: {
             teamId: teamId,
-            accountId: accountId,
-          },
+            accountId: accountId
+          }
         });
-      } catch {
+      }
+      catch {
         const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
-          expected: true,
+          expected: true
         };
         throw err;
       }
     }
-  },
+  }
 };
 
 export default teamService;

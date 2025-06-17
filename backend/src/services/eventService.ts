@@ -1,10 +1,5 @@
 import logger from "../utils/logger";
-import {
-  redisClient,
-  cacheExpiration,
-  cacheKeyEventData,
-  cacheKeyEventTypeData,
-} from "../config/redis";
+import { redisClient, cacheExpiration, cacheKeyEventData, cacheKeyEventTypeData } from "../config/redis";
 import socketIO from "../config/socket";
 import sass from "sass";
 
@@ -14,7 +9,7 @@ import {
   isValidTeamId,
   lessonDateEventAtLeastOneNull,
   updateCacheData,
-  BigIntreplacer,
+  BigIntreplacer
 } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
@@ -26,7 +21,8 @@ export const eventService = {
     if (cachedEventData) {
       try {
         return JSON.parse(cachedEventData);
-      } catch (error) {
+      }
+      catch (error) {
         logger.error("Error parsing Redis data:", error);
         throw new Error();
       }
@@ -34,13 +30,14 @@ export const eventService = {
 
     const eventData = await prisma.event.findMany({
       orderBy: {
-        startDate: "asc",
-      },
+        startDate: "asc"
+      }
     });
 
     try {
       await updateCacheData(eventData, cacheKeyEventData);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -59,21 +56,13 @@ export const eventService = {
     },
     session: Session & Partial<SessionData>
   ) {
-    const {
-      eventTypeId,
-      name,
-      description,
-      startDate,
-      lesson,
-      endDate,
-      teamId,
-    } = reqData;
+    const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
     }
@@ -88,28 +77,30 @@ export const eventService = {
           startDate: startDate,
           lesson: lesson,
           endDate: endDate,
-          teamId: teamId,
-        },
+          teamId: teamId
+        }
       });
-    } catch {
+    }
+    catch {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
-        expected: true,
+        expected: true
       };
       throw err;
     }
     const eventData = await prisma.event.findMany({
       orderBy: {
-        startDate: "asc",
-      },
+        startDate: "asc"
+      }
     });
     try {
       await updateCacheData(eventData, cacheKeyEventData);
       const io = socketIO.getIO();
       io.emit("updateEventData");
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -127,22 +118,13 @@ export const eventService = {
     },
     session: Session & Partial<SessionData>
   ) {
-    const {
-      eventId,
-      eventTypeId,
-      name,
-      description,
-      startDate,
-      lesson,
-      endDate,
-      teamId,
-    } = reqData;
+    const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
     }
@@ -158,29 +140,31 @@ export const eventService = {
           startDate: startDate,
           lesson: lesson,
           endDate: endDate,
-          teamId: teamId,
-        },
+          teamId: teamId
+        }
       });
-    } catch {
+    }
+    catch {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
-        expected: true,
+        expected: true
       };
       throw err;
     }
 
     const eventData = await prisma.event.findMany({
       orderBy: {
-        startDate: "asc",
-      },
+        startDate: "asc"
+      }
     });
     try {
       await updateCacheData(eventData, cacheKeyEventData);
       const io = socketIO.getIO();
       io.emit("updateEventData");
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -191,7 +175,7 @@ export const eventService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
-        expected: true,
+        expected: true
       };
       throw err;
     }
@@ -200,26 +184,27 @@ export const eventService = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
-        expected: true,
+        expected: true
       };
       throw err;
     }
     await prisma.event.delete({
       where: {
-        eventId: eventId,
-      },
+        eventId: eventId
+      }
     });
 
     const eventData = await prisma.event.findMany({
       orderBy: {
-        startDate: "asc",
-      },
+        startDate: "asc"
+      }
     });
     try {
       await updateCacheData(eventData, cacheKeyEventData);
       const io = socketIO.getIO();
       io.emit("updateEventData");
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -230,7 +215,8 @@ export const eventService = {
     if (cachedEventTypeData) {
       try {
         return JSON.parse(cachedEventTypeData);
-      } catch (error) {
+      }
+      catch (error) {
         logger.error("Error parsing Redis data:", error);
         throw new Error();
       }
@@ -240,22 +226,21 @@ export const eventService = {
 
     try {
       await updateCacheData(eventTypeData, cacheKeyEventTypeData);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
 
     return eventTypeData;
   },
-  async setEventTypeData(
-    eventTypes: { eventTypeId: number | ""; name: string; color: string }[]
-  ) {
+  async setEventTypeData(eventTypes: { eventTypeId: number | ""; name: string; color: string }[]) {
     const existingEventTypes = await prisma.eventType.findMany();
     await Promise.all(
       existingEventTypes.map(async eventType => {
         if (!eventTypes.some(e => e.eventTypeId === eventType.eventTypeId)) {
           await prisma.eventType.delete({
-            where: { eventTypeId: eventType.eventTypeId },
+            where: { eventTypeId: eventType.eventTypeId }
           });
         }
       })
@@ -268,7 +253,7 @@ export const eventService = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
-          expected: true,
+          expected: true
         };
         throw err;
       }
@@ -277,24 +262,26 @@ export const eventService = {
           await prisma.eventType.create({
             data: {
               name: eventType.name,
-              color: eventType.color,
-            },
+              color: eventType.color
+            }
           });
-        } else {
+        }
+        else {
           await prisma.eventType.update({
             where: { eventTypeId: eventType.eventTypeId },
             data: {
               name: eventType.name,
-              color: eventType.color,
-            },
+              color: eventType.color
+            }
           });
         }
-      } catch {
+      }
+      catch {
         const err: RequestError = {
           name: "Bad Request",
           status: 400,
           message: "Invalid data format",
-          expected: true,
+          expected: true
         };
         throw err;
       }
@@ -304,7 +291,8 @@ export const eventService = {
 
     try {
       await updateCacheData(eventTypeData, cacheKeyEventTypeData);
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
@@ -316,7 +304,8 @@ export const eventService = {
     if (cachedEventTypeStyles) {
       try {
         return cachedEventTypeStyles;
-      } catch (error) {
+      }
+      catch (error) {
         logger.error("Error parsing Redis data:", error);
         throw new Error();
       }
@@ -332,25 +321,17 @@ export const eventService = {
       @use "sass:color";
 
       ${eventTypeData
-        .map(
-          (eventType: { eventTypeId: string; name: string; color: string }) => {
-            return `$event-${eventType.eventTypeId}: ${eventType.color};`;
-          }
-        )
-        .join("")}
+    .map((eventType: { eventTypeId: string; name: string; color: string }) => {
+      return `$event-${eventType.eventTypeId}: ${eventType.color};`;
+    })
+    .join("")}
 
       $event-colors: (
         ${eventTypeData
-          .map(
-            (eventType: {
-              eventTypeId: string;
-              name: string;
-              color: string;
-            }) => {
-              return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`;
-            }
-          )
-          .join("")}
+    .map((eventType: { eventTypeId: string; name: string; color: string }) => {
+      return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`;
+    })
+    .join("")}
       );
 
       @each $name, $color in $event-colors {
@@ -383,13 +364,14 @@ export const eventService = {
 
     try {
       await redisClient.set("event_type_styles", css, { EX: cacheExpiration });
-    } catch (err) {
+    }
+    catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
 
     return css;
-  },
+  }
 };
 
 export default eventService;

@@ -8,8 +8,8 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 
 ### Definitions
 
-- **"Licensors"** refers to Mingqi Li and Fabian Leonardi, the original creators and copyright holders of the Software.  
-- **"You"** refers to any individual or entity obtaining a copy of the Software and using it under the terms of this License.  
+- **"Licensors"** refers to Mingqi Li and Fabian Leonardi, the original creators and copyright holders of the Software.
+- **"You"** refers to any individual or entity obtaining a copy of the Software and using it under the terms of this License.
 - **"Software"** means the TaskMinder source code, binaries, and any accompanying documentation or files made available by the Licensors.
 
 ---
@@ -28,10 +28,10 @@ You may provide this credit in any reasonable manner, but not in any way that su
 
 The Software may not be used, in whole or in part, for any commercial purposes without prior written permission from the Licensors. Commercial use includes, but is not limited to:
 
-- Selling, licensing, or distributing the Software as part of a product or service  
-- Offering paid subscriptions or memberships  
-- Running ads on, in, or alongside the Software  
-- Using the Software to offer commercial services  
+- Selling, licensing, or distributing the Software as part of a product or service
+- Offering paid subscriptions or memberships
+- Running ads on, in, or alongside the Software
+- Using the Software to offer commercial services
 - Deploying the Software in a commercial or enterprise environment
 
 The examples above are representative but not exhaustive. If in doubt, You must seek written clarification from the Licensors before engaging in potentially commercial use.  

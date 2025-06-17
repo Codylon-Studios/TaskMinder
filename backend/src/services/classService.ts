@@ -8,13 +8,13 @@ const classService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged into class",
-        expected: true,
+        expected: true
       };
       throw err;
     }
     const classCode = process.env.CLASSCODE;
     return classCode;
-  },
+  }
 };
 
 export default classService;

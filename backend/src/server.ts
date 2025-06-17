@@ -16,10 +16,7 @@ import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
 import cleanupOldHomework from "./utils/homeworkCleanup";
-import {
-  csrfProtection,
-  csrfSessionInit,
-} from "./middleware/csrfProtectionMiddleware";
+import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
 import events from "./routes/eventRoute";
@@ -45,14 +42,14 @@ declare module "express-session" {
 
 const register = new client.Registry();
 register.setDefaultLabels({
-  app: "taskminder-nodejs",
+  app: "taskminder-nodejs"
 });
 
 const httpRequestDurationMicroseconds = new client.Histogram({
   name: "http_request_duration_ms",
   help: "Duration of HTTP requests in ms",
   labelNames: ["method", "route", "code"],
-  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000],
+  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000]
 });
 register.registerMetric(httpRequestDurationMicroseconds);
 
@@ -73,7 +70,7 @@ const sessionPool = new Pool({
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
-  port: 5432,
+  port: 5432
 });
 
 const sessionSecret = process.env.SESSION_SECRET;
@@ -93,7 +90,7 @@ const limiter = rateLimit({
   limit: 70, // Max 70 requests per IP per second
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: { status: 429, message: "Too many requests, please slow down." },
+  message: { status: 429, message: "Too many requests, please slow down." }
 });
 app.use(limiter);
 
@@ -107,25 +104,24 @@ if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
           "script-src": [
             "'self'",
             "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
-            "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='",
+            "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='"
           ],
           "connect-src": ["'self'", "wss://*"],
           "style-src": ["'self'", "'unsafe-inline'"],
           "font-src": ["'self'"],
           "img-src": ["'self'", "data:"],
           "object-src": ["'none'"],
-          "frame-ancestors": ["'self'"],
-        },
+          "frame-ancestors": ["'self'"]
+        }
       },
       referrerPolicy: {
-        policy: "strict-origin-when-cross-origin",
-      },
+        policy: "strict-origin-when-cross-origin"
+      }
     })
   );
-} else {
-  logger.warn(
-    "Helmet and CSP is disabled! This is not recommended for production!"
-  );
+}
+else {
+  logger.warn("Helmet and CSP is disabled! This is not recommended for production!");
 }
 
 app.use(compression());
@@ -134,10 +130,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  if (
-    req.path === "/metrics" ||
-    req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)
-  ) {
+  if (req.path === "/metrics" || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)) {
     return next();
   }
   const end = httpRequestDurationMicroseconds.startTimer();
@@ -154,7 +147,7 @@ const sessionMiddleware = session({
   store: new PgSession({
     pool: sessionPool,
     tableName: "account_sessions",
-    createTableIfMissing: true,
+    createTableIfMissing: true
   }),
   proxy: process.env.NODE_ENV !== "DEVELOPMENT",
   secret: sessionSecret,
@@ -164,9 +157,9 @@ const sessionMiddleware = session({
     sameSite: "lax",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     httpOnly: true,
-    secure: process.env.NODE_ENV !== "DEVELOPMENT",
+    secure: process.env.NODE_ENV !== "DEVELOPMENT"
   },
-  name: "UserLogin",
+  name: "UserLogin"
 });
 
 app.use(sessionMiddleware);

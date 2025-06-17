@@ -6,7 +6,8 @@ export const getLessonData = asyncHandler(async (req, res, next) => {
   try {
     const lessonData = await lessonService.getLessonData();
     res.status(200).json(lessonData);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
@@ -20,16 +21,14 @@ export const setLessonData = asyncHandler(async (req, res, next) => {
         subjectId: z.coerce.number(),
         room: z.string(),
         startTime: z.coerce.number(),
-        endTime: z.coerce.number(),
+        endTime: z.coerce.number()
       })
-    ),
+    )
   });
   const parseResult = setEventTypesSchema.safeParse(req.body);
   if (
     !parseResult.success ||
-    parseResult.data.lessons
-      .map(l => [0, 1, 2, 3, 4].includes(l.weekDay))
-      .includes(false)
+    parseResult.data.lessons.map(l => [0, 1, 2, 3, 4].includes(l.weekDay)).includes(false)
   ) {
     res.status(400).json({
       error: "Invalid request format",
@@ -47,34 +46,27 @@ export const setLessonData = asyncHandler(async (req, res, next) => {
                 subjectId: { type: "number" },
                 room: { type: "string" },
                 startTime: { type: "number" },
-                endTime: { type: "number" },
+                endTime: { type: "number" }
               },
-              required: [
-                "lessonNumber",
-                "weekDay",
-                "teamId",
-                "subjectId",
-                "room",
-                "startTime",
-                "endTime",
-              ],
-            },
-          },
+              required: ["lessonNumber", "weekDay", "teamId", "subjectId", "room", "startTime", "endTime"]
+            }
+          }
         },
-        required: ["lessons"],
-      },
+        required: ["lessons"]
+      }
     });
     return;
   }
   try {
     await lessonService.setLessonData(parseResult.data.lessons);
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export default {
   getLessonData,
-  setLessonData,
+  setLessonData
 };

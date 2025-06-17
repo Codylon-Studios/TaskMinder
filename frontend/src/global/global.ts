@@ -1,9 +1,11 @@
 import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
 import { user } from "../snippets/navbar/navbar.js";
 
-export function runOnce(fn: Function): Function {
-  async function wrapper(force: boolean = false, ...args: any) {
-    if (wrapper.running && !force) return;
+export function runOnce<F extends (...args: unknown[]) => unknown>(
+  fn: F
+): (...args: Parameters<F>) => Promise<unknown> {
+  async function wrapper(...args: Parameters<F>) {
+    if (wrapper.running) return;
     wrapper.running = true;
     const res = await fn(...args);
     wrapper.running = false;
@@ -37,7 +39,8 @@ export function dateToMs(dateStr: string): number | null {
     const [year, month, day] = dateStr.split("-").map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.getTime();
-  } else if (dateStr.includes(".")) {
+  }
+  else if (dateStr.includes(".")) {
     const [day, month, year] = dateStr.split(".").map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
     return date.getTime();
@@ -64,9 +67,7 @@ export function isSameDay(date1: Date, date2: Date): boolean {
   );
 }
 
-export async function getHomeworkCheckStatus(
-  homeworkId: number
-): Promise<boolean> {
+export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
 }
 
@@ -96,13 +97,13 @@ export async function loadHomeworkCheckedData() {
     $.get("/homework/get_homework_checked_data", data => {
       homeworkCheckedData(data);
     });
-  } else {
+  }
+  else {
     try {
       // If the user is not logged in, get the data from the local storage
-      homeworkCheckedData(
-        JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]")
-      );
-    } catch {
+      homeworkCheckedData(JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]"));
+    }
+    catch {
       homeworkCheckedData([]);
     }
   }
@@ -124,7 +125,7 @@ async function loadClassSubstitutionsData() {
   const data = structuredClone(currentSubstitutionsData);
   for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
     const key = ("plan" + planId) as "plan1" | "plan2";
-    data[key].substitutions = data[key].substitutions.filter((entry: any) =>
+    data[key].substitutions = data[key].substitutions.filter((entry: Record<string, string>) =>
       /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class)
     );
   }
@@ -138,12 +139,12 @@ export async function loadJoinedTeamsData() {
     $.get("/teams/get_joined_teams_data", data => {
       joinedTeamsData(data);
     });
-  } else {
+  }
+  else {
     try {
-      joinedTeamsData(
-        JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]")
-      );
-    } catch {
+      joinedTeamsData(JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]"));
+    }
+    catch {
       joinedTeamsData([]);
     }
   }
@@ -178,7 +179,8 @@ export function userDataLoaded(): Promise<void> {
         $(window).off("userDataLoaded");
         resolve();
       });
-    } catch {
+    }
+    catch {
       $(window).on("userDataLoaded", () => {
         $(window).off("userDataLoaded");
         resolve();
@@ -252,12 +254,12 @@ export async function updateAll() {
   }
 }
 
-export function addUpdateAllFunction(...fn: Function[]) {
+export function addUpdateAllFunction(...fn: ((...args: unknown[]) => unknown)[]) {
   updateAllFunctions.push(...fn);
 }
 
 let requiredData: string[] = [];
-const updateAllFunctions: Function[] = [];
+const updateAllFunctions: ((...args: unknown[]) => unknown)[] = [];
 
 type ColorTheme = "dark" | "light";
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
@@ -266,16 +268,20 @@ const themeColor = document.createElement("meta");
 themeColor.name = "theme-color";
 if (localStorage.getItem("colorTheme") == "dark") {
   colorTheme("dark");
-} else if (localStorage.getItem("colorTheme") == "light") {
+}
+else if (localStorage.getItem("colorTheme") == "light") {
   colorTheme("light");
-} else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+}
+else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
   colorTheme("dark");
-} else {
+}
+else {
   colorTheme("light");
 }
 if ((await colorTheme()) == "light") {
   themeColor.content = "#f8f9fa";
-} else {
+}
+else {
   document.getElementsByTagName("html")[0].style.background = "#212529";
   themeColor.content = "#2b3035";
 }
@@ -287,14 +293,11 @@ document.head.appendChild(themeColor);
 
 // DATA
 type DataAccessorEventName = "update";
-type DataAccessorEventCallback = (...args: any[]) => void;
+type DataAccessorEventCallback = (...args: unknown[]) => void;
 export function createDataAccessor<T>(name: string) {
   const eventName = `dataLoaded:${name}`;
   let data: T | null = null;
-  const _eventListeners = {} as Record<
-    DataAccessorEventName,
-    DataAccessorEventCallback[]
-  >;
+  const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
 
   const accessor = async (value?: T | null): Promise<T> => {
     if (value !== undefined) {
@@ -316,7 +319,7 @@ export function createDataAccessor<T>(name: string) {
     return getNotNullValue();
   };
 
-  accessor.set = (value: any) => {
+  accessor.set = (value: T | null) => {
     data = value;
     if (value !== null) {
       $(window).trigger(eventName);
@@ -324,15 +327,12 @@ export function createDataAccessor<T>(name: string) {
     accessor.trigger("update");
   };
 
-  accessor.on = (
-    event: DataAccessorEventName,
-    callback: DataAccessorEventCallback
-  ) => {
+  accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback) => {
     _eventListeners[event] ??= [];
     _eventListeners[event].push(callback);
   };
 
-  accessor.trigger = (event: DataAccessorEventName, ...args: any[]) => {
+  accessor.trigger = (event: DataAccessorEventName, ...args: unknown[]) => {
     const callbacks = _eventListeners[event];
     if (callbacks) {
       callbacks.forEach(cb => cb(...args));
@@ -381,9 +381,7 @@ export const homeworkData = createDataAccessor<HomeworkData>("homeworkData");
 
 // Homework checked data
 type HomeworkCheckedData = number[];
-export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>(
-  "homeworkCheckedData"
-);
+export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>("homeworkCheckedData");
 
 // Substitutions data
 type SubstitutionPlan = {
@@ -397,16 +395,12 @@ export type SubstitutionsData =
       updated: string;
     }
   | "No data";
-export const substitutionsData =
-  createDataAccessor<SubstitutionsData>("substitutionsData");
-export const classSubstitutionsData = createDataAccessor<SubstitutionsData>(
-  "classSubstitutionsData"
-);
+export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData");
+export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData");
 
 // Joined teams data
 export type JoinedTeamsData = number[];
-export const joinedTeamsData =
-  createDataAccessor<JoinedTeamsData>("joinedTeamsData");
+export const joinedTeamsData = createDataAccessor<JoinedTeamsData>("joinedTeamsData");
 
 // Teams data
 export type TeamsData = {
@@ -442,39 +436,28 @@ export const csrfToken = createDataAccessor<string>("csrfToken");
 
 $(async () => {
   switch (location.pathname) {
-    case "/homework":
-    case "/homework/":
-      requiredData = [
-        "subjectData",
-        "homeworkData",
-        "homeworkCheckedData",
-        "teamsData",
-        "joinedTeamsData",
-      ];
-      break;
-    case "/events":
-    case "/events/":
-      requiredData = [
-        "eventData",
-        "eventTypeData",
-        "teamsData",
-        "joinedTeamsData",
-      ];
-      break;
-    case "/main":
-    case "/main/":
-      requiredData = [
-        "subjectData",
-        "lessonData",
-        "homeworkData",
-        "homeworkCheckedData",
-        "substitutionsData",
-        "classSubstitutionsData",
-        "eventData",
-        "eventTypeData",
-        "joinedTeamsData",
-      ];
-      break;
+  case "/homework":
+  case "/homework/":
+    requiredData = ["subjectData", "homeworkData", "homeworkCheckedData", "teamsData", "joinedTeamsData"];
+    break;
+  case "/events":
+  case "/events/":
+    requiredData = ["eventData", "eventTypeData", "teamsData", "joinedTeamsData"];
+    break;
+  case "/main":
+  case "/main/":
+    requiredData = [
+      "subjectData",
+      "lessonData",
+      "homeworkData",
+      "homeworkCheckedData",
+      "substitutionsData",
+      "classSubstitutionsData",
+      "eventData",
+      "eventTypeData",
+      "joinedTeamsData"
+    ];
+    break;
   }
 
   await reloadAll();
@@ -484,22 +467,22 @@ $(async () => {
     const $target = $(hash);
     if ($target?.offset() != undefined) {
       $("html").animate({
-        scrollTop: ($target.offset()?.top ?? 0) - 70,
+        scrollTop: ($target.offset()?.top ?? 0) - 70
       });
     }
   }
 
-  $(`[data-bs-toggle="tooltip"]`).tooltip();
+  $('[data-bs-toggle="tooltip"]').tooltip();
   new MutationObserver(mutationsList => {
     mutationsList.forEach(mutation => {
       $(mutation.addedNodes).each(function () {
-        $(this).find(`[data-bs-toggle="tooltip"]`).tooltip();
-        $(this).filter(`[data-bs-toggle="tooltip"]`).tooltip();
+        $(this).find('[data-bs-toggle="tooltip"]').tooltip();
+        $(this).filter('[data-bs-toggle="tooltip"]').tooltip();
       });
     });
   }).observe(document.body, {
     childList: true,
-    subtree: true,
+    subtree: true
   });
 
   try {
@@ -509,7 +492,8 @@ $(async () => {
     }
     const data = await res.json();
     csrfToken(data.csrfToken);
-  } catch (error) {
+  }
+  catch (error) {
     console.error("initCSRF: Error fetching token:", error);
   }
 });
@@ -520,18 +504,8 @@ $(document).on("click", "#navbar-reload-button", () => {
 });
 
 $(window).on("userDataLoaded", () => {
-  if (
-    user.classJoined &&
-    ["/settings", "/settings/"].includes(location.pathname)
-  ) {
-    requiredData = [
-      "teamsData",
-      "joinedTeamsData",
-      "eventTypeData",
-      "subjectData",
-      "lessonData",
-      "substitutionsData",
-    ];
+  if (user.classJoined && ["/settings", "/settings/"].includes(location.pathname)) {
+    requiredData = ["teamsData", "joinedTeamsData", "eventTypeData", "subjectData", "lessonData", "substitutionsData"];
     reloadAll();
   }
 
@@ -552,13 +526,10 @@ const smallScreenQuery = window.matchMedia("(max-width: 575px)");
 
 function handleSmallScreenQueryChange() {
   if (smallScreenQuery.matches) {
-    $(".btn-group-dynamic")
-      .removeClass("btn-group")
-      .addClass("btn-group-vertical");
-  } else {
-    $(".btn-group-dynamic")
-      .addClass("btn-group")
-      .removeClass("btn-group-vertical");
+    $(".btn-group-dynamic").removeClass("btn-group").addClass("btn-group-vertical");
+  }
+  else {
+    $(".btn-group-dynamic").addClass("btn-group").removeClass("btn-group-vertical");
   }
 }
 
@@ -569,7 +540,8 @@ handleSmallScreenQueryChange();
 (async () => {
   if ((await colorTheme()) == "light") {
     document.body.setAttribute("data-bs-theme", "light");
-  } else {
+  }
+  else {
     document.body.setAttribute("data-bs-theme", "dark");
   }
 })();
@@ -581,27 +553,25 @@ if (!["/settings/", "/settings"].includes(location.pathname)) {
     async function updateColorTheme() {
       if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
         colorTheme("dark");
-      } else {
+      }
+      else {
         colorTheme("light");
       }
 
       if ((await colorTheme()) == "light") {
         document.getElementsByTagName("html")[0].style.background = "#ffffff";
         document.body.setAttribute("data-bs-theme", "light");
-        $(`meta[name="theme-color"]`).attr("content", "#f8f9fa");
-      } else {
+        $('meta[name="theme-color"]').attr("content", "#f8f9fa");
+      }
+      else {
         document.getElementsByTagName("html")[0].style.background = "#212529";
         document.body.setAttribute("data-bs-theme", "dark");
-        $(`meta[name="theme-color"]`).attr("content", "#2b3035");
+        $('meta[name="theme-color"]').attr("content", "#2b3035");
       }
     }
 
-    window
-      .matchMedia("(prefers-color-scheme: light)")
-      .addEventListener("change", updateColorTheme);
-    window
-      .matchMedia("(prefers-color-scheme: dark)")
-      .addEventListener("change", updateColorTheme);
+    window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
   }
 }
 
@@ -612,7 +582,7 @@ declare global {
       html: string,
       options?: {
         multiNewlineStartNewline?: boolean;
-      }
+      },
     ): string;
   }
 }

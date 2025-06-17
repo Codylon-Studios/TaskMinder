@@ -3,11 +3,7 @@ import { RequestError } from "../@types/requestError";
 
 import logger from "../utils/logger";
 
-export function ErrorHandler(
-  err: RequestError,
-  req: Request,
-  res: Response
-): void {
+export function ErrorHandler(err: RequestError, req: Request, res: Response): void {
   try {
     if (err.additionalInformation) {
       logger.write();
@@ -15,14 +11,14 @@ export function ErrorHandler(
         padding: {
           totalWidth: logger.getConsoleDimensions().width,
           alignment: "center",
-          fillCharacter: "=",
+          fillCharacter: "="
         },
         color: "red",
-        text: " Critical Exception ",
+        text: " Critical Exception "
       });
       logger.write({
         color: "gray",
-        text: "This might be an attack attempt as normal use of the UI should not have caused this error!",
+        text: "This might be an attack attempt as normal use of the UI should not have caused this error!"
       });
       logger.write(
         { bold: true, text: req.method },
@@ -36,11 +32,13 @@ export function ErrorHandler(
 
     if (err.expected) {
       res.status(err.status ?? 500).send(err.message);
-    } else {
+    }
+    else {
       console.log(err);
       res.status(500).send("Internal Server Error");
     }
-  } catch (err) {
+  }
+  catch (err) {
     logger.warn("An error occured in the error handler middleware:\t", err);
     res.status(500).send("Internal Server Error");
   }

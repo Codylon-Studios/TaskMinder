@@ -4,10 +4,6 @@ import checkAccess from "../middleware/accessMiddleware";
 
 const router = express.Router();
 
-router.get(
-  "/get_classcode",
-  checkAccess.elseUnauthorized,
-  classController.getClassCode
-);
+router.get("/get_classcode", checkAccess.elseUnauthorized, classController.getClassCode);
 
 export default router;

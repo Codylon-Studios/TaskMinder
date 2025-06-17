@@ -5,11 +5,12 @@ export const getClassCode = asyncHandler(async (req, res, next) => {
   try {
     const classCode = await classService.getClassCode(req.session);
     res.status(200).json(classCode);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export default {
-  getClassCode,
+  getClassCode
 };

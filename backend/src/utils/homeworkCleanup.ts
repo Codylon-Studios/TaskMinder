@@ -15,28 +15,23 @@ export default async function cleanupOldHomework() {
     const count = await prisma.homework10d.count({
       where: {
         submissionDate: {
-          lt: sixtyDaysAgo,
-        },
-      },
+          lt: sixtyDaysAgo
+        }
+      }
     });
 
     // Delete the records
     const deleted = await prisma.homework10d.deleteMany({
       where: {
         submissionDate: {
-          lt: sixtyDaysAgo,
-        },
-      },
+          lt: sixtyDaysAgo
+        }
+      }
     });
 
-    logger.info(
-      "Homework cleanup completed:",
-      deleted.count,
-      "records deleted out of",
-      count,
-      "found"
-    );
-  } catch (error) {
+    logger.info("Homework cleanup completed:", deleted.count, "records deleted out of", count, "found");
+  }
+  catch (error) {
     logger.error("Error during homework cleanup:", error);
   }
 }

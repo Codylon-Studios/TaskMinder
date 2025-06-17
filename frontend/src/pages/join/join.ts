@@ -1,8 +1,4 @@
-import {
-  addUpdateAllFunction,
-  csrfToken,
-  reloadAll,
-} from "../../global/global.js";
+import { addUpdateAllFunction, csrfToken, reloadAll } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
 $("#show-join-class-btn").on("click", () => {
@@ -29,10 +25,7 @@ $("#join-class-back-btn").on("click", () => {
 });
 
 function onLogin() {
-  $("#show-login-register-btn")
-    .addClass("disabled")
-    .find("i")
-    .removeClass("d-none");
+  $("#show-login-register-btn").addClass("disabled").find("i").removeClass("d-none");
 
   $.get("/account/auth", response => {
     user.classJoined = response.classJoined;
@@ -43,12 +36,11 @@ function onLogin() {
   });
 
   if (!firstLogin) {
-    $(".login-register-element, .login-element, .register-element").addClass(
-      "d-none"
-    );
+    $(".login-register-element, .login-element, .register-element").addClass("d-none");
     if (user.classJoined) {
       $("#decide-account-panel").removeClass("d-none");
-    } else {
+    }
+    else {
       $("#decide-action-panel").removeClass("d-none");
     }
   }
@@ -61,12 +53,11 @@ $(() => {
 });
 
 $("#login-register-back-btn").on("click", () => {
-  $(".login-register-element, .login-element, .register-element").addClass(
-    "d-none"
-  );
+  $(".login-register-element, .login-element, .register-element").addClass("d-none");
   if (user.classJoined) {
     $("#decide-account-panel").removeClass("d-none");
-  } else {
+  }
+  else {
     $("#decide-action-panel").removeClass("d-none");
   }
 });
@@ -83,7 +74,7 @@ $("#join-class-btn").on("click", async () => {
   const classcode = $("#join-class-classcode").val();
 
   const data = {
-    classcode: classcode,
+    classcode: classcode
   };
 
   $.ajax({
@@ -91,7 +82,7 @@ $("#join-class-btn").on("click", async () => {
     type: "POST",
     data: data,
     headers: {
-      "X-CSRF-Token": await csrfToken(),
+      "X-CSRF-Token": await csrfToken()
     },
     success: () => {
       $("#join-class-panel").addClass("d-none");
@@ -106,10 +97,11 @@ $("#join-class-btn").on("click", async () => {
     error: xhr => {
       if (xhr.status === 401) {
         $("#error-invalid-classcode").removeClass("d-none");
-      } else if (xhr.status === 500) {
+      }
+      else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
       }
-    },
+    }
   });
 });
 
@@ -123,7 +115,8 @@ if (urlParams.has("action")) {
   if (urlParams.get("action") == "join") {
     $("#decide-action-panel").addClass("d-none");
     $("#join-class-panel").removeClass("d-none");
-  } else if (urlParams.get("action") == "account") {
+  }
+  else if (urlParams.get("action") == "account") {
     $("#decide-action-panel").addClass("d-none");
     $("#decide-account-panel").removeClass("d-none");
   }
@@ -132,6 +125,7 @@ if (urlParams.has("action")) {
 if (urlParams.has("classcode")) {
   $("#join-class-classcode").val(urlParams.get("classcode") ?? "");
   $("#join-class-btn").trigger("click");
-} else {
+}
+else {
   $("#join-class-classcode").val("");
 }

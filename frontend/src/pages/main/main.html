@@ -1,77 +1,33 @@
 <!doctype html>
 <html lang="de">
   <head>
-    <meta
-      name="description"
-      content="Synchronize homework, events and more with your classmates!"
-    />
-    <link
-      class="preload-style"
-      rel="preload"
-      href="/events/event_type_styles"
-      as="style"
-    />
+    <meta name="description" content="Synchronize homework, events and more with your classmates!" />
+    <link class="preload-style" rel="preload" href="/events/event_type_styles" as="style" />
   </head>
   <body>
     <div class="container">
-      <div
-        class="container-fluid d-flex justify-content-center align-items-center mb-3"
-      >
-        <button
-          class="btn btn-sm fw-bold btn-primary me-2 calendar-special-button"
-          id="calendar-today-btn"
-        >
-          Heute
-        </button>
-        <button
-          class="btn btn-semivisible calendar-month-year-move-button"
-          id="calendar-month-year-l-btn"
-        >
+      <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
+        <button class="btn btn-sm fw-bold btn-primary me-2 calendar-special-button" id="calendar-today-btn">Heute</button>
+        <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-l-btn">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
-        <div class="mx-2 text-center" id="calendar-month-year">
-          Dezember 2024
-        </div>
-        <button
-          class="btn btn-semivisible calendar-month-year-move-button"
-          id="calendar-month-year-r-btn"
-        >
+        <div class="mx-2 text-center" id="calendar-month-year">Dezember 2024</div>
+        <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-r-btn">
           <i class="fa-solid fa-chevron-right"></i>
         </button>
-        <button
-          class="btn btn-sm fw-bold btn-primary ms-2 calendar-special-button"
-          id="calendar-month-btn"
-        >
-          Monat
-        </button>
-        <button
-          class="btn btn-sm fw-bold btn-primary ms-2 calendar-special-button"
-          id="calendar-week-btn"
-        >
-          Woche
-        </button>
+        <button class="btn btn-sm fw-bold btn-primary ms-2 calendar-special-button" id="calendar-month-btn">Monat</button>
+        <button class="btn btn-sm fw-bold btn-primary ms-2 calendar-special-button" id="calendar-week-btn">Woche</button>
       </div>
 
-      <div
-        class="container-fluid d-flex justify-content-center align-items-center"
-      >
-        <button
-          class="btn btn-semivisible calendar-week-move-button"
-          id="calendar-week-l-btn"
-        >
+      <div class="container-fluid d-flex justify-content-center align-items-center">
+        <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-l-btn">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
         <div class="mx-1" id="calendar-week-wrapper">
           <div class="calendar-week calendar-old" id="calendar-week-old"></div>
-          <div
-            class="d-none calendar-week calendar-new"
-            id="calendar-week-new"
-          ></div>
+          <div class="d-none calendar-week calendar-new" id="calendar-week-new"></div>
         </div>
-        <button
-          class="btn btn-semivisible calendar-week-move-button"
-          id="calendar-week-r-btn"
-        >
+        <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-r-btn">
           <i class="fa-solid fa-chevron-right"></i>
         </button>
       </div>
@@ -82,52 +38,19 @@
       >
         <label class="text-nowrap" for="timetable-mode">Stundenplanart</label>
         <div class="btn-group" id="timetable-mode">
-          <input
-            type="radio"
-            class="btn-check"
-            name="timetable-mode"
-            id="timetable-mode-none"
-          />
-          <label
-            class="btn btn-sm btn-outline-primary fw-semibold"
-            for="timetable-mode-none"
-            >Nicht</label
-          >
+          <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-none" />
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-none">Nicht</label>
 
-          <input
-            type="radio"
-            class="btn-check"
-            name="timetable-mode"
-            id="timetable-mode-less"
-          />
-          <label
-            class="btn btn-sm btn-outline-primary fw-semibold"
-            for="timetable-mode-less"
-            >Weniger</label
-          >
+          <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-less" />
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-less">Weniger</label>
 
-          <input
-            type="radio"
-            class="btn-check"
-            name="timetable-mode"
-            id="timetable-mode-more"
-          />
-          <label
-            class="btn btn-sm btn-outline-primary fw-semibold"
-            for="timetable-mode-more"
-            >Mehr</label
-          >
+          <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-more" />
+          <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-more">Mehr</label>
         </div>
       </div>
 
-      <div
-        class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xl-row gap-2"
-        id="timetable-less"
-      ></div>
-      <div
-        class="container-fluid mb-3 d-flex flex-wrap flex-column gap-3 d-none"
-        id="timetable-more"
-      ></div>
+      <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xl-row gap-2" id="timetable-less"></div>
+      <div class="container-fluid mb-3 d-flex flex-wrap flex-column gap-3 d-none" id="timetable-more"></div>
 
       <div class="container-fluid mb-3">
         <div class="mb-2 d-flex align-items-center">
@@ -147,41 +70,14 @@
           id="homework-mode-wrapper"
         >
           <div class="btn-group btn-group-dynamic" id="homework-mode">
-            <input
-              type="radio"
-              class="btn-check"
-              name="homework-mode"
-              id="homework-mode-tomorrow"
-            />
-            <label
-              class="btn btn-sm btn-outline-primary fw-semibold"
-              for="homework-mode-tomorrow"
-              >Auf den nächsten Tag</label
-            >
+            <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-tomorrow" />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-tomorrow">Auf den nächsten Tag</label>
 
-            <input
-              type="radio"
-              class="btn-check"
-              name="homework-mode"
-              id="homework-mode-assignment"
-            />
-            <label
-              class="btn btn-sm btn-outline-primary fw-semibold"
-              for="homework-mode-assignment"
-              >Von diesem Tag</label
-            >
+            <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-assignment" />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-assignment">Von diesem Tag</label>
 
-            <input
-              type="radio"
-              class="btn-check"
-              name="homework-mode"
-              id="homework-mode-submission"
-            />
-            <label
-              class="btn btn-sm btn-outline-primary fw-semibold"
-              for="homework-mode-submission"
-              >Auf diesen Tag</label
-            >
+            <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-submission" />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-submission">Auf diesen Tag</label>
           </div>
         </div>
         <div class="ms-3" id="homework-list">
@@ -200,52 +96,20 @@
           class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row"
           id="substitutions-mode-wrapper"
         >
-          <label class="text-nowrap" for="substitutions-mode"
-            >Vertretungsplanart</label
-          >
+          <label class="text-nowrap" for="substitutions-mode">Vertretungsplanart</label>
           <div class="btn-group" id="substitutions-mode">
-            <input
-              type="radio"
-              class="btn-check"
-              name="substitutions-mode"
-              id="substitutions-mode-none"
-            />
-            <label
-              class="btn btn-sm btn-outline-primary fw-semibold"
-              for="substitutions-mode-none"
-              >Nicht</label
-            >
+            <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-none" />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-none">Nicht</label>
 
-            <input
-              type="radio"
-              class="btn-check"
-              name="substitutions-mode"
-              id="substitutions-mode-class"
-            />
-            <label
-              class="btn btn-sm btn-outline-primary fw-semibold"
-              for="substitutions-mode-class"
-              >Nur von der Klasse</label
-            >
+            <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-class" />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-class">Nur von der Klasse</label>
 
-            <input
-              type="radio"
-              class="btn-check"
-              name="substitutions-mode"
-              id="substitutions-mode-all"
-            />
-            <label
-              class="btn btn-sm btn-outline-primary fw-semibold"
-              for="substitutions-mode-all"
-              >Alle</label
-            >
+            <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-all" />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-all">Alle</label>
           </div>
         </div>
         <div class="ms-3">
-          <div
-            class="rounded-3 overflow-hidden border d-none"
-            id="substitutions-table"
-          >
+          <div class="rounded-3 overflow-hidden border d-none" id="substitutions-table">
             <div class="table-responsive">
               <table class="table table-striped mb-0">
                 <thead>
@@ -259,19 +123,12 @@
                     <th>Raum</th>
                   </tr>
                 </thead>
-                <tbody
-                  class="table-group-divider"
-                  id="substitutions-list"
-                ></tbody>
+                <tbody class="table-group-divider" id="substitutions-list"></tbody>
               </table>
             </div>
           </div>
-          <div class="text-secondary d-none" id="substitutions-no-entry">
-            Keine Vertretungen an diesem Tag.
-          </div>
-          <div class="text-secondary d-none" id="substitutions-no-data">
-            Keine Vertretungsdaten für diesen Tag verfügbar.
-          </div>
+          <div class="text-secondary d-none" id="substitutions-no-entry">Keine Vertretungen an diesem Tag.</div>
+          <div class="text-secondary d-none" id="substitutions-no-data">Keine Vertretungsdaten für diesen Tag verfügbar.</div>
         </div>
       </div>
     </div>
