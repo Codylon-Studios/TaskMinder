@@ -15,14 +15,8 @@ import {
   lessonData,
   timeToMs,
   updateAll,
-  userDataLoaded,
   LessonData,
-  csrfToken,
-  loadTeamsData,
-  loadJoinedTeamsData,
-  loadEventTypeData,
-  loadSubjectData,
-  loadLessonData
+  csrfToken
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
@@ -803,49 +797,50 @@ $(() => {
 });
 
 $(async () => {
-  await userDataLoaded();
-  if (user.classJoined) {
-    $(".not-joined-info").addClass("d-none");
-    $("#settings-student, #settings-class").removeClass("d-none");
-    addUpdateAllFunction(updateTeamLists, updateEventTypeList, updateSubjectList, updateTimetable);
-    reloadAll();
-
-    const $classcodeCopyLink = $("#classcode-copy-link");
-    const $classcode = $("#classcode");
-    const $classcodeCopyText = $("#classcode-copy-text");
-    const $classcodeCopiedText = $("#classcode-copied-text");
-
-    $.get("/class/get_classcode")
-      .done((classCode: string) => {
-        $classcode.val(classCode);
-        $classcodeCopyLink.prop("disabled", false);
-      })
-      .fail(() => {
-        $classcode.val("Fehler beim Laden");
-        $classcodeCopyLink.prop("disabled", true);
-      });
-
-    $classcodeCopyLink.on("click", async () => {
-      const value = $classcode.val();
-
-      try {
-        await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
-
-        $classcodeCopyText.addClass("d-none");
-        $classcodeCopiedText.removeClass("d-none");
-        $classcodeCopyLink.prop("disabled", true);
-
-        setTimeout(() => {
-          $classcodeCopyText.removeClass("d-none");
-          $classcodeCopiedText.addClass("d-none");
+  user.on("change", () => {
+    if (user.classJoined) {
+      $(".not-joined-info").addClass("d-none");
+      $("#settings-student, #settings-class").removeClass("d-none");
+      addUpdateAllFunction(updateTeamLists, updateEventTypeList, updateSubjectList, updateTimetable);
+      reloadAll();
+  
+      const $classcodeCopyLink = $("#classcode-copy-link");
+      const $classcode = $("#classcode");
+      const $classcodeCopyText = $("#classcode-copy-text");
+      const $classcodeCopiedText = $("#classcode-copied-text");
+  
+      $.get("/class/get_classcode")
+        .done((classCode: string) => {
+          $classcode.val(classCode);
           $classcodeCopyLink.prop("disabled", false);
-        }, 2000);
-      }
-      catch (err) {
-        console.error("Fehler beim Kopieren:", err);
-      }
-    });
-  }
+        })
+        .fail(() => {
+          $classcode.val("Fehler beim Laden");
+          $classcodeCopyLink.prop("disabled", true);
+        });
+  
+      $classcodeCopyLink.on("click", async () => {
+        const value = $classcode.val();
+  
+        try {
+          await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
+  
+          $classcodeCopyText.addClass("d-none");
+          $classcodeCopiedText.removeClass("d-none");
+          $classcodeCopyLink.prop("disabled", true);
+  
+          setTimeout(() => {
+            $classcodeCopyText.removeClass("d-none");
+            $classcodeCopiedText.addClass("d-none");
+            $classcodeCopyLink.prop("disabled", false);
+          }, 2000);
+        }
+        catch (err) {
+          console.error("Error copying classcode to clipboard:", err);
+        }
+      });
+    }
+  });
 });
 
 let animations = JSON.parse(localStorage.getItem("animations") ?? "true") ?? true;
@@ -914,10 +909,8 @@ $("#team-selection-save").on("click", async () => {
         "X-CSRF-Token": await csrfToken()
       },
       success: () => {
-        teamsData(null);
-        joinedTeamsData(null);
-        loadTeamsData();
-        loadJoinedTeamsData();
+        teamsData.reload();
+        joinedTeamsData.reload();
         updateTeamLists();
         $("#team-selection-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
         setTimeout(() => {
@@ -948,10 +941,8 @@ $("#team-selection-save").on("click", async () => {
   }
   else {
     localStorage.setItem("joinedTeamsData", JSON.stringify(newJoinedTeamsData));
-    teamsData(null);
-    joinedTeamsData(null);
-    loadTeamsData();
-    loadJoinedTeamsData();
+    teamsData.reload();
+    joinedTeamsData.reload();
     updateTeamLists();
     $("#team-selection-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
     setTimeout(() => {
@@ -1045,10 +1036,8 @@ async function saveTeams() {
       "X-CSRF-Token": await csrfToken()
     },
     success: () => {
-      teamsData(null);
-      joinedTeamsData(null);
-      loadTeamsData();
-      loadJoinedTeamsData();
+      teamsData.reload();
+      joinedTeamsData.reload();
       updateTeamLists();
       $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
       $("#teams-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
@@ -1196,7 +1185,6 @@ async function saveEventTypes() {
     },
     success: () => {
       eventTypeData(null);
-      loadEventTypeData();
       updateEventTypeList();
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
       $("#event-types-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
@@ -1403,8 +1391,7 @@ async function saveSubjects() {
       "X-CSRF-Token": await csrfToken()
     },
     success: () => {
-      subjectData(null);
-      loadSubjectData();
+      subjectData.reload();
       updateSubjectList();
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
       $("#subjects-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
@@ -1507,8 +1494,7 @@ $("#timetable-save").on("click", async () => {
       "X-CSRF-Token": await csrfToken()
     },
     success: () => {
-      lessonData(null);
-      loadLessonData();
+      lessonData.reload();
       updateTimetable();
       $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none");
       $("#timetable-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);

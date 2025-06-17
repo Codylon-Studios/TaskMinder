@@ -1,8 +1,8 @@
 <nav class="navbar bg-body-tertiary fixed-top">
-  <div class="container-fluid">
+  <div class="container-fluid position-relative">
     <div class="d-flex justify-content-between align-items-center flex-grow-1">
       <div class="d-md-none text-center flex-grow-1">
-        <a class="navbar-text fs-5 text-decoration-none navbar-home-link" href="/">TaskMinder</a>
+        <a class="navbar-text fs-5 text-decoration-none navbar-home-link position-absolute top-50 start-50 translate-middle" href="/">TaskMinder</a>
       </div>
       <a class="d-none d-md-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link" href="/">TaskMinder</a>
       <ul class="navbar-nav d-none d-md-flex flex-row me-auto">
@@ -20,11 +20,14 @@
         </li>
       </ul>
     </div>
-    <button class="btn btn-semivisible d-none" id="login-register-button" data-bs-toggle="modal" data-bs-target="#login-register-modal">
-      <i class="fa-solid fa-right-to-bracket"></i>
+
+    <button class="btn invisible">
+      :D
+      <!--This button only has to be here so the navbar always has the same height-->
     </button>
-    <button class="btn btn-semivisible d-none" id="logout-button">
-      <i class="fa-solid fa-right-from-bracket"></i>
+
+    <button class="btn btn-semivisible" id="login-register-button" data-bs-toggle="modal" data-bs-target="#login-register-modal">
+      <i class="fa-solid fa-right-to-bracket"></i>
     </button>
     <button class="btn btn-semivisible class-page-content d-none" id="navbar-reload-button">
       <i class="fas fa-rotate"></i>

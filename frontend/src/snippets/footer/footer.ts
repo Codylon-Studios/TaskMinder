@@ -1,4 +1,4 @@
-import { colorTheme } from "../../global/global.js";
+import { colorTheme, isSite } from "../../global/global.js";
 
 const bottombarShown = window.innerWidth < 992 && $(".bottombar").length > 0;
 let bottombarHeight = 45;
@@ -22,7 +22,7 @@ $("#footer-close").on("click", () => {
     paddingBottom: (bottombarShown ? bottombarHeight : 0) + 70 + "px"
   });
   $("footer").hide();
-  if (["/settings", "/settings/"].includes(location.pathname)) {
+  if (isSite("settings")) {
     $("#display-footer input").prop("checked", false);
   }
 });

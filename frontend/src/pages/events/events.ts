@@ -5,7 +5,6 @@ import {
   eventTypeData,
   isSameDay,
   joinedTeamsData,
-  loadEventData,
   msToDisplayDate,
   msToInputDate,
   runOnce,
@@ -232,8 +231,7 @@ function addEvent() {
         success: () => {
           // Show a success notification and update the shown events
           $("#add-event-success-toast").toast("show");
-          eventData(null);
-          loadEventData();
+          eventData.reload();
           updateEventList();
         },
         error: xhr => {
@@ -331,8 +329,7 @@ async function editEvent(eventId: number) {
         success: () => {
           // Show a success notification and update the shown events
           $("#edit-event-success-toast").toast("show");
-          eventData(null);
-          loadEventData();
+          eventData.reload();
           updateEventList();
         },
         error: xhr => {
@@ -398,8 +395,7 @@ function deleteEvent(eventId: number) {
         success: () => {
           // Show a success notification and update the shown events
           $("#delete-event-success-toast").toast("show");
-          eventData(null);
-          loadEventData();
+          eventData.reload();
           updateEventList();
         },
         error: xhr => {
@@ -464,27 +460,16 @@ $(function () {
   reloadAll();
 
   // If user is logged in, show the edit toggle button
-  user.on("login", () => {
-    $("#edit-toggle-label").removeClass("d-none");
-    $("#show-add-event-button").removeClass("d-none");
-  });
-  user.on("logout", () => {
-    $("#edit-toggle-label").addClass("d-none");
-    $("#show-add-event-button").addClass("d-none");
-    $(".event-edit-options").addClass("d-none");
-    $(".event-title").css("margin-right", "0rem");
-  });
-
-  if (user.loggedIn) {
-    $("#edit-toggle-label").removeClass("d-none");
-    $("#show-add-event-button").removeClass("d-none");
-  }
-  else {
-    $("#edit-toggle-label").addClass("d-none");
-    $("#show-add-event-button").addClass("d-none");
-    $(".event-edit-options").addClass("d-none");
-    $(".event-title").css("margin-right", "0rem");
-  }
+  user.on("change", (function _() {
+    const loggedIn = user.loggedIn;
+    $("#edit-toggle-label").toggleClass("d-none", !loggedIn);
+    $("#show-add-event-button").toggleClass("d-none", !loggedIn);
+    if (!loggedIn) {
+      $(".event-edit-options").addClass("d-none");
+      $(".event-title").css("margin-right", "0rem");
+    }
+    return _;
+  })());
 
   // Leave edit mode (if user entered it in a previous session)
   $("#edit-toggle").prop("checked", false);
@@ -639,10 +624,7 @@ $(function () {
 
 socket.on("updateEventData", () => {
   try {
-    eventData(null);
-
-    loadEventData();
-
+    eventData.reload();
     updateEventList();
   }
   catch (error) {

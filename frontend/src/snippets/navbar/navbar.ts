@@ -1,4 +1,4 @@
-import { csrfToken, updateAll, userDataLoaded } from "../../global/global.js";
+import { csrfToken, isSite, updateAll } from "../../global/global.js";
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 async function registerAccount(username: string, password: string) {
@@ -19,8 +19,11 @@ async function registerAccount(username: string, password: string) {
       $("#register-success-toast .username").text(username);
       $("#register-success-toast").toast("show");
       $("#login-register-modal").modal("hide");
-      user.trigger("login");
+      $("#login-register-button").hide();
+
+      user.loggedIn = true;
       user.username = username;
+      user.trigger("change");
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -61,8 +64,14 @@ async function loginAccount(username: string, password: string) {
       $("#login-success-toast .username").text(username);
       $("#login-success-toast").toast("show");
       $("#login-register-modal").modal("hide");
-      user.trigger("login");
-      user.username = username;
+      $("#login-register-button").hide();
+      
+      $.get("/account/auth", response => {
+        user.classJoined = response.classJoined;
+        user.loggedIn = true;
+        user.username = username;
+        user.trigger("change");
+      });
     },
     error: xhr => {
       if (xhr.status === 401) {
@@ -100,7 +109,10 @@ async function logoutAccount() {
     },
     success: () => {
       $("#logout-success-toast").toast("show");
-      user.trigger("logout");
+      
+      user.loggedIn = false;
+      user.username = null;
+      user.trigger("change");
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -199,17 +211,19 @@ export const $navbarToasts = {
 $(async () => {
   updateAll();
 
-  await userDataLoaded();
-  if (user.classJoined) {
-    $(".class-joined-content").removeClass("d-none");
-    $(".navbar-home-link").attr("href", "/main");
-  }
-  if (["/main/", "/main", "/homework/", "/homework", "/events/", "/events"].includes(location.pathname)) {
+  if (isSite("main", "homework", "events")) {
     $(".class-page-content").removeClass("d-none");
   }
+  user.on("change", (function _() {
+    if (user.classJoined) {
+      $(".class-joined-content").removeClass("d-none");
+      $(".navbar-home-link").attr("href", "/main");
+    }
+    return _;
+  })());
 });
 
-type UserEventName = "login" | "logout";
+type UserEventName = "change";
 type UserEventCallback = (...args: unknown[]) => void;
 
 export const user = {
@@ -223,6 +237,12 @@ export const user = {
       this._eventListeners[event] = [];
     }
     this._eventListeners[event].push(callback);
+    return this;
+  },
+
+  off(event: UserEventName) {
+    this._eventListeners[event] = [];
+    return this;
   },
 
   trigger(event: UserEventName, ...args: unknown[]) {
@@ -230,27 +250,15 @@ export const user = {
     if (callbacks) {
       callbacks.forEach(cb => cb(...args));
     }
+    return this;
   }
 };
-
-user.on("login", () => {
-  user.loggedIn = true;
-});
-
-user.on("logout", () => {
-  user.loggedIn = false;
-  user.username = null;
-});
-
-if (!["/join/", "/join"].includes(location.pathname)) {
-  user.on("login", () => {
-    $("#login-register-button").addClass("d-none");
-    $("#logout-button").removeClass("d-none");
-  });
-
-  user.on("logout", () => {
-    $("#login-register-button").removeClass("d-none");
-    $("#logout-button").addClass("d-none");
+if (isSite("join")) {
+  $("#login-register-button").addClass("d-none");
+}
+else {
+  user.on("change", () => {
+    $("#logout-button").toggleClass("d-none", !user.loggedIn);
   });
 }
 
@@ -267,14 +275,16 @@ $.get("/account/auth", response => {
 
   user.classJoined = response.classJoined;
 
-  $(window).trigger("userDataLoaded");
-
   if (response.loggedIn) {
-    user.trigger("login");
+    $("#login-register-button").hide();
+    user.loggedIn = true;
   }
   else {
-    user.trigger("logout");
+    user.loggedIn = false;
+    user.username = null;
   }
+
+  user.trigger("change");
 });
 
 $(() => {

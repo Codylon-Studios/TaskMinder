@@ -24,29 +24,6 @@ $("#join-class-back-btn").on("click", () => {
   $("#error-invalid-classcode").addClass("d-none");
 });
 
-function onLogin() {
-  $("#show-login-register-btn").addClass("disabled").find("i").removeClass("d-none");
-
-  $.get("/account/auth", response => {
-    user.classJoined = response.classJoined;
-
-    if (user.classJoined) {
-      location.href = "/main";
-    }
-  });
-
-  if (!firstLogin) {
-    $(".login-register-element, .login-element, .register-element").addClass("d-none");
-    if (user.classJoined) {
-      $("#decide-account-panel").removeClass("d-none");
-    }
-    else {
-      $("#decide-action-panel").removeClass("d-none");
-    }
-  }
-  firstLogin = false;
-}
-
 $(() => {
   addUpdateAllFunction(() => {});
   reloadAll();
@@ -62,12 +39,17 @@ $("#login-register-back-btn").on("click", () => {
   }
 });
 
-let firstLogin = true;
-$(window).on("userDataLoaded", () => {
-  user.on("login", onLogin);
-  user.on("logout", () => {
-    firstLogin = false;
-  });
+user.on("change", () => {
+  if (user.loggedIn) {
+    $("#show-login-register-btn").addClass("disabled").find("i").removeClass("d-none");
+    if (user.classJoined) {
+      location.href = "/main";
+    }
+    else if (urlParams.get("action") != "join") {
+      $("#decide-action-panel").removeClass("d-none");
+    }
+    $(".login-register-element, .login-element, .register-element").addClass("d-none");
+  }
 });
 
 $("#join-class-btn").on("click", async () => {
@@ -88,6 +70,7 @@ $("#join-class-btn").on("click", async () => {
       $("#join-class-panel").addClass("d-none");
       $("#decide-account-panel").removeClass("d-none");
       user.classJoined = true;
+      user.trigger("change");
       if (user.loggedIn) {
         location.href = "/main";
       }
@@ -111,15 +94,13 @@ $("#join-class-classcode").on("input", () => {
 
 const urlParams = new URLSearchParams(window.location.search);
 
-if (urlParams.has("action")) {
-  if (urlParams.get("action") == "join") {
-    $("#decide-action-panel").addClass("d-none");
-    $("#join-class-panel").removeClass("d-none");
-  }
-  else if (urlParams.get("action") == "account") {
-    $("#decide-action-panel").addClass("d-none");
-    $("#decide-account-panel").removeClass("d-none");
-  }
+if (urlParams.get("action") == "join") {
+  $("#decide-action-panel").addClass("d-none");
+  $("#join-class-panel").removeClass("d-none");
+}
+else if (urlParams.get("action") == "account") {
+  $("#decide-action-panel").addClass("d-none");
+  $("#decide-account-panel").removeClass("d-none");
 }
 
 if (urlParams.has("classcode")) {

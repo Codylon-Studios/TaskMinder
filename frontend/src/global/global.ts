@@ -15,6 +15,17 @@ export function runOnce<F extends (...args: unknown[]) => unknown>(
   return wrapper;
 }
 
+export function getSite(): string {
+  return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
+}
+
+export function isSite(...sites: (string | RegExp)[]): boolean {
+  const site = getSite();
+  return sites.some(s => {
+    return s == site || (s instanceof RegExp && s.test(site));
+  });
+}
+
 export function msToDisplayDate(ms: number | string): string {
   const num = typeof ms === "string" ? parseInt(ms) : ms;
   const date = new Date(num);
@@ -71,175 +82,43 @@ export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolea
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
 }
 
-export function loadSubjectData() {
-  $.get("/subjects/get_subject_data", data => {
-    subjectData(data);
-  });
-}
-
-export function loadLessonData() {
-  $.get("/lessons/get_lesson_data", data => {
-    lessonData(data);
-  });
-}
-
-export function loadHomeworkData() {
-  $.get("/homework/get_homework_data", data => {
-    homeworkData(data);
-  });
-}
-
-export async function loadHomeworkCheckedData() {
-  await userDataLoaded();
-
-  if (user.loggedIn) {
-    // If the user is logged in, get the data from the server
-    $.get("/homework/get_homework_checked_data", data => {
-      homeworkCheckedData(data);
-    });
-  }
-  else {
-    try {
-      // If the user is not logged in, get the data from the local storage
-      homeworkCheckedData(JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]"));
-    }
-    catch {
-      homeworkCheckedData([]);
-    }
-  }
-}
-
-function loadSubstitutionsData() {
-  $.get("/substitutions/get_substitutions_data", data => {
-    substitutionsData(data);
-  });
-}
-
-async function loadClassSubstitutionsData() {
-  const currentSubstitutionsData = await substitutionsData();
-  if (currentSubstitutionsData === "No data") {
-    classSubstitutionsData("No data");
-    return;
-  }
-
-  const data = structuredClone(currentSubstitutionsData);
-  for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
-    const key = ("plan" + planId) as "plan1" | "plan2";
-    data[key].substitutions = data[key].substitutions.filter((entry: Record<string, string>) =>
-      /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class)
-    );
-  }
-  classSubstitutionsData(data);
-}
-
-export async function loadJoinedTeamsData() {
-  await userDataLoaded();
-
-  if (user.loggedIn) {
-    $.get("/teams/get_joined_teams_data", data => {
-      joinedTeamsData(data);
-    });
-  }
-  else {
-    try {
-      joinedTeamsData(JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]"));
-    }
-    catch {
-      joinedTeamsData([]);
-    }
-  }
-}
-
-export function loadTeamsData() {
-  $.get("/teams/get_teams_data", data => {
-    teamsData(data);
-  });
-}
-
-export function loadEventData() {
-  $.get("/events/get_event_data", data => {
-    eventData(data);
-  });
-}
-
-export function loadEventTypeData() {
-  $.get("/events/get_event_type_data", data => {
-    eventTypeData(data);
-  });
-}
-
-export function userDataLoaded(): Promise<void> {
-  return new Promise(resolve => {
-    try {
-      if (user.loggedIn != undefined && user.loggedIn != null) {
-        resolve();
-        return;
-      }
-      $(window).on("userDataLoaded", () => {
-        $(window).off("userDataLoaded");
-        resolve();
-      });
-    }
-    catch {
-      $(window).on("userDataLoaded", () => {
-        $(window).off("userDataLoaded");
-        resolve();
-      });
-    }
-  });
-}
-
 export const reloadAll = (): Promise<void> => {
+  console.log("Reload all", updateAllFunctions);
   return new Promise(resolve => {
     (async resolve => {
       if (updateAllFunctions.length != 0) {
         if (requiredData.includes("subjectData")) {
-          subjectData(null);
-          loadSubjectData();
+          subjectData.reload();
         }
         if (requiredData.includes("lessonData")) {
-          lessonData(null);
-          loadLessonData();
+          lessonData.reload();
         }
         if (requiredData.includes("homeworkData")) {
-          homeworkData(null);
-          loadHomeworkData();
+          homeworkData.reload();
         }
         if (requiredData.includes("homeworkCheckedData")) {
-          homeworkCheckedData(null);
-          loadHomeworkCheckedData();
+          homeworkCheckedData.reload();
         }
         if (requiredData.includes("substitutionsData")) {
-          substitutionsData(null);
-          loadSubstitutionsData();
+          substitutionsData.reload();
         }
         if (requiredData.includes("classSubstitutionsData")) {
-          classSubstitutionsData(null);
-          loadClassSubstitutionsData();
+          classSubstitutionsData.reload();
         }
         if (requiredData.includes("joinedTeamsData")) {
-          joinedTeamsData(null);
-          loadJoinedTeamsData();
+          joinedTeamsData.reload();
         }
         if (requiredData.includes("teamsData")) {
-          teamsData(null);
-          loadTeamsData();
+          teamsData.reload();
         }
         if (requiredData.includes("eventData")) {
-          eventData(null);
-          loadEventData();
+          eventData.reload();
         }
         if (requiredData.includes("eventTypeData")) {
-          eventTypeData(null);
-          loadEventTypeData();
+          eventTypeData.reload();
         }
 
         await updateAll();
-
-        const promises = [];
-
-        promises.push(userDataLoaded());
-        await Promise.all(promises);
 
         $("body").css({ display: "block" });
       }
@@ -294,12 +173,19 @@ document.head.appendChild(themeColor);
 // DATA
 type DataAccessorEventName = "update";
 type DataAccessorEventCallback = (...args: unknown[]) => void;
-export function createDataAccessor<T>(name: string) {
+export function createDataAccessor<DataType>(name: string, reload?: string | (() => void)) {
   const eventName = `dataLoaded:${name}`;
-  let data: T | null = null;
+  let data: DataType | null = null;
   const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
+  
+  const reloadFunction = typeof reload == "string" ? () => {
+    accessor.set(null);
+    $.get(reload, data => {
+      accessor.set(data);
+    });
+  } : reload ?? null;
 
-  const accessor = async (value?: T | null): Promise<T> => {
+  const accessor = async (value?: DataType | null): Promise<DataType> => {
     if (value !== undefined) {
       accessor.set(value);
     }
@@ -307,7 +193,7 @@ export function createDataAccessor<T>(name: string) {
   };
 
   accessor.get = () => {
-    async function getNotNullValue(): Promise<T> {
+    async function getNotNullValue(): Promise<DataType> {
       if (data == null) {
         await new Promise(resolve => {
           $(window).on(eventName, resolve);
@@ -319,17 +205,19 @@ export function createDataAccessor<T>(name: string) {
     return getNotNullValue();
   };
 
-  accessor.set = (value: T | null) => {
+  accessor.set = (value: DataType | null) => {
     data = value;
     if (value !== null) {
       $(window).trigger(eventName);
     }
     accessor.trigger("update");
+    return accessor;
   };
 
   accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback) => {
     _eventListeners[event] ??= [];
     _eventListeners[event].push(callback);
+    return accessor;
   };
 
   accessor.trigger = (event: DataAccessorEventName, ...args: unknown[]) => {
@@ -337,6 +225,21 @@ export function createDataAccessor<T>(name: string) {
     if (callbacks) {
       callbacks.forEach(cb => cb(...args));
     }
+    return accessor;
+  };
+
+  accessor.reload = () => {
+    if (reloadFunction instanceof Function) {
+      reloadFunction();
+    }
+    else (() => {
+      console.warn(
+        `No reload function for the data accessor %c${name}%c defined! Either define one or do not call .reload().`,
+        "font-weight: bold",
+        "font-weight: normal"
+      );
+    })();
+    return accessor;
   };
 
   return accessor;
@@ -353,7 +256,7 @@ export type SubjectData = {
   teacherNameShort: string;
   teacherNameSubstitution: string[] | null;
 }[];
-export const subjectData = createDataAccessor<SubjectData>("subjectData");
+export const subjectData = createDataAccessor<SubjectData>("subjectData", "/subjects/get_subject_data");
 
 // Timetable data
 export type LessonData = {
@@ -366,7 +269,7 @@ export type LessonData = {
   startTime: number;
   endTime: number;
 }[];
-export const lessonData = createDataAccessor<LessonData>("lessonData");
+export const lessonData = createDataAccessor<LessonData>("lessonData", "/lessons/get_lesson_data");
 
 // Homework data
 type HomeworkData = {
@@ -377,11 +280,28 @@ type HomeworkData = {
   submissionDate: string;
   teamId: number;
 }[];
-export const homeworkData = createDataAccessor<HomeworkData>("homeworkData");
+export const homeworkData = createDataAccessor<HomeworkData>("homeworkData", "/homework/get_homework_data");
 
 // Homework checked data
 type HomeworkCheckedData = number[];
-export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>("homeworkCheckedData");
+async function loadHomeworkCheckedData() {
+  if (user.loggedIn) {
+    // If the user is logged in, get the data from the server
+    $.get("/homework/get_homework_checked_data", data => {
+      homeworkCheckedData(data);
+    });
+  }
+  else {
+    try {
+      // If the user is not logged in, get the data from the local storage
+      homeworkCheckedData(JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]"));
+    }
+    catch {
+      homeworkCheckedData([]);
+    }
+  }
+}
+export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>("homeworkCheckedData", loadHomeworkCheckedData);
 
 // Substitutions data
 type SubstitutionPlan = {
@@ -395,19 +315,50 @@ export type SubstitutionsData =
       updated: string;
     }
   | "No data";
-export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData");
-export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData");
+export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", "/substitutions/get_substitutions_data");
+async function loadClassSubstitutionsData() {
+  const currentSubstitutionsData = await substitutionsData();
+  if (currentSubstitutionsData === "No data") {
+    classSubstitutionsData("No data");
+    return;
+  }
+
+  const data = structuredClone(currentSubstitutionsData);
+  for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
+    const key = ("plan" + planId) as "plan1" | "plan2";
+    data[key].substitutions = data[key].substitutions.filter((entry: Record<string, string>) =>
+      /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class)
+    );
+  }
+  classSubstitutionsData(data);
+}
+export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", loadClassSubstitutionsData);
 
 // Joined teams data
 export type JoinedTeamsData = number[];
-export const joinedTeamsData = createDataAccessor<JoinedTeamsData>("joinedTeamsData");
+async function loadJoinedTeamsData() {
+  if (user.loggedIn) {
+    $.get("/teams/get_joined_teams_data", data => {
+      joinedTeamsData(data);
+    });
+  }
+  else {
+    try {
+      joinedTeamsData(JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]"));
+    }
+    catch {
+      joinedTeamsData([]);
+    }
+  }
+}
+export const joinedTeamsData = createDataAccessor<JoinedTeamsData>("joinedTeamsData", loadJoinedTeamsData);
 
 // Teams data
 export type TeamsData = {
   teamId: number;
   name: string;
 }[];
-export const teamsData = createDataAccessor<TeamsData>("teamsData");
+export const teamsData = createDataAccessor<TeamsData>("teamsData", "/teams/get_teams_data");
 
 // Event data
 export type SingleEventData = {
@@ -421,7 +372,7 @@ export type SingleEventData = {
   teamId: number;
 };
 type EventData = SingleEventData[];
-export const eventData = createDataAccessor<EventData>("eventData");
+export const eventData = createDataAccessor<EventData>("eventData", "/events/get_event_data");
 
 // Event type data
 export type EventTypeData = {
@@ -429,24 +380,27 @@ export type EventTypeData = {
   name: string;
   color: string;
 }[];
-export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData");
+export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData", "/events/get_event_type_data");
 
 // CSRF token
 export const csrfToken = createDataAccessor<string>("csrfToken");
 
 $(async () => {
-  switch (location.pathname) {
-  case "/homework":
-  case "/homework/":
-    requiredData = ["subjectData", "homeworkData", "homeworkCheckedData", "teamsData", "joinedTeamsData"];
-    break;
-  case "/events":
-  case "/events/":
-    requiredData = ["eventData", "eventTypeData", "teamsData", "joinedTeamsData"];
-    break;
-  case "/main":
-  case "/main/":
-    requiredData = [
+  requiredData = {
+    homework: [
+      "subjectData",
+      "homeworkData",
+      "homeworkCheckedData",
+      "teamsData",
+      "joinedTeamsData"
+    ],
+    events: [
+      "eventData",
+      "eventTypeData",
+      "teamsData",
+      "joinedTeamsData"
+    ],
+    main: [
       "subjectData",
       "lessonData",
       "homeworkData",
@@ -456,9 +410,8 @@ $(async () => {
       "eventData",
       "eventTypeData",
       "joinedTeamsData"
-    ];
-    break;
-  }
+    ]
+  }[getSite()] || [];
 
   await reloadAll();
 
@@ -503,19 +456,14 @@ $(document).on("click", "#navbar-reload-button", () => {
   if (requiredData && updateAllFunctions.length != 0) reloadAll();
 });
 
-$(window).on("userDataLoaded", () => {
-  if (user.classJoined && ["/settings", "/settings/"].includes(location.pathname)) {
+user.on("change", () => {
+  if (user.classJoined && isSite("settings")) {
     requiredData = ["teamsData", "joinedTeamsData", "eventTypeData", "subjectData", "lessonData", "substitutionsData"];
     reloadAll();
   }
 
   let afterFirstEvent = false;
-  user.on("login", () => {
-    if (afterFirstEvent) reloadAll();
-    afterFirstEvent = true;
-  });
-
-  user.on("logout", () => {
+  user.on("change", () => {
     if (afterFirstEvent) reloadAll();
     afterFirstEvent = true;
   });
@@ -546,7 +494,7 @@ handleSmallScreenQueryChange();
   }
 })();
 
-if (!["/settings/", "/settings"].includes(location.pathname)) {
+if (!isSite("settings")) {
   const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
 
   if (colorThemeSetting == "auto") {

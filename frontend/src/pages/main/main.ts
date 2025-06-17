@@ -16,9 +16,6 @@ import {
   SingleEventData,
   updateAll,
   homeworkCheckedData,
-  loadHomeworkData,
-  loadHomeworkCheckedData,
-  loadEventData,
   addUpdateAllFunction,
   socket,
   reloadAll,
@@ -1184,11 +1181,8 @@ $("#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")).prop
 
 socket.on("updateHomeworkData", () => {
   try {
-    homeworkData(null);
-    homeworkCheckedData(null);
-
-    loadHomeworkData();
-    loadHomeworkCheckedData();
+    homeworkData.reload();
+    homeworkCheckedData.reload();
 
     updateHomeworkList();
   }
@@ -1199,9 +1193,7 @@ socket.on("updateHomeworkData", () => {
 
 socket.on("updateEventData", () => {
   try {
-    eventData(null);
-
-    loadEventData();
+    eventData.reload();
 
     updateEventList();
     updateCalendarWeekContent("#calendar-week-old");
