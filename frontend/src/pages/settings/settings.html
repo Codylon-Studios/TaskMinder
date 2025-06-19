@@ -10,6 +10,7 @@
     <div class="container">
       <div class="nav nav-tabs mb-3">
         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#nav-settings-app">App</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-account">Account</button>
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-student">Schüler</button>
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-class">Klasse</button>
       </div>
@@ -49,6 +50,87 @@
             Zeigt / Versteckt die Fußzeile, in der rechtliche Hinweise und ähnliches sind. Die Links finden sich auch unter "Über TaskMinder".
           </div>
         </div>
+
+        <div class="tab-pane fade" id="nav-settings-account">
+          <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-logged-in-info">
+            <i class="fa-solid fa-circle-xmark mx-1"></i>
+            <div>
+              <div class="d-block">Für diese Einstellungen musst du angemeldet sein.</div>
+              <div class="d-block">Du kannst dich über das Icon oben rechts anmelden oder registrieren.</div>
+            </div>
+          </div>
+
+          <div id="settings-account" class="d-none">
+            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
+              <i class="fa-solid fa-circle-info mx-1"></i>
+              <div class="d-block">Diese Einstellungen betreffen deinen gesamten Account, auch geräteübergreifend.</div>
+            </div>
+
+            <button class="btn btn-primary fw-bold" id="logout-button">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              Abmelden
+            </button>
+            <div class="form-text mb-4">Du kannst dich jederzeit wieder anmelden.</div>
+
+            <button class="btn btn-warning fw-bold" id="change-password-button">
+              <i class="fa-solid fa-unlock-keyhole"></i>
+              Passwort ändern
+            </button>
+            <div id="change-password">
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-invalid-password">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Das Passwort ist falsch!</span>
+              </div>
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-not-matching-passwords">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Die Passwörter stimmen nicht überein!</span>
+              </div>
+              <div class="alert alert-warning p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-insecure-password">
+                <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+                <span class="d-block me-1">Das Passwort ist nicht sehr sicher!</span>
+              </div>
+
+              <div class="mb-2 d-flex flex-column flex-md-row gap-2">
+                <input class="form-control w-fit-content" type="password" placeholder="Dein altes Passwort" id="change-password-old" />
+                <input class="form-control w-fit-content" type="password" placeholder="Dein neues Passwort" id="change-password-new" />
+                <input class="form-control w-fit-content" type="password" placeholder="Wiederhole dein neues Passwort" id="change-password-repeat" />
+              </div>
+              <button class="btn btn-secondary fw-bold" id="change-password-cancel">
+                <i class="fa-solid fa-xmark"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-warning fw-bold" id="change-password-confirm">
+                <i class="fa-solid fa-unlock-keyhole"></i>
+                Bestätigen
+              </button>
+            </div>
+            <div class="form-text mb-4">Achtung, das kann nicht rückgängig gemacht werden!</div>
+
+            <button class="btn btn-danger fw-bold" id="delete-account-button">
+              <i class="fa-solid fa-user-slash"></i>
+              Account löschen
+            </button>
+            <div id="delete-account">
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="delete-account-invalid-password">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Das Passwort ist falsch!</span>
+              </div>
+              <div class="mb-2">
+                <input class="form-control w-fit-content" type="password" placeholder="Dein Passwort" id="delete-account-password" />
+              </div>
+              <button class="btn btn-secondary fw-bold" id="delete-account-cancel">
+                <i class="fa-solid fa-xmark"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-danger fw-bold" id="delete-account-confirm">
+                <i class="fa-solid fa-user-slash"></i>
+                Bestätigen
+              </button>
+            </div>
+            <div class="form-text mb-4">Achtung, das kann nicht rückgängig gemacht werden!</div>
+          </div>
+        </div>
+
         <div class="tab-pane fade" id="nav-settings-student">
           <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
             <i class="fa-solid fa-circle-xmark mx-1"></i>
@@ -80,6 +162,7 @@
             <div class="form-text mb-4">Du kannst die verfügbaren Teams deiner Klasse unter "Klasse" einstellen.</div>
           </div>
         </div>
+
         <div class="tab-pane fade" id="nav-settings-class">
           <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
             <i class="fa-solid fa-circle-xmark mx-1"></i>
@@ -234,6 +317,35 @@
         </div>
       </div>
     </div>
+
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+      <div id="logout-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Erfolgreich abgemeldet</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Auf Wiedersehen!</div>
+      </div>
+
+      <div id="change-password-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Passwort erfolgreich geändert</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Vergiss es nicht!</div>
+      </div>
+
+      <div id="delete-account-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Account erfolgreich gelöscht</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+          Wenn dir TaskMinder nicht gefallen hat, kontaktiere uns gerne und gib uns Feedback, damit wir TaskMinder noch besser gestalten können.
+        </div>
+      </div>
+    </div>
+
     <div class="load-snippet" data-target="bottombar"></div>
   </body>
 </html>

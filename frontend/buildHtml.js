@@ -131,6 +131,15 @@ async function buildDirectory(src, dest) {
           }
         } while (elements.length > 0);
 
+        // Group all toast containers to disable overlapping
+        $("body").append(
+          $("<div class='toast-container position-fixed top-0 end-0 p-3'></div>").html(
+            $(".toast-container").map(function () {
+              return $(this).remove().html();
+            }).get().join("")
+          )
+        );
+
         await writeFile(destFile, $.html());
       }
       else {

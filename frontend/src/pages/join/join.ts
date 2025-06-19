@@ -1,4 +1,4 @@
-import { addUpdateAllFunction, csrfToken, reloadAll } from "../../global/global.js";
+import { csrfToken, reloadAll, reloadAllFn } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
 $("#show-join-class-btn").on("click", () => {
@@ -25,7 +25,8 @@ $("#join-class-back-btn").on("click", () => {
 });
 
 $(() => {
-  addUpdateAllFunction(() => {});
+  reloadAllFn.set(async () => {
+  });
   reloadAll();
 });
 

@@ -14,13 +14,12 @@ import {
   dateToMs,
   lessonData,
   SingleEventData,
-  updateAll,
   homeworkCheckedData,
-  addUpdateAllFunction,
   socket,
   reloadAll,
   msToTime,
-  csrfToken
+  csrfToken,
+  reloadAllFn
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -35,6 +34,9 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
   // If the day is selected, add the days-overview-selected class
   if (isSameDay(date, selectedDate)) {
     specialClasses += "days-overview-selected ";
+    if (!selectedNewDay) {
+      specialClasses += "days-overview-selected-start ";
+    }
   }
   if ([0, 6].includes(date.getDay())) {
     specialClasses += "text-body-tertiary ";
@@ -109,7 +111,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
 
   // Append the days (All days will be added into and .calendar-week element)
   return `
-  <div class="days-overview-day ${specialClasses}btn btn-semivisible" data-week="${week}" data-day="${date.getDay()}">
+  <div class="days-overview-day ${specialClasses} cursor-pointer" data-week="${week}" data-day="${date.getDay()}">
     <span class="weekday">${calendarMode == "week" ? weekday : ""}</span>
     <span class="date">${date.getDate()}</span>
     <div class="events ${calendarMode}">
@@ -900,6 +902,7 @@ async function renameCalendarMonthYear() {
 }
 
 function slideCalendar(direction: "l" | "r", transition: string, slideTime: number) {
+  selectedNewDay = false;
   return new Promise<void>(resolve => {
     if (!animations) {
       transition = "";
@@ -938,12 +941,28 @@ function slideCalendar(direction: "l" | "r", transition: string, slideTime: numb
         resolve();
       }, slideTime);
     }, 20);
-    updateAll();
+    updateEventList();
+    updateHomeworkList();
+    updateSubstitutionList();
+    updateTimetable();
   });
 }
 
 $(() => {
-  addUpdateAllFunction(updateHomeworkList, updateEventList, updateSubstitutionList, updateTimetable);
+  reloadAllFn.set(async () => {
+    eventData.reload();
+    joinedTeamsData.reload();
+    homeworkData.reload();
+    subjectData.reload();
+    substitutionsData.reload();
+    classSubstitutionsData.reload();
+    lessonData.reload();
+    homeworkCheckedData.reload();
+    await updateHomeworkList();
+    await updateEventList();
+    await updateSubstitutionList();
+    await updateTimetable();
+  });
   reloadAll();
 });
 const animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
@@ -1071,6 +1090,9 @@ $("#calendar-week-wrapper").on("mouseup", () => {
 });
 
 $("#calendar-today-btn").on("click", () => {
+  if (isSameDay(selectedDate, new Date())) {
+    return;
+  }
   // If the calendar is already moving, stop; else set it moving
   if (calendarMoving) {
     return;
@@ -1080,13 +1102,17 @@ $("#calendar-today-btn").on("click", () => {
 
   updateCalendarWeekContent("#calendar-week-old");
   renameCalendarMonthYear();
-  updateAll();
+  updateEventList();
+  updateHomeworkList();
+  updateSubstitutionList();
+  updateTimetable();
 });
 
 let calendarMode = localStorage.getItem("calendarMode") ?? "week";
 $(`#calendar-${calendarMode}-btn`).addClass("d-none");
 
 $("#calendar-month-btn").on("click", () => {
+  selectedNewDay = false;
   calendarMode = "month";
   localStorage.setItem("calendarMode", calendarMode);
   $("#calendar-week-btn").removeClass("d-none");
@@ -1095,6 +1121,7 @@ $("#calendar-month-btn").on("click", () => {
 });
 
 $("#calendar-week-btn").on("click", () => {
+  selectedNewDay = false;
   calendarMode = "week";
   localStorage.setItem("calendarMode", calendarMode);
   $("#calendar-month-btn").removeClass("d-none");
@@ -1103,16 +1130,25 @@ $("#calendar-week-btn").on("click", () => {
 });
 
 $(document).on("click", ".days-overview-day", async function () {
+  selectedNewDay = true;
   const day = parseInt($(this).data("day"));
-  selectedDate = (await monthDates())[parseInt($(this).data("week"))][day == 0 ? 6 : day - 1];
+  const newSelectedDate = (await monthDates())[parseInt($(this).data("week"))][day == 0 ? 6 : day - 1];
+  if (isSameDay(selectedDate, newSelectedDate)) {
+    return;
+  }
+  selectedDate = newSelectedDate;
   $("#calendar-week-old").find(".days-overview-selected").removeClass("days-overview-selected");
   $(this).addClass("days-overview-selected");
   updateCalendarWeekContent("#calendar-week-old");
   renameCalendarMonthYear();
-  updateAll();
+  updateEventList();
+  updateHomeworkList();
+  updateSubstitutionList();
+  updateTimetable();
 });
 
 let selectedDate = new Date();
+let selectedNewDay = false;
 
 // Save whether the calendar is currently moving (It shouldn't be moved then, as bugs could appear)
 let calendarMoving = false;

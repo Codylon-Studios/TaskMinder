@@ -1,4 +1,4 @@
-import { csrfToken, isSite, updateAll } from "../../global/global.js";
+import { csrfToken, isSite } from "../../global/global.js";
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 async function registerAccount(username: string, password: string) {
@@ -19,7 +19,6 @@ async function registerAccount(username: string, password: string) {
       $("#register-success-toast .username").text(username);
       $("#register-success-toast").toast("show");
       $("#login-register-modal").modal("hide");
-      $("#login-register-button").hide();
 
       user.loggedIn = true;
       user.username = username;
@@ -64,7 +63,6 @@ async function loginAccount(username: string, password: string) {
       $("#login-success-toast .username").text(username);
       $("#login-success-toast").toast("show");
       $("#login-register-modal").modal("hide");
-      $("#login-register-button").hide();
       
       $.get("/account/auth", response => {
         user.classJoined = response.classJoined;
@@ -79,43 +77,6 @@ async function loginAccount(username: string, password: string) {
         $(".login-error-invalid-password").addClass("d-flex");
       }
       else if (xhr.status === 500) {
-        $navbarToasts.serverError.toast("show");
-      }
-      else {
-        $navbarToasts.unknownError.toast("show");
-      }
-    },
-    complete: () => {
-      hasResponded = true;
-    }
-  });
-
-  setTimeout(() => {
-    if (!hasResponded) {
-      $navbarToasts.serverError.toast("show");
-    }
-  }, 1000);
-}
-
-//LOGOUT -- LOGOUT -- LOGOUT
-async function logoutAccount() {
-  let hasResponded = false;
-
-  $.ajax({
-    url: "/account/logout",
-    type: "POST",
-    headers: {
-      "X-CSRF-Token": await csrfToken()
-    },
-    success: () => {
-      $("#logout-success-toast").toast("show");
-      
-      user.loggedIn = false;
-      user.username = null;
-      user.trigger("change");
-    },
-    error: xhr => {
-      if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
       }
       else {
@@ -209,16 +170,13 @@ export const $navbarToasts = {
 };
 
 $(async () => {
-  updateAll();
-
   if (isSite("main", "homework", "events")) {
     $(".class-page-content").removeClass("d-none");
   }
   user.on("change", (function _() {
-    if (user.classJoined) {
-      $(".class-joined-content").removeClass("d-none");
-      $(".navbar-home-link").attr("href", "/main");
-    }
+    $(".class-joined-content").toggleClass("d-none", !user.classJoined);
+    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
+    $("#login-register-button").toggleClass("d-none", user.loggedIn ?? false);
     return _;
   })());
 });
@@ -256,11 +214,6 @@ export const user = {
 if (isSite("join")) {
   $("#login-register-button").addClass("d-none");
 }
-else {
-  user.on("change", () => {
-    $("#logout-button").toggleClass("d-none", !user.loggedIn);
-  });
-}
 
 // Check if the user is logged in for the first time
 $.get("/account/auth", response => {
@@ -276,7 +229,6 @@ $.get("/account/auth", response => {
   user.classJoined = response.classJoined;
 
   if (response.loggedIn) {
-    $("#login-register-button").hide();
     user.loggedIn = true;
   }
   else {
@@ -289,7 +241,7 @@ $.get("/account/auth", response => {
 
 $(() => {
   //
-  //LOGIN -- LOGOUT -- REGISTER
+  //LOGIN -- REGISTER
   //
   $(".login-button").on("click", () => {
     const username = $(".login-register-username").val()?.toString() ?? "";
@@ -301,10 +253,6 @@ $(() => {
     const username = $(".login-register-username").val()?.toString() ?? "";
     const password = $(".register-password").val()?.toString() ?? "";
     registerAccount(username, password);
-  });
-
-  $("#logout-button").on("click", () => {
-    logoutAccount();
   });
 
   $(".login-register-username").val("");

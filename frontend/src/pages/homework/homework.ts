@@ -1,5 +1,4 @@
 import {
-  addUpdateAllFunction,
   dateToMs,
   getHomeworkCheckStatus,
   homeworkCheckedData,
@@ -11,10 +10,10 @@ import {
   runOnce,
   subjectData,
   teamsData,
-  updateAll,
   socket,
   reloadAll,
-  csrfToken
+  csrfToken,
+  reloadAllFn
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -542,7 +541,16 @@ function resetFilters() {
 }
 
 $(function () {
-  addUpdateAllFunction(updateSubjectList, updateHomeworkList, updateTeamList);
+  reloadAllFn.set(async () => {
+    homeworkCheckedData.reload();
+    homeworkData.reload();
+    joinedTeamsData.reload();
+    subjectData.reload();
+    teamsData.reload();
+    await updateSubjectList();
+    await updateHomeworkList();
+    await updateTeamList();
+  });
   reloadAll();
 
   // If user is logged in, show the edit toggle button
@@ -593,7 +601,7 @@ $(function () {
   $("#filter-reset").on("click", () => {
     localStorage.setItem("homeworkFilter", "{}");
     resetFilters();
-    updateAll();
+    updateHomeworkList();
   });
 
   // On changing any information in the add homework modal, disable the add button if any information is empty

@@ -64,24 +64,28 @@ export function richTextToHtml(
     let showMoreButton = $('<a href="#">Mehr anzeigen</a>');
     if (options?.showMoreButton && typeof options?.showMoreButton != "boolean")
       showMoreButton = options?.showMoreButton;
-
-    targetElement.on("addedToDom", () => {
-      if ((targetElement.height() ?? 0) >= 120) {
-        targetElement.css({ maxHeight: "96px", overflow: "hidden", display: "block" }).after(
-          showMoreButton.on("click", function (ev) {
-            ev.preventDefault();
-            if ($(this).text() == "Mehr anzeigen") {
-              $(this).text("Weniger anzeigen");
-              targetElement.css({ maxHeight: "none" });
-            }
-            else {
-              $(this).text("Mehr anzeigen");
-              targetElement.css({ maxHeight: "96px" });
-            }
-          })
-        );
+    
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if ((entry.contentRect.height ?? 0) >= 120) {
+          targetElement.css({ maxHeight: "96px", overflow: "hidden", display: "block" }).after(
+            showMoreButton.on("click", function (ev) {
+              ev.preventDefault();
+              if ($(this).text() == "Mehr anzeigen") {
+                $(this).text("Weniger anzeigen");
+                targetElement.css({ maxHeight: "none" });
+              }
+              else {
+                $(this).text("Mehr anzeigen");
+                targetElement.css({ maxHeight: "96px" });
+              }
+            })
+          );
+          resizeObserver.disconnect();
+        }
       }
     });
+    resizeObserver.observe(targetElement[0]);
   }
   function parseNormalChar(char: string) {
     const span = $(`<span>${sanitizeHtml(char)}</span>`);

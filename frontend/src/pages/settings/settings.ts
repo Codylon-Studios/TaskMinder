@@ -1,5 +1,4 @@
 import {
-  addUpdateAllFunction,
   colorTheme,
   EventTypeData,
   eventTypeData,
@@ -14,9 +13,9 @@ import {
   teamsData,
   lessonData,
   timeToMs,
-  updateAll,
   LessonData,
-  csrfToken
+  csrfToken,
+  reloadAllFn
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
@@ -635,7 +634,6 @@ async function updateTimetable() {
   const newTimetableContent = $("<div></div>");
 
   let subjectOptions: string = "";
-
   (await subjectData()).forEach(subject => {
     subjectOptions += `<option value="${subject.subjectId}">${$.formatHtml(subject.subjectNameLong)}</option>`;
   });
@@ -791,57 +789,77 @@ async function updateTimetable() {
 
 let dsbActivated = false;
 
-$(() => {
-  addUpdateAllFunction(() => {});
-  reloadAll();
-});
-
 $(async () => {
-  user.on("change", () => {
+  reloadAllFn.set(async () => {
     if (user.classJoined) {
-      $(".not-joined-info").addClass("d-none");
-      $("#settings-student, #settings-class").removeClass("d-none");
-      addUpdateAllFunction(updateTeamLists, updateEventTypeList, updateSubjectList, updateTimetable);
-      reloadAll();
-  
-      const $classcodeCopyLink = $("#classcode-copy-link");
-      const $classcode = $("#classcode");
-      const $classcodeCopyText = $("#classcode-copy-text");
-      const $classcodeCopiedText = $("#classcode-copied-text");
-  
-      $.get("/class/get_classcode")
-        .done((classCode: string) => {
-          $classcode.val(classCode);
-          $classcodeCopyLink.prop("disabled", false);
-        })
-        .fail(() => {
-          $classcode.val("Fehler beim Laden");
-          $classcodeCopyLink.prop("disabled", true);
-        });
-  
-      $classcodeCopyLink.on("click", async () => {
-        const value = $classcode.val();
-  
-        try {
-          await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
-  
-          $classcodeCopyText.addClass("d-none");
-          $classcodeCopiedText.removeClass("d-none");
-          $classcodeCopyLink.prop("disabled", true);
-  
-          setTimeout(() => {
-            $classcodeCopyText.removeClass("d-none");
-            $classcodeCopiedText.addClass("d-none");
-            $classcodeCopyLink.prop("disabled", false);
-          }, 2000);
-        }
-        catch (err) {
-          console.error("Error copying classcode to clipboard:", err);
-        }
-      });
+      eventTypeData.reload();
+      joinedTeamsData.reload();
+      subjectData.reload();
+      substitutionsData.reload();
+      teamsData.reload();
+      lessonData.reload();
+      await updateTeamLists();
+      await updateEventTypeList();
+      await updateSubjectList();
+      await updateTimetable();
     }
   });
+  if (user.loggedIn !== null) reloadAll();
 });
+
+user.on("change", () => {
+  if (user.loggedIn !== null) {
+    $(".not-logged-in-info").toggleClass("d-none", user.loggedIn);
+    $("#settings-account").toggleClass("d-none", !user.loggedIn);
+
+    $("#change-password-button").show();
+    $("#change-password").hide();
+
+    $("#delete-account-button").show();
+    $("#delete-account").hide();
+  }
+  if (user.classJoined) {
+    $(".not-joined-info").addClass("d-none");
+    $("#settings-student, #settings-class").removeClass("d-none");
+
+    const $classcodeCopyLink = $("#classcode-copy-link");
+    const $classcode = $("#classcode");
+    const $classcodeCopyText = $("#classcode-copy-text");
+    const $classcodeCopiedText = $("#classcode-copied-text");
+
+    $.get("/class/get_classcode")
+      .done((classCode: string) => {
+        $classcode.val(classCode);
+        $classcodeCopyLink.prop("disabled", false);
+      })
+      .fail(() => {
+        $classcode.val("Fehler beim Laden");
+        $classcodeCopyLink.prop("disabled", true);
+      });
+
+    $classcodeCopyLink.on("click", async () => {
+      const value = $classcode.val();
+
+      try {
+        await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
+
+        $classcodeCopyText.addClass("d-none");
+        $classcodeCopiedText.removeClass("d-none");
+        $classcodeCopyLink.prop("disabled", true);
+
+        setTimeout(() => {
+          $classcodeCopyText.removeClass("d-none");
+          $classcodeCopiedText.addClass("d-none");
+          $classcodeCopyLink.prop("disabled", false);
+        }, 2000);
+      }
+      catch (err) {
+        console.error("Error copying classcode to clipboard:", err);
+      }
+    });
+  }
+});
+
 
 let animations = JSON.parse(localStorage.getItem("animations") ?? "true") ?? true;
 $("#animations input").prop("checked", animations);
@@ -883,6 +901,221 @@ $("#color-theme input").each(function () {
 
 window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
+
+// ACCOUNT SETTINGS
+
+// Logout
+$("#logout-button").on("click", async () => {
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/account/logout",
+    type: "POST",
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#logout-success-toast").toast("show");
+
+      user.loggedIn = false;
+      user.username = null;
+      user.trigger("change");
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+// Change password
+$("#change-password-button").on("click", function () {
+  $(this).hide();
+  $("#change-password").show();
+  $("#change-password input").val("");
+  $("#change-password-confirm").addClass("disabled")
+  $("#change-password-invalid-password").addClass("d-none").removeClass("d-flex");
+  $("#change-password-not-matching-passwords").addClass("d-none").removeClass("d-flex");
+  $("#change-password-insecure-password").addClass("d-none").removeClass("d-flex");
+});
+
+$("#change-password-cancel").on("click", () => {
+  $("#change-password").hide();
+  $("#change-password-button").show();
+});
+
+$("#change-password-old").on("input", () => {
+  $("#change-password-invalid-password").addClass("d-none").removeClass("d-flex");
+});
+
+$("#change-password-new, #change-password-repeat").on("change", function () {
+  if ($("#change-password-new").val() != $("#change-password-repeat").val()) {
+    $("#change-password-not-matching-passwords").removeClass("d-none").addClass("d-flex");
+    $("#change-password-confirm").addClass("disabled")
+  }
+  if ($(this).val() == "") {
+    $("#change-password-confirm").addClass("disabled")
+  }
+});
+
+$("#change-password-new, #change-password-repeat").on("input", () => {
+  if ($("#change-password-new").val() == $("#change-password-repeat").val()) {
+    $("#change-password-not-matching-passwords").addClass("d-none").removeClass("d-flex");
+  }
+});
+
+function checkSecurePassword(password: string) {
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
+}
+
+$("#change-password-new").on("change", () => {
+  if (! checkSecurePassword($("#change-password-new").val()?.toString() ?? "")) {
+    $("#change-password-insecure-password").removeClass("d-none").addClass("d-flex");
+  }
+});
+
+$("#change-password-new").on("input", () => {
+  if (checkSecurePassword($("#change-password-new").val()?.toString() ?? "")) {
+    $("#change-password-insecure-password").addClass("d-none").removeClass("d-flex");
+  }
+});
+
+$("#change-password-old, #change-password-new, #change-password-repeat").on("input", function () {
+  if (! ($("#change-password-old, #change-password-new, #change-password-repeat").map(
+          function () { return $(this).val() }
+         ).get().includes("")
+        || $("#change-password-invalid-password").hasClass("d-flex")
+        || $("#change-password-not-matching-passwords").hasClass("d-flex"))
+     ) {
+    $("#change-password-confirm").removeClass("disabled")
+  }
+});
+
+$("#change-password-confirm").on("click", async () => {
+  const data = {
+    passwordOld: $("#change-password-old").val(),
+    passwordNew: $("#change-password-new").val(),
+  };
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/account/change_password",
+    type: "POST",
+    data: data,
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#change-password-success-toast").toast("show");
+    },
+    error: xhr => {
+      if (xhr.status === 401) {
+        $("#change-password-invalid-password").removeClass("d-none").addClass("d-flex");
+        $("#change-password-confirm").addClass("disabled")
+      }
+      else if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+// Delete account
+$("#delete-account-button").on("click", function () {
+  $(this).hide();
+  $("#delete-account").show();
+  $("#delete-account-password").val("");
+  $("#delete-account-confirm").addClass("disabled")
+  $("#delete-account-invalid-password").addClass("d-none").removeClass("d-flex");
+});
+
+$("#delete-account-cancel").on("click", () => {
+  $("#delete-account").hide();
+  $("#delete-account-button").show();
+});
+
+$("#delete-account-password").on("change", function () {
+  console.log("change")
+  if ($(this).val() == "") {
+    $("#delete-account-confirm").addClass("disabled")
+  }
+});
+
+$("#delete-account-password").on("input", function () {
+  $("#delete-account-invalid-password").addClass("d-none").removeClass("d-flex");
+  if ($(this).val() != "") {
+    $("#delete-account-confirm").removeClass("disabled")
+  }
+});
+
+$("#delete-account-confirm").on("click", async () => {
+  const data = {
+    password: $("#delete-account-password").val()
+  };
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/account/delete",
+    type: "POST",
+    data: data,
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#delete-account-success-toast").toast("show");
+      
+      user.loggedIn = false;
+      user.username = null;
+      user.trigger("change");
+    },
+    error: xhr => {
+      if (xhr.status === 401) {
+        $("#delete-account-invalid-password").removeClass("d-none").addClass("d-flex");
+        $("#delete-account-confirm").addClass("disabled")
+      }
+      else if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
 
 // TEAM SELECTION
 
@@ -949,9 +1182,6 @@ $("#team-selection-save").on("click", async () => {
       $("#team-selection-save").text("Speichern").prop("disabled", false);
     }, 1000);
   }
-
-  $("#team-selection-modal").modal("hide");
-  updateAll();
 });
 
 // TEAMS

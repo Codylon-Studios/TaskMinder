@@ -31,12 +31,12 @@ export default tseslint.config(
       }
     },
     rules: {
-      semi: ["error", "always"],
-      indent: ["error", 2],
+      "semi": ["error", "always"],
+      "indent": ["error", 2],
       "brace-style": ["error", "stroustrup"],
       "comma-dangle": ["error", "never"],
       "arrow-parens": ["error", "as-needed"],
-      quotes: ["error", "double", { avoidEscape: true }],
+      "quotes": ["error", "double", { avoidEscape: true }],
       "max-len": ["error", { "code": 150 }]
     }
   }

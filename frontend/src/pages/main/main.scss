@@ -18,15 +18,55 @@
     font-size: 0.75rem;
   }
 
+  & > .date {
+    z-index: 1;
+  }
+
   &.days-overview-today span {
     color: #dc3545 !important;
   }
 
-  &.days-overview-selected {
-    border: 3px solid $semivisible-hover-light !important;
+  &::before {
+    content: "";
+    height: 1.8rem;
+    width: 1.8rem;
+    background: $primary;
+    position: absolute;
+    border-radius: 100%;
+    bottom: 4px;
+    transition: 0.1s ease opacity;
+    opacity: 0;
+  }
+  
+  &.days-overview-today::before {
+    background: #dc3545;
+  }
 
-    body[data-bs-theme="dark"] & {
-      border: 3px solid $semivisible-hover-dark !important;
+  &.days-overview-selected::before {
+    opacity: 0.3;
+  }
+  &.days-overview-selected:not(.days-overview-selected-start)::before {
+    animation: 0.3s 1 select-day;
+  }
+  &:not(.days-overview-selected):hover::before {
+    opacity: 0.2;
+  }
+
+  @keyframes select-day {
+    0% {
+      height: 1.8rem;
+      width: 1.8rem;
+    }
+
+    50% {
+      height: 1.4rem;
+      width: 1.4rem;
+      margin-bottom: 0.2rem;
+    }
+  
+    100% {
+      height: 1.8rem;
+      width: 1.8rem;
     }
   }
 

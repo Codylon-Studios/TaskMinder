@@ -82,63 +82,13 @@ export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolea
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
 }
 
-export const reloadAll = (): Promise<void> => {
-  console.log("Reload all", updateAllFunctions);
-  return new Promise(resolve => {
-    (async resolve => {
-      if (updateAllFunctions.length != 0) {
-        if (requiredData.includes("subjectData")) {
-          subjectData.reload();
-        }
-        if (requiredData.includes("lessonData")) {
-          lessonData.reload();
-        }
-        if (requiredData.includes("homeworkData")) {
-          homeworkData.reload();
-        }
-        if (requiredData.includes("homeworkCheckedData")) {
-          homeworkCheckedData.reload();
-        }
-        if (requiredData.includes("substitutionsData")) {
-          substitutionsData.reload();
-        }
-        if (requiredData.includes("classSubstitutionsData")) {
-          classSubstitutionsData.reload();
-        }
-        if (requiredData.includes("joinedTeamsData")) {
-          joinedTeamsData.reload();
-        }
-        if (requiredData.includes("teamsData")) {
-          teamsData.reload();
-        }
-        if (requiredData.includes("eventData")) {
-          eventData.reload();
-        }
-        if (requiredData.includes("eventTypeData")) {
-          eventTypeData.reload();
-        }
-
-        await updateAll();
-
-        $("body").css({ display: "block" });
-      }
-      resolve();
-    })(resolve);
-  });
-};
-
-export async function updateAll() {
-  for (const fn of updateAllFunctions) {
-    await fn();
-  }
+export async function reloadAll() {
+  const currentReloadAllFn = await reloadAllFn.get();
+  await currentReloadAllFn();
+  $("body").css({ display: "block" }).addClass("d-flex");
 }
 
-export function addUpdateAllFunction(...fn: ((...args: unknown[]) => unknown)[]) {
-  updateAllFunctions.push(...fn);
-}
-
-let requiredData: string[] = [];
-const updateAllFunctions: ((...args: unknown[]) => unknown)[] = [];
+export const reloadAllFn = createDataAccessor<() => Promise<void>>("reloadAllFn");
 
 type ColorTheme = "dark" | "light";
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
@@ -203,6 +153,10 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
       return data;
     }
     return getNotNullValue();
+  };
+
+  accessor.getCurrent = () => {
+    return data;
   };
 
   accessor.set = (value: DataType | null) => {
@@ -386,35 +340,6 @@ export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData", 
 export const csrfToken = createDataAccessor<string>("csrfToken");
 
 $(async () => {
-  requiredData = {
-    homework: [
-      "subjectData",
-      "homeworkData",
-      "homeworkCheckedData",
-      "teamsData",
-      "joinedTeamsData"
-    ],
-    events: [
-      "eventData",
-      "eventTypeData",
-      "teamsData",
-      "joinedTeamsData"
-    ],
-    main: [
-      "subjectData",
-      "lessonData",
-      "homeworkData",
-      "homeworkCheckedData",
-      "substitutionsData",
-      "classSubstitutionsData",
-      "eventData",
-      "eventTypeData",
-      "joinedTeamsData"
-    ]
-  }[getSite()] || [];
-
-  await reloadAll();
-
   const hash = window.location.hash;
   if (hash) {
     const $target = $(hash);
@@ -453,20 +378,13 @@ $(async () => {
 
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", () => {
-  if (requiredData && updateAllFunctions.length != 0) reloadAll();
+  reloadAll();
 });
 
-user.on("change", () => {
-  if (user.classJoined && isSite("settings")) {
-    requiredData = ["teamsData", "joinedTeamsData", "eventTypeData", "subjectData", "lessonData", "substitutionsData"];
-    reloadAll();
-  }
-
-  let afterFirstEvent = false;
-  user.on("change", () => {
-    if (afterFirstEvent) reloadAll();
-    afterFirstEvent = true;
-  });
+let afterFirstEvent = false;
+user.on("change", async () => {
+  if (afterFirstEvent || (isSite("settings") && reloadAllFn.getCurrent() !== null)) reloadAll();
+  afterFirstEvent = true;
 });
 
 // Change btn group selections to vertical / horizontal

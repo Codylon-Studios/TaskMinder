@@ -241,6 +241,11 @@ app.get("/events", checkAccess.elseRedirect, (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
 });
 
+app.use((req, res, next) => {
+  res.status(404).send("Not found")
+  next()
+});
+
 // Error Handler Middleware (Must be the last app.use)
 app.use(ErrorHandler);
 

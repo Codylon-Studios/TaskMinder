@@ -1,5 +1,4 @@
 import {
-  addUpdateAllFunction,
   dateToMs,
   eventData,
   eventTypeData,
@@ -9,10 +8,10 @@ import {
   msToInputDate,
   runOnce,
   teamsData,
-  updateAll,
   socket,
+  csrfToken,
   reloadAll,
-  csrfToken
+  reloadAllFn
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -456,7 +455,15 @@ function resetFilters() {
 }
 
 $(function () {
-  addUpdateAllFunction(updateEventTypeList, updateEventList, updateTeamList);
+  reloadAllFn.set(async () => {
+    eventData.reload();
+    eventTypeData.reload();
+    joinedTeamsData.reload();
+    teamsData.reload();
+    await updateEventTypeList();
+    await updateEventList();
+    await updateTeamList();
+  });
   reloadAll();
 
   // If user is logged in, show the edit toggle button
@@ -510,7 +517,7 @@ $(function () {
   $("#filter-reset").on("click", () => {
     localStorage.setItem("eventFilter", "{}");
     resetFilters();
-    updateAll();
+    updateEventList();
   });
 
   // On changing any information in the add event modal, disable the add button if any information is empty

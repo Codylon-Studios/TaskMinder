@@ -27,7 +27,7 @@ $("#footer-close").on("click", () => {
   }
 });
 
-$("body").addClass("d-flex flex-column min-vh-100");
+$("body").addClass("flex-column min-vh-100");
 
 if ((await colorTheme()) == "dark") {
   $("footer").removeClass("bg-dark").addClass("bg-dark-subtle");

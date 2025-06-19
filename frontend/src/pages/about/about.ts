@@ -1,4 +1,4 @@
-import { addUpdateAllFunction, reloadAll } from "../../global/global.js";
+import { reloadAll, reloadAllFn } from "../../global/global.js";
 
 class LicenseDisplay extends HTMLElement {
   constructor() {
@@ -20,6 +20,7 @@ ${content}</pre>
 customElements.define("license-display", LicenseDisplay);
 
 $(() => {
-  addUpdateAllFunction(() => {});
+  reloadAllFn.set(async () => {
+  });
   reloadAll();
 });

@@ -17,7 +17,7 @@
     "build:fe:tsc": "tsc -p frontend",
     "build:fe:copy": "bun copyFiles.js frontend/src frontend/dist",
     "build": "bun run build:fe && bun run build:be",
-    "dev:server": "bun backend/dist/server.js --watch",
+    "dev:server": "bun --watch backend/dist/server.js",
     "dev:be": "concurrently -n 'copy,tsc' \"bun run dev:be:copy\" \"bun run dev:be:tsc\"",
     "dev:be:tsc": "tsc -p backend --watch --incremental",
     "dev:be:copy": "chokidar 'backend/src/**/*' -c 'bun copyFiles.js backend/src backend/dist'",
