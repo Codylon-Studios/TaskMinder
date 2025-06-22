@@ -187,23 +187,19 @@
             </div>
 
             <div class="row align-items-center mb-2">
-              <div class="col-12 col-md-auto">
+              <div class="col-12 col-lg-auto">
                 <label for="classcode-container" class="col-form-label mb-0">Euer Klassencode</label>
               </div>
-              <div class="col-12 col-md" id="classcode-container">
-                <div class="input-group">
+              <div class="col-12 col-lg" id="classcode-container">
+                <div class="d-flex gap-2 flex-column flex-lg-row">
                   <input id="classcode" type="text" class="form-control" value="" readonly />
-                  <button id="classcode-copy-link" class="btn btn-primary fw-semibold" type="button" aria-label="Einladungslink kopieren">
-                    <span class="d-inline d-flex align-items-center" id="classcode-copy-text">
-                      <i class="fa-regular fa-copy me-2 me-sm-1"></i>
-                      Einladungslink
-                      <br class="d-block d-sm-none" />
-                      kopieren
-                    </span>
-                    <span class="classcode-copied-text d-none" id="classcode-copied-text">
-                      <i class="fa-solid fa-circle-check me-1"></i>
-                      Kopiert
-                    </span>
+                  <button class="btn btn-primary w-100 fw-semibold" id="invite-copy-link">
+                    <i class="fa-solid fa-link"></i>
+                    Einladungslink kopieren
+                  </button>
+                  <button class="btn btn-primary w-100 fw-semibold" id="invite-qrcode" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
+                    <i class="fa-solid fa-qrcode"></i>
+                    QR-Code anzeigen
                   </button>
                 </div>
               </div>
@@ -313,6 +309,25 @@
               ist, wird Mitgliedern des Teams diese Unterrichtsstunde angezeigt. Wenn es je nach Team oder wöchentlich verschiedene Fächer in einer
               Stunde gibt, sollte einfach die Stundennummer gleich sein, dann werden alle Optionen angezeigt.
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="show-qrcode-modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="show-qrcode-modal-title">
+              Trete der Klasse
+              <b></b>
+              auf TaskMinder bei!
+            </h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
           </div>
         </div>
       </div>

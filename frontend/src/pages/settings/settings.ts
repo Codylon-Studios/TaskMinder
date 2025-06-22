@@ -807,6 +807,12 @@ $(async () => {
   if (user.loggedIn !== null) reloadAll();
 });
 
+const qrCode = new QRCode( "show-qrcode-modal-qrcode", {
+  text: "https://codylon.de",
+  width: 300,
+  height: 300
+});
+
 user.on("change", () => {
   if (user.loggedIn !== null) {
     $(".not-logged-in-info").toggleClass("d-none", user.loggedIn);
@@ -822,35 +828,30 @@ user.on("change", () => {
     $(".not-joined-info").addClass("d-none");
     $("#settings-student, #settings-class").removeClass("d-none");
 
-    const $classcodeCopyLink = $("#classcode-copy-link");
-    const $classcode = $("#classcode");
-    const $classcodeCopyText = $("#classcode-copy-text");
-    const $classcodeCopiedText = $("#classcode-copied-text");
+    let classcode = "";
 
     $.get("/class/get_classcode")
-      .done((classCode: string) => {
-        $classcode.val(classCode);
-        $classcodeCopyLink.prop("disabled", false);
+      .done((resClasscode: string) => {
+        $("#classcode").val(resClasscode);
+        $("#invite-copy-link, #invite-qrcode").removeClass("disabled");
+        classcode = resClasscode;
+
+        qrCode.makeCode(`https://codylon.de/join?classcode=${classcode}`);
+        $("#show-qrcode-modal-title b").text("className");
       })
       .fail(() => {
-        $classcode.val("Fehler beim Laden");
-        $classcodeCopyLink.prop("disabled", true);
+        $("#classcode").val("Fehler beim Laden");
+        $("#invite-copy-link, #invite-qrcode").addClass("disabled");
       });
 
-    $classcodeCopyLink.on("click", async () => {
-      const value = $classcode.val();
-
+    $("#invite-copy-link").on("click", async () => {
       try {
-        await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${value}&action=join`);
-
-        $classcodeCopyText.addClass("d-none");
-        $classcodeCopiedText.removeClass("d-none");
-        $classcodeCopyLink.prop("disabled", true);
-
+        await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${classcode}`);
+    
+        $("#invite-copy-link").addClass("disabled").html("<i class=\"fa-solid fa-check-circle\"></i> Einladungslink kopiert");
+    
         setTimeout(() => {
-          $classcodeCopyText.removeClass("d-none");
-          $classcodeCopiedText.addClass("d-none");
-          $classcodeCopyLink.prop("disabled", false);
+          $("#invite-copy-link").removeClass("disabled").html("<i class=\"fa-solid fa-link\"></i> Einladungslink kopieren");
         }, 2000);
       }
       catch (err) {
@@ -946,7 +947,7 @@ $("#change-password-button").on("click", function () {
   $(this).hide();
   $("#change-password").show();
   $("#change-password input").val("");
-  $("#change-password-confirm").addClass("disabled")
+  $("#change-password-confirm").addClass("disabled");
   $("#change-password-invalid-password").addClass("d-none").removeClass("d-flex");
   $("#change-password-not-matching-passwords").addClass("d-none").removeClass("d-flex");
   $("#change-password-insecure-password").addClass("d-none").removeClass("d-flex");
@@ -964,10 +965,10 @@ $("#change-password-old").on("input", () => {
 $("#change-password-new, #change-password-repeat").on("change", function () {
   if ($("#change-password-new").val() != $("#change-password-repeat").val()) {
     $("#change-password-not-matching-passwords").removeClass("d-none").addClass("d-flex");
-    $("#change-password-confirm").addClass("disabled")
+    $("#change-password-confirm").addClass("disabled");
   }
   if ($(this).val() == "") {
-    $("#change-password-confirm").addClass("disabled")
+    $("#change-password-confirm").addClass("disabled");
   }
 });
 
@@ -995,19 +996,21 @@ $("#change-password-new").on("input", () => {
 
 $("#change-password-old, #change-password-new, #change-password-repeat").on("input", function () {
   if (! ($("#change-password-old, #change-password-new, #change-password-repeat").map(
-          function () { return $(this).val() }
-         ).get().includes("")
+    function () {
+      return $(this).val(); 
+    }
+  ).get().includes("")
         || $("#change-password-invalid-password").hasClass("d-flex")
         || $("#change-password-not-matching-passwords").hasClass("d-flex"))
-     ) {
-    $("#change-password-confirm").removeClass("disabled")
+  ) {
+    $("#change-password-confirm").removeClass("disabled");
   }
 });
 
 $("#change-password-confirm").on("click", async () => {
   const data = {
     passwordOld: $("#change-password-old").val(),
-    passwordNew: $("#change-password-new").val(),
+    passwordNew: $("#change-password-new").val()
   };
   let hasResponded = false;
 
@@ -1024,7 +1027,7 @@ $("#change-password-confirm").on("click", async () => {
     error: xhr => {
       if (xhr.status === 401) {
         $("#change-password-invalid-password").removeClass("d-none").addClass("d-flex");
-        $("#change-password-confirm").addClass("disabled")
+        $("#change-password-confirm").addClass("disabled");
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
@@ -1050,7 +1053,7 @@ $("#delete-account-button").on("click", function () {
   $(this).hide();
   $("#delete-account").show();
   $("#delete-account-password").val("");
-  $("#delete-account-confirm").addClass("disabled")
+  $("#delete-account-confirm").addClass("disabled");
   $("#delete-account-invalid-password").addClass("d-none").removeClass("d-flex");
 });
 
@@ -1060,16 +1063,15 @@ $("#delete-account-cancel").on("click", () => {
 });
 
 $("#delete-account-password").on("change", function () {
-  console.log("change")
   if ($(this).val() == "") {
-    $("#delete-account-confirm").addClass("disabled")
+    $("#delete-account-confirm").addClass("disabled");
   }
 });
 
 $("#delete-account-password").on("input", function () {
   $("#delete-account-invalid-password").addClass("d-none").removeClass("d-flex");
   if ($(this).val() != "") {
-    $("#delete-account-confirm").removeClass("disabled")
+    $("#delete-account-confirm").removeClass("disabled");
   }
 });
 
@@ -1096,7 +1098,7 @@ $("#delete-account-confirm").on("click", async () => {
     error: xhr => {
       if (xhr.status === 401) {
         $("#delete-account-invalid-password").removeClass("d-none").addClass("d-flex");
-        $("#delete-account-confirm").addClass("disabled")
+        $("#delete-account-confirm").addClass("disabled");
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");

@@ -176,7 +176,9 @@ $(async () => {
   user.on("change", (function _() {
     $(".class-joined-content").toggleClass("d-none", !user.classJoined);
     $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
-    $("#login-register-button").toggleClass("d-none", user.loggedIn ?? false);
+    if (!isSite("join")) {
+      $("#login-register-button").toggleClass("d-none", user.loggedIn ?? false);
+    }
     return _;
   })());
 });

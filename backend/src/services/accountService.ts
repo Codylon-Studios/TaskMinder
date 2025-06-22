@@ -236,13 +236,16 @@ export default {
       session.classJoined = true;
       if (session.account) {
         const accountId = session.account.accountId;
+        console.log(accountId);
         const joinedClassExists = await prisma.joinedClass.findUnique({
           where: {
             accountId: accountId
           }
         });
+        console.log(joinedClassExists);
         if (joinedClassExists == null) {
-          prisma.joinedClass.create({
+          console.log("create");
+          await prisma.joinedClass.create({
             data: {
               accountId: accountId
             }

@@ -42,4 +42,5 @@ export function ErrorHandler(err: RequestError, req: Request, res: Response, nex
     logger.warn("An error occured in the error handler middleware:\t", err);
     res.status(500).send("Internal Server Error");
   }
+  next();
 }

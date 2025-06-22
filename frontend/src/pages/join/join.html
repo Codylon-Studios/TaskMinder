@@ -17,8 +17,8 @@
             Klasse beitreten
             <i class="fa-solid fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none"></i>
           </button>
-          <button class="btn btn-primary w-100 fw-semibold" id="show-create-class-btn" disabled>Klasse erstellen</button>
-          <div class="form-text">Wir arbeiten gerade noch daran, TaskMinder für jeden verfügbar zu machen. Schau gerne bald wieder vorbei!</div>
+          <button class="btn btn-primary w-100 fw-semibold disabled" id="show-create-class-btn">Klasse erstellen</button>
+          <div class="form-text">Du brauchst einen Account, um eine Klasse zu erstellen.</div>
         </div>
 
         <div id="join-class-panel" class="d-none">
@@ -48,7 +48,7 @@
             </span>
           </div>
           <h2 class="text-center mb-4">Möchtest du einen Account nutzen?</h2>
-          <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-classcode-login-register-btn">Anmelden oder Registrieren</button>
+          <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-joined-login-register-btn">Anmelden oder Registrieren</button>
           <div class="text-center mb-3">
             <a href="/main">Ohne Account fortfahren</a>
           </div>
@@ -64,6 +64,7 @@
             </div>
           </div>
         </div>
+
         <div id="login-register-panel" class="d-none">
           <!--LOGIN REGISTER CONTENT-->
           <div class="d-none login-register-element">
@@ -116,6 +117,89 @@
             <input type="password" class="form-control register-password-repeat" />
             <div class="form-text">Gib es noch mal ein</div>
             <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 register-element register-button">Registrieren</button>
+          </div>
+        </div>
+
+        <div id="create-class-is-test-panel" class="d-none">
+          <div class="d-flex align-items-center mb-4">
+            <button class="btn-back" id="create-class-is-test-back-btn"></button>
+            <h2 class="text-center mb-0 flex-grow-1">Klasse erstellen</h2>
+          </div>
+          <label class="form-check-label mb-3 fs-5">
+            <input type="checkbox" class="form-check-input me-2" id="create-class-is-test" />
+            Als Testklasse erstellen
+          </label>
+          <div class="mb-3" style="text-align: justify">
+            Bitte erstelle eine Testklasse, wenn du noch nicht sicher bist, ob du TaskMinder benutzen möchtest. Beide Typen haben die gleichen
+            Funktionen, aber eine Testklasse wird nach 24 Stunden gelöscht. Dein Account bleibt danach aber weiter bestehen und, wenn du möchtest,
+            kannst du danach einfach eine normale Klasse erstellen.
+          </div>
+          <button class="btn btn-primary w-100 fw-semibold" id="create-class-continue-btn">Weiter</button>
+        </div>
+
+        <div id="create-class-credentials-panel" class="d-none">
+          <div class="d-flex align-items-center mb-4">
+            <button class="btn-back" id="create-class-credentials-back-btn"></button>
+            <h2 class="text-center mb-0 flex-grow-1">Klasse erstellen</h2>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="create-class-name">Gib einen Namen für deine Klasse an</label>
+            <input type="text" class="form-control" id="create-class-name" placeholder="z.B. 10d" />
+            <div class="invalid-feedback">
+              Klassennamen dürfen nur aus Buchstaben, Zahlen, Leerzeichen, "_", "-" und "." bestehen und müssen 2 bis 20 Zeichen lang sein.
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="create-class-classcode">Euer Klassencode (zufälllig generiert)</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="create-class-classcode" readonly />
+              <button class="btn btn-tertiary" id="create-class-classcode-new">
+                <i class="fas fa-rotate"></i>
+              </button>
+            </div>
+            <div class="form-text">
+              Mit diesem Code können deine Mitschüler*innen eurer Klasse beitreten.
+              <br />
+              Keine Sorge, du kannst auch einen Einladungslink oder QR Code teilen.
+            </div>
+          </div>
+          <button class="btn btn-primary w-100 fw-semibold" id="create-class-btn">Klasse erstellen</button>
+        </div>
+
+        <div id="invite-panel" class="d-none">
+          <div class="d-flex align-items-center mb-4">
+            <button class="btn-back" id="create-class-credentials-back-btn"></button>
+            <h2 class="text-center mb-0 flex-grow-1">Mitglieder einladen</h2>
+          </div>
+          <div class="d-flex gap-2 flex-column flex-md-row">
+            <button class="btn btn-primary w-100 fw-semibold" id="invite-copy-link">
+              <i class="fa-solid fa-link"></i>
+              Einladungslink kopieren
+            </button>
+            <button class="btn btn-primary w-100 fw-semibold" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
+              <i class="fa-solid fa-qrcode"></i>
+              QR-Code anzeigen
+            </button>
+          </div>
+          <div class="form-text mb-3">Du kannst auch jederzeit später in den Einstellungen unter "Klasse" Mitglieder einladen.</div>
+          <a class="btn btn-primary w-100 fw-semibold" href="/main">Weiter zur Startseite</a>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="show-qrcode-modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="show-qrcode-modal-title">
+              Trete der Klasse
+              <b></b>
+              auf TaskMinder bei!
+            </h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
           </div>
         </div>
       </div>

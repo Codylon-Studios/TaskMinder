@@ -195,12 +195,6 @@ app.get("/join", (req, res) => {
     return res.redirect(302, "/main");
   }
 
-  if (req.session.account && !req.session.classJoined) {
-    if (action !== "join") {
-      return res.redirect(302, "/join?action=join");
-    }
-  }
-
   if (!req.session.account && req.session.classJoined) {
     if (action !== "account") {
       return res.redirect(302, "/join?action=account");
@@ -242,8 +236,8 @@ app.get("/events", checkAccess.elseRedirect, (req, res) => {
 });
 
 app.use((req, res, next) => {
-  res.status(404).send("Not found")
-  next()
+  res.status(404).send("Not found");
+  next();
 });
 
 // Error Handler Middleware (Must be the last app.use)
