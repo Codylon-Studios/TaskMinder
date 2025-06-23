@@ -12,7 +12,7 @@ export default async function cleanupOldHomework() {
     const sixtyDaysAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
 
     // Count records to be deleted
-    const count = await prisma.homework10d.count({
+    const count = await prisma.homework.count({
       where: {
         submissionDate: {
           lt: sixtyDaysAgo
@@ -21,7 +21,7 @@ export default async function cleanupOldHomework() {
     });
 
     // Delete the records
-    const deleted = await prisma.homework10d.deleteMany({
+    const deleted = await prisma.homework.deleteMany({
       where: {
         submissionDate: {
           lt: sixtyDaysAgo

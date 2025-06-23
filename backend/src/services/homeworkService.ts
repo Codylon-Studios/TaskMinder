@@ -31,7 +31,7 @@ const homeworkService = {
     }
     isValidTeamId(teamId);
     try {
-      await prisma.homework10d.create({
+      await prisma.homework.create({
         data: {
           content: content,
           subjectId: subjectId,
@@ -50,7 +50,7 @@ const homeworkService = {
       };
       throw err;
     }
-    const data = await prisma.homework10d.findMany({
+    const data = await prisma.homework.findMany({
       orderBy: {
         submissionDate: "asc"
       }
@@ -75,8 +75,8 @@ const homeworkService = {
     else {
       accountId = session.account.accountId;
     }
-    if (checkStatus == "true") {
-      await prisma.homework10dCheck.upsert({
+    if (checkStatus === "true") {
+      await prisma.homeworkCheck.upsert({
         where: { accountId, homeworkId },
         update: {},
         create: {
@@ -86,7 +86,7 @@ const homeworkService = {
       });
     }
     else {
-      await prisma.homework10dCheck.delete({
+      await prisma.homeworkCheck.deleteMany({
         where: {
           accountId: accountId,
           homeworkId: homeworkId
@@ -116,12 +116,12 @@ const homeworkService = {
       };
       throw err;
     }
-    await prisma.homework10d.delete({
+    await prisma.homework.delete({
       where: {
         homeworkId: homeworkId
       }
     });
-    const data = await prisma.homework10d.findMany({
+    const data = await prisma.homework.findMany({
       orderBy: {
         submissionDate: "asc"
       }
@@ -154,7 +154,7 @@ const homeworkService = {
     }
     isValidTeamId(teamId);
     try {
-      await prisma.homework10d.update({
+      await prisma.homework.update({
         where: { homeworkId: homeworkId },
         data: {
           content: content,
@@ -175,7 +175,7 @@ const homeworkService = {
       throw err;
     }
 
-    const data = await prisma.homework10d.findMany({
+    const data = await prisma.homework.findMany({
       orderBy: {
         submissionDate: "asc"
       }
@@ -198,7 +198,7 @@ const homeworkService = {
       }
     }
 
-    const data = await prisma.homework10d.findMany({
+    const data = await prisma.homework.findMany({
       orderBy: {
         submissionDate: "asc"
       }
@@ -223,7 +223,7 @@ const homeworkService = {
     else {
       accountId = session.account.accountId;
     }
-    const homework = await prisma.homework10dCheck.findMany({
+    const homework = await prisma.homeworkCheck.findMany({
       where: { accountId: accountId },
       select: {
         homeworkId: true

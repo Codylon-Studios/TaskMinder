@@ -37,7 +37,7 @@ const teamService = {
       existingTeams.map(async (team: { teamId: number }) => {
         if (!teams.some(t => t.teamId === team.teamId)) {
           // delete homework which were linked to team
-          await prisma.homework10d.deleteMany({
+          await prisma.homework.deleteMany({
             where: { teamId: team.teamId }
           });
           // delete events which were linked to team

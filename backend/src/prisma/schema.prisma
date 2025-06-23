@@ -12,7 +12,7 @@ model Account {
   username         String             @unique
   password         String
   isAdmin          Boolean?
-  Homework10dCheck Homework10dCheck[]
+  HomeworkCheck HomeworkCheck[]
   JoinedClass      JoinedClass[]
   JoinedTeams      JoinedTeams[]
 
@@ -51,7 +51,7 @@ model EventType {
   @@map("eventType")
 }
 
-model Homework10d {
+model Homework {
   homeworkId       Int                @id @default(autoincrement()) @map("homeworkId")
   content          String
   subjectId        Int
@@ -59,20 +59,20 @@ model Homework10d {
   submissionDate   BigInt
   teamId           Int
   Subjects         Subjects           @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade, onUpdate: NoAction)
-  Homework10dCheck Homework10dCheck[]
+  HomeworkCheck HomeworkCheck[]
 
-  @@map("homework10d")
+  @@map("homework")
 }
 
-model Homework10dCheck {
+model HomeworkCheck {
   checkId     Int         @id @default(autoincrement()) @map("checkId")
   accountId   Int         @unique
   homeworkId  Int
   Account     Account     @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
-  Homework10d Homework10d @relation(fields: [homeworkId], references: [homeworkId], onDelete: Cascade, onUpdate: NoAction)
+  Homework Homework @relation(fields: [homeworkId], references: [homeworkId], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([accountId, homeworkId], map: "homework10d_check_account_id_homework_id")
-  @@map("homework10dCheck")
+  @@unique([accountId, homeworkId], map: "homework_check_account_id_homework_id")
+  @@map("homeworkCheck")
 }
 
 model JoinedClass {
@@ -116,7 +116,7 @@ model Subjects {
   teacherNameLong         String
   teacherNameShort        String
   teacherNameSubstitution String[]
-  Homework10d             Homework10d[]
+  Homework             Homework[]
 
   @@map("subjects")
 }
