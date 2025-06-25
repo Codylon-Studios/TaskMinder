@@ -180,7 +180,7 @@ app.get("/metrics", async (req: Request, res: Response) => {
 });
 
 app.get("/", (req: Request, res: Response) => {
-  if (req.session.account && req.session.classJoined) {
+  if (req.session.account && req.session.classId) {
     return res.redirect(302, "/main");
   }
   res.redirect(302, "/join");
@@ -191,11 +191,11 @@ const pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages");
 app.get("/join", (req, res) => {
   const action = req.query.action;
 
-  if (req.session.account && req.session.classJoined) {
+  if (req.session.account && req.session.classId) {
     return res.redirect(302, "/main");
   }
 
-  if (!req.session.account && req.session.classJoined) {
+  if (!req.session.account && req.session.classId) {
     if (action !== "account") {
       return res.redirect(302, "/join?action=account");
     }

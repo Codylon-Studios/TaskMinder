@@ -38,6 +38,22 @@ const homeworkService = {
       };
       throw err;
     }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
     isValidTeamId(teamId);
     try {
       await prisma.homework.create({
@@ -153,6 +169,22 @@ const homeworkService = {
       };
       throw err;
     }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
     await prisma.homework.delete({
       where: {
         homeworkId: homeworkId,
@@ -203,6 +235,22 @@ const homeworkService = {
       };
       throw err;
     }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
     isValidTeamId(teamId);
     try {
       await prisma.homework.update({
@@ -247,6 +295,22 @@ const homeworkService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
         expected: true
       };
       throw err;

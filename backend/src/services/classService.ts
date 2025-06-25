@@ -47,6 +47,23 @@ const classService = {
       throw err;
     }
 
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
+
     const classInfo = await prisma.class.findUnique({
       where: {
         classId: parseInt(session.classId)
@@ -259,9 +276,16 @@ const classService = {
       };
       throw err;
     }
-
-    // check if admin, 
-    // if last member, delete all corresponding teams, homework, event data etc.
+    // currently allow that a class with no members can exist
+    // add deleting stuff when last user with user role addition
+    delete session.classId;
+    if (session.account) {
+      await prisma.joinedClass.delete({
+        where: {
+          accountId: session.account.accountId
+        }
+      });
+    }
   },
   async deleteClass(session: Session & Partial<SessionData>){
     if (!session.account) {
@@ -283,10 +307,47 @@ const classService = {
       };
       throw err;
     }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
     // delete class
-    // delete all corresponding teams, homework, event data etc.
+    // all corresponding teams, homework, event data etc. will be deleted through onCascade
+    await prisma.class.delete({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+    delete session.classId;
   },
-  async updateDSBMobileData(session: Session & Partial<SessionData>){
+  async updateDSBMobileData(
+    reqData: {
+      dsbMobileActivated: boolean;
+      dsbMobileUser?: string | null;
+      dsbMobilePassword?: string | null;
+      dsbMobileClass?: string | null;
+    },
+    session: Session & Partial<SessionData>
+  ){
+    const {
+      dsbMobileActivated,
+      dsbMobileUser,
+      dsbMobilePassword,
+      dsbMobileClass
+    } = reqData;
+
     if (!session.classId) {
       const err: RequestError = {
         name: "Unauthorized",
@@ -307,6 +368,34 @@ const classService = {
       throw err;
     }
 
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
+
+    await prisma.class.update({
+      where: {
+        classId: parseInt(session.classId)
+      },
+      data: {
+        dsbMobileActivated: dsbMobileActivated,
+        dsbMobileUser: dsbMobileUser,
+        dsbMobilePassword: dsbMobilePassword,
+        dsbMobileClass: dsbMobileClass
+      }
+    });
   }
 };
 

@@ -186,6 +186,7 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
   });
 
   if (!substitutionClass) {
+    delete session.classId;
     const err: RequestError = {
       name: "Not Found",
       status: 404,

@@ -16,6 +16,22 @@ const subjectService = {
       };
       throw err;
     }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
 
     const getSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId);
     const cachedSubjectata = await redisClient.get(getSubjectDataCacheKey);
@@ -73,6 +89,22 @@ const subjectService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
         expected: true
       };
       throw err;

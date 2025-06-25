@@ -32,7 +32,7 @@ export const createTestClass = asyncHandler(async (req, res, next) => {
           classCode: { type: "string" },
           dsbMobileActivated: { type: "boolean" }
         },
-        required: ["className", "classCode"]
+        required: ["className", "classCode", "dsbMobileActivated"]
       }
     });
     return;
@@ -66,7 +66,7 @@ export const createClass = asyncHandler(async (req, res, next) => {
           classCode: { type: "string" }.type,
           dsbMobileActivated: { type: "boolean" }
         },
-        required: ["className", "classCode"]
+        required: ["className", "classCode", "dsbMobileActivated"]
       }
     });
     return;
@@ -111,8 +111,28 @@ export const deleteClass = asyncHandler(async (req, res, next) => {
 });
 
 export const updateDSBMobileData = asyncHandler(async (req, res, next) => {
+  const updateDSBMobileDataSchema = z.object({
+    dsbMobileActivated: z.boolean(),
+    dsbMobileUser: z.string().nullable(),
+    dsbMobilePassword: z.string().nullable(),
+    dsbMobileClass: z.string().nullable()
+  });
+  const parseResult = updateDSBMobileDataSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    res.status(400).json({
+      error: "Invalid request format",
+      expectedFormat: {
+        type: "object",
+        properties: {
+          dsbMobileActivated: { type: "boolean" }
+        },
+        required: ["dsbMobileActivated"]
+      }
+    });
+    return;
+  }
   try {
-    await classService.updateDSBMobileData(req.session);
+    await classService.updateDSBMobileData(parseResult.data, req.session);
     res.sendStatus(200);
   }
   catch (error) {

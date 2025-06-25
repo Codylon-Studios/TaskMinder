@@ -36,6 +36,22 @@ const lessonService = {
       };
       throw err;
     }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
     for (const lesson of lessons) {
       isValidweekDay(lesson.weekDay);
     }
@@ -94,6 +110,22 @@ const lessonService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
         expected: true
       };
       throw err;

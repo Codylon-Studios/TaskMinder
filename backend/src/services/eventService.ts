@@ -25,6 +25,22 @@ export const eventService = {
       };
       throw err;
     }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
 
     const getEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId);
 
@@ -87,6 +103,22 @@ export const eventService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
         expected: true
       };
       throw err;
@@ -169,6 +201,22 @@ export const eventService = {
       };
       throw err;
     }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
+        expected: true
+      };
+      throw err;
+    }
     lessonDateEventAtLeastOneNull(endDate, lesson);
     isValidTeamId(teamId);
     try {
@@ -242,6 +290,22 @@ export const eventService = {
         name: "Bad Request",
         status: 400,
         message: "Invalid data format",
+        expected: true
+      };
+      throw err;
+    }
+    const classExists = await prisma.class.findUnique({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    if (!classExists){
+      delete session.classId;
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "No class mapped to session.classId, deleting classId from session",
         expected: true
       };
       throw err;
