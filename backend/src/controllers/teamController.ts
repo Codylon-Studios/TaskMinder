@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const getTeams = asyncHandler(async (req, res, next) => {
   try {
-    const teamsData = await teamService.getTeamsData();
+    const teamsData = await teamService.getTeamsData(req.session);
     res.status(200).json(teamsData);
   }
   catch (error) {
@@ -46,7 +46,7 @@ export const setTeams = asyncHandler(async (req, res, next) => {
     return;
   }
   try {
-    await teamService.setTeamsData(parseResult.data.teams);
+    await teamService.setTeamsData(parseResult.data.teams, req.session);
     res.sendStatus(200);
   }
   catch (error) {

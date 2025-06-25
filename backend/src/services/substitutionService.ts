@@ -1,33 +1,24 @@
-import { redisClient, cacheKeySubstitutionsData, cacheExpiration } from "../config/redis";
+import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
 import logger from "../utils/logger";
+import { Session, SessionData } from "express-session";
+import { RequestError } from "../@types/requestError";
+import prisma from "../config/prisma";
 
-async function loadSubstitutionData(): Promise<void> {
-  if (process.env.DSB_ACTIVATED != "true") {
-    return;
-  }
+async function loadSubstitutionData(dsbMobileUser: string, dsbMobilePassword: string, setSubstitutionDataCacheKey: string): Promise<void> {
   try {
-    if (typeof process.env.DSB_USER != "string") {
-      logger.error("DSB user not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
-      return;
-    }
-    if (typeof process.env.DSB_PASSWORD != "string") {
-      logger.error("DSB password not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
-      return;
-    }
-    const username = process.env.DSB_USER;
-    const password = process.env.DSB_PASSWORD;
 
     let authId: string;
     try {
-      const url = `https://mobileapi.dsbcontrol.de/authid?user=${username}&password=${password}&appversion=&bundleid=&osversion=&pushid=`;
+      // eslint-disable-next-line max-len
+      const url = `https://mobileapi.dsbcontrol.de/authid?user=${dsbMobileUser}&password=${dsbMobilePassword}&appversion=&bundleid=&osversion=&pushid=`;
       const authRes = await axios.get<string>(url);
       authId = authRes.data;
       if (authId == "") {
         logger.error(
-          "The DSB credeantials don't return a valid authId! Either correct them or set DSB_ACTIVATED to false!"
+          "The DSB credentials don't return a valid authId! Either correct them or set DSB_ACTIVATED to false!"
         );
         return;
       }
@@ -98,7 +89,7 @@ async function loadSubstitutionData(): Promise<void> {
     }
 
     try {
-      await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(substitutionsData), { EX: cacheExpiration });
+      await redisClient.set(setSubstitutionDataCacheKey, JSON.stringify(substitutionsData), { EX: cacheExpiration });
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
@@ -109,7 +100,7 @@ async function loadSubstitutionData(): Promise<void> {
     logger.error("Error fetching substitutions data!");
     const substitutionsData = "No data";
     try {
-      await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(substitutionsData), { EX: cacheExpiration });
+      await redisClient.set(setSubstitutionDataCacheKey, JSON.stringify(substitutionsData), { EX: cacheExpiration });
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
@@ -118,19 +109,125 @@ async function loadSubstitutionData(): Promise<void> {
   }
 }
 
-setInterval(loadSubstitutionData, 60000);
+// load all substitution data from all classes from dsb mobile server 
+// every 1 minute from 6am to 3 pm monday to friday, else hourly
+function scheduleUpdateLoop() {
+  const now = new Date();
+  const isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+  const isWorkingHours = now.getHours() >= 6 && now.getHours() < 15;
 
-export async function getSubstitutionData() {
-  if (process.env.DSB_ACTIVATED != "true") {
+  const delay = isWeekday && isWorkingHours ? 60_000 : 3_600_000; // 1 min vs 1 hr
+
+  updateSubstitutionDataCache().catch(logger.error);
+
+  setTimeout(scheduleUpdateLoop, delay); // recursively schedule next run
+}
+
+scheduleUpdateLoop();
+
+
+async function updateSubstitutionDataCache() {
+  // get clases which have substitution services in the db
+  const substitutionClasses = await prisma.class.findMany({
+    where: {
+      dsbMobileActivated: true
+    }
+  });
+
+  // no classes have a substitution service
+  if (!substitutionClasses) {
+    return;
+  }
+
+  // TODO:
+  // look if concurrent requets are possible with promises
+  // rate-limiting from DSB Mobile API Server?
+  for (const classItem of substitutionClasses) {
+
+    if (!classItem.dsbMobileUser) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "dsbMobileActivated is set to true, but dsbMobileUser is not available",
+        expected: true
+      };
+      throw err;
+    }
+
+    if (!classItem.dsbMobilePassword) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "dsbMobileActivated is set to true, but dsbMobilePassword is not available",
+        expected: true
+      };
+      throw err;
+    }
+    const updateSubstitutionDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBSTITUTIONS, classItem.classId.toString());
+
+    await loadSubstitutionData(classItem.dsbMobileUser, classItem.dsbMobilePassword, updateSubstitutionDataCacheKey);
+  }
+}
+
+export async function getSubstitutionData(session: Session & Partial<SessionData>) {
+  if (!session.classId) {
+    const err: RequestError = {
+      name: "Unauthorized",
+      status: 401,
+      message: "User not logged into class",
+      expected: true
+    };
+    throw err;
+  }
+  const substitutionClass = await prisma.class.findUnique({
+    where: {
+      classId: parseInt(session.classId)
+    }
+  });
+
+  if (!substitutionClass) {
+    const err: RequestError = {
+      name: "Not Found",
+      status: 404,
+      message: "No class found for substitution data",
+      expected: true
+    };
+    throw err;
+  }
+
+  if (substitutionClass.dsbMobileActivated != true) {
     return "No data";
   }
-  let cachedData = await redisClient.get(cacheKeySubstitutionsData);
+
+  if (!substitutionClass.dsbMobileUser) {
+    const err: RequestError = {
+      name: "Not Found",
+      status: 404,
+      message: "dsbMobileActivated is set to true, but dsbMobileUser is not available",
+      expected: true
+    };
+    throw err;
+  }
+
+  if (!substitutionClass.dsbMobilePassword) {
+    const err: RequestError = {
+      name: "Not Found",
+      status: 404,
+      message: "dsbMobileActivated is set to true, but dsbMobilePassword is not available",
+      expected: true
+    };
+    throw err;
+  }
+
+  const getSubstitutionDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBSTITUTIONS, session.classId);
+
+  let cachedData = await redisClient.get(getSubstitutionDataCacheKey);
   if (cachedData) {
     return JSON.parse(cachedData);
   }
   else {
-    await loadSubstitutionData();
-    cachedData = (await redisClient.get(cacheKeySubstitutionsData)) ?? "No data";
+    await loadSubstitutionData(substitutionClass.dsbMobileUser, substitutionClass.dsbMobilePassword, getSubstitutionDataCacheKey);
+    cachedData = (await redisClient.get(getSubstitutionDataCacheKey)) ?? "No data";
     return JSON.parse(cachedData);
   }
 }

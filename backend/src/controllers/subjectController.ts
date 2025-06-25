@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const getSubjectData = asyncHandler(async (req, res, next) => {
   try {
-    const timetableData = await subjectService.getSubjectData();
+    const timetableData = await subjectService.getSubjectData(req.session);
     res.status(200).json(timetableData);
   }
   catch (error) {
@@ -70,7 +70,7 @@ export const setSubjectData = asyncHandler(async (req, res, next) => {
     return;
   }
   try {
-    await subjectService.setSubjectData(parseResult.data.subjects);
+    await subjectService.setSubjectData(parseResult.data.subjects, req.session);
     res.sendStatus(200);
   }
   catch (error) {

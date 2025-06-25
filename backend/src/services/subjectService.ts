@@ -1,12 +1,24 @@
 import { RequestError } from "../@types/requestError";
 import logger from "../utils/logger";
-import { redisClient, cacheKeySubjectData } from "../config/redis";
+import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
 import { isValidGender, updateCacheData } from "../utils/validateFunctions";
+import { Session, SessionData } from "express-session";
 
 const subjectService = {
-  async getSubjectData() {
-    const cachedSubjectata = await redisClient.get("subject_data");
+  async getSubjectData(session: Session & Partial<SessionData>) {
+    if (!session.classId) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+
+    const getSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId);
+    const cachedSubjectata = await redisClient.get(getSubjectDataCacheKey);
 
     if (cachedSubjectata) {
       try {
@@ -18,10 +30,14 @@ const subjectService = {
       }
     }
 
-    const data = await prisma.subjects.findMany();
+    const data = await prisma.subjects.findMany({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
 
     try {
-      await updateCacheData(data, cacheKeySubjectData);
+      await updateCacheData(data, getSubjectDataCacheKey);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
@@ -40,9 +56,32 @@ const subjectService = {
       teacherNameLong: string;
       teacherNameShort: string;
       teacherNameSubstitution: string[] | null;
-    }[]
+    }[],
+    session: Session & Partial<SessionData>
   ) {
-    const existingSubjects = await prisma.subjects.findMany();
+    if (!session.account) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged in",
+        expected: true
+      };
+      throw err;
+    }
+    if (!session.classId) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+    const existingSubjects = await prisma.subjects.findMany({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
     await Promise.all(
       existingSubjects.map(async subject => {
         if (!subjects.some(s => s.subjectId === subject.subjectId)) {
@@ -77,6 +116,7 @@ const subjectService = {
         if (subject.subjectId == "") {
           await prisma.subjects.create({
             data: {
+              classId: parseInt(session.classId),
               subjectNameLong: subject.subjectNameLong,
               subjectNameShort: subject.subjectNameShort,
               subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
@@ -113,10 +153,16 @@ const subjectService = {
       }
     }
 
-    const data = await prisma.subjects.findMany();
+    const data = await prisma.subjects.findMany({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    const setSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId);
 
     try {
-      await updateCacheData(data, cacheKeySubjectData);
+      await updateCacheData(data, setSubjectDataCacheKey);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);

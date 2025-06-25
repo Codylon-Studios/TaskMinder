@@ -32,7 +32,7 @@ export default {
     else {
       res.loggedIn = false;
     }
-    if (session.classJoined) {
+    if (session.classId) {
       res.classJoined = true;
     }
     else {
@@ -75,6 +75,7 @@ export default {
       };
       throw err;
     }
+
     const hashedPassword = await bcrypt.hash(password, SALTROUNDS);
     const account = await prisma.account.create({
       data: {
@@ -85,15 +86,18 @@ export default {
     const accountId = account.accountId;
     session.account = { username, accountId };
 
-    if (session.classJoined) {
+
+    if (session.classId) {
       const accountId = session.account.accountId;
       await prisma.joinedClass.create({
         data: {
-          accountId: accountId
+          accountId: accountId,
+          classId: parseInt(session.classId)
         }
       });
     }
   },
+
   async logoutAccount(session: Session & Partial<SessionData>) {
     if (!session.account) {
       const err: RequestError = {
@@ -114,6 +118,7 @@ export default {
       });
     });
   },
+
   async loginAccount(reqData: { username: string; password: string }, session: Session & Partial<SessionData>) {
     const { username, password } = reqData;
     if (session.account) {
@@ -159,17 +164,19 @@ export default {
         accountId: accountId
       }
     });
-    if (joinedClassExists == null && session.classJoined) {
+    if (joinedClassExists == null && session.classId) {
       prisma.joinedClass.create({
         data: {
-          accountId: accountId
+          accountId: accountId,
+          classId: parseInt(session.classId)
         }
       });
     }
     else if (joinedClassExists != null) {
-      session.classJoined = true;
+      session.classId = joinedClassExists.classId.toString();
     }
   },
+
   async deleteAccount(password: string, session: Session & Partial<SessionData>) {
     if (!session.account) {
       const err: RequestError = {
@@ -216,14 +223,16 @@ export default {
       if (err) throw err instanceof Error ? err : new Error("Error destroying session during account deletion");
     });
   },
+
   async checkUsername(username: string) {
     const accountExists = await prisma.account.findUnique({
       where: { username: username }
     });
     return accountExists != null;
   },
+
   async joinClass(classcode: string, session: Session & Partial<SessionData>) {
-    if (session.classJoined) {
+    if (session.classId) {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
@@ -232,28 +241,34 @@ export default {
       };
       throw err;
     }
-    if (classcode == process.env.CLASSCODE) {
-      session.classJoined = true;
+
+    const existingClass = await prisma.class.findUnique({
+      where: {
+        classCode: classcode
+      }
+    });
+
+    if (existingClass) {
+      session.classId = existingClass.classId.toString();
       if (session.account) {
         const accountId = session.account.accountId;
-        console.log(accountId);
         const joinedClassExists = await prisma.joinedClass.findUnique({
           where: {
             accountId: accountId
           }
         });
-        console.log(joinedClassExists);
         if (joinedClassExists == null) {
-          console.log("create");
           await prisma.joinedClass.create({
             data: {
-              accountId: accountId
+              accountId: accountId,
+              classId: existingClass.classId
             }
           });
         }
       }
       return;
     }
+
     const err: RequestError = {
       name: "Unauthorized",
       status: 401,

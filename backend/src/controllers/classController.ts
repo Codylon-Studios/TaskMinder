@@ -14,8 +14,12 @@ export const getClassInfo = asyncHandler(async (req, res, next) => {
 
 export const createTestClass = asyncHandler(async (req, res, next) => {
   const createTestClassSchema = z.object({
-    className: z.string(),
-    classCode: z.string()
+    classDisplayName: z.string(),
+    classCode: z.string(),
+    dsbMobileActivated: z.boolean(),
+    dsbMobileUser: z.string().nullable(),
+    dsbMobilePassword: z.string().nullable(),
+    dsbMobileClass: z.string().nullable()
   });
   const parseResult = createTestClassSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -24,8 +28,9 @@ export const createTestClass = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          className: { type: "string" },
-          classCode: { type: "string" }
+          classDisplayName: { type: "string" },
+          classCode: { type: "string" },
+          dsbMobileActivated: { type: "boolean" }
         },
         required: ["className", "classCode"]
       }
@@ -43,8 +48,12 @@ export const createTestClass = asyncHandler(async (req, res, next) => {
 
 export const createClass = asyncHandler(async (req, res, next) => {
   const createClassSchema = z.object({
-    className: z.string(),
-    classCode: z.string()
+    classDisplayName: z.string(),
+    classCode: z.string(),
+    dsbMobileActivated: z.boolean(),
+    dsbMobileUser: z.string().nullable(),
+    dsbMobilePassword: z.string().nullable(),
+    dsbMobileClass: z.string().nullable()
   });
   const parseResult = createClassSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -53,8 +62,9 @@ export const createClass = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          className: { type: "string" },
-          classCode: { type: "string" }
+          classDisplayName: { type: "string" },
+          classCode: { type: "string" }.type,
+          dsbMobileActivated: { type: "boolean" }
         },
         required: ["className", "classCode"]
       }
@@ -90,10 +100,32 @@ export const leaveClass = asyncHandler(async (req, res, next) => {
   }
 });
 
+export const deleteClass = asyncHandler(async (req, res, next) => {
+  try {
+    await classService.deleteClass(req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+});
+
+export const updateDSBMobileData = asyncHandler(async (req, res, next) => {
+  try {
+    await classService.updateDSBMobileData(req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+});
+
 export default {
   getClassInfo,
   createTestClass,
   createClass,
   generateNewClassCode,
-  leaveClass
+  leaveClass,
+  deleteClass,
+  updateDSBMobileData
 };

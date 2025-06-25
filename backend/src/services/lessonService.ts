@@ -1,8 +1,9 @@
 import { RequestError } from "../@types/requestError";
-import { cacheKeyLessonData, redisClient } from "../config/redis";
+import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
 import logger from "../utils/logger";
 import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
+import { Session, SessionData } from "express-session";
 
 const lessonService = {
   async setLessonData(
@@ -14,16 +15,42 @@ const lessonService = {
       room: string;
       startTime: number;
       endTime: number;
-    }[]
+    }[],
+    session: Session & Partial<SessionData>
   ) {
+    if (!session.account) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged in",
+        expected: true
+      };
+      throw err;
+    }
+    if (!session.classId) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
     for (const lesson of lessons) {
       isValidweekDay(lesson.weekDay);
     }
-    await prisma.$executeRaw`TRUNCATE TABLE "lesson" RESTART IDENTITY;`;
+
+    await prisma.lesson.deleteMany({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
     for (const lesson of lessons) {
       try {
         await prisma.lesson.create({
           data: {
+            classId: parseInt(session.classId),
             lessonNumber: lesson.lessonNumber,
             weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
             teamId: lesson.teamId,
@@ -44,18 +71,35 @@ const lessonService = {
         throw err;
       }
     }
-    const lessonData = await prisma.lesson.findMany();
+
+    const lessonData = await prisma.lesson.findMany({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId);
 
     try {
-      await updateCacheData(lessonData, cacheKeyLessonData);
+      await updateCacheData(lessonData, setLessonDataCacheKey);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
   },
-  async getLessonData() {
-    const cachedLessonData = await redisClient.get("lesson_data");
+  async getLessonData(session: Session & Partial<SessionData>) {
+    if (!session.classId) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+    const getLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId);
+    const cachedLessonData = await redisClient.get(getLessonDataCacheKey);
 
     if (cachedLessonData) {
       try {
@@ -67,10 +111,14 @@ const lessonService = {
       }
     }
 
-    const lessonData = await prisma.lesson.findMany();
+    const lessonData = await prisma.lesson.findMany({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
 
     try {
-      await updateCacheData(lessonData, cacheKeyLessonData);
+      await updateCacheData(lessonData, getLessonDataCacheKey);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);

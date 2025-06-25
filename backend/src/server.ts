@@ -15,7 +15,7 @@ import socketIO from "./config/socket";
 import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
-import cleanupOldHomework from "./utils/homeworkCleanup";
+import { cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
@@ -247,6 +247,12 @@ app.use(ErrorHandler);
 cron.schedule("0 0 * * *", () => {
   logger.info("Starting scheduled homework cleanup");
   cleanupOldHomework();
+});
+
+// Schedule the cron job to run at midnight (00:00) every day
+cron.schedule("0 0 * * *", () => {
+  logger.info("Starting scheduled test class cleanup");
+  cleanupTestClasses();
 });
 
 server.listen(3000, () => {

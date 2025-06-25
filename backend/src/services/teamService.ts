@@ -2,12 +2,22 @@ import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import prisma from "../config/prisma";
 import logger from "../utils/logger";
-import { redisClient, cacheKeyTeamData } from "../config/redis";
+import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { updateCacheData } from "../utils/validateFunctions";
 
 const teamService = {
-  async getTeamsData() {
-    const cachedTeamsData = await redisClient.get("teams_data");
+  async getTeamsData(session: Session & Partial<SessionData>) {
+    if (!session.classId) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+    const getTeamsDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.TEAMS, session.classId);
+    const cachedTeamsData = await redisClient.get(getTeamsDataCacheKey);
 
     if (cachedTeamsData) {
       try {
@@ -19,10 +29,14 @@ const teamService = {
       }
     }
 
-    const data = await prisma.team.findMany();
+    const data = await prisma.team.findMany({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
 
     try {
-      await updateCacheData(data, cacheKeyTeamData);
+      await updateCacheData(data, getTeamsDataCacheKey);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
@@ -31,8 +45,32 @@ const teamService = {
 
     return data;
   },
-  async setTeamsData(teams: { teamId: number | ""; name: string }[]) {
-    const existingTeams = await prisma.team.findMany();
+
+  async setTeamsData(teams: { teamId: number | ""; name: string }[], session: Session & Partial<SessionData>) {
+    if (!session.account) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Not logged in",
+        additionalInformation: "The requesting session is not logged in!",
+        expected: true
+      };
+      throw err;
+    }
+    if (!session.classId) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+    const existingTeams = await prisma.team.findMany({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
     await Promise.all(
       existingTeams.map(async (team: { teamId: number }) => {
         if (!teams.some(t => t.teamId === team.teamId)) {
@@ -70,6 +108,7 @@ const teamService = {
         if (team.teamId == "") {
           await prisma.team.create({
             data: {
+              classId: parseInt(session.classId),
               name: team.name
             }
           });
@@ -78,6 +117,7 @@ const teamService = {
           await prisma.team.update({
             where: { teamId: team.teamId },
             data: {
+              classId: parseInt(session.classId),
               name: team.name
             }
           });
@@ -94,16 +134,23 @@ const teamService = {
       }
     }
 
-    const data = await prisma.team.findMany();
+    const data = await prisma.team.findMany({
+      where: {
+        classId: parseInt(session.classId)
+      }
+    });
+
+    const setTeamsDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.TEAMS, session.classId);
 
     try {
-      await updateCacheData(data, cacheKeyTeamData);
+      await updateCacheData(data, setTeamsDataCacheKey);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
   },
+
   async getJoinedTeamsData(session: Session & Partial<SessionData>) {
     let accountId;
     if (!session.account) {
@@ -111,6 +158,15 @@ const teamService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
+        expected: true
+      };
+      throw err;
+    }
+    if (!session.classId) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged into class",
         expected: true
       };
       throw err;
@@ -131,6 +187,7 @@ const teamService = {
 
     return teams;
   },
+  
   async setJoinedTeamsData(teams: number[], session: Session & Partial<SessionData>) {
     let accountId;
     if (!session.account) {
@@ -138,6 +195,15 @@ const teamService = {
         name: "Unauthorized",
         status: 401,
         message: "User not logged in",
+        expected: true
+      };
+      throw err;
+    }
+    if (!session.classId) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged into class",
         expected: true
       };
       throw err;
