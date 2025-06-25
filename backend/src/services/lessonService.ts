@@ -52,41 +52,56 @@ const lessonService = {
       };
       throw err;
     }
+
     for (const lesson of lessons) {
       isValidweekDay(lesson.weekDay);
     }
 
-    await prisma.lesson.deleteMany({
-      where: {
-        classId: parseInt(session.classId)
+    const classId = parseInt(session.classId);
+    if (isNaN(classId)) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Invalid classId in session",
+        expected: true
+      };
+      throw err;
+    }
+
+    await prisma.$transaction(async tx => {
+      await tx.lesson.deleteMany({
+        where: {
+          classId: classId
+        }
+      });
+    
+      for (const lesson of lessons) {
+        try {
+          await tx.lesson.create({
+            data: {
+              classId: classId,
+              lessonNumber: lesson.lessonNumber,
+              weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
+              teamId: lesson.teamId,
+              subjectId: lesson.subjectId,
+              room: lesson.room,
+              startTime: lesson.startTime,
+              endTime: lesson.endTime
+            }
+          });
+        } 
+        catch {
+          const err: RequestError = {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data format",
+            expected: true
+          };
+          throw err;
+        }
       }
     });
-
-    for (const lesson of lessons) {
-      try {
-        await prisma.lesson.create({
-          data: {
-            classId: parseInt(session.classId),
-            lessonNumber: lesson.lessonNumber,
-            weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
-            teamId: lesson.teamId,
-            subjectId: lesson.subjectId,
-            room: lesson.room,
-            startTime: lesson.startTime,
-            endTime: lesson.endTime
-          }
-        });
-      }
-      catch {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "Invalid data format",
-          expected: true
-        };
-        throw err;
-      }
-    }
+    
 
     const lessonData = await prisma.lesson.findMany({
       where: {

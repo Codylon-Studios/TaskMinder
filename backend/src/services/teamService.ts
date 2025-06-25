@@ -99,73 +99,88 @@ const teamService = {
       };
       throw err;
     }
+
+    const classId = parseInt(session.classId);
+    if (isNaN(classId)) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Invalid classId in session",
+        expected: true
+      };
+      throw err;
+    }
+
     const existingTeams = await prisma.team.findMany({
       where: {
         classId: parseInt(session.classId)
       }
     });
-    await Promise.all(
-      existingTeams.map(async (team: { teamId: number }) => {
-        if (!teams.some(t => t.teamId === team.teamId)) {
-          // delete homework which were linked to team
-          await prisma.homework.deleteMany({
-            where: { teamId: team.teamId }
-          });
-          // delete events which were linked to team
-          await prisma.event.deleteMany({
-            where: { teamId: team.teamId }
-          });
-          // delete lessons which were linked to team
-          await prisma.lesson.deleteMany({
-            where: { teamId: team.teamId }
-          });
-          // delete team
-          await prisma.team.delete({
-            where: { teamId: team.teamId }
-          });
-        }
-      })
-    );
 
-    for (const team of teams) {
-      if (team.name.trim() == "") {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "Invalid data (Team name cannot be empty)",
-          expected: true
-        };
-        throw err;
-      }
-      try {
-        if (team.teamId == "") {
-          await prisma.team.create({
-            data: {
-              classId: parseInt(session.classId),
-              name: team.name
-            }
-          });
+    await prisma.$transaction(async tx => {
+      await Promise.all(
+        existingTeams.map(async (team: { teamId: number }) => {
+          if (!teams.some(t => t.teamId === team.teamId)) {
+            // delete homework which were linked to team
+            await tx.homework.deleteMany({
+              where: { teamId: team.teamId }
+            });
+            // delete events which were linked to team
+            await tx.event.deleteMany({
+              where: { teamId: team.teamId }
+            });
+            // delete lessons which were linked to team
+            await tx.lesson.deleteMany({
+              where: { teamId: team.teamId }
+            });
+            // delete team
+            await tx.team.delete({
+              where: { teamId: team.teamId }
+            });
+          }
+        })
+      );
+
+      for (const team of teams) {
+        if (team.name.trim() == "") {
+          const err: RequestError = {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data (Team name cannot be empty)",
+            expected: true
+          };
+          throw err;
         }
-        else {
-          await prisma.team.update({
-            where: { teamId: team.teamId },
-            data: {
-              classId: parseInt(session.classId),
-              name: team.name
-            }
-          });
+        try {
+          if (team.teamId == "") {
+            await tx.team.create({
+              data: {
+                classId: classId,
+                name: team.name
+              }
+            });
+          }
+          else {
+            await tx.team.update({
+              where: { teamId: team.teamId },
+              data: {
+                classId: classId,
+                name: team.name
+              }
+            });
+          }
+        }
+        catch {
+          const err: RequestError = {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data format",
+            expected: true
+          };
+          throw err;
         }
       }
-      catch {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "Invalid data format",
-          expected: true
-        };
-        throw err;
-      }
-    }
+    });
 
     const data = await prisma.team.findMany({
       where: {
@@ -255,29 +270,31 @@ const teamService = {
       throw err;
     }
 
-    await prisma.joinedTeams.deleteMany({
-      where: { accountId: accountId }
-    });
+    await prisma.$transaction(async tx => {
+      await tx.joinedTeams.deleteMany({
+        where: { accountId: accountId }
+      });
 
-    for (const teamId of teams) {
-      try {
-        await prisma.joinedTeams.create({
-          data: {
-            teamId: teamId,
-            accountId: accountId
-          }
-        });
+      for (const teamId of teams) {
+        try {
+          await tx.joinedTeams.create({
+            data: {
+              teamId: teamId,
+              accountId: accountId
+            }
+          });
+        }
+        catch {
+          const err: RequestError = {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data format",
+            expected: true
+          };
+          throw err;
+        }
       }
-      catch {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "Invalid data format",
-          expected: true
-        };
-        throw err;
-      }
-    }
+    });
   }
 };
 

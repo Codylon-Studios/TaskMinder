@@ -92,7 +92,6 @@ const homeworkService = {
 
   async checkHomework(reqData: { homeworkId: number; checkStatus: string }, session: Session & Partial<SessionData>) {
     const { homeworkId, checkStatus } = reqData;
-    let accountId;
     if (!session.account) {
       const err: RequestError = {
         name: "Unauthorized",
@@ -111,32 +110,35 @@ const homeworkService = {
       };
       throw err;
     }
-    else {
-      accountId = session.account.accountId;
-    }
-    if (checkStatus === "true") {
-      await prisma.homeworkCheck.upsert({
-        where: {
-          accountId_homeworkId: {
-            accountId, 
-            homeworkId 
+
+    const accountId = session.account.accountId;
+
+    await prisma.$transaction(async tx => {
+      if (checkStatus === "true") {
+        await tx.homeworkCheck.upsert({
+          where: {
+            accountId_homeworkId: {
+              accountId,
+              homeworkId
+            }
+          },
+          update: {},
+          create: {
+            accountId,
+            homeworkId
           }
-        },
-        update: {},
-        create: {
-          accountId,
-          homeworkId
-        }
-      });
-    }
-    else {
-      await prisma.homeworkCheck.deleteMany({
-        where: {
-          accountId: accountId,
-          homeworkId: homeworkId
-        }
-      });
-    }
+        });
+      } 
+      else {
+        await tx.homeworkCheck.deleteMany({
+          where: {
+            accountId,
+            homeworkId
+          }
+        });
+      }
+    });
+
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },

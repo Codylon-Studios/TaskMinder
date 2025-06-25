@@ -77,25 +77,30 @@ export default {
     }
 
     const hashedPassword = await bcrypt.hash(password, SALTROUNDS);
-    const account = await prisma.account.create({
-      data: {
-        username: username,
-        password: hashedPassword
-      }
-    });
-    const accountId = account.accountId;
-    session.account = { username, accountId };
-
-
-    if (session.classId) {
-      const accountId = session.account.accountId;
-      await prisma.joinedClass.create({
+    const account = await prisma.$transaction(async tx => {
+      const newAccount = await tx.account.create({
         data: {
-          accountId: accountId,
-          classId: parseInt(session.classId)
+          username,
+          password: hashedPassword
         }
       });
-    }
+
+      if (session.classId) {
+        await tx.joinedClass.create({
+          data: {
+            accountId: newAccount.accountId,
+            classId: parseInt(session.classId)
+          }
+        });
+      }
+
+      return newAccount;
+    });
+
+    session.account = {
+      username,
+      accountId: account.accountId
+    };
   },
 
   async logoutAccount(session: Session & Partial<SessionData>) {

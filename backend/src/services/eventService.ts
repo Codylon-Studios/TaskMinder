@@ -387,65 +387,58 @@ export const eventService = {
       };
       throw err;
     }
-    const existingEventTypes = await prisma.eventType.findMany({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-    await Promise.all(
-      existingEventTypes.map(async eventType => {
-        if (!eventTypes.some(e => e.eventTypeId === eventType.eventTypeId)) {
-          await prisma.eventType.delete({
-            where: { 
-              eventTypeId: eventType.eventTypeId
-            }
+
+    const classId = parseInt(session.classId);
+
+    await prisma.$transaction(async tx => {
+      const existingEventTypes = await tx.eventType.findMany({
+        where: { classId }
+      });
+
+      // Delete removed event types
+      for (const existing of existingEventTypes) {
+        if (!eventTypes.some(e => e.eventTypeId === existing.eventTypeId)) {
+          await tx.eventType.delete({
+            where: { eventTypeId: existing.eventTypeId }
           });
         }
-      })
-    );
-
-    for (const eventType of eventTypes) {
-      isValidColor(eventType.color);
-      if (eventType.name.trim() == "") {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "Invalid data format",
-          expected: true
-        };
-        throw err;
       }
-      try {
-        if (eventType.eventTypeId == "") {
-          await prisma.eventType.create({
+
+      // Create or update event types
+      for (const eventType of eventTypes) {
+        isValidColor(eventType.color);
+        if (eventType.name.trim() === "") {
+          const err: RequestError =  {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data format",
+            expected: true
+          };
+          throw err;
+        }
+
+        if (eventType.eventTypeId === "") {
+          await tx.eventType.create({
             data: {
-              classId: parseInt(session.classId),
+              classId,
               name: eventType.name,
               color: eventType.color
             }
           });
         }
         else {
-          await prisma.eventType.update({
+          await tx.eventType.update({
             where: { eventTypeId: eventType.eventTypeId },
             data: {
-              classId: parseInt(session.classId),
+              classId,
               name: eventType.name,
               color: eventType.color
             }
           });
         }
       }
-      catch {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "Invalid data format",
-          expected: true
-        };
-        throw err;
-      }
-    }
+    });
+
 
     const eventTypeData = await prisma.eventType.findMany({
       where: {
