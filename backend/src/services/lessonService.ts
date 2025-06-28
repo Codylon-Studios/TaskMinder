@@ -77,7 +77,8 @@ const lessonService = {
       throw new Error();
     }
 
-    return JSON.stringify(lessonData, BigIntreplacer);
+    const stringified = JSON.stringify(lessonData, BigIntreplacer);
+    return JSON.parse(stringified);
   },
 };
 

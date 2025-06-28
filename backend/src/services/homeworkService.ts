@@ -223,7 +223,8 @@ const homeworkService = {
 
     await updateCacheData(data, cacheKeyHomeworkData);
 
-    return JSON.stringify(data, BigIntreplacer);
+    const stringified = JSON.stringify(data, BigIntreplacer);
+    return JSON.parse(stringified);
   },
 
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {

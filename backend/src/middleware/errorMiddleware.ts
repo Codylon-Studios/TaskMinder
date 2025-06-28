@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { RequestError } from "../@types/requestError";
 
 import logger from "../utils/logger";
@@ -6,7 +6,10 @@ import logger from "../utils/logger";
 export function ErrorHandler(
   err: RequestError,
   req: Request,
-  res: Response
+  res: Response,
+  // this MUST be included although not needed to let express recognize the error middleware
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: NextFunction
 ): void {
   try {
     if (err.additionalInformation) {
