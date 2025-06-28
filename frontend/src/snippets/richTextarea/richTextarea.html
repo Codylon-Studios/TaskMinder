@@ -88,4 +88,55 @@
       </button>
     </div>
   </div>
+  <div class="rich-textarea-paste-area">This is for pasting content (Elements have to be in the real DOM to have correct display of styles)</div>
+  <div class="toast-container">
+    <div id="rich-textarea-unsupported-input-type" class="toast">
+      <div class="toast-header bg-warning text-white">
+        <b class="me-auto">InputType nicht verfügbar</b>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+        Leider ist der
+        <i>inputType</i>
+        "
+        <i></i>
+        " nicht implementiert.
+        <br />
+        Du kannst aber normal Text eintippen / einfügen, Zeilenumbrüche eingeben und mit der Backspace Taste Text entfernen.
+        <br />
+        Bitte kontaktiere uns per Email oder erstelle einen Github Issue, wenn dir eine Implementation wichtig wäre.
+      </div>
+    </div>
+    <div id="rich-textarea-pasting-error" class="toast">
+      <div class="toast-header bg-danger text-white">
+        <b class="me-auto">Fehler beim Einfügen</b>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">Es gab einen Fehler beim Versuch, Text einzufügen. Vielleicht hast du der Website keine Berechtigung gegeben?</div>
+    </div>
+    <div id="rich-textarea-unsafe-link" class="toast">
+      <div class="toast-header bg-warning text-white">
+        <span class="me-auto fw-bold">
+          Fremder Link:
+          <b></b>
+        </span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+        Achtung, dieser Link führt auf eine andere Website (
+        <b></b>
+        ). Klicke nur auf öffnen, wenn du diese Website kennst.
+        <div class="mt-2 pt-2 border-top">
+          <div class="row g-2 justify-content-end">
+            <div class="col-auto">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
+            </div>
+            <div class="col-auto">
+              <button type="button" class="btn btn-warning btn-sm" data-bs-dismiss="toast" id="rich-textarea-unsafe-link-confirm">Öffnen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>

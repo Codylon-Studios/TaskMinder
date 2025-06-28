@@ -22,7 +22,7 @@ function hsvToRgb({ hue: h, saturation: s, value: v }: { hue: number; saturation
   return { red: r, green: g, blue: b };
 }
 
-function rgbToHex({ red: r, green: g, blue: b }: { red: number; green: number; blue: number }): string {
+export function rgbToHex({ red: r, green: g, blue: b }: { red: number; green: number; blue: number }): string {
   return "#" + [r, g, b].map(val => val.toString(16).padStart(2, "0")).join("");
 }
 

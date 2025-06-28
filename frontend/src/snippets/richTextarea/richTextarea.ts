@@ -1,3 +1,5 @@
+import { rgbToHex } from "../colorPicker/colorPicker.js";
+
 export function richTextToHtml(
   val: string,
   targetElement?: JQuery<HTMLElement>,
@@ -233,9 +235,6 @@ function replaceRichTextareas() {
       return ranges;
     }
     function updateInput() {
-      textarea.css("height", "auto");
-      textarea.css("height", textarea[0].scrollHeight + 2 + "px");
-
       let newVal = "";
 
       textarea.find("span, br").each(function () {
@@ -302,13 +301,29 @@ function replaceRichTextareas() {
     }
 
     const input = $(this);
-    const richTextarea = $($("#rich-textarea-template").html());
+    const richTextareaTemplate = $($("#rich-textarea-template").html());
+    const richTextarea = richTextareaTemplate.filter(".rich-textarea-wrapper");
+    const pasteArea = richTextareaTemplate.filter(".rich-textarea-paste-area");
+    const pasteAreaElement = pasteArea.get(0);
+    if (! pasteAreaElement) {
+      console.error("No paste area found for the rich text area");
+      return;
+    }
+    const pasteAreaShadowRoot = pasteAreaElement.attachShadow({ mode: "open" });
     const textarea = richTextarea.find(".rich-textarea-input");
 
     textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
     textarea.toggleClass("rich-textarea-empty", textarea.html() == "");
-    textarea.css("height", "auto");
-    textarea.css("height", textarea[0].scrollHeight + 2 + "px");
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if ((entry.contentRect.height ?? 0) >= 120) {
+          textarea.css("height", "auto");
+          textarea.css("height", textarea[0].scrollHeight + 2 + "px");
+        }
+      }
+    });
+    resizeObserver.observe(textarea[0]);
 
     const currentStyles = {
       bold: false,
@@ -332,8 +347,6 @@ function replaceRichTextareas() {
     input.on("input change", () => {
       textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
       textarea.toggleClass("rich-textarea-empty", textarea.html() == "");
-      textarea.css("height", "auto");
-      textarea.css("height", Math.max(textarea[0].scrollHeight, 36) + 2 + "px");
     });
 
     function findReplacement(direction: "old" | "new", val: string) {
@@ -352,7 +365,7 @@ function replaceRichTextareas() {
       { old: "...", new: "…" }
     ];
 
-    textarea.on("beforeinput", e => {
+    textarea.on("beforeinput", async e => {
       function copyStyles(node: JQuery<HTMLElement>) {
         for (const styleToggle of styleToggles) {
           if (currentStyles[styleToggle.styleName]) {
@@ -417,8 +430,8 @@ function replaceRichTextareas() {
           }
         }
 
-        range.setStartAfter(newNode[0]);
-        range.setEndAfter(newNode[0]);
+        range.setStartAfter(newNode.last()[0]);
+        range.setEndAfter(newNode.last()[0]);
         window.getSelection()?.removeAllRanges();
         window.getSelection()?.addRange(range);
       }
@@ -489,6 +502,160 @@ function replaceRichTextareas() {
       else if (ev.inputType === "deleteContentBackward") {
         e.preventDefault();
         deleteAtRange();
+      }
+      else if (ev.inputType === "insertFromPaste") {
+        e.preventDefault();
+        try {
+          function getAllNodes(root: Node) {
+            const textNodes: Node[] = [];
+        
+            function recurse(node: Node) {
+              if (
+                (node.nodeType === Node.TEXT_NODE && node.nodeValue !== "") ||
+                (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR")
+              ) {
+                textNodes.push(node);
+              }
+              else {
+                node.childNodes.forEach(recurse);
+              }
+            }
+        
+            recurse(root);
+            return textNodes;
+          }
+          
+          async function extractStyledTextFromBlob(blob: Blob) {
+            function getRealUnderline(element: HTMLElement) {
+              while (element.parentElement) {
+                if (getComputedStyle(element).textDecorationLine == "underline" || element.tagName == "U") {
+                  return true;
+                }
+                if (element.style.textDecorationLine == "none") {
+                  return false;
+                }
+                element = element.parentElement;
+              }
+              return false;
+            }
+            function isSub(element: HTMLElement) {
+              while (element.parentElement) {
+                if (element.tagName == "SUB" || element.style.verticalAlign == "sub") {
+                  return true;
+                }
+                element = element.parentElement;
+              }
+              return false;
+            }
+            function isSup(element: HTMLElement) {
+              while (element.parentElement) {
+                if (element.tagName == "SUP" || element.style.verticalAlign == "super") {
+                  return true;
+                }
+                element = element.parentElement;
+              }
+              return false;
+            }
+            function isLink(element: HTMLElement) {
+              while (element.parentElement) {
+                if (element.tagName == "A" && element.getAttribute("href") !== null) {
+                  return element.getAttribute("href");
+                }
+                element = element.parentElement;
+              }
+              return false;
+            }
+            const result = $("<div></div>");
+            const htmlText = (await blob.text()).replaceAll("\n", "");
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, "text/html");
+            $(doc).find("p").each(function ()  {
+              if ($(this).next().length) {
+                $(this).after("<br>");
+              }
+            });
+          
+            // Get all text nodes and <br> tags
+            const nodes = getAllNodes(doc.body);
+            
+            pasteAreaShadowRoot.appendChild(doc.body);
+            for (const node of nodes) {
+              if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR") {
+                result.append($("<br><span class=\"newline\">&#8203;</span>"));
+                continue;
+              }
+              const parentElement = node.parentElement;
+              if (parentElement) {
+                const computedStyle = getComputedStyle(parentElement);
+                const spans = $(node.textContent?.split("").map(c => c != "" ? `<span>${c}</span>` : "").join("") ?? "");
+                if (parseInt(computedStyle.fontWeight) > 500) {
+                  spans.css("font-weight", "700");
+                }
+                // Get the underline style. As it isn't inehrited normally, you need to iterate over the parents
+                if (getRealUnderline(parentElement)) {
+                  spans.css("text-decoration", "underline");
+                }
+                if (computedStyle.fontStyle == "italic") {
+                  spans.css("font-style", "italic");
+                }
+                let fontSize = parseInt(computedStyle.fontSize);
+                spans.css("font-size", Math.round(fontSize) + "px");
+                if (isSub(parentElement)) {
+                  fontSize /= 0.83;
+                  fontSize = Math.round(fontSize);
+                  spans.addClass("sub");
+                  spans.css("font-size", fontSize * 0.83 + "px");
+                }
+                else if (isSup(parentElement)) {
+                  fontSize /= 0.83;
+                  fontSize = Math.round(fontSize);
+                  spans.addClass("sup");
+                  spans.css("font-size", fontSize * 0.83 + "px");
+                }
+                spans.attr("data-font-size", fontSize);
+                let color = computedStyle.color;
+                if (! ["rgb(33, 37, 41)", "rgb(222, 226, 230)"].includes(color)) {
+                  color = color.substring(4, color.length - 1);
+                  const colors = color.split(", ").map(v => parseInt(v));
+                  const hex = rgbToHex({ red: colors[0], green: colors[1], blue: colors[2] });
+                  spans.attr("data-color", hex);
+                  spans.css("color", hex);
+                }
+                const link = isLink(parentElement);
+                if (link) {
+                  spans.attr( "data-link-url", link.replaceAll("\\", "\\\\").replaceAll(";", "\\;").replaceAll("<", "\\«").replaceAll(">", "\\»") );
+                }
+                result.append(spans);
+              }
+            }
+            pasteAreaShadowRoot.innerHTML = "";
+            return result.html();
+          }
+        
+          const clipboardItems = await navigator.clipboard.read();
+          const blobs: { [key: string]: Blob } = {};
+
+          for (const clipboardItem of clipboardItems) {
+            for (const type of clipboardItem.types) {
+              blobs[type] = await clipboardItem.getType(type);
+            }
+          }
+          
+          const html = blobs["text/html"];
+          const plain = blobs["text/plain"];
+          if (html) {
+            insertAtRange(await extractStyledTextFromBlob(html));
+          }
+          else if (plain) {
+            insertAtRange((await plain.text()).split("").map(c => c != "" ? `<span>${c}</span>` : "").join("") ?? "");
+          }
+          else {
+            $("#rich-textarea-pasting-error").toast("show");
+          }
+        }
+        catch {
+          $("#rich-textarea-pasting-error").toast("show");
+        }
       }
       else {
         e.preventDefault();
@@ -729,7 +896,7 @@ function replaceRichTextareas() {
       }
     });
 
-    input.after(richTextarea).addClass("rich-textarea-replaced");
+    input.after(richTextareaTemplate).addClass("rich-textarea-replaced");
   });
 }
 
@@ -748,45 +915,4 @@ $(() => {
   });
 
   replaceRichTextareas();
-
-  $(".toast-container").append(
-    `<div id="rich-textarea-unsupported-input-type" class="toast">
-      <div class="toast-header bg-warning text-white">
-        <b class="me-auto">InputType nicht verfügbar</b>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-        Leider ist der <i>inputType</i> "<i></i>" nicht implementiert.
-        <br>
-        Du kannst aber normal Text eintippen, Zeilenumbrüche eingeben und mit der Backspace Taste Text entfernen.
-        <br>
-        Bitte kontaktiere uns per Email oder erstelle einen Github Issue, wenn dir eine Implementation wichtig wäre.
-      </div>
-    </div>
-  `,
-    `
-    <div id="rich-textarea-unsafe-link" class="toast">
-      <div class="toast-header bg-warning text-white">
-        <span class="me-auto fw-bold">Fremder Link: <b></b></span>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-      </div>
-      <div class="toast-body">
-        Achtung, dieser Link führt auf eine andere Website (<b></b>).
-        Klicke nur auf öffnen, wenn du diese Website kennst.
-        <div class="mt-2 pt-2 border-top">
-          <div class="row g-2 justify-content-end">
-            <div class="col-auto">
-              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
-            </div>
-            <div class="col-auto">
-              <button type="button" class="btn btn-warning btn-sm" data-bs-dismiss="toast"
-                id="rich-textarea-unsafe-link-confirm">
-                Öffnen
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`
-  );
 });
