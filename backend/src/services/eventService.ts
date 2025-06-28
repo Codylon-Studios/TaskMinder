@@ -73,7 +73,8 @@ export const eventService = {
       throw new Error();
     }
 
-    return JSON.stringify(eventData, BigIntreplacer);
+    const stringified = JSON.stringify(eventData, BigIntreplacer);
+    return JSON.parse(stringified);
   },
 
   async addEvent(
