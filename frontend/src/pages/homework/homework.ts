@@ -10,7 +10,6 @@ import {
   loadHomeworkData,
   msToDisplayDate,
   msToInputDate,
-  runOnce,
   subjectData,
   teamsData,
   updateAll,
@@ -21,7 +20,7 @@ import {
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-const updateHomeworkList = runOnce(async (): Promise<void> => {
+async function updateHomeworkList() {
   const newContent = $("<div></div>");
   let addedElements: JQuery<HTMLElement> = $();
 
@@ -131,9 +130,9 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
   }
   $("#homework-list").empty().append(newContent.children());
   addedElements.trigger("addedToDom");
-});
+};
 
-const updateSubjectList = runOnce(async (): Promise<void> => {
+async function updateSubjectList() {
   // Clear the select element in the add homework modal
   $("#add-homework-subject").empty();
   $("#add-homework-subject").append(
@@ -183,13 +182,13 @@ const updateSubjectList = runOnce(async (): Promise<void> => {
     filterData.subject ??= {};
     filterData.subject[$(this).data("id")] = $(this).prop("checked");
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
   });
 
   localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
-});
+};
 
-const updateTeamList = runOnce(async (): Promise<void> => {
+async function updateTeamList() {
   // Clear the select element in the add homework modal
   $("#add-homework-team").empty();
   $("#add-homework-team").append('<option value="-1" selected>Alle</option>');
@@ -206,7 +205,7 @@ const updateTeamList = runOnce(async (): Promise<void> => {
     $("#add-homework-team").append(templateFormSelect);
     $("#edit-homework-team").append(templateFormSelect);
   });
-});
+};
 
 function addHomework() {
   //
@@ -524,7 +523,7 @@ async function checkHomework(homeworkId: number) {
   }
 }
 
-function resetFilters() {
+function updateFilters(ignoreSubjects?: boolean) {
   $("#filter-changed").addClass("d-none");
 
   const filterData =
@@ -563,8 +562,10 @@ function resetFilters() {
     if (!isSameDay(new Date(filterData.dateUntil), nextMonth))
       $("#filter-changed").removeClass("d-none");
   }
-
-  updateSubjectList();
+  
+  if (! ignoreSubjects) {
+    updateSubjectList();
+  }
 }
 
 $(function () {
@@ -622,10 +623,10 @@ $(function () {
   if (!localStorage.getItem("homeworkFilter")) {
     localStorage.setItem("homeworkFilter", `{}`);
   }
-  resetFilters();
+  updateFilters(true);
   $("#filter-reset").on("click", () => {
     localStorage.setItem("homeworkFilter", `{}`);
-    resetFilters();
+    updateFilters();
     updateAll();
   });
 
@@ -694,7 +695,7 @@ $(function () {
       JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
     filterData.statusUnchecked = $("#filter-status-unchecked").prop("checked");
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateHomeworkList();
   });
 
@@ -704,7 +705,7 @@ $(function () {
       JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
     filterData.statusChecked = $("#filter-status-checked").prop("checked");
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateHomeworkList();
   });
 
@@ -718,7 +719,7 @@ $(function () {
       filterData.subject[$(this).data("id")] = true;
     });
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateHomeworkList();
   });
 
@@ -732,7 +733,7 @@ $(function () {
       filterData.subject[$(this).data("id")] = false;
     });
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateHomeworkList();
   });
 
@@ -742,7 +743,7 @@ $(function () {
       JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
     filterData.dateFrom = $("#filter-date-from").val();
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateHomeworkList();
   });
 
@@ -752,7 +753,7 @@ $(function () {
       JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
     filterData.dateUntil = $("#filter-date-until").val();
     localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateHomeworkList();
   });
 
