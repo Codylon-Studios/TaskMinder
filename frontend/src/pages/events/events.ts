@@ -6,17 +6,17 @@ import {
   joinedTeamsData,
   msToDisplayDate,
   msToInputDate,
-  runOnce,
   teamsData,
   socket,
   csrfToken,
   reloadAll,
-  reloadAllFn
+  reloadAllFn,
+  lessonData
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-const updateEventList = runOnce(async (): Promise<void> => {
+async function updateEventList() {
   // Clear the list
   $("#event-list").empty();
 
@@ -24,20 +24,8 @@ const updateEventList = runOnce(async (): Promise<void> => {
   const editEnabled = $("#edit-toggle").is(":checked");
 
   for (const event of await eventData()) {
-    // Get the information for the event
     const eventId = event.eventId;
     const eventTypeId = event.eventTypeId;
-    const name = event.name;
-    const description = event.description;
-    const startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
-    const lesson = event.lesson;
-    let endDate;
-    if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
-    }
-    else {
-      endDate = null;
-    }
 
     // Filter by type
     if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
@@ -65,21 +53,38 @@ const updateEventList = runOnce(async (): Promise<void> => {
       continue;
     }
 
+    // Get the information for the event
+    const name = event.name;
+    const description = event.description;
+    const startDate = msToDisplayDate(event.startDate);
+    const lesson = event.lesson;
+    let endDate;
+    if (event.endDate) {
+      endDate = msToDisplayDate(event.endDate);
+    }
+    else {
+      endDate = null;
+    }
+
     // The template for an event with edit options
     const template = $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column me-3 event-content-wrapper">
               <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${$.formatHtml(name)}</span>
-              <b>${startDate}${endDate ? ` - ${endDate}` : ""}${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b>
+              <span>${startDate}${endDate ? ` - ${endDate}` : ""}<b>${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b></span>
               <span class="event-description"></span>
             </div>
-            <div class="event-edit-options ${editEnabled ? "" : "d-none"} position-absolute end-0 top-0 m-2">
-              <button class="btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
+            <div class="position-absolute end-0 top-0 m-2 text-end">
+              <button class="event-edit-option ${editEnabled ? "" : "d-none"} btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
                 <i class="fa-solid fa-edit event-${eventTypeId} opacity-75"></i>
               </button>
-              <button class="btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
+              <button class="event-edit-option ${editEnabled ? "" : "d-none"} btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
                 <i class="fa-solid fa-trash event-${eventTypeId} opacity-75"></i>
+              </button>
+              <br class="event-edit-option ${editEnabled ? "" : "d-none"} mb-2">
+              <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}">
+                <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75"></i>
               </button>
             </div>
           </div>
@@ -91,7 +96,8 @@ const updateEventList = runOnce(async (): Promise<void> => {
 
     richTextToHtml(description ?? "", template.find(".event-description"), {
       showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
-      parseLinks: true
+      parseLinks: true,
+      merge: true
     });
     template.find(".event-description").trigger("addedToDom");
   }
@@ -100,9 +106,9 @@ const updateEventList = runOnce(async (): Promise<void> => {
   if ($("#event-list").html() == "") {
     $("#event-list").html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
   }
-});
+};
 
-const updateEventTypeList = runOnce(async (): Promise<void> => {
+async function updateEventTypeList () {
   // Clear the select element in the add event modal
   $("#add-event-type").empty();
   $("#add-event-type").append('<option value="" disabled selected>Art</option>');
@@ -146,13 +152,13 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
     filterData.type ??= {};
     filterData.type[$(this).data("id")] = $(this).prop("checked");
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
   });
 
   localStorage.setItem("eventFilter", JSON.stringify(filterData));
-});
+};
 
-const updateTeamList = runOnce(async (): Promise<void> => {
+async function updateTeamList() {
   // Clear the select element in the add event modal
   $("#add-event-team").empty();
   $("#add-event-team").append('<option value="-1" selected>Alle</option>');
@@ -169,7 +175,7 @@ const updateTeamList = runOnce(async (): Promise<void> => {
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
   });
-});
+};
 
 function addEvent() {
   //
@@ -230,8 +236,6 @@ function addEvent() {
         success: () => {
           // Show a success notification and update the shown events
           $("#add-event-success-toast").toast("show");
-          eventData.reload();
-          updateEventList();
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -262,6 +266,117 @@ function addEvent() {
         }
       }, 1000);
     });
+}
+
+async function shareEvent(eventId: number) {
+  const event = (await eventData()).find(e => e.eventId == eventId);
+  if (!event) return;
+
+  const name = event.name;
+  let description = "";
+  $(richTextToHtml(event.description ?? "")).each(function () {
+    if ($(this).is("br")) {
+      description += "\\n";
+    }
+    else {
+      description += $(this).html();
+    }
+  })
+
+  const format = (num: number) => String(num).padStart(2, "0");
+
+  const formatDateAndTime = (date: Date) => {
+    return date.getUTCFullYear().toString() +
+      format(date.getUTCMonth() + 1) +
+      format(date.getUTCDate()) + "T" +
+      format(date.getUTCHours()) +
+      format(date.getUTCMinutes()) +
+      format(date.getUTCSeconds()) + "Z";
+  };
+
+  const formatDate = (date: Date) => {
+    return date.getUTCFullYear().toString() +
+      format(date.getUTCMonth() + 1) +
+      format(date.getUTCDate())
+  };
+
+  let timeContent = "";
+
+  if (event.lesson !== null && event.lesson !== "") {
+    async function findLessonWithLessonNumber(lessonNumber: number) {
+      return (await lessonData()).find(lesson =>
+        lesson.lessonNumber == lessonNumber
+        && (lesson.teamId == -1 || currentJoinedTeamsData.includes(lesson.teamId))
+        && lesson.weekDay == start.getDay() - 1
+      )
+    }
+    const start = new Date(parseInt(event.startDate));
+    const end = new Date(parseInt(event.startDate));
+    const currentJoinedTeamsData = (await joinedTeamsData());
+    
+    let startLesson, endLesson;
+    if (event.lesson?.includes("-")) {
+      event.lesson = event.lesson.replace(" ", "");
+      startLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[0]))
+      endLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[1]))
+    }
+    else {
+      startLesson = endLesson = await findLessonWithLessonNumber(parseInt(event.lesson))
+    }
+
+    if (! (startLesson && endLesson)) {
+      $("#share-event-error-toast").toast("show")
+      return
+    }
+    const lessonStart = parseInt(startLesson.startTime) / 1000 / 60
+    start.setHours(Math.trunc(lessonStart / 60), lessonStart % 60)
+    
+    const lessonEnd = parseInt(endLesson.endTime) / 1000 / 60
+    end.setHours(Math.trunc(lessonEnd / 60), lessonEnd % 60)
+    timeContent = `
+      DTSTART:${formatDateAndTime(start)}
+      DTEND:${formatDateAndTime(end)}
+    `
+  }
+  else {
+    if (event.endDate == null || event.endDate == "") {
+      event.endDate = event.startDate
+    }
+    const start = new Date(parseInt(event.startDate));
+    const end = new Date(parseInt(event.endDate) + 1000 * 60 * 60 * 24);
+    timeContent = `
+      DTSTART;VALUE=DATE:${formatDate(start)}
+      DTEND;VALUE=DATE:${formatDate(end)}
+    `
+  }
+
+  const icsContent = `
+    BEGIN:VCALENDAR
+    VERSION:2.0
+    PRODID:-//https://taskminder.de
+    BEGIN:VEVENT
+    UID:event-${eventId}@taskminder.de
+    DTSTAMP:${formatDateAndTime(new Date())}
+    ${timeContent}
+    SUMMARY:${name}
+    DESCRIPTION:${description?.replaceAll("\n", "\\n")}
+    END:VEVENT
+    END:VCALENDAR
+  `.split("\n").map(l => l.trim()).join("\n");
+
+  const blob = new Blob([icsContent], { type: "text/calendar" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "event.ics";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+
+  // Aufräumen
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 async function editEvent(eventId: number) {
@@ -328,8 +443,6 @@ async function editEvent(eventId: number) {
         success: () => {
           // Show a success notification and update the shown events
           $("#edit-event-success-toast").toast("show");
-          eventData.reload();
-          updateEventList();
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -394,8 +507,6 @@ function deleteEvent(eventId: number) {
         success: () => {
           // Show a success notification and update the shown events
           $("#delete-event-success-toast").toast("show");
-          eventData.reload();
-          updateEventList();
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -426,7 +537,7 @@ function deleteEvent(eventId: number) {
     });
 }
 
-function resetFilters() {
+function updateFilters(ingoreEventTypes?: boolean) {
   $("#filter-changed").addClass("d-none");
 
   const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
@@ -451,7 +562,9 @@ function resetFilters() {
     if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
   }
 
-  updateEventTypeList();
+  if (! ingoreEventTypes) {
+    updateEventTypeList();
+  }
 }
 
 $(function () {
@@ -460,6 +573,7 @@ $(function () {
     eventTypeData.reload();
     joinedTeamsData.reload();
     teamsData.reload();
+    lessonData.reload();
     await updateEventTypeList();
     await updateEventList();
     await updateTeamList();
@@ -472,7 +586,7 @@ $(function () {
     $("#edit-toggle-label").toggleClass("d-none", !loggedIn);
     $("#show-add-event-button").toggleClass("d-none", !loggedIn);
     if (!loggedIn) {
-      $(".event-edit-options").addClass("d-none");
+      $(".event-edit-option").addClass("d-none");
       $(".event-title").css("margin-right", "0rem");
     }
     return _;
@@ -484,12 +598,12 @@ $(function () {
   $("#edit-toggle").on("click", function () {
     if ($("#edit-toggle").is(":checked")) {
       // On checking the edit toggle, show the add button and edit options
-      $(".event-edit-options").removeClass("d-none");
+      $(".event-edit-option").removeClass("d-none");
       $(".event-title").css("margin-right", "3.75rem");
     }
     else {
       // On unchecking the edit toggle, hide the add button and edit options
-      $(".event-edit-options").addClass("d-none");
+      $(".event-edit-option").addClass("d-none");
       $(".event-title").css("margin-right", "0rem");
     }
   });
@@ -513,10 +627,10 @@ $(function () {
   if (!localStorage.getItem("eventFilter")) {
     localStorage.setItem("eventFilter", "{}");
   }
-  resetFilters();
+  updateFilters(true);
   $("#filter-reset").on("click", () => {
     localStorage.setItem("eventFilter", "{}");
-    resetFilters();
+    updateFilters();
     updateEventList();
   });
 
@@ -569,13 +683,19 @@ $(function () {
     });
   });
 
+  // Share the event on clicking its share icon
+  $(document).on("click", ".event-share", function () {
+    const eventId = $(this).data("id");
+    shareEvent(eventId);
+  });
+
   // Request deleting the event on clicking its delete icon
   $(document).on("click", ".event-delete", function () {
     const eventId = $(this).data("id");
     deleteEvent(eventId);
   });
 
-  // Request editing the event on clicking its delete icon
+  // Request editing the event on clicking its edit icon
   $(document).on("click", ".event-edit", function () {
     const eventId = $(this).data("id");
     editEvent(eventId);
@@ -589,7 +709,7 @@ $(function () {
       filterData.type[$(this).data("id")] = true;
     });
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateEventList();
   });
 
@@ -602,7 +722,7 @@ $(function () {
       filterData.type[$(this).data("id")] = false;
     });
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateEventList();
   });
 
@@ -611,7 +731,7 @@ $(function () {
     const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateFrom = $("#filter-date-from").val();
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateEventList();
   });
 
@@ -620,7 +740,7 @@ $(function () {
     const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateUntil = $("#filter-date-until").val();
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateEventList();
   });
 

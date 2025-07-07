@@ -37,7 +37,8 @@ export default tseslint.config(
       "comma-dangle": ["error", "never"],
       "arrow-parens": ["error", "as-needed"],
       "quotes": ["error", "double", { avoidEscape: true }],
-      "max-len": ["error", { "code": 150 }]
+      "max-len": ["error", { "code": 150 }],
+      "comma-spacing": ["error", { "before": false, "after": true }]
     }
   }
 );

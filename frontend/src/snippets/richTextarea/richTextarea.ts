@@ -1,3 +1,4 @@
+import { deepCompare } from "../../global/global.js";
 import { rgbToHex } from "../colorPicker/colorPicker.js";
 
 export function richTextToHtml(
@@ -7,6 +8,7 @@ export function richTextToHtml(
     showMoreButton?: boolean | JQuery<HTMLElement>;
     parseLinks?: boolean;
     displayBlockIfNewline?: boolean;
+    merge?: boolean;
   }
 ) {
   // Addressing double escaping/unescaping and DOM text reinterpreted as HTML
@@ -90,6 +92,11 @@ export function richTextToHtml(
     resizeObserver.observe(targetElement[0]);
   }
   function parseNormalChar(char: string) {
+    if (deepCompare(previousActiveTags, activeTags) && options?.merge) {
+      const previousSpan = parsedText.find("span").last();
+      previousSpan.html(previousSpan.html() + sanitizeHtml(char));
+      return;
+    }
     const span = $(`<span>${sanitizeHtml(char)}</span>`);
     if (activeTags.some(tag => tag.tagName === "b")) {
       span.css("font-weight", "700");
@@ -134,6 +141,7 @@ export function richTextToHtml(
   const parsedText = $("<div></div>");
   let escaped = false;
   let activeTags: { tagName: string; args: string[] }[] = [];
+  let previousActiveTags: { tagName: string; args: string[] }[] | null = null;
   let inTag = false;
   let activeTagName = "";
   let activeTagArgs: string[] = [];
@@ -193,9 +201,11 @@ export function richTextToHtml(
     }
     else if (char == "\n") {
       parsedText.append('<br><span class="newline">&#8203;</span>');
+      previousActiveTags = null;
     }
     else {
       parseNormalChar(char);
+      previousActiveTags = [ ...activeTags ];
     }
   }
 

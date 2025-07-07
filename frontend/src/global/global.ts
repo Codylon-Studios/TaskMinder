@@ -1,20 +1,6 @@
 import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
 import { user } from "../snippets/navbar/navbar.js";
 
-export function runOnce<F extends (...args: unknown[]) => unknown>(
-  fn: F
-): (...args: Parameters<F>) => Promise<unknown> {
-  async function wrapper(...args: Parameters<F>) {
-    if (wrapper.running) return;
-    wrapper.running = true;
-    const res = await fn(...args);
-    wrapper.running = false;
-    return res;
-  }
-  wrapper.running = false;
-  return wrapper;
-}
-
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
 }
@@ -29,10 +15,30 @@ export function isSite(...sites: (string | RegExp)[]): boolean {
 export function msToDisplayDate(ms: number | string): string {
   const num = typeof ms === "string" ? parseInt(ms) : ms;
   const date = new Date(num);
+
   const day = String(date.getDate());
   const month = String(date.getMonth() + 1);
-  const year = date.getFullYear();
-  return `${day}.${month}.${year}`;
+  const dateStr = `${day}.${month}`;
+
+  const msDate = date.setHours(0, 0, 0, 0);
+  const msToday = new Date().setHours(0, 0, 0, 0);
+  const diff = (msDate - msToday) / (1000 * 60 * 60 * 24);
+
+  const weekDays = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+
+  switch (diff) {
+  case -1: return `<b>gestern</b>, ${dateStr}`;
+  case 0:  return `<b>heute</b>, ${dateStr}`;
+  case 1:  return `<b>morgen</b>, ${dateStr}`;
+  case 2:  return `<b>übermorgen</b>, ${dateStr}`;
+  default: 
+    if (diff < -1 || diff > 6) {
+      return `<b>${dateStr}</b>`;
+    }
+    else {
+      return `<b>${weekDays[date.getDay()]}</b>, ${dateStr}`;
+    }
+  }
 }
 
 export function msToInputDate(ms: number | string): string {
@@ -64,10 +70,11 @@ export function timeToMs(timeStr: string): number {
   return (time[0] * 60 + time[1]) * 60 * 1000;
 }
 
-export function msToTime(ms: number): string {
-  return `${Math.trunc(ms / 1000 / 60 / 60)
+export function msToTime(ms: number | string): string {
+  const num = typeof ms === "string" ? parseInt(ms) : ms;
+  return `${Math.trunc(num / 1000 / 60 / 60)
     .toString()
-    .padStart(2, "0")}:${((ms / 1000 / 60) % 60).toString().padStart(2, "0")}`;
+    .padStart(2, "0")}:${((num / 1000 / 60) % 60).toString().padStart(2, "0")}`;
 }
 
 export function isSameDay(date1: Date, date2: Date): boolean {
@@ -76,6 +83,34 @@ export function isSameDay(date1: Date, date2: Date): boolean {
     date1.getMonth() === date2.getMonth() &&
     date1.getDate() === date2.getDate()
   );
+}
+
+export function deepCompare(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== typeof b) return false;
+  if (a == null || b == null) return false;
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (! deepCompare(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  if (typeof a === "object" && typeof b === "object") {
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+
+    for (const key of keysA) {
+      if (! keysB.includes(key)) return false;
+      if (! deepCompare((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) return false;
+    }
+    return true;
+  }
+
+  return false;
 }
 
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
@@ -129,7 +164,6 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
   const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
   
   const reloadFunction = typeof reload == "string" ? () => {
-    accessor.set(null);
     $.get(reload, data => {
       accessor.set(data);
     });
@@ -184,6 +218,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
 
   accessor.reload = () => {
     if (reloadFunction instanceof Function) {
+      accessor.set(null);
       reloadFunction();
     }
     else (() => {
@@ -220,8 +255,8 @@ export type LessonData = {
   teamId: number;
   subjectId: number;
   room: string;
-  startTime: number;
-  endTime: number;
+  startTime: string;
+  endTime: string;
 }[];
 export const lessonData = createDataAccessor<LessonData>("lessonData", "/lessons/get_lesson_data");
 

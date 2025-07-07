@@ -86,7 +86,7 @@ const homeworkService = {
       });
     }
     else {
-      await prisma.homework10dCheck.delete({
+      await prisma.homework10dCheck.deleteMany({
         where: {
           accountId: accountId,
           homeworkId: homeworkId

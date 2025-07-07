@@ -1180,7 +1180,7 @@ $("#team-selection-save").on("click", async () => {
 // TEAMS
 
 $("#teams-toggle").on("click", function () {
-  $("#teams-list").toggleClass("d-none");
+  $("#teams-wrapper").toggleClass("d-none");
   $(this).toggleClass("rotate-90");
 });
 
@@ -1323,7 +1323,7 @@ $("#teams-save-confirm").on("click", saveTeams);
 // EVENT TYPES
 
 $("#event-types-toggle").on("click", function () {
-  $("#event-types-list").toggleClass("d-none");
+  $("#event-types-wrapper").toggleClass("d-none");
   $(this).toggleClass("rotate-90");
 });
 
@@ -1471,7 +1471,7 @@ $("#event-types-save-confirm").on("click", saveEventTypes);
 // SUBJECTS
 
 $("#subjects-toggle").on("click", function () {
-  $("#subjects-list").toggleClass("d-none");
+  $("#subjects-wrapper").toggleClass("d-none");
   $(this).toggleClass("rotate-90");
 });
 
@@ -1679,7 +1679,7 @@ $("#subjects-save-confirm").on("click", saveSubjects);
 // TIMETABLE
 
 $("#timetable-toggle").on("click", function () {
-  $("#timetable").toggleClass("d-none");
+  $("#timetable-wrapper").toggleClass("d-none");
   $(this).toggleClass("rotate-90");
 });
 
@@ -1702,8 +1702,8 @@ $("#timetable-save").on("click", async () => {
           teamId: parseInt($(this).find(".timetable-team-select").val()?.toString() ?? "-1"),
           subjectId: parseInt($(this).find(".timetable-subject-select").val()?.toString() ?? "-1"),
           room: $(this).find(".timetable-room").val()?.toString() ?? "",
-          startTime: timeToMs($(this).find(".timetable-start-time").val()?.toString() ?? "0:0"),
-          endTime: timeToMs($(this).find(".timetable-end-time").val()?.toString() ?? "0:0")
+          startTime: timeToMs($(this).find(".timetable-start-time").val()?.toString() ?? "0:0") + "",
+          endTime: timeToMs($(this).find(".timetable-end-time").val()?.toString() ?? "0:0") + ""
         });
       });
   });

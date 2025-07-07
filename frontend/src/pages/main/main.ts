@@ -6,7 +6,6 @@ import {
   homeworkData,
   subjectData,
   getHomeworkCheckStatus,
-  runOnce,
   msToDisplayDate,
   substitutionsData,
   classSubstitutionsData,
@@ -34,8 +33,8 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
   // If the day is selected, add the days-overview-selected class
   if (isSameDay(date, selectedDate)) {
     specialClasses += "days-overview-selected ";
-    if (!selectedNewDay) {
-      specialClasses += "days-overview-selected-start ";
+    if (!selectedNewDay || !animations) {
+      specialClasses += "days-overview-selected-no-animation ";
     }
   }
   if ([0, 6].includes(date.getDay())) {
@@ -136,9 +135,9 @@ async function getNewCalendarWeekContent() {
 
   if (calendarMode == "week") {
     newCalendarWeekContent += '<div class="d-flex position-relative">';
-    const weekDates = (await monthDates())[selectedWeek];
+    const weekDates = (await monthDates())[2];
     for (let i = 0; i < 7; i++) {
-      newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], selectedWeek, multiEventPositions);
+      newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], 2, multiEventPositions);
     }
     newCalendarWeekContent += "</div>";
     return newCalendarWeekContent;
@@ -174,6 +173,20 @@ async function loadMonthDates(selectedDate: Date) {
   monthDates([]);
   const monthDatesData: MonthDates = [];
 
+  let selectedDateWeekDay = selectedDate.getDay();
+  selectedDateWeekDay = selectedDateWeekDay == 0 ? 7 : selectedDateWeekDay;
+
+  const firstMonday = new Date(selectedDate);
+  firstMonday.setDate(firstMonday.getDate() - 14 - selectedDateWeekDay + 1);
+
+  for (let week = 0; week < 5; week++) {
+    monthDatesData[week] = [];
+    for (let day = 0; day < 7; day++) {
+      monthDatesData[week].push(new Date(firstMonday));
+      firstMonday.setDate(firstMonday.getDate() + 1);
+    }
+  }
+  /*
   const firstDate = new Date(selectedDate);
   firstDate.setDate(1);
 
@@ -195,12 +208,13 @@ async function loadMonthDates(selectedDate: Date) {
       iteratorDate.setDate(iteratorDate.getDate() + 1);
     }
     weekId++;
-  }
+  }*/
 
   monthDates(monthDatesData);
 }
 
 async function checkHomework(homeworkId: number) {
+  justCheckedHomeworkId = homeworkId;
   // Save whether the user has checked or unchecked the homework
   const checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
 
@@ -271,10 +285,13 @@ async function checkHomework(homeworkId: number) {
     dataString = JSON.stringify(data);
 
     localStorage.setItem("homeworkCheckedData", dataString);
+    
+    homeworkCheckedData.reload();
+    updateHomeworkList();
   }
 }
 
-const updateHomeworkList = runOnce(async (): Promise<void> => {
+async function updateHomeworkList() {
   const currentSubjectData = await subjectData();
   const currentJoinedTeams = await joinedTeamsData();
 
@@ -285,8 +302,9 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     if (currentSubjectData.find(s => s.subjectId == homework.subjectId) === undefined) {
       continue;
     }
-    // Get the information for the homework
+    
     const homeworkId = homework.homeworkId;
+    // Get the information for the homework
     const subject = currentSubjectData.find(s => s.subjectId == homework.subjectId)?.subjectNameLong;
     const content = homework.content;
     const assignmentDate = new Date(parseInt(homework.assignmentDate));
@@ -319,13 +337,30 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     }
 
     // The template for a homework with checkbox and edit options
-    const template = $(`<div class="mb-1 form-check">
-        <label class="form-check-label">
-          <input type="checkbox" class="form-check-input homework-check" data-id="${homeworkId}" ${checked ? "checked" : ""}>
-          <b>${$.formatHtml(subject ?? "")}</b>
+    const template = $(`
+      <div class="mb-1 form-check">
+        <div class="homework-check-wrapper form-check-input invisible">
+          <input type="checkbox" class="form-check-input homework-check visible" id="homework-check-${homeworkId}"
+            data-id="${homeworkId}" ${checked ? "checked" : ""}>
+        </div>
+        <label class="form-check-label" for="homework-check-${homeworkId}">
+          <span class="fw-bold">${$.formatHtml(subject ?? "")}</span>
         </label>
         <span class="homework-content"></span>
-      </div>`);
+      </div>
+    `);
+    
+    if (checked && justCheckedHomeworkId == homeworkId && animations) {
+      justCheckedHomeworkId = -1;
+      template.find(".homework-check-wrapper").append($("<div></div>".repeat(8)).each(
+        function (id) {
+          $(this).attr("data-id", id);
+          setTimeout(() => {
+            $(this).remove();
+          }, 400);
+        }
+      ));
+    }
 
     // Add this homework to the list
     newContent.append(template);
@@ -333,7 +368,8 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
     richTextToHtml(content, template.find(".homework-content"), {
       showMoreButton: true,
       parseLinks: true,
-      displayBlockIfNewline: true
+      displayBlockIfNewline: true,
+      merge: true
     });
     addedElements = addedElements.add(template.find(".homework-content"));
   }
@@ -354,7 +390,7 @@ const updateHomeworkList = runOnce(async (): Promise<void> => {
   }
   $("#homework-list").empty().append(newContent.children());
   addedElements.trigger("addedToDom");
-});
+};
 
 function updateHomeworkMode() {
   if ($("#homework-mode-tomorrow").prop("checked")) {
@@ -370,7 +406,7 @@ function updateHomeworkMode() {
   updateHomeworkList();
 }
 
-const updateEventList = runOnce(async (): Promise<void> => {
+async function updateEventList() {
   // Clear the list
   $("#event-list").empty();
 
@@ -379,19 +415,6 @@ const updateEventList = runOnce(async (): Promise<void> => {
       continue;
     }
 
-    // Get the information for the event
-    const eventTypeId = event.eventTypeId;
-    const name = event.name;
-    const description = event.description;
-    const startDate = msToDisplayDate(event.startDate).split(".").slice(0, 2).join(".");
-    const lesson = event.lesson;
-    let endDate;
-    if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
-    }
-    else {
-      endDate = null;
-    }
     const msStartDate = parseInt(event.startDate);
     const msEndDate = parseInt(event.endDate ?? event.startDate);
 
@@ -405,13 +428,27 @@ const updateEventList = runOnce(async (): Promise<void> => {
       continue;
     }
 
+    // Get the information for the event
+    const eventTypeId = event.eventTypeId;
+    const name = event.name;
+    const description = event.description;
+    const startDate = msToDisplayDate(event.startDate);
+    const lesson = event.lesson;
+    let endDate;
+    if (event.endDate) {
+      endDate = msToDisplayDate(event.endDate);
+    }
+    else {
+      endDate = null;
+    }
+
     // The template for an event
     const template = $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2 d-flex">
             <div class="d-flex flex-column">
               <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
-              <b>${startDate}${endDate ? ` - ${endDate}` : ""}${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b>
+              <span>${startDate}${endDate ? ` - ${endDate}` : ""}<b>${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b></span>
               <span class="event-description"></span>
             </div>
           </div>
@@ -423,7 +460,8 @@ const updateEventList = runOnce(async (): Promise<void> => {
 
     richTextToHtml(description ?? "", template.find(".event-description"), {
       showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
-      parseLinks: true
+      parseLinks: true,
+      merge: true
     });
     template.find(".event-description").trigger("addedToDom");
   }
@@ -432,9 +470,9 @@ const updateEventList = runOnce(async (): Promise<void> => {
   if ($("#event-list").html() == "") {
     $("#event-list").html('<div class="text-secondary">Keine Ereignisse an diesem Tag.</div>');
   }
-});
+};
 
-const updateSubstitutionList = runOnce(async (): Promise<void> => {
+async function updateSubstitutionList() {
   const substitutionsMode = localStorage.getItem("substitutionsMode") ?? "class";
 
   let data: SubstitutionsData;
@@ -521,7 +559,7 @@ const updateSubstitutionList = runOnce(async (): Promise<void> => {
   $("#substitutions-no-entry").addClass("d-none");
   $("#substitutions-no-data").addClass("d-none");
   $("#substitutions-mode-wrapper").removeClass("d-none");
-});
+};
 
 function updateSubstitutionsMode() {
   if ($("#substitutions-mode-class").prop("checked")) {
@@ -537,7 +575,7 @@ function updateSubstitutionsMode() {
   updateSubstitutionList();
 }
 
-const updateTimetable = runOnce(async (): Promise<void> => {
+async function updateTimetable() {
   $("#timetable-less").empty();
   $("#timetable-more").empty();
 
@@ -604,8 +642,8 @@ const updateTimetable = runOnce(async (): Promise<void> => {
         subject.teacherNameLong,
       teacherNameSubstitution: subject.teacherNameSubstitution,
       room: lesson.room,
-      startTime: lesson.startTime,
-      endTime: lesson.endTime
+      startTime: parseInt(lesson.startTime),
+      endTime: parseInt(lesson.endTime)
     });
   }
 
@@ -828,7 +866,8 @@ const updateTimetable = runOnce(async (): Promise<void> => {
 
         richTextToHtml(event.description ?? "", descriptionTemplate, {
           showMoreButton: $(`<a class="event-${event.eventTypeId}" href="#">Mehr anzeigen</a>`),
-          parseLinks: true
+          parseLinks: true,
+          merge: true
         });
         addedDescriptionTemplates = addedDescriptionTemplates.add(descriptionTemplate);
       }
@@ -873,7 +912,7 @@ const updateTimetable = runOnce(async (): Promise<void> => {
     }
     addedDescriptionTemplates.trigger("addedToDom");
   }
-});
+};
 
 function updateTimetableMode() {
   if ([0, 6].includes(selectedDate.getDay())) {
@@ -965,6 +1004,8 @@ $(() => {
   });
   reloadAll();
 });
+
+let justCheckedHomeworkId: number = -1;
 const animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
 
 $(".calendar-week-move-button").on("click", function () {
@@ -1156,7 +1197,6 @@ let calendarMoving = false;
 // Is a list of the dates (number of day in the month) of the week which is currently selected
 type MonthDates = Date[][];
 const monthDates = createDataAccessor<MonthDates>("monthDates");
-let selectedWeek: number;
 
 // Set the visible content of the calendar to today's week
 updateCalendarWeekContent("#calendar-week-old");

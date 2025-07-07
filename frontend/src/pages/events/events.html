@@ -68,7 +68,6 @@
       <div class="container-fluid mt-3 row row-cols-1 row-cols-sm-2 row-cols-md-3 mx-0" id="event-list">
         <!--Gets filled-->
       </div>
-      <textarea class="rich-textarea"></textarea>
 
       <div class="modal fade" id="add-event-modal">
         <div class="modal-dialog">
@@ -239,6 +238,13 @@
             </div>
           </div>
         </div>
+      </div>
+      <div id="share-event-error-toast" class="toast">
+        <div class="toast-header bg-danger text-white">
+          <b class="me-auto">Fehler beim Teilen</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Das Ereignis konnte nicht geteilt werden. Vielleicht ist die Zeit der angegebenen Stunde nie definiert?</div>
       </div>
     </div>
     <div class="load-snippet" data-target="bottombar"></div>

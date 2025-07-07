@@ -45,7 +45,7 @@
   &.days-overview-selected::before {
     opacity: 0.3;
   }
-  &.days-overview-selected:not(.days-overview-selected-start)::before {
+  &.days-overview-selected:not(.days-overview-selected-no-animation)::before {
     animation: 0.3s 1 select-day;
   }
   &:not(.days-overview-selected):hover::before {
@@ -71,12 +71,11 @@
   }
 
   &.days-overview-other-month span {
-    opacity: 30%;
+    transform: skewX(-10deg);
   }
 
-  &.text-body-tertiary:not(.days-overview-today):not(.days-overview-other-month)
-    span {
-    opacity: 60%;
+  &.text-body-tertiary:not(.days-overview-today):not(.days-overview-other-month) span {
+    opacity: 100%;
   }
 
   & .events {
