@@ -1,7 +1,7 @@
-# Server Setup in Production v1.2.0 - stable
+# Server Setup in Production v1.2.1 - stable
 ## What you'll need
 
-* A valid domain (e.g. `codylon.de`)
+* A valid domain (e.g. `taskminder.de`)
 * A server running Ubuntu (≥ 24.04 LTS) with sudo or root access
 * The codebase of TaskMinder from [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)
 
@@ -129,34 +129,58 @@ cd TaskMinder
 ```
 ---
 
+Here’s a revised version of your section with improved language and logical flow:
+
+---
+
 ## 4. Configure NGINX
 
-Modify the ngnix.config to replace codylon.de with your actual domain.
+First, modify the `nginx.config` file to replace `taskminder.de` with your actual domain name.
 
 ```bash
 vi nginx.config
 ```
+
 or
+
 ```bash
 nano nginx.config
 ```
-Then copy/paste the file, get the SSL certificates and activate/start the nginx config
+
+Next, remove all `server` blocks that use `listen 443`—this is necessary to let Certbot handle SSL configuration properly. Keep only the `listen 80` block for now.
+
+### Install Certbot and Obtain SSL Certificates
+
+Install Certbot and its NGINX plugin:
+
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-# 
-sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
+```
 
-# 1. Get certificates first - Don't forget to change `example.com` to your actual domain.
+Run Certbot to obtain SSL certificates (replace `example.com` and subdomains with your actual domains):
+
+```bash
 sudo certbot -d example.com -d www.example.com -d monitoring.example.com
+```
 
-# 2. Deploy your complete config
+Certbot will automatically update the configuration file at `/etc/nginx/sites-available/taskminder`. **Delete this file**, as you’ll be using your custom config instead.
+
+Now that you know the location and filenames of the generated certificates, update your original `nginx.config` at `/opt/TaskMinder/nginx.config`. Replace the certificate paths with the correct ones provided by Certbot.
+
+### Deploy Your Final NGINX Configuration
+
+```bash
+# Copy your updated configuration
 sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
 
-# 3. Enable and activate
+# Enable and test the configuration
 sudo ln -s /etc/nginx/sites-available/taskminder /etc/nginx/sites-enabled/
 sudo nginx -t
+
+# Restart NGINX to apply changes
 sudo systemctl restart nginx
 ```
+
 ---
 
 ## 5. Set Up Non-Root User
