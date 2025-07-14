@@ -489,6 +489,22 @@ $(async () => {
     }
   }
 
+  const params = new URLSearchParams(window.location.search)
+  if (params.has("from-codylon-de")) {
+    $(".toast-container").eq(0).append($(`
+      <div id="from-codylon-toast" class="toast">
+        <div class="toast-header bg-warning text-white">
+          <b class="me-auto">Domain wurde geändert</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+          Unsere Domain hat von <b>codylon.de</b> zu <b>taskminder.de</b> gewechselt.
+          Bitte ändere deine Lesezeichen, Links oder so. Danke!
+        </div>
+      </div>
+    `).toast("show"))
+  }
+
   $(`[data-bs-toggle="tooltip"]`).tooltip();
   new MutationObserver(mutationsList => {
     mutationsList.forEach(mutation => {

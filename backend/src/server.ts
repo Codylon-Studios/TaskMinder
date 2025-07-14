@@ -15,7 +15,6 @@ import socketIO from "./config/socket";
 import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
-import { createDBBackupStreaming } from "./utils/backupTable";
 import cleanupOldHomework from "./utils/homeworkCleanup";
 import {
   csrfProtection,
@@ -256,12 +255,6 @@ app.use(ErrorHandler);
 cron.schedule("0 0 * * *", () => {
   logger.info("Starting scheduled homework cleanup");
   cleanupOldHomework();
-});
-
-// Schedule PostgreSQL backup every hour every day
-cron.schedule("0 * * * *", () => {
-  logger.info("Starting hourly PostgreSQL backup");
-  createDBBackupStreaming();
 });
 
 server.listen(3000, () => {

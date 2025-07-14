@@ -8,7 +8,6 @@ import {
   loadEventData,
   msToDisplayDate,
   msToInputDate,
-  runOnce,
   teamsData,
   updateAll,
   socket,
@@ -18,7 +17,7 @@ import {
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-const updateEventList = runOnce(async (): Promise<void> => {
+async function updateEventList() {
   // Clear the list
   $("#event-list").empty();
 
@@ -115,9 +114,9 @@ const updateEventList = runOnce(async (): Promise<void> => {
       `<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>`
     );
   }
-});
+};
 
-const updateEventTypeList = runOnce(async (): Promise<void> => {
+async function updateEventTypeList () {
   // Clear the select element in the add event modal
   $("#add-event-type").empty();
   $("#add-event-type").append(
@@ -169,13 +168,13 @@ const updateEventTypeList = runOnce(async (): Promise<void> => {
     filterData.type ??= {};
     filterData.type[$(this).data("id")] = $(this).prop("checked");
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
   });
 
   localStorage.setItem("eventFilter", JSON.stringify(filterData));
-});
+};
 
-const updateTeamList = runOnce(async (): Promise<void> => {
+async function updateTeamList() {
   // Clear the select element in the add event modal
   $("#add-event-team").empty();
   $("#add-event-team").append('<option value="-1" selected>Alle</option>');
@@ -192,7 +191,7 @@ const updateTeamList = runOnce(async (): Promise<void> => {
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
   });
-});
+};
 
 function addEvent() {
   //
@@ -282,7 +281,7 @@ function addEvent() {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
@@ -378,7 +377,7 @@ async function editEvent(eventId: number) {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
@@ -442,11 +441,11 @@ function deleteEvent(eventId: number) {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
-function resetFilters() {
+function updateFilters(ingoreEventTypes?: boolean) {
   $("#filter-changed").addClass("d-none");
 
   const filterData =
@@ -472,7 +471,9 @@ function resetFilters() {
       $("#filter-changed").removeClass("d-none");
   }
 
-  updateEventTypeList();
+  if (! ingoreEventTypes) {
+    updateEventTypeList();
+  }
 }
 
 $(function () {
@@ -534,10 +535,10 @@ $(function () {
   if (!localStorage.getItem("eventFilter")) {
     localStorage.setItem("eventFilter", `{}`);
   }
-  resetFilters();
+  updateFilters(true);
   $("#filter-reset").on("click", () => {
     localStorage.setItem("eventFilter", `{}`);
-    resetFilters();
+    updateFilters();
     updateAll();
   });
 
@@ -609,7 +610,7 @@ $(function () {
       filterData.type[$(this).data("id")] = true;
     });
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateEventList();
   });
 
@@ -623,7 +624,7 @@ $(function () {
       filterData.type[$(this).data("id")] = false;
     });
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateEventList();
   });
 
@@ -633,7 +634,7 @@ $(function () {
       JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateFrom = $("#filter-date-from").val();
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateEventList();
   });
 
@@ -643,7 +644,7 @@ $(function () {
       JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateUntil = $("#filter-date-until").val();
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    resetFilters();
+    updateFilters();
     updateEventList();
   });
 

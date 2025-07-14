@@ -38,7 +38,7 @@ async function registerAccount(username: string, password: string) {
     if (!hasResponded) {
       $navbarToasts.serverError.toast("show");
     }
-  }, 1000);
+  }, 5000);
 }
 
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
@@ -82,7 +82,7 @@ async function loginAccount(username: string, password: string) {
     if (!hasResponded) {
       $navbarToasts.serverError.toast("show");
     }
-  }, 1000);
+  }, 5000);
 }
 
 //LOGOUT -- LOGOUT -- LOGOUT
@@ -115,7 +115,7 @@ async function logoutAccount() {
     if (!hasResponded) {
       $navbarToasts.serverError.toast("show");
     }
-  }, 1000);
+  }, 5000);
 }
 
 function checkExistingUsername(username: string) {
@@ -149,7 +149,7 @@ function checkExistingUsername(username: string) {
       if (!hasResponded) {
         $navbarToasts.serverError.toast("show");
       }
-    }, 1000);
+    }, 5000);
   });
 }
 

@@ -1,17 +1,18 @@
 .bottombar {
-  border: 0 solid var(--bs-secondary-bg);
-  border-top-width: 0.3rem;
+  border: 0 solid rgba(0, 0, 0, 0.25);
+  border-top-width: 0.5px;
 }
 
 .bottombar-link {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 19%;
+  width: 20%;
   border-radius: 0;
-
-  &:nth-child(3) {
-    width: 24%;
+  cursor: pointer;
+  &.bottombar-link-deactivated {
+    cursor: auto;
+    opacity: 0.5;
   }
 
   &.bottombar-current-link {
@@ -19,7 +20,7 @@
   }
 
   & i {
-    font-size: calc(1.3rem + 0.6vw);
-    margin: 1rem;
+    font-size: 1.2rem;
+    margin: 0.8rem;
   }
 }

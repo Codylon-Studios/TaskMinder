@@ -1127,7 +1127,7 @@ $("#team-selection-save").on("click", async () => {
       if (!hasResponded) {
         $navbarToasts.serverError.toast("show");
       }
-    }, 1000);
+    }, 5000);
   } else {
     localStorage.setItem("joinedTeamsData", JSON.stringify(newJoinedTeamsData));
     teamsData(null);
@@ -1266,7 +1266,7 @@ async function saveTeams() {
     if (!hasResponded) {
       $navbarToasts.serverError.toast("show");
     }
-  }, 1000);
+  }, 5000);
 }
 
 $("#teams-save").on("click", () => {
@@ -1424,7 +1424,7 @@ async function saveEventTypes() {
     if (!hasResponded) {
       $navbarToasts.serverError.toast("show");
     }
-  }, 1000);
+  }, 5000);
 }
 
 $("#event-types-save").on("click", () => {
@@ -1681,7 +1681,7 @@ async function saveSubjects() {
     if (!hasResponded) {
       $navbarToasts.serverError.toast("show");
     }
-  }, 1000);
+  }, 5000);
 }
 
 $("#subjects-save").on("click", () => {
@@ -1799,5 +1799,5 @@ $("#timetable-save").on("click", async () => {
     if (!hasResponded) {
       $navbarToasts.serverError.toast("show");
     }
-  }, 1000);
+  }, 5000);
 });
