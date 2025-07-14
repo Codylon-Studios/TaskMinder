@@ -4,6 +4,24 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v1.2.1] - 2025-07-14
+
+### Added
+
+* add codylon.de migration toast
+
+### Changed
+
+* Increase timeout to 5 seconds
+* migrate to extern sh script
+
+### Fixed
+
+* sometimes no homework & events appear on their own site
+* fix cache stringify issue
+
+---
+
 ## \[v1.2.0] - 2025-06-10
 
 ### Breaking Change - License

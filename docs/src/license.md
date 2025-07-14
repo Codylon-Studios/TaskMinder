@@ -64,4 +64,4 @@ This disclaimer does not affect liability which cannot be excluded under applica
 ### Contact
 
 For commercial licensing or other inquiries, please contact:  
-[contact@codylon.de](mailto:contact@codylon.de)
+[info@taskminder.de](mailto:info@taskminder.de)

@@ -3,7 +3,7 @@ docs_dir: src
 site_dir: dist
 # Project information
 site_name: TaskMinder Docs
-site_url: https://docs.codylon.de
+site_url: https://docs.taskminder.de
 site_author: Mingqi Li, Fabian Leonardi
 site_description: >-
   Technical Documentation for TaskMinder.
