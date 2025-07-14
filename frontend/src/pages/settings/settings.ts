@@ -1007,7 +1007,7 @@ $(async () => {
 
       try {
         await navigator.clipboard.writeText(
-          `https://codylon.de/join?classcode=${value}&action=join`
+          `https://taskminder.de/join?classcode=${value}&action=join`
         );
 
         $classcodeCopyText.addClass("d-none");

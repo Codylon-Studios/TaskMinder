@@ -207,4 +207,4 @@ Time-series data across multiple tables could reveal:
 * **Stable Version Alignment:** v1.2.1
 * **Last Updated:** July 14, 2025
 * **Next Scheduled Review:** Quarterly – September 1, 2025
-* **Technical Contact:** [info@codylon.de](mailto:info@codylon.de)
+* **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)
