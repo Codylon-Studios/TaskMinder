@@ -281,7 +281,7 @@ function addEvent() {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
@@ -377,7 +377,7 @@ async function editEvent(eventId: number) {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
@@ -441,7 +441,7 @@ function deleteEvent(eventId: number) {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 

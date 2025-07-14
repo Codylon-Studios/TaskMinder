@@ -291,7 +291,7 @@ function addHomework() {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
@@ -384,7 +384,7 @@ async function editHomework(homeworkId: number) {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
@@ -448,7 +448,7 @@ function deleteHomework(homeworkId: number) {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
@@ -499,7 +499,7 @@ async function checkHomework(homeworkId: number) {
         // If the server hasn't answered, show the internal server error notification
         $navbarToasts.serverError.toast("show");
       }
-    }, 1000);
+    }, 5000);
   } else {
     // The user is not logged in
 

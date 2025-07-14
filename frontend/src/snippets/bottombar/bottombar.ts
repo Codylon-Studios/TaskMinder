@@ -15,18 +15,20 @@ const availableLinks = [
 const siteName = location.pathname.replace(/\/$/, "")
 const siteIndex = availableLinks.indexOf(siteName) ?? -1
 
-if (! user.classJoined) {
-  $(".bottombar-link").eq(1).addClass("bottombar-link-deactivated")
-  $(".bottombar-link").eq(3).addClass("bottombar-link-deactivated")
-}
+$(".bottombar-link").eq(1).toggleClass("bottombar-link-deactivated", ! user.classJoined)
+$(".bottombar-link").eq(3).toggleClass("bottombar-link-deactivated", ! user.classJoined)
+user.on("login", () => {
+  $(".bottombar-link").eq(1).toggleClass("bottombar-link-deactivated", ! user.classJoined)
+  $(".bottombar-link").eq(3).toggleClass("bottombar-link-deactivated", ! user.classJoined)
+});
 
 $(".bottombar-link").eq(siteIndex).addClass("bottombar-current-link")
 if (siteIndex == 5) {
   $(".bottombar-link").eq(2).addClass("bottombar-current-link")
 }
 $(".bottombar-link").each(function (id) {
-  if ($(this).is(".bottombar-link-deactivated")) return
-  $(this).on("click", () => {
+  $(this).on("click", function () {
+    if ($(this).is(".bottombar-link-deactivated")) return
     location.href = availableLinks[id];
   });
 });
