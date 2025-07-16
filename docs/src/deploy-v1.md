@@ -1,4 +1,4 @@
-# Server Setup in Production v1.2.1 - stable
+# Server Setup in Production v1.2.2 - stable
 ## What you'll need
 
 * A valid domain (e.g. `taskminder.de`)

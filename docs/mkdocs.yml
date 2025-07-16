@@ -40,7 +40,7 @@ theme:
 nav:
   - Home: index.md
   - Development: development.md
-  - Production (v1-stable-v1.2.0): deploy-v1.md
+  - Production (v1-stable-v1.2.2): deploy-v1.md
   - Production (v2-unstable): deploy-v2.md
   - Migrations (preview): migrations.md
   - Data Processing: data-processing.md
