@@ -489,8 +489,7 @@ $(async () => {
     }
   }
 
-  const params = new URLSearchParams(window.location.search)
-  if (params.has("from-codylon-de")) {
+  if (window.location.host == "codylon.de") {
     $(".toast-container").eq(0).append($(`
       <div id="from-codylon-toast" class="toast">
         <div class="toast-header bg-warning text-white">
