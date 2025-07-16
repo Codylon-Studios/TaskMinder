@@ -10,35 +10,57 @@ function checkUsername(username: string) {
 }
 
 export default {
-  async getAuth(session: Session & Partial<SessionData>) {
-    type AuthResponse = {
-      loggedIn?: boolean;
-      classJoined?: boolean;
-      account?: {
-        username: string;
-      };
+  async getAuth( session: Session & Partial<SessionData>) {
+  type AuthResponse = {
+    loggedIn: boolean;
+    classJoined: boolean;
+    account?: {
+      username: string;
     };
+    permissionLevel?: number;
+  };
 
-    const res: AuthResponse = {};
-    if (!session) {
-      res.loggedIn = false;
-      res.classJoined = false;
-    }
-    if (session.account) {
+  if (!session) {
+    return { loggedIn: false, classJoined: false };
+  }
+
+  const res: AuthResponse = {
+    loggedIn: false,
+    classJoined: false
+  };
+
+  if (session.account) {
+    const accountInDb = await prisma.account.findUnique({
+      where: { accountId: session.account.accountId },
+      select: { permissionSetting: true }
+    });
+
+    if (!accountInDb) {
+      delete session.account;
+    } 
+    else {
       res.loggedIn = true;
-      const username = session.account.username;
-      res.account = { username };
+      res.account = { username: session.account.username };
+      res.permissionLevel = accountInDb.permissionSetting ?? 0;
     }
+  }
+
+  if (!res.loggedIn && session.classId) {
+    const classInDb = await prisma.class.findUnique({
+      where: { classId: parseInt(session.classId, 10) },
+      select: { permissionDefaultSetting: true }
+    });
+
+    if (!classInDb) {
+      delete session.classId;
+    } 
     else {
-      res.loggedIn = false;
+      res.permissionLevel = classInDb.permissionDefaultSetting;
     }
-    if (session.classId) {
-      res.classJoined = true;
-    }
-    else {
-      res.classJoined = false;
-    }
-    return res;
+  }
+  res.classJoined = !!session.classId;
+
+  return res;
   },
   async registerAccount(reqData: { username: string; password: string }, session: Session & Partial<SessionData>) {
     const { username, password } = reqData;
@@ -104,24 +126,7 @@ export default {
   },
 
   async logoutAccount(session: Session & Partial<SessionData>) {
-    if (!session.account) {
-      const err: RequestError = {
-        name: "OK",
-        status: 200,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-
     delete session.account;
-
-    await new Promise<void | Error>((resolve, reject) => {
-      session.save((err: unknown) => {
-        if (err) return err instanceof Error ? reject(err) : reject(new Error("Error saving session during logout"));
-        resolve();
-      });
-    });
   },
 
   async loginAccount(reqData: { username: string; password: string }, session: Session & Partial<SessionData>) {
@@ -183,33 +188,25 @@ export default {
   },
 
   async deleteAccount(password: string, session: Session & Partial<SessionData>) {
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Not logged in",
-        additionalInformation: "The requesting session is not logged in!",
-        expected: true
-      };
-      throw err;
-    }
-    const username = session.account.username;
+    // account and session.account certainly exist here 
+    // -> checkAccess.checkAccount middleware
+    const username = session!.account!.username;
     const account = await prisma.account.findUnique({
       where: {
         username: username
       }
     });
-    if (!account) {
+    if (account!.permissionSetting === 3){
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
-        message: "Not logged in",
-        additionalInformation: "The account requested to be deleted does not exist!",
+        message: "Admin still in class",
+        additionalInformation: "The account is still an admin in a class, leave the class first",
         expected: true
       };
       throw err;
     }
-    const isPasswordValid = await bcrypt.compare(password, account.password);
+    const isPasswordValid = await bcrypt.compare(password, account!.password);
     if (!isPasswordValid) {
       const err: RequestError = {
         name: "Unauthorized",
@@ -219,13 +216,65 @@ export default {
       };
       throw err;
     }
+    await prisma.deletedAccount.create({
+      data: {
+        deletedUsername: account!.username,
+        deletedPassword: account!.password,
+        deletedAccountId: account!.accountId,
+        deletedOn: Date.now()
+      }
+    });
     await prisma.account.delete({
       where: {
         username: username
       }
     });
-    session.destroy((err: unknown) => {
-      if (err) throw err instanceof Error ? err : new Error("Error destroying session during account deletion");
+    delete session.account;
+  },
+
+  async changeUsername(newUsername: string, session: Session & Partial<SessionData>) {
+    await prisma.account.update({
+      where: {
+        accountId: session.account!.accountId
+      },
+      data: {
+        username: newUsername
+      }
+    });
+  },
+
+  async changePassword(
+    reqData: {
+      oldPassword: string;
+      newPassword: string;
+    },
+    session: Session & Partial<SessionData>
+  ) {
+    const {oldPassword, newPassword } = reqData;
+    const changePasswordAccount = await prisma.account.findUnique({
+      where: {
+        accountId: session.account!.accountId
+      }
+    });
+
+    const isPasswordValid = await bcrypt.compare(oldPassword, changePasswordAccount!.password);
+    if (!isPasswordValid) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "Invalid credentials",
+        expected: true
+      };
+      throw err;
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, SALTROUNDS);
+    await prisma.account.update({
+      where: {
+        accountId: session.account!.accountId
+      },
+      data: {
+        password: hashedPassword
+      }
     });
   },
 
@@ -236,50 +285,75 @@ export default {
     return accountExists != null;
   },
 
+
   async joinClass(classcode: string, session: Session & Partial<SessionData>) {
     if (session.classId) {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
-        message: "Already joined class",
+        message: "Already in a class",
+        expected: true
+      };
+      throw err;
+    }
+    const targetClass = await prisma.class.findUnique({
+      where: {
+        classCode: classcode
+      }
+    });
+    if (!targetClass) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Invalid class code",
         expected: true
       };
       throw err;
     }
 
-    const existingClass = await prisma.class.findUnique({
-      where: {
-        classCode: classcode
-      }
-    });
+    // checkAccess.checkAccount middleware
+    const { accountId } = session.account!;
 
-    if (existingClass) {
-      session.classId = existingClass.classId.toString();
-      if (session.account) {
-        const accountId = session.account.accountId;
-        const joinedClassExists = await prisma.joinedClass.findUnique({
-          where: {
-            accountId: accountId
+    await prisma.$transaction(async tx => {
+      const existingJoin = await tx.joinedClass.findUnique({
+        where: { accountId }
+      });
+
+      if (existingJoin) {
+        // DB says user is in a class, but it's not the one they're trying to join
+        if (existingJoin.classId !== targetClass.classId) {
+          throw {
+            name: "Conflict",
+            status: 409,
+            message: "Account is already linked to a different class in the database.",
+            expected: true
+          };
+        }
+      
+        // DB and target class match, but session was out of sync
+        await tx.account.update({
+          where: { accountId },
+          data: {
+            permissionSetting: targetClass.permissionDefaultSetting
           }
         });
-        if (joinedClassExists == null) {
-          await prisma.joinedClass.create({
-            data: {
-              accountId: accountId,
-              classId: existingClass.classId
-            }
-          });
-        }
-      }
-      return;
-    }
 
-    const err: RequestError = {
-      name: "Unauthorized",
-      status: 401,
-      message: "Invalid classcode",
-      expected: true
-    };
-    throw err;
+      } 
+      else {
+        await tx.joinedClass.create({
+          data: {
+            accountId: accountId,
+            classId: targetClass.classId
+          }
+        });
+        await tx.account.update({
+          where: { accountId },
+          data: {
+            permissionSetting: targetClass.permissionDefaultSetting
+          }
+        });
+      }
+    });
+    session.classId = targetClass.classId.toString();
   }
 };

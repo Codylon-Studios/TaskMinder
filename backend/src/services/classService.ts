@@ -37,36 +37,11 @@ function generateRandomBase62String(length: number = 20): string {
 
 const classService = {
   async getClassInfo(session: Session & Partial<SessionData>) {
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
 
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
-
+    // checkAcces.checkClass middleware
     const classInfo = await prisma.class.findUnique({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
     if (!classInfo){
@@ -101,21 +76,11 @@ const classService = {
       dsbMobileClass
     } = reqData;
   
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Not logged in",
-        additionalInformation: "The requesting session is not logged in!",
-        expected: true
-      };
-      throw err;
-    }
     if (session.classId) {
       const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User logged into class",
+        name: "Forbidden",
+        status: 403,
+        message: "User logged in into class",
         expected: true
       };
       throw err;
@@ -127,7 +92,8 @@ const classService = {
       classCode: classCode,
       classCreated: Date.now(),
       isTestClass: false,
-      dsbMobileActivated: dsbMobileActivated
+      dsbMobileActivated: dsbMobileActivated,
+      permissionDefaultSetting: 0 // default setting when creating class is 0 - read only
     };
   
     if (dsbMobileActivated) {
@@ -145,9 +111,33 @@ const classService = {
       baseData.dsbMobilePassword = dsbMobilePassword;
       baseData.dsbMobileClass = dsbMobileClass;
     }
+
+    await prisma.$transaction(async tx => {
   
-    await prisma.class.create({
-      data: baseData
+      const createdClass = await tx.class.create({
+        data: baseData
+      });
+
+      session.classId = createdClass.classId.toString();
+
+      // add user to classJoined table 
+      // change permission of user which created the account to admin
+      await tx.joinedClass.create({
+        data: {
+          accountId: session.account!.accountId,
+          classId: createdClass.classId
+        }
+      });
+
+      await tx.account.update({
+        where: {
+          accountId: session.account!.accountId
+        },
+        data: {
+          permissionSetting: 3 // class creator has highest role level -> admin
+        }
+      });
+
     });
   },
   
@@ -171,16 +161,6 @@ const classService = {
       dsbMobileClass
     } = reqData;
   
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Not logged in",
-        additionalInformation: "The requesting session is not logged in!",
-        expected: true
-      };
-      throw err;
-    }
     if (session.classId) {
       const err: RequestError = {
         name: "Unauthorized",
@@ -216,21 +196,35 @@ const classService = {
       baseData.dsbMobileClass = dsbMobileClass;
     }
   
-    await prisma.class.create({
-      data: baseData
+
+    await prisma.$transaction(async tx => {
+  
+      const createdClass = await tx.class.create({
+        data: baseData
+      });
+
+      session.classId = createdClass.classId.toString();
+
+      // add user to classJoined table 
+      // change permission of user which created the account to admin
+      await tx.joinedClass.create({
+        data: {
+          accountId: session.account!.accountId,
+          classId: createdClass.classId
+        }
+      });
+
+      await tx.account.update({
+        where: {
+          accountId: session.account!.accountId
+        },
+        data: {
+          permissionSetting: 3 // class creator has highest role level -> admin
+        }
+      });
     });
   },
   async generateNewClassCode(session: Session & Partial<SessionData>){
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Not logged in",
-        additionalInformation: "The requesting session is not logged in!",
-        expected: true
-      };
-      throw err;
-    }
     if (session.classId) {
       const err: RequestError = {
         name: "Unauthorized",
@@ -261,76 +255,114 @@ const classService = {
       name: "Server Error",
       status: 500,
       message: "Could not generate unique class code",
-      additionalInformation: "All randomly generated class codes were already in use.",
+      additionalInformation: "All randomly generated class codes were already in use",
       expected: false
     };
     throw err;
   },
-  async leaveClass(session: Session & Partial<SessionData>){
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    // currently allow that a class with no members can exist
-    // add deleting stuff when last user with user role addition
-    delete session.classId;
+  async leaveClass(session: Session & Partial<SessionData>) {
     if (session.account) {
-      await prisma.joinedClass.delete({
-        where: {
-          accountId: session.account.accountId
+      await prisma.$transaction(async tx => {
+        const allMembers = await tx.joinedClass.findMany({
+          where: {
+            classId: parseInt(session.classId!)
+          },
+          include: {
+            Account: {
+              select: {
+                accountId: true,
+                permissionSetting: true
+              }
+            }
+          }
+        });
+
+        const currentUserMemberInfo = allMembers.find(
+          member => member.accountId === session.account!.accountId
+        );
+
+        if (!currentUserMemberInfo || !currentUserMemberInfo.Account) {
+          delete session.classId;
+          delete session.account;
+          const err: RequestError = {
+            name: "Unauthorized",
+            status: 401,
+            message: "Session account not found in the class. Logging out of class",
+            expected: true
+          };
+          throw err;
         }
+
+        const leavingUserIsAdmin = currentUserMemberInfo.Account.permissionSetting === 3;
+
+        if (leavingUserIsAdmin) {
+          if (allMembers.length === 1) {
+            const err: RequestError = {
+              name: "Bad Request",
+              status: 400,
+              message: "You are the last user. Please delete the class instead",
+              expected: true
+            };
+            throw err;
+          }
+
+          const adminsInClass = allMembers.filter(
+            member => member.Account?.permissionSetting === 3
+          );
+
+          if (adminsInClass.length === 1) {
+            const err: RequestError = {
+              name: "Bad Request",
+              status: 400,
+              message: "You are the only admin. Please promote another member before leaving.",
+              expected: true
+            };
+            throw err;
+          }
+        }
+
+        await tx.joinedClass.delete({
+          where: {
+            accountId: session.account!.accountId
+          }
+        });
+
+        await tx.account.update({
+          where: {
+            accountId: session.account!.accountId
+          },
+          data: {
+            permissionSetting: null
+          }
+        });
       });
     }
-  },
-  async deleteClass(session: Session & Partial<SessionData>){
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Not logged in",
-        additionalInformation: "The requesting session is not logged in!",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
 
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
-    // delete class
-    // all corresponding teams, homework, event data etc. will be deleted through onCascade
-    await prisma.class.delete({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
     delete session.classId;
+  },
+  async deleteClass(session: Session & Partial<SessionData>) {
+    await prisma.$transaction(async tx => {
+      const classIdToDelete = parseInt(session.classId!);
+
+      await tx.account.updateMany({
+        where: {
+          JoinedClass: {
+            classId: classIdToDelete
+          }
+        },
+        data: {
+          permissionSetting: null
+        }
+      });
+
+      await tx.class.delete({
+        where: {
+          classId: classIdToDelete
+        }
+      });
+
+      delete session.classId;
+    });
   },
   async updateDSBMobileData(
     reqData: {
@@ -348,52 +380,89 @@ const classService = {
       dsbMobileClass
     } = reqData;
 
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Not logged in",
-        additionalInformation: "The requesting session is not logged in!",
-        expected: true
-      };
-      throw err;
-    }
-
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
-
     await prisma.class.update({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       },
       data: {
         dsbMobileActivated: dsbMobileActivated,
         dsbMobileUser: dsbMobileUser,
         dsbMobilePassword: dsbMobilePassword,
         dsbMobileClass: dsbMobileClass
+      }
+    });
+  },
+  async changeDefaultPermission(
+    reqData: {
+      defaultPermission: number;
+    },
+    session: Session & Partial<SessionData>
+  ) {
+    const {
+      defaultPermission
+    } = reqData;
+    await prisma.class.update({
+      where: {
+        classId: parseInt(session.classId!, 10)
+      },
+      data: {
+        permissionDefaultSetting: defaultPermission
+      }
+    });
+  },
+  async setClassMembersPermissions(
+    members: {
+      accountId: number;
+      permissionLevel: number;
+    }[]
+  ) {
+    await prisma.$transaction(async tx => {
+      for (const member of members) {
+        await tx.account.update({
+          where: { accountId: member.accountId },
+          data: {
+            permissionSetting: member.permissionLevel
+          }
+        });
+      }
+    });
+
+  },
+  async getClassMembers(session: Session & Partial<SessionData>) {
+    const classMembers = await prisma.joinedClass.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      },
+      select: {
+        Account: {
+          select: {
+            username: true,
+            permissionSetting: true
+          }
+        }
+      }
+    });
+    return classMembers.map(item => item.Account);
+  },
+  async kickClassMember(
+    reqData: {
+      accountId: number;
+    }
+  ) {
+    const {
+      accountId
+    } = reqData;
+    await prisma.account.update({
+      where: {
+        accountId: accountId
+      },
+      data: {
+        permissionSetting: null
+      }
+    });
+    await prisma.joinedClass.delete({
+      where: {
+        accountId: accountId
       }
     });
   }

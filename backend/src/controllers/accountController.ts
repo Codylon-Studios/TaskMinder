@@ -136,6 +136,62 @@ export const getAuth = asyncHandler(async (req, res, next) => {
   }
 });
 
+export const changeUsername = asyncHandler(async (req, res, next) => {
+  const changeUsernameSchema = z.object({
+    username: z.string()
+  });
+  const parseResult = changeUsernameSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    res.status(400).json({
+      error: "Invalid request format",
+      expectedFormat: {
+        type: "object",
+        properties: {
+          username: { type: "string", pattern: "/^\\w{4,20}$/" }
+        },
+        required: ["username"]
+      }
+    });
+    return;
+  }
+  try {
+    await accountService.changeUsername(parseResult.data.username, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+});
+
+export const changePassword = asyncHandler(async (req, res, next) => {
+  const changeUsernameSchema = z.object({
+    oldPassword: z.string(),
+    newPassword: z.string()
+  });
+  const parseResult = changeUsernameSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    res.status(400).json({
+      error: "Invalid request format",
+      expectedFormat: {
+        type: "object",
+        properties: {
+          oldPassword: { type: "string" },
+          newPassword: { type: "string" }
+        },
+        required: ["oldPassword", "newPassword"]
+      }
+    });
+    return;
+  }
+  try {
+    await accountService.changePassword(parseResult.data, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+});
+
 export const checkUsername = asyncHandler(async (req, res, next) => {
   const checkUsernameSchema = z.object({
     username: z.string()
@@ -170,5 +226,7 @@ export default {
   logoutAccount,
   deleteAccount,
   getAuth,
-  checkUsername
+  checkUsername,
+  changeUsername,
+  changePassword
 };

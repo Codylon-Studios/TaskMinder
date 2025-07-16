@@ -18,46 +18,11 @@ const lessonService = {
     }[],
     session: Session & Partial<SessionData>
   ) {
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
-
     for (const lesson of lessons) {
       isValidweekDay(lesson.weekDay);
     }
 
-    const classId = parseInt(session.classId);
+    const classId = parseInt(session.classId!);
     if (isNaN(classId)) {
       const err: RequestError = {
         name: "Bad Request",
@@ -105,11 +70,11 @@ const lessonService = {
 
     const lessonData = await prisma.lesson.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
 
-    const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId);
+    const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
 
     try {
       await updateCacheData(lessonData, setLessonDataCacheKey);
@@ -120,32 +85,7 @@ const lessonService = {
     }
   },
   async getLessonData(session: Session & Partial<SessionData>) {
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
-    const getLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId);
+    const getLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
     const cachedLessonData = await redisClient.get(getLessonDataCacheKey);
 
     if (cachedLessonData) {
@@ -160,7 +100,7 @@ const lessonService = {
 
     const lessonData = await prisma.lesson.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
 

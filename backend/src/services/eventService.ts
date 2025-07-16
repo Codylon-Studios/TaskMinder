@@ -16,33 +16,8 @@ import { RequestError } from "../@types/requestError";
 
 export const eventService = {
   async getEventData(session: Session & Partial<SessionData>) {
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
 
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
-
-    const getEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId);
+    const getEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
 
     const cachedEventData = await redisClient.get(getEventDataCacheKey);
 
@@ -58,7 +33,7 @@ export const eventService = {
 
     const eventData = await prisma.event.findMany({
       where: { 
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       },
       orderBy: {
         startDate: "asc"
@@ -90,47 +65,13 @@ export const eventService = {
     session: Session & Partial<SessionData>
   ) {
     const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
     lessonDateEventAtLeastOneNull(endDate, lesson);
     isValidTeamId(teamId);
     try {
       await prisma.event.create({
         data: {
           eventTypeId: eventTypeId,
-          classId: parseInt(session.classId),
+          classId: parseInt(session.classId!),
           name: name,
           description: description,
           startDate: startDate,
@@ -151,13 +92,13 @@ export const eventService = {
     }
     const eventData = await prisma.event.findMany({
       where : {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       },
       orderBy: {
         startDate: "asc"
       }
     });
-    const addEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId);
+    const addEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
 
     try {
       await updateCacheData(eventData, addEventDataCacheKey);
@@ -184,47 +125,13 @@ export const eventService = {
     session: Session & Partial<SessionData>
   ) {
     const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
     lessonDateEventAtLeastOneNull(endDate, lesson);
     isValidTeamId(teamId);
     try {
       await prisma.event.update({
         where: { 
           eventId: eventId, 
-          classId: parseInt(session.classId)
+          classId: parseInt(session.classId!)
         },
         data: {
           eventTypeId: eventTypeId,
@@ -249,13 +156,13 @@ export const eventService = {
 
     const eventData = await prisma.event.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       },
       orderBy: {
         startDate: "asc"
       }
     });
-    const editEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId);
+    const editEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
     try {
       await updateCacheData(eventData, editEventDataCacheKey);
       const io = socketIO.getIO();
@@ -268,24 +175,6 @@ export const eventService = {
   },
 
   async deleteEvent(eventId: number, session: Session & Partial<SessionData>) {
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
     if (!eventId) {
       const err: RequestError = {
         name: "Bad Request",
@@ -295,38 +184,22 @@ export const eventService = {
       };
       throw err;
     }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
     await prisma.event.delete({
       where: {
         eventId: eventId,
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
 
     const eventData = await prisma.event.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       },
       orderBy: {
         startDate: "asc"
       }
     });
-    const deleteEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId);
+    const deleteEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
     try {
       await updateCacheData(eventData, deleteEventDataCacheKey);
       const io = socketIO.getIO();
@@ -339,16 +212,7 @@ export const eventService = {
   },
 
   async getEventTypeData(session: Session & Partial<SessionData>) {
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const getEventTypeDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPE, session.classId);
+    const getEventTypeDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPE, session.classId!);
     const cachedEventTypeData = await redisClient.get(getEventTypeDataCacheKey);
 
     if (cachedEventTypeData) {
@@ -363,7 +227,7 @@ export const eventService = {
 
     const eventTypeData = await prisma.eventType.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
 
@@ -379,17 +243,8 @@ export const eventService = {
   },
 
   async setEventTypeData(eventTypes: { eventTypeId: number | ""; name: string; color: string }[], session: Session & Partial<SessionData>) {
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
 
-    const classId = parseInt(session.classId);
+    const classId = parseInt(session.classId!);
 
     await prisma.$transaction(async tx => {
       const existingEventTypes = await tx.eventType.findMany({
@@ -443,11 +298,11 @@ export const eventService = {
 
     const eventTypeData = await prisma.eventType.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
 
-    const setEventTypeDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPE, session.classId);
+    const setEventTypeDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPE, session.classId!);
 
     try {
       await updateCacheData(eventTypeData, setEventTypeDataCacheKey);
@@ -460,17 +315,8 @@ export const eventService = {
   },
 
   async getEventTypeStyles(session: Session & Partial<SessionData>) {
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
 
-    const setEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId);
+    const setEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId!);
 
     const cachedEventTypeStyles = await redisClient.get(setEventTypeStylesCacheKey);
 

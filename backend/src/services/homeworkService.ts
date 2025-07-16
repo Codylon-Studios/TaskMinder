@@ -20,45 +20,11 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
     isValidTeamId(teamId);
     try {
       await prisma.homework.create({
         data: {
-          classId: parseInt(session.classId),
+          classId: parseInt(session.classId!),
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
@@ -78,13 +44,13 @@ const homeworkService = {
     }
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       },
       orderBy: {
         submissionDate: "asc"
       }
     });
-    const addHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId);
+    const addHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     await updateCacheData(data, addHomeworkDataCacheKey);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
@@ -92,26 +58,8 @@ const homeworkService = {
 
   async checkHomework(reqData: { homeworkId: number; checkStatus: string }, session: Session & Partial<SessionData>) {
     const { homeworkId, checkStatus } = reqData;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
 
-    const accountId = session.account.accountId;
+    const accountId = session.account!.accountId;
 
     await prisma.$transaction(async tx => {
       if (checkStatus === "true") {
@@ -144,24 +92,6 @@ const homeworkService = {
   },
 
   async deleteHomework(homeworkId: number, session: Session & Partial<SessionData>) {
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
     if (!homeworkId) {
       const err: RequestError = {
         name: "Bad Request",
@@ -171,37 +101,21 @@ const homeworkService = {
       };
       throw err;
     }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
     await prisma.homework.delete({
       where: {
         homeworkId: homeworkId,
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       },
       orderBy: {
         submissionDate: "asc"
       }
     });
-    const deleteHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId);
+    const deleteHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     await updateCacheData(data, deleteHomeworkDataCacheKey);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
@@ -219,46 +133,12 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
     isValidTeamId(teamId);
     try {
       await prisma.homework.update({
         where: { homeworkId: homeworkId },
         data: {
-          classId: parseInt(session.classId),
+          classId: parseInt(session.classId!),
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
@@ -279,45 +159,20 @@ const homeworkService = {
 
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       },
       orderBy: {
         submissionDate: "asc"
       }
     });
-    const editHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId);
+    const editHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     await updateCacheData(data, editHomeworkDataCacheKey);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
 
   async getHomeworkData(session: Session & Partial<SessionData>) {
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
-    const getHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId);
+    const getHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     const cachedHomeworkData = await redisClient.get(getHomeworkDataCacheKey);
 
     if (cachedHomeworkData) {
@@ -332,7 +187,7 @@ const homeworkService = {
 
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       },
       orderBy: {
         submissionDate: "asc"
@@ -346,28 +201,8 @@ const homeworkService = {
   },
 
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {
-    let accountId;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    else {
-      accountId = session.account.accountId;
-    }
+    const accountId = session.account!.accountId;
+
     const homework = await prisma.homeworkCheck.findMany({
       where: { accountId: accountId },
       select: {

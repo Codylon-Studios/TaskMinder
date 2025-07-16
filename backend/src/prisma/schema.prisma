@@ -11,12 +11,19 @@ model Account {
   accountId     Int             @id @unique(map: "account_account_id") @default(autoincrement()) @map("accountId")
   username      String          @unique
   password      String
-  isAdmin       Boolean?
+  permissionSetting Int?
   HomeworkCheck HomeworkCheck[]
   JoinedClass   JoinedClass?
   JoinedTeams   JoinedTeams[]
 
   @@map("account")
+}
+
+model deletedAccount {
+  deletedAccountId Int @id @default(autoincrement()) @map("deletedAccountId")
+  deletedUsername      String
+  deletedPassword      String
+  deletedOn BigInt
 }
 
 model AccountSessions {
@@ -62,6 +69,7 @@ model Class {
   classCode   String        @unique
   classCreated BigInt
   isTestClass Boolean
+  permissionDefaultSetting Int
   dsbMobileActivated Boolean
   dsbMobileUser String?
   dsbMobilePassword String?

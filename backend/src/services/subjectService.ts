@@ -7,33 +7,8 @@ import { Session, SessionData } from "express-session";
 
 const subjectService = {
   async getSubjectData(session: Session & Partial<SessionData>) {
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
 
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
-
-    const getSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId);
+    const getSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId!);
     const cachedSubjectata = await redisClient.get(getSubjectDataCacheKey);
 
     if (cachedSubjectata) {
@@ -48,7 +23,7 @@ const subjectService = {
 
     const data = await prisma.subjects.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
 
@@ -75,47 +50,13 @@ const subjectService = {
     }[],
     session: Session & Partial<SessionData>
   ) {
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const classExists = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId)
-      }
-    });
-
-    if (!classExists){
-      delete session.classId;
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "No class mapped to session.classId, deleting classId from session",
-        expected: true
-      };
-      throw err;
-    }
     const existingSubjects = await prisma.subjects.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
 
-    const classId = parseInt(session.classId);
+    const classId = parseInt(session.classId!);
     if (isNaN(classId)) {
       const err: RequestError = {
         name: "Bad Request",
@@ -201,11 +142,11 @@ const subjectService = {
 
     const data = await prisma.subjects.findMany({
       where: {
-        classId: parseInt(session.classId)
+        classId: parseInt(session.classId!)
       }
     });
 
-    const setSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId);
+    const setSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId!);
 
     try {
       await updateCacheData(data, setSubjectDataCacheKey);

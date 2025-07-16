@@ -15,7 +15,7 @@ import socketIO from "./config/socket";
 import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
-import { cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
+import { cleanupDeletedAccounts, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
@@ -35,8 +35,8 @@ declare module "express-session" {
       accountId: number;
       username: string;
     };
-    loggedIn: boolean;
-    classJoined: boolean;
+    classId: string;
+    csrfToken?: string;
   }
 }
 
@@ -253,6 +253,12 @@ cron.schedule("0 0 * * *", () => {
 cron.schedule("0 0 * * *", () => {
   logger.info("Starting scheduled test class cleanup");
   cleanupTestClasses();
+});
+
+// Schedule the cron job to run at midnight (00:00) every day
+cron.schedule("0 0 * * *", () => {
+  logger.info("Starting scheduled deleted account cleanup");
+  cleanupDeletedAccounts();
 });
 
 server.listen(3000, () => {
