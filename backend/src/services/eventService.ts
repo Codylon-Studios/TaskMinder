@@ -1,5 +1,5 @@
 import logger from "../utils/logger";
-import { redisClient, cacheExpiration, cacheKeyEventData, cacheKeyEventTypeData } from "../config/redis";
+import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO from "../config/socket";
 import sass from "sass";
 
@@ -15,8 +15,11 @@ import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 
 export const eventService = {
-  async getEventData() {
-    const cachedEventData = await redisClient.get("event_data");
+  async getEventData(session: Session & Partial<SessionData>) {
+
+    const getEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
+
+    const cachedEventData = await redisClient.get(getEventDataCacheKey);
 
     if (cachedEventData) {
       try {
@@ -29,21 +32,26 @@ export const eventService = {
     }
 
     const eventData = await prisma.event.findMany({
+      where: { 
+        classId: parseInt(session.classId!)
+      },
       orderBy: {
         startDate: "asc"
       }
     });
 
     try {
-      await updateCacheData(eventData, cacheKeyEventData);
+      await updateCacheData(eventData, getEventDataCacheKey);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
 
-    return JSON.stringify(eventData, BigIntreplacer);
+    const stringified = JSON.stringify(eventData, BigIntreplacer);
+    return JSON.parse(stringified);
   },
+
   async addEvent(
     reqData: {
       eventTypeId: number;
@@ -57,21 +65,13 @@ export const eventService = {
     session: Session & Partial<SessionData>
   ) {
     const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
     lessonDateEventAtLeastOneNull(endDate, lesson);
     isValidTeamId(teamId);
     try {
       await prisma.event.create({
         data: {
           eventTypeId: eventTypeId,
+          classId: parseInt(session.classId!),
           name: name,
           description: description,
           startDate: startDate,
@@ -91,12 +91,17 @@ export const eventService = {
       throw err;
     }
     const eventData = await prisma.event.findMany({
+      where : {
+        classId: parseInt(session.classId!)
+      },
       orderBy: {
         startDate: "asc"
       }
     });
+    const addEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
+
     try {
-      await updateCacheData(eventData, cacheKeyEventData);
+      await updateCacheData(eventData, addEventDataCacheKey);
       const io = socketIO.getIO();
       io.emit("updateEventData");
     }
@@ -105,6 +110,7 @@ export const eventService = {
       throw new Error();
     }
   },
+
   async editEvent(
     reqData: {
       eventId: number;
@@ -119,20 +125,14 @@ export const eventService = {
     session: Session & Partial<SessionData>
   ) {
     const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
     lessonDateEventAtLeastOneNull(endDate, lesson);
     isValidTeamId(teamId);
     try {
       await prisma.event.update({
-        where: { eventId: eventId },
+        where: { 
+          eventId: eventId, 
+          classId: parseInt(session.classId!)
+        },
         data: {
           eventTypeId: eventTypeId,
           name: name,
@@ -155,12 +155,16 @@ export const eventService = {
     }
 
     const eventData = await prisma.event.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      },
       orderBy: {
         startDate: "asc"
       }
     });
+    const editEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
     try {
-      await updateCacheData(eventData, cacheKeyEventData);
+      await updateCacheData(eventData, editEventDataCacheKey);
       const io = socketIO.getIO();
       io.emit("updateEventData");
     }
@@ -169,16 +173,8 @@ export const eventService = {
       throw new Error();
     }
   },
+
   async deleteEvent(eventId: number, session: Session & Partial<SessionData>) {
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
     if (!eventId) {
       const err: RequestError = {
         name: "Bad Request",
@@ -190,17 +186,22 @@ export const eventService = {
     }
     await prisma.event.delete({
       where: {
-        eventId: eventId
+        eventId: eventId,
+        classId: parseInt(session.classId!)
       }
     });
 
     const eventData = await prisma.event.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      },
       orderBy: {
         startDate: "asc"
       }
     });
+    const deleteEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
     try {
-      await updateCacheData(eventData, cacheKeyEventData);
+      await updateCacheData(eventData, deleteEventDataCacheKey);
       const io = socketIO.getIO();
       io.emit("updateEventData");
     }
@@ -209,8 +210,10 @@ export const eventService = {
       throw new Error();
     }
   },
-  async getEventTypeData() {
-    const cachedEventTypeData = await redisClient.get("event_type_data");
+
+  async getEventTypeData(session: Session & Partial<SessionData>) {
+    const getEventTypeDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPE, session.classId!);
+    const cachedEventTypeData = await redisClient.get(getEventTypeDataCacheKey);
 
     if (cachedEventTypeData) {
       try {
@@ -222,10 +225,14 @@ export const eventService = {
       }
     }
 
-    const eventTypeData = await prisma.eventType.findMany();
+    const eventTypeData = await prisma.eventType.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      }
+    });
 
     try {
-      await updateCacheData(eventTypeData, cacheKeyEventTypeData);
+      await updateCacheData(eventTypeData, getEventTypeDataCacheKey);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
@@ -234,72 +241,84 @@ export const eventService = {
 
     return eventTypeData;
   },
-  async setEventTypeData(eventTypes: { eventTypeId: number | ""; name: string; color: string }[]) {
-    const existingEventTypes = await prisma.eventType.findMany();
-    await Promise.all(
-      existingEventTypes.map(async eventType => {
-        if (!eventTypes.some(e => e.eventTypeId === eventType.eventTypeId)) {
-          await prisma.eventType.delete({
-            where: { eventTypeId: eventType.eventTypeId }
+
+  async setEventTypeData(eventTypes: { eventTypeId: number | ""; name: string; color: string }[], session: Session & Partial<SessionData>) {
+
+    const classId = parseInt(session.classId!);
+
+    await prisma.$transaction(async tx => {
+      const existingEventTypes = await tx.eventType.findMany({
+        where: { classId }
+      });
+
+      // Delete removed event types
+      for (const existing of existingEventTypes) {
+        if (!eventTypes.some(e => e.eventTypeId === existing.eventTypeId)) {
+          await tx.eventType.delete({
+            where: { eventTypeId: existing.eventTypeId }
           });
         }
-      })
-    );
-
-    for (const eventType of eventTypes) {
-      isValidColor(eventType.color);
-      if (eventType.name.trim() === "") {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "Invalid data format",
-          expected: true
-        };
-        throw err;
       }
-      try {
+
+      // Create or update event types
+      for (const eventType of eventTypes) {
+        isValidColor(eventType.color);
+        if (eventType.name.trim() === "") {
+          const err: RequestError =  {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data format",
+            expected: true
+          };
+          throw err;
+        }
+
         if (eventType.eventTypeId === "") {
-          await prisma.eventType.create({
+          await tx.eventType.create({
             data: {
+              classId,
               name: eventType.name,
               color: eventType.color
             }
           });
         }
         else {
-          await prisma.eventType.update({
+          await tx.eventType.update({
             where: { eventTypeId: eventType.eventTypeId },
             data: {
+              classId,
               name: eventType.name,
               color: eventType.color
             }
           });
         }
       }
-      catch {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "Invalid data format",
-          expected: true
-        };
-        throw err;
-      }
-    }
+    });
 
-    const eventTypeData = await prisma.eventType.findMany();
+
+    const eventTypeData = await prisma.eventType.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      }
+    });
+
+    const setEventTypeDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPE, session.classId!);
 
     try {
-      await updateCacheData(eventTypeData, cacheKeyEventTypeData);
+      await updateCacheData(eventTypeData, setEventTypeDataCacheKey);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
       throw new Error();
     }
-    this.updateEventTypeStyles();
+    this.updateEventTypeStyles(session);
   },
-  async getEventTypeStyles() {
-    const cachedEventTypeStyles = await redisClient.get("event_type_styles");
+
+  async getEventTypeStyles(session: Session & Partial<SessionData>) {
+
+    const setEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId!);
+
+    const cachedEventTypeStyles = await redisClient.get(setEventTypeStylesCacheKey);
 
     if (cachedEventTypeStyles) {
       try {
@@ -311,12 +330,24 @@ export const eventService = {
       }
     }
 
-    const eventTypeStyles = await this.updateEventTypeStyles();
+    const eventTypeStyles = await this.updateEventTypeStyles(session);
 
     return eventTypeStyles;
   },
-  async updateEventTypeStyles() {
-    const eventTypeData = await this.getEventTypeData();
+
+  async updateEventTypeStyles(session: Session & Partial<SessionData>) {
+    // needed for updateEventTypeStylesCacheKey generation (actually redundant)
+    // to avoid type errors
+    if (!session.classId) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "User not logged into class",
+        expected: true
+      };
+      throw err;
+    }
+    const eventTypeData = await this.getEventTypeData(session);
     const scss = `
       @use "sass:color";
 
@@ -362,8 +393,10 @@ export const eventService = {
       }`;
     const css = sass.compileString(scss).css;
 
+    const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId);
+
     try {
-      await redisClient.set("event_type_styles", css, { EX: cacheExpiration });
+      await redisClient.set(updateEventTypeStylesCacheKey, css, { EX: cacheExpiration });
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);

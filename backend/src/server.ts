@@ -15,7 +15,7 @@ import socketIO from "./config/socket";
 import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
-import cleanupOldHomework from "./utils/homeworkCleanup";
+import { cleanupDeletedAccounts, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
@@ -35,8 +35,8 @@ declare module "express-session" {
       accountId: number;
       username: string;
     };
-    loggedIn: boolean;
-    classJoined: boolean;
+    classId: string;
+    csrfToken?: string;
   }
 }
 
@@ -180,7 +180,7 @@ app.get("/metrics", async (req: Request, res: Response) => {
 });
 
 app.get("/", (req: Request, res: Response) => {
-  if (req.session.account && req.session.classJoined) {
+  if (req.session.account && req.session.classId) {
     return res.redirect(302, "/main");
   }
   res.redirect(302, "/join");
@@ -191,11 +191,11 @@ const pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages");
 app.get("/join", (req, res) => {
   const action = req.query.action;
 
-  if (req.session.account && req.session.classJoined) {
+  if (req.session.account && req.session.classId) {
     return res.redirect(302, "/main");
   }
 
-  if (!req.session.account && req.session.classJoined) {
+  if (!req.session.account && req.session.classId) {
     if (action !== "account") {
       return res.redirect(302, "/join?action=account");
     }
@@ -247,6 +247,18 @@ app.use(ErrorHandler);
 cron.schedule("0 0 * * *", () => {
   logger.info("Starting scheduled homework cleanup");
   cleanupOldHomework();
+});
+
+// Schedule the cron job to run at midnight (00:00) every day
+cron.schedule("0 0 * * *", () => {
+  logger.info("Starting scheduled test class cleanup");
+  cleanupTestClasses();
+});
+
+// Schedule the cron job to run at midnight (00:00) every day
+cron.schedule("0 0 * * *", () => {
+  logger.info("Starting scheduled deleted account cleanup");
+  cleanupDeletedAccounts();
 });
 
 server.listen(3000, () => {

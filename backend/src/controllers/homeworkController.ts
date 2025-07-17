@@ -132,7 +132,7 @@ export const editHomework = asyncHandler(async (req, res, next) => {
 
 export const getHomeworkData = asyncHandler(async (req, res, next) => {
   try {
-    const homeworkData = await homeworkService.getHomeworkData();
+    const homeworkData = await homeworkService.getHomeworkData(req.session);
     res.status(200).json(homeworkData);
   }
   catch (error) {

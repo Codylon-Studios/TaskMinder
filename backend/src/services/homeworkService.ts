@@ -1,4 +1,4 @@
-import { connectRedis, redisClient, cacheKeyHomeworkData } from "../config/redis";
+import { connectRedis, redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO from "../config/socket";
 import prisma from "../config/prisma";
 import { isValidTeamId, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
@@ -20,19 +20,11 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
     isValidTeamId(teamId);
     try {
-      await prisma.homework10d.create({
+      await prisma.homework.create({
         data: {
+          classId: parseInt(session.classId!),
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
@@ -50,63 +42,56 @@ const homeworkService = {
       };
       throw err;
     }
-    const data = await prisma.homework10d.findMany({
+    const data = await prisma.homework.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      },
       orderBy: {
         submissionDate: "asc"
       }
     });
-    await updateCacheData(data, cacheKeyHomeworkData);
+    const addHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
+    await updateCacheData(data, addHomeworkDataCacheKey);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
 
   async checkHomework(reqData: { homeworkId: number; checkStatus: string }, session: Session & Partial<SessionData>) {
     const { homeworkId, checkStatus } = reqData;
-    let accountId;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    else {
-      accountId = session.account.accountId;
-    }
-    if (checkStatus === "true") {
-      await prisma.homework10dCheck.upsert({
-        where: { accountId, homeworkId },
-        update: {},
-        create: {
-          accountId,
-          homeworkId
-        }
-      });
-    }
-    else {
-      await prisma.homework10dCheck.deleteMany({
-        where: {
-          accountId: accountId,
-          homeworkId: homeworkId
-        }
-      });
-    }
+
+    const accountId = session.account!.accountId;
+
+    await prisma.$transaction(async tx => {
+      if (checkStatus === "true") {
+        await tx.homeworkCheck.upsert({
+          where: {
+            accountId_homeworkId: {
+              accountId,
+              homeworkId
+            }
+          },
+          update: {},
+          create: {
+            accountId,
+            homeworkId
+          }
+        });
+      } 
+      else {
+        await tx.homeworkCheck.deleteMany({
+          where: {
+            accountId,
+            homeworkId
+          }
+        });
+      }
+    });
+
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
 
   async deleteHomework(homeworkId: number, session: Session & Partial<SessionData>) {
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
     if (!homeworkId) {
       const err: RequestError = {
         name: "Bad Request",
@@ -116,17 +101,22 @@ const homeworkService = {
       };
       throw err;
     }
-    await prisma.homework10d.delete({
+    await prisma.homework.delete({
       where: {
-        homeworkId: homeworkId
+        homeworkId: homeworkId,
+        classId: parseInt(session.classId!)
       }
     });
-    const data = await prisma.homework10d.findMany({
+    const data = await prisma.homework.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      },
       orderBy: {
         submissionDate: "asc"
       }
     });
-    await updateCacheData(data, cacheKeyHomeworkData);
+    const deleteHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
+    await updateCacheData(data, deleteHomeworkDataCacheKey);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
@@ -143,20 +133,12 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
     isValidTeamId(teamId);
     try {
-      await prisma.homework10d.update({
+      await prisma.homework.update({
         where: { homeworkId: homeworkId },
         data: {
+          classId: parseInt(session.classId!),
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
@@ -175,18 +157,23 @@ const homeworkService = {
       throw err;
     }
 
-    const data = await prisma.homework10d.findMany({
+    const data = await prisma.homework.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      },
       orderBy: {
         submissionDate: "asc"
       }
     });
-    await updateCacheData(data, cacheKeyHomeworkData);
+    const editHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
+    await updateCacheData(data, editHomeworkDataCacheKey);
     const io = socketIO.getIO();
     io.emit("updateHomeworkData");
   },
 
-  async getHomeworkData() {
-    const cachedHomeworkData = await redisClient.get(cacheKeyHomeworkData);
+  async getHomeworkData(session: Session & Partial<SessionData>) {
+    const getHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
+    const cachedHomeworkData = await redisClient.get(getHomeworkDataCacheKey);
 
     if (cachedHomeworkData) {
       try {
@@ -198,32 +185,25 @@ const homeworkService = {
       }
     }
 
-    const data = await prisma.homework10d.findMany({
+    const data = await prisma.homework.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      },
       orderBy: {
         submissionDate: "asc"
       }
     });
 
-    await updateCacheData(data, cacheKeyHomeworkData);
+    await updateCacheData(data, getHomeworkDataCacheKey);
 
-    return JSON.stringify(data, BigIntreplacer);
+    const stringified = JSON.stringify(data, BigIntreplacer);
+    return JSON.parse(stringified);
   },
 
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {
-    let accountId;
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    else {
-      accountId = session.account.accountId;
-    }
-    const homework = await prisma.homework10dCheck.findMany({
+    const accountId = session.account!.accountId;
+
+    const homework = await prisma.homeworkCheck.findMany({
       where: { accountId: accountId },
       select: {
         homeworkId: true

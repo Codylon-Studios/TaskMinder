@@ -4,6 +4,6 @@ import checkAccess from "../middleware/accessMiddleware";
 
 const router = express.Router();
 
-router.get("/get_substitutions_data", checkAccess.elseUnauthorized, substitutionController.getSubstitutionData);
+router.get("/get_substitutions_data", checkAccess.checkClass, substitutionController.getSubstitutionData);
 
 export default router;

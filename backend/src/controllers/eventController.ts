@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const getEventData = asyncHandler(async (req, res, next) => {
   try {
-    const eventData = await eventService.getEventData();
+    const eventData = await eventService.getEventData(req.session);
     res.status(200).json(eventData);
   }
   catch (error) {
@@ -124,7 +124,7 @@ export const deleteEvent = asyncHandler(async (req, res, next) => {
 
 export const getEventTypeData = asyncHandler(async (req, res, next) => {
   try {
-    const eventTypeData = await eventService.getEventTypeData();
+    const eventTypeData = await eventService.getEventTypeData(req.session);
     res.status(200).json(eventTypeData);
   }
   catch (error) {
@@ -168,7 +168,7 @@ export const setEventTypeData = asyncHandler(async (req, res, next) => {
     return;
   }
   try {
-    await eventService.setEventTypeData(parseResult.data.eventTypes);
+    await eventService.setEventTypeData(parseResult.data.eventTypes, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -178,7 +178,7 @@ export const setEventTypeData = asyncHandler(async (req, res, next) => {
 
 export const getEventTypeStyles = asyncHandler(async (req, res, next) => {
   try {
-    const eventTypeStyles = await eventService.getEventTypeStyles();
+    const eventTypeStyles = await eventService.getEventTypeStyles(req.session);
     res.setHeader("Content-Type", "text/css");
     res.status(200).send(eventTypeStyles);
   }

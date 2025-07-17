@@ -6,8 +6,7 @@ declare module "express-session" {
       accountId: number;
       username: string;
     };
-    loggedIn: boolean;
-    classJoined: boolean;
+    classId: string;
     csrfToken?: string;
   }
 }

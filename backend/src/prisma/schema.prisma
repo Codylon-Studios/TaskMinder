@@ -8,15 +8,22 @@ datasource db {
 }
 
 model Account {
-  accountId        Int                @id @unique(map: "account_account_id") @default(autoincrement()) @map("accountId")
-  username         String             @unique
-  password         String
-  isAdmin          Boolean?
-  Homework10dCheck Homework10dCheck[]
-  JoinedClass      JoinedClass[]
-  JoinedTeams      JoinedTeams[]
+  accountId     Int             @id @unique(map: "account_account_id") @default(autoincrement()) @map("accountId")
+  username      String          @unique
+  password      String
+  permissionSetting Int?
+  HomeworkCheck HomeworkCheck[]
+  JoinedClass   JoinedClass?
+  JoinedTeams   JoinedTeams[]
 
   @@map("account")
+}
+
+model deletedAccount {
+  deletedAccountId Int @id @default(autoincrement()) @map("deletedAccountId")
+  deletedUsername      String
+  deletedPassword      String
+  deletedOn BigInt
 }
 
 model AccountSessions {
@@ -30,6 +37,7 @@ model AccountSessions {
 
 model Event {
   eventId     Int       @id @default(autoincrement()) @map("eventId")
+  classId     Int
   eventTypeId Int
   name        String
   description String?
@@ -38,47 +46,76 @@ model Event {
   lesson      String?
   teamId      Int
   EventType   EventType @relation(fields: [eventTypeId], references: [eventTypeId], onDelete: Cascade, onUpdate: NoAction)
+  Class       Class     @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("event")
 }
 
 model EventType {
   eventTypeId Int     @id @default(autoincrement()) @map("eventTypeId")
+  classId     Int
   name        String
   color       String?
   Event       Event[]
+  Class       Class   @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
+  @@unique([classId, name])
   @@map("eventType")
 }
 
-model Homework10d {
-  homeworkId       Int                @id @default(autoincrement()) @map("homeworkId")
-  content          String
-  subjectId        Int
-  assignmentDate   BigInt
-  submissionDate   BigInt
-  teamId           Int
-  Subjects         Subjects           @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade, onUpdate: NoAction)
-  Homework10dCheck Homework10dCheck[]
-
-  @@map("homework10d")
+model Class {
+  classId     Int           @id @default(autoincrement()) @map("classId")
+  className   String        @unique
+  classCode   String        @unique
+  classCreated BigInt
+  isTestClass Boolean
+  permissionDefaultSetting Int
+  dsbMobileActivated Boolean
+  dsbMobileUser String?
+  dsbMobilePassword String?
+  // The real name of the class to filter in the substitutions data
+  dsbMobileClass String?
+  Event       Event[]
+  EventType   EventType[]
+  Homework    Homework[]
+  JoinedClass JoinedClass[]
+  Lesson      Lesson[]
+  Subjects    Subjects[]
+  Team        Team[]
 }
 
-model Homework10dCheck {
-  checkId     Int         @id @default(autoincrement()) @map("checkId")
-  accountId   Int         @unique
-  homeworkId  Int
-  Account     Account     @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
-  Homework10d Homework10d @relation(fields: [homeworkId], references: [homeworkId], onDelete: Cascade, onUpdate: NoAction)
+model Homework {
+  homeworkId     Int             @id @default(autoincrement()) @map("homeworkId")
+  classId        Int
+  content        String
+  subjectId      Int
+  assignmentDate BigInt
+  submissionDate BigInt
+  teamId         Int
+  Subjects       Subjects        @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade, onUpdate: NoAction)
+  HomeworkCheck  HomeworkCheck[]
+  Class          Class           @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
-  @@unique([accountId, homeworkId], map: "homework10d_check_account_id_homework_id")
-  @@map("homework10dCheck")
+  @@map("homework")
+}
+
+model HomeworkCheck {
+  checkId    Int      @id @default(autoincrement()) @map("checkId")
+  accountId  Int
+  homeworkId Int
+  Account    Account  @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
+  Homework   Homework @relation(fields: [homeworkId], references: [homeworkId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([accountId, homeworkId], map: "homework_check_account_id_homework_id")
+  @@map("homeworkCheck")
 }
 
 model JoinedClass {
   joinedClassId Int     @id @default(autoincrement()) @map("joinedClassId")
+  classId       Int
   accountId     Int     @unique
   Account       Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
+  Class         Class   @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("joinedClass")
 }
@@ -96,6 +133,7 @@ model JoinedTeams {
 
 model Lesson {
   lessonId     Int    @id @default(autoincrement()) @map("lessonId")
+  classId      Int
   lessonNumber Int
   weekDay      Int
   teamId       Int
@@ -103,12 +141,15 @@ model Lesson {
   room         String
   startTime    BigInt
   endTime      BigInt
+  Class        Class  @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
+  @@unique([classId, teamId, weekDay, lessonNumber])
   @@map("lesson")
 }
 
 model Subjects {
-  subjectId               Int           @id @default(autoincrement()) @map("subjectId")
+  subjectId               Int      @id @default(autoincrement()) @map("subjectId")
+  classId                 Int
   subjectNameLong         String
   subjectNameShort        String
   subjectNameSubstitution String[]
@@ -116,24 +157,21 @@ model Subjects {
   teacherNameLong         String
   teacherNameShort        String
   teacherNameSubstitution String[]
-  Homework10d             Homework10d[]
+  Homework                Homework[]
+  Class                   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
+  @@unique([classId, subjectNameLong])
+  @@unique([classId, subjectNameShort])
   @@map("subjects")
 }
 
 model Team {
   teamId      Int           @id @default(autoincrement()) @map("teamId")
+  classId     Int
   name        String
   JoinedTeams JoinedTeams[]
+  Class       Class         @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
+  @@unique([classId, name])
   @@map("team")
-}
-
-model Timetable {
-  timetableId Int    @id @default(autoincrement()) @map("timetableId")
-  class       Int
-  content     Json   @db.Json
-  lastUpdated BigInt
-
-  @@map("timetable")
 }

@@ -1,146 +1,132 @@
-import { redisClient, cacheKeySubstitutionsData, cacheExpiration } from "../config/redis";
+import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey, STALE_THRESHOLD_MS } from "../config/redis";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
 import logger from "../utils/logger";
+import { Session, SessionData } from "express-session";
+import { RequestError } from "../@types/requestError";
+import prisma from "../config/prisma";
 
-async function loadSubstitutionData(): Promise<void> {
-  function getCredentials(): { username: string, password: string} | null {
-    if (typeof process.env.DSB_USER !== "string") {
-      logger.error("DSB user not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
-      return null;
-    }
-    if (typeof process.env.DSB_PASSWORD !== "string") {
-      logger.error("DSB password not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
-      return null;
-    }
-    return {
-      username: process.env.DSB_USER,
-      password: process.env.DSB_PASSWORD
-    };
-  }
-  
-  if (process.env.DSB_ACTIVATED !== "true") {
-    return;
-  }
+type SubstitutionData = {
+  plan1: { substitutions: unknown; date: string };
+  plan2: { substitutions: unknown; date: string };
+  updated: string;
+};
+
+export async function loadSubstitutionData(
+  dsbMobileUser: string, 
+  dsbMobilePassword: string, 
+  cacheKey: string
+): Promise<SubstitutionData | "No data"> {
   try {
-    const credentials = getCredentials();
-    if (credentials === null) return;
-    const {username, password} = credentials;
-
-    let authId: string;
-    try {
-      const url = `https://mobileapi.dsbcontrol.de/authid?user=${username}&password=${password}&appversion=&bundleid=&osversion=&pushid=`;
-      const authRes = await axios.get<string>(url);
-      authId = authRes.data;
-      if (authId === "") {
-        logger.error(
-          "The DSB credeantials don't return a valid authId! Either correct them or set DSB_ACTIVATED to false!"
-        );
-        return;
-      }
-    }
-    catch (err) {
-      logger.error("Error getting DSBmobile AuthId: ", err);
-      return;
+    // eslint-disable-next-line max-len
+    const authUrl = `https://mobileapi.dsbcontrol.de/authid?user=${dsbMobileUser}&password=${dsbMobilePassword}&appversion=&bundleid=&osversion=&pushid=`;
+    const authRes = await axios.get<string>(authUrl);
+    const authId = authRes.data;
+    if (!authId) {
+      throw new Error("The DSB credentials did not return a valid authId.");
     }
 
-    let plan1Url: string, plan2Url: string;
-    try {
-      const url = `https://mobileapi.dsbcontrol.de/dsbtimetables?authid=${authId}`;
-      const timetablesRes = await axios.get<{ Childs: { Detail: string }[] }[]>(url);
-      plan1Url = timetablesRes.data[0].Childs[0].Detail;
-      plan2Url = timetablesRes.data[2].Childs[0].Detail;
-    }
-    catch (err) {
-      logger.error("Error getting DSBmobile data: ", err);
-      return;
-    }
+    const timetablesUrl = `https://mobileapi.dsbcontrol.de/dsbtimetables?authid=${authId}`;
+    const timetablesRes = await axios.get<{ Childs: { Detail: string }[] }[]>(timetablesUrl);
+    const plan1Url = timetablesRes.data[0]?.Childs[0]?.Detail;
+    const plan2Url = timetablesRes.data[2]?.Childs[0]?.Detail;
 
-    const substitutionEntryKeys = [
-      "class",
-      "lesson",
-      "time",
-      "subject",
-      "text",
-      "teacher",
-      "teacherOld",
-      "room",
-      "type"
-    ];
-
-    type Plan = {
-      substitutions: unknown;
-      date: string;
-    };
-    const substitutionsData: { plan1: Plan; plan2: Plan; updated: string } = {
+    if (!plan1Url || !plan2Url) {
+      throw new Error("Could not retrieve timetable URLs from DSB.");
+    }
+    
+    const substitutionEntryKeys = ["class", "lesson", "time", "subject", "text", "teacher", "teacherOld", "room", "type"];
+    const substitutionsResult: SubstitutionData = {
       plan1: { substitutions: null, date: "" },
       plan2: { substitutions: null, date: "" },
       updated: ""
     };
 
-    for (let id: 1 | 2 = 1; id <= 2; id++) {
+    for (const id of [1, 2] as const) {
       const planData: { [key: string]: string }[] = [];
-      const url = [plan1Url, plan2Url][id - 1];
+      const url = (id === 1) ? plan1Url : plan2Url;
       const planRes = await axios.get(url, { responseType: "arraybuffer" });
       const planHtml = iconv.decode(Buffer.from(planRes.data), "ISO-8859-1");
       const $ = cheerio.load(planHtml);
+
       $(".mon_list tr:not(:nth-child(1))").each((_, substitutionEntry) => {
         const data: { [key: string]: string } = {};
-        $(substitutionEntry)
-          .find("td")
-          .each((j, substitutionEntryData) => {
-            let val = $(substitutionEntryData).text();
-            if (["---", "&nbsp;", " ", "\u00A0"].includes(val)) {
-              val = "-";
-            }
-            data[substitutionEntryKeys[j]] = val;
-          });
+        $(substitutionEntry).find("td").each((j, substitutionEntryData) => {
+          const val = $(substitutionEntryData).text().trim();
+          data[substitutionEntryKeys[j]] = ["---", " ", ""].includes(val) ? "-" : val;
+        });
         planData.push(data);
       });
 
-      substitutionsData[("plan" + id) as "plan1" | "plan2"]["substitutions"] = planData;
-
-      substitutionsData[("plan" + id) as "plan1" | "plan2"]["date"] = $(".mon_title").text().split(" ")[0];
-      substitutionsData["updated"] = $(".mon_head p").text().split("Stand: ")[1];
+      substitutionsResult[`plan${id}`].substitutions = planData;
+      substitutionsResult[`plan${id}`].date = $(".mon_title").text().split(" ")[0];
+      substitutionsResult.updated = $(".mon_head p").text().split("Stand: ")[1] || "";
     }
 
+    const cachePayload = {
+      data: substitutionsResult,
+      timestamp: Date.now()
+    };
+    await redisClient.set(cacheKey, JSON.stringify(cachePayload), { EX: cacheExpiration });
+    
+    return substitutionsResult;
+
+  } 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  catch (error) {
+    const errorPayload = {
+      data: "No data",
+      timestamp: Date.now()
+    };
     try {
-      await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(substitutionsData), { EX: cacheExpiration });
+      await redisClient.set(cacheKey, JSON.stringify(errorPayload), { EX: 300 }); 
+    } 
+    catch (redisErr) {
+      logger.error("Fatal: Error updating Redis cache with error state:", redisErr);
     }
-    catch (err) {
-      logger.error("Error updating Redis cache:", err);
-      throw new Error();
-    }
-  }
-  catch {
-    logger.error("Error fetching substitutions data!");
-    const substitutionsData = "No data";
-    try {
-      await redisClient.set(cacheKeySubstitutionsData, JSON.stringify(substitutionsData), { EX: cacheExpiration });
-    }
-    catch (err) {
-      logger.error("Error updating Redis cache:", err);
-      throw new Error();
-    }
-  }
-}
-
-setInterval(loadSubstitutionData, 60000);
-
-export async function getSubstitutionData(): Promise<unknown> {
-  if (process.env.DSB_ACTIVATED !== "true") {
     return "No data";
   }
-  let cachedData = await redisClient.get(cacheKeySubstitutionsData);
-  if (cachedData) {
-    return JSON.parse(cachedData);
-  }
-  else {
-    await loadSubstitutionData();
-    cachedData = (await redisClient.get(cacheKeySubstitutionsData)) ?? "No data";
-    return JSON.parse(cachedData);
-  }
 }
 
+// Use a longer cache TTL (e.g., 1 hour) and serve data from Redis immediately, even if it's stale. 
+// If the data is older than your freshness threshold (e.g., 10 minutes), trigger a background job to refresh it without delaying the user. 
+// This approach improves performance while still keeping data reasonably fresh.
+export async function getSubstitutionData(session: Session & Partial<SessionData>) {
+  const substitutionClass = await prisma.class.findUnique({
+    where: { classId: parseInt(session.classId!) }
+  });
+
+  if (!substitutionClass || !substitutionClass.dsbMobileActivated || !substitutionClass.dsbMobileUser || !substitutionClass.dsbMobilePassword) {
+    const err: RequestError = {
+      name: "Not Found", 
+      status: 404, 
+      message: "Substitution data not configured for this class.", 
+      expected: true
+    };
+    throw err;
+  }
+
+  const { dsbMobileUser, dsbMobilePassword, classId } = substitutionClass;
+  const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBSTITUTIONS, classId.toString());
+
+  const cachedEntry = await redisClient.get(cacheKey);
+
+  if (!cachedEntry) {
+    return await loadSubstitutionData(dsbMobileUser, dsbMobilePassword, cacheKey);
+  }
+
+  const { data, timestamp } = JSON.parse(cachedEntry);
+  const isStale = (Date.now() - timestamp) > STALE_THRESHOLD_MS;
+
+  if (isStale) {
+    loadSubstitutionData(dsbMobileUser, dsbMobilePassword, cacheKey)
+      .catch(err => {
+        logger.error(`Background refresh failed for key ${cacheKey}:`, err);
+      });
+  }
+  const realClassName = substitutionClass.dsbMobileClass;
+
+  return {data, realClassName};
+}
 export default { getSubstitutionData };

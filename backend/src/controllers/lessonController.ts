@@ -4,7 +4,7 @@ import asyncHandler from "express-async-handler";
 
 export const getLessonData = asyncHandler(async (req, res, next) => {
   try {
-    const lessonData = await lessonService.getLessonData();
+    const lessonData = await lessonService.getLessonData(req.session);
     res.status(200).json(lessonData);
   }
   catch (error) {
@@ -58,7 +58,7 @@ export const setLessonData = asyncHandler(async (req, res, next) => {
     return;
   }
   try {
-    await lessonService.setLessonData(parseResult.data.lessons);
+    await lessonService.setLessonData(parseResult.data.lessons, req.session);
     res.sendStatus(200);
   }
   catch (error) {
