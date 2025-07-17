@@ -83,7 +83,7 @@ const subjectService = {
       );
 
       for (const subject of subjects) {
-      function check(): void {
+        function check(): void {
           if (
             subject.subjectNameLong.trim() === "" ||
             subject.subjectNameShort.trim() === "" ||
@@ -99,9 +99,9 @@ const subjectService = {
             throw err;
           }
           isValidGender(subject.teacherGender);
-      }
+        }
 
-      check();
+        check();
         try {
           if (subject.subjectId === "") {
             await tx.subjects.create({

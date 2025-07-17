@@ -520,9 +520,9 @@ $.formatHtml = (html, options?) => {
 
 
 
-
+/*
 // TODO: Remove this overwrite
-const fixedTime = new Date('2025-07-14T08:05:00Z');
+const fixedTime = new Date("2025-07-14T08:05:00Z");
 
 // Original sichern
 const OriginalDate = Date;
@@ -532,7 +532,8 @@ class FakeDate extends OriginalDate {
     // Wenn keine Argumente → fixe Zeit zurückgeben
     if (args.length === 0) {
       super(fixedTime); // das ist typisch besser als return new Date(...) hier
-    } else {
+    }
+    else {
       super(args[0]);
     }
   }
@@ -544,3 +545,4 @@ class FakeDate extends OriginalDate {
 
 // Zuweisung – aber mit Casting, um TS zu beruhigen
 (window as any).Date = FakeDate;
+*/

@@ -12,7 +12,7 @@ export const CACHE_KEY_PREFIXES = {
   TEAMS: "teams_data"
 };
 
-export const generateCacheKey = (baseKey: string, classId: string) => {
+export const generateCacheKey = (baseKey: string, classId: string): string => {
   if (!baseKey || !classId) {
     logger.error("Base Key or/and ClassId missing to generate redis cache key");
     throw new Error();

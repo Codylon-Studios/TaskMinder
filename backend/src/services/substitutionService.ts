@@ -13,6 +13,22 @@ type SubstitutionData = {
   updated: string;
 };
 
+
+async function fetchFromDSBMobileServer(authId: string): Promise<{
+    plan1Url: string;
+    plan2Url: string;
+}> {
+  const timetablesUrl = `https://mobileapi.dsbcontrol.de/dsbtimetables?authid=${authId}`;
+  const timetablesRes = await axios.get<{ Childs: { Detail: string }[] }[]>(timetablesUrl);
+  const plan1Url = timetablesRes.data[0]?.Childs[0]?.Detail;
+  const plan2Url = timetablesRes.data[2]?.Childs[0]?.Detail;
+
+  if (!plan1Url || !plan2Url) {
+    throw new Error("Could not retrieve timetable URLs from DSB.");
+  }
+  return {plan1Url, plan2Url};
+}
+
 export async function loadSubstitutionData(
   dsbMobileUser: string, 
   dsbMobilePassword: string, 
@@ -27,14 +43,7 @@ export async function loadSubstitutionData(
       throw new Error("The DSB credentials did not return a valid authId.");
     }
 
-    const timetablesUrl = `https://mobileapi.dsbcontrol.de/dsbtimetables?authid=${authId}`;
-    const timetablesRes = await axios.get<{ Childs: { Detail: string }[] }[]>(timetablesUrl);
-    const plan1Url = timetablesRes.data[0]?.Childs[0]?.Detail;
-    const plan2Url = timetablesRes.data[2]?.Childs[0]?.Detail;
-
-    if (!plan1Url || !plan2Url) {
-      throw new Error("Could not retrieve timetable URLs from DSB.");
-    }
+    const { plan1Url, plan2Url } = await fetchFromDSBMobileServer(authId);
     
     const substitutionEntryKeys = ["class", "lesson", "time", "subject", "text", "teacher", "teacherOld", "room", "type"];
     const substitutionsResult: SubstitutionData = {
@@ -92,7 +101,10 @@ export async function loadSubstitutionData(
 // Use a longer cache TTL (e.g., 1 hour) and serve data from Redis immediately, even if it's stale. 
 // If the data is older than your freshness threshold (e.g., 10 minutes), trigger a background job to refresh it without delaying the user. 
 // This approach improves performance while still keeping data reasonably fresh.
-export async function getSubstitutionData(session: Session & Partial<SessionData>) {
+export async function getSubstitutionData(session: Session & Partial<SessionData>): Promise<{
+    data: SubstitutionData | "No data";
+    realClassName: string | null;
+}> {
   const substitutionClass = await prisma.class.findUnique({
     where: { classId: parseInt(session.classId!) }
   });
@@ -113,7 +125,9 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
   const cachedEntry = await redisClient.get(cacheKey);
 
   if (!cachedEntry) {
-    return await loadSubstitutionData(dsbMobileUser, dsbMobilePassword, cacheKey);
+    const data =  await loadSubstitutionData(dsbMobileUser, dsbMobilePassword, cacheKey);
+    const realClassName = substitutionClass.dsbMobileClass;
+    return {data, realClassName};
   }
 
   const { data, timestamp } = JSON.parse(cachedEntry);

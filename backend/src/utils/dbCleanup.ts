@@ -4,7 +4,7 @@ import logger from "./logger";
 /**
  * Deletes class records that are older than 1 day and are a TEST CLASSES
  */
-export async function cleanupTestClasses() {
+export async function cleanupTestClasses(): Promise<void> {
   try {
     logger.setStandardPrefix("[CronJob]");
 
@@ -87,7 +87,7 @@ export async function cleanupTestClasses() {
 /**
  * Deletes deleted accounts records that are older than 30 days based on deletedOn date
  */
-export async function cleanupDeletedAccounts() {
+export async function cleanupDeletedAccounts(): Promise<void> {
   try {
     logger.setStandardPrefix("[CronJob]");
 
@@ -122,7 +122,7 @@ export async function cleanupDeletedAccounts() {
 /**
  * Deletes homework records that are older than 60 days based on submission date
  */
-export async function cleanupOldHomework() {
+export async function cleanupOldHomework(): Promise<void> {
   try {
     logger.setStandardPrefix("[CronJob]");
 

@@ -149,8 +149,6 @@ Then copy/paste the file, get the SSL certificates and activate/start the nginx 
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-#
-sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
 
 # 1. Get certificates first - Don't forget to change `example.com` to your actual domain.
 sudo certbot -d example.com -d www.example.com -d monitoring.example.com
@@ -204,7 +202,7 @@ ssh ubuntu@<your-ip-address>
 The `cron` service needs permission to run the script. You only need to do this once.
 
 ```bash
-chmod +x /opt/TaskMinder/db_backup.sh
+chmod +x /opt/TaskMinder/backup-cmds/db_backup.sh
 ```
 
 ### Add the Job to Crontab
@@ -220,7 +218,7 @@ Open the crontab editor for the current user:
 Add the following line to the bottom of the file, then save and exit:
 
 ```bash
-   0 * * * * /opt/TaskMinder/db_backup.sh >> /var/log/backup.log 2>&1
+   0 * * * * /opt/TaskMinder/backup-cmds/db_backup.sh >> /var/log/backup.log 2>&1
 ```
 
 ### Verify the Setup
@@ -348,14 +346,14 @@ ls -lt /opt/TaskMinder/db-backups/
 Execute the `db_restore.sh` script with `sudo` and provide the backup file you chose.
 
 ```bash
-sudo /opt/TaskMinder/db_restore.sh <backup-filename>
+sudo /opt/TaskMinder/backup-cmds/db_restore.sh <backup-filename>
 ```
 
 **Example:**
 If you want to restore a file named `backup-2023-10-27_15-00-00.sql.gz`, you would run:
 
 ```bash
-sudo /opt/TaskMinder/db_restore.sh backup-2023-10-27_15-00-00.sql.gz
+sudo /opt/TaskMinder/backup-cmds/db_restore.sh backup-2023-10-27_15-00-00.sql.gz
 ```
 
 ### Verify the Restoration
