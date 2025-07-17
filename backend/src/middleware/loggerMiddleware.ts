@@ -3,17 +3,23 @@ import { NextFunction, Request, Response } from "express";
 import logger from "../utils/logger";
 import { isJSON } from "validator";
 
-const loggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
+const loggerMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const start = Date.now();
 
   const originalSend = res.send;
 
   res.send = function (this: unknown, body: string) {
+    function getStatusCodeColor(statusCode: number): string {
+      if (statusCode >= 200 && statusCode < 300) return "green";
+      if (statusCode >= 400 && statusCode < 500) return "yellow";
+      if (statusCode >= 500 && statusCode < 600) return "red";
+      return "";
+    }
     try {
       let loggedBody = body;
       if (isJSON(body)) {
         const json = JSON.parse(body);
-        if (json.error == "Invalid request format" && json.expectedFormat != undefined && json.expectedFormat != null) {
+        if (json.error === "Invalid request format" && json.expectedFormat !== undefined && json.expectedFormat !== null) {
           loggedBody = "Invalid request format";
         }
       }
@@ -25,10 +31,7 @@ const loggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
       const duration = Date.now() - start;
 
-      let statusCodeColor = "";
-      if (/2\d{2}/.test(res.statusCode.toString())) statusCodeColor = "green";
-      if (/4\d{2}/.test(res.statusCode.toString())) statusCodeColor = "yellow";
-      if (/5\d{2}/.test(res.statusCode.toString())) statusCodeColor = "red";
+      const statusCodeColor = getStatusCodeColor(res.statusCode);
 
       let durationColor = "";
       if (duration < 50) durationColor = "green";

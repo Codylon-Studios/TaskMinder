@@ -1,7 +1,7 @@
 import { csrfToken, reloadAll, reloadAllFn } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
-function checkClassName(className: string) {
+function checkClassName(className: string): boolean {
   return /^[\wÄÖÜäöü\s\-.]{2,50}$/.test(className);
 }
 
@@ -104,7 +104,7 @@ user.on("change", () => {
     if (user.classJoined) {
       location.href = "/main";
     }
-    else if (urlParams.get("action") != "join") {
+    else if (urlParams.get("action") !== "join") {
       $("#decide-action-panel").removeClass("d-none");
     }
     $(".login-register-element, .login-element, .register-element").addClass("d-none");
@@ -174,11 +174,11 @@ $("#create-class-btn").on("click", () => {
 
 const urlParams = new URLSearchParams(window.location.search);
 
-if (urlParams.get("action") == "join" || urlParams.has("classcode")) {
+if (urlParams.get("action") === "join" || urlParams.has("classcode")) {
   $("#decide-action-panel").addClass("d-none");
   $("#join-class-panel").removeClass("d-none");
 }
-else if (urlParams.get("action") == "account") {
+else if (urlParams.get("action") === "account") {
   $("#decide-action-panel").addClass("d-none");
   $("#decide-account-panel").removeClass("d-none");
 }

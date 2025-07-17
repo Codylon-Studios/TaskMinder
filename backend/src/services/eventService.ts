@@ -248,7 +248,7 @@ export const eventService = {
 
     for (const eventType of eventTypes) {
       isValidColor(eventType.color);
-      if (eventType.name.trim() == "") {
+      if (eventType.name.trim() === "") {
         const err: RequestError = {
           name: "Bad Request",
           status: 400,
@@ -258,7 +258,7 @@ export const eventService = {
         throw err;
       }
       try {
-        if (eventType.eventTypeId == "") {
+        if (eventType.eventTypeId === "") {
           await prisma.eventType.create({
             data: {
               name: eventType.name,

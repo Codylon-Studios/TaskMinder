@@ -30,6 +30,7 @@ export default tseslint.config(
         ...globals.node
       }
     },
+
     rules: {
       "semi": ["error", "always"],
       "indent": ["error", 2],
@@ -38,7 +39,30 @@ export default tseslint.config(
       "arrow-parens": ["error", "as-needed"],
       "quotes": ["error", "double", { avoidEscape: true }],
       "max-len": ["error", { "code": 150 }],
-      "comma-spacing": ["error", { "before": false, "after": true }]
+      "comma-spacing": ["error", { "before": false, "after": true }],
+      "eqeqeq": ["error", "always"],
+      "@typescript-eslint/explicit-function-return-type": ["error", { "allowExpressions": true }],
+      "complexity": ["error", 10],
+      "max-depth": ["error", 4],
+      "no-warning-comments": [
+        "warn",
+        {
+          "terms": ["TODO", "FIXME"],
+          "location": "anywhere"
+        }
+      ]
+    }
+  },
+
+  {
+    files: ["**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    },
+    rules: {
+      "@typescript-eslint/explicit-function-return-type": "off"
     }
   }
 );

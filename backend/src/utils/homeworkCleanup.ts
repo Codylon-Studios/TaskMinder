@@ -4,7 +4,7 @@ import logger from "./logger";
 /**
  * Deletes homework records that are older than 30 days based on submission date
  */
-export default async function cleanupOldHomework() {
+export default async function cleanupOldHomework(): Promise<void> {
   try {
     logger.setStandardPrefix("[CronJob]");
 

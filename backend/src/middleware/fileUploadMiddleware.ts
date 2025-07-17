@@ -26,7 +26,7 @@ export const fileFilter = (
     (error: Error): void;
     (error: null, acceptFile: boolean): void;
   }
-) => {
+): void => {
   if (file.mimetype === "application/json") {
     cb(null, true);
   }

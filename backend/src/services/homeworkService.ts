@@ -75,7 +75,7 @@ const homeworkService = {
     else {
       accountId = session.account.accountId;
     }
-    if (checkStatus == "true") {
+    if (checkStatus === "true") {
       await prisma.homework10dCheck.upsert({
         where: { accountId, homeworkId },
         update: {},

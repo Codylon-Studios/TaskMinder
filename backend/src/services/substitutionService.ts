@@ -5,27 +5,35 @@ import iconv from "iconv-lite";
 import logger from "../utils/logger";
 
 async function loadSubstitutionData(): Promise<void> {
-  if (process.env.DSB_ACTIVATED != "true") {
+  function getCredentials(): { username: string, password: string} | null {
+    if (typeof process.env.DSB_USER !== "string") {
+      logger.error("DSB user not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
+      return null;
+    }
+    if (typeof process.env.DSB_PASSWORD !== "string") {
+      logger.error("DSB password not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
+      return null;
+    }
+    return {
+      username: process.env.DSB_USER,
+      password: process.env.DSB_PASSWORD
+    };
+  }
+  
+  if (process.env.DSB_ACTIVATED !== "true") {
     return;
   }
   try {
-    if (typeof process.env.DSB_USER != "string") {
-      logger.error("DSB user not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
-      return;
-    }
-    if (typeof process.env.DSB_PASSWORD != "string") {
-      logger.error("DSB password not defined! Either define it in the .env file or set DSB_AVTIVATED to false!");
-      return;
-    }
-    const username = process.env.DSB_USER;
-    const password = process.env.DSB_PASSWORD;
+    const credentials = getCredentials();
+    if (credentials === null) return;
+    const {username, password} = credentials;
 
     let authId: string;
     try {
       const url = `https://mobileapi.dsbcontrol.de/authid?user=${username}&password=${password}&appversion=&bundleid=&osversion=&pushid=`;
       const authRes = await axios.get<string>(url);
       authId = authRes.data;
-      if (authId == "") {
+      if (authId === "") {
         logger.error(
           "The DSB credeantials don't return a valid authId! Either correct them or set DSB_ACTIVATED to false!"
         );
@@ -120,8 +128,8 @@ async function loadSubstitutionData(): Promise<void> {
 
 setInterval(loadSubstitutionData, 60000);
 
-export async function getSubstitutionData() {
-  if (process.env.DSB_ACTIVATED != "true") {
+export async function getSubstitutionData(): Promise<unknown> {
+  if (process.env.DSB_ACTIVATED !== "true") {
     return "No data";
   }
   let cachedData = await redisClient.get(cacheKeySubstitutionsData);

@@ -57,7 +57,7 @@ const teamService = {
     );
 
     for (const team of teams) {
-      if (team.name.trim() == "") {
+      if (team.name.trim() === "") {
         const err: RequestError = {
           name: "Bad Request",
           status: 400,
@@ -67,7 +67,7 @@ const teamService = {
         throw err;
       }
       try {
-        if (team.teamId == "") {
+        if (team.teamId === "") {
           await prisma.team.create({
             data: {
               name: team.name

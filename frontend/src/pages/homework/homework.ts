@@ -17,7 +17,7 @@ import {
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-export async function updateHomeworkList() {
+export async function updateHomeworkList(): Promise<void> {
   const newContent = $("<div></div>");
   let addedElements: JQuery<HTMLElement> = $();
 
@@ -25,47 +25,72 @@ export async function updateHomeworkList() {
   const editEnabled = $("#edit-toggle").is(":checked");
 
   for (const homework of await homeworkData()) {
+    async function filter(): Promise<boolean> {
+      function filterDate(): boolean {
+        // Filter by min. date
+        if ($("#filter-date-from").val() !== "") {
+          const filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
+          if (filterDate > parseInt(homework.submissionDate)) {
+            return true;
+          }
+        }
+
+        // Filter by max. date
+        if ($("#filter-date-until").val() !== "") {
+          const filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "1.1.1970");
+          if (filterDate < parseInt(homework.assignmentDate)) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      // Filter by checked status
+      if (checked && !$("#filter-status-checked").prop("checked")) {
+        return true;
+      }
+
+      // Filter by checked status
+      if (!checked && !$("#filter-status-unchecked").prop("checked")) {
+        return true;
+      }
+
+      // Filter by subject
+      if (!$(`#filter-subject-${homework.subjectId}`).prop("checked")) {
+        return true;
+      }
+
+      if (filterDate()) return true;
+
+      // Filter by team
+      if (!(await joinedTeamsData()).includes(homework.teamId) && homework.teamId !== -1) {
+        return true;
+      }
+
+      return false;
+    }
+    function showCheckAnimation(): void {
+      if (checked && justCheckedHomeworkId === homeworkId && animations) {
+        justCheckedHomeworkId = -1;
+        template.find(".homework-check-wrapper").append($("<div></div>".repeat(8)).each(
+          function (id) {
+            $(this).attr("data-id", id);
+            setTimeout(() => {
+              $(this).remove();
+            }, 400);
+          }
+        ));
+      }
+    }
+
     const homeworkId = homework.homeworkId;
     const checked = await getHomeworkCheckStatus(homeworkId);
 
-    // Filter by checked status
-    if (checked && !$("#filter-status-checked").prop("checked")) {
-      continue;
-    }
-
-    // Filter by checked status
-    if (!checked && !$("#filter-status-unchecked").prop("checked")) {
-      continue;
-    }
-
-    // Filter by subject
-    if (!$(`#filter-subject-${homework.subjectId}`).prop("checked")) {
-      continue;
-    }
-
-    // Filter by min. date
-    if ($("#filter-date-from").val() != "") {
-      const filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-      if (filterDate > parseInt(homework.submissionDate)) {
-        continue;
-      }
-    }
-
-    // Filter by max. date
-    if ($("#filter-date-until").val() != "") {
-      const filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "1.1.1970");
-      if (filterDate < parseInt(homework.assignmentDate)) {
-        continue;
-      }
-    }
-
-    // Filter by team
-    if (!(await joinedTeamsData()).includes(homework.teamId) && homework.teamId != -1) {
-      continue;
-    }
+    if (await filter()) continue;
 
     // Get the information for the homework
-    const subject = (await subjectData()).find(s => s.subjectId == homework.subjectId)?.subjectNameLong;
+    const subject = (await subjectData()).find(s => s.subjectId === homework.subjectId)?.subjectNameLong;
     const content = homework.content;
     const assignmentDate = msToDisplayDate(homework.assignmentDate);
     const submissionDate = msToDisplayDate(homework.submissionDate);
@@ -96,17 +121,7 @@ export async function updateHomeworkList() {
       </div>
     `);
     
-    if (checked && justCheckedHomeworkId == homeworkId && animations) {
-      justCheckedHomeworkId = -1;
-      template.find(".homework-check-wrapper").append($("<div></div>".repeat(8)).each(
-        function (id) {
-          $(this).attr("data-id", id);
-          setTimeout(() => {
-            $(this).remove();
-          }, 400);
-        }
-      ));
-    }
+    showCheckAnimation();
 
     // Add this homework to the list
     newContent.append(template);
@@ -121,14 +136,16 @@ export async function updateHomeworkList() {
   }
 
   // If no homeworks match, add an explanation text
-  if (newContent.html() == "") {
+  $("#edit-toggle ~ label").toggle(newContent.html() !== "");
+  $("#filter-toggle ~ label").toggle((await homeworkData()).length > 0);
+  if (newContent.html() === "") {
     newContent.html('<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>');
   }
   $("#homework-list").empty().append(newContent.children());
   addedElements.trigger("addedToDom");
 };
 
-async function updateSubjectList () {
+async function updateSubjectList(): Promise<void> {
   // Clear the select element in the add homework modal
   $("#add-homework-subject").empty();
   $("#add-homework-subject").append('<option value="" disabled selected>Fach</option>');
@@ -148,7 +165,7 @@ async function updateSubjectList () {
 
     filterData.subject[subjectId] ??= true;
     const checkedStatus = filterData.subject[subjectId] ? "checked" : "";
-    if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none");
+    if (checkedStatus !== "checked") $("#filter-changed").removeClass("d-none");
 
     // Add the template for filtering by subject
     const templateFilterSubject = `<div class="form-check">
@@ -179,7 +196,7 @@ async function updateSubjectList () {
   localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
 };
 
-async function updateTeamList () {
+async function updateTeamList(): Promise<void> {
   // Clear the select element in the add homework modal
   $("#add-homework-team").empty();
   $("#add-homework-team").append('<option value="-1" selected>Alle</option>');
@@ -198,7 +215,7 @@ async function updateTeamList () {
   });
 };
 
-function addHomework() {
+function addHomework(): void {
   //
   // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS A HOMEWORK
   //
@@ -285,12 +302,12 @@ function addHomework() {
     });
 }
 
-async function editHomework(homeworkId: number) {
+async function editHomework(homeworkId: number): Promise<void> {
   //
   // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF A HOMEWORK, NOT WHEN USER ACTUALLY EDITS A HOMEWORK
   //
 
-  const homework = (await homeworkData()).find(h => h.homeworkId == homeworkId);
+  const homework = (await homeworkData()).find(h => h.homeworkId === homeworkId);
   if (!homework) return;
 
   // Set the inputs on the already saved information
@@ -373,7 +390,7 @@ async function editHomework(homeworkId: number) {
     });
 }
 
-function deleteHomework(homeworkId: number) {
+function deleteHomework(homeworkId: number): void {
   //
   // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF A HOMEWORK, NOT WHEN USER ACTUALLY DELETES A HOMEWORK
   //
@@ -438,7 +455,7 @@ function deleteHomework(homeworkId: number) {
     });
 }
 
-async function checkHomework(homeworkId: number) {
+async function checkHomework(homeworkId: number): Promise<void> {
   justCheckedHomeworkId = homeworkId;
   // Save whether the user has checked or unchecked the homework
   const checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
@@ -495,7 +512,7 @@ async function checkHomework(homeworkId: number) {
     let dataString = localStorage.getItem("homeworkCheckedData");
     let data = [];
 
-    if (dataString != null && dataString != undefined) {
+    if (dataString !== null && dataString !== undefined) {
       data = JSON.parse(dataString);
     }
 
@@ -515,12 +532,34 @@ async function checkHomework(homeworkId: number) {
   }
 }
 
-function updateFilters(ignoreSubjects?: boolean) {
+function updateFilters(ignoreSubjects?: boolean): void {
+  function updateDateFilters(): void {
+    if (filterData.dateFrom === undefined) {
+      $("#filter-date-from").val(msToInputDate(Date.now()));
+    }
+    else {
+      $("#filter-date-from").val(filterData.dateFrom);
+      if (!isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none");
+    }
+  
+    if (filterData.dateUntil === undefined) {
+      const nextMonth = new Date(Date.now());
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
+    }
+    else {
+      $("#filter-date-from").val(filterData.dateUntil);
+      const nextMonth = new Date(Date.now());
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
+    }
+  }
+
   $("#filter-changed").addClass("d-none");
 
   const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
 
-  if (filterData.statusUnchecked == undefined) {
+  if (filterData.statusUnchecked === undefined) {
     $("#filter-status-unchecked").prop("checked", true);
   }
   else {
@@ -528,7 +567,7 @@ function updateFilters(ignoreSubjects?: boolean) {
     if (!filterData.statusUnchecked) $("#filter-changed").removeClass("d-none");
   }
 
-  if (filterData.statusChecked == undefined) {
+  if (filterData.statusChecked === undefined) {
     $("#filter-status-checked").prop("checked", true);
   }
   else {
@@ -536,32 +575,14 @@ function updateFilters(ignoreSubjects?: boolean) {
     if (!filterData.statusChecked) $("#filter-changed").removeClass("d-none");
   }
 
-  if (filterData.dateFrom == undefined) {
-    $("#filter-date-from").val(msToInputDate(Date.now()));
-  }
-  else {
-    $("#filter-date-from").val(filterData.dateFrom);
-    if (!isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none");
-  }
-
-  if (filterData.dateUntil == undefined) {
-    const nextMonth = new Date(Date.now());
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
-  }
-  else {
-    $("#filter-date-from").val(filterData.dateUntil);
-    const nextMonth = new Date(Date.now());
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
-  }
+  updateDateFilters();
   
   if (! ignoreSubjects) {
     updateSubjectList();
   }
 }
 
-let justCheckedHomeworkId: number = -1;
+let justCheckedHomeworkId = -1;
 const animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
 
 $(function () {
@@ -635,7 +656,7 @@ $(function () {
     const assignmentDate = $("#add-homework-date-assignment").val();
     const submissionDate = $("#add-homework-date-submission").val();
 
-    if ([content, assignmentDate, submissionDate].includes("") || subject == null) {
+    if ([content, assignmentDate, submissionDate].includes("") || subject === null) {
       $("#add-homework-button").addClass("disabled");
     }
     else {
@@ -650,7 +671,7 @@ $(function () {
     const assignmentDate = $("#edit-homework-date-assignment").val();
     const submissionDate = $("#edit-homework-date-submission").val();
 
-    if ([content, assignmentDate, submissionDate].includes("") || subject == null) {
+    if ([content, assignmentDate, submissionDate].includes("") || subject === null) {
       $("#edit-homework-button").addClass("disabled");
     }
     else {

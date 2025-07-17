@@ -3,7 +3,7 @@ import { cacheExpiration, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
 import logger from "./logger";
 
-async function updateCacheData<T>(data: T[], key: string) {
+async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   try {
     await redisClient.set(key, JSON.stringify(data, BigIntreplacer), {
       EX: cacheExpiration
@@ -14,11 +14,11 @@ async function updateCacheData<T>(data: T[], key: string) {
   }
 }
 
-function BigIntreplacer(key: string, value: unknown) {
+function BigIntreplacer(key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
-async function isValidTeamId(teamId: number) {
+async function isValidTeamId(teamId: number): Promise<void> {
   if (teamId !== -1) {
     const teamExists = await prisma.team.findUnique({
       where: {
@@ -40,7 +40,7 @@ async function isValidTeamId(teamId: number) {
   }
 }
 
-async function isValidSubjectId(subjectId: number) {
+async function isValidSubjectId(subjectId: number): Promise<void> {
   if (subjectId !== -1) {
     const subjectExists = await prisma.subjects.findUnique({
       where: {
@@ -62,7 +62,7 @@ async function isValidSubjectId(subjectId: number) {
   }
 }
 
-async function isValidweekDay(weekDay: number) {
+async function isValidweekDay(weekDay: number): Promise<void> {
   if ([0, 1, 2, 3, 4].includes(weekDay)) return;
   const err: RequestError = {
     name: "Not Found",
@@ -73,7 +73,7 @@ async function isValidweekDay(weekDay: number) {
   throw err;
 }
 
-async function isValidGender(gender: string) {
+async function isValidGender(gender: string): Promise<void> {
   if (["d", "w", "m"].includes(gender)) return;
   const err: RequestError = {
     name: "Not Found",
@@ -84,7 +84,7 @@ async function isValidGender(gender: string) {
   throw err;
 }
 
-function isValidColor(color: string) {
+function isValidColor(color: string): void {
   const hexColorRegex = /^#[0-9a-f]{6}$/i;
   const colorValid = hexColorRegex.test(color);
   if (!colorValid) {
@@ -101,7 +101,7 @@ function isValidColor(color: string) {
   }
 }
 
-function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | null) {
+function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | null): void {
   if (
     !(
       ["", undefined, null].includes(endDate as string | null | undefined) ||

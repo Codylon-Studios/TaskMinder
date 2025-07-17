@@ -1,7 +1,7 @@
 import { csrfToken, isSite } from "../../global/global.js";
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
-async function registerAccount(username: string, password: string) {
+async function registerAccount(username: string, password: string): Promise<void> {
   const data = {
     username: username,
     password: password
@@ -45,7 +45,7 @@ async function registerAccount(username: string, password: string) {
 }
 
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
-async function loginAccount(username: string, password: string) {
+async function loginAccount(username: string, password: string): Promise<void> {
   const data = {
     username: username,
     password: password
@@ -95,7 +95,7 @@ async function loginAccount(username: string, password: string) {
   }, 1000);
 }
 
-async function checkExistingUsername(username: string) {
+async function checkExistingUsername(username: string): Promise<boolean> {
   const data = { username: username };
   const token = await csrfToken();
   let hasResponded = false;
@@ -132,7 +132,7 @@ async function checkExistingUsername(username: string) {
   });
 }
 
-function resetLoginRegisterModal() {
+function resetLoginRegisterModal(): void {
   $(".login-register-element").removeClass("d-none");
   $(".login-element").addClass("d-none");
   $(".register-element").addClass("d-none");
@@ -155,11 +155,11 @@ function resetLoginRegisterModal() {
   $(".register-error-insecure-password").removeClass("d-flex");
 }
 
-function checkUsername(username: string) {
+function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
 }
 
-function checkSecurePassword(password: string) {
+function checkSecurePassword(password: string): boolean {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
@@ -190,6 +190,8 @@ export const user = {
   loggedIn: null as boolean | null,
   username: null as string | null,
   classJoined: null as boolean | null,
+  permissionLevel: null as number | null,
+
   _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
 
   on(event: UserEventName, callback: UserEventCallback) {
@@ -229,6 +231,7 @@ $.get("/account/auth", response => {
   }
 
   user.classJoined = response.classJoined;
+  user.permissionLevel = 0; // TODO: Fetch from server
 
   if (response.loggedIn) {
     user.loggedIn = true;
@@ -319,7 +322,7 @@ $(() => {
     // Sync multiple instances of login possibilites
     $(".register-password-repeat").val($(this).val() ?? "");
 
-    if ($(".register-password").val() == $(".register-password-repeat").val()) {
+    if ($(".register-password").val() === $(".register-password-repeat").val()) {
       $(".register-button").removeClass("disabled");
       $(".register-error-no-matching-passwords").addClass("d-none");
       $(".register-error-no-matching-passwords").removeClass("d-flex");
@@ -327,7 +330,7 @@ $(() => {
   });
 
   $(".register-password-repeat").on("change", () => {
-    if ($(".register-password").val() != $(".register-password-repeat").val()) {
+    if ($(".register-password").val() !== $(".register-password-repeat").val()) {
       $(".register-button").addClass("disabled");
       $(".register-error-no-matching-passwords").removeClass("d-none");
       $(".register-error-no-matching-passwords").addClass("d-flex");
@@ -340,7 +343,8 @@ $(() => {
     $(".login-register-element, .login-register-next-button").addClass("d-none");
 
     checkExistingUsername($(".login-register-username").val()?.toString() ?? "").then(response => {
-      if (response) {
+      const isTaken = response;
+      if (isTaken) {
         $(".login-element").removeClass("d-none");
       }
       else {

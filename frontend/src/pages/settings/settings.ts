@@ -19,7 +19,7 @@ import {
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
-async function updateColorTheme() {
+async function updateColorTheme(): Promise<void> {
   if ($("#color-theme-dark").prop("checked")) {
     colorTheme("dark");
     localStorage.setItem("colorTheme", "dark");
@@ -38,7 +38,7 @@ async function updateColorTheme() {
     localStorage.setItem("colorTheme", "auto");
   }
 
-  if ((await colorTheme()) == "light") {
+  if ((await colorTheme()) === "light") {
     $("html").css({ background: "#ffffff" });
     document.body.setAttribute("data-bs-theme", "light");
     $('meta[name="theme-color"]').attr("content", "#f8f9fa");
@@ -50,7 +50,7 @@ async function updateColorTheme() {
   }
 }
 
-async function updateTeamLists() {
+async function updateTeamLists(): Promise<void> {
   let newTeamSelectionContent = "";
   let newTeamsContent = "";
 
@@ -72,8 +72,8 @@ async function updateTeamLists() {
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center">
         <div class="d-flex flex-column flex-md-row align-items-md-center">
         <div>
-          <input class="form-control form-control-sm d-inline w-fit-content me-3 team-name-input"
-            type="text" value="${$.formatHtml(team.name)}" placeholder="${$.formatHtml(team.name)}" data-id="${teamId}">
+          <input class="form-control form-control-sm d-inline w-fit-content me-3 team-name-input" type="text"
+            value="${$.formatHtml(team.name)}" placeholder="${$.formatHtml(team.name)}" data-id="${teamId}" ${canEditClassSettings ? "" : "disabled"}>
           <div class="invalid-feedback">
             Teamnamen dürfen nicht leer sein!
           </div>
@@ -85,7 +85,7 @@ async function updateTeamLists() {
           <span class="text-danger fw-bold mt-2 mt-md-0 d-none team-deleted" data-id="${teamId}">Gelöscht</span>
         </div
         <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end team-delete" data-id="${teamId}">
+          <button class="btn btn-sm btn-sm-square btn-danger float-end team-delete" data-id="${teamId}" ${canEditClassSettings ? "" : "disabled"}>
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
@@ -93,7 +93,7 @@ async function updateTeamLists() {
     newTeamsContent += template;
   }
 
-  if ((await teamsData()).length == 0) {
+  if ((await teamsData()).length === 0) {
     $("#team-selection-list, #teams-list").append('<span class="text-secondary no-teams">Keine Teams vorhanden</span>');
   }
 
@@ -103,7 +103,7 @@ async function updateTeamLists() {
   $(document).off("change", ".team-name-input").on("change", ".team-name-input", async function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
 
-    if ($(this).val().trim() == "") {
+    if ($(this).val().trim() === "") {
       $(this).addClass("is-invalid");
       $("#teams-save").addClass("disabled");
     }
@@ -111,8 +111,8 @@ async function updateTeamLists() {
     const teamId = $(this).data("id");
     if (teamId !== "") {
       const newName = $(this).val();
-      const oldName = (await teamsData()).find(team => team.teamId == teamId)?.name;
-      if (newName != oldName) {
+      const oldName = (await teamsData()).find(team => team.teamId === teamId)?.name;
+      if (newName !== oldName) {
         if ($(`.team-deleted[data-id="${teamId}"]`).hasClass("d-none")) {
           $(`.team-renamed[data-id="${teamId}"]`)
             .removeClass("d-none")
@@ -156,7 +156,7 @@ async function updateTeamLists() {
   });
 }
 
-async function updateEventTypeList() {
+async function updateEventTypeList(): Promise<void> {
   let newEventTypesContent = "";
 
   for (const eventType of await eventTypeData()) {
@@ -167,11 +167,13 @@ async function updateEventTypeList() {
         <div class="d-flex flex-column flex-lg-row align-items-lg-center">
           <div class="d-flex">
             <div>
-              <input class="form-control form-control-sm d-inline w-fit-content me-3 event-type-name-input"
-                type="text" value="${$.formatHtml(eventType.name)}" placeholder="${$.formatHtml(eventType.name)}" data-id="${eventTypeId}">
+              <input class="form-control form-control-sm d-inline w-fit-content me-3 event-type-name-input" type="text"
+                value="${$.formatHtml(eventType.name)}" placeholder="${$.formatHtml(eventType.name)}"
+                data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
               <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
             </div>
-            <input type="text" value="${$.formatHtml(eventType.color)}" class="color-picker event-type-color-input" data-id="${eventTypeId}">
+            <input type="text" value="${$.formatHtml(eventType.color)}" class="color-picker event-type-color-input"
+              data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
           </div>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none me-2 event-type-renamed" data-id="${eventTypeId}">
             Umbenannt
@@ -190,7 +192,8 @@ async function updateEventTypeList() {
           <span class="text-danger fw-bold mt-2 mt-md-0 d-none event-type-deleted" data-id="${eventTypeId}">Gelöscht</span>
         </div
         <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete" data-id="${eventTypeId}">
+          <button class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete"
+            data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
@@ -198,7 +201,7 @@ async function updateEventTypeList() {
     newEventTypesContent += template;
   }
 
-  if ((await eventTypeData()).length == 0) {
+  if ((await eventTypeData()).length === 0) {
     newEventTypesContent += '<span class="text-secondary no-event-types">Keine Ereignisarten vorhanden</span>';
   }
   $("#event-types-list").html(newEventTypesContent);
@@ -206,7 +209,7 @@ async function updateEventTypeList() {
   $(document).off("change", ".event-type-name-input").on("change", ".event-type-name-input", async function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
 
-    if ($(this).val().trim() == "") {
+    if ($(this).val().trim() === "") {
       $(this).addClass("is-invalid");
       $("#event-types-save").addClass("disabled");
     }
@@ -214,8 +217,8 @@ async function updateEventTypeList() {
     const eventTypeId = $(this).data("id");
     if (eventTypeId !== "") {
       const newName = $(this).val();
-      const oldName = (await eventTypeData()).find(eventType => eventType.eventTypeId == eventTypeId)?.name;
-      if (newName != oldName) {
+      const oldName = (await eventTypeData()).find(eventType => eventType.eventTypeId === eventTypeId)?.name;
+      if (newName !== oldName) {
         if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
           $(`.event-type-renamed[data-id="${eventTypeId}"]`)
             .removeClass("d-none")
@@ -246,8 +249,8 @@ async function updateEventTypeList() {
     const eventTypeId = $(this).data("id");
     if (eventTypeId !== "") {
       const newColor = $(this).val();
-      const oldColor = (await eventTypeData()).find(eventType => eventType.eventTypeId == eventTypeId)?.color ?? "";
-      if (newColor != oldColor) {
+      const oldColor = (await eventTypeData()).find(eventType => eventType.eventTypeId === eventTypeId)?.color ?? "";
+      if (newColor !== oldColor) {
         if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
           const $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`);
           $recoloredElement.removeClass("d-none").find("*").removeClass("d-none");
@@ -283,7 +286,7 @@ async function updateEventTypeList() {
   });
 }
 
-async function updateSubjectList() {
+async function updateSubjectList(): Promise<void> {
   if ((await substitutionsData()) !== "No data") {
     dsbActivated = true;
   }
@@ -293,100 +296,124 @@ async function updateSubjectList() {
   let currentSubjectData = await subjectData();
   currentSubjectData = currentSubjectData.sort((a, b) => a.subjectId - b.subjectId);
   for (const subject of currentSubjectData) {
+
+    function getTemplate(): JQuery<HTMLElement> {
+      function getHtmlFromValue(value: unknown, fallback: string): string {
+        return $.formatHtml(value?.toString() ?? fallback);
+      }
+      const disabledState = canEditClassSettings ? "" : "disabled";
+
+      const teacherGenderOptions = [
+        { value: "d", label: "-" },
+        { value: "w", label: "Frau" },
+        { value: "m", label: "Herr" }
+      ];
+      const teacherGenderOptionsHtml = teacherGenderOptions.map(opt => 
+        `<option value="${opt.value}" ${subject.teacherGender === opt.value ? "selected" : ""}>${opt.label}</option>`
+      ).join("");
+
+      const subjectNameSubstitution = getHtmlFromValue(subject.subjectNameSubstitution, "keine Angabe");
+      const teacherNameSubstitution = getHtmlFromValue(subject.teacherNameSubstitution, "keine Angabe");
+      return $(`
+        <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
+          <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
+            <div class="me-3 w-md-50">
+              <div class="d-flex gap-3 mb-2">
+                <div class="subject-inputs-label d-flex align-items-center">
+                  <span class="d-none d-lg-inline">Name</span>
+                  <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name des Fachs"><i class="fa-solid fa-circle-info"></i></a>
+                </div>
+                <div class="d-inline-block">
+                  <input class="form-control form-control-sm subject-name-long-input" type="text" value="${subjectNameLong}"
+                    placeholder="${subjectNameLong}" data-id="${subjectId}" ${disabledState}>
+                  <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
+                </div>
+                <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input" type="text"
+                  value="${subjectNameShort}" placeholder="${subjectNameShort}" data-id="${subjectId}" ${disabledState}>
+              </div>
+              <div class="d-flex gap-3 ${dsbActivated ? "mb-2" : ""}">
+                <div class="subject-inputs-label d-flex align-items-center">
+                  <span class="d-none d-lg-inline">Lehrkraft</span>
+                  <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name der Lehrkraft"><i class="fa-solid fa-circle-info"></i></a>
+                </div>
+                <div class="d-inline-block">
+                  <select class="form-control form-control-sm subject-teacher-gender-input"
+                    data-id="${subjectId}" ${disabledState}>
+                    ${teacherGenderOptionsHtml}
+                  </select>
+                </div>
+                <div class="d-inline-block">
+                  <input class="form-control form-control-sm h-fit-content subject-teacher-long-input" type="text" value="${teacherNameLong}"
+                    placeholder="${teacherNameLong}" data-id="${subjectId}" ${disabledState}>
+                  <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
+                </div>
+                <input class="form-control form-control-sm h-fit-content subject-teacher-short-input" type="text" value="${teacherNameShort}"
+                  placeholder="${teacherNameShort}" data-id="${subjectId}" ${disabledState}>
+              </div>
+              <div class="d-flex gap-3 ${dsbActivated ? "" : "d-none"}">
+                <div class="subject-inputs-label d-flex align-items-center">
+                  <span class="d-none d-lg-inline">Vertretung</span>
+                  <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Vertretungsoptionen"><i class="fa-solid fa-circle-info"></i></a>
+                </div>
+                <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"
+                  type="text" value="${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "")}"
+                  placeholder="${subjectNameSubstitution}"
+                  ${disabledState}>
+                <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id="${subjectId}"
+                  type="text" value="${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "")}"
+                  placeholder="${teacherNameSubstitution}"
+                  ${disabledState}>
+              </div>
+            </div>
+            <div class="w-md-50">
+              <span class="text-warning fw-bold mt-2 mt-md-0 d-none subject-changed" data-id="${subjectId}">
+                Geändert
+                <span class="subject-changed-name-long">
+                  ${$.formatHtml(subject.subjectNameLong)} zu <b></b>
+                </span>
+                <span class="subject-changed-name-short">
+                  ${$.formatHtml(subject.subjectNameShort)} zu <b></b>
+                </span>
+                <span class="subject-changed-name-substitution">
+                  ${subjectNameSubstitution} zu <b></b>
+                </span>
+                <span class="subject-changed-teacher-gender">
+                  ${{ w: "Frau", m: "Herr", d: "Keine Anrede" }[subject.teacherGender]} zu <b></b>
+                </span>
+                <span class="subject-changed-teacher-long">
+                  ${$.formatHtml(subject.teacherNameLong)} zu <b></b>
+                </span>
+                <span class="subject-changed-teacher-short">
+                  ${$.formatHtml(subject.teacherNameShort)} zu <b></b>
+                </span>
+                <span class="subject-changed-teacher-substitution">
+                  ${teacherNameSubstitution} zu <b></b>
+                </span>
+              </span>
+              <span class="text-danger fw-bold mt-2 mt-md-0 d-none subject-deleted" data-id="${subjectId}">Gelöscht</span>
+            </div>
+          </div
+          <div>
+            <button class="btn btn-sm btn-sm-square btn-danger float-end subject-delete"
+              data-id="${subjectId}" ${disabledState}>
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `);
+    }
+
     const subjectId = subject.subjectId;
     const subjectNameLong = $.formatHtml(subject.subjectNameLong);
     const subjectNameShort = $.formatHtml(subject.subjectNameShort);
     const teacherNameLong = $.formatHtml(subject.teacherNameLong);
     const teacherNameShort = $.formatHtml(subject.teacherNameShort);
-    const template = $(`
-      <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
-        <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
-          <div class="me-3 w-md-50">
-            <div class="d-flex gap-3 mb-2">
-              <div class="subject-inputs-label d-flex align-items-center">
-                <span class="d-none d-lg-inline">Name</span>
-                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name des Fachs"><i class="fa-solid fa-circle-info"></i></a>
-              </div>
-              <div class="d-inline-block">
-                <input class="form-control form-control-sm subject-name-long-input"
-                  type="text" value="${subjectNameLong}" placeholder="${subjectNameLong}" data-id="${subjectId}">
-                <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
-              </div>
-              <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input"
-                type="text" value="${subjectNameShort}" placeholder="${subjectNameShort}" data-id="${subjectId}">
-            </div>
-            <div class="d-flex gap-3 ${dsbActivated ? "mb-2" : ""}">
-              <div class="subject-inputs-label d-flex align-items-center">
-                <span class="d-none d-lg-inline">Lehrkraft</span>
-                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name der Lehrkraft"><i class="fa-solid fa-circle-info"></i></a>
-              </div>
-              <div class="d-inline-block">
-                <select class="form-control form-control-sm subject-teacher-gender-input" data-id="${subjectId}">
-                  <option value="d" ${subject.teacherGender == "d" ? "selected" : ""}>-</option>
-                  <option value="w" ${subject.teacherGender == "w" ? "selected" : ""}>Frau</option>
-                  <option value="m" ${subject.teacherGender == "m" ? "selected" : ""}>Herr</option>
-                </select>
-              </div>
-              <div class="d-inline-block">
-                <input class="form-control form-control-sm h-fit-content subject-teacher-long-input"
-                  type="text" value="${teacherNameLong}" placeholder="${teacherNameLong}" data-id="${subjectId}">
-                <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
-              </div>
-              <input class="form-control form-control-sm h-fit-content subject-teacher-short-input"
-                type="text" value="${teacherNameShort}" placeholder="${teacherNameShort}" data-id="${subjectId}">
-            </div>
-            <div class="d-flex gap-3 ${dsbActivated ? "" : "d-none"}">
-              <div class="subject-inputs-label d-flex align-items-center">
-                <span class="d-none d-lg-inline">Vertretung</span>
-                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Vertretungsoptionen"><i class="fa-solid fa-circle-info"></i></a>
-              </div>
-              <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"
-                type="text" value="${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "")}"
-                placeholder="${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "keine Angabe")}">
-              <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id="${subjectId}"
-                type="text" value="${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "")}"
-                placeholder="${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "keine Angabe")}">
-            </div>
-          </div>
-          <div class="w-md-50">
-            <span class="text-warning fw-bold mt-2 mt-md-0 d-none subject-changed" data-id="${subjectId}">
-              Geändert
-              <span class="subject-changed-name-long">
-                ${$.formatHtml(subject.subjectNameLong)} zu <b></b>
-              </span>
-              <span class="subject-changed-name-short">
-                ${$.formatHtml(subject.subjectNameShort)} zu <b></b>
-              </span>
-              <span class="subject-changed-name-substitution">
-                ${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "keine Angabe")} zu <b></b>
-              </span>
-              <span class="subject-changed-teacher-gender">
-                ${{ w: "Frau", m: "Herr", d: "Keine Anrede" }[subject.teacherGender]} zu <b></b>
-              </span>
-              <span class="subject-changed-teacher-long">
-                ${$.formatHtml(subject.teacherNameLong)} zu <b></b>
-              </span>
-              <span class="subject-changed-teacher-short">
-                ${$.formatHtml(subject.teacherNameShort)} zu <b></b>
-              </span>
-              <span class="subject-changed-teacher-substitution">
-                ${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "keine Angabe")} zu <b></b>
-              </span>
-            </span>
-            <span class="text-danger fw-bold mt-2 mt-md-0 d-none subject-deleted" data-id="${subjectId}">Gelöscht</span>
-          </div>
-        </div
-        <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end subject-delete" data-id="${subjectId}">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-      </div>`);
+    const template = getTemplate();
     template.find(".subject-changed").last().find("span").addClass("d-none").attr("data-id", subjectId);
     newSubjectsContent += template[0].outerHTML;
   }
 
-  if ((await subjectData()).length == 0) {
+  if ((await subjectData()).length === 0) {
     newSubjectsContent += '<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>';
   }
   $("#subjects-list").html(newSubjectsContent);
@@ -394,7 +421,7 @@ async function updateSubjectList() {
   $(document).off("change", ".subject-name-long-input").on("change", ".subject-name-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
-    if ($(this).val().trim() == "") {
+    if ($(this).val().trim() === "") {
       $(this).addClass("is-invalid");
       $("#subjects-save").addClass("disabled");
     }
@@ -402,8 +429,8 @@ async function updateSubjectList() {
     const subjectId = $(this).data("id");
     if (subjectId !== "") {
       const newName = $(this).val();
-      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameLong;
-      if (newName != oldName) {
+      const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameLong;
+      if (newName !== oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
           $(`.subject-changed-name-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
@@ -411,7 +438,7 @@ async function updateSubjectList() {
       }
       else {
         $(`.subject-changed-name-long[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
       }
@@ -433,8 +460,8 @@ async function updateSubjectList() {
     const subjectId = $(this).data("id");
     if (subjectId !== "") {
       const newName = $(this).val();
-      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameShort;
-      if (newName != oldName) {
+      const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameShort;
+      if (newName !== oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
           $(`.subject-changed-name-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
@@ -442,7 +469,7 @@ async function updateSubjectList() {
       }
       else {
         $(`.subject-changed-name-short[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
       }
@@ -456,8 +483,8 @@ async function updateSubjectList() {
     const subjectId = $(this).data("id");
     if (subjectId !== "") {
       const newGender = $(this).val() as "d" | "w" | "m";
-      const oldGender = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherGender;
-      if (newGender != oldGender) {
+      const oldGender = (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherGender;
+      if (newGender !== oldGender) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
           $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`)
@@ -468,7 +495,7 @@ async function updateSubjectList() {
       }
       else {
         $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
       }
@@ -478,7 +505,7 @@ async function updateSubjectList() {
   $(document).off("change", ".subject-teacher-long-input").on("change", ".subject-teacher-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
-    if ($(this).val().trim() == "") {
+    if ($(this).val().trim() === "") {
       $(this).addClass("is-invalid");
       $("#subjects-save").addClass("disabled");
     }
@@ -486,8 +513,8 @@ async function updateSubjectList() {
     const subjectId = $(this).data("id");
     if (subjectId !== "") {
       const newName = $(this).val();
-      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameLong;
-      if (newName != oldName) {
+      const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameLong;
+      if (newName !== oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
           $(`.subject-changed-teacher-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
@@ -495,7 +522,7 @@ async function updateSubjectList() {
       }
       else {
         $(`.subject-changed-teacher-long[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
       }
@@ -517,8 +544,8 @@ async function updateSubjectList() {
     const subjectId = $(this).data("id");
     if (subjectId !== "") {
       const newName = $(this).val();
-      const oldName = (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameShort;
-      if (newName != oldName) {
+      const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameShort;
+      if (newName !== oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
           $(`.subject-changed-teacher-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
@@ -526,7 +553,7 @@ async function updateSubjectList() {
       }
       else {
         $(`.subject-changed-teacher-short[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
       }
@@ -541,9 +568,9 @@ async function updateSubjectList() {
     if (subjectId !== "") {
       const newName = $(this).val();
       const oldName =
-          (await subjectData()).find(subject => subject.subjectId == subjectId)?.subjectNameSubstitution ??
+          (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameSubstitution ??
           "keine Angabe";
-      if (newName != oldName) {
+      if (newName !== oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
           $(`.subject-changed-name-substitution[data-id="${subjectId}"]`)
@@ -554,7 +581,7 @@ async function updateSubjectList() {
       }
       else {
         $(`.subject-changed-name-substitution[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
       }
@@ -569,9 +596,9 @@ async function updateSubjectList() {
     if (subjectId !== "") {
       const newName = $(this).val();
       const oldName =
-          (await subjectData()).find(subject => subject.subjectId == subjectId)?.teacherNameSubstitution ??
+          (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameSubstitution ??
           "keine Angabe";
-      if (newName != oldName) {
+      if (newName !== oldName) {
         if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
           $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
           $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`)
@@ -582,7 +609,7 @@ async function updateSubjectList() {
       }
       else {
         $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length == 0) {
+        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
       }
@@ -615,15 +642,15 @@ async function updateSubjectList() {
   });
 }
 
-async function updateTimetable() {
+async function updateTimetable(): Promise<void> {
   const newTimetableContent = $("<div></div>");
 
-  let subjectOptions: string = "";
+  let subjectOptions = "";
   (await subjectData()).forEach(subject => {
     subjectOptions += `<option value="${subject.subjectId}">${$.formatHtml(subject.subjectNameLong)}</option>`;
   });
 
-  let teamOptions: string = "";
+  let teamOptions = "";
 
   (await teamsData()).forEach(team => {
     teamOptions += `<option value="${team.teamId}">${$.formatHtml(team.name)}</option>`;
@@ -642,7 +669,11 @@ async function updateTimetable() {
     `);
     dayTemplate
       .find(".card")
-      .append('<button class="btn btn-sm btn-success fw-semibold timetable-new-lesson">Neue Stunde</button>');
+      .append(`
+        <button class="btn btn-sm btn-success fw-semibold timetable-new-lesson"${canEditClassSettings ? "" : "disabled"}>
+          Neue Stunde
+        </button>`
+      );
     $("#timetable").append(dayTemplate);
     newTimetableContent.append(dayTemplate);
   }
@@ -654,18 +685,23 @@ async function updateTimetable() {
           <label class="form-label form-label-sm mb-0 me-2">
             Stundennummer
           </label>
-          <input class="timetable-lesson-number form-control form-control-sm me-2" type="text" value="${lesson.lessonNumber}">
-          <button class="btn btn-sm btn-danger timetable-lesson-delete"><i class="fa-solid fa-trash"></i></button>
+          <input class="timetable-lesson-number form-control form-control-sm me-2" type="text"
+            value="${lesson.lessonNumber}" ${canEditClassSettings ? "" : "disabled"}>
+          <button class="btn btn-sm btn-danger timetable-lesson-delete" ${canEditClassSettings ? "" : "disabled"}>
+            <i class="fa-solid fa-trash"></i>
+          </button>
         </div>
         <div class="d-flex mb-2 align-items-center">
-          <input class="timetable-start-time form-control form-control-sm me-4" type="time" value="${msToTime(lesson.startTime)}">
-          <input class="timetable-end-time form-control form-control-sm" type="time" value="${msToTime(lesson.endTime)}">
+          <input class="timetable-start-time form-control form-control-sm me-4" type="time"
+            value="${msToTime(lesson.startTime)}" ${canEditClassSettings ? "" : "disabled"}>
+          <input class="timetable-end-time form-control form-control-sm" type="time"
+            value="${msToTime(lesson.endTime)}" ${canEditClassSettings ? "" : "disabled"}>
         </div>
         <div class="d-flex mb-2 align-items-center">
           <label class="form-label form-label-sm mb-0 me-2">
             Fach
           </label>
-          <select class="timetable-subject-select form-select form-select-sm">
+          <select class="timetable-subject-select form-select form-select-sm" ${canEditClassSettings ? "" : "disabled"}>
             <option value="" disabled>Fach</option>
             <option value="-1">Pause</option>
             ${subjectOptions}
@@ -675,13 +711,14 @@ async function updateTimetable() {
           <label class="form-label form-label-sm mb-0 me-2">
             Raum
           </label>
-          <input class="timetable-room form-control form-control-sm" type="text" value="${$.formatHtml(lesson.room)}">
+          <input class="timetable-room form-control form-control-sm" type="text" value="${$.formatHtml(lesson.room)}"
+            ${canEditClassSettings ? "" : "disabled"}>
         </div>
         <div class="d-flex align-items-center">
           <label class="form-label form-label-sm mb-0 me-2">
             Team
           </label>
-          <select class="timetable-team-select form-select form-select-sm">
+          <select class="timetable-team-select form-select form-select-sm" ${canEditClassSettings ? "" : "disabled"}>
             <option value="-1">Alle</option>
             ${teamOptions}
           </select>
@@ -741,18 +778,13 @@ async function updateTimetable() {
         </div>
       </div>
     `);
-    function updateTimeInputs(newBtn: JQuery<HTMLElement>) {
-      newBtn
-        .parent()
-        .parent()
-        .parent()
-        .find(".timetable-lesson")
-        .each(function () {
-          if ($(this).find(".timetable-lesson-number").val() == lessonNumber.toString()) {
-            lessonTemplate.find(".timetable-start-time").val($(this).find(".timetable-start-time").val() ?? "--:--");
-            lessonTemplate.find(".timetable-end-time").val($(this).find(".timetable-end-time").val() ?? "--:--");
-          }
-        });
+    function updateTimeInputs(newBtn: JQuery<HTMLElement>): void {
+      newBtn.parent().parent().parent().find(".timetable-lesson").each(function () {
+        if ($(this).find(".timetable-lesson-number").val() === lessonNumber.toString()) {
+          lessonTemplate.find(".timetable-start-time").val($(this).find(".timetable-start-time").val() ?? "--:--");
+          lessonTemplate.find(".timetable-end-time").val($(this).find(".timetable-end-time").val() ?? "--:--");
+        }
+      });
     }
 
     const lessonList = $(this).parent().find(".timetable-lesson-list");
@@ -777,6 +809,7 @@ async function updateTimetable() {
 }
 
 let dsbActivated = false;
+let canEditClassSettings = false;
 
 $(async () => {
   reloadAllFn.set(async () => {
@@ -849,6 +882,19 @@ user.on("change", () => {
         console.error("Error copying classcode to clipboard:", err);
       }
     });
+
+    if ((user.permissionLevel ?? 0) < 2) {
+      canEditClassSettings = false;
+      $("#teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
+        .find("input, button, select, .color-picker-trigger")
+        .attr("disabled", "");
+    }
+    else {
+      canEditClassSettings = true;
+      $("#teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
+        .find("input, button, select, .color-picker-trigger")
+        .removeAttr("disabled");
+    }
   }
 });
 
@@ -881,9 +927,9 @@ $("#display-footer input").on("click", function () {
 
 const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
 document.body.setAttribute("data-bs-theme", await colorTheme());
-$("#color-theme-auto").prop("checked", colorThemeSetting == "auto");
-$("#color-theme-dark").prop("checked", colorThemeSetting == "dark");
-$("#color-theme-light").prop("checked", colorThemeSetting == "light");
+$("#color-theme-auto").prop("checked", colorThemeSetting === "auto");
+$("#color-theme-dark").prop("checked", colorThemeSetting === "dark");
+$("#color-theme-light").prop("checked", colorThemeSetting === "light");
 
 $("#color-theme input").each(function () {
   $(this).on("click", () => {
@@ -954,22 +1000,22 @@ $("#change-password-old").on("input", () => {
 });
 
 $("#change-password-new, #change-password-repeat").on("change", function () {
-  if ($("#change-password-new").val() != $("#change-password-repeat").val()) {
+  if ($("#change-password-new").val() !== $("#change-password-repeat").val()) {
     $("#change-password-not-matching-passwords").removeClass("d-none").addClass("d-flex");
     $("#change-password-confirm").addClass("disabled");
   }
-  if ($(this).val() == "") {
+  if ($(this).val() === "") {
     $("#change-password-confirm").addClass("disabled");
   }
 });
 
 $("#change-password-new, #change-password-repeat").on("input", () => {
-  if ($("#change-password-new").val() == $("#change-password-repeat").val()) {
+  if ($("#change-password-new").val() === $("#change-password-repeat").val()) {
     $("#change-password-not-matching-passwords").addClass("d-none").removeClass("d-flex");
   }
 });
 
-function checkSecurePassword(password: string) {
+function checkSecurePassword(password: string): boolean {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
@@ -1054,14 +1100,14 @@ $("#delete-account-cancel").on("click", () => {
 });
 
 $("#delete-account-password").on("change", function () {
-  if ($(this).val() == "") {
+  if ($(this).val() === "") {
     $("#delete-account-confirm").addClass("disabled");
   }
 });
 
 $("#delete-account-password").on("input", function () {
   $("#delete-account-invalid-password").addClass("d-none").removeClass("d-flex");
-  if ($(this).val() != "") {
+  if ($(this).val() !== "") {
     $("#delete-account-confirm").removeClass("disabled");
   }
 });
@@ -1214,7 +1260,7 @@ $("#new-team").on("click", () => {
   $(".team-name-input")
     .last()
     .on("focusout", function () {
-      if ($(this).val()?.toString().trim() == "") {
+      if ($(this).val()?.toString().trim() === "") {
         $(this).addClass("is-invalid");
         $("#teams-save").addClass("disabled");
       }
@@ -1223,7 +1269,7 @@ $("#new-team").on("click", () => {
   $(".new-team-delete").off("click").on("click", function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
     $(this).parent().remove();
-    if ($("#teams-list").children().length == 0) {
+    if ($("#teams-list").children().length === 0) {
       $("#teams-list").append('<span class="text-secondary no-teams">Keine Teams vorhanden</span>');
     }
   });
@@ -1235,7 +1281,7 @@ $("#teams-cancel").on("click", () => {
   $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
 });
 
-async function saveTeams() {
+async function saveTeams(): Promise<void> {
   $("#teams-cancel").hide();
   const newTeamsData: TeamsData = [];
   $(".team-name-input").each(function () {
@@ -1298,12 +1344,12 @@ $("#teams-save").on("click", () => {
     deleted.push($(this).parent().find("input").attr("placeholder") ?? "");
   });
 
-  if (deleted.length == 0) {
+  if (deleted.length === 0) {
     saveTeams();
   }
   else {
     $("#teams-save-confirm-container, #teams-save-confirm").removeClass("d-none");
-    if (deleted.length == 1) {
+    if (deleted.length === 1) {
       $("#teams-save-confirm-list").html(`des Teams <b>${$.formatHtml(deleted[0])}</b>`);
     }
     else {
@@ -1360,7 +1406,7 @@ $("#new-event-type").on("click", () => {
   $(".event-type-name-input")
     .last()
     .on("focusout", function () {
-      if ($(this).val()?.toString().trim() == "") {
+      if ($(this).val()?.toString().trim() === "") {
         $(this).addClass("is-invalid");
         $("#event-types-save").addClass("disabled");
       }
@@ -1369,7 +1415,7 @@ $("#new-event-type").on("click", () => {
   $(".new-event-type-delete").off("click").on("click", function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
     $(this).parent().remove();
-    if ($("#event-types-list").children().length == 0) {
+    if ($("#event-types-list").children().length === 0) {
       $("#event-types-list").append(
         '<span class="text-secondary no-event-types">Keine Ereignisarten vorhanden</span>'
       );
@@ -1383,7 +1429,7 @@ $("#event-types-cancel").on("click", () => {
   $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
 });
 
-async function saveEventTypes() {
+async function saveEventTypes(): Promise<void> {
   $("#event-types-cancel").hide();
   const newEventTypesData: EventTypeData = [];
   $("#event-types-list > div").each(function () {
@@ -1446,12 +1492,12 @@ $("#event-types-save").on("click", () => {
     deleted.push($(this).parent().find("input").attr("placeholder") ?? "");
   });
 
-  if (deleted.length == 0) {
+  if (deleted.length === 0) {
     saveEventTypes();
   }
   else {
     $("#event-types-save-confirm-container, #event-types-save-confirm").removeClass("d-none");
-    if (deleted.length == 1) {
+    if (deleted.length === 1) {
       $("#event-types-save-confirm-list").html(`der Art <b>${$.formatHtml(deleted[0])}</b>`);
     }
     else {
@@ -1546,7 +1592,7 @@ $("#new-subject").on("click", () => {
   $(".subject-name-long-input")
     .last()
     .on("focusout", function () {
-      if ($(this).val()?.toString().trim() == "") {
+      if ($(this).val()?.toString().trim() === "") {
         $(this).addClass("is-invalid");
         $("#subjects-save").addClass("disabled");
       }
@@ -1555,7 +1601,7 @@ $("#new-subject").on("click", () => {
   $(".new-subject-delete").off("click").on("click", function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
     $(this).parent().remove();
-    if ($("#subjects-list").children().length == 0) {
+    if ($("#subjects-list").children().length === 0) {
       $("#subjects-list").append('<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>');
     }
   });
@@ -1567,29 +1613,31 @@ $("#subjects-cancel").on("click", () => {
   $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 });
 
-async function saveSubjects() {
+async function saveSubjects(): Promise<void> {
   $("#subjects-cancel").hide();
   const newSubjectData: SubjectData = [];
   $("#subjects-list > div").each(function () {
+    function getInputValueSelectorFallback(element: HTMLElement, selector: string, fallbackSelector: string): string {
+      let res = $(element).find(selector).val()?.toString().trim();
+      if (res === "") res = undefined;
+      res ??= $(element).find(fallbackSelector).val()?.toString().trim().substring(0, 3) ?? "???";
+      return res;
+    }
+    function getInputValueStringFallback(element: HTMLElement, selector: string, fallback: string): string {
+      let res = $(element).find(selector).val()?.toString().trim();
+      if (res === "") res = undefined;
+      res ??= fallback;
+      return res;
+    }
+
     if ($(this).find(".btn-success").length > 0) return;
 
     const subjectNameLong = $(this).find(".subject-name-long-input").val()?.toString().trim() ?? "";
 
-    let subjectNameShort = $(this).find(".subject-name-short-input").val()?.toString().trim();
-    if (subjectNameShort == "") subjectNameShort = undefined;
-    subjectNameShort ??= $(this).find(".subject-name-long-input").val()?.toString().trim().substring(0, 3) ?? "???";
-
-    let teacherNameShort = $(this).find(".subject-teacher-short-input").val()?.toString().trim();
-    if (teacherNameShort == "") teacherNameShort = undefined;
-    teacherNameShort ??= $(this).find(".subject-teacher-long-input").val()?.toString().trim().substring(0, 3) ?? "???";
-
-    let subjectNameSubstitution = $(this).find(".subject-name-substitution-input").val()?.toString();
-    if (subjectNameSubstitution == "") subjectNameSubstitution = undefined;
-    subjectNameSubstitution ??= subjectNameLong;
-
-    let teacherNameSubstitution = $(this).find(".subject-teacher-substitution-input").val()?.toString();
-    if (teacherNameSubstitution == "") teacherNameSubstitution = undefined;
-    teacherNameSubstitution ??= teacherNameShort;
+    const subjectNameShort = getInputValueSelectorFallback(this, ".subject-name-short-input", ".subject-name-long-input");
+    const teacherNameShort = getInputValueSelectorFallback(this, ".subject-teacher-short-input", ".subject-teacher-long-input");
+    const subjectNameSubstitution = getInputValueStringFallback(this, ".subject-name-substitution-input", subjectNameLong);
+    const teacherNameSubstitution = getInputValueStringFallback(this, ".subject-teacher-substitution-input", teacherNameShort);
 
     newSubjectData.push({
       subjectId: $(this).data("id"),
@@ -1654,12 +1702,12 @@ $("#subjects-save").on("click", () => {
     deleted.push($(this).parent().find("input").attr("placeholder") ?? "");
   });
 
-  if (deleted.length == 0) {
+  if (deleted.length === 0) {
     saveSubjects();
   }
   else {
     $("#subjects-save-confirm-container, #subjects-save-confirm").removeClass("d-none");
-    if (deleted.length == 1) {
+    if (deleted.length === 1) {
       $("#subjects-save-confirm-list").html(`des Fachs <b>${$.formatHtml(deleted[0])}</b>`);
     }
     else {
@@ -1695,15 +1743,18 @@ $("#timetable-save").on("click", async () => {
     $(this)
       .find(".timetable-lesson")
       .each(function () {
+        function getInputValue(element: JQuery<HTMLElement>, fallback: string): string {
+          return element.val()?.toString() ?? fallback;
+        }
         newTimetableData.push({
           lessonId: -1,
-          lessonNumber: parseInt($(this).find(".timetable-lesson-number").val()?.toString() ?? "1"),
+          lessonNumber: parseInt(getInputValue($(this).find(".timetable-lesson-number"), "1")),
           weekDay: weekDay as 0 | 1 | 2 | 3 | 4,
-          teamId: parseInt($(this).find(".timetable-team-select").val()?.toString() ?? "-1"),
-          subjectId: parseInt($(this).find(".timetable-subject-select").val()?.toString() ?? "-1"),
-          room: $(this).find(".timetable-room").val()?.toString() ?? "",
-          startTime: timeToMs($(this).find(".timetable-start-time").val()?.toString() ?? "0:0") + "",
-          endTime: timeToMs($(this).find(".timetable-end-time").val()?.toString() ?? "0:0") + ""
+          teamId: parseInt(getInputValue($(this).find(".timetable-team-select"), "-1")),
+          subjectId: parseInt(getInputValue($(this).find(".timetable-subject-select"), "-1")),
+          room: getInputValue($(this).find(".timetable-room"), ""),
+          startTime: timeToMs(getInputValue($(this).find(".timetable-start-time"), "0:0")) + "",
+          endTime: timeToMs(getInputValue($(this).find(".timetable-end-time"), "0:0")) + ""
         });
       });
   });

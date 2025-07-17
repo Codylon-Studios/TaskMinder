@@ -7,30 +7,34 @@ function generateCSRFToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
-export function csrfSessionInit(req: Request, res: Response, next: NextFunction) {
+export function csrfSessionInit(req: Request, res: Response, next: NextFunction): void {
   if (!req.session.csrfToken) {
     req.session.csrfToken = generateCSRFToken();
   }
   next();
 }
 
-export function csrfProtection(req: Request, res: Response, next: NextFunction) {
+export function csrfProtection(req: Request, res: Response, next: NextFunction): void {
+  function getProvidedToken(): unknown {
+    const tokenFromHeader = req.headers["x-csrf-token"] as string | undefined;
+    const tokenFromBody = req.body?.csrf ?? null;
+  
+    return tokenFromHeader || tokenFromBody;
+  }
+
   const method = req.method.toUpperCase();
   if (["GET", "HEAD", "OPTIONS"].includes(method)) {
     return next();
   }
 
   const tokenFromSession = req.session.csrfToken;
-  const tokenFromHeader = req.headers["x-csrf-token"] as string | undefined;
-  const tokenFromBody = (req.body && req.body._csrf) || null;
-
-  const providedToken = tokenFromHeader || tokenFromBody;
+  const providedToken = getProvidedToken();
 
   if (
-    !providedToken ||
-    typeof providedToken !== "string" ||
-    !tokenFromSession ||
-    typeof tokenFromSession !== "string"
+    !providedToken
+    || typeof providedToken !== "string"
+    || !tokenFromSession
+    || typeof tokenFromSession !== "string"
   ) {
     logger.warn("CSRF Check: Validation failed - Token missing or invalid type");
     const err: RequestError = {

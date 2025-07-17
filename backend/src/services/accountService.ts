@@ -5,7 +5,7 @@ import { RequestError } from "../@types/requestError";
 
 const SALTROUNDS = 10;
 
-function checkUsername(username: string) {
+function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
 }
 
@@ -159,14 +159,14 @@ export default {
         accountId: accountId
       }
     });
-    if (joinedClassExists == null && session.classJoined) {
+    if (joinedClassExists === null && session.classJoined) {
       prisma.joinedClass.create({
         data: {
           accountId: accountId
         }
       });
     }
-    else if (joinedClassExists != null) {
+    else if (joinedClassExists !== null) {
       session.classJoined = true;
     }
   },
@@ -220,7 +220,7 @@ export default {
     const accountExists = await prisma.account.findUnique({
       where: { username: username }
     });
-    return accountExists != null;
+    return accountExists !== null;
   },
   async joinClass(classcode: string, session: Session & Partial<SessionData>) {
     if (session.classJoined) {
@@ -232,7 +232,7 @@ export default {
       };
       throw err;
     }
-    if (classcode == process.env.CLASSCODE) {
+    if (classcode === process.env.CLASSCODE) {
       session.classJoined = true;
       if (session.account) {
         const accountId = session.account.accountId;
@@ -241,7 +241,7 @@ export default {
             accountId: accountId
           }
         });
-        if (joinedClassExists == null) {
+        if (joinedClassExists === null) {
           await prisma.joinedClass.create({
             data: {
               accountId: accountId

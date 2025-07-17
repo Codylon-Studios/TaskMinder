@@ -8,7 +8,7 @@ export function getSite(): string {
 export function isSite(...sites: (string | RegExp)[]): boolean {
   const site = getSite();
   return sites.some(s => {
-    return s == site || (s instanceof RegExp && s.test(site));
+    return s === site || (s instanceof RegExp && s.test(site));
   });
 }
 
@@ -42,7 +42,7 @@ export function msToDisplayDate(ms: number | string): string {
 }
 
 export function msToInputDate(ms: number | string): string {
-  if (ms == "") return "";
+  if (ms === "") return "";
   const num = typeof ms === "string" ? parseInt(ms) : ms;
   const date = new Date(num);
   const day = String(date.getDate()).padStart(2, "0");
@@ -86,19 +86,14 @@ export function isSameDay(date1: Date, date2: Date): boolean {
 }
 
 export function deepCompare(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (typeof a !== typeof b) return false;
-  if (a == null || b == null) return false;
-
-  if (Array.isArray(a) && Array.isArray(b)) {
+  function deepCompareArray(a: unknown[], b: unknown[]): boolean {
     if (a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) {
       if (! deepCompare(a[i], b[i])) return false;
     }
     return true;
   }
-
-  if (typeof a === "object" && typeof b === "object") {
+  function deepCompareObject(a: object, b: object): boolean {
     const keysA = Object.keys(a);
     const keysB = Object.keys(b);
     if (keysA.length !== keysB.length) return false;
@@ -110,6 +105,18 @@ export function deepCompare(a: unknown, b: unknown): boolean {
     return true;
   }
 
+  if (a === b) return true;
+  if (typeof a !== typeof b) return false;
+  if (a === null || b === null) return false;
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return deepCompareArray(a, b);
+  }
+
+  if (typeof a === "object" && typeof b === "object") {
+    return deepCompareObject(a, b);
+  }
+
   return false;
 }
 
@@ -117,7 +124,7 @@ export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolea
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
 }
 
-export async function reloadAll() {
+export async function reloadAll(): Promise<void> {
   const currentReloadAllFn = await reloadAllFn.get();
   await currentReloadAllFn();
   $("body").css({ display: "block" }).addClass("d-flex");
@@ -130,10 +137,10 @@ export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
 
 const themeColor = document.createElement("meta");
 themeColor.name = "theme-color";
-if (localStorage.getItem("colorTheme") == "dark") {
+if (localStorage.getItem("colorTheme") === "dark") {
   colorTheme("dark");
 }
-else if (localStorage.getItem("colorTheme") == "light") {
+else if (localStorage.getItem("colorTheme") === "light") {
   colorTheme("light");
 }
 else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
@@ -142,7 +149,7 @@ else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
 else {
   colorTheme("light");
 }
-if ((await colorTheme()) == "light") {
+if ((await colorTheme()) === "light") {
   themeColor.content = "#f8f9fa";
 }
 else {
@@ -158,12 +165,22 @@ document.head.appendChild(themeColor);
 // DATA
 type DataAccessorEventName = "update";
 type DataAccessorEventCallback = (...args: unknown[]) => void;
-export function createDataAccessor<DataType>(name: string, reload?: string | (() => void)) {
+type DataAccessor<DataType> = {
+  (value?: DataType | null): Promise<DataType>;
+  get(): Promise<DataType>;
+  getCurrent(): DataType | null;
+  set(value: DataType | null): DataAccessor<DataType>;
+  on(event: DataAccessorEventName, callback: DataAccessorEventCallback): DataAccessor<DataType>;
+  trigger(event: DataAccessorEventName, ...args: unknown[]): DataAccessor<DataType>;
+  reload(): DataAccessor<DataType>;
+}
+
+export function createDataAccessor<DataType>(name: string, reload?: string | (() => void)): DataAccessor<DataType> {
   const eventName = `dataLoaded:${name}`;
   let data: DataType | null = null;
   const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
   
-  const reloadFunction = typeof reload == "string" ? () => {
+  const reloadFunction = typeof reload === "string" ? () => {
     $.get(reload, data => {
       accessor.set(data);
     });
@@ -178,7 +195,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
 
   accessor.get = () => {
     async function getNotNullValue(): Promise<DataType> {
-      if (data == null) {
+      if (data === null) {
         await new Promise(resolve => {
           $(window).on(eventName, resolve);
         });
@@ -273,7 +290,7 @@ export const homeworkData = createDataAccessor<HomeworkData>("homeworkData", "/h
 
 // Homework checked data
 type HomeworkCheckedData = number[];
-async function loadHomeworkCheckedData() {
+async function loadHomeworkCheckedData(): Promise<void> {
   if (user.loggedIn) {
     // If the user is logged in, get the data from the server
     $.get("/homework/get_homework_checked_data", data => {
@@ -305,7 +322,7 @@ export type SubstitutionsData =
     }
   | "No data";
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", "/substitutions/get_substitutions_data");
-async function loadClassSubstitutionsData() {
+async function loadClassSubstitutionsData(): Promise<void> {
   const currentSubstitutionsData = await substitutionsData();
   if (currentSubstitutionsData === "No data") {
     classSubstitutionsData("No data");
@@ -325,7 +342,7 @@ export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("cla
 
 // Joined teams data
 export type JoinedTeamsData = number[];
-async function loadJoinedTeamsData() {
+async function loadJoinedTeamsData(): Promise<void> {
   if (user.loggedIn) {
     $.get("/teams/get_joined_teams_data", data => {
       joinedTeamsData(data);
@@ -378,7 +395,7 @@ $(async () => {
   const hash = window.location.hash;
   if (hash) {
     const $target = $(hash);
-    if ($target?.offset() != undefined) {
+    if ($target?.offset() !== undefined) {
       $("html").animate({
         scrollTop: ($target.offset()?.top ?? 0) - 70
       });
@@ -425,7 +442,7 @@ user.on("change", async () => {
 // Change btn group selections to vertical / horizontal
 const smallScreenQuery = window.matchMedia("(max-width: 575px)");
 
-function handleSmallScreenQueryChange() {
+function handleSmallScreenQueryChange(): void {
   if (smallScreenQuery.matches) {
     $(".btn-group-dynamic").removeClass("btn-group").addClass("btn-group-vertical");
   }
@@ -439,7 +456,7 @@ smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
 handleSmallScreenQueryChange();
 
 (async () => {
-  if ((await colorTheme()) == "light") {
+  if ((await colorTheme()) === "light") {
     document.body.setAttribute("data-bs-theme", "light");
   }
   else {
@@ -450,8 +467,8 @@ handleSmallScreenQueryChange();
 if (!isSite("settings")) {
   const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
 
-  if (colorThemeSetting == "auto") {
-    async function updateColorTheme() {
+  if (colorThemeSetting === "auto") {
+    async function updateColorTheme(): Promise<void> {
       if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
         colorTheme("dark");
       }
@@ -459,7 +476,7 @@ if (!isSite("settings")) {
         colorTheme("light");
       }
 
-      if ((await colorTheme()) == "light") {
+      if ((await colorTheme()) === "light") {
         document.getElementsByTagName("html")[0].style.background = "#ffffff";
         document.body.setAttribute("data-bs-theme", "light");
         $('meta[name="theme-color"]').attr("content", "#f8f9fa");
@@ -500,3 +517,30 @@ $.formatHtml = (html, options?) => {
   const newlines = escaped.replace(/\n/g, "<br>");
   return newlines;
 };
+
+
+
+
+// TODO: Remove this overwrite
+const fixedTime = new Date('2025-07-14T08:05:00Z');
+
+// Original sichern
+const OriginalDate = Date;
+
+class FakeDate extends OriginalDate {
+  constructor(...args: any[]) {
+    // Wenn keine Argumente → fixe Zeit zurückgeben
+    if (args.length === 0) {
+      super(fixedTime); // das ist typisch besser als return new Date(...) hier
+    } else {
+      super(args[0]);
+    }
+  }
+
+  static now(): number {
+    return fixedTime.getTime();
+  }
+}
+
+// Zuweisung – aber mit Casting, um TS zu beruhigen
+(window as any).Date = FakeDate;

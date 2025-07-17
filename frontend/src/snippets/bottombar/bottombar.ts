@@ -15,7 +15,7 @@ user.on("change", (function _() {
 })());
 
 $(".bottombar-link").eq(siteIndex).addClass("bottombar-current-link");
-if (siteIndex == 5) {
+if (siteIndex === 5) {
   $(".bottombar-link").eq(2).addClass("bottombar-current-link");
 }
 $(".bottombar-link").each(function (id) {

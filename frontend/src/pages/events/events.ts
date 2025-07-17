@@ -11,12 +11,13 @@ import {
   csrfToken,
   reloadAll,
   reloadAllFn,
-  lessonData
+  lessonData,
+  SingleEventData
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-async function updateEventList() {
+async function updateEventList(): Promise<void> {
   // Clear the list
   $("#event-list").empty();
 
@@ -24,34 +25,44 @@ async function updateEventList() {
   const editEnabled = $("#edit-toggle").is(":checked");
 
   for (const event of await eventData()) {
+    async function filter(): Promise<boolean> {
+      function filterDate(): boolean {
+        // Filter by min. date
+        if ($("#filter-date-from").val() !== "") {
+          const filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
+          if (filterDate > parseInt(event.endDate ?? event.startDate)) {
+            return true;
+          }
+        }
+
+        // Filter by max. date
+        if ($("#filter-date-until").val() !== "") {
+          const filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
+          if (filterDate < parseInt(event.startDate)) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      // Filter by type
+      if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
+        return true;
+      }
+
+      if (filterDate()) return true;
+
+      // Filter by team
+      if (!(await joinedTeamsData()).includes(event.teamId) && event.teamId !== -1) {
+        return true;
+      }
+      return false;
+    }
     const eventId = event.eventId;
     const eventTypeId = event.eventTypeId;
 
-    // Filter by type
-    if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
-      continue;
-    }
-
-    // Filter by min. date
-    if ($("#filter-date-from").val() != "") {
-      const filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-      if (filterDate > parseInt(event.endDate ?? event.startDate)) {
-        continue;
-      }
-    }
-
-    // Filter by max. date
-    if ($("#filter-date-until").val() != "") {
-      const filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
-      if (filterDate < parseInt(event.startDate)) {
-        continue;
-      }
-    }
-
-    // Filter by team
-    if (!(await joinedTeamsData()).includes(event.teamId) && event.teamId != -1) {
-      continue;
-    }
+    if (await filter()) continue;
 
     // Get the information for the event
     const name = event.name;
@@ -66,6 +77,7 @@ async function updateEventList() {
       endDate = null;
     }
 
+    const editOptionsDisplay = editEnabled ? "" : "d-none";
     // The template for an event with edit options
     const template = $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
@@ -76,13 +88,13 @@ async function updateEventList() {
               <span class="event-description"></span>
             </div>
             <div class="position-absolute end-0 top-0 m-2 text-end">
-              <button class="event-edit-option ${editEnabled ? "" : "d-none"} btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
+              <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
                 <i class="fa-solid fa-edit event-${eventTypeId} opacity-75"></i>
               </button>
-              <button class="event-edit-option ${editEnabled ? "" : "d-none"} btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
+              <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
                 <i class="fa-solid fa-trash event-${eventTypeId} opacity-75"></i>
               </button>
-              <br class="event-edit-option ${editEnabled ? "" : "d-none"} mb-2">
+              <br class="event-edit-option ${editOptionsDisplay} mb-2">
               <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}">
                 <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75"></i>
               </button>
@@ -103,12 +115,14 @@ async function updateEventList() {
   }
 
   // If no events match, add an explanation text
-  if ($("#event-list").html() == "") {
+  $("#edit-toggle ~ label").toggle($("#event-list").html() !== "");
+  $("#filter-toggle ~ label").toggle((await eventData()).length > 0);
+  if ($("#event-list").html() === "") {
     $("#event-list").html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
   }
 };
 
-async function updateEventTypeList () {
+async function updateEventTypeList(): Promise<void> {
   // Clear the select element in the add event modal
   $("#add-event-type").empty();
   $("#add-event-type").append('<option value="" disabled selected>Art</option>');
@@ -128,7 +142,7 @@ async function updateEventTypeList () {
 
     filterData.type[eventTypeId] ??= true;
     const checkedStatus: "checked" | "" = filterData.type[eventTypeId] ? "checked" : "";
-    if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none");
+    if (checkedStatus !== "checked") $("#filter-changed").removeClass("d-none");
 
     // Add the template for filtering by type
     const templateFilterType = `<div class="form-check">
@@ -158,7 +172,7 @@ async function updateEventTypeList () {
   localStorage.setItem("eventFilter", JSON.stringify(filterData));
 };
 
-async function updateTeamList() {
+async function updateTeamList(): Promise<void> {
   // Clear the select element in the add event modal
   $("#add-event-team").empty();
   $("#add-event-team").append('<option value="-1" selected>Alle</option>');
@@ -177,7 +191,7 @@ async function updateTeamList() {
   });
 };
 
-function addEvent() {
+function addEvent(): void {
   //
   // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS AN EVENT
   //
@@ -268,8 +282,54 @@ function addEvent() {
     });
 }
 
-async function shareEvent(eventId: number) {
-  const event = (await eventData()).find(e => e.eventId == eventId);
+async function shareEvent(eventId: number): Promise<void> {
+  async function parseLessonEvent(event: SingleEventData, lesson: string): Promise<void> {
+    async function findLessonWithLessonNumber(lessonNumber: number):
+      Promise< {
+        lessonId: number;
+        lessonNumber: number;
+        weekDay: 0 | 1 | 2 | 3 | 4;
+        teamId: number;
+        subjectId: number;
+        room: string;
+        startTime: string;
+        endTime: string;
+      } | undefined > {
+      return (await lessonData()).find(lesson =>
+        lesson.lessonNumber === lessonNumber
+        && (lesson.teamId === -1 || currentJoinedTeamsData.includes(lesson.teamId))
+        && lesson.weekDay === start.getDay() - 1
+      );
+    }
+    const start = new Date(parseInt(event.startDate));
+    const end = new Date(parseInt(event.startDate));
+    const currentJoinedTeamsData = (await joinedTeamsData());
+    
+    let startLesson, endLesson;
+    if (event.lesson?.includes("-")) {
+      event.lesson = event.lesson.replace(" ", "");
+      startLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[0]));
+      endLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[1]));
+    }
+    else {
+      startLesson = endLesson = await findLessonWithLessonNumber(parseInt(lesson));
+    }
+
+    if (! (startLesson && endLesson)) {
+      $("#share-event-error-toast").toast("show");
+      return;
+    }
+    const lessonStart = parseInt(startLesson.startTime) / 1000 / 60;
+    start.setHours(Math.trunc(lessonStart / 60), lessonStart % 60);
+    
+    const lessonEnd = parseInt(endLesson.endTime) / 1000 / 60;
+    end.setHours(Math.trunc(lessonEnd / 60), lessonEnd % 60);
+    timeContent = `
+      DTSTART:${formatDateAndTime(start)}
+      DTEND:${formatDateAndTime(end)}
+    `;
+  }
+  const event = (await eventData()).find(e => e.eventId === eventId);
   if (!event) return;
 
   const name = event.name;
@@ -281,11 +341,11 @@ async function shareEvent(eventId: number) {
     else {
       description += $(this).html();
     }
-  })
+  });
 
-  const format = (num: number) => String(num).padStart(2, "0");
+  const format = (num: number): string => String(num).padStart(2, "0");
 
-  const formatDateAndTime = (date: Date) => {
+  function formatDateAndTime (date: Date): string {
     return date.getUTCFullYear().toString() +
       format(date.getUTCMonth() + 1) +
       format(date.getUTCDate()) + "T" +
@@ -294,60 +354,27 @@ async function shareEvent(eventId: number) {
       format(date.getUTCSeconds()) + "Z";
   };
 
-  const formatDate = (date: Date) => {
+  function formatDate (date: Date): string {
     return date.getUTCFullYear().toString() +
       format(date.getUTCMonth() + 1) +
-      format(date.getUTCDate())
+      format(date.getUTCDate());
   };
 
   let timeContent = "";
 
   if (event.lesson !== null && event.lesson !== "") {
-    async function findLessonWithLessonNumber(lessonNumber: number) {
-      return (await lessonData()).find(lesson =>
-        lesson.lessonNumber == lessonNumber
-        && (lesson.teamId == -1 || currentJoinedTeamsData.includes(lesson.teamId))
-        && lesson.weekDay == start.getDay() - 1
-      )
-    }
-    const start = new Date(parseInt(event.startDate));
-    const end = new Date(parseInt(event.startDate));
-    const currentJoinedTeamsData = (await joinedTeamsData());
-    
-    let startLesson, endLesson;
-    if (event.lesson?.includes("-")) {
-      event.lesson = event.lesson.replace(" ", "");
-      startLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[0]))
-      endLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[1]))
-    }
-    else {
-      startLesson = endLesson = await findLessonWithLessonNumber(parseInt(event.lesson))
-    }
-
-    if (! (startLesson && endLesson)) {
-      $("#share-event-error-toast").toast("show")
-      return
-    }
-    const lessonStart = parseInt(startLesson.startTime) / 1000 / 60
-    start.setHours(Math.trunc(lessonStart / 60), lessonStart % 60)
-    
-    const lessonEnd = parseInt(endLesson.endTime) / 1000 / 60
-    end.setHours(Math.trunc(lessonEnd / 60), lessonEnd % 60)
-    timeContent = `
-      DTSTART:${formatDateAndTime(start)}
-      DTEND:${formatDateAndTime(end)}
-    `
+    await parseLessonEvent(event, event.lesson);
   }
   else {
-    if (event.endDate == null || event.endDate == "") {
-      event.endDate = event.startDate
+    if (event.endDate === null || event.endDate === "") {
+      event.endDate = event.startDate;
     }
     const start = new Date(parseInt(event.startDate));
     const end = new Date(parseInt(event.endDate) + 1000 * 60 * 60 * 24);
     timeContent = `
       DTSTART;VALUE=DATE:${formatDate(start)}
       DTEND;VALUE=DATE:${formatDate(end)}
-    `
+    `;
   }
 
   const icsContent = `
@@ -379,13 +406,13 @@ async function shareEvent(eventId: number) {
   URL.revokeObjectURL(url);
 }
 
-async function editEvent(eventId: number) {
+async function editEvent(eventId: number): Promise<void> {
   //
   // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY EDITS AN EVENT
   //
 
   // Get the data of the event
-  const event = (await eventData()).find(e => e.eventId == eventId);
+  const event = (await eventData()).find(e => e.eventId === eventId);
   if (!event) return;
 
   // Set the inputs on the already saved information
@@ -474,7 +501,7 @@ async function editEvent(eventId: number) {
     });
 }
 
-function deleteEvent(eventId: number) {
+function deleteEvent(eventId: number): void {
   //
   // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY DELETES AN EVENT
   //
@@ -537,12 +564,12 @@ function deleteEvent(eventId: number) {
     });
 }
 
-function updateFilters(ingoreEventTypes?: boolean) {
+function updateFilters(ingoreEventTypes?: boolean): void {
   $("#filter-changed").addClass("d-none");
 
   const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
 
-  if (filterData.dateFrom == undefined) {
+  if (filterData.dateFrom === undefined) {
     $("#filter-date-from").val(msToInputDate(Date.now()));
   }
   else {
@@ -550,7 +577,7 @@ function updateFilters(ingoreEventTypes?: boolean) {
     if (!isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none");
   }
 
-  if (filterData.dateUntil == undefined) {
+  if (filterData.dateUntil === undefined) {
     const nextMonth = new Date(Date.now());
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
@@ -640,7 +667,7 @@ $(function () {
     const name = $("#add-event-name").val()?.toString().trim();
     const startDate = $("#add-event-start-date").val();
 
-    if ([name, startDate].includes("") || type == null) {
+    if ([name, startDate].includes("") || type === null) {
       $("#add-event-button").addClass("disabled");
     }
     else {
@@ -661,7 +688,7 @@ $(function () {
     const name = $("#edit-event-name").val()?.toString().trim();
     const startDate = $("#edit-event-start-date").val();
 
-    if ([name, startDate].includes("") || type == null) {
+    if ([name, startDate].includes("") || type === null) {
       $("#edit-event-button").addClass("disabled");
     }
     else {

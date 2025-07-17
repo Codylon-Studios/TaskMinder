@@ -1,4 +1,4 @@
-import Ajv from "ajv";
+import { Ajv, ErrorObject } from "ajv";
 const ajv = new Ajv({ allErrors: true });
 
 const schema = {
@@ -68,7 +68,10 @@ const schema = {
 
 const validate = ajv.compile(schema);
 
-export const validateTimetableJSON = (data: unknown) => {
+export const validateTimetableJSON = (data: unknown): {
+  valid: boolean;
+  errors: ErrorObject<string, Record<string, unknown>, unknown>[] | null | undefined;
+} => {
   const valid = validate(data);
   return {
     valid,

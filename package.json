@@ -69,9 +69,11 @@
     "schema": "backend/src/prisma/schema.prisma"
   },
   "devDependencies": {
+    "@eslint/js": "^9.29.0",
     "@prisma/client": "^6.10.1",
     "@types/bcrypt": "^5.0.2",
     "@types/bootstrap": "^5.2.10",
+    "@types/bun": "latest",
     "@types/compression": "^1.8.1",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express": "^5.0.3",
@@ -83,9 +85,8 @@
     "@types/qrcode": "^1.5.5",
     "@types/socket.io": "^3.0.2",
     "@types/validator": "^13.15.2",
-    "@eslint/js": "^9.29.0",
-    "@types/bun": "latest",
     "eslint": "^9.29.0",
+    "eslint-plugin-import": "^2.32.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.34.1"
   },

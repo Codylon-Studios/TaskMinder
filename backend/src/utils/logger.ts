@@ -22,7 +22,7 @@ export class StyledTextComponent {
     this.content = convertToString(content, this.styles.disableParsing ?? false);
   }
   apply(styles: Styles): void {
-    function deepMerge(target: Styles, source: Styles) {
+    function deepMerge(target: Styles, source: Styles): void {
       for (const [key, value] of Object.entries(source) as [keyof Styles, Styles[keyof Styles]][]) {
         if (Array.isArray(value)) {
           if (!(key in target)) {
@@ -30,7 +30,7 @@ export class StyledTextComponent {
           }
           deepMerge(target[key] as Styles, value as Styles);
         }
-        else if (typeof value == "object") {
+        else if (typeof value === "object") {
           if (!(key in target)) {
             target[key] = {} as unknown as undefined;
           }
@@ -58,43 +58,36 @@ export class StyledTextComponent {
 
       const alignment = paddingStyles.alignment ?? "left";
 
-      if (alignment == "left") {
+      if (alignment === "left") {
         paddingRightCharacters = fillStyledText.toString().repeat(remainingCharacters);
       }
-      else if (alignment == "right") {
+      else if (alignment === "right") {
         paddingLeftCharacters = fillStyledText.toString().repeat(remainingCharacters);
       }
-      else if (alignment == "center") {
+      else if (alignment === "center") {
         paddingLeftCharacters = fillStyledText.toString().repeat(Math.floor(remainingCharacters / 2));
         paddingRightCharacters = fillStyledText.toString().repeat(Math.ceil(remainingCharacters / 2));
       }
     }
 
     const startEscapeCodes = findEscapeCodes(this.styles);
-    const endEscapeCodes = startEscapeCodes != "" ? "\x1b[0m" : "";
+    const endEscapeCodes = startEscapeCodes !== "" ? "\x1b[0m" : "";
     return paddingLeftCharacters + startEscapeCodes + this.content + endEscapeCodes + paddingRightCharacters;
   }
 }
 export class StyledText {
   components: StyledTextComponent[];
   constructor(texts: unknown) {
-    this.components = [];
-    if (texts instanceof Array) {
+    const handleArray = (texts: unknown[]): void => {
       for (const text of texts) {
         const styledText = new StyledText(text);
         for (const styledTextComponent of styledText.components) {
           this.components.push(styledTextComponent);
         }
       }
-    }
-    else if (
-      Object.prototype.toString.call(texts) == "[object Object]" &&
-      typeof texts == "object" &&
-      texts !== null &&
-      texts !== undefined &&
-      "text" in texts
-    ) {
-      if ("disableParsing" in texts && typeof texts.disableParsing == "boolean" && texts.disableParsing) {
+    };
+    const handleObject = (texts: object & Record<"text", unknown>): void => {
+      if ("disableParsing" in texts && typeof texts.disableParsing === "boolean" && texts.disableParsing) {
         const { text, ...styles } = texts as {
           text: unknown;
           disableParsing: true;
@@ -109,6 +102,20 @@ export class StyledText {
           this.components.push(styledTextComponent);
         }
       }
+    };
+
+    this.components = [];
+    if (texts instanceof Array) {
+      handleArray(texts);
+    }
+    else if (
+      Object.prototype.toString.call(texts) === "[object Object]" &&
+      typeof texts === "object" &&
+      texts !== null &&
+      texts !== undefined &&
+      "text" in texts
+    ) {
+      handleObject(texts);
     }
     else {
       this.components.push(new StyledTextComponent({}, convertToString(texts, false)));
@@ -124,24 +131,20 @@ export class StyledText {
     for (const [styledTextComponentId, styledTextComponent] of Object.entries(this.components)) {
       result += styledTextComponent.toString();
       let space = true;
-      if (parseInt(styledTextComponentId) == this.components.length - 1) space = false;
-      if (styledTextComponent.styles.space != undefined) space = styledTextComponent.styles.space;
+      if (parseInt(styledTextComponentId) === this.components.length - 1) space = false;
+      if (styledTextComponent.styles.space !== undefined) space = styledTextComponent.styles.space;
       if (space) result += " ";
     }
     return result;
   }
 }
-export function convertToString(obj: unknown, disableParsing: boolean, depth: number = 0): string {
+export function convertToString(obj: unknown, disableParsing: boolean, depth = 0): string {
   function parseError(err: Error): string {
     const errArray = (err.stack ?? "").split("\n");
     errArray[0] = colors.red.fg + "\x1b[1m" + err.name + "\x1b[0m: " + colors.red.fg + err.message + "\x1b[0m";
     return errArray.join("\n");
   }
-
-  if (depth == 3) depth = 0;
-  const color = [colors.blue.fg, colors.magenta.fg, colors.yellow.fg][depth];
-
-  if (disableParsing) {
+  function styleWithoutParsing(): string {
     let res;
     if (obj === null) {
       return colors.green.fg + "\x1b[1m" + "null" + "\x1b[0m";
@@ -170,7 +173,7 @@ export function convertToString(obj: unknown, disableParsing: boolean, depth: nu
       res += color + "\x1b[1m" + " ]" + "\x1b[0m";
       return res;
     }
-    if (Object.prototype.toString.call(obj) == "[object Object]") {
+    if (Object.prototype.toString.call(obj) === "[object Object]") {
       res = "";
       res += color + "\x1b[1m" + "{ " + "\x1b[0m";
       res += Object.entries(obj)
@@ -184,12 +187,19 @@ export function convertToString(obj: unknown, disableParsing: boolean, depth: nu
     console.error("Unknown Object type:", obj);
     return colors.red.fg + "???" + "\x1b[0m";
   }
+
+  if (depth === 3) depth = 0;
+  const color = [colors.blue.fg, colors.magenta.fg, colors.yellow.fg][depth];
+
+  if (disableParsing) {
+    return styleWithoutParsing();
+  }
   else {
     try {
-      if (obj == undefined) {
+      if (obj === undefined) {
         return "undefined";
       }
-      if (obj == null) {
+      if (obj === null) {
         return "null";
       }
       if (obj instanceof Error) {
@@ -204,7 +214,7 @@ export function convertToString(obj: unknown, disableParsing: boolean, depth: nu
   }
 }
 
-let standardPrefix: string = "[TaskMinder]";
+let standardPrefix = "[TaskMinder]";
 export function setStandardPrefix(text: string): void {
   standardPrefix = text;
 }
@@ -241,7 +251,7 @@ export function printableSubstring(str: string, start: number, end?: number): st
   let res = "";
   for (const char of str) {
     if (escapeSequenceFound) {
-      if (char == "m") {
+      if (char === "m") {
         escapeSequenceFound = false;
       }
       res += char;

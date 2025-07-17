@@ -1,8 +1,8 @@
-function isIos() {
+function isIos(): boolean {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
-function isInStandaloneMode() {
+function isInStandaloneMode(): boolean {
   return window.matchMedia("(display-mode: standalone)").matches;
 }
 

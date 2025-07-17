@@ -20,7 +20,7 @@ export const addEvent = asyncHandler(async (req, res, next) => {
     startDate: z.coerce.number(),
     lesson: z.string().nullable(),
     endDate: z.preprocess(val => {
-      if (val == "") return null;
+      if (val === "") return null;
       return val;
     }, z.coerce.number().nullable()),
     teamId: z.coerce.number()

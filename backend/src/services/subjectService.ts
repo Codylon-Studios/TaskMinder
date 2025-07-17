@@ -58,23 +58,27 @@ const subjectService = {
     );
 
     for (const subject of subjects) {
-      if (
-        subject.subjectNameLong.trim() == "" ||
-        subject.subjectNameShort.trim() == "" ||
-        subject.teacherNameLong.trim() == "" ||
-        subject.teacherNameShort.trim() == ""
-      ) {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "Invalid data format",
-          expected: true
-        };
-        throw err;
+      function check(): void {
+        if (
+          subject.subjectNameLong.trim() === "" ||
+          subject.subjectNameShort.trim() === "" ||
+          subject.teacherNameLong.trim() === "" ||
+          subject.teacherNameShort.trim() === ""
+        ) {
+          const err: RequestError = {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data format",
+            expected: true
+          };
+          throw err;
+        }
+        isValidGender(subject.teacherGender);
       }
-      isValidGender(subject.teacherGender);
+
+      check();
       try {
-        if (subject.subjectId == "") {
+        if (subject.subjectId === "") {
           await prisma.subjects.create({
             data: {
               subjectNameLong: subject.subjectNameLong,
