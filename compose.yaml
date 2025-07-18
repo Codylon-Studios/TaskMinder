@@ -1,7 +1,7 @@
 # Prometheus: 9090
 # Loki: 3100
 # Grafana: 3001
-# TaskMinder-app: 3002
+# TaskMinder-app: 3000
 # redis: redis_port.txt
 # postgres: 5432
 services:
@@ -10,7 +10,7 @@ services:
     container_name: taskminder-app
     restart: always
     ports:
-      - "3002:3000"
+      - "3000:3000"
     environment:
       - NODE_ENV=PRODUCTION
       - REDIS_HOST=redis
@@ -21,10 +21,6 @@ services:
       - db_host
       - redis_port
       - session_secret
-      - classcode
-      - dsb_user
-      - dsb_password
-      - dsb_activated
       - unsafe_deactivate_csp
       - database_url
     depends_on:
@@ -145,14 +141,6 @@ secrets:
     file: ./docker_secrets/redis_port.txt
   session_secret:
     file: ./docker_secrets/session_secret.txt
-  classcode:
-    file: ./docker_secrets/classcode.txt
-  dsb_user:
-    file: ./docker_secrets/dsb_user.txt
-  dsb_password:
-    file: ./docker_secrets/dsb_password.txt
-  dsb_activated:
-    file: ./docker_secrets/dsb_activated.txt
   unsafe_deactivate_csp:
     file: ./docker_secrets/unsafe_deactivate_csp.txt
   database_url:

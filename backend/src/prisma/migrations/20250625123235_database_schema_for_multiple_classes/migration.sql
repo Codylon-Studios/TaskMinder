@@ -44,12 +44,6 @@ CREATE TABLE "Class" (
 INSERT INTO "Class" ("className", "classCode", "classCreated", "isTestClass", "dsbMobileActivated", "dsbMobileUser", "dsbMobilePassword", "dsbMobileClass", "permissionDefaultSetting")
 VALUES ('YOUR_CLASS_NAME', 'YOUR_CLASS_CODE', 1735689600000, false, true, 'DSB_MOBILE_USER', 'DSB_MOBILE_PASSWORD', 'DSB_MOBILE_CLASS_NAME', 0);
 
--- DropIndex
-DROP INDEX "homework10dCheck_accountId_key";
-
--- DropIndex
-DROP INDEX "homeworkCheck_accountId_key";
-
 -- AlterTable
 ALTER TABLE "event" ADD COLUMN "classId" INTEGER NOT NULL DEFAULT 1;
 
@@ -76,7 +70,7 @@ ALTER TABLE "subjects" ADD COLUMN "classId" INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE "team" ADD COLUMN "classId" INTEGER NOT NULL DEFAULT 1;
 
 -- DropTable
-DROP TABLE "timetable";
+DROP TABLE IF EXISTS "timetable";
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Class_className_key" ON "Class"("className");
@@ -88,7 +82,7 @@ CREATE UNIQUE INDEX "Class_classCode_key" ON "Class"("classCode");
 CREATE UNIQUE INDEX "eventType_classId_name_key" ON "eventType"("classId", "name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "lesson_classId_teamId_weekDay_lessonNumber_key" ON "lesson"("classId", "teamId", "weekDay", "lessonNumber");
+CREATE UNIQUE INDEX "lesson_classId_teamId_weekDay_lessonNumber_key" ON "lesson"("classId", "teamId", "weekDay", "lessonNumber", "subjectId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "subjects_classId_subjectNameLong_key" ON "subjects"("classId", "subjectNameLong");
@@ -161,3 +155,13 @@ CREATE TABLE "deletedAccount" (
 
     CONSTRAINT "deletedAccount_pkey" PRIMARY KEY ("deletedAccountId")
 );
+
+/*
+OPTIONAL CMDS
+The following commands are optional and may or may not be required, depending on your setup.
+*/
+-- DropIndex
+DROP INDEX IF EXISTS "homework10dCheck_accountId_key";
+-- DropIndex
+DROP INDEX IF EXISTS "homework10d_check_account_id_homework_id";
+

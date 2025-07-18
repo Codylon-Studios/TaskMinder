@@ -14,9 +14,6 @@ ALTER TABLE "homework10d" RENAME TO "homework";
 ALTER TABLE "homework10dCheck" RENAME TO "homeworkCheck";
 
 -- CreateIndex
-CREATE UNIQUE INDEX "homeworkCheck_accountId_key" ON "homeworkCheck"("accountId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "homework_check_account_id_homework_id" ON "homeworkCheck"("accountId", "homeworkId");
 
 -- AddForeignKey
