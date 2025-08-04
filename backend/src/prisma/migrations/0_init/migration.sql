@@ -114,16 +114,6 @@ CREATE TABLE "team" (
     CONSTRAINT "team_pkey" PRIMARY KEY ("teamId")
 );
 
--- CreateTable
-CREATE TABLE "timetable" (
-    "timetableId" SERIAL NOT NULL,
-    "class" INTEGER NOT NULL,
-    "content" JSON NOT NULL,
-    "lastUpdated" BIGINT NOT NULL,
-
-    CONSTRAINT "timetable_pkey" PRIMARY KEY ("timetableId")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "account_account_id" ON "account"("accountId");
 
@@ -134,16 +124,7 @@ CREATE UNIQUE INDEX "account_username_key" ON "account"("username");
 CREATE INDEX "IDX_session_expire" ON "account_sessions"("expire");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "homework10dCheck_accountId_key" ON "homework10dCheck"("accountId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "homework10d_check_account_id_homework_id" ON "homework10dCheck"("accountId", "homeworkId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "joinedClass_accountId_key" ON "joinedClass"("accountId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "joinedTeams_accountId_key" ON "joinedTeams"("accountId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "joined_teams_team_id_account_id" ON "joinedTeams"("teamId", "accountId");

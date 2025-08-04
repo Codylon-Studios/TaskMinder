@@ -162,6 +162,10 @@ const sessionMiddleware = session({
   name: "UserLogin"
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ message: "service operational" });
+});
+
 app.use(sessionMiddleware);
 app.use(csrfSessionInit);
 app.get("/csrf-token", (req, res) => {
@@ -170,9 +174,6 @@ app.get("/csrf-token", (req, res) => {
 app.use(csrfProtection);
 app.use(RequestLogger);
 
-app.get("/health", (req, res) => {
-  res.status(200).json({ message: "service operational" });
-});
 
 app.get("/metrics", async (req: Request, res: Response) => {
   res.set("Content-Type", register.contentType);
