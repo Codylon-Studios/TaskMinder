@@ -31,33 +31,6 @@ export const registerAccount = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const joinClass = asyncHandler(async (req, res, next) => {
-  const joinClassSchema = z.object({
-    classcode: z.string()
-  });
-  const parseResult = joinClassSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          classcode: { type: "string" }
-        },
-        required: ["classcode"]
-      }
-    });
-    return;
-  }
-  try {
-    await accountService.joinClass(parseResult.data.classcode, req.session);
-    res.sendStatus(200);
-  }
-  catch (error) {
-    next(error);
-  }
-});
-
 export const loginAccount = asyncHandler(async (req, res, next) => {
   const loginAccountSchema = z.object({
     username: z.string(),
@@ -221,7 +194,6 @@ export const checkUsername = asyncHandler(async (req, res, next) => {
 
 export default {
   registerAccount,
-  joinClass,
   loginAccount,
   logoutAccount,
   deleteAccount,

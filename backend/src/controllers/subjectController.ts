@@ -15,7 +15,7 @@ export const setSubjectData = asyncHandler(async (req, res, next) => {
   const setSubjectsSchema = z.object({
     subjects: z.array(
       z.object({
-        subjectId: z.union([z.coerce.number(), z.literal("")]),
+        subjectId: z.union([z.literal(""), z.coerce.number()]),
         subjectNameLong: z.string(),
         subjectNameShort: z.string(),
         subjectNameSubstitution: z.array(z.string()).nullable(),

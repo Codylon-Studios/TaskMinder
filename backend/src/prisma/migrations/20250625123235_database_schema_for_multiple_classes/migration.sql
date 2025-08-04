@@ -73,9 +73,6 @@ ALTER TABLE "team" ADD COLUMN "classId" INTEGER NOT NULL DEFAULT 1;
 DROP TABLE IF EXISTS "timetable";
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Class_className_key" ON "Class"("className");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Class_classCode_key" ON "Class"("classCode");
 
 -- CreateIndex

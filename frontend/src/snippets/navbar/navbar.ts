@@ -219,30 +219,34 @@ if (isSite("join")) {
   $("#login-register-button").addClass("d-none");
 }
 
+export function authUser(): void {
+  $.get("/account/auth", response => {
+    if (response.loggedIn) {
+      user.loggedIn = true;
+      user.username = response.account.username;
+    }
+    else {
+      user.loggedIn = false;
+      user.username = null;
+    }
+  
+    user.classJoined = response.classJoined;
+    user.permissionLevel = response.permissionLevel;
+  
+    if (response.loggedIn) {
+      user.loggedIn = true;
+    }
+    else {
+      user.loggedIn = false;
+      user.username = null;
+    }
+  
+    user.trigger("change");
+  });
+}
+
 // Check if the user is logged in for the first time
-$.get("/account/auth", response => {
-  if (response.loggedIn) {
-    user.loggedIn = true;
-    user.username = response.account.username;
-  }
-  else {
-    user.loggedIn = false;
-    user.username = null;
-  }
-
-  user.classJoined = response.classJoined;
-  user.permissionLevel = 0; // TODO: Fetch from server
-
-  if (response.loggedIn) {
-    user.loggedIn = true;
-  }
-  else {
-    user.loggedIn = false;
-    user.username = null;
-  }
-
-  user.trigger("change");
-});
+authUser();
 
 $(() => {
   //

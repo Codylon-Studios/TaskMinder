@@ -136,13 +136,15 @@ export const setEventTypeData = asyncHandler(async (req, res, next) => {
   const setEventTypesSchema = z.object({
     eventTypes: z.array(
       z.object({
-        eventTypeId: z.union([z.coerce.number(), z.literal("")]),
+        eventTypeId: z.union([z.literal(""), z.coerce.number()]),
         name: z.string(),
         color: z.string().regex(/^#[0-9a-fA-F]{6}$/)
       })
     )
   });
   const parseResult = setEventTypesSchema.safeParse(req.body);
+  console.log(req.body);
+  console.log(parseResult.data);
   if (!parseResult.success) {
     res.status(400).json({
       error: "Invalid request format",

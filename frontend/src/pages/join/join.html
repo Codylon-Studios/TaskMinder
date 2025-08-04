@@ -26,13 +26,13 @@
             <button class="btn-back" id="join-class-back-btn"></button>
             <h2 class="text-center mb-0 flex-grow-1">Klasse beitreten</h2>
           </div>
-          <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2" id="error-invalid-classcode">
+          <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2" id="error-invalid-class-code">
             <i class="fa-solid fa-circle-exclamation mx-1"></i>
             <span class="d-block">Der Klassencode ist ungültig!</span>
           </div>
           <div class="mb-3">
-            <label for="join-class-classcode" class="form-label">Gib den Klassencode ein</label>
-            <input type="text" class="form-control" id="join-class-classcode" />
+            <label for="join-class-class-code" class="form-label">Gib den Klassencode ein</label>
+            <input type="text" class="form-control" id="join-class-class-code" />
             <div class="form-text">Frag den Ersteller eurer Klasse, wenn du ihn vergessen hast</div>
           </div>
           <button class="btn btn-primary w-100 fw-semibold" id="join-class-btn">Beitreten</button>
@@ -149,26 +149,11 @@
               Klassennamen dürfen nur aus Buchstaben, Zahlen, Leerzeichen, "_", "-" und "." bestehen und müssen 2 bis 20 Zeichen lang sein.
             </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-class-classcode">Euer Klassencode (zufälllig generiert)</label>
-            <div class="input-group">
-              <input type="text" class="form-control" id="create-class-classcode" readonly />
-              <button class="btn btn-tertiary" id="create-class-classcode-new">
-                <i class="fas fa-rotate"></i>
-              </button>
-            </div>
-            <div class="form-text">
-              Mit diesem Code können deine Mitschüler*innen eurer Klasse beitreten.
-              <br />
-              Keine Sorge, du kannst auch einen Einladungslink oder QR Code teilen.
-            </div>
-          </div>
           <button class="btn btn-primary w-100 fw-semibold" id="create-class-btn">Klasse erstellen</button>
         </div>
 
         <div id="invite-panel" class="d-none">
           <div class="d-flex align-items-center mb-4">
-            <button class="btn-back" id="create-class-credentials-back-btn"></button>
             <h2 class="text-center mb-0 flex-grow-1">Mitglieder einladen</h2>
           </div>
           <div class="d-flex gap-2 flex-column flex-md-row">

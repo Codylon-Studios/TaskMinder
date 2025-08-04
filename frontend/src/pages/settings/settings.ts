@@ -15,7 +15,8 @@ import {
   timeToMs,
   LessonData,
   csrfToken,
-  reloadAllFn
+  reloadAllFn,
+  classMemberData
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
@@ -48,6 +49,95 @@ async function updateColorTheme(): Promise<void> {
     document.body.setAttribute("data-bs-theme", "dark");
     $('meta[name="theme-color"]').attr("content", "#2b3035");
   }
+}
+
+async function updateClassMemberList(): Promise<void> {
+  const roles = [ "Mitglied", "Bearbeiter:in", "Manager:in", "Admin" ];
+  let newClassMembersContent = "";
+
+  for (const classMember of await classMemberData()) {
+    const classMemberId = classMember.accountId;
+
+    const roleOptionsHtml = roles.map((opt, index) => 
+      `<option value="${index}" ${(classMember.permissionSetting ?? 0) === index ? "selected" : ""}>${opt}</option>`
+    ).join("");
+
+    const template = `
+      <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${classMemberId}">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center flex-grow-1">
+          <div class="d-flex w-lg-50 pe-3 align-items-center">
+            <span class="w-100">${$.formatHtml(classMember.username) + ((classMember.username === user.username) ? " <b>(Du)</b>" : "")}</span>
+            <span class="form-text mt-0">Rolle:</span>
+            <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content"
+              data-id="${classMemberId}" ${(canEditClassSettings && classMember.username !== user.username) ? "" : "disabled"}>
+              ${roleOptionsHtml}
+            </select>
+          </div>
+          <span class="text-warning fw-bold mt-2 mt-lg-0 d-none me-2 class-member-changed" data-id="${classMemberId}">
+            Rolle geändert
+            <span class="text-secondary fw-normal class-member-changed-role" data-id="${classMemberId}">
+              (${roles[classMember.permissionSetting ?? 0]} zu <b></b>)
+            </span>
+          </span>
+          <span class="text-danger fw-bold mt-2 mt-lg-0 d-none class-member-kicked" data-id="${classMemberId}">Entfernt</span>
+          <span class="form-text mt-2 mt-lg-0 pe-2 w-lg-50${classMember.username === user.username ? "" : " d-none"}">
+            Du kannst deine eigenen Berechtigungen nicht ändern. Du kannst die Klasse unter "Schüler:in" verlassen.
+          </span>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick"
+            data-id="${classMemberId}" ${(canEditClassSettings && classMember.username !== user.username) ? "" : "disabled"}>
+            <i class="fa-solid fa-user-minus"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    newClassMembersContent += template;
+  }
+
+  $("#class-members-list").html(newClassMembersContent);
+
+  $(document).off("change", ".class-member-role-input").on("change", ".class-member-role-input", async function () {
+    $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
+    $("#class-members-cancel").show();
+
+    const classMemberId = $(this).data("id");
+    const newRole = parseInt($(this).val()) as 0 | 1 | 2 | 3;
+    const oldRole = (await classMemberData()).find(classMember => classMember.accountId === classMemberId)?.permissionSetting ?? 0;
+    if (newRole !== oldRole) {
+      if ($(`.class-member-kicked[data-id="${classMemberId}"]`).hasClass("d-none")) {
+        $(`.class-member-changed[data-id="${classMemberId}"]`).removeClass("d-none");
+        $(`.class-member-changed-role[data-id="${classMemberId}"]`)
+          .removeClass("d-none")
+          .find("b")
+          .removeClass("d-none")
+          .text(roles[newRole]);
+      }
+    }
+    else {
+      $(`.class-member-changed[data-id="${classMemberId}"]`).addClass("d-none");
+      $(`.class-member-changed-role[data-id="${classMemberId}"]`).addClass("d-none");
+    }
+  });
+
+  $(".class-member-kick").on("click", function () {
+    $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
+    $("#class-members-cancel").show();
+
+    const classMemberId = $(this).data("id");
+    if ($(this).hasClass("btn-danger")) {
+      $(`.class-member-kicked[data-id="${classMemberId}"]`).removeClass("d-none");
+      $(`.class-member-changed[data-id="${classMemberId}"]`).addClass("d-none").find("*").addClass("d-none");
+
+      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo"></i>');
+    }
+    else {
+      $(`.class-member-kicked[data-id="${classMemberId}"]`).addClass("d-none");
+      $(`.class-member-role-input[data-id="${classMemberId}"]`).trigger("change");
+
+      $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-user-minus"></i>');
+    }
+  });
 }
 
 async function updateTeamLists(): Promise<void> {
@@ -93,8 +183,8 @@ async function updateTeamLists(): Promise<void> {
     newTeamsContent += template;
   }
 
-  if ((await teamsData()).length === 0) {
-    $("#team-selection-list, #teams-list").append('<span class="text-secondary no-teams">Keine Teams vorhanden</span>');
+  if (currentTeamsData.length === 0) {
+    newTeamSelectionContent = newTeamsContent = '<span class="text-secondary no-teams">Keine Teams vorhanden</span>';
   }
 
   $("#team-selection-list").html(newTeamSelectionContent);
@@ -287,7 +377,7 @@ async function updateEventTypeList(): Promise<void> {
 }
 
 async function updateSubjectList(): Promise<void> {
-  if ((await substitutionsData()) !== "No data") {
+  if ((await substitutionsData()).data !== "No data") {
     dsbActivated = true;
   }
 
@@ -814,12 +904,14 @@ let canEditClassSettings = false;
 $(async () => {
   reloadAllFn.set(async () => {
     if (user.classJoined) {
-      eventTypeData.reload();
+      classMemberData.reload();
+      teamsData.reload();
       joinedTeamsData.reload();
+      eventTypeData.reload();
       subjectData.reload();
       substitutionsData.reload();
-      teamsData.reload();
       lessonData.reload();
+      await updateClassMemberList();
       await updateTeamLists();
       await updateEventTypeList();
       await updateSubjectList();
@@ -837,7 +929,7 @@ const qrCode = new QRCode( "show-qrcode-modal-qrcode", {
 
 $(".cancel-btn").hide();
 
-user.on("change", () => {
+user.on("change", async () => {
   if (user.loggedIn !== null) {
     $(".not-logged-in-info").toggleClass("d-none", user.loggedIn);
     $("#settings-account").toggleClass("d-none", !user.loggedIn);
@@ -848,29 +940,36 @@ user.on("change", () => {
     $("#delete-account-button").show();
     $("#delete-account").hide();
   }
+  if (user.classJoined !== null) {
+    $(".not-joined-info").toggleClass("d-none", user.classJoined);
+    $("#settings-student, #settings-class").toggleClass("d-none", ! user.classJoined);
+  }
   if (user.classJoined) {
-    $(".not-joined-info").addClass("d-none");
-    $("#settings-student, #settings-class").removeClass("d-none");
+    $("#leave-class").hide();
+    $("#delete-class").hide();
+    $("#kick-logged-out-users").hide();
+    $("#set-logged-out-users-role").hide();
 
-    let classcode = "";
+    let classCode = "";
 
-    $.get("/class/get_classcode")
-      .done((resClasscode: string) => {
-        $("#classcode").val(resClasscode);
+    $.get("/class/get_class_info")
+      .done(res => {
+        const resClassCode = res.classCode;
+        $("#class-code").val(resClassCode);
         $("#invite-copy-link, #invite-qrcode").removeClass("disabled");
-        classcode = resClasscode;
+        classCode = resClassCode;
 
-        qrCode.makeCode(`https://codylon.de/join?classcode=${classcode}`);
-        $("#show-qrcode-modal-title b").text("className");
+        qrCode.makeCode(`https://taskminder.de/join?class_code=${classCode}`);
+        $("#show-qrcode-modal-title b").text(res.className);
       })
       .fail(() => {
-        $("#classcode").val("Fehler beim Laden");
+        $("#class-code").val("Fehler beim Laden");
         $("#invite-copy-link, #invite-qrcode").addClass("disabled");
       });
 
     $("#invite-copy-link").on("click", async () => {
       try {
-        await navigator.clipboard.writeText(`https://codylon.de/join?classcode=${classcode}`);
+        await navigator.clipboard.writeText(`https://taskminder.de/join?class_code=${classCode}`);
     
         $("#invite-copy-link").addClass("disabled").html("<i class=\"fa-solid fa-check-circle\"></i> Einladungslink kopiert");
     
@@ -883,18 +982,32 @@ user.on("change", () => {
       }
     });
 
+    let loggedOutUsersRole
+    try {
+      loggedOutUsersRole = await $.get("/class/get_logged_out_users_role")
+    }
+    catch {
+      loggedOutUsersRole = 0
+    }
+    finally {
+      $(`#set-logged-out-users-role-select option[value="${loggedOutUsersRole}"]`).attr("selected", "")
+    }
+
     if ((user.permissionLevel ?? 0) < 2) {
       canEditClassSettings = false;
-      $("#teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
+      $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
         .find("input, button, select, .color-picker-trigger")
         .attr("disabled", "");
     }
     else {
       canEditClassSettings = true;
-      $("#teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
+      $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
         .find("input, button, select, .color-picker-trigger")
         .removeAttr("disabled");
     }
+    $("#delete-class-button").toggleClass("disabled", (user.permissionLevel ?? 0) !== 3);
+    $("#kick-logged-out-users-button").toggleClass("disabled", (user.permissionLevel ?? 0) !== 3);
+    $("#set-logged-out-users-role-select").toggleClass("disabled", (user.permissionLevel ?? 0) !== 3);
   }
 });
 
@@ -1092,6 +1205,7 @@ $("#delete-account-button").on("click", function () {
   $("#delete-account-password").val("");
   $("#delete-account-confirm").addClass("disabled");
   $("#delete-account-invalid-password").addClass("d-none").removeClass("d-flex");
+  $("#delete-account-still-in-class").addClass("d-none").removeClass("d-flex");
 });
 
 $("#delete-account-cancel").on("click", () => {
@@ -1135,6 +1249,10 @@ $("#delete-account-confirm").on("click", async () => {
     error: xhr => {
       if (xhr.status === 401) {
         $("#delete-account-invalid-password").removeClass("d-none").addClass("d-flex");
+        $("#delete-account-confirm").addClass("disabled");
+      }
+      else if (xhr.status === 409) {
+        $("#delete-account-still-in-class").removeClass("d-none").addClass("d-flex");
         $("#delete-account-confirm").addClass("disabled");
       }
       else if (xhr.status === 500) {
@@ -1222,6 +1340,331 @@ $("#team-selection-save").on("click", async () => {
     }, 1000);
   }
 });
+
+// Leave class
+
+$("#leave-class-button").on("click", function () {
+  $(this).hide();
+  $("#leave-class").show();
+  $("#leave-class-confirm").removeClass("disabled");
+  $("#leave-class-last-admin").addClass("d-none").removeClass("d-flex");
+});
+
+$("#leave-class-cancel").on("click", () => {
+  $("#leave-class").hide();
+  $("#leave-class-button").show();
+});
+
+$("#leave-class-confirm").on("click", async () => {
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/class/leave_class",
+    type: "POST",
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#leave-class-success-toast").toast("show");
+      
+      user.classJoined = false;
+      user.trigger("change");
+    },
+    error: xhr => {
+      if (xhr.status === 409) {
+        $("#leave-class-last-admin").removeClass("d-none").addClass("d-flex");
+        $("#leave-class-confirm").addClass("disabled");
+      }
+      else if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+// Delete class
+
+$("#delete-class-button").on("click", function () {
+  $(this).hide();
+  $("#delete-class").show();
+  $("#delete-class-confirm").removeClass("disabled");
+});
+
+$("#delete-class-cancel").on("click", () => {
+  $("#delete-class").hide();
+  $("#delete-class-button").show();
+});
+
+$("#delete-class-confirm").on("click", async () => {
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/class/delete_class",
+    type: "POST",
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#delete-class-success-toast").toast("show");
+      
+      user.classJoined = false;
+      user.trigger("change");
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+// Kick logged out users
+
+$("#kick-logged-out-users-button").on("click", function () {
+  $(this).hide();
+  $("#kick-logged-out-users").show();
+});
+
+$("#kick-logged-out-users-cancel").on("click", () => {
+  $("#kick-logged-out-users").hide();
+  $("#kick-logged-out-users-button").show();
+});
+
+$("#kick-logged-out-users-confirm").on("click", async () => {
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/class/kick_logged_out_users",
+    type: "POST",
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#kick-logged-out-users-success-toast").toast("show");
+      
+      user.classJoined = false;
+      user.trigger("change");
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+// Set logged out users role
+
+$("#set-logged-out-users-role-select").on("change", function () {
+  if ($(this).find('option[selected]').is(":selected")) {
+    $("#set-logged-out-users-role").hide();
+  }
+  else {
+    $("#set-logged-out-users-role").show();
+  }
+});
+
+$("#set-logged-out-users-role-cancel").on("click", () => {
+  $("#set-logged-out-users-role-select").val($("#set-logged-out-users-role-select").find('option[selected]').val() ?? "")
+  $("#set-logged-out-users-role").hide();
+});
+
+$("#set-logged-out-users-role-confirm").on("click", async () => {
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/class/set_logged_out_users_role",
+    type: "POST",
+    data: JSON.stringify({role: parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0")}),
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#set-logged-out-users-role-success-toast").toast("show");
+      
+      user.classJoined = false;
+      user.trigger("change");
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+// CLASS MEMBERS
+
+$("#class-members-toggle").on("click", function () {
+  $("#class-members-wrapper").toggleClass("d-none");
+  $(this).toggleClass("rotate-90");
+});
+
+$("#class-members-cancel").on("click", () => {
+  $("#class-members-cancel").hide();
+  updateClassMemberList();
+  $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
+});
+
+async function saveClassMembers(): Promise<void> {
+  $("#class-members-cancel").hide();
+
+
+  const classMembersKickData: { accountId: number }[] = [];
+  const classMembersPermissionsData: { accountId: number, permissionSetting: 0 | 1 | 2 | 3 }[] = [];
+
+  $(".class-member-role-input").each(function () {
+    if ($(this).parent().parent().parent().find("~ .btn-success").length > 0) {
+      classMembersKickData.push({
+        accountId: $(this).data("id")
+      });
+    }
+    else {
+      classMembersPermissionsData.push({
+        accountId: $(this).data("id"),
+        permissionSetting: parseInt($(this).val()?.toString() ?? "") as 0 | 1 | 2 | 3
+      });
+    }
+  });
+
+  const kickData = {
+    classMembers: classMembersKickData
+  };
+  const permissionsData = {
+    classMembers: classMembersPermissionsData
+  };
+  let hasResponded = false;
+
+  const csrf = await csrfToken()
+
+  $.ajax({
+    url: "/class/kick_class_members",
+    type: "POST",
+    data: JSON.stringify(kickData),
+    contentType: "application/json",
+    headers: {
+      "X-CSRF-Token": csrf
+    },
+    success: () => {
+      $.ajax({
+        url: "/class/set_class_members_permission",
+        type: "POST",
+        data: JSON.stringify(permissionsData),
+        contentType: "application/json",
+        headers: {
+          "X-CSRF-Token": csrf
+        },
+        success: () => {
+          
+        },
+        error: xhr => {
+          if (xhr.status === 500) {
+            $navbarToasts.serverError.toast("show");
+          }
+          else {
+            $navbarToasts.unknownError.toast("show");
+          }
+        },
+        complete: () => {
+          hasResponded = true;
+        }
+      });
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+}
+
+$("#class-members-save").on("click", () => {
+  const deleted: string[] = [];
+  $(".class-member-kicked:not(.d-none)").each(function () {
+    deleted.push($(this).parent().find("span").eq(0).text());
+  });
+
+  if (deleted.length === 0) {
+    saveClassMembers();
+  }
+  else {
+    $("#class-members-save-confirm-container, #class-members-save-confirm").removeClass("d-none");
+    if (deleted.length === 1) {
+      $("#class-members-save-confirm-list").html(`wird der Schüler / die Schülerin <b>${$.formatHtml(deleted[0])}</b>`);
+    }
+    else {
+      $("#class-members-save-confirm-list").html(
+        "werden die Schüler:innen " +
+          deleted
+            .map(e => `<b>${$.formatHtml(e)}</b>`)
+            .join(", ")
+            .replace(/,(?!.*,)/, " und")
+      );
+    }
+  }
+});
+
+$("#class-member-save-confirm").on("click", saveClassMembers);
 
 // TEAMS
 
@@ -1455,7 +1898,7 @@ async function saveEventTypes(): Promise<void> {
       "X-CSRF-Token": await csrfToken()
     },
     success: () => {
-      eventTypeData(null);
+      eventTypeData.reload();
       updateEventTypeList();
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
       $("#event-types-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);

@@ -12,6 +12,5 @@ router.post("/change_password", checkAccess.checkAccount, userController.changeP
 router.get("/auth", userController.getAuth);
 router.post("/logout", checkAccess.checkAccount, userController.logoutAccount);
 router.post("/checkusername", userController.checkUsername);
-router.post("/join", checkAccess.checkAccount, userController.joinClass);
 
 export default router;

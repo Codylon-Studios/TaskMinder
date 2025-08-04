@@ -198,10 +198,9 @@ export default {
     });
     if (account!.permissionSetting === 3){
       const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Admin still in class",
-        additionalInformation: "The account is still an admin in a class, leave the class first",
+        name: "Conflict",
+        status: 409,
+        message: "The account is still an admin in a class, leave the class first",
         expected: true
       };
       throw err;
@@ -283,77 +282,5 @@ export default {
       where: { username: username }
     });
     return accountExists !== null;
-  },
-
-
-  async joinClass(classcode: string, session: Session & Partial<SessionData>) {
-    if (session.classId) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Already in a class",
-        expected: true
-      };
-      throw err;
-    }
-    const targetClass = await prisma.class.findUnique({
-      where: {
-        classCode: classcode
-      }
-    });
-    if (!targetClass) {
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "Invalid class code",
-        expected: true
-      };
-      throw err;
-    }
-
-    // checkAccess.checkAccount middleware
-    const { accountId } = session.account!;
-
-    await prisma.$transaction(async tx => {
-      const existingJoin = await tx.joinedClass.findUnique({
-        where: { accountId }
-      });
-
-      if (existingJoin) {
-        // DB says user is in a class, but it's not the one they're trying to join
-        if (existingJoin.classId !== targetClass.classId) {
-          throw {
-            name: "Conflict",
-            status: 409,
-            message: "Account is already linked to a different class in the database.",
-            expected: true
-          };
-        }
-      
-        // DB and target class match, but session was out of sync
-        await tx.account.update({
-          where: { accountId },
-          data: {
-            permissionSetting: targetClass.permissionDefaultSetting
-          }
-        });
-
-      } 
-      else {
-        await tx.joinedClass.create({
-          data: {
-            accountId: accountId,
-            classId: targetClass.classId
-          }
-        });
-        await tx.account.update({
-          where: { accountId },
-          data: {
-            permissionSetting: targetClass.permissionDefaultSetting
-          }
-        });
-      }
-    });
-    session.classId = targetClass.classId.toString();
   }
 };

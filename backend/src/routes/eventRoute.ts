@@ -4,7 +4,7 @@ import checkAccess from "../middleware/accessMiddleware";
 
 const router = express.Router();
 
-router.get("/get_event_data", checkAccess.checkClass, checkAccess.checkPermissionLevel(1), eventController.getEventData);
+router.get("/get_event_data", checkAccess.checkClass, eventController.getEventData);
 router.post("/add_event", checkAccess.checkAccountAndClass, checkAccess.checkPermissionLevel(1), eventController.addEvent);
 router.post("/edit_event", checkAccess.checkAccountAndClass, checkAccess.checkPermissionLevel(1), eventController.editEvent);
 router.post("/delete_event", checkAccess.checkAccountAndClass, checkAccess.checkPermissionLevel(1), eventController.deleteEvent);

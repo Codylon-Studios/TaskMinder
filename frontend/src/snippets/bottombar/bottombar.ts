@@ -1,7 +1,7 @@
 import { getSite } from "../../global/global.js";
 import { user } from "../navbar/navbar.js";
 
-if (/OS (18|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
+if (/OS (18|19|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
   $(".bottombar").css("padding-bottom", "1rem");
 }
 

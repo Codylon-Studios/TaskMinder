@@ -1,5 +1,5 @@
 import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
-import { user } from "../snippets/navbar/navbar.js";
+import { $navbarToasts, user } from "../snippets/navbar/navbar.js";
 
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
@@ -122,6 +122,52 @@ export function deepCompare(a: unknown, b: unknown): boolean {
 
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
+}
+
+export async function sendWrappedRequest(
+  url: string,
+  data: string | Record<string, unknown> | undefined,
+  successFn: () => void,
+  errorHandling: { status: number, handlerFn: () => void }[]
+): Promise<void> {
+  
+  let hasResponded = false;
+
+  $.ajax({
+    url: url,
+    type: "POST",
+    data: data,
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: successFn,
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        const match = errorHandling.find(handler => handler.status === xhr.status);
+        if (match) {
+          match.handlerFn();
+        }
+        else if (xhr.status >= 500) {
+          $navbarToasts.serverError.toast("show");
+        }
+        else {
+          $navbarToasts.unknownError.toast("show");
+        }
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
 }
 
 export async function reloadAll(): Promise<void> {
@@ -314,29 +360,34 @@ type SubstitutionPlan = {
   date: string;
   substitutions: Record<string, string>[];
 };
-export type SubstitutionsData =
+export type CoreSubstitutionsData =
   | {
-      plan1: SubstitutionPlan;
-      plan2: SubstitutionPlan;
-      updated: string;
+    plan1: SubstitutionPlan;
+    plan2: SubstitutionPlan;
+    updated: string;
     }
   | "No data";
+export type SubstitutionsData = {
+  data: CoreSubstitutionsData;
+  realClassName: string | null;
+};
+
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", "/substitutions/get_substitutions_data");
 async function loadClassSubstitutionsData(): Promise<void> {
   const currentSubstitutionsData = await substitutionsData();
-  if (currentSubstitutionsData === "No data") {
-    classSubstitutionsData("No data");
+  if (currentSubstitutionsData.data === "No data") {
+    classSubstitutionsData({data: "No data", realClassName: currentSubstitutionsData.realClassName});
     return;
   }
 
-  const data = structuredClone(currentSubstitutionsData);
+  const data = structuredClone(currentSubstitutionsData.data);
   for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
     const key = ("plan" + planId) as "plan1" | "plan2";
     data[key].substitutions = data[key].substitutions.filter((entry: Record<string, string>) =>
-      /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class)
+      /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class) // TODO @Fabian: filter by class
     );
   }
-  classSubstitutionsData(data);
+  classSubstitutionsData({data: data, realClassName: currentSubstitutionsData.realClassName});
 }
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", loadClassSubstitutionsData);
 
@@ -387,6 +438,14 @@ export type EventTypeData = {
   color: string;
 }[];
 export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData", "/events/get_event_type_data");
+
+// Class member Data
+export type ClassMemberData = {
+  accountId: number;
+  username: string;
+  permissionSetting: 0 | 1 | 2 | 3 | null; // TODO @Mingqi: Always send permission level
+}[];
+export const classMemberData = createDataAccessor<ClassMemberData>("classMemberData", "/class/get_class_members");
 
 // CSRF token
 export const csrfToken = createDataAccessor<string>("csrfToken");
@@ -517,32 +576,3 @@ $.formatHtml = (html, options?) => {
   const newlines = escaped.replace(/\n/g, "<br>");
   return newlines;
 };
-
-
-
-/*
-// TODO: Remove this overwrite
-const fixedTime = new Date("2025-07-14T08:05:00Z");
-
-// Original sichern
-const OriginalDate = Date;
-
-class FakeDate extends OriginalDate {
-  constructor(...args: any[]) {
-    // Wenn keine Argumente → fixe Zeit zurückgeben
-    if (args.length === 0) {
-      super(fixedTime); // das ist typisch besser als return new Date(...) hier
-    }
-    else {
-      super(args[0]);
-    }
-  }
-
-  static now(): number {
-    return fixedTime.getTime();
-  }
-}
-
-// Zuweisung – aber mit Casting, um TS zu beruhigen
-(window as any).Date = FakeDate;
-*/

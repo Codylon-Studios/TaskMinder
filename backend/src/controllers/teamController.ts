@@ -16,7 +16,7 @@ export const setTeams = asyncHandler(async (req, res, next) => {
   const setTeamsSchema = z.object({
     teams: z.array(
       z.object({
-        teamId: z.union([z.coerce.number(), z.literal("")]),
+        teamId: z.union([z.literal(""), z.coerce.number()]),
         name: z.string()
       })
     )

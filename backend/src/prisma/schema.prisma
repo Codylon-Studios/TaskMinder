@@ -65,7 +65,7 @@ model EventType {
 
 model Class {
   classId     Int           @id @default(autoincrement()) @map("classId")
-  className   String        @unique
+  className   String
   classCode   String        @unique
   classCreated BigInt
   isTestClass Boolean

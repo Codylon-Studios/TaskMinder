@@ -1,6 +1,7 @@
 import { RequestError } from "../@types/requestError";
 import { Session, SessionData } from "express-session";
 import prisma from "../config/prisma";
+import { BigIntreplacer } from "../utils/validateFunctions";
 
 function generateRandomBase62String(length: number = 20): string {
   const chars: string[] = [];
@@ -53,28 +54,17 @@ const classService = {
       };
       throw err;
     }
-    return classInfo;
+    return JSON.parse(JSON.stringify(classInfo, BigIntreplacer));
   },
 
   async createClass(
     reqData: {
       classDisplayName: string;
-      classCode: string;
-      dsbMobileActivated: boolean;
-      dsbMobileUser?: string | null;
-      dsbMobilePassword?: string | null;
-      dsbMobileClass?: string | null;
     },
     session: Session & Partial<SessionData>
   ) {
-    const {
-      classDisplayName,
-      classCode,
-      dsbMobileActivated,
-      dsbMobileUser,
-      dsbMobilePassword,
-      dsbMobileClass
-    } = reqData;
+    const classDisplayName = reqData.classDisplayName;
+    const classCode = generateRandomBase62String();
   
     if (session.classId) {
       const err: RequestError = {
@@ -86,31 +76,14 @@ const classService = {
       throw err;
     }
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const baseData: any = {
+    const baseData = {
       className: classDisplayName,
       classCode: classCode,
       classCreated: Date.now(),
       isTestClass: false,
-      dsbMobileActivated: dsbMobileActivated,
+      dsbMobileActivated: false,
       permissionDefaultSetting: 0 // default setting when creating class is 0 - read only
     };
-  
-    if (dsbMobileActivated) {
-      if (!dsbMobileUser || !dsbMobilePassword || !dsbMobileClass) {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "DSB credentials are required when dsbMobileActivated is true.",
-          expected: true
-        };
-        throw err;
-      }
-  
-      baseData.dsbMobileUser = dsbMobileUser;
-      baseData.dsbMobilePassword = dsbMobilePassword;
-      baseData.dsbMobileClass = dsbMobileClass;
-    }
 
     await prisma.$transaction(async tx => {
   
@@ -144,22 +117,11 @@ const classService = {
   async createTestClass(
     reqData: {
       classDisplayName: string;
-      classCode: string;
-      dsbMobileActivated: boolean;
-      dsbMobileUser?: string | null;
-      dsbMobilePassword?: string | null;
-      dsbMobileClass?: string | null;
     },
     session: Session & Partial<SessionData>
   ) {
-    const {
-      classDisplayName,
-      classCode,
-      dsbMobileActivated,
-      dsbMobileUser,
-      dsbMobilePassword,
-      dsbMobileClass
-    } = reqData;
+    const classDisplayName = reqData.classDisplayName;
+    const classCode = generateRandomBase62String();
   
     if (session.classId) {
       const err: RequestError = {
@@ -171,31 +133,14 @@ const classService = {
       throw err;
     }
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const baseData: any = {
+    const baseData = {
       className: classDisplayName,
       classCode: classCode,
       classCreated: Date.now(),
       isTestClass: true,
-      dsbMobileActivated: dsbMobileActivated
+      dsbMobileActivated: false,
+      permissionDefaultSetting: 0
     };
-  
-    if (dsbMobileActivated) {
-      if (!dsbMobileUser || !dsbMobilePassword || !dsbMobileClass) {
-        const err: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "DSB credentials are required when dsbMobileActivated is true.",
-          expected: true
-        };
-        throw err;
-      }
-  
-      baseData.dsbMobileUser = dsbMobileUser;
-      baseData.dsbMobilePassword = dsbMobilePassword;
-      baseData.dsbMobileClass = dsbMobileClass;
-    }
-  
 
     await prisma.$transaction(async tx => {
   
@@ -224,7 +169,7 @@ const classService = {
       });
     });
   },
-  async generateNewClassCode(session: Session & Partial<SessionData>){
+  async generateClassCode(session: Session & Partial<SessionData>){
     if (session.classId) {
       const err: RequestError = {
         name: "Unauthorized",
@@ -259,6 +204,79 @@ const classService = {
       expected: false
     };
     throw err;
+  },
+
+  async joinClass(classCode: string, session: Session & Partial<SessionData>) {
+    if (session.classId) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Already in a class",
+        expected: true
+      };
+      throw err;
+    }
+    const targetClass = await prisma.class.findUnique({
+      where: {
+        classCode: classCode
+      }
+    });
+    if (!targetClass) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Invalid class code",
+        expected: true
+      };
+      throw err;
+    }
+
+    const accountId = session.account?.accountId;
+
+    if (accountId !== undefined) {
+      await prisma.$transaction(async tx => {
+        const existingJoin = await tx.joinedClass.findUnique({
+          where: { accountId }
+        });
+
+        if (existingJoin) {
+          // DB says user is in a class, but it's not the one they're trying to join
+          if (existingJoin.classId !== targetClass.classId) {
+            const err: RequestError = {
+              name: "Conflict",
+              status: 409,
+              message: "Account is already linked to a different class in the database.",
+              expected: true
+            };
+            throw err;
+          }
+        
+          // DB and target class match, but session was out of sync
+          await tx.account.update({
+            where: { accountId },
+            data: {
+              permissionSetting: targetClass.permissionDefaultSetting
+            }
+          });
+
+        } 
+        else {
+          await tx.joinedClass.create({
+            data: {
+              accountId: accountId,
+              classId: targetClass.classId
+            }
+          });
+          await tx.account.update({
+            where: { accountId },
+            data: {
+              permissionSetting: targetClass.permissionDefaultSetting
+            }
+          });
+        }
+      });
+    }
+    session.classId = targetClass.classId.toString();
   },
   async leaveClass(session: Session & Partial<SessionData>) {
     if (session.account) {
@@ -298,9 +316,9 @@ const classService = {
         if (leavingUserIsAdmin) {
           if (allMembers.length === 1) {
             const err: RequestError = {
-              name: "Bad Request",
-              status: 400,
-              message: "You are the last user. Please delete the class instead",
+              name: "Conflict",
+              status: 409,
+              message: "You are the only admin. Please promote another member before leaving or delete the class.",
               expected: true
             };
             throw err;
@@ -312,9 +330,9 @@ const classService = {
 
           if (adminsInClass.length === 1) {
             const err: RequestError = {
-              name: "Bad Request",
-              status: 400,
-              message: "You are the only admin. Please promote another member before leaving.",
+              name: "Conflict",
+              status: 409,
+              message: "You are the only admin. Please promote another member before leaving or delete the class.",
               expected: true
             };
             throw err;
@@ -437,7 +455,8 @@ const classService = {
         Account: {
           select: {
             username: true,
-            permissionSetting: true
+            permissionSetting: true,
+            accountId: true
           }
         }
       }

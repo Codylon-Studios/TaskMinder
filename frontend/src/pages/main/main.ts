@@ -9,7 +9,6 @@ import {
   msToDisplayDate,
   substitutionsData,
   classSubstitutionsData,
-  SubstitutionsData,
   dateToMs,
   lessonData,
   SingleEventData,
@@ -18,7 +17,8 @@ import {
   reloadAll,
   msToTime,
   csrfToken,
-  reloadAllFn
+  reloadAllFn,
+  CoreSubstitutionsData
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -491,13 +491,13 @@ async function updateSubstitutionList(): Promise<void> {
   }
   const substitutionsMode = localStorage.getItem("substitutionsMode") ?? "class";
 
-  let data: SubstitutionsData;
+  let data: CoreSubstitutionsData;
 
   if (substitutionsMode === "class") {
-    data = await classSubstitutionsData();
+    data = (await classSubstitutionsData()).data;
   }
   else {
-    data = await substitutionsData();
+    data = (await substitutionsData()).data;
   }
   if (data === "No data") {
     $("#substitutions-container").addClass("d-none");
@@ -668,7 +668,7 @@ async function updateTimetable(): Promise<void> {
   $("#timetable-mode-wrapper").removeClass("d-none");
   updateTimetableMode();
 
-  const currentClassSubstitutionsData = await classSubstitutionsData();
+  const currentClassSubstitutionsData = (await classSubstitutionsData()).data;
 
   const substitutionPlanId = getSubstitutionPlanId();
   

@@ -74,8 +74,8 @@ export async function cleanupTestClasses(): Promise<void> {
 
 
     logger.info(
-      // eslint-disable-next-line max-len
-      `Test Class cleanup completed: ${deletedClasses.count} classes deleted, ${deletedJoins.count} join records removed, and ${updatedAccounts.count} accounts updated.`
+      "Test Class cleanup completed: " + deletedClasses.count + " classes deleted, " + deletedJoins.count
+      + " join records removed, and " + updatedAccounts.count + " accounts updated."
     );
   }
   catch (error) {

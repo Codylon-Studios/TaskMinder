@@ -2,6 +2,9 @@
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import globals from "globals";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 export default tseslint.config(
   {
@@ -47,7 +50,8 @@ export default tseslint.config(
       "no-warning-comments": [
         "warn",
         {
-          "terms": ["TODO", "FIXME"],
+          "terms": ["TODO:", "TODO @" + process.env.DEVELOPER_NAME + ":"],
+          // TODO @undefined: Define your developer name in the .env file!
           "location": "anywhere"
         }
       ]

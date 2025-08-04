@@ -4,7 +4,6 @@ import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
 import logger from "../utils/logger";
 import { Session, SessionData } from "express-session";
-import { RequestError } from "../@types/requestError";
 import prisma from "../config/prisma";
 
 type SubstitutionData = {
@@ -35,8 +34,8 @@ export async function loadSubstitutionData(
   cacheKey: string
 ): Promise<SubstitutionData | "No data"> {
   try {
-    // eslint-disable-next-line max-len
-    const authUrl = `https://mobileapi.dsbcontrol.de/authid?user=${dsbMobileUser}&password=${dsbMobilePassword}&appversion=&bundleid=&osversion=&pushid=`;
+    const generalReqData = "appversion=&bundleid=&osversion=&pushid=";
+    const authUrl = `https://mobileapi.dsbcontrol.de/authid?user=${dsbMobileUser}&password=${dsbMobilePassword}&${generalReqData}`;
     const authRes = await axios.get<string>(authUrl);
     const authId = authRes.data;
     if (!authId) {
@@ -82,8 +81,7 @@ export async function loadSubstitutionData(
     return substitutionsResult;
 
   } 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  catch (error) {
+  catch {
     const errorPayload = {
       data: "No data",
       timestamp: Date.now()
@@ -110,13 +108,7 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
   });
 
   if (!substitutionClass || !substitutionClass.dsbMobileActivated || !substitutionClass.dsbMobileUser || !substitutionClass.dsbMobilePassword) {
-    const err: RequestError = {
-      name: "Not Found", 
-      status: 404, 
-      message: "Substitution data not configured for this class.", 
-      expected: true
-    };
-    throw err;
+    return { data: "No data", realClassName: null};
   }
 
   const { dsbMobileUser, dsbMobilePassword, classId } = substitutionClass;

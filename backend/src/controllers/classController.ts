@@ -11,15 +11,10 @@ export const getClassInfo = asyncHandler(async (req, res, next) => {
     next(error);
   }
 });
-
+// TODO @Mingqi: merge createTestClass and createClass
 export const createTestClass = asyncHandler(async (req, res, next) => {
   const createTestClassSchema = z.object({
-    classDisplayName: z.string(),
-    classCode: z.string(),
-    dsbMobileActivated: z.boolean(),
-    dsbMobileUser: z.string().nullable(),
-    dsbMobilePassword: z.string().nullable(),
-    dsbMobileClass: z.string().nullable()
+    classDisplayName: z.string()
   });
   const parseResult = createTestClassSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -28,11 +23,9 @@ export const createTestClass = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          classDisplayName: { type: "string" },
-          classCode: { type: "string" },
-          dsbMobileActivated: { type: "boolean" }
+          classDisplayName: { type: "string" }
         },
-        required: ["className", "classCode", "dsbMobileActivated"]
+        required: ["classDisplayName"]
       }
     });
     return;
@@ -48,12 +41,7 @@ export const createTestClass = asyncHandler(async (req, res, next) => {
 
 export const createClass = asyncHandler(async (req, res, next) => {
   const createClassSchema = z.object({
-    classDisplayName: z.string(),
-    classCode: z.string(),
-    dsbMobileActivated: z.boolean(),
-    dsbMobileUser: z.string().nullable(),
-    dsbMobilePassword: z.string().nullable(),
-    dsbMobileClass: z.string().nullable()
+    classDisplayName: z.string()
   });
   const parseResult = createClassSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -62,11 +50,9 @@ export const createClass = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          classDisplayName: { type: "string" },
-          classCode: { type: "string" }.type,
-          dsbMobileActivated: { type: "boolean" }
+          classDisplayName: { type: "string" }
         },
-        required: ["className", "classCode", "dsbMobileActivated"]
+        required: ["classDisplayName"]
       }
     });
     return;
@@ -80,15 +66,43 @@ export const createClass = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const generateNewClassCode = asyncHandler(async (req, res, next) => {
+export const generateClassCode = asyncHandler(async (req, res, next) => {
   try {
-    const classCode = await classService.generateNewClassCode(req.session);
+    const classCode = await classService.generateClassCode(req.session);
     res.sendStatus(200).json(classCode);
   }
   catch (error) {
     next(error);
   }
 });
+
+export const joinClass = asyncHandler(async (req, res, next) => {
+  const joinClassSchema = z.object({
+    classCode: z.string()
+  });
+  const parseResult = joinClassSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    res.status(400).json({
+      error: "Invalid request format",
+      expectedFormat: {
+        type: "object",
+        properties: {
+          classCode: { type: "string" }
+        },
+        required: ["classCode"]
+      }
+    });
+    return;
+  }
+  try {
+    await classService.joinClass(parseResult.data.classCode, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+});
+
 
 export const leaveClass = asyncHandler(async (req, res, next) => {
   try {
@@ -185,7 +199,7 @@ export const setClassMembersPermissions = asyncHandler(async (req, res, next) =>
 export const getClassMembers = asyncHandler(async (req, res, next) => {
   try {
     const classMembers = await classService.getClassMembers(req.session);
-    res.sendStatus(200).json(classMembers);
+    res.status(200).json(classMembers);
   }
   catch (error) {
     next(error);
@@ -254,7 +268,8 @@ export default {
   getClassInfo,
   createTestClass,
   createClass,
-  generateNewClassCode,
+  generateClassCode,
+  joinClass,
   leaveClass,
   deleteClass,
   changeDefaultPermission,

@@ -348,7 +348,7 @@ $(() => {
         if ($(this).find(".color-picker")) {
           replaceColorPickers();
           $(this).find(".color-picker").each(function () {
-            if ($(this).attr("disabled") === null) {
+            if ($(this).attr("disabled") === undefined) {
               $(this).next().removeAttr("disabled");
             }
             else {
@@ -358,7 +358,7 @@ $(() => {
         }
       });
       if (mutation.type === "attributes" && mutation.attributeName === "disabled") {
-        if ($(mutation.target).attr("disabled") === null) {
+        if ($(mutation.target).attr("disabled") === undefined) {
           $(mutation.target).next().removeAttr("disabled");
         }
         else {
