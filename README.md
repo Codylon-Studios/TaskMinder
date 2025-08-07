@@ -8,4 +8,4 @@
   &copy; 2025 Codylon Studios
 </p>
 
-[Documentation](https://docs.codylon.de)
+[Documentation](https://docs.taskminder.de)

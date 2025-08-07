@@ -25,7 +25,7 @@ function generateRandomBase62String(length: number = 20): string {
   // Build the random string
   let result = "";
   for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * (62));
+    const randomIndex = Math.floor(Math.random() * 62);
     if (randomIndex < 0 || randomIndex > 61) {
       throw new Error(`Random index out of bounds: ${randomIndex}`);
     }
@@ -35,17 +35,15 @@ function generateRandomBase62String(length: number = 20): string {
   return result;
 }
 
-
 const classService = {
   async getClassInfo(session: Session & Partial<SessionData>) {
-
     // checkAcces.checkClass middleware
     const classInfo = await prisma.class.findUnique({
       where: {
         classId: parseInt(session.classId!)
       }
     });
-    if (!classInfo){
+    if (!classInfo) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
@@ -60,12 +58,13 @@ const classService = {
   async createClass(
     reqData: {
       classDisplayName: string;
+      isTestClass: boolean;
     },
     session: Session & Partial<SessionData>
   ) {
-    const classDisplayName = reqData.classDisplayName;
+    const { classDisplayName, isTestClass } = reqData;
     const classCode = generateRandomBase62String();
-  
+
     if (session.classId) {
       const err: RequestError = {
         name: "Forbidden",
@@ -75,101 +74,35 @@ const classService = {
       };
       throw err;
     }
-    
+
     const baseData = {
       className: classDisplayName,
       classCode: classCode,
       classCreated: Date.now(),
-      isTestClass: false,
+      isTestClass: isTestClass,
       dsbMobileActivated: false,
-      permissionDefaultSetting: 0 // default setting when creating class is 0 - read only
+      defaultPermissionLevel: 0 // default setting when creating class is 0 - read only
     };
 
     await prisma.$transaction(async tx => {
-  
       const createdClass = await tx.class.create({
         data: baseData
       });
 
       session.classId = createdClass.classId.toString();
 
-      // add user to classJoined table 
+      // add user to classJoined table
       // change permission of user which created the account to admin
       await tx.joinedClass.create({
         data: {
           accountId: session.account!.accountId,
-          classId: createdClass.classId
-        }
-      });
-
-      await tx.account.update({
-        where: {
-          accountId: session.account!.accountId
-        },
-        data: {
-          permissionSetting: 3 // class creator has highest role level -> admin
-        }
-      });
-
-    });
-  },
-  
-  async createTestClass(
-    reqData: {
-      classDisplayName: string;
-    },
-    session: Session & Partial<SessionData>
-  ) {
-    const classDisplayName = reqData.classDisplayName;
-    const classCode = generateRandomBase62String();
-  
-    if (session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    
-    const baseData = {
-      className: classDisplayName,
-      classCode: classCode,
-      classCreated: Date.now(),
-      isTestClass: true,
-      dsbMobileActivated: false,
-      permissionDefaultSetting: 0
-    };
-
-    await prisma.$transaction(async tx => {
-  
-      const createdClass = await tx.class.create({
-        data: baseData
-      });
-
-      session.classId = createdClass.classId.toString();
-
-      // add user to classJoined table 
-      // change permission of user which created the account to admin
-      await tx.joinedClass.create({
-        data: {
-          accountId: session.account!.accountId,
-          classId: createdClass.classId
-        }
-      });
-
-      await tx.account.update({
-        where: {
-          accountId: session.account!.accountId
-        },
-        data: {
-          permissionSetting: 3 // class creator has highest role level -> admin
+          classId: createdClass.classId,
+          permissionLevel: 3 // class creator is admin
         }
       });
     });
   },
-  async generateClassCode(session: Session & Partial<SessionData>){
+  async generateClassCode(session: Session & Partial<SessionData>) {
     if (session.classId) {
       const err: RequestError = {
         name: "Unauthorized",
@@ -200,7 +133,8 @@ const classService = {
       name: "Server Error",
       status: 500,
       message: "Could not generate unique class code",
-      additionalInformation: "All randomly generated class codes were already in use",
+      additionalInformation:
+        "All randomly generated class codes were already in use",
       expected: false
     };
     throw err;
@@ -245,38 +179,35 @@ const classService = {
             const err: RequestError = {
               name: "Conflict",
               status: 409,
-              message: "Account is already linked to a different class in the database.",
+              message:
+                "Account is already linked to a different class in the database.",
               expected: true
             };
             throw err;
           }
-        
+
           // DB and target class match, but session was out of sync
-          await tx.account.update({
+          await tx.joinedClass.update({
             where: { accountId },
             data: {
-              permissionSetting: targetClass.permissionDefaultSetting
+              permissionLevel: targetClass.defaultPermissionLevel
             }
           });
-
         } 
         else {
           await tx.joinedClass.create({
             data: {
               accountId: accountId,
-              classId: targetClass.classId
-            }
-          });
-          await tx.account.update({
-            where: { accountId },
-            data: {
-              permissionSetting: targetClass.permissionDefaultSetting
+              classId: targetClass.classId,
+              permissionLevel: targetClass.defaultPermissionLevel
             }
           });
         }
       });
     }
     session.classId = targetClass.classId.toString();
+    return targetClass.className;
+    
   },
   async leaveClass(session: Session & Partial<SessionData>) {
     if (session.account) {
@@ -284,14 +215,6 @@ const classService = {
         const allMembers = await tx.joinedClass.findMany({
           where: {
             classId: parseInt(session.classId!)
-          },
-          include: {
-            Account: {
-              select: {
-                accountId: true,
-                permissionSetting: true
-              }
-            }
           }
         });
 
@@ -299,40 +222,43 @@ const classService = {
           member => member.accountId === session.account!.accountId
         );
 
-        if (!currentUserMemberInfo || !currentUserMemberInfo.Account) {
+        if (!currentUserMemberInfo) {
           delete session.classId;
           delete session.account;
           const err: RequestError = {
             name: "Unauthorized",
             status: 401,
-            message: "Session account not found in the class. Logging out of class",
+            message:
+              "Session account not found in the class. Logging out of class",
             expected: true
           };
           throw err;
         }
 
-        const leavingUserIsAdmin = currentUserMemberInfo.Account.permissionSetting === 3;
+        const leavingUserIsAdmin = currentUserMemberInfo.permissionLevel === 3;
 
         if (leavingUserIsAdmin) {
           if (allMembers.length === 1) {
             const err: RequestError = {
               name: "Conflict",
               status: 409,
-              message: "You are the only admin. Please promote another member before leaving or delete the class.",
+              message:
+                "You are the only admin. Please promote another member before leaving or delete the class.",
               expected: true
             };
             throw err;
           }
 
           const adminsInClass = allMembers.filter(
-            member => member.Account?.permissionSetting === 3
+            member => member.permissionLevel === 3
           );
 
           if (adminsInClass.length === 1) {
             const err: RequestError = {
               name: "Conflict",
               status: 409,
-              message: "You are the only admin. Please promote another member before leaving or delete the class.",
+              message:
+                "You are the only admin. Please promote another member before leaving or delete the class.",
               expected: true
             };
             throw err;
@@ -344,15 +270,6 @@ const classService = {
             accountId: session.account!.accountId
           }
         });
-
-        await tx.account.update({
-          where: {
-            accountId: session.account!.accountId
-          },
-          data: {
-            permissionSetting: null
-          }
-        });
       });
     }
 
@@ -362,14 +279,9 @@ const classService = {
     await prisma.$transaction(async tx => {
       const classIdToDelete = parseInt(session.classId!);
 
-      await tx.account.updateMany({
+      await tx.joinedClass.deleteMany({
         where: {
-          JoinedClass: {
-            classId: classIdToDelete
-          }
-        },
-        data: {
-          permissionSetting: null
+          classId: classIdToDelete
         }
       });
 
@@ -390,7 +302,7 @@ const classService = {
       dsbMobileClass?: string | null;
     },
     session: Session & Partial<SessionData>
-  ){
+  ) {
     const {
       dsbMobileActivated,
       dsbMobileUser,
@@ -416,15 +328,13 @@ const classService = {
     },
     session: Session & Partial<SessionData>
   ) {
-    const {
-      defaultPermission
-    } = reqData;
+    const { defaultPermission } = reqData;
     await prisma.class.update({
       where: {
         classId: parseInt(session.classId!, 10)
       },
       data: {
-        permissionDefaultSetting: defaultPermission
+        defaultPermissionLevel: defaultPermission
       }
     });
   },
@@ -436,15 +346,14 @@ const classService = {
   ) {
     await prisma.$transaction(async tx => {
       for (const member of members) {
-        await tx.account.update({
+        await tx.joinedClass.update({
           where: { accountId: member.accountId },
           data: {
-            permissionSetting: member.permissionLevel
+            permissionLevel: member.permissionLevel
           }
         });
       }
     });
-
   },
   async getClassMembers(session: Session & Partial<SessionData>) {
     const classMembers = await prisma.joinedClass.findMany({
@@ -452,36 +361,78 @@ const classService = {
         classId: parseInt(session.classId!)
       },
       select: {
+        permissionLevel: true,
         Account: {
           select: {
             username: true,
-            permissionSetting: true,
             accountId: true
           }
         }
       }
     });
-    return classMembers.map(item => item.Account);
+
+    return classMembers.map(({ Account, permissionLevel }) => ({
+      ...Account,
+      permissionLevel
+    }));
   },
   async kickClassMember(
-    reqData: {
+    classMembersToBeKicked: {
       accountId: number;
-    }
+    }[]
   ) {
-    const {
-      accountId
-    } = reqData;
-    await prisma.account.update({
-      where: {
-        accountId: accountId
-      },
-      data: {
-        permissionSetting: null
+    await prisma.$transaction(async tx => {
+      for (const classMember of classMembersToBeKicked) {
+        try {
+          await tx.joinedClass.delete({
+            where: {
+              accountId: classMember.accountId
+            }
+          });
+          await tx.joinedTeams.deleteMany({
+            where: {
+              accountId: classMember.accountId
+            }
+          });
+          await tx.homeworkCheck.deleteMany({
+            where: {
+              accountId: classMember.accountId
+            }
+          });
+        } 
+        catch {
+          const err: RequestError = {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data format",
+            expected: true
+          };
+          throw err;
+        }
       }
     });
-    await prisma.joinedClass.delete({
+  },
+  async getUsersLoggedOutRole(session: Session & Partial<SessionData>) {
+    const targetClass = await prisma.class.findUnique({
       where: {
-        accountId: accountId
+        classId: parseInt(session.classId!, 10)
+      }
+    });
+    return targetClass!.defaultPermissionLevel;
+  },
+  async setUsersLoggedOutRole(
+    reqData: {
+      role: number;
+    },
+    session: Session & Partial<SessionData>
+  ) {
+    const { role } = reqData;
+    await prisma.class.update({
+      where: {
+        classId: parseInt(session.classId!, 10)
+      },
+      data: {
+        defaultPermissionLevel: role
       }
     });
   }

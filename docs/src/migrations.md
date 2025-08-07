@@ -3,51 +3,174 @@
 ## Migrating from v1 to v2
 
 !!! info "Early Preview"
-This guide provides an early look at the migration process from the latest v1 release to the upcoming v2 version.
+This guide walks you through migrating from the latest **v1** release to the upcoming **v2** release.
 
-**Before you begin**, make sure you're running the latest v1 release.
+---
 
-The **v2** release includes **breaking changes**, such as:
+### Before You Begin
 
-* Significant changes to the database structure for multiple classes (manual adjustments required)
+- Ensure you’re running the **latest v1** release.
 
-**Important:**
+- Be aware that **v2 introduces breaking changes**, including:
+  - Significant database structure changes across multiple classes (manual intervention required).
 
-* Read this migration guide thoroughly multiple times before beginning.
-* Always **back up your database** before proceeding.
+- Carefully read this guide **at least once** before starting the process.
+
+- Always **back up your database** before proceeding.
+
+---
+
+### Step 0: Stop All Running Containers
+
+To prevent user access during the migration, shut down all containers:
+
+```bash
+docker compose down
+```
+
+Once stopped, users will receive a **503 Service Unavailable** error. Notify them in advance of the planned downtime.
+
+---
 
 ### Step 1: Pull the Latest v2 Release
 
-Manually pull the latest v2 release from the `main` branch (do **not** use a script for this step).
-
-### Step 2: Modify the Prisma Migration File
-
-Navigate to `backend/src/prisma/migrations/`, open the relevant `.sql` file, and adjust the following:
-
-* **INSERT and UPDATE statements** to recreate the previous single class setup
-* **Account settings** to assign an admin and set the permission of others to 0
-
-📝 *Detailed instructions are included as comments within the `.sql` file.*
-
-
-### Step 3: Remove Unused Docker Secrets
-
-Delete the following files from your Docker secrets folder:
-
-* `classcode.txt`
-* `dsb_user.txt`
-* `dsb_password.txt`
-* `dsb_activated.txt`
-
-### Step 4: Rebuild and Restart Containers
-
-Before restarting, it’s recommended to:
-
-* Check your system for security or package updates
-* Ensure your Nginx configuration and UFW firewall are still functioning correctly
-
-Then run:
+Manually fetch the latest v2 code from the `main` branch:
 
 ```bash
-docker compose up --build
+git pull origin main
 ```
+
+Do **not** use automated update scripts for this step.
+
+---
+
+### Step 2: Drop the `_prisma_migrations` Table
+
+The initial migration (`0_init`) has changed. To allow Prisma to re-run migrations, drop the `_prisma_migrations` table.
+
+1. Start the PostgreSQL container and open a shell:
+
+   ```bash
+   docker compose up -d postgres
+   docker ps
+   ```
+
+   Copy the container ID of the PostgreSQL instance and run:
+
+   ```bash
+   docker exec -it <CONTAINER_ID> bash
+   ```
+
+2. Connect to the database and drop the migration table:
+
+   ```bash
+   psql -U postgres
+   \c taskminder
+   DROP TABLE _prisma_migrations;
+   \q
+   exit
+   ```
+
+3. Stop the PostgreSQL container:
+
+   ```bash
+   docker compose down
+   ```
+
+---
+
+### Step 2.3: Start & Build the New Service
+
+1. Temporarily **comment out** the following line entrypoint.sh:
+   - `bunx prisma migrate resolve --applied 0_init`
+
+   Temporarily **comment** the following line in entrypoint.sh:
+   - `bunx prisma migrate deploy`
+
+2. Build and start the service:
+
+   ```bash
+   docker compose up --build
+   ```
+
+3. Wait until `0_init` is marked as applied (this will be displayed in the logs), then **stop the process** (`Ctrl+C`).
+
+4. **Re-comment** this line:
+   - `bunx prisma migrate resolve --applied 0_init`
+
+   **Comment out** this line:
+   - `bunx prisma migrate deploy`
+
+---
+
+### Step 2.5: Edit the SQL Migration File
+
+Update the generated `.sql` migration file to include your **specific values**. There is an INSERT and an UPDATE statement which have to be changed. The commands assume default values, change them. In `UPDATE "account"`, `USERNAME` must be a valid, existing value in the table.
+
+---
+
+### Step 3: Start All Services
+
+Start all services and rebuild containers:
+
+```bash
+docker compose up -d --build
+```
+
+---
+
+### Step 4: Reset Git Changes
+
+To ensure clean future updates, reset the modified migration file:
+
+```bash
+git reset --hard
+```
+
+---
+
+### Step 5: Drop `_prisma_migrations` Again & Mark Migrations as Applied
+
+Prisma validates migration checksums. Any change to a migration file (like editing defaults) will cause mismatches and failures in future deployments.
+
+1. Drop the `_prisma_migrations` table again (refer to Step 2).
+2. Temporarily **comment out** these lines in entrypoint.sh :
+   - `bunx prisma migrate resolve --applied 0_init`
+   - `bunx prisma migrate resolve --applied 20250804114621_migrate_to_multiple_classes`
+
+3. Also **comment**:
+   - `bunx prisma migrate deploy`
+
+---
+
+### Step 6: Rebuild & Restart All Containers
+
+1. Stop all containers:
+
+   ```bash
+   docker compose down
+   ```
+
+2. _(Optional but recommended)_ Apply system updates.
+
+3. Verify:
+   - **Nginx** configuration
+   - **UFW** firewall rules
+
+4. Rebuild and start all services:
+
+   ```bash
+   docker compose up --build
+   ```
+
+---
+
+### Step 7: Final Git Reset
+
+Reset any remaining Git changes:
+
+```bash
+git reset --hard
+```
+
+---

@@ -443,7 +443,7 @@ export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData", 
 export type ClassMemberData = {
   accountId: number;
   username: string;
-  permissionSetting: 0 | 1 | 2 | 3 | null; // TODO @Mingqi: Always send permission level
+  permissionLevel: 0 | 1 | 2 | 3 | null;
 }[];
 export const classMemberData = createDataAccessor<ClassMemberData>("classMemberData", "/class/get_class_members");
 

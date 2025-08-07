@@ -1,182 +1,115 @@
-import { NextFunction, Request, Response } from "express";
-import { RequestError } from "../@types/requestError";
+import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
+import { RequestError } from "../@types/requestError";
 
-// Middleware to enforce session-based access control
-// checkAccount, checkClass, checkAccountAndClass, checkPermission(), elseRedirect
-const checkAccess = {
-  async checkAccount(req: Request, res: Response, next: NextFunction) {
-    const { session } = req;
+const ROLES = {
+  MEMBER: 0,
+  EDITOR: 1,
+  MANAGER: 2,
+  ADMIN: 3
+} as const;
 
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
+type AccessRequirement = "ACCOUNT" | "CLASS" | keyof typeof ROLES;
 
+export default function checkAccess(requirements: AccessRequirement[]) {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const account = await prisma.account.findUnique({
-        where: { accountId: session.account.accountId }
-      });
-
-      if (!account) {
-        delete session.account;
-        const err: RequestError = {
-          name: "Unauthorized",
-          status: 401,
-          message: "Account not found. You have been logged out",
-          expected: true
-        };
-        throw err;
+      if (requirements.includes("ACCOUNT")) {
+        await checkAccountAccess(req);
       }
+
+      if (requirements.includes("CLASS")) {
+        await checkClassAccess(req, res);
+        if (res.headersSent) {
+          return;
+        }
+      }
+
+      const roleLevels = requirements.filter(
+        r => r in ROLES
+      ) as (keyof typeof ROLES)[];
+      if (roleLevels.length > 0) {
+        const requiredPermission = Math.max(...roleLevels.map(r => ROLES[r]));
+        await checkPermissionLevel(req, requiredPermission);
+      }
+
       return next();
     } 
-    catch (error) {
-      return next(error);
+    catch (err) {
+      return next(err);
     }
-  },
+  };
+}
 
-  async checkClass(req: Request, res: Response, next: NextFunction) {
-    const { session } = req;
-
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User has not joined a class",
-        expected: true
-      };
-      throw err;
-    }
-
-    try {
-      const aClass = await prisma.class.findUnique({
-        where: { classId: parseInt(session.classId, 10) }
-      });
-
-      if (!aClass) {
-        delete session.classId;
-        const err: RequestError = {
-          name: "Not Found",
-          status: 404,
-          message: "The selected class no longer exists. Please select another class",
-          expected: true
-        };
-        throw err;
-      }
-      return next();
-    } 
-    catch (error) {
-      return next(error);
-    }
-  },
-
-  async checkAccountAndClass(req: Request, res: Response, next: NextFunction) {
-    const { session } = req;
-
-    if (!session.account) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged in",
-        expected: true
-      };
-      throw err;
-    }
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Forbidden",
-        status: 403,
-        message: "User has not joined a class",
-        expected: true
-      };
-      throw err;
-    }
-
-    try {
-      const [account, aClass] = await Promise.all([
-        prisma.account.findUnique({ where: { accountId: session.account.accountId } }),
-        prisma.class.findUnique({ where: { classId: parseInt(session.classId, 10) } })
-      ]);
-
-      if (!account) {
-        delete session.account;
-        const err: RequestError = {
-          name: "Unauthorized",
-          status: 401,
-          message: "Your account could not be found. You have been logged out",
-          expected: true
-        };
-        throw err;
-      }
-
-      if (!aClass) {
-        delete session.classId;
-        const err: RequestError = {
-          name: "Not Found",
-          status: 404,
-          message: "The selected class no longer exists. Please select another class",
-          expected: true
-        };
-        throw err;
-      }
-      return next();
-    } 
-    catch (error) {
-      return next(error);
-    }
-  },
-  // check permission (0, 1, 2, 3)
-  checkPermissionLevel(permissionLevel: number) {
-    return async (req: Request, res: Response, next: NextFunction) => {
-      let effectivePermission = 0;
-
-      if (req.session.account) {
-        const accountPermission = await prisma.account.findUnique({
-          where: {
-            accountId: req.session.account.accountId
-          },
-          select: {
-            permissionSetting: true
-          }
-        });
-        effectivePermission = accountPermission!.permissionSetting ?? 0;
-      }
-      else {
-        const classPermission = await prisma.class.findUnique({
-          where: {
-            classId: parseInt(req.session.classId!)
-          },
-          select: {
-            permissionDefaultSetting: true
-          }
-        });
-        effectivePermission = classPermission!.permissionDefaultSetting ?? 0;
-      }
-
-      if (effectivePermission >= permissionLevel) {
-        return next();
-      }
-
-      const err: RequestError = {
-        name: "Forbidden",
-        status: 403,
-        message: "The permission level is not sufficient to perform this action",
-        expected: true
-      };
-      throw err;
-    };
-  },
-  elseRedirect(req: Request, res: Response, next: NextFunction) {
-    if (!req.session.classId) {
-      return res.redirect(302, "/join");
-    }
-    return next();
+async function checkAccountAccess(req: Request): Promise<void> {
+  if (!req.session.account) {
+    throwError("Unauthorized", 401, "User not logged in");
   }
-};
 
-export default checkAccess;
+  const account = await prisma.account.findUnique({
+    where: { accountId: req.session.account.accountId }
+  });
+
+  if (!account) {
+    delete req.session.account;
+    throwError(
+      "Unauthorized",
+      401,
+      "Account not found. You have been logged out"
+    );
+  }
+}
+
+async function checkClassAccess(req: Request, res: Response): Promise<void> {
+  if (!req.session.classId) {
+    return res.redirect(302, "/join");
+  }
+
+  const aClass = await prisma.class.findUnique({
+    where: { classId: parseInt(req.session.classId, 10) }
+  });
+
+  if (!aClass) {
+    delete req.session.classId;
+    throwError(
+      "Not Found",
+      404,
+      "The selected class no longer exists. Please select another class"
+    );
+  }
+}
+
+async function checkPermissionLevel(
+  req: Request,
+  requiredPermission: number
+): Promise<void> {
+  let effectivePermission = 0;
+
+  if (req.session.account) {
+    const account = await prisma.joinedClass.findUnique({
+      where: { accountId: req.session.account.accountId },
+      select: { permissionLevel: true }
+    });
+    effectivePermission = account?.permissionLevel ?? 0;
+  } 
+  else if (req.session.classId) {
+    const aClass = await prisma.class.findUnique({
+      where: { classId: parseInt(req.session.classId, 10) },
+      select: { defaultPermissionLevel: true }
+    });
+    effectivePermission = aClass?.defaultPermissionLevel ?? 0;
+  }
+
+  if (effectivePermission < requiredPermission) {
+    throwError(
+      "Forbidden",
+      403,
+      "The permission level is not sufficient to perform this action"
+    );
+  }
+}
+
+function throwError(name: string, status: number, message: string): never {
+  const err: RequestError = { name, status, message, expected: true };
+  throw err;
+}

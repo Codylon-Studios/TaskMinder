@@ -42,7 +42,7 @@ CREATE TABLE "Class" (
     "classCode" TEXT NOT NULL,
     "classCreated" BIGINT NOT NULL,
     "isTestClass" BOOLEAN NOT NULL,
-    "permissionDefaultSetting" INTEGER NOT NULL,
+    "defaultPermissionLevel" INTEGER NOT NULL,
     "dsbMobileActivated" BOOLEAN NOT NULL,
     "dsbMobileUser" TEXT,
     "dsbMobilePassword" TEXT,
@@ -53,9 +53,11 @@ CREATE TABLE "Class" (
 
 -- UPDATE THESE VALUES -- UPDATE THESE VALUES
 -- You MUST ensure the 'Class' table is empty and its sequence is reset before running this script to guarantee the new class gets an ID of 1.
-INSERT INTO "Class" ("className", "classCode", "classCreated", "isTestClass", "dsbMobileActivated", "dsbMobileUser", "dsbMobilePassword", "dsbMobileClass", "permissionDefaultSetting")
-VALUES ('CLASS_NAME', 'CLASS_CODE', 1735689600000, false, true, 'DSB_MOBILE_USER', 'DSB_MOBILE_PASSWORD', 'DSB_MOBILE_CLASS', 0);
+INSERT INTO "Class" ("className", "classCode", "classCreated", "isTestClass", "dsbMobileActivated", "dsbMobileUser", "dsbMobilePassword", "dsbMobileClass", "defaultPermissionLevel")
+VALUES ('CLASS_NAME', 'CLASS_CODE', 1754484031375, false, true, 'DSB_MOBILE_USER', 'DSB_MOBILE_PASSWORD', 'DSB_MOBILE_CLASS', 0);
 
+ALTER TABLE "joinedClass" ADD COLUMN "permissionLevel" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "joinedClass" ALTER COLUMN "permissionLevel" DROP DEFAULT;
 
 -- rename table changes: homework10d -> homework; homework10dCheck -> homeworkCheck
 -- DropForeignKey
@@ -104,19 +106,12 @@ ALTER TABLE "subjects" ADD COLUMN "classId" INTEGER NOT NULL DEFAULT 1;
 -- AlterTable
 ALTER TABLE "team" ADD COLUMN "classId" INTEGER NOT NULL DEFAULT 1;
 
--- remove the isAdmin column and add permissionSetting column instead
-ALTER TABLE "account" ADD COLUMN "permissionSetting" INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE "account" ALTER COLUMN "permissionSetting" DROP NOT NULL;
-
 -- UPDATE THESE VALUES -- UPDATE THESE VALUES
 -- sets one admin for the previous single class
-UPDATE "account" SET "permissionSetting" = 3 WHERE "username" = 'USERNAME';
+UPDATE "joinedClass" SET "permissionLevel" = 3 WHERE "accountId" = (SELECT "accountId" FROM "account" WHERE "username" = 'USERNAME');
 ALTER TABLE "account" DROP COLUMN "isAdmin";
 
 -- Drops the default value after applying 1
--- AlterTable
-ALTER TABLE "account" ALTER COLUMN "permissionSetting" DROP DEFAULT;
-
 -- AlterTable
 ALTER TABLE "event" ALTER COLUMN "classId" DROP DEFAULT;
 

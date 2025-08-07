@@ -8,7 +8,7 @@ function checkClassName(className: string): boolean {
 let justCreatedClass = false;
 
 const qrCode = new QRCode( "show-qrcode-modal-qrcode", {
-  text: "https://codylon.de",
+  text: "https://taskminder.de",
   width: 300,
   height: 300
 });

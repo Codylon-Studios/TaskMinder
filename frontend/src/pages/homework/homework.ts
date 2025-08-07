@@ -259,7 +259,7 @@ function addHomework(): void {
 
       // Post the request
       $.ajax({
-        url: "/homework/add",
+        url: "/homework/add_homework",
         type: "POST",
         data: data,
         headers: {
@@ -348,7 +348,7 @@ async function editHomework(homeworkId: number): Promise<void> {
 
       // Post the request
       $.ajax({
-        url: "/homework/edit",
+        url: "/homework/edit_homework",
         type: "POST",
         data: data,
         headers: {
@@ -414,7 +414,7 @@ function deleteHomework(homeworkId: number): void {
 
       // Post the request
       $.ajax({
-        url: "/homework/delete",
+        url: "/homework/delete_homework",
         type: "POST",
         data: data,
         headers: {
@@ -472,7 +472,7 @@ async function checkHomework(homeworkId: number): Promise<void> {
 
     // Post the request
     $.ajax({
-      url: "/homework/check",
+      url: "/homework/check_homework",
       type: "POST",
       data: data,
       headers: {

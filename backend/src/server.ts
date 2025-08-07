@@ -224,15 +224,15 @@ app.use("/class", classes);
 //
 // Protected routes: Redirect to /join if not logged in
 //
-app.get("/main", checkAccess.elseRedirect, (req, res) => {
+app.get("/main", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "main", "main.html"));
 });
 
-app.get("/homework", checkAccess.elseRedirect, (req, res) => {
+app.get("/homework", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "homework", "homework.html"));
 });
 
-app.get("/events", checkAccess.elseRedirect, (req, res) => {
+app.get("/events", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
 });
 

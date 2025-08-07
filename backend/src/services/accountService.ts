@@ -29,37 +29,59 @@ export default {
     classJoined: false
   };
 
+  let accountId: number | undefined;
+
   if (session.account) {
     const accountInDb = await prisma.account.findUnique({
       where: { accountId: session.account.accountId },
-      select: { permissionSetting: true }
+      select: { accountId: true, username: true }
     });
 
-    if (!accountInDb) {
-      delete session.account;
-    } 
-    else {
+    if (accountInDb) {
       res.loggedIn = true;
-      res.account = { username: session.account.username };
-      res.permissionLevel = accountInDb.permissionSetting ?? 0;
+      res.account = { username: accountInDb.username };
+      accountId = accountInDb.accountId;
+      session.account = { accountId: accountInDb.accountId, username: accountInDb.username };
+    }
+    else {
+      delete session.account;
     }
   }
 
-  if (!res.loggedIn && session.classId) {
-    const classInDb = await prisma.class.findUnique({
-      where: { classId: parseInt(session.classId, 10) },
-      select: { permissionDefaultSetting: true }
+  if (res.loggedIn && accountId) {
+    const joinedClass = await prisma.joinedClass.findUnique({
+      where: { accountId: accountId },
+      select: { permissionLevel: true, classId: true }
     });
 
-    if (!classInDb) {
-      delete session.classId;
+    if (joinedClass) {
+      res.classJoined = true;
+      res.permissionLevel = joinedClass.permissionLevel;
+      session.classId = joinedClass.classId.toString();
     } 
     else {
-      res.permissionLevel = classInDb.permissionDefaultSetting;
+      delete session.classId;
+      res.classJoined = false;
+    }
+  } 
+
+  else if (!res.loggedIn && session.classId) {
+    const classId = parseInt(session.classId, 10);
+    const classInDb = await prisma.class.findUnique({
+      where: { classId: classId },
+      select: { defaultPermissionLevel: true }
+    });
+
+    if (classInDb) {
+      res.classJoined = true;
+      res.permissionLevel = classInDb.defaultPermissionLevel;
+    } 
+    else {
+      delete session.classId;
+      res.classJoined = false;
     }
   }
-  res.classJoined = !!session.classId;
-
+  
   return res;
   },
   async registerAccount(reqData: { username: string; password: string }, session: Session & Partial<SessionData>) {
@@ -111,7 +133,8 @@ export default {
         await tx.joinedClass.create({
           data: {
             accountId: newAccount.accountId,
-            classId: parseInt(session.classId)
+            classId: parseInt(session.classId),
+            permissionLevel: 0 // assume lowest role for class
           }
         });
       }
@@ -175,10 +198,11 @@ export default {
       }
     });
     if (joinedClassExists === null && session.classId) {
-      prisma.joinedClass.create({
+      await prisma.joinedClass.create({
         data: {
           accountId: accountId,
-          classId: parseInt(session.classId)
+          classId: parseInt(session.classId),
+          permissionLevel: 0 // assume lowest level
         }
       });
     }
@@ -190,13 +214,12 @@ export default {
   async deleteAccount(password: string, session: Session & Partial<SessionData>) {
     // account and session.account certainly exist here 
     // -> checkAccess.checkAccount middleware
-    const username = session!.account!.username;
-    const account = await prisma.account.findUnique({
+    const joinedClassAccount = await prisma.joinedClass.findUnique({
       where: {
-        username: username
+        accountId: session.account!.accountId
       }
     });
-    if (account!.permissionSetting === 3){
+    if (joinedClassAccount!.permissionLevel === 3) {
       const err: RequestError = {
         name: "Conflict",
         status: 409,
@@ -205,6 +228,11 @@ export default {
       };
       throw err;
     }
+    const account = await prisma.account.findUnique({
+      where: {
+        accountId: session.account!.accountId
+      }
+    });
     const isPasswordValid = await bcrypt.compare(password, account!.password);
     if (!isPasswordValid) {
       const err: RequestError = {
@@ -225,7 +253,7 @@ export default {
     });
     await prisma.account.delete({
       where: {
-        username: username
+        accountId: session.account!.accountId
       }
     });
     delete session.account;
@@ -249,7 +277,7 @@ export default {
     },
     session: Session & Partial<SessionData>
   ) {
-    const {oldPassword, newPassword } = reqData;
+    const { oldPassword, newPassword } = reqData;
     const changePasswordAccount = await prisma.account.findUnique({
       where: {
         accountId: session.account!.accountId

@@ -52,31 +52,31 @@ async function updateColorTheme(): Promise<void> {
 }
 
 async function updateClassMemberList(): Promise<void> {
-  const roles = [ "Mitglied", "Bearbeiter:in", "Manager:in", "Admin" ];
+  const roles = ["Mitglied", "Bearbeiter:in", "Manager:in", "Admin"];
   let newClassMembersContent = "";
 
   for (const classMember of await classMemberData()) {
     const classMemberId = classMember.accountId;
 
-    const roleOptionsHtml = roles.map((opt, index) => 
-      `<option value="${index}" ${(classMember.permissionSetting ?? 0) === index ? "selected" : ""}>${opt}</option>`
+    const roleOptionsHtml = roles.map((opt, index) =>
+      `<option value="${index}" ${(classMember.permissionLevel ?? 0) === index ? "selected" : ""}>${opt}</option>`
     ).join("");
 
     const template = `
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${classMemberId}">
         <div class="d-flex flex-column flex-lg-row align-items-lg-center flex-grow-1">
           <div class="d-flex w-lg-50 pe-3 align-items-center">
-            <span class="w-100">${$.formatHtml(classMember.username) + ((classMember.username === user.username) ? " <b>(Du)</b>" : "")}</span>
+            <span class="w-100">${$.formatHtml(classMember.username) + (classMember.username === user.username ? " <b>(Du)</b>" : "")}</span>
             <span class="form-text mt-0">Rolle:</span>
             <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content"
-              data-id="${classMemberId}" ${(canEditClassSettings && classMember.username !== user.username) ? "" : "disabled"}>
+              data-id="${classMemberId}" ${canEditClassSettings && classMember.username !== user.username ? "" : "disabled"}>
               ${roleOptionsHtml}
             </select>
           </div>
           <span class="text-warning fw-bold mt-2 mt-lg-0 d-none me-2 class-member-changed" data-id="${classMemberId}">
             Rolle geändert
             <span class="text-secondary fw-normal class-member-changed-role" data-id="${classMemberId}">
-              (${roles[classMember.permissionSetting ?? 0]} zu <b></b>)
+              (${roles[classMember.permissionLevel ?? 0]} zu <b></b>)
             </span>
           </span>
           <span class="text-danger fw-bold mt-2 mt-lg-0 d-none class-member-kicked" data-id="${classMemberId}">Entfernt</span>
@@ -86,7 +86,7 @@ async function updateClassMemberList(): Promise<void> {
         </div>
         <div>
           <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick"
-            data-id="${classMemberId}" ${(canEditClassSettings && classMember.username !== user.username) ? "" : "disabled"}>
+            data-id="${classMemberId}" ${canEditClassSettings && classMember.username !== user.username ? "" : "disabled"}>
             <i class="fa-solid fa-user-minus"></i>
           </button>
         </div>
@@ -103,7 +103,7 @@ async function updateClassMemberList(): Promise<void> {
 
     const classMemberId = $(this).data("id");
     const newRole = parseInt($(this).val()) as 0 | 1 | 2 | 3;
-    const oldRole = (await classMemberData()).find(classMember => classMember.accountId === classMemberId)?.permissionSetting ?? 0;
+    const oldRole = (await classMemberData()).find(classMember => classMember.accountId === classMemberId)?.permissionLevel ?? 0;
     if (newRole !== oldRole) {
       if ($(`.class-member-kicked[data-id="${classMemberId}"]`).hasClass("d-none")) {
         $(`.class-member-changed[data-id="${classMemberId}"]`).removeClass("d-none");
@@ -982,15 +982,15 @@ user.on("change", async () => {
       }
     });
 
-    let loggedOutUsersRole
+    let loggedOutUsersRole;
     try {
-      loggedOutUsersRole = await $.get("/class/get_logged_out_users_role")
+      loggedOutUsersRole = await $.get("/class/get_logged_out_users_role");
     }
     catch {
-      loggedOutUsersRole = 0
+      loggedOutUsersRole = 0;
     }
     finally {
-      $(`#set-logged-out-users-role-select option[value="${loggedOutUsersRole}"]`).attr("selected", "")
+      $(`#set-logged-out-users-role-select option[value="${loggedOutUsersRole}"]`).attr("selected", "");
     }
 
     if ((user.permissionLevel ?? 0) < 2) {
@@ -1010,7 +1010,6 @@ user.on("change", async () => {
     $("#set-logged-out-users-role-select").toggleClass("disabled", (user.permissionLevel ?? 0) !== 3);
   }
 });
-
 
 let animations = JSON.parse(localStorage.getItem("animations") ?? "true") ?? true;
 $("#animations input").prop("checked", animations);
@@ -1465,9 +1464,7 @@ $("#kick-logged-out-users-confirm").on("click", async () => {
     },
     success: () => {
       $("#kick-logged-out-users-success-toast").toast("show");
-      
-      user.classJoined = false;
-      user.trigger("change");
+
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -1492,7 +1489,7 @@ $("#kick-logged-out-users-confirm").on("click", async () => {
 // Set logged out users role
 
 $("#set-logged-out-users-role-select").on("change", function () {
-  if ($(this).find('option[selected]').is(":selected")) {
+  if ($(this).find("option[selected]").is(":selected")) {
     $("#set-logged-out-users-role").hide();
   }
   else {
@@ -1501,7 +1498,7 @@ $("#set-logged-out-users-role-select").on("change", function () {
 });
 
 $("#set-logged-out-users-role-cancel").on("click", () => {
-  $("#set-logged-out-users-role-select").val($("#set-logged-out-users-role-select").find('option[selected]').val() ?? "")
+  $("#set-logged-out-users-role-select").val($("#set-logged-out-users-role-select").find("option[selected]").val() ?? "");
   $("#set-logged-out-users-role").hide();
 });
 
@@ -1511,15 +1508,13 @@ $("#set-logged-out-users-role-confirm").on("click", async () => {
   $.ajax({
     url: "/class/set_logged_out_users_role",
     type: "POST",
+    contentType: "application/json",
     data: JSON.stringify({role: parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0")}),
     headers: {
       "X-CSRF-Token": await csrfToken()
     },
     success: () => {
       $("#set-logged-out-users-role-success-toast").toast("show");
-      
-      user.classJoined = false;
-      user.trigger("change");
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -1557,12 +1552,11 @@ $("#class-members-cancel").on("click", () => {
 async function saveClassMembers(): Promise<void> {
   $("#class-members-cancel").hide();
 
-
   const classMembersKickData: { accountId: number }[] = [];
-  const classMembersPermissionsData: { accountId: number, permissionSetting: 0 | 1 | 2 | 3 }[] = [];
+  const classMembersPermissionsData: {accountId: number, permissionLevel: 0 | 1 | 2 | 3 }[] = [];
 
   $(".class-member-role-input").each(function () {
-    if ($(this).parent().parent().parent().find("~ .btn-success").length > 0) {
+    if ($(this).closest(".card").find(".class-member-kick.btn-success").length > 0) {
       classMembersKickData.push({
         accountId: $(this).data("id")
       });
@@ -1570,7 +1564,7 @@ async function saveClassMembers(): Promise<void> {
     else {
       classMembersPermissionsData.push({
         accountId: $(this).data("id"),
-        permissionSetting: parseInt($(this).val()?.toString() ?? "") as 0 | 1 | 2 | 3
+        permissionLevel: parseInt($(this).val()?.toString() ?? "") as 0 | 1 | 2 | 3
       });
     }
   });
@@ -1583,7 +1577,7 @@ async function saveClassMembers(): Promise<void> {
   };
   let hasResponded = false;
 
-  const csrf = await csrfToken()
+  const csrf = await csrfToken();
 
   $.ajax({
     url: "/class/kick_class_members",
@@ -1603,7 +1597,6 @@ async function saveClassMembers(): Promise<void> {
           "X-CSRF-Token": csrf
         },
         success: () => {
-          
         },
         error: xhr => {
           if (xhr.status === 500) {
@@ -1664,7 +1657,7 @@ $("#class-members-save").on("click", () => {
   }
 });
 
-$("#class-member-save-confirm").on("click", saveClassMembers);
+$("#class-members-save-confirm").on("click", saveClassMembers);
 
 // TEAMS
 

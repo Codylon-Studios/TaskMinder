@@ -11,7 +11,6 @@ model Account {
   accountId     Int             @id @unique(map: "account_account_id") @default(autoincrement()) @map("accountId")
   username      String          @unique
   password      String
-  permissionSetting Int?
   HomeworkCheck HomeworkCheck[]
   JoinedClass   JoinedClass?
   JoinedTeams   JoinedTeams[]
@@ -69,7 +68,7 @@ model Class {
   classCode   String        @unique
   classCreated BigInt
   isTestClass Boolean
-  permissionDefaultSetting Int
+  defaultPermissionLevel Int
   dsbMobileActivated Boolean
   dsbMobileUser String?
   dsbMobilePassword String?
@@ -114,6 +113,7 @@ model JoinedClass {
   joinedClassId Int     @id @default(autoincrement()) @map("joinedClassId")
   classId       Int
   accountId     Int     @unique
+  permissionLevel Int
   Account       Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
   Class         Class   @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 

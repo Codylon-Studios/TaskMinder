@@ -19,6 +19,13 @@ export DATABASE_URL=$(cat /run/secrets/database_url)
 echo "Running database migrations..."
 bunx prisma migrate deploy
 
+# ==============================================================================
+# ----- One time v2 migration cmds -----
+# ==============================================================================
+
+# bunx prisma migrate resolve --applied 0_init
+# bunx prisma migrate resolve --applied 20250804114621_migrate_to_multiple_classes
+
 echo "Flushing Redis..."
 redis-cli -h redis FLUSHALL
 

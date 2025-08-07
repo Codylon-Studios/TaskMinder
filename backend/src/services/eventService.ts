@@ -273,7 +273,6 @@ export const eventService = {
           throw err;
         }
 
-        console.log("HIERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR", eventType.eventTypeId);
         if (eventType.eventTypeId === "") {
           await tx.eventType.create({
             data: {

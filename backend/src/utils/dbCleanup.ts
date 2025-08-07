@@ -30,31 +30,7 @@ export async function cleanupTestClasses(): Promise<void> {
 
     const classIdsToDelete = classesToDelete.map(c => c.classId);
 
-    const joinedRecords = await prisma.joinedClass.findMany({
-      where: {
-        classId: {
-          in: classIdsToDelete
-        }
-      },
-      select: {
-        accountId: true
-      }
-    });
-
-    const accountIdsToUpdate = joinedRecords.map(jr => jr.accountId);
-    
-    const [updatedAccounts, deletedJoins, deletedClasses] = await prisma.$transaction([
-      prisma.account.updateMany({
-        where: {
-          accountId: {
-            in: accountIdsToUpdate
-          }
-        },
-        data: {
-          permissionSetting: null
-        }
-      }),
-      
+    const [updatedAccounts, deletedJoins] = await prisma.$transaction([
       prisma.joinedClass.deleteMany({
         where: {
           classId: {
@@ -72,17 +48,14 @@ export async function cleanupTestClasses(): Promise<void> {
       })
     ]);
 
-
-    logger.info(
-      "Test Class cleanup completed: " + deletedClasses.count + " classes deleted, " + deletedJoins.count
-      + " join records removed, and " + updatedAccounts.count + " accounts updated."
+    logger.info("Test Class cleanup completed: " + classesToDelete.length + " classes deleted, " + deletedJoins.count +
+       " join records removed, and " + updatedAccounts.count +" accounts updated."
     );
   }
   catch (error) {
     logger.error("Error during test class cleanup:", error);
   }
 }
-
 
 /**
  * Deletes deleted accounts records that are older than 30 days based on deletedOn date
@@ -113,7 +86,7 @@ export async function cleanupDeletedAccounts(): Promise<void> {
     });
 
     logger.info("Deleted accounts cleanup completed:", deleted.count, "records deleted out of", count, "found");
-  }
+  } 
   catch (error) {
     logger.error("Error during deleted account cleanup:", error);
   }
@@ -148,7 +121,7 @@ export async function cleanupOldHomework(): Promise<void> {
     });
 
     logger.info("Homework cleanup completed:", deleted.count, "records deleted out of", count, "found");
-  }
+  } 
   catch (error) {
     logger.error("Error during homework cleanup:", error);
   }
