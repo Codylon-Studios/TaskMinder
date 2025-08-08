@@ -105,13 +105,17 @@ $("#join-class-btn").on("click", async () => {
     success: () => {
       $("#join-class-panel").addClass("d-none");
       $("#decide-account-panel").removeClass("d-none");
-      user.classJoined = true;
-      user.trigger("change");
+      authUser()
       if (user.loggedIn) {
         location.href = "/main";
       }
       $(".class-joined-content").removeClass("d-none");
       $(".navbar-home-link").attr("href", "/main");
+      (async () => {
+        const className = (await $.get("/class/get_class_info")).className;
+        console.log(className)
+        $("#decide-account-class-name")
+      })();
     },
     error: xhr => {
       if (xhr.status === 401) {

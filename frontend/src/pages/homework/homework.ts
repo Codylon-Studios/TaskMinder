@@ -601,8 +601,8 @@ $(function () {
   // If user is logged in, show the edit toggle button
   user.on("change", (function _() {
     const loggedIn = user.loggedIn;
-    $("#edit-toggle-label").toggleClass("d-none", !loggedIn);
-    $("#show-add-homework-button").toggleClass("d-none", !loggedIn);
+    $("#edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
+    $("#show-add-homework-button").toggle((user.permissionLevel ?? 0) >= 1);
     if (!loggedIn) {
       $(".homework-edit-options").addClass("d-none");
     }

@@ -1,5 +1,16 @@
 @use "sass:color";
 
+@use "../vendor/fontawesome/scss/variables" with (
+  $font-path: "../../vendor/fontawesome/fonts"
+);
+@use "../vendor/fontawesome/scss/fontawesome";
+@use "../vendor/fontawesome/scss/fa" as fa;
+@use "../vendor/fontawesome/scss/solid";
+@use "../vendor/fontawesome/scss/regular";
+@use "../vendor/fontawesome/scss/brands";
+
+//@include fa.solid;
+
 @import "../../../node_modules/bootstrap/scss/functions";
 
 // Overwriting Bootstrap standards
@@ -8,12 +19,9 @@ $primary: #3bb9ca;
 @import "../../../node_modules/bootstrap/scss/bootstrap";
 
 $navbar-top-offset: 70px;
-
-$fa-font-path: "/vendor/fontawesome/fonts";
-@import "../vendor/fontawesome/scss/fontawesome";
-@import "../vendor/fontawesome/scss/solid";
-@import "../vendor/fontawesome/scss/regular";
-@import "../vendor/fontawesome/scss/brands";
+//@import "../vendor/fontawesome/scss/solid";
+//@import "../vendor/fontawesome/scss/regular";
+//@import "../vendor/fontawesome/scss/brands";
 
 @font-face {
   font-family: "Quicksand";

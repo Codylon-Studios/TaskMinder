@@ -19,10 +19,8 @@ async function registerAccount(username: string, password: string): Promise<void
       $("#register-success-toast .username").text(username);
       $("#register-success-toast").toast("show");
       $("#login-register-modal").modal("hide");
-
-      user.loggedIn = true;
-      user.username = username;
-      user.trigger("change");
+      
+      authUser()
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -63,13 +61,8 @@ async function loginAccount(username: string, password: string): Promise<void> {
       $("#login-success-toast .username").text(username);
       $("#login-success-toast").toast("show");
       $("#login-register-modal").modal("hide");
-      
-      $.get("/account/auth", response => {
-        user.classJoined = response.classJoined;
-        user.loggedIn = true;
-        user.username = username;
-        user.trigger("change");
-      });
+
+      authUser()
     },
     error: xhr => {
       if (xhr.status === 401) {
@@ -174,10 +167,10 @@ $(async () => {
     $(".class-page-content").removeClass("d-none");
   }
   user.on("change", (function _() {
-    $(".class-joined-content").toggleClass("d-none", !user.classJoined);
+    $(".class-joined-content").toggle(!user.classJoined);
     $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
     if (!isSite("join")) {
-      $("#login-register-button").toggleClass("d-none", user.loggedIn ?? false);
+      $("#login-register-button").toggle(user.loggedIn ?? false);
     }
     return _;
   })());

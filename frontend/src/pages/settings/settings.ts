@@ -18,7 +18,7 @@ import {
   reloadAllFn,
   classMemberData
 } from "../../global/global.js";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { $navbarToasts, authUser, user } from "../../snippets/navbar/navbar.js";
 
 async function updateColorTheme(): Promise<void> {
   if ($("#color-theme-dark").prop("checked")) {
@@ -931,8 +931,8 @@ $(".cancel-btn").hide();
 
 user.on("change", async () => {
   if (user.loggedIn !== null) {
-    $(".not-logged-in-info").toggleClass("d-none", user.loggedIn);
-    $("#settings-account").toggleClass("d-none", !user.loggedIn);
+    $(".not-logged-in-info").toggle(!user.loggedIn);
+    $("#settings-account").toggle(user.loggedIn);
 
     $("#change-password-button").show();
     $("#change-password").hide();
@@ -941,8 +941,8 @@ user.on("change", async () => {
     $("#delete-account").hide();
   }
   if (user.classJoined !== null) {
-    $(".not-joined-info").toggleClass("d-none", user.classJoined);
-    $("#settings-student, #settings-class").toggleClass("d-none", ! user.classJoined);
+    $(".not-joined-info").toggle(!user.classJoined).toggleClass("d-flex", !user.classJoined);
+    $("#settings-student, #settings-class").toggle(user.classJoined);
   }
   if (user.classJoined) {
     $("#leave-class").hide();
@@ -1066,10 +1066,8 @@ $("#logout-button").on("click", async () => {
     },
     success: () => {
       $("#logout-success-toast").toast("show");
-
-      user.loggedIn = false;
-      user.username = null;
-      user.trigger("change");
+      
+      authUser()
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -1241,9 +1239,7 @@ $("#delete-account-confirm").on("click", async () => {
     success: () => {
       $("#delete-account-success-toast").toast("show");
       
-      user.loggedIn = false;
-      user.username = null;
-      user.trigger("change");
+      authUser()
     },
     error: xhr => {
       if (xhr.status === 401) {
@@ -1366,8 +1362,7 @@ $("#leave-class-confirm").on("click", async () => {
     success: () => {
       $("#leave-class-success-toast").toast("show");
       
-      user.classJoined = false;
-      user.trigger("change");
+      authUser()
     },
     error: xhr => {
       if (xhr.status === 409) {
@@ -1418,8 +1413,7 @@ $("#delete-class-confirm").on("click", async () => {
     success: () => {
       $("#delete-class-success-toast").toast("show");
       
-      user.classJoined = false;
-      user.trigger("change");
+      authUser()
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -1538,8 +1532,9 @@ $("#set-logged-out-users-role-confirm").on("click", async () => {
 
 // CLASS MEMBERS
 
+$("#class-members-wrapper").hide()
 $("#class-members-toggle").on("click", function () {
-  $("#class-members-wrapper").toggleClass("d-none");
+  $("#class-members-wrapper").toggle();
   $(this).toggleClass("rotate-90");
 });
 
@@ -1661,8 +1656,9 @@ $("#class-members-save-confirm").on("click", saveClassMembers);
 
 // TEAMS
 
+$("#teams-wrapper").hide()
 $("#teams-toggle").on("click", function () {
-  $("#teams-wrapper").toggleClass("d-none");
+  $("#teams-wrapper").toggle();
   $(this).toggleClass("rotate-90");
 });
 
@@ -1804,8 +1800,9 @@ $("#teams-save-confirm").on("click", saveTeams);
 
 // EVENT TYPES
 
+$("#event-types-wrapper").hide()
 $("#event-types-toggle").on("click", function () {
-  $("#event-types-wrapper").toggleClass("d-none");
+  $("#event-types-wrapper").toggle();
   $(this).toggleClass("rotate-90");
 });
 
@@ -1952,8 +1949,9 @@ $("#event-types-save-confirm").on("click", saveEventTypes);
 
 // SUBJECTS
 
+$("#subjects-wrapper").hide()
 $("#subjects-toggle").on("click", function () {
-  $("#subjects-wrapper").toggleClass("d-none");
+  $("#subjects-wrapper").toggle();
   $(this).toggleClass("rotate-90");
 });
 
@@ -2162,8 +2160,9 @@ $("#subjects-save-confirm").on("click", saveSubjects);
 
 // TIMETABLE
 
+$("#timetable-wrapper").hide()
 $("#timetable-toggle").on("click", function () {
-  $("#timetable-wrapper").toggleClass("d-none");
+  $("#timetable-wrapper").toggle();
   $(this).toggleClass("rotate-90");
 });
 
