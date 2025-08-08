@@ -72,7 +72,6 @@ async function checkClassAccess(req: Request, res: Response): Promise<void> {
   }
 
   const authClassRedis = await redisClient.get(`auth_class:${req.session.classId}`);
-  console.log(authClassRedis);
   if (!authClassRedis) {
     const aClass = await prisma.class.findUnique({
       where: { classId: parseInt(req.session.classId, 10) }

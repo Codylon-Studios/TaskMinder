@@ -1,6 +1,5 @@
 import { createServer } from "http";
 import path from "path";
-import compression from "compression";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
 import * as dotenv from "dotenv";
@@ -78,7 +77,6 @@ else {
   logger.warn("Helmet and CSP is disabled! This is not recommended for production!");
 }
 
-app.use(compression());
 app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
