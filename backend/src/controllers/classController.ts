@@ -33,8 +33,8 @@ export const createClass = asyncHandler(async (req, res, next) => {
     return;
   }
   try {
-    await classService.createClass(parseResult.data, req.session);
-    res.sendStatus(200);
+    const classsCode = await classService.createClass(parseResult.data, req.session);
+    res.status(200).json(classsCode);
   } 
   catch (error) {
     next(error);

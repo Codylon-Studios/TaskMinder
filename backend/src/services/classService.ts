@@ -86,24 +86,35 @@ const classService = {
       dsbMobileActivated: false,
       defaultPermissionLevel: 0 // default setting when creating class is 0 - read only
     };
+    try {
+      await prisma.$transaction(async tx => {
+        const createdClass = await tx.class.create({
+          data: baseData
+        });
 
-    await prisma.$transaction(async tx => {
-      const createdClass = await tx.class.create({
-        data: baseData
+        session.classId = createdClass.classId.toString();
+
+        // add user to classJoined table
+        // change permission of user which created the account to admin
+        await tx.joinedClass.create({
+          data: {
+            accountId: session.account!.accountId,
+            classId: createdClass.classId,
+            permissionLevel: 3 // class creator is admin
+          }
+        });
+        return createdClass.classCode;
       });
-
-      session.classId = createdClass.classId.toString();
-
-      // add user to classJoined table
-      // change permission of user which created the account to admin
-      await tx.joinedClass.create({
-        data: {
-          accountId: session.account!.accountId,
-          classId: createdClass.classId,
-          permissionLevel: 3 // class creator is admin
-        }
-      });
-    });
+    }
+    catch {
+      const err: RequestError = {
+        name: "Server Error",
+        status: 500,
+        message: "Could not create class in database",
+        expected: true
+      };
+      throw err;
+    }
   },
   async generateClassCode(session: Session & Partial<SessionData>) {
     if (session.classId) {

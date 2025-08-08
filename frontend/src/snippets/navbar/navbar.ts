@@ -20,7 +20,7 @@ async function registerAccount(username: string, password: string): Promise<void
       $("#register-success-toast").toast("show");
       $("#login-register-modal").modal("hide");
       
-      authUser()
+      authUser();
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -62,7 +62,7 @@ async function loginAccount(username: string, password: string): Promise<void> {
       $("#login-success-toast").toast("show");
       $("#login-register-modal").modal("hide");
 
-      authUser()
+      authUser();
     },
     error: xhr => {
       if (xhr.status === 401) {

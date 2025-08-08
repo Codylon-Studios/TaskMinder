@@ -1067,7 +1067,7 @@ $("#logout-button").on("click", async () => {
     success: () => {
       $("#logout-success-toast").toast("show");
       
-      authUser()
+      authUser();
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -1239,7 +1239,7 @@ $("#delete-account-confirm").on("click", async () => {
     success: () => {
       $("#delete-account-success-toast").toast("show");
       
-      authUser()
+      authUser();
     },
     error: xhr => {
       if (xhr.status === 401) {
@@ -1362,7 +1362,7 @@ $("#leave-class-confirm").on("click", async () => {
     success: () => {
       $("#leave-class-success-toast").toast("show");
       
-      authUser()
+      authUser();
     },
     error: xhr => {
       if (xhr.status === 409) {
@@ -1413,7 +1413,7 @@ $("#delete-class-confirm").on("click", async () => {
     success: () => {
       $("#delete-class-success-toast").toast("show");
       
-      authUser()
+      authUser();
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -1532,7 +1532,7 @@ $("#set-logged-out-users-role-confirm").on("click", async () => {
 
 // CLASS MEMBERS
 
-$("#class-members-wrapper").hide()
+$("#class-members-wrapper").hide();
 $("#class-members-toggle").on("click", function () {
   $("#class-members-wrapper").toggle();
   $(this).toggleClass("rotate-90");
@@ -1656,7 +1656,7 @@ $("#class-members-save-confirm").on("click", saveClassMembers);
 
 // TEAMS
 
-$("#teams-wrapper").hide()
+$("#teams-wrapper").hide();
 $("#teams-toggle").on("click", function () {
   $("#teams-wrapper").toggle();
   $(this).toggleClass("rotate-90");
@@ -1800,7 +1800,7 @@ $("#teams-save-confirm").on("click", saveTeams);
 
 // EVENT TYPES
 
-$("#event-types-wrapper").hide()
+$("#event-types-wrapper").hide();
 $("#event-types-toggle").on("click", function () {
   $("#event-types-wrapper").toggle();
   $(this).toggleClass("rotate-90");
@@ -1949,7 +1949,7 @@ $("#event-types-save-confirm").on("click", saveEventTypes);
 
 // SUBJECTS
 
-$("#subjects-wrapper").hide()
+$("#subjects-wrapper").hide();
 $("#subjects-toggle").on("click", function () {
   $("#subjects-wrapper").toggle();
   $(this).toggleClass("rotate-90");
@@ -2160,7 +2160,7 @@ $("#subjects-save-confirm").on("click", saveSubjects);
 
 // TIMETABLE
 
-$("#timetable-wrapper").hide()
+$("#timetable-wrapper").hide();
 $("#timetable-toggle").on("click", function () {
   $("#timetable-wrapper").toggle();
   $(this).toggleClass("rotate-90");
