@@ -105,7 +105,7 @@ $("#join-class-btn").on("click", async () => {
     success: () => {
       $("#join-class-panel").addClass("d-none");
       $("#decide-account-panel").removeClass("d-none");
-      authUser()
+      authUser();
       if (user.loggedIn) {
         location.href = "/main";
       }
@@ -113,8 +113,8 @@ $("#join-class-btn").on("click", async () => {
       $(".navbar-home-link").attr("href", "/main");
       (async () => {
         const className = (await $.get("/class/get_class_info")).className;
-        console.log(className)
-        $("#decide-account-class-name")
+        console.log(className);
+        $("#decide-account-class-name");
       })();
     },
     error: xhr => {
@@ -153,10 +153,13 @@ $("#create-class-btn").on("click", async () => {
   let hasResponded = false;
   // Post the request
   await $.ajax({
-    url: `/class/create${$("#create-class-is-test").prop("checked") ? "_test_" : "_"}class`,
+    url: "/class/create_class",
     type: "POST",
     contentType: "application/json",
-    data: JSON.stringify({ classDisplayName: className }),
+    data: JSON.stringify({ 
+      classDisplayName: className,
+      isTestClass: $("#create-class-is-test").prop("checked")
+    }),
     headers: {
       "X-CSRF-Token": await csrfToken()
     },
@@ -165,13 +168,13 @@ $("#create-class-btn").on("click", async () => {
       authUser();
       (async () => {
         const classCode = (await $.get("/class/get_class_info")).classCode;
-        qrCode.makeCode(`https://codylon.de/join?class_code=${classCode}`);
+        qrCode.makeCode(`https://taskminder.de/join?class_code=${classCode}`);
         $("#create-class-credentials-panel").addClass("d-none");
   
         $("#invite-panel").removeClass("d-none");
         $("#invite-copy-link").on("click", async () => {
           try {
-            await navigator.clipboard.writeText(`https://codylon.de/join?class_code=${classCode}`);
+            await navigator.clipboard.writeText(`https://taskminder.de/join?class_code=${classCode}`);
   
             $("#invite-copy-link").addClass("disabled").html("<i class=\"fa-solid fa-check-circle\"></i> Einladungslink kopiert");
   

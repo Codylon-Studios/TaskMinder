@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import prisma from "../config/prisma";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
+import { redisClient } from "../config/redis";
 
 const SALTROUNDS = 10;
 
@@ -256,6 +257,7 @@ export default {
         accountId: session.account!.accountId
       }
     });
+    await redisClient.del(`auth_user:${account!.accountId}`);
     delete session.account;
   },
 

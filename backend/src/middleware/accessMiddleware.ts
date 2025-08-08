@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/prisma";
 import { RequestError } from "../@types/requestError";
+import { redisClient } from "../config/redis";
 
 const ROLES = {
   MEMBER: 0,
@@ -46,17 +47,22 @@ async function checkAccountAccess(req: Request): Promise<void> {
     throwError("Unauthorized", 401, "User not logged in");
   }
 
-  const account = await prisma.account.findUnique({
-    where: { accountId: req.session.account.accountId }
-  });
+  const authUserRedis = await redisClient.get(`auth_user:${req.session.account.accountId}`);
 
-  if (!account) {
-    delete req.session.account;
-    throwError(
-      "Unauthorized",
-      401,
-      "Account not found. You have been logged out"
-    );
+  if (!authUserRedis) {
+    const account = await prisma.account.findUnique({
+      where: { accountId: req.session.account.accountId }
+    });
+
+    if (!account) {
+      delete req.session.account;
+      throwError(
+        "Unauthorized",
+        401,
+        "Account not found. You have been logged out"
+      );
+    }
+    await redisClient.set(`auth_user:${req.session.account.accountId}`, "true");
   }
 }
 
@@ -65,17 +71,22 @@ async function checkClassAccess(req: Request, res: Response): Promise<void> {
     return res.redirect(302, "/join");
   }
 
-  const aClass = await prisma.class.findUnique({
-    where: { classId: parseInt(req.session.classId, 10) }
-  });
+  const authClassRedis = await redisClient.get(`auth_class:${req.session.classId}`);
+  console.log(authClassRedis);
+  if (!authClassRedis) {
+    const aClass = await prisma.class.findUnique({
+      where: { classId: parseInt(req.session.classId, 10) }
+    });
 
-  if (!aClass) {
-    delete req.session.classId;
-    throwError(
-      "Not Found",
-      404,
-      "The selected class no longer exists. Please select another class"
-    );
+    if (!aClass) {
+      delete req.session.classId;
+      throwError(
+        "Not Found",
+        404,
+        "The selected class no longer exists. Please select another class"
+      );
+    }
+    await redisClient.set(`auth_class:${req.session.classId}`, "true");
   }
 }
 

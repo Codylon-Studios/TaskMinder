@@ -4,6 +4,7 @@ import prisma from "../config/prisma";
 import { BigIntreplacer } from "../utils/validateFunctions";
 import { sessionPool } from "../config/pg";
 import logger from "../utils/logger";
+import { redisClient } from "../config/redis";
 
 function generateRandomBase62String(length: number = 20): string {
   const chars: string[] = [];
@@ -292,7 +293,7 @@ const classService = {
           classId: classIdToDelete
         }
       });
-
+      await redisClient.del(`auth_class:${classIdToDelete}`);
       delete session.classId;
     });
   },

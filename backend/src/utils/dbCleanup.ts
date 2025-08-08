@@ -1,4 +1,5 @@
 import prisma from "../config/prisma";
+import { redisClient } from "../config/redis";
 import logger from "./logger";
 
 /**
@@ -47,6 +48,12 @@ export async function cleanupTestClasses(): Promise<void> {
         }
       })
     ]);
+
+    await Promise.all(
+      classIdsToDelete.map(classId =>
+        redisClient.del(`auth_class:${classId}`)
+      )
+    );
 
     logger.info("Test Class cleanup completed: " + classesToDelete.length + " classes deleted, " + deletedJoins.count +
        " join records removed, and " + updatedAccounts.count +" accounts updated."
