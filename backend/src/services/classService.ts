@@ -2,6 +2,8 @@ import { RequestError } from "../@types/requestError";
 import { Session, SessionData } from "express-session";
 import prisma from "../config/prisma";
 import { BigIntreplacer } from "../utils/validateFunctions";
+import { sessionPool } from "../config/pg";
+import logger from "../utils/logger";
 
 function generateRandomBase62String(length: number = 20): string {
   const chars: string[] = [];
@@ -435,6 +437,35 @@ const classService = {
         defaultPermissionLevel: role
       }
     });
+  },
+  async kickLoggedOutUsers(
+    session: Session & Partial<SessionData>
+  ) {
+    const classId = session.classId;
+    try {
+      const deleteQuery = {
+        text: `
+        DELETE FROM "account_sessions"
+        WHERE
+        (sess->>'classId')::integer = $1
+        AND (sess->'account') IS NULL;
+        `,
+        values: [classId]
+      };
+
+      const result = await sessionPool.query(deleteQuery);
+      logger.info(`Successfully deleted ${result.rowCount} unregistered user sessions for class ${classId}.`);
+    } 
+    catch (error) {
+      console.log(error);
+      const err: RequestError = {
+        name: "Internal Server Error",
+        status: 500,
+        message: "Error while cleaning unregistred users of class",
+        expected: true
+      };
+      throw err;
+    }
   }
 };
 

@@ -1,6 +1,5 @@
 import { createServer } from "http";
 import path from "path";
-import client from "prom-client";
 import compression from "compression";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
@@ -8,15 +7,16 @@ import * as dotenv from "dotenv";
 import express, { Request, Response, NextFunction } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
-import helmet from "helmet";
-import { Pool } from "pg";
 import prisma from "./config/prisma";
 import socketIO from "./config/socket";
+import { sessionPool } from "./config/pg";
+import { httpRequestDurationMicroseconds, register } from "./config/promClient";
 import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
-import { cleanupDeletedAccounts, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
+import { CSPMiddleware } from "./middleware/CSPMiddleware";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
+import { cleanupDeletedAccounts, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
 import events from "./routes/eventRoute";
@@ -40,21 +40,6 @@ declare module "express-session" {
   }
 }
 
-const register = new client.Registry();
-register.setDefaultLabels({
-  app: "taskminder-nodejs"
-});
-
-const httpRequestDurationMicroseconds = new client.Histogram({
-  name: "http_request_duration_ms",
-  help: "Duration of HTTP requests in ms",
-  labelNames: ["method", "route", "code"],
-  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000]
-});
-register.registerMetric(httpRequestDurationMicroseconds);
-
-client.collectDefaultMetrics({ register });
-
 prisma
   .$connect()
   .then(() => {
@@ -64,14 +49,6 @@ prisma
     logger.error("DB connection failed:", err);
     process.exit(1);
   });
-
-const sessionPool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: 5432
-});
 
 const sessionSecret = process.env.SESSION_SECRET;
 
@@ -94,31 +71,8 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Content Security Policy
 if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          "default-src": ["'self'"],
-          "script-src": [
-            "'self'",
-            "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
-            "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='"
-          ],
-          "connect-src": ["'self'", "wss://*"],
-          "style-src": ["'self'", "'unsafe-inline'"],
-          "font-src": ["'self'"],
-          "img-src": ["'self'", "data:"],
-          "object-src": ["'none'"],
-          "frame-ancestors": ["'self'"]
-        }
-      },
-      referrerPolicy: {
-        policy: "strict-origin-when-cross-origin"
-      }
-    })
-  );
+  app.use(CSPMiddleware());
 }
 else {
   logger.warn("Helmet and CSP is disabled! This is not recommended for production!");

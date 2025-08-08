@@ -288,6 +288,16 @@ export const setUsersLoggedOutRole = asyncHandler(async (req, res, next) => {
   }
 });
 
+export const kickLoggedOutUsers = asyncHandler(async (req, res, next) => {
+  try {
+    await classService.kickLoggedOutUsers(req.session);
+    res.sendStatus(200);
+  } 
+  catch (error) {
+    next(error);
+  }
+});
+
 export default {
   getClassInfo,
   createClass,
@@ -301,5 +311,6 @@ export default {
   kickClassMembers,
   updateDSBMobileData,
   getUsersLoggedOutRole,
-  setUsersLoggedOutRole
+  setUsersLoggedOutRole,
+  kickLoggedOutUsers
 };

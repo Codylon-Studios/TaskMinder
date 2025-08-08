@@ -1,20 +1,20 @@
 # Development Setup Guide
 
-!!! warning "Docs for develop branch"
-This guide outlines the current development process and is intended for contributing to the develop branch. It may differ from the steps used in the latest stable release.
+!!! warning "Docs for develop branch"  
+    This guide outlines the current development process and is intended for contributing to the develop branch. It may differ from the steps used in the latest stable release.
 
 This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing bun, python3, mkdocs-material, redis, and PostgreSQL.
 
 !!! warning "License Notice"
-**Please make sure to review [our license](./license.md) before contributing to the project!**  
- In brief:
+    **Please make sure to review [our license](./license.md) before contributing to the project!**  
+    In brief:
 
     - Properly credit Codylon Studios
     - Commercial use is prohibited
     - Your project must use the same license terms
 
 !!! info
-Windows is currently not supported, as the primary development and testing of this tool are carried out on Linux and macOS platforms. This may result in compatibility issues or unexpected behavior when attempting to run the server on Windows.
+    Windows is currently not supported, as the primary development and testing of this tool are carried out on Linux and macOS platforms. This may result in compatibility issues or unexpected behavior when attempting to run the server on Windows.
 
 ---
 
@@ -88,7 +88,7 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.2.15 (May 28, 2025).
+You should see at least Bun 1.2.19 (last checked: August 8, 2025).
 
 [Bun Versions]: https://bun.sh/blog
 
@@ -160,17 +160,13 @@ Replace `your_db_name` with your actual database name.
 
 ### Create the `.env` File
 
-To securely manage credentials, create a `.env` file in the root directory of your project. Replace all placeholder values (e.g., `your_*`) with your actual credentials.
+To securely manage credentials, create a `.env` file in the root directory of your project.
 
 You can use the `.env.example` file located in the root folder as a reference.
 
-- `SESSION_SECRET` and `CLASSCODE` should be secure and consistent values. For local development, you can use simpler values if needed.
-- `DSB_USER` and `DSB_PASSWORD` are the login credentials for [DSBmobile](https://www.dsbmobile.de), used to fetch substitution plan data and integrate it into the timetable.
-  If you don’t have valid credentials, you can leave placeholders and set `DSB_ACTIVATED=false` to disable this feature.
-
 ---
 
-### Setup mkdocs-material (documentation)
+### Setup mkdocs-material (documentation) - optional
 
 Follow this video guide:  
 📺 [How to set up Material for MkDocs](https://www.youtube.com/watch?v=xlABhbnNrfI)  
@@ -186,6 +182,23 @@ Create a new file in the same directory named `personalData.html` (i.e., `fronte
 
 ---
 
+### Setup DB Migrations
+
+Since v1.2.2 on develop, the initial migration file (0_init) has changed. Please follow this guide to update the database:
+
+Since you have created the database before, we can now seed the initial database. This will create the 
+necessary tables for the migration phase:
+
+```
+psql -X -U DB_USER DB_NAME < backend/src/prisma/seed.sql
+```
+
+Next mark the initial migration as applied: 
+
+```
+bunx prisma migrate resolve --applied 0_init
+```
+
 ### Applying database changes
 
 Run `bunx prisma migrate dev` to apply schema changes from previously pulled commits to your local database.
@@ -197,19 +210,18 @@ If you make changes to the schema while developing—especially on a feature bra
 
 ### Start the Server
 
-Run this command to compile the typescript code and start the development server, ru
+Run this command to compile the typescript code and start the development server:
 
 ```zsh
-bun run dev-build
+bun run build
+bun run dev
 ```
 
 _Notes_:
 
 - You can manually compile the code by running `bun run build`, or use `bun run build:fe` and `bun run build:be` to compile the frontend and backend separately. After building, start the server with `bun run dev`.
 
-- We recommend using linting tools to maintain code quality. To use ESLint on this project, simply run: `bunx eslint .`.
-
-- As a best practice, format your code using Prettier. You can run `bunx prettier --write PATH/TO/FILE_OR_FOLDER` to format specific files or directories, or use `bunx prettier . --write` to format the entire project.
+- We recommend using linting/formatting tools to maintain code quality. To use ESLint and Prettier (frontend only) on this project, simply run: `bun run lint .`.
 
 - When updating the Prisma schema, remember to run `bunx prisma generate` to regenerate the client and TypeScript types in `node_modules/`.
   Before committing your changes, make sure to run `bunx prisma migrate dev` to create and apply the necessary migration files to your local database—skipping this step may result in broken or inconsistent code.

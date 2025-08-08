@@ -14,6 +14,12 @@ export UNSAFE_DEACTIVATE_CSP=$(cat /run/secrets/unsafe_deactivate_csp)
 export DATABASE_URL=$(cat /run/secrets/database_url)
 
 # ==============================================================================
+# ----- One time v2 deployment cmds -----
+# ==============================================================================
+# PGPASSWORD="$DB_PASSWORD" psql -X -U "$DB_USER" "$DB_NAME" < /usr/src/app/backend/src/prisma/seed.sql
+# bunx prisma migrate resolve --applied 0_init
+
+# ==============================================================================
 # ----- Run One-Time Initialization Tasks -----
 # ==============================================================================
 echo "Running database migrations..."

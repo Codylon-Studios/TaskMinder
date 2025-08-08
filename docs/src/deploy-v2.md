@@ -1,7 +1,4 @@
-# Server Setup in Production v2 - unstable
-
-!!! warning
-This guide is based on non-final decisions and is subject to frequent changes as it reflects the current state of the develop branch. It serves only as a preview of the upcoming documentation version.
+# Server Setup in Production v2
 
 ## What you'll need
 
@@ -125,9 +122,6 @@ sudo fail2ban-client status
 ---
 
 ## 3. Clone the Project from GitHub
-
-!!! info
-Change this to pull from the develop branch
 
 ```bash
 cd /opt
@@ -253,14 +247,10 @@ Before starting the application, create the following **text files inside the `d
 
 | **Filename**                | **Description**                                                                                                |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `classcode.txt`             | Custom class code required to access content.                                                                  |
 | `db_name.txt`               | Name of the PostgreSQL database.                                                                               |
 | `db_password.txt`           | Password for the PostgreSQL database user.                                                                     |
 | `db_host.txt`               | Host for the database, usually postgres when running in docker.                                                |
 | `db_user.txt`               | PostgreSQL database username.                                                                                  |
-| `dsb_activated.txt`         | Whether DSB is enabled (`true` or `false`). If `false`, the next two files can be dummy values.                |
-| `dsb_password.txt`          | DSB login password.                                                                                            |
-| `dsb_user.txt`              | DSB login username.                                                                                            |
 | `redis_port.txt`            | Redis port (default is `6379`).                                                                                |
 | `session_secret.txt`        | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                                         |
 | `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.                                 |
@@ -268,7 +258,7 @@ Before starting the application, create the following **text files inside the `d
 
 ---
 
-## 8. Setup `personalData.html`
+## 8. Setup `personalData.html` and edit entrypoint.sh
 
 1. **Navigate to the directory** where the example file is located:
 
@@ -288,14 +278,34 @@ Before starting the application, create the following **text files inside the `d
    sudo vi personalData.html
    ```
 
+4. **Edit entrypoint.sh:**
+
+   Uncomment the lines under `# ----- One time v2 deployment cmds -----:`
+
+   * `PGPASSWORD=your_password psql -X -U your_username DB_NAME < /usr/src/app/backend/src/prisma/seed.sql`
+   * `bunx prisma migrate resolve --applied 0_init`
+
+   Replace `your_password`, `your_username`, `DB_NAME` with your actual username, password and database name.
+
 ---
 
-## 9. Run Docker Compose
+## 9. Run Docker Compose and reset git changes
 
 Navigate to the project root and build/start the containers:
 
 ```bash
 cd /opt/TaskMinder
+docker compose up -d --build
+```
+
+Reset git changes:
+
+```bash
+git reset --hard
+```
+
+And build/start the containers again:
+```bash
 docker compose up -d --build
 ```
 

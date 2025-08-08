@@ -16,6 +16,7 @@ router.post("/kick_class_members", checkAccess(["CLASS", "ADMIN"]), classControl
 router.get("/get_class_members", checkAccess(["CLASS"]), classController.getClassMembers);
 router.get("/get_logged_out_users_role", checkAccess(["CLASS"]), classController.getUsersLoggedOutRole);
 router.post("/set_logged_out_users_role", checkAccess(["CLASS", "ADMIN"]), classController.setUsersLoggedOutRole);
+router.post("/kick_logged_out_users", checkAccess(["ADMIN"]), classController.kickLoggedOutUsers);
 // temp disable route
 //router.post("/update_dsb_mobile_data", checkAccess(["ACCOUNT", "CLASS", "MANAGER"]), classController.updateDSBMobileData);
 

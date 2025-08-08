@@ -2,8 +2,8 @@
 
 ## Migrating from v1 to v2
 
-!!! info "Early Preview"
-This guide walks you through migrating from the latest **v1** release to the upcoming **v2** release.
+!!! info "Info"
+      This guide walks you through migrating from the latest **v1** release to the **v2** release.
 
 ---
 
@@ -12,7 +12,7 @@ This guide walks you through migrating from the latest **v1** release to the upc
 - Ensure you’re running the **latest v1** release.
 
 - Be aware that **v2 introduces breaking changes**, including:
-  - Significant database structure changes across multiple classes (manual intervention required).
+      - Significant database structure changes across multiple classes (manual intervention required).
 
 - Carefully read this guide **at least once** before starting the process.
 
@@ -79,31 +79,27 @@ The initial migration (`0_init`) has changed. To allow Prisma to re-run migratio
 
 ---
 
-### Step 2.3: Start & Build the New Service
+### Step 2.1: Start & Build the New Service
 
-1. Temporarily **comment out** the following line entrypoint.sh:
-   - `bunx prisma migrate resolve --applied 0_init`
+1. Temporarily **comment out** the following line entrypoint.sh: `bunx prisma migrate resolve --applied 0_init`
 
-   Temporarily **comment** the following line in entrypoint.sh:
-   - `bunx prisma migrate deploy`
+2. Temporarily **comment** the following line in entrypoint.sh: `bunx prisma migrate deploy`
 
-2. Build and start the service:
+3. Build and start the service:
 
-   ```bash
-   docker compose up --build
-   ```
+      ```bash
+         docker compose up --build
+      ```
 
-3. Wait until `0_init` is marked as applied (this will be displayed in the logs), then **stop the process** (`Ctrl+C`).
+4. Wait until `0_init` is marked as applied (this will be displayed in the logs), then **stop the process** (`Ctrl+C`).
 
-4. **Re-comment** this line:
-   - `bunx prisma migrate resolve --applied 0_init`
+5. **Re-comment** this line: `bunx prisma migrate resolve --applied 0_init`
 
-   **Comment out** this line:
-   - `bunx prisma migrate deploy`
+6. **Comment out** this line: `bunx prisma migrate deploy`
 
 ---
 
-### Step 2.5: Edit the SQL Migration File
+### Step 2.2: Edit the SQL Migration File
 
 Update the generated `.sql` migration file to include your **specific values**. There is an INSERT and an UPDATE statement which have to be changed. The commands assume default values, change them. In `UPDATE "account"`, `USERNAME` must be a valid, existing value in the table.
 
@@ -135,11 +131,11 @@ Prisma validates migration checksums. Any change to a migration file (like editi
 
 1. Drop the `_prisma_migrations` table again (refer to Step 2).
 2. Temporarily **comment out** these lines in entrypoint.sh :
-   - `bunx prisma migrate resolve --applied 0_init`
-   - `bunx prisma migrate resolve --applied 20250804114621_migrate_to_multiple_classes`
+      - `bunx prisma migrate resolve --applied 0_init`
+      - `bunx prisma migrate resolve --applied 20250804114621_migrate_to_multiple_classes`
 
 3. Also **comment**:
-   - `bunx prisma migrate deploy`
+      - `bunx prisma migrate deploy`
 
 ---
 
