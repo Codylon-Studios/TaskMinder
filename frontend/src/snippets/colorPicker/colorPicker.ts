@@ -357,7 +357,7 @@ $(() => {
           });
         }
       });
-      if (mutation.type === "attributes" && mutation.attributeName === "disabled") {
+      if (mutation.type === "attributes" && mutation.attributeName === "disabled" && $(mutation.target).is(".color-picker")) {
         if ($(mutation.target).attr("disabled") === undefined) {
           $(mutation.target).next().removeAttr("disabled");
         }

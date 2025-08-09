@@ -57,6 +57,7 @@ async function updateClassMemberList(): Promise<void> {
 
   for (const classMember of await classMemberData()) {
     const classMemberId = classMember.accountId;
+    const isCurrentUser = classMember.username === user.username
 
     const roleOptionsHtml = roles.map((opt, index) =>
       `<option value="${index}" ${(classMember.permissionLevel ?? 0) === index ? "selected" : ""}>${opt}</option>`
@@ -66,10 +67,10 @@ async function updateClassMemberList(): Promise<void> {
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${classMemberId}">
         <div class="d-flex flex-column flex-lg-row align-items-lg-center flex-grow-1">
           <div class="d-flex w-lg-50 pe-3 align-items-center">
-            <span class="w-100">${$.formatHtml(classMember.username) + (classMember.username === user.username ? " <b>(Du)</b>" : "")}</span>
+            <span class="w-100">${$.formatHtml(classMember.username) + (isCurrentUser ? " <b>(Du)</b>" : "")}</span>
             <span class="form-text mt-0">Rolle:</span>
-            <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content"
-              data-id="${classMemberId}" ${canEditClassSettings && classMember.username !== user.username ? "" : "disabled"}>
+            <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content${isCurrentUser ? " is-current-user": ""}"
+              data-id="${classMemberId}" ${canEditClassSettings && !isCurrentUser ? "" : "disabled"}>
               ${roleOptionsHtml}
             </select>
           </div>
@@ -80,13 +81,13 @@ async function updateClassMemberList(): Promise<void> {
             </span>
           </span>
           <span class="text-danger fw-bold mt-2 mt-lg-0 d-none class-member-kicked" data-id="${classMemberId}">Entfernt</span>
-          <span class="form-text mt-2 mt-lg-0 pe-2 w-lg-50${classMember.username === user.username ? "" : " d-none"}">
+          <span class="form-text mt-2 mt-lg-0 pe-2 w-lg-50${isCurrentUser ? "" : " d-none"}">
             Du kannst deine eigenen Berechtigungen nicht ändern. Du kannst die Klasse unter "Schüler:in" verlassen.
           </span>
         </div>
         <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick"
-            data-id="${classMemberId}" ${canEditClassSettings && classMember.username !== user.username ? "" : "disabled"}>
+          <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick${isCurrentUser ? " is-current-user": ""}"
+            data-id="${classMemberId}" ${canEditClassSettings && !isCurrentUser ? "" : "disabled"}>
             <i class="fa-solid fa-user-minus"></i>
           </button>
         </div>
@@ -922,7 +923,7 @@ $(async () => {
 });
 
 const qrCode = new QRCode( "show-qrcode-modal-qrcode", {
-  text: "https://codylon.de",
+  text: "https://taskminder.de",
   width: 300,
   height: 300
 });
@@ -930,16 +931,14 @@ const qrCode = new QRCode( "show-qrcode-modal-qrcode", {
 $(".cancel-btn").hide();
 
 user.on("change", async () => {
-  if (user.loggedIn !== null) {
-    $(".not-logged-in-info").toggle(!user.loggedIn);
-    $("#settings-account").toggle(user.loggedIn);
+  $(".not-logged-in-info").toggle(!user.loggedIn).toggleClass("d-flex", !user.loggedIn);
+  $("#settings-account").toggle(user.loggedIn ?? false);
 
-    $("#change-password-button").show();
-    $("#change-password").hide();
+  $("#change-password-button").show();
+  $("#change-password").hide();
 
-    $("#delete-account-button").show();
-    $("#delete-account").hide();
-  }
+  $("#delete-account-button").show();
+  $("#delete-account").hide();
   if (user.classJoined !== null) {
     $(".not-joined-info").toggle(!user.classJoined).toggleClass("d-flex", !user.classJoined);
     $("#settings-student, #settings-class").toggle(user.classJoined);
@@ -1004,6 +1003,7 @@ user.on("change", async () => {
       $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
         .find("input, button, select, .color-picker-trigger")
         .removeAttr("disabled");
+      $("#class-members-wrapper .is-current-user").attr("disabled", "");
     }
     $("#delete-class-button").toggleClass("disabled", (user.permissionLevel ?? 0) !== 3);
     $("#kick-logged-out-users-button").toggleClass("disabled", (user.permissionLevel ?? 0) !== 3);
@@ -1156,8 +1156,8 @@ $("#change-password-old, #change-password-new, #change-password-repeat").on("inp
 
 $("#change-password-confirm").on("click", async () => {
   const data = {
-    passwordOld: $("#change-password-old").val(),
-    passwordNew: $("#change-password-new").val()
+    oldPassword: $("#change-password-old").val(),
+    newPassword: $("#change-password-new").val()
   };
   let hasResponded = false;
 
@@ -1170,6 +1170,8 @@ $("#change-password-confirm").on("click", async () => {
     },
     success: () => {
       $("#change-password-success-toast").toast("show");
+      $("#change-password-button").show()
+      $("#change-password").hide()
     },
     error: xhr => {
       if (xhr.status === 401) {
@@ -1592,6 +1594,13 @@ async function saveClassMembers(): Promise<void> {
           "X-CSRF-Token": csrf
         },
         success: () => {
+          classMemberData.reload();
+          updateClassMemberList();
+          $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
+          $("#class-members-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
+          setTimeout(() => {
+            $("#class-members-save").text("Speichern").prop("disabled", false);
+          }, 1000);
         },
         error: xhr => {
           if (xhr.status === 500) {

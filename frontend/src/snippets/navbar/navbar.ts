@@ -167,10 +167,10 @@ $(async () => {
     $(".class-page-content").removeClass("d-none");
   }
   user.on("change", (function _() {
-    $(".class-joined-content").toggle(!user.classJoined);
+    $(".class-joined-content").toggle(user.classJoined ?? false);
     $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
     if (!isSite("join")) {
-      $("#login-register-button").toggle(user.loggedIn ?? false);
+      $("#login-register-button").toggle(!user.loggedIn);
     }
     return _;
   })());
@@ -184,6 +184,7 @@ export const user = {
   username: null as string | null,
   classJoined: null as boolean | null,
   permissionLevel: null as number | null,
+  changeEvents: 0,
 
   _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
 
@@ -233,7 +234,8 @@ export function authUser(): void {
       user.loggedIn = false;
       user.username = null;
     }
-  
+
+    user.changeEvents++
     user.trigger("change");
   });
 }

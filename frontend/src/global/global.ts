@@ -173,7 +173,8 @@ export async function sendWrappedRequest(
 export async function reloadAll(): Promise<void> {
   const currentReloadAllFn = await reloadAllFn.get();
   await currentReloadAllFn();
-  $("body").css({ display: "block" }).addClass("d-flex");
+  console.log("RA")
+  $("body").css({ display: "flex" });
 }
 
 export const reloadAllFn = createDataAccessor<() => Promise<void>>("reloadAllFn");
@@ -494,7 +495,7 @@ $(document).on("click", "#navbar-reload-button", () => {
 
 let afterFirstEvent = false;
 user.on("change", async () => {
-  if (afterFirstEvent || (isSite("settings") && reloadAllFn.getCurrent() !== null)) reloadAll();
+  if (user.changeEvents > 1) reloadAll();
   afterFirstEvent = true;
 });
 
