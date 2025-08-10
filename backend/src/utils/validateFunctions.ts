@@ -14,6 +14,10 @@ async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   }
 }
 
+export function checkUsername(username: string): boolean {
+  return /^\w{4,20}$/.test(username);
+}
+
 function BigIntreplacer(key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
 }

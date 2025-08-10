@@ -3,12 +3,16 @@ import prisma from "../config/prisma";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import { redisClient } from "../config/redis";
+import { 
+  changePasswordTypeBody, 
+  changeUsernameTypeBody, 
+  checkUsernameTypeBody, 
+  deleteAccountTypeBody, 
+  loginAccountTypeBody, 
+  registerAccountTypeBody 
+} from "../schemas/accountSchema";
 
 const SALTROUNDS = 10;
-
-function checkUsername(username: string): boolean {
-  return /^\w{4,20}$/.test(username);
-}
 
 export default {
   async getAuth( session: Session & Partial<SessionData>) {
@@ -85,7 +89,7 @@ export default {
   
   return res;
   },
-  async registerAccount(reqData: { username: string; password: string }, session: Session & Partial<SessionData>) {
+  async registerAccount(reqData: registerAccountTypeBody, session: Session & Partial<SessionData>) {
     const { username, password } = reqData;
     if (session.account) {
       const err: RequestError = {
@@ -93,15 +97,6 @@ export default {
         status: 400,
         message: "Already logged in",
         additionalInformation: "The requesting session is already logged in!",
-        expected: true
-      };
-      throw err;
-    }
-    if (!checkUsername(username)) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "The username does not comply with the rules!",
         expected: true
       };
       throw err;
@@ -153,7 +148,7 @@ export default {
     delete session.account;
   },
 
-  async loginAccount(reqData: { username: string; password: string }, session: Session & Partial<SessionData>) {
+  async loginAccount(reqData: loginAccountTypeBody, session: Session & Partial<SessionData>) {
     const { username, password } = reqData;
     if (session.account) {
       const err: RequestError = {
@@ -212,7 +207,8 @@ export default {
     }
   },
 
-  async deleteAccount(password: string, session: Session & Partial<SessionData>) {
+  async deleteAccount(reqData: deleteAccountTypeBody, session: Session & Partial<SessionData>) {
+    const { password } = reqData;
     // account and session.account certainly exist here 
     // -> checkAccess.checkAccount middleware
     const joinedClassAccount = await prisma.joinedClass.findUnique({
@@ -261,7 +257,8 @@ export default {
     delete session.account;
   },
 
-  async changeUsername(newUsername: string, session: Session & Partial<SessionData>) {
+  async changeUsername(reqData: changeUsernameTypeBody, session: Session & Partial<SessionData>) {
+    const { newUsername } = reqData;
     await prisma.account.update({
       where: {
         accountId: session.account!.accountId
@@ -273,10 +270,7 @@ export default {
   },
 
   async changePassword(
-    reqData: {
-      oldPassword: string;
-      newPassword: string;
-    },
+    reqData: changePasswordTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { oldPassword, newPassword } = reqData;
@@ -307,7 +301,8 @@ export default {
     });
   },
 
-  async checkUsername(username: string) {
+  async checkUsername(reqData: checkUsernameTypeBody) {
+    const { username } = reqData;
     const accountExists = await prisma.account.findUnique({
       where: { username: username }
     });
