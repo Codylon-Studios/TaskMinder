@@ -188,9 +188,8 @@ app.get("/events", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
 });
 
-app.use((req, res, next) => {
-  res.status(404).send("Not found");
-  next();
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(pagesPath, "404", "404.html"));
 });
 
 // Error Handler Middleware (Must be the last app.use)

@@ -235,7 +235,7 @@ export function authUser(): void {
       user.username = null;
     }
 
-    user.changeEvents++
+    user.changeEvents++;
     user.trigger("change");
   });
 }

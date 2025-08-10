@@ -4,6 +4,7 @@
 
 // Overwriting Bootstrap standards
 $primary: #3bb9ca;
+$enable-negative-margins: true;
 
 @import "../../../node_modules/bootstrap/scss/bootstrap";
 

@@ -20,7 +20,7 @@ export const CSPMiddleware = (): RequestHandler => {
       }
     },
     referrerPolicy: {
-      policy: "strict-origin-when-cross-origin"
+      policy: "same-origin"
     }
   });
 };

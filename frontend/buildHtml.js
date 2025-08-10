@@ -24,6 +24,7 @@ async function buildDirectory(src, dest) {
       const $ = load(html);
 
       const titleMap = {
+        404: "Nicht gefunden",
         about: "Über",
         events: "Ereignisse",
         homework: "Hausaufgaben",

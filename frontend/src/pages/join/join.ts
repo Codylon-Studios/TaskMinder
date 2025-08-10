@@ -8,7 +8,7 @@ function checkClassName(className: string): boolean {
 let justCreatedClass = false;
 
 const qrCode = new QRCode( "show-qrcode-modal-qrcode", {
-  text: "https://taskminder.de",
+  text: location.host,
   width: 300,
   height: 300
 });
@@ -102,23 +102,20 @@ $("#join-class-btn").on("click", async () => {
     headers: {
       "X-CSRF-Token": await csrfToken()
     },
-    success: () => {
-      $("#join-class-panel").addClass("d-none");
-      $("#decide-account-panel").removeClass("d-none");
-      authUser();
+    success: res => {
       if (user.loggedIn) {
         location.href = "/main";
       }
+      $("#join-class-panel").addClass("d-none");
+      $("#decide-account-panel").removeClass("d-none");
+      authUser();
       $(".class-joined-content").removeClass("d-none");
       $(".navbar-home-link").attr("href", "/main");
-      (async () => {
-        const className = (await $.get("/class/get_class_info")).className;
-        console.log(className);
-        $("#decide-account-class-name");
-      })();
+      const className = res;
+      $("#decide-account-class-name").text(className);
     },
     error: xhr => {
-      if (xhr.status === 401) {
+      if (xhr.status === 404) {
         $("#error-invalid-class-code").removeClass("d-none");
       }
       else if (xhr.status === 500) {
@@ -152,7 +149,7 @@ $("#create-class-btn").on("click", async () => {
 
   let hasResponded = false;
   // Post the request
-  await $.ajax({
+  $.ajax({
     url: "/class/create_class",
     type: "POST",
     contentType: "application/json",
@@ -163,30 +160,28 @@ $("#create-class-btn").on("click", async () => {
     headers: {
       "X-CSRF-Token": await csrfToken()
     },
-    success: () => {
+    success: res => {
       justCreatedClass = true;
       authUser();
-      (async () => {
-        const classCode = (await $.get("/class/get_class_info")).classCode;
-        qrCode.makeCode(`https://taskminder.de/join?class_code=${classCode}`);
-        $("#create-class-credentials-panel").addClass("d-none");
-  
-        $("#invite-panel").removeClass("d-none");
-        $("#invite-copy-link").on("click", async () => {
-          try {
-            await navigator.clipboard.writeText(`https://taskminder.de/join?class_code=${classCode}`);
-  
-            $("#invite-copy-link").addClass("disabled").html("<i class=\"fa-solid fa-check-circle\"></i> Einladungslink kopiert");
-  
-            setTimeout(() => {
-              $("#invite-copy-link").removeClass("disabled").html("<i class=\"fa-solid fa-link\"></i> Einladungslink kopieren");
-            }, 2000);
-          }
-          catch (err) {
-            console.error("Error copying classcode to clipboard:", err);
-          }
-        });
-      })();
+      const classCode = res;
+      qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
+      $("#create-class-credentials-panel").addClass("d-none");
+
+      $("#invite-panel").removeClass("d-none");
+      $("#invite-copy-link").on("click", async () => {
+        try {
+          await navigator.clipboard.writeText(location.host + `/join?class_code=${classCode}`);
+
+          $("#invite-copy-link").addClass("disabled").html("<i class=\"fa-solid fa-check-circle\"></i> Einladungslink kopiert");
+
+          setTimeout(() => {
+            $("#invite-copy-link").removeClass("disabled").html("<i class=\"fa-solid fa-link\"></i> Einladungslink kopieren");
+          }, 2000);
+        }
+        catch (err) {
+          console.error("Error copying classcode to clipboard:", err);
+        }
+      });
     },
     error: xhr => {
       if (xhr.status === 401) {

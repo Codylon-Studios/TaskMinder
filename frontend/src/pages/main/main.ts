@@ -442,7 +442,7 @@ async function updateEventList(): Promise<void> {
     // The template for an event
     const template = $(`<div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
-          <div class="card-body p-2 d-flex">
+          <div class="card-body p-2">
             <div class="d-flex flex-column">
               <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
               <span>${startDate}${endDate ? ` - ${endDate}` : ""}<b>${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b></span>

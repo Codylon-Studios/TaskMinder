@@ -12,64 +12,57 @@ import {
   socket,
   reloadAll,
   csrfToken,
-  reloadAllFn
+  reloadAllFn,
+  HomeworkData
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 export async function updateHomeworkList(): Promise<void> {
+  async function getFilteredData(): Promise<(HomeworkData[number] & { checked: boolean })[]> {
+    // Add the check value to each homework
+    let data = await Promise.all(
+      (await homeworkData()).map(async h => ({
+        ...h,
+        checked: await getHomeworkCheckStatus(h.homeworkId)
+      }))
+    );
+    // Filter by min. date
+    const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
+    if (!isNaN(filterDateMin)) {
+      data = data.filter(h => filterDateMin <= parseInt(h.submissionDate));
+    }
+    // Filter by max. date
+    const filterDateMax = Date.parse($("#filter-date-until").val()?.toString() ?? "");
+    if (!isNaN(filterDateMax)) {
+      data = data.filter(h => filterDateMax >= parseInt(h.assignmentDate));
+    }
+    // Filter by checked status
+    if (! $("#filter-status-checked").prop("checked")) {
+      data = data.filter(h => !h.checked);
+    }
+    // Filter by unchecked status
+    if (! $("#filter-status-unchecked").prop("checked")) {
+      data = data.filter(h => h.checked);
+    }
+    // Filter by subject
+    data = data.filter(h => $(`#filter-subject-${h.subjectId}`).prop("checked"));
+    // Filter by team
+    const currentJoinedTeamsData = await joinedTeamsData();
+    data = data.filter(h => currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1);
+    
+    return data;
+  }
+
   const newContent = $("<div></div>");
   let addedElements: JQuery<HTMLElement> = $();
 
   // Check if user is in edit mode
   const editEnabled = $("#edit-toggle").is(":checked");
 
-  for (const homework of await homeworkData()) {
-    async function filter(): Promise<boolean> {
-      function filterDate(): boolean {
-        // Filter by min. date
-        if ($("#filter-date-from").val() !== "") {
-          const filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-          if (filterDate > parseInt(homework.submissionDate)) {
-            return true;
-          }
-        }
+  const data = await getFilteredData();
 
-        // Filter by max. date
-        if ($("#filter-date-until").val() !== "") {
-          const filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "1.1.1970");
-          if (filterDate < parseInt(homework.assignmentDate)) {
-            return true;
-          }
-        }
-
-        return false;
-      }
-
-      // Filter by checked status
-      if (checked && !$("#filter-status-checked").prop("checked")) {
-        return true;
-      }
-
-      // Filter by checked status
-      if (!checked && !$("#filter-status-unchecked").prop("checked")) {
-        return true;
-      }
-
-      // Filter by subject
-      if (!$(`#filter-subject-${homework.subjectId}`).prop("checked")) {
-        return true;
-      }
-
-      if (filterDate()) return true;
-
-      // Filter by team
-      if (!(await joinedTeamsData()).includes(homework.teamId) && homework.teamId !== -1) {
-        return true;
-      }
-
-      return false;
-    }
+  for (const homework of data) {
     function showCheckAnimation(): void {
       if (checked && justCheckedHomeworkId === homeworkId && animations) {
         justCheckedHomeworkId = -1;
@@ -85,9 +78,7 @@ export async function updateHomeworkList(): Promise<void> {
     }
 
     const homeworkId = homework.homeworkId;
-    const checked = await getHomeworkCheckStatus(homeworkId);
-
-    if (await filter()) continue;
+    const checked = homework.checked;
 
     // Get the information for the homework
     const subject = (await subjectData()).find(s => s.subjectId === homework.subjectId)?.subjectNameLong;
@@ -136,7 +127,7 @@ export async function updateHomeworkList(): Promise<void> {
   }
 
   // If no homeworks match, add an explanation text
-  $("#edit-toggle ~ label").toggle(newContent.html() !== "");
+  $("#edit-toggle ~ label").toggle(newContent.html() !== "" && (user.permissionLevel ?? 0) >= 1);
   $("#filter-toggle ~ label").toggle((await homeworkData()).length > 0);
   if (newContent.html() === "") {
     newContent.html('<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>');
@@ -548,7 +539,7 @@ function updateFilters(ignoreSubjects?: boolean): void {
       $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
     }
     else {
-      $("#filter-date-from").val(filterData.dateUntil);
+      $("#filter-date-until").val(filterData.dateUntil);
       const nextMonth = new Date(Date.now());
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
@@ -559,21 +550,13 @@ function updateFilters(ignoreSubjects?: boolean): void {
 
   const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
 
-  if (filterData.statusUnchecked === undefined) {
-    $("#filter-status-unchecked").prop("checked", true);
-  }
-  else {
-    $("#filter-status-unchecked").prop("checked", filterData.statusUnchecked);
-    if (!filterData.statusUnchecked) $("#filter-changed").removeClass("d-none");
-  }
+  filterData.statusUnchecked ??= true;
+  $("#filter-status-unchecked").prop("checked", filterData.statusUnchecked);
+  if (! filterData.statusUnchecked) $("#filter-changed").removeClass("d-none");
 
-  if (filterData.statusChecked === undefined) {
-    $("#filter-status-checked").prop("checked", true);
-  }
-  else {
-    $("#filter-status-checked").prop("checked", filterData.statusChecked);
-    if (!filterData.statusChecked) $("#filter-changed").removeClass("d-none");
-  }
+  filterData.statusChecked ??= true;
+  $("#filter-status-checked").prop("checked", filterData.statusChecked);
+  if (! filterData.statusChecked) $("#filter-changed").removeClass("d-none");
 
   updateDateFilters();
   

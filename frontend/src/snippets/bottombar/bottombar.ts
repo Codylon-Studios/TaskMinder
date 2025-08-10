@@ -24,3 +24,33 @@ $(".bottombar-link").each(function (id) {
     location.href = availableLinks[id];
   });
 });
+
+let startX = 0;
+let startY = 0;
+
+$(document).on("touchstart", ev => {
+  startX = ev.originalEvent?.touches[0].clientX ?? 0;
+  startY = ev.originalEvent?.touches[0].clientY ?? 0;
+});
+
+$(document).on("touchend", ev => {
+  function changeSite(): void {
+    if (diffX > 0) {
+      if (siteIndex === 0) return;
+      window.location.href = availableLinks[siteIndex === 5 ? 0: siteIndex - 1];
+    }
+    else {
+      if (siteIndex === 4) return;
+      window.location.href = availableLinks[siteIndex === 5 ? 4: siteIndex + 1];
+    }
+  }
+  const endX = ev.originalEvent?.changedTouches[0].clientX ?? 0;
+  const endY = ev.originalEvent?.changedTouches[0].clientY ?? 0;
+  
+  const diffX = endX - startX;
+  const diffY = endY - startY;
+  
+  if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 150 && (startX < 75 || startX > window.innerWidth - 75)) {
+    changeSite();
+  }
+});

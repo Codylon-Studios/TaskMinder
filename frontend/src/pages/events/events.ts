@@ -79,29 +79,37 @@ async function updateEventList(): Promise<void> {
 
     const editOptionsDisplay = editEnabled ? "" : "d-none";
     // The template for an event with edit options
-    const template = $(`<div class="col p-2">
+    const template = $(`
+      <div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
-          <div class="card-body p-2 d-flex">
-            <div class="d-flex flex-column me-3 event-content-wrapper">
-              <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${$.formatHtml(name)}</span>
-              <span>${startDate}${endDate ? ` - ${endDate}` : ""}<b>${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b></span>
-              <span class="event-description"></span>
+          <div class="card-body p-2">
+            <div class="d-flex justify-content-between">
+              <div style="min-width: 0;">
+                <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${$.formatHtml(name)}</span>
+                <br>
+                <span>${startDate}${endDate ? ` - ${endDate}` : ""}<b>${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b></span>
+              </div>
+              <div>
+                <div class="d-flex flex-nowrap">
+                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
+                    <i class="fa-solid fa-edit event-${eventTypeId} opacity-75"></i>
+                  </button>
+                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
+                    <i class="fa-solid fa-trash event-${eventTypeId} opacity-75"></i>
+                  </button>
+                </div>
+                <div class="d-flex flex-nowrap justify-content-end">
+                  <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}">
+                    <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75"></i>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="position-absolute end-0 top-0 m-2 text-end">
-              <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
-                <i class="fa-solid fa-edit event-${eventTypeId} opacity-75"></i>
-              </button>
-              <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
-                <i class="fa-solid fa-trash event-${eventTypeId} opacity-75"></i>
-              </button>
-              <br class="event-edit-option ${editOptionsDisplay} mb-2">
-              <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}">
-                <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75"></i>
-              </button>
-            </div>
+            <div class="event-description"></div>
           </div>
         </div>
-      </div>`);
+      </div>
+      `);
 
     // Add this event to the list
     $("#event-list").append(template);
@@ -115,7 +123,7 @@ async function updateEventList(): Promise<void> {
   }
 
   // If no events match, add an explanation text
-  $("#edit-toggle ~ label").toggle($("#event-list").html() !== "");
+  $("#edit-toggle ~ label").toggle($("#event-list").html() !== "" && (user.permissionLevel ?? 0) >= 1);
   $("#filter-toggle ~ label").toggle((await eventData()).length > 0);
   if ($("#event-list").html() === "") {
     $("#event-list").html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
@@ -614,7 +622,6 @@ $(function () {
     $("#show-add-event-button").toggle((user.permissionLevel ?? 0) >= 1);
     if (!loggedIn) {
       $(".event-edit-option").addClass("d-none");
-      $(".event-title").css("margin-right", "0rem");
     }
     return _;
   })());
@@ -626,12 +633,10 @@ $(function () {
     if ($("#edit-toggle").is(":checked")) {
       // On checking the edit toggle, show the add button and edit options
       $(".event-edit-option").removeClass("d-none");
-      $(".event-title").css("margin-right", "3.75rem");
     }
     else {
       // On unchecking the edit toggle, hide the add button and edit options
       $(".event-edit-option").addClass("d-none");
-      $(".event-title").css("margin-right", "0rem");
     }
   });
 

@@ -171,13 +171,14 @@ export async function sendWrappedRequest(
 }
 
 export async function reloadAll(): Promise<void> {
+  doneFirstReloadAll = true;
   const currentReloadAllFn = await reloadAllFn.get();
   await currentReloadAllFn();
-  console.log("RA")
   $("body").css({ display: "flex" });
 }
 
 export const reloadAllFn = createDataAccessor<() => Promise<void>>("reloadAllFn");
+let doneFirstReloadAll = false;
 
 type ColorTheme = "dark" | "light";
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
@@ -325,7 +326,7 @@ export type LessonData = {
 export const lessonData = createDataAccessor<LessonData>("lessonData", "/lessons/get_lesson_data");
 
 // Homework data
-type HomeworkData = {
+export type HomeworkData = {
   homeworkId: number;
   content: string;
   subjectId: number;
@@ -493,10 +494,8 @@ $(document).on("click", "#navbar-reload-button", () => {
   reloadAll();
 });
 
-let afterFirstEvent = false;
 user.on("change", async () => {
-  if (user.changeEvents > 1) reloadAll();
-  afterFirstEvent = true;
+  if (user.changeEvents > 1 || !doneFirstReloadAll) reloadAll();
 });
 
 // Change btn group selections to vertical / horizontal

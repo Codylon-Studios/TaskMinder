@@ -57,7 +57,8 @@ async function updateClassMemberList(): Promise<void> {
 
   for (const classMember of await classMemberData()) {
     const classMemberId = classMember.accountId;
-    const isCurrentUser = classMember.username === user.username
+    const isCurrentUser = classMember.username === user.username;
+    const isDisabled = canEditMemberSettings && !isCurrentUser ? "" : "disabled";
 
     const roleOptionsHtml = roles.map((opt, index) =>
       `<option value="${index}" ${(classMember.permissionLevel ?? 0) === index ? "selected" : ""}>${opt}</option>`
@@ -70,7 +71,7 @@ async function updateClassMemberList(): Promise<void> {
             <span class="w-100">${$.formatHtml(classMember.username) + (isCurrentUser ? " <b>(Du)</b>" : "")}</span>
             <span class="form-text mt-0">Rolle:</span>
             <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content${isCurrentUser ? " is-current-user": ""}"
-              data-id="${classMemberId}" ${canEditClassSettings && !isCurrentUser ? "" : "disabled"}>
+              data-id="${classMemberId}" ${isDisabled}>
               ${roleOptionsHtml}
             </select>
           </div>
@@ -87,7 +88,7 @@ async function updateClassMemberList(): Promise<void> {
         </div>
         <div>
           <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick${isCurrentUser ? " is-current-user": ""}"
-            data-id="${classMemberId}" ${canEditClassSettings && !isCurrentUser ? "" : "disabled"}>
+            data-id="${classMemberId}" ${isDisabled}>
             <i class="fa-solid fa-user-minus"></i>
           </button>
         </div>
@@ -901,6 +902,7 @@ async function updateTimetable(): Promise<void> {
 
 let dsbActivated = false;
 let canEditClassSettings = false;
+let canEditMemberSettings = false;
 
 $(async () => {
   reloadAllFn.set(async () => {
@@ -923,7 +925,7 @@ $(async () => {
 });
 
 const qrCode = new QRCode( "show-qrcode-modal-qrcode", {
-  text: "https://taskminder.de",
+  text: location.host,
   width: 300,
   height: 300
 });
@@ -958,7 +960,7 @@ user.on("change", async () => {
         $("#invite-copy-link, #invite-qrcode").removeClass("disabled");
         classCode = resClassCode;
 
-        qrCode.makeCode(`https://taskminder.de/join?class_code=${classCode}`);
+        qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
         $("#show-qrcode-modal-title b").text(res.className);
       })
       .fail(() => {
@@ -968,7 +970,7 @@ user.on("change", async () => {
 
     $("#invite-copy-link").on("click", async () => {
       try {
-        await navigator.clipboard.writeText(`https://taskminder.de/join?class_code=${classCode}`);
+        await navigator.clipboard.writeText(location.host + `/join?class_code=${classCode}`);
     
         $("#invite-copy-link").addClass("disabled").html("<i class=\"fa-solid fa-check-circle\"></i> Einladungslink kopiert");
     
@@ -992,7 +994,8 @@ user.on("change", async () => {
       $(`#set-logged-out-users-role-select option[value="${loggedOutUsersRole}"]`).attr("selected", "");
     }
 
-    if ((user.permissionLevel ?? 0) < 2) {
+    const permissionLevel = user.permissionLevel ?? 0;
+    if (permissionLevel < 2) {
       canEditClassSettings = false;
       $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
         .find("input, button, select, .color-picker-trigger")
@@ -1003,11 +1006,22 @@ user.on("change", async () => {
       $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
         .find("input, button, select, .color-picker-trigger")
         .removeAttr("disabled");
-      $("#class-members-wrapper .is-current-user").attr("disabled", "");
     }
-    $("#delete-class-button").toggleClass("disabled", (user.permissionLevel ?? 0) !== 3);
-    $("#kick-logged-out-users-button").toggleClass("disabled", (user.permissionLevel ?? 0) !== 3);
-    $("#set-logged-out-users-role-select").toggleClass("disabled", (user.permissionLevel ?? 0) !== 3);
+    if (permissionLevel < 3) {
+      canEditMemberSettings = false;
+      $("#class-members-wrapper")
+        .find("button, select")
+        .attr("disabled", "");
+    }
+    else {
+      canEditMemberSettings = true;
+      $("#class-members-wrapper")
+        .find("button, select")
+        .removeAttr("disabled");
+    }
+    $("#delete-class-button").toggleClass("disabled", permissionLevel !== 3);
+    $("#kick-logged-out-users-button").toggleClass("disabled", permissionLevel !== 3);
+    $("#set-logged-out-users-role-select").toggleClass("disabled", permissionLevel !== 3);
   }
 });
 
@@ -1170,8 +1184,8 @@ $("#change-password-confirm").on("click", async () => {
     },
     success: () => {
       $("#change-password-success-toast").toast("show");
-      $("#change-password-button").show()
-      $("#change-password").hide()
+      $("#change-password-button").show();
+      $("#change-password").hide();
     },
     error: xhr => {
       if (xhr.status === 401) {
@@ -1460,7 +1474,8 @@ $("#kick-logged-out-users-confirm").on("click", async () => {
     },
     success: () => {
       $("#kick-logged-out-users-success-toast").toast("show");
-
+      $("#kick-logged-out-users").hide();
+      $("#kick-logged-out-users-button").show();
     },
     error: xhr => {
       if (xhr.status === 500) {
@@ -1494,7 +1509,7 @@ $("#set-logged-out-users-role-select").on("change", function () {
 });
 
 $("#set-logged-out-users-role-cancel").on("click", () => {
-  $("#set-logged-out-users-role-select").val($("#set-logged-out-users-role-select").find("option[selected]").val() ?? "");
+  $("#set-logged-out-users-role-select").val($("#set-logged-out-users-role-select option[selected]").val() ?? "");
   $("#set-logged-out-users-role").hide();
 });
 
@@ -1511,6 +1526,11 @@ $("#set-logged-out-users-role-confirm").on("click", async () => {
     },
     success: () => {
       $("#set-logged-out-users-role-success-toast").toast("show");
+      $("#set-logged-out-users-role").hide();
+      $("#set-logged-out-users-role-button").show();
+      const $newRole = $("#set-logged-out-users-role-select option:selected");
+      $("#set-logged-out-users-role-select option[selected]").removeAttr("selected");
+      $newRole.attr("selected", "");
     },
     error: xhr => {
       if (xhr.status === 500) {

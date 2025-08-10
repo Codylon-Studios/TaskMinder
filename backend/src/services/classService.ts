@@ -87,7 +87,7 @@ const classService = {
       defaultPermissionLevel: 0 // default setting when creating class is 0 - read only
     };
     try {
-      await prisma.$transaction(async tx => {
+      return await prisma.$transaction(async tx => {
         const createdClass = await tx.class.create({
           data: baseData
         });

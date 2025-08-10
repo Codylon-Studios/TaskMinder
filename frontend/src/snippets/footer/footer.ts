@@ -1,7 +1,7 @@
 import { colorTheme, isSite } from "../../global/global.js";
 
 const bottombarShown = window.innerWidth < 992 && $(".bottombar").length > 0;
-let bottombarHeight = 45;
+let bottombarHeight = 38 + Math.max(8, window.innerWidth / 100 * 1.5) * 1.5;
 if (/OS (18|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
   bottombarHeight += 16;
 }
