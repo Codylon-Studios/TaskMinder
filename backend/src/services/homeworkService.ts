@@ -5,18 +5,13 @@ import { isValidTeamId, BigIntreplacer, updateCacheData } from "../utils/validat
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../utils/logger";
+import { addHomeworkTypeBody, checkHomeworkTypeBody, deleteHomeworkTypeBody, editHomeworkTypeBody } from "../schemas/homeworkSchema";
 
 connectRedis();
 
 const homeworkService = {
   async addHomework(
-    reqData: {
-      subjectId: number;
-      content: string;
-      assignmentDate: number;
-      submissionDate: number;
-      teamId: number;
-    },
+    reqData: addHomeworkTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
@@ -56,7 +51,7 @@ const homeworkService = {
     io.emit("updateHomeworkData");
   },
 
-  async checkHomework(reqData: { homeworkId: number; checkStatus: string }, session: Session & Partial<SessionData>) {
+  async checkHomework(reqData: checkHomeworkTypeBody, session: Session & Partial<SessionData>) {
     const { homeworkId, checkStatus } = reqData;
 
     const accountId = session.account!.accountId;
@@ -91,7 +86,8 @@ const homeworkService = {
     io.emit("updateHomeworkData");
   },
 
-  async deleteHomework(homeworkId: number, session: Session & Partial<SessionData>) {
+  async deleteHomework(reqData: deleteHomeworkTypeBody, session: Session & Partial<SessionData>) {
+    const { homeworkId } = reqData;
     if (!homeworkId) {
       const err: RequestError = {
         name: "Bad Request",
@@ -122,14 +118,7 @@ const homeworkService = {
   },
 
   async editHomework(
-    reqData: {
-      homeworkId: number;
-      subjectId: number;
-      content: string;
-      assignmentDate: number;
-      submissionDate: number;
-      teamId: number;
-    },
+    reqData: editHomeworkTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;

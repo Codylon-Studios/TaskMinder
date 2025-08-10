@@ -1,35 +1,9 @@
 import homeworkService from "../services/homeworkService";
 import asyncHandler from "express-async-handler";
-import { z } from "zod";
 
 export const addHomework = asyncHandler(async (req, res, next) => {
-  const addHomeworkSchema = z.object({
-    subjectId: z.coerce.number(),
-    content: z.string(),
-    assignmentDate: z.coerce.number(),
-    submissionDate: z.coerce.number(),
-    teamId: z.coerce.number()
-  });
-  const parseResult = addHomeworkSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          subjectId: { type: "number" },
-          content: { type: "string" },
-          assignmentDate: { type: "number" },
-          submissionDate: { type: "number" },
-          teamId: { type: "number" }
-        },
-        required: ["subjectId", "content", "assignmentDate", "submissionDate", "teamId"]
-      }
-    });
-    return;
-  }
   try {
-    await homeworkService.addHomework(parseResult.data, req.session);
+    await homeworkService.addHomework(req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -38,27 +12,8 @@ export const addHomework = asyncHandler(async (req, res, next) => {
 });
 
 export const checkHomework = asyncHandler(async (req, res, next) => {
-  const checkHomeworkSchema = z.object({
-    homeworkId: z.coerce.number(),
-    checkStatus: z.string()
-  });
-  const parseResult = checkHomeworkSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          homeworkId: { type: "number" },
-          checkStatus: { type: "string" }
-        },
-        required: ["homeworkId", "checkStatus"]
-      }
-    });
-    return;
-  }
   try {
-    await homeworkService.checkHomework(parseResult.data, req.session);
+    await homeworkService.checkHomework(req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -67,25 +22,8 @@ export const checkHomework = asyncHandler(async (req, res, next) => {
 });
 
 export const deleteHomework = asyncHandler(async (req, res, next) => {
-  const deleteHomeworkSchema = z.object({
-    homeworkId: z.coerce.number()
-  });
-  const parseResult = deleteHomeworkSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          homeworkId: { type: "number" }
-        },
-        required: ["homeworkId"]
-      }
-    });
-    return;
-  }
   try {
-    await homeworkService.deleteHomework(parseResult.data.homeworkId, req.session);
+    await homeworkService.deleteHomework(req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -94,35 +32,8 @@ export const deleteHomework = asyncHandler(async (req, res, next) => {
 });
 
 export const editHomework = asyncHandler(async (req, res, next) => {
-  const editHomeworkSchema = z.object({
-    homeworkId: z.coerce.number(),
-    subjectId: z.coerce.number(),
-    content: z.string(),
-    assignmentDate: z.coerce.number(),
-    submissionDate: z.coerce.number(),
-    teamId: z.coerce.number()
-  });
-  const parseResult = editHomeworkSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          homeworkId: { type: "number" },
-          subjectId: { type: "number" },
-          content: { type: "string" },
-          assignmentDate: { type: "number" },
-          submissionDate: { type: "number" },
-          teamId: { type: "number" }
-        },
-        required: ["homeworkId", "subjectId", "content", "assignmentDate", "submissionDate", "teamId"]
-      }
-    });
-    return;
-  }
   try {
-    await homeworkService.editHomework(parseResult.data, req.session);
+    await homeworkService.editHomework(req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
