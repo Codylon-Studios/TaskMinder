@@ -162,9 +162,7 @@ export const setClassMembersPermissions = asyncHandler(
       return;
     }
     try {
-      await classService.setClassMembersPermissions(
-        parseResult.data.classMembers
-      );
+      await classService.setClassMembersPermissions(parseResult.data.classMembers, req.session);
       res.sendStatus(200);
     } 
     catch (error) {
@@ -213,7 +211,7 @@ export const kickClassMembers = asyncHandler(async (req, res, next) => {
     return;
   }
   try {
-    await classService.kickClassMember(parseResult.data.classMembers);
+    await classService.kickClassMember(parseResult.data.classMembers, req.session);
     res.sendStatus(200);
   } 
   catch (error) {

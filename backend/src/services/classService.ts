@@ -356,16 +356,40 @@ const classService = {
     members: {
       accountId: number;
       permissionLevel: number;
-    }[]
+    }[],
+    session: Session & Partial<SessionData>
   ) {
     await prisma.$transaction(async tx => {
       for (const member of members) {
-        await tx.joinedClass.update({
-          where: { accountId: member.accountId },
+        await tx.joinedClass.updateMany({
+          where: { 
+            accountId: member.accountId,
+            classId: parseInt(session.classId!, 10)
+          },
           data: {
             permissionLevel: member.permissionLevel
           }
         });
+      }
+
+      // Check if there is at least one admin left
+      const adminExists = await tx.joinedClass.findFirst({
+        where: {
+          classId: parseInt(session.classId!, 10),
+          permissionLevel: 3
+        }
+      });
+
+      console.log(adminExists);
+
+      if (!adminExists) {
+        const err: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "At least one logged in admin must be remaining after this action.",
+          expected: true
+        };
+        throw err;
       }
     });
   },
@@ -393,14 +417,16 @@ const classService = {
   async kickClassMember(
     classMembersToBeKicked: {
       accountId: number;
-    }[]
+    }[],
+    session: Session & Partial<SessionData>
   ) {
     await prisma.$transaction(async tx => {
       for (const classMember of classMembersToBeKicked) {
         try {
-          await tx.joinedClass.delete({
+          await tx.joinedClass.deleteMany({
             where: {
-              accountId: classMember.accountId
+              accountId: classMember.accountId,
+              classId: parseInt(session.classId!, 10)
             }
           });
           await tx.joinedTeams.deleteMany({
@@ -423,6 +449,23 @@ const classService = {
           };
           throw err;
         }
+      }
+      // Check if there is at least one admin left
+      const adminExists = await tx.joinedClass.findFirst({
+        where: {
+          classId: parseInt(session.classId!, 10),
+          permissionLevel: 3
+        }
+      });
+
+      if (!adminExists) {
+        const err: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "At least one logged in admin must be remaining after this action.",
+          expected: true
+        };
+        throw err;
       }
     });
   },

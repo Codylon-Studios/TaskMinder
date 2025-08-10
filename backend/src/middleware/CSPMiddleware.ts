@@ -8,8 +8,8 @@ export const CSPMiddleware = (): RequestHandler => {
         "default-src": ["'self'"],
         "script-src": [
           "'self'",
-          "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
-          "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='"
+          "'sha256-QFw+QUzHJldIS6KPHm5fwXGah0NptK7NyfaX02zG9nc='",
+          "'sha256-3fZXNfKWLWGx+X4+QnkmeW5Tkw85iCAvVLYdxv26qD4='"
         ],
         "connect-src": ["'self'", "wss://*"],
         "style-src": ["'self'", "'unsafe-inline'"],
