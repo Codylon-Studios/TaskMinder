@@ -5,6 +5,14 @@ import { BigIntreplacer } from "../utils/validateFunctions";
 import { sessionPool } from "../config/pg";
 import logger from "../utils/logger";
 import { redisClient } from "../config/redis";
+import { 
+  changeDefaultPermissionTypeBody, 
+  createClassTypeBody, 
+  joinClassTypeBody, 
+  kickClassMembersTypeBody, 
+  setClassMembersPermissionsTypeBody, 
+  updateDSBMobileDataTypeBody 
+} from "../schemas/classSchema";
 
 function generateRandomBase62String(length: number = 20): string {
   const chars: string[] = [];
@@ -59,10 +67,7 @@ const classService = {
   },
 
   async createClass(
-    reqData: {
-      classDisplayName: string;
-      isTestClass: boolean;
-    },
+    reqData: createClassTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { classDisplayName, isTestClass } = reqData;
@@ -154,7 +159,8 @@ const classService = {
     throw err;
   },
 
-  async joinClass(classCode: string, session: Session & Partial<SessionData>) {
+  async joinClass(reqData: joinClassTypeBody, session: Session & Partial<SessionData>) {
+    const { classCode } = reqData;
     if (session.classId) {
       const err: RequestError = {
         name: "Bad Request",
@@ -309,12 +315,7 @@ const classService = {
     });
   },
   async updateDSBMobileData(
-    reqData: {
-      dsbMobileActivated: boolean;
-      dsbMobileUser?: string | null;
-      dsbMobilePassword?: string | null;
-      dsbMobileClass?: string | null;
-    },
+    reqData: updateDSBMobileDataTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const {
@@ -337,9 +338,7 @@ const classService = {
     });
   },
   async changeDefaultPermission(
-    reqData: {
-      defaultPermission: number;
-    },
+    reqData: changeDefaultPermissionTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { defaultPermission } = reqData;
@@ -353,14 +352,12 @@ const classService = {
     });
   },
   async setClassMembersPermissions(
-    members: {
-      accountId: number;
-      permissionLevel: number;
-    }[],
+    reqData: setClassMembersPermissionsTypeBody,
     session: Session & Partial<SessionData>
   ) {
+    const { classMembers } = reqData;
     await prisma.$transaction(async tx => {
-      for (const member of members) {
+      for (const member of classMembers) {
         await tx.joinedClass.updateMany({
           where: { 
             accountId: member.accountId,
@@ -379,8 +376,6 @@ const classService = {
           permissionLevel: 3
         }
       });
-
-      console.log(adminExists);
 
       if (!adminExists) {
         const err: RequestError = {
@@ -415,13 +410,12 @@ const classService = {
     }));
   },
   async kickClassMember(
-    classMembersToBeKicked: {
-      accountId: number;
-    }[],
+    reqData: kickClassMembersTypeBody,
     session: Session & Partial<SessionData>
   ) {
+    const { classMembers } = reqData;
     await prisma.$transaction(async tx => {
-      for (const classMember of classMembersToBeKicked) {
+      for (const classMember of classMembers) {
         try {
           await tx.joinedClass.deleteMany({
             where: {
@@ -511,8 +505,7 @@ const classService = {
       const result = await sessionPool.query(deleteQuery);
       logger.info(`Successfully deleted ${result.rowCount} unregistered user sessions for class ${classId}.`);
     } 
-    catch (error) {
-      console.log(error);
+    catch {
       const err: RequestError = {
         name: "Internal Server Error",
         status: 500,

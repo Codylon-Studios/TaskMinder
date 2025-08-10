@@ -1,4 +1,3 @@
-import z from "zod";
 import classService from "../services/classService";
 import asyncHandler from "express-async-handler";
 
@@ -13,27 +12,8 @@ export const getClassInfo = asyncHandler(async (req, res, next) => {
 });
 
 export const createClass = asyncHandler(async (req, res, next) => {
-  const createClassSchema = z.object({
-    classDisplayName: z.string(),
-    isTestClass: z.boolean()
-  });
-  const parseResult = createClassSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          classDisplayName: { type: "string" },
-          isTestClass: { type: "boolean" }
-        },
-        required: ["classDisplayName", "isTestClass"]
-      }
-    });
-    return;
-  }
   try {
-    const classsCode = await classService.createClass(parseResult.data, req.session);
+    const classsCode = await classService.createClass(req.body, req.session);
     res.status(200).json(classsCode);
   } 
   catch (error) {
@@ -52,25 +32,8 @@ export const generateClassCode = asyncHandler(async (req, res, next) => {
 });
 
 export const joinClass = asyncHandler(async (req, res, next) => {
-  const joinClassSchema = z.object({
-    classCode: z.string()
-  });
-  const parseResult = joinClassSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          classCode: { type: "string" }
-        },
-        required: ["classCode"]
-      }
-    });
-    return;
-  }
   try {
-    const className = await classService.joinClass(parseResult.data.classCode, req.session);
+    const className = await classService.joinClass(req.body, req.session);
     res.status(200).json(className);
   } 
   catch (error) {
@@ -100,25 +63,8 @@ export const deleteClass = asyncHandler(async (req, res, next) => {
 
 // for unregistered users
 export const changeDefaultPermission = asyncHandler(async (req, res, next) => {
-  const changeDefaultPermissionSchema = z.object({
-    defaultPermission: z.coerce.number()
-  });
-  const parseResult = changeDefaultPermissionSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          defaultPermission: { type: "number" }
-        },
-        required: ["defaultPermission"]
-      }
-    });
-    return;
-  }
   try {
-    await classService.changeDefaultPermission(parseResult.data, req.session);
+    await classService.changeDefaultPermission(req.body, req.session);
     res.sendStatus(200);
   } 
   catch (error) {
@@ -129,40 +75,8 @@ export const changeDefaultPermission = asyncHandler(async (req, res, next) => {
 // for registered users
 export const setClassMembersPermissions = asyncHandler(
   async (req, res, next) => {
-    const setClassMembersPermissionsSchema = z.object({
-      classMembers: z.array(
-        z.object({
-          accountId: z.number(),
-          permissionLevel: z.number()
-        })
-      )
-    });
-    const parseResult = setClassMembersPermissionsSchema.safeParse(req.body);
-    if (!parseResult.success) {
-      res.status(400).json({
-        error: "Invalid request format",
-        expectedFormat: {
-          type: "object",
-          properties: {
-            classMembers: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  accountId: { type: "number" },
-                  permissionLevel: { type: "number" }
-                },
-                required: ["accountId", "permissionLevel"]
-              }
-            }
-          },
-          required: ["members"]
-        }
-      });
-      return;
-    }
     try {
-      await classService.setClassMembersPermissions(parseResult.data.classMembers, req.session);
+      await classService.setClassMembersPermissions(req.body, req.session);
       res.sendStatus(200);
     } 
     catch (error) {
@@ -182,36 +96,8 @@ export const getClassMembers = asyncHandler(async (req, res, next) => {
 });
 
 export const kickClassMembers = asyncHandler(async (req, res, next) => {
-  const kickClassMembersSchema = z.object({
-    classMembers: z.array(
-      z.object({
-        accountId: z.coerce.number()
-      })
-    )
-  });
-  const parseResult = kickClassMembersSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          classMembers: {
-            type: "array",
-            items: {
-              type: "object",
-              accountId: { type: "number" }
-            },
-            required: ["accountId"]
-          }
-        },
-        required: ["classMembers"]
-      }
-    });
-    return;
-  }
   try {
-    await classService.kickClassMember(parseResult.data.classMembers, req.session);
+    await classService.kickClassMember(req.body, req.session);
     res.sendStatus(200);
   } 
   catch (error) {
@@ -220,28 +106,8 @@ export const kickClassMembers = asyncHandler(async (req, res, next) => {
 });
 
 export const updateDSBMobileData = asyncHandler(async (req, res, next) => {
-  const updateDSBMobileDataSchema = z.object({
-    dsbMobileActivated: z.boolean(),
-    dsbMobileUser: z.string().nullable(),
-    dsbMobilePassword: z.string().nullable(),
-    dsbMobileClass: z.string().nullable()
-  });
-  const parseResult = updateDSBMobileDataSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          dsbMobileActivated: { type: "boolean" }
-        },
-        required: ["dsbMobileActivated"]
-      }
-    });
-    return;
-  }
   try {
-    await classService.updateDSBMobileData(parseResult.data, req.session);
+    await classService.updateDSBMobileData(req.body, req.session);
     res.sendStatus(200);
   } 
   catch (error) {
@@ -260,25 +126,8 @@ export const getUsersLoggedOutRole = asyncHandler(async (req, res, next) => {
 });
 
 export const setUsersLoggedOutRole = asyncHandler(async (req, res, next) => {
-  const setUsersLoggedOutRoleSchema = z.object({
-    role: z.coerce.number().int().min(0).max(3)
-  });
-  const parseResult = setUsersLoggedOutRoleSchema.safeParse(req.body);
-  if (!parseResult.success) {
-    res.status(400).json({
-      error: "Invalid request format",
-      expectedFormat: {
-        type: "object",
-        properties: {
-          role: { type: "integer", min: 0, max: 3 }
-        },
-        required: ["role"]
-      }
-    });
-    return;
-  }
   try {
-    await classService.setUsersLoggedOutRole(parseResult.data, req.session);
+    await classService.setUsersLoggedOutRole(req.body, req.session);
     res.sendStatus(200);
   } 
   catch (error) {

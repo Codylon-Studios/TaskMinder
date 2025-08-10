@@ -13,6 +13,7 @@ import {
 } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
+import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody } from "../schemas/eventSchema";
 
 export const eventService = {
   async getEventData(session: Session & Partial<SessionData>) {
@@ -53,15 +54,7 @@ export const eventService = {
   },
 
   async addEvent(
-    reqData: {
-      eventTypeId: number;
-      name: string;
-      description: string | null;
-      startDate: number;
-      lesson: string | null;
-      endDate: number | null;
-      teamId: number;
-    },
+    reqData: addEventTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
@@ -112,16 +105,7 @@ export const eventService = {
   },
 
   async editEvent(
-    reqData: {
-      eventId: number;
-      eventTypeId: number;
-      name: string;
-      description: string | null;
-      startDate: number;
-      lesson: string | null;
-      endDate: number | null;
-      teamId: number;
-    },
+    reqData: editEventTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
@@ -174,7 +158,8 @@ export const eventService = {
     }
   },
 
-  async deleteEvent(eventId: number, session: Session & Partial<SessionData>) {
+  async deleteEvent(reqData: deleteEventTypeBody, session: Session & Partial<SessionData>) {
+    const { eventId } = reqData;
     if (!eventId) {
       const err: RequestError = {
         name: "Bad Request",
@@ -242,8 +227,10 @@ export const eventService = {
     return eventTypeData;
   },
 
-  async setEventTypeData(eventTypes: { eventTypeId: number | ""; name: string; color: string }[], session: Session & Partial<SessionData>) {
-
+  async setEventTypeData(
+    reqData: setEventTypesTypeBody,
+    session: Session & Partial<SessionData>) {
+    const { eventTypes } = reqData;
     const classId = parseInt(session.classId!);
 
     await prisma.$transaction(async tx => {
