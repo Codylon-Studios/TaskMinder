@@ -8,7 +8,7 @@ export const addHomework = asyncHandler(async (req, res, next) => {
     content: z.string(),
     assignmentDate: z.coerce.number(),
     submissionDate: z.coerce.number(),
-    teamId: z.coerce.number(),
+    teamId: z.coerce.number()
   });
   const parseResult = addHomeworkSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -21,23 +21,18 @@ export const addHomework = asyncHandler(async (req, res, next) => {
           content: { type: "string" },
           assignmentDate: { type: "number" },
           submissionDate: { type: "number" },
-          teamId: { type: "number" },
+          teamId: { type: "number" }
         },
-        required: [
-          "subjectId",
-          "content",
-          "assignmentDate",
-          "submissionDate",
-          "teamId",
-        ],
-      },
+        required: ["subjectId", "content", "assignmentDate", "submissionDate", "teamId"]
+      }
     });
     return;
   }
   try {
     await homeworkService.addHomework(parseResult.data, req.session);
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
@@ -45,7 +40,7 @@ export const addHomework = asyncHandler(async (req, res, next) => {
 export const checkHomework = asyncHandler(async (req, res, next) => {
   const checkHomeworkSchema = z.object({
     homeworkId: z.coerce.number(),
-    checkStatus: z.string(),
+    checkStatus: z.string()
   });
   const parseResult = checkHomeworkSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -55,24 +50,25 @@ export const checkHomework = asyncHandler(async (req, res, next) => {
         type: "object",
         properties: {
           homeworkId: { type: "number" },
-          checkStatus: { type: "string" },
+          checkStatus: { type: "string" }
         },
-        required: ["homeworkId", "checkStatus"],
-      },
+        required: ["homeworkId", "checkStatus"]
+      }
     });
     return;
   }
   try {
     await homeworkService.checkHomework(parseResult.data, req.session);
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export const deleteHomework = asyncHandler(async (req, res, next) => {
   const deleteHomeworkSchema = z.object({
-    homeworkId: z.coerce.number(),
+    homeworkId: z.coerce.number()
   });
   const parseResult = deleteHomeworkSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -81,20 +77,18 @@ export const deleteHomework = asyncHandler(async (req, res, next) => {
       expectedFormat: {
         type: "object",
         properties: {
-          homeworkId: { type: "number" },
+          homeworkId: { type: "number" }
         },
-        required: ["homeworkId"],
-      },
+        required: ["homeworkId"]
+      }
     });
     return;
   }
   try {
-    await homeworkService.deleteHomework(
-      parseResult.data.homeworkId,
-      req.session
-    );
+    await homeworkService.deleteHomework(parseResult.data.homeworkId, req.session);
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
@@ -106,7 +100,7 @@ export const editHomework = asyncHandler(async (req, res, next) => {
     content: z.string(),
     assignmentDate: z.coerce.number(),
     submissionDate: z.coerce.number(),
-    teamId: z.coerce.number(),
+    teamId: z.coerce.number()
   });
   const parseResult = editHomeworkSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -120,44 +114,38 @@ export const editHomework = asyncHandler(async (req, res, next) => {
           content: { type: "string" },
           assignmentDate: { type: "number" },
           submissionDate: { type: "number" },
-          teamId: { type: "number" },
+          teamId: { type: "number" }
         },
-        required: [
-          "homeworkId",
-          "subjectId",
-          "content",
-          "assignmentDate",
-          "submissionDate",
-          "teamId",
-        ],
-      },
+        required: ["homeworkId", "subjectId", "content", "assignmentDate", "submissionDate", "teamId"]
+      }
     });
     return;
   }
   try {
     await homeworkService.editHomework(parseResult.data, req.session);
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export const getHomeworkData = asyncHandler(async (req, res, next) => {
   try {
-    const homeworkData = await homeworkService.getHomeworkData();
+    const homeworkData = await homeworkService.getHomeworkData(req.session);
     res.status(200).json(homeworkData);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export const getHomeworkCheckedData = asyncHandler(async (req, res, next) => {
   try {
-    const homeworkCheckedData = await homeworkService.getHomeworkCheckedData(
-      req.session
-    );
+    const homeworkCheckedData = await homeworkService.getHomeworkCheckedData(req.session);
     res.status(200).json(homeworkCheckedData);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
@@ -168,5 +156,5 @@ export default {
   deleteHomework,
   editHomework,
   getHomeworkData,
-  getHomeworkCheckedData,
+  getHomeworkCheckedData
 };

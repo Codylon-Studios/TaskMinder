@@ -1,10 +1,7 @@
 <!doctype html>
 <html lang="de">
   <head>
-    <meta
-      name="description"
-      content="Log in or create/join a class to synchronize homework events and more with your classmates!."
-    />
+    <meta name="description" content="Log in or create/join a class to synchronize homework events and more with your classmates!." />
   </head>
 
   <body>
@@ -12,27 +9,10 @@
 
     <div class="container">
       <div class="nav nav-tabs mb-3">
-        <button
-          class="nav-link active"
-          data-bs-toggle="tab"
-          data-bs-target="#nav-settings-app"
-        >
-          App
-        </button>
-        <button
-          class="nav-link"
-          data-bs-toggle="tab"
-          data-bs-target="#nav-settings-student"
-        >
-          Schüler
-        </button>
-        <button
-          class="nav-link"
-          data-bs-toggle="tab"
-          data-bs-target="#nav-settings-class"
-        >
-          Klasse
-        </button>
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#nav-settings-app">App</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-account">Account</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-student">Schüler:in</button>
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-class">Klasse</button>
       </div>
 
       <div class="tab-content container">
@@ -43,57 +23,22 @@
               <input class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
-          <div class="form-text mb-4">
-            Aktiviert / deaktiviert Animationen in der App wie zum Beispiel beim
-            Kalender.
-          </div>
+          <div class="form-text mb-4">Aktiviert / deaktiviert Animationen in der App wie zum Beispiel beim Kalender.</div>
 
           <div class="d-flex align-items-center mb-2">
             <label class="me-3" for="color-theme">Farbthema</label>
             <div class="btn-group" id="color-theme">
-              <input
-                type="radio"
-                class="btn-check"
-                name="color-theme"
-                id="color-theme-auto"
-                checked
-              />
-              <label
-                class="btn btn-sm btn-outline-primary fw-semibold"
-                for="color-theme-auto"
-                >Automatisch</label
-              >
+              <input type="radio" class="btn-check" name="color-theme" id="color-theme-auto" checked />
+              <label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-auto">Automatisch</label>
 
-              <input
-                type="radio"
-                class="btn-check"
-                name="color-theme"
-                id="color-theme-light"
-                checked
-              />
-              <label
-                class="btn btn-sm btn-outline-primary fw-semibold"
-                for="color-theme-light"
-                >Hell</label
-              >
+              <input type="radio" class="btn-check" name="color-theme" id="color-theme-light" checked />
+              <label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-light">Hell</label>
 
-              <input
-                type="radio"
-                class="btn-check"
-                name="color-theme"
-                id="color-theme-dark"
-              />
-              <label
-                class="btn btn-sm btn-outline-primary fw-semibold"
-                for="color-theme-dark"
-                >Dunkel</label
-              >
+              <input type="radio" class="btn-check" name="color-theme" id="color-theme-dark" />
+              <label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-dark">Dunkel</label>
             </div>
           </div>
-          <div class="form-text mb-4">
-            Bestimmt das Farbthema der App. Bei Automatisch folgt das Farbthema
-            dem deines Geräts.
-          </div>
+          <div class="form-text mb-4">Bestimmt das Farbthema der App. Bei Automatisch folgt das Farbthema dem deines Geräts.</div>
 
           <div class="d-flex align-items-center mb-2">
             <label class="me-3" for="display-footer">Fußzeile</label>
@@ -102,81 +47,161 @@
             </div>
           </div>
           <div class="form-text mb-4">
-            Zeigt / Versteckt die Fußzeile, in der rechtliche Hinweise und
-            ähnliches sind. Die Links finden sich auch unter "Über TaskMinder".
+            Zeigt / Versteckt die Fußzeile, in der rechtliche Hinweise und ähnliches sind. Die Links finden sich auch unter "Über TaskMinder".
           </div>
         </div>
-        <div class="tab-pane fade" id="nav-settings-student">
-          <div
-            class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info"
-          >
+
+        <div class="tab-pane fade" id="nav-settings-account">
+          <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-logged-in-info">
             <i class="fa-solid fa-circle-xmark mx-1"></i>
             <div>
-              <div class="d-block">
-                Für diese Einstellungen musst du einer Klasse beigetreten sein.
+              <div class="d-block">Für diese Einstellungen musst du angemeldet sein.</div>
+              <div class="d-block">Du kannst dich über das Icon oben rechts anmelden oder registrieren.</div>
+            </div>
+          </div>
+
+          <div id="settings-account">
+            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
+              <i class="fa-solid fa-circle-info mx-1"></i>
+              <div class="d-block">Diese Einstellungen betreffen deinen gesamten Account, auch geräteübergreifend.</div>
+            </div>
+
+            <button class="btn btn-primary fw-bold" id="logout-button">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              Abmelden
+            </button>
+            <div class="form-text mb-4">Du kannst dich jederzeit wieder anmelden. Du musst dich auf allen Geräten einzeln abmelden.</div>
+
+            <button class="btn btn-warning fw-bold" id="change-password-button">
+              <i class="fa-solid fa-unlock-keyhole"></i>
+              Passwort ändern
+            </button>
+            <div id="change-password">
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-invalid-password">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Das Passwort ist falsch!</span>
               </div>
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-not-matching-passwords">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Die Passwörter stimmen nicht überein!</span>
+              </div>
+              <div class="alert alert-warning p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-insecure-password">
+                <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+                <span class="d-block me-1">Das Passwort ist nicht sehr sicher!</span>
+              </div>
+
+              <div class="mb-2 d-flex flex-column flex-md-row gap-2">
+                <input class="form-control w-fit-content" type="password" placeholder="Dein altes Passwort" id="change-password-old" />
+                <input class="form-control w-fit-content" type="password" placeholder="Dein neues Passwort" id="change-password-new" />
+                <input class="form-control w-fit-content" type="password" placeholder="Wiederhole dein neues Passwort" id="change-password-repeat" />
+              </div>
+              <button class="btn btn-secondary fw-bold" id="change-password-cancel">
+                <i class="fa-solid fa-xmark"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-warning fw-bold" id="change-password-confirm">
+                <i class="fa-solid fa-unlock-keyhole"></i>
+                Bestätigen
+              </button>
+            </div>
+            <div class="form-text mb-4">Achtung, das kann nicht rückgängig gemacht werden!</div>
+
+            <button class="btn btn-danger fw-bold" id="delete-account-button">
+              <i class="fa-solid fa-user-slash"></i>
+              Account löschen
+            </button>
+            <div id="delete-account">
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="delete-account-invalid-password">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Das Passwort ist falsch!</span>
+              </div>
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="delete-account-still-in-class">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Du bist noch in einer Klasse. Bitte verlasse sie zuerst unter "Schüler".</span>
+              </div>
+              <div class="mb-2">
+                <input class="form-control w-fit-content" type="password" placeholder="Dein Passwort" id="delete-account-password" />
+              </div>
+              <button class="btn btn-secondary fw-bold" id="delete-account-cancel">
+                <i class="fa-solid fa-xmark"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-danger fw-bold" id="delete-account-confirm">
+                <i class="fa-solid fa-user-slash"></i>
+                Bestätigen
+              </button>
+            </div>
+            <div class="form-text mb-4">Achtung, das kann nicht rückgängig gemacht werden!</div>
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="nav-settings-student">
+          <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
+            <i class="fa-solid fa-circle-xmark mx-1"></i>
+            <div>
+              <div class="d-block">Für diese Einstellungen musst du einer Klasse beigetreten sein.</div>
               <div class="d-block">
                 <a href="/join?action=join">Klasse beitreten</a>
               </div>
             </div>
           </div>
 
-          <div id="settings-student" class="d-none">
-            <div
-              class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content"
-            >
+          <div id="settings-student">
+            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
               <i class="fa-solid fa-circle-info mx-1"></i>
-              <div class="d-block">
-                Wenn du einen Account hast, werden diese Einstellungen mit
-                anderen angemeldeten Geräten synchronisiert.
-              </div>
+              <div class="d-block">Wenn du einen Account hast, werden diese Einstellungen mit anderen angemeldeten Geräten synchronisiert.</div>
             </div>
 
             <div class="mb-2">
               <h5 class="mb-2" for="team-selection-list">Teams auswählen</h5>
-              <div
-                class="mb-2 ms-2 row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6"
-                id="team-selection-list"
-              >
+              <div class="mb-2 ms-2 row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 row-cols-xxl-6" id="team-selection-list">
                 <!--Gets filled-->
               </div>
-              <button
-                class="btn btn-primary btn-sm fw-semibold"
-                id="team-selection-save"
-              >
-                Speichern
-              </button>
+              <button class="btn btn-primary btn-sm fw-semibold" id="team-selection-save">Speichern</button>
             </div>
             <div class="form-text mb-1">
-              Teams sind Untergruppen deiner Klasse, zum Beispiel für
-              verschiedene Sprachkurse. Du siehst dann nur die Hausaufgaben und
-              Ereignisse der Teams, die du hier ausgewählt hast.
+              Teams sind Untergruppen deiner Klasse, zum Beispiel für verschiedene Sprachkurse. Du siehst dann nur die Hausaufgaben und Ereignisse der
+              Teams, die du hier ausgewählt hast.
             </div>
-            <div class="form-text mb-4">
-              Du kannst die verfügbaren Teams deiner Klasse unter "Klasse"
-              einstellen.
+            <div class="form-text mb-4">Du kannst die verfügbaren Teams deiner Klasse unter "Klasse" einstellen.</div>
+
+            <button class="btn btn-danger fw-bold" id="leave-class-button">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              Klasse verlassen
+            </button>
+            <div id="leave-class">
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="leave-class-last-admin">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">
+                  Du bist der letzte Admin in der Klasse. Bitte lösche die Klasse oder ernenne einen anderen Nutzer zum Admin.
+                </span>
+              </div>
+              <button class="btn btn-secondary fw-bold" id="leave-class-cancel">
+                <i class="fa-solid fa-xmark"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-danger fw-bold" id="leave-class-confirm">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                Bestätigen
+              </button>
             </div>
+            <div class="form-text mb-4">Achtung, das kann nicht rückgängig gemacht werden!</div>
           </div>
         </div>
+
         <div class="tab-pane fade" id="nav-settings-class">
-          <div
-            class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info"
-          >
+          <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
             <i class="fa-solid fa-circle-xmark mx-1"></i>
             <div>
-              <div class="d-block">
-                Für diese Einstellungen musst du einer Klasse beigetreten sein.
-              </div>
+              <div class="d-block">Für diese Einstellungen musst du einer Klasse beigetreten sein.</div>
               <div class="d-block">
                 <a href="/join?action=join">Klasse beitreten</a>
               </div>
             </div>
           </div>
 
-          <div id="settings-class" class="d-none">
-            <div
-              class="alert alert-warning p-2 d-flex align-items-center gap-2 width-fit-content"
-            >
+          <div id="settings-class">
+            <div class="alert alert-warning p-2 d-flex align-items-center gap-2 width-fit-content">
               <i class="fa-solid fa-triangle-exclamation mx-1"></i>
               <div>
                 <div class="d-block">
@@ -188,236 +213,318 @@
             </div>
 
             <div class="row align-items-center mb-2">
-              <div class="col-12 col-md-auto">
-                <label for="classcode-container" class="col-form-label mb-0"
-                  >Euer Klassencode</label
-                >
+              <div class="col-12 col-lg-auto">
+                <label for="class-code-container" class="col-form-label mb-0">Euer Klassencode</label>
               </div>
-              <div class="col-12 col-md" id="classcode-container">
-                <div class="input-group">
-                  <input
-                    id="classcode"
-                    type="text"
-                    class="form-control"
-                    value=""
-                    readonly
-                  />
-                  <button
-                    id="classcode-copy-link"
-                    class="btn btn-primary fw-semibold"
-                    type="button"
-                    aria-label="Einladungslink kopieren"
-                  >
-                    <span
-                      class="d-inline d-flex align-items-center"
-                      id="classcode-copy-text"
-                    >
-                      <i class="fa-regular fa-copy me-2 me-sm-1"></i>
-                      Einladungslink <br class="d-block d-sm-none" />
-                      kopieren
-                    </span>
-                    <span
-                      class="classcode-copied-text d-none"
-                      id="classcode-copied-text"
-                    >
-                      <i class="fa-solid fa-circle-check me-1"></i> Kopiert
-                    </span>
+              <div class="col-12 col-lg" id="class-code-container">
+                <div class="d-flex gap-2 flex-column flex-lg-row">
+                  <input id="class-code" type="text" class="form-control user-select-all" value="" readonly />
+                  <button class="btn btn-primary w-100 fw-semibold" id="invite-copy-link">
+                    <i class="fa-solid fa-link"></i>
+                    Einladungslink kopieren
+                  </button>
+                  <button class="btn btn-primary w-100 fw-semibold" id="invite-qrcode" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
+                    <i class="fa-solid fa-qrcode"></i>
+                    QR-Code anzeigen
                   </button>
                 </div>
               </div>
             </div>
             <div class="form-text mb-4">
-              Um die Inhalte eurer Klasse zu sehen, müssen deine Mitschülerinnen
-              und Mitschüler den Klassencode eingeben. Du kannst ihnen auch den
+              Um die Inhalte eurer Klasse zu sehen, müssen deine Mitschülerinnen und Mitschüler den Klassencode eingeben. Du kannst ihnen auch den
               Einladungslink schicken.
             </div>
 
-            <div class="mb-2">
-              <h5 class="mb-2">
-                <span class="display-toggle" id="teams-toggle"
-                  ><span class="fa fa-caret-right"></span
-                ></span>
+            <button class="btn btn-danger fw-bold" id="delete-class-button">
+              <i class="fa-solid fa-users-slash"></i>
+              Klasse löschen
+            </button>
+            <div id="delete-class">
+              <button class="btn btn-secondary fw-bold" id="delete-class-cancel">
+                <i class="fa-solid fa-xmark"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-danger fw-bold" id="delete-class-confirm">
+                <i class="fa-solid fa-users-slash"></i>
+                Bestätigen
+              </button>
+            </div>
+            <div class="form-text mb-4">Achtung, das kann nicht rückgängig gemacht werden!</div>
+
+            <div class="mb-4">
+              <h5>
+                <span class="display-toggle" id="class-members-toggle">
+                  <span class="fa fa-caret-right"></span>
+                </span>
+                Klassenmitglieder:innen
+              </h5>
+              <div id="class-members-wrapper">
+                <div class="mb-2" id="class-members-list">
+                  <!--Gets filled-->
+                </div>
+                <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="class-members-cancel">Abbrechen</button>
+                <button class="btn btn-primary btn-sm fw-semibold" id="class-members-save">Speichern</button>
+                <div class="my-2 d-none" id="class-members-save-confirm-container">
+                  <span class="fw-bold text-danger">Achtung!</span>
+                  Es
+                  <span id="class-members-save-confirm-list"></span>
+                  entfernt! Für ein erneutes Beitreten braucht es den Klassencode! Erledigte Hausaufgaben und ausgewählte Teams werden unwiderruflich
+                  gelöscht!
+                </div>
+                <button class="btn btn-danger btn-sm fw-semibold d-none" id="class-members-save-confirm">Fortfahren</button>
+                <div class="form-text mt-2 mb-4">
+                  Hier kannst du die Schüler und Schülerinnen deiner Klasse sehen, die einen Account haben. Es gibt verschiedene Rollen. Jede höhere
+                  hat auch die Berechtigungen der niedrigeren.
+                  <br />
+                  <b>Mitglied:</b>
+                  Kann Informationen wie Hausaufgaben und Ereignisse nur sehen, nicht bearbeiten.
+                  <br />
+                  <b>Bearbeiter:in:</b>
+                  Kann Hausaufgaben und Ereignisse hinzufügen, bearbeiten und löschen.
+                  <br />
+                  <b>Manager:in:</b>
+                  Kann Klasseneinstellungen wie Teams, Ereignisarten, Fächer und Stundenplan anpassen.
+                  <br />
+                  <b>Admin:</b>
+                  Kann hier Berechtigungen von Klassenmitgliedern einstellen und die Klasse löschen. Es muss immer mindestens ein Admin in einer
+                  Klasse sein.
+                </div>
+
+                <button class="btn btn-danger fw-bold" id="kick-logged-out-users-button">
+                  <i class="fa-solid fa-users-slash"></i>
+                  Alle unangemeldeten Nutzer entfernen
+                </button>
+                <div id="kick-logged-out-users">
+                  <button class="btn btn-secondary fw-bold" id="kick-logged-out-users-cancel">
+                    <i class="fa-solid fa-xmark"></i>
+                    Abbrechen
+                  </button>
+                  <button class="btn btn-danger fw-bold" id="kick-logged-out-users-confirm">
+                    <i class="fa-solid fa-users-slash"></i>
+                    Bestätigen
+                  </button>
+                </div>
+                <div class="form-text">Achtung, das kann nicht rückgängig gemacht werden!</div>
+
+                <div class="mt-2">
+                  <div class="d-flex mb-1">
+                    <label class="col-form-label me-2" for="set-logged-out-users-role-select">Rolle für alle unangemeldeten Nutzer:</label>
+                    <select class="form-control w-fit-content" id="set-logged-out-users-role-select">
+                      <option value="0">Mitglied</option>
+                      <option value="1">Bearbeiter:in</option>
+                      <option value="2">Manager:in</option>
+                      <option value="3">Admin</option>
+                    </select>
+                  </div>
+                  <div id="set-logged-out-users-role">
+                    <button class="btn btn-secondary fw-bold" id="set-logged-out-users-role-cancel">
+                      <i class="fa-solid fa-xmark"></i>
+                      Abbrechen
+                    </button>
+                    <button class="btn btn-primary fw-bold" id="set-logged-out-users-role-confirm">
+                      <i class="fa-solid fa-check"></i>
+                      Bestätigen
+                    </button>
+                  </div>
+                </div>
+                <div class="form-text mt-2">Hier kannst du die Rolle für alle unangemeldeten Nutzer festlegen.</div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h5>
+                <span class="display-toggle" id="teams-toggle">
+                  <span class="fa fa-caret-right"></span>
+                </span>
                 Teams
               </h5>
-              <div class="mb-2 d-none" id="teams-list">
-                <!--Gets filled-->
+              <div id="teams-wrapper">
+                <div class="mb-2" id="teams-list">
+                  <!--Gets filled-->
+                </div>
+                <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="teams-cancel">Abbrechen</button>
+                <button class="btn btn-success btn-sm fw-semibold" id="new-team">Neues Team</button>
+                <button class="btn btn-primary btn-sm fw-semibold" id="teams-save">Speichern</button>
+                <div class="my-2 d-none" id="teams-save-confirm-container">
+                  <span class="fw-bold text-danger">Achtung!</span>
+                  Es werden alle Hausaufgaben, Ereignisse und Stundenplaneinträge
+                  <span id="teams-save-confirm-list"></span>
+                  gelöscht! Das kann nicht rückgängig gemacht werden!
+                </div>
+                <button class="btn btn-danger btn-sm fw-semibold d-none" id="teams-save-confirm">Fortfahren</button>
+                <div class="form-text mt-2">
+                  Teams sind Untergruppen deiner Klasse, zum Beispiel für verschiedene Sprachkurse. Schülerinnen und Schüler sehen dann nur die
+                  Hausaufgaben und Ereignisse der Teams, die sie unter "Schüler" ausgewählt haben.
+                </div>
               </div>
-              <button
-                class="btn btn-secondary btn-sm fw-semibold"
-                id="teams-cancel"
-              >
-                Abbrechen
-              </button>
-              <button class="btn btn-success btn-sm fw-semibold" id="new-team">
-                Neues Team
-              </button>
-              <button
-                class="btn btn-primary btn-sm fw-semibold"
-                id="teams-save"
-              >
-                Speichern
-              </button>
-              <div class="my-2 d-none" id="teams-save-confirm-container">
-                <span class="fw-bold text-danger">Achtung!</span>
-                Es werden alle Hausaufgaben, Ereignisse und Stundenplaneinträge
-                <span id="teams-save-confirm-list"></span> gelöscht! Das kann
-                nicht rückgängig gemacht werden!
-              </div>
-              <button
-                class="btn btn-danger btn-sm fw-semibold d-none"
-                id="teams-save-confirm"
-              >
-                Fortfahren
-              </button>
-            </div>
-            <div class="form-text mb-4">
-              Teams sind Untergruppen deiner Klasse, zum Beispiel für
-              verschiedene Sprachkurse. Schülerinnen und Schüler sehen dann nur
-              die Hausaufgaben und Ereignisse der Teams, die sie unter "Schüler"
-              ausgewählt haben.
             </div>
 
-            <div class="mb-2">
-              <h5 class="mb-2">
-                <span class="display-toggle" id="event-types-toggle"
-                  ><span class="fa fa-caret-right"></span
-                ></span>
+            <div class="mb-4">
+              <h5>
+                <span class="display-toggle" id="event-types-toggle">
+                  <span class="fa fa-caret-right"></span>
+                </span>
                 Ereignisarten
               </h5>
-              <div class="mb-2 d-none" id="event-types-list">
-                <!--Gets filled-->
+              <div id="event-types-wrapper">
+                <div class="mb-2" id="event-types-list">
+                  <!--Gets filled-->
+                </div>
+                <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="event-types-cancel">Abbrechen</button>
+                <button class="btn btn-success btn-sm fw-semibold" id="new-event-type">Neue Art</button>
+                <button class="btn btn-primary btn-sm fw-semibold" id="event-types-save">Speichern</button>
+                <div class="my-2 d-none" id="event-types-save-confirm-container">
+                  <span class="fw-bold text-danger">Achtung!</span>
+                  Es werden alle Ereignisse
+                  <span id="event-types-save-confirm-list"></span>
+                  gelöscht! Das kann nicht rückgängig gemacht werden!
+                </div>
+                <button class="btn btn-danger btn-sm fw-semibold d-none" id="event-types-save-confirm">Fortfahren</button>
+                <div class="form-text mt-2">
+                  Mit Ereignisarten kannst du verschiedene Ereignisse gruppieren, zum Beispiel nach Prüfungen, Ausflügen oder Ferien. Durch
+                  verschiedene Farben kannst du die Ereignisse besser unterscheiden.
+                </div>
               </div>
-              <button
-                class="btn btn-secondary btn-sm fw-semibold"
-                id="event-types-cancel"
-              >
-                Abbrechen
-              </button>
-              <button
-                class="btn btn-success btn-sm fw-semibold"
-                id="new-event-type"
-              >
-                Neue Art
-              </button>
-              <button
-                class="btn btn-primary btn-sm fw-semibold"
-                id="event-types-save"
-              >
-                Speichern
-              </button>
-              <div class="my-2 d-none" id="event-types-save-confirm-container">
-                <span class="fw-bold text-danger">Achtung!</span>
-                Es werden alle Ereignisse
-                <span id="event-types-save-confirm-list"></span> gelöscht! Das
-                kann nicht rückgängig gemacht werden!
-              </div>
-              <button
-                class="btn btn-danger btn-sm fw-semibold d-none"
-                id="event-types-save-confirm"
-              >
-                Fortfahren
-              </button>
             </div>
-            <div class="form-text mb-4">
-              Mit Ereignisarten kannst du verschiedene Ereignisse gruppieren,
-              zum Beispiel nach Prüfungen, Ausflügen oder Ferien. Durch
-              verschiedene Farben kannst du die Ereignisse besser unterscheiden.
-            </div>
-
-            <div class="mb-2">
-              <h5 class="mb-2">
-                <span class="display-toggle" id="subjects-toggle"
-                  ><span class="fa fa-caret-right"></span
-                ></span>
+            <div class="mb-4">
+              <h5>
+                <span class="display-toggle" id="subjects-toggle">
+                  <span class="fa fa-caret-right"></span>
+                </span>
                 Fächer
               </h5>
-              <div class="mb-2 d-none" id="subjects-list">
-                <!--Gets filled-->
+              <div id="subjects-wrapper">
+                <div class="mb-2" id="subjects-list">
+                  <!--Gets filled-->
+                </div>
+                <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="subjects-cancel">Abbrechen</button>
+                <button class="btn btn-success btn-sm fw-semibold" id="new-subject">Neues Fach</button>
+                <button class="btn btn-primary btn-sm fw-semibold" id="subjects-save">Speichern</button>
+                <div class="my-2 d-none" id="subjects-save-confirm-container">
+                  <span class="fw-bold text-danger">Achtung!</span>
+                  Es werden alle Hausaufgaben und Stundenplaneinträge
+                  <span id="subjects-save-confirm-list"></span>
+                  gelöscht! Das kann nicht rückgängig gemacht werden!
+                </div>
+                <button class="btn btn-danger btn-sm fw-semibold d-none" id="subjects-save-confirm">Fortfahren</button>
+                <div class="form-text mt-2">
+                  Jede Hausaufgabe und jeder Stundenplaneintrag muss einem Fach zugeordnet werden. Der kurze Fachname wird in der kleineren
+                  Stundenplanansicht angezeigt, der lange in der größeren. Der lange Lehrername wird in der größeren Stundenplanansicht angezeigt.
+                  Wenn nicht angegeben, ist der kurze Fachname die ersten drei Buchstaben des Langen, ebenso für den kurzen Lehrernamen. Wenn
+                  DSBmobile verwendet wird, werden die Vertretungen anhand den Angaben in der Zeile "Vertretung" gefiltert. Wenn nichts angegeben ist,
+                  ist der gefilterte Fachname der Lange und der gefilterte Lehrername der Kurze. Mehrere Möglichkeiten können durch "," getrennt
+                  werden.
+                </div>
               </div>
-              <button
-                class="btn btn-secondary btn-sm fw-semibold"
-                id="subjects-cancel"
-              >
-                Abbrechen
-              </button>
-              <button
-                class="btn btn-success btn-sm fw-semibold"
-                id="new-subject"
-              >
-                Neues Fach
-              </button>
-              <button
-                class="btn btn-primary btn-sm fw-semibold"
-                id="subjects-save"
-              >
-                Speichern
-              </button>
-              <div class="my-2 d-none" id="subjects-save-confirm-container">
-                <span class="fw-bold text-danger">Achtung!</span>
-                Es werden alle Hausaufgaben und Stundenplaneinträge
-                <span id="subjects-save-confirm-list"></span> gelöscht! Das kann
-                nicht rückgängig gemacht werden!
-              </div>
-              <button
-                class="btn btn-danger btn-sm fw-semibold d-none"
-                id="subjects-save-confirm"
-              >
-                Fortfahren
-              </button>
-            </div>
-            <div class="form-text mb-4">
-              Jede Hausaufgabe und jeder Stundenplaneintrag muss einem Fach
-              zugeordnet werden. Der kurze Fachname wird in der kleineren
-              Stundenplanansicht angezeigt, der lange in der größeren. Der lange
-              Lehrername wird in der größeren Stundenplanansicht angezeigt. Wenn
-              nicht angegeben, ist der kurze Fachname die ersten drei Buchstaben
-              des Langen, ebenso für den kurzen Lehrernamen. Wenn DSBmobile
-              verwendet wird, werden die Vertretungen anhand den Angaben in der
-              Zeile "Vertretung" gefiltert. Wenn nichts angegeben ist, ist der
-              gefilterte Fachname der Lange und der gefilterte Lehrername der
-              Kurze. Mehrere Möglichkeiten können durch "," getrennt werden.
             </div>
 
-            <div class="mb-2">
-              <h5 class="mb-2">
-                <span class="display-toggle" id="timetable-toggle"
-                  ><span class="fa fa-caret-right"></span
-                ></span>
+            <div class="mb-4">
+              <h5>
+                <span class="display-toggle" id="timetable-toggle">
+                  <span class="fa fa-caret-right"></span>
+                </span>
                 Stundenplan
               </h5>
-              <div
-                class="mb-2 d-none row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 p-2"
-                id="timetable"
-              >
-                <!--Gets filled-->
+              <div id="timetable-wrapper">
+                <div class="mb-2 row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 p-2" id="timetable">
+                  <!--Gets filled-->
+                </div>
+                <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="timetable-cancel">Abbrechen</button>
+                <button class="btn btn-primary btn-sm fw-semibold" id="timetable-save">Speichern</button>
+                <div class="form-text mt-2">
+                  Der Stundenplan besteht aus mehreren Stunden. Der Stundenplan wird auf der Hauptseite angezeigt. Jede Stunde hat eine Stundennummer,
+                  Ereignisse und Vertretungen von DSBmobile können sich auf diese beziehen und werden dann passend angezeigt. Wenn ein Team ausgewählt
+                  ist, wird Mitgliedern des Teams diese Unterrichtsstunde angezeigt. Wenn es je nach Team oder wöchentlich verschiedene Fächer in
+                  einer Stunde gibt, sollte einfach die Stundennummer gleich sein, dann werden alle Optionen angezeigt.
+                </div>
               </div>
-              <button
-                class="btn btn-secondary btn-sm fw-semibold"
-                id="timetable-cancel"
-              >
-                Abbrechen
-              </button>
-              <button
-                class="btn btn-primary btn-sm fw-semibold"
-                id="timetable-save"
-              >
-                Speichern
-              </button>
-            </div>
-            <div class="form-text mb-4">
-              Der Stundenplan besteht aus mehreren Stunden. Der Stundenplan wird
-              auf der Hauptseite angezeigt. Jede Stunde hat eine Stundennummer,
-              Ereignisse und Vertretungen von DSBmobile können sich auf diese
-              beziehen und werden dann passend angezeigt. Wenn ein Team
-              ausgewählt ist, wird Mitgliedern des Teams diese Unterrichtsstunde
-              angezeigt. Wenn es je nach Team oder wöchentlich verschiedene
-              Fächer in einer Stunde gibt, sollte einfach die Stundennummer
-              gleich sein, dann werden alle Optionen angezeigt.
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <div class="modal fade" id="show-qrcode-modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="show-qrcode-modal-title">
+              Trete der Klasse
+              <b></b>
+              auf TaskMinder bei!
+            </h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+      <div id="logout-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Erfolgreich abgemeldet</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Auf Wiedersehen!</div>
+      </div>
+
+      <div id="change-password-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Passwort erfolgreich geändert</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Vergiss es nicht!</div>
+      </div>
+
+      <div id="delete-account-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Account erfolgreich gelöscht</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+          Wenn dir TaskMinder nicht gefallen hat, kontaktiere uns gerne und gib uns Feedback, damit wir TaskMinder noch besser gestalten können.
+        </div>
+      </div>
+
+      <div id="leave-class-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Klasse erfolgreich verlassen</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Du hast die Klasse erfolgreich verlassen</div>
+      </div>
+
+      <div id="delete-class-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Klasse erfolgreich gelöscht</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+          Wenn dir TaskMinder nicht gefallen hat, kontaktiere uns gerne und gib uns Feedback, damit wir TaskMinder noch besser gestalten können.
+        </div>
+      </div>
+
+      <div id="kick-logged-out-users-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Erfolg!</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Alle unangemeldeten Nutzer wurden aus der Klasse entfernt.</div>
+      </div>
+
+      <div id="set-logged-out-users-role-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Erfolg!</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Die Rolle für unangemeldete Nutzer wurde aktualisiert.</div>
+      </div>
+    </div>
+
     <div class="load-snippet" data-target="bottombar"></div>
   </body>
 </html>

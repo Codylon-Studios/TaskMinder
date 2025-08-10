@@ -3,13 +3,14 @@ import asyncHandler from "express-async-handler";
 
 export const getSubstitutionData = asyncHandler(async (req, res, next) => {
   try {
-    const substitutionData = await substitutionService.getSubstitutionData();
+    const substitutionData = await substitutionService.getSubstitutionData(req.session);
     res.status(200).json(substitutionData);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export default {
-  getSubstitutionData,
+  getSubstitutionData
 };

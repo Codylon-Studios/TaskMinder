@@ -4,6 +4,7 @@
 
 // Overwriting Bootstrap standards
 $primary: #3bb9ca;
+$enable-negative-margins: true;
 
 @import "../../../node_modules/bootstrap/scss/bootstrap";
 
@@ -72,6 +73,12 @@ body {
 
 .w-md-50 {
   @include media-breakpoint-up(md) {
+    width: 50% !important;
+  }
+}
+
+.w-lg-50 {
+  @include media-breakpoint-up(lg) {
     width: 50% !important;
   }
 }
@@ -180,11 +187,62 @@ footer a {
     .rounded-circle;
 }
 
+
+@function get-circle-pos($id, $axis, $radius) {
+  @if ($axis == x) {
+    @return cos(45deg * $id) * $radius + 5px;
+  }
+  @else {
+    @return sin(45deg * $id) * $radius + 5px;
+  }
+}
+
+.homework-check-wrapper {
+  width: 1rem;
+  height: 1rem;
+  position: relative;
+  & input.homework-check {
+    margin: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  & div {
+    visibility: visible;
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 100%;
+    background-color: $primary;
+    opacity: 0;
+  }
+  @for $id from 0 through 7 {
+    & div[data-id="#{$id}"] {
+      --id: #{$id};
+      animation: checkAnimation-#{$id} 0.4s ease normal;
+      background-color: $primary;
+
+      @keyframes checkAnimation-#{$id} {
+        0% {
+          left: get-circle-pos($id, x, 8px);
+          top:  get-circle-pos($id, y, 8px);
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          left: get-circle-pos($id, x, 20px);
+          top:  get-circle-pos($id, y, 20px);
+          opacity: 0;
+        }
+      }
+    }
+  }
+}
+
 // Styles exclusively for iOS devices
 @supports (-webkit-touch-callout: none) {
-  b,
-  .fw-semibold,
-  .fw-bold {
-    letter-spacing: -1px;
+  b, strong, .fw-semibold, .fw-bold, *[style*="font-weight: 700"] {
+    letter-spacing: calc(-1em / 16);
   }
 }

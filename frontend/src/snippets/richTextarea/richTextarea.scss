@@ -15,6 +15,7 @@
   white-space: pre-wrap;
   word-wrap: break-word;
   max-height: 158px;
+  padding: 0.375rem 2rem 0.375rem 0.75rem;
 
   &.rich-textarea-empty::before {
     content: "Text eingeben...";
@@ -84,4 +85,8 @@ textarea.rich-textarea {
 
 .rich-textarea-link-enabled {
   background: color.change($color: #3bb9ca, $alpha: 0.2);
+}
+
+.rich-textarea-paste-area {
+  all: unset
 }

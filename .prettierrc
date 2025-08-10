@@ -1,8 +1,12 @@
 {
-  "semi": true,
-  "trailingComma": "es5",
-  "printWidth": 80,
-  "tabWidth": 2,
-  "useTabs": false,
-  "arrowParens": "avoid"
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "printWidth": 150,
+        "tabWidth": 2,
+        "htmlWhitespaceSensitivity": "ignore"
+      }
+    }
+  ]
 }

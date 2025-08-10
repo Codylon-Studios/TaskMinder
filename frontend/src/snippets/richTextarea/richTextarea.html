@@ -13,29 +13,17 @@
         </button>
 
         <div class="btn-group dropdown">
-          <button
-            class="rich-textarea-font-size btn btn-tertiary d-flex align-items-center"
-          >
-            <i class="fa-solid fa-text-height"></i
-            ><span class="text-secondary ms-1">(16)</span>
+          <button class="rich-textarea-font-size btn btn-tertiary d-flex align-items-center">
+            <i class="fa-solid fa-text-height"></i>
+            <span class="text-secondary ms-1">(16)</span>
           </button>
-          <button
-            class="btn btn-tertiary dropdown-toggle dropdown-toggle-split"
-            data-bs-toggle="dropdown"
-          >
+          <button class="btn btn-tertiary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
             <span class="visually-hidden">Toggle Dropdown</span>
           </button>
           <div class="dropdown-menu rich-textarea-font-size-dropdown">
             <div class="px-2 py-0 text-center">
               <span class="text-secondary">Normal: 16</span>
-              <input
-                type="range"
-                class="form-range mt-2"
-                placeholder="16"
-                value="16"
-                min="8"
-                max="24"
-              />
+              <input type="range" class="form-range mt-2" placeholder="16" value="16" min="8" max="24" />
             </div>
           </div>
         </div>
@@ -50,14 +38,8 @@
         </div>
 
         <div class="btn-group">
-          <button
-            class="rich-textarea-color btn btn-tertiary d-flex align-items-center"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 676 612"
-              stroke-width="50"
-            >
+          <button class="rich-textarea-color btn btn-tertiary d-flex align-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 676 612" stroke-width="50">
               <path
                 d="M339.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L568.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S517.7-4.4 499.1 9.6L262.4 187.2c-24 18-38.2 46.1-38.4 76.1
                 L339.3 367.1zm-19.6 25.4l-116-104.4C143.9 290.3 96 339.6 96 400c0 3.9 .2 7.8 .6 11.6C98.4 429.1 86.4 448 68.8 448L64 448c-17.7 0-32 14.3-32 32
@@ -70,37 +52,26 @@
               <i class="fas fa-slash fa-stack-1x"></i>
             </span>
           </button>
-          <button
-            class="btn btn-tertiary dropdown-toggle dropdown-toggle-split rich-textarea-color-picker-toggle"
-          >
+          <button class="btn btn-tertiary dropdown-toggle dropdown-toggle-split rich-textarea-color-picker-toggle">
             <span class="visually-hidden">Toggle Dropdown</span>
           </button>
-          <input
-            type="text"
-            value="#3bb9ca"
-            class="color-picker rich-textarea-color-picker"
-            data-show-auto-option="true"
-          />
+          <input type="text" value="#3bb9ca" class="color-picker rich-textarea-color-picker" data-show-auto-option="true" />
         </div>
 
         <div class="btn-group dropdown">
           <button class="rich-textarea-link btn btn-tertiary">
             <i class="fa-solid fa-link"></i>
           </button>
-          <button
-            class="btn btn-tertiary dropdown-toggle dropdown-toggle-split"
-            data-bs-toggle="dropdown"
-          >
+          <button class="btn btn-tertiary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
             <span class="visually-hidden">Toggle Dropdown</span>
           </button>
           <div class="dropdown-menu rich-textarea-link-dropdown">
             <div class="px-2 py-0 text-center">
-              <span class="form-text mb-1">Aktuell: <b></b></span>
-              <input
-                type="text"
-                class="form-control form-control-sm"
-                placeholder="https://www.example.com"
-              />
+              <span class="form-text mb-1">
+                Aktuell:
+                <b></b>
+              </span>
+              <input type="text" class="form-control form-control-sm" placeholder="https://www.example.com" />
             </div>
           </div>
         </div>
@@ -111,16 +82,61 @@
       </div>
     </div>
     <div class="rich-textarea-input-wrapper">
-      <div
-        contenteditable="true"
-        spellcheck="false"
-        class="rich-textarea-input"
-      ></div>
-      <button
-        class="rich-textarea-input-toggle btn btn-tertiary position-absolute top-0 end-0 m-1 d-flex align-items-center justify-content-center"
-      >
+      <div contenteditable="true" spellcheck="false" class="rich-textarea-input"></div>
+      <button class="rich-textarea-input-toggle btn btn-tertiary position-absolute top-0 end-0 m-1 d-flex align-items-center justify-content-center">
         <i class="fa-solid fa-font"></i>
       </button>
+    </div>
+  </div>
+  <div class="rich-textarea-paste-area">This is for pasting content (Elements have to be in the real DOM to have correct display of styles)</div>
+  <div class="toast-container">
+    <div id="rich-textarea-unsupported-input-type" class="toast">
+      <div class="toast-header bg-warning text-white">
+        <b class="me-auto">InputType nicht verfügbar</b>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+        Leider ist der
+        <i>inputType</i>
+        "
+        <i></i>
+        " nicht implementiert.
+        <br />
+        Du kannst aber normal Text eintippen / einfügen, Zeilenumbrüche eingeben und mit der Backspace Taste Text entfernen.
+        <br />
+        Bitte kontaktiere uns per Email oder erstelle einen Github Issue, wenn dir eine Implementation wichtig wäre.
+      </div>
+    </div>
+    <div id="rich-textarea-pasting-error" class="toast">
+      <div class="toast-header bg-danger text-white">
+        <b class="me-auto">Fehler beim Einfügen</b>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">Es gab einen Fehler beim Versuch, Text einzufügen. Vielleicht hast du der Website keine Berechtigung gegeben?</div>
+    </div>
+    <div id="rich-textarea-unsafe-link" class="toast">
+      <div class="toast-header bg-warning text-white">
+        <span class="me-auto fw-bold">
+          Fremder Link:
+          <b></b>
+        </span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+        Achtung, dieser Link führt auf eine andere Website (
+        <b></b>
+        ). Klicke nur auf öffnen, wenn du diese Website kennst.
+        <div class="mt-2 pt-2 border-top">
+          <div class="row g-2 justify-content-end">
+            <div class="col-auto">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
+            </div>
+            <div class="col-auto">
+              <button type="button" class="btn btn-warning btn-sm" data-bs-dismiss="toast" id="rich-textarea-unsafe-link-confirm">Öffnen</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

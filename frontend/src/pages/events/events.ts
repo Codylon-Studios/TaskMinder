@@ -1,23 +1,23 @@
 import {
-  addUpdateAllFunction,
   dateToMs,
   eventData,
   eventTypeData,
   isSameDay,
   joinedTeamsData,
-  loadEventData,
   msToDisplayDate,
   msToInputDate,
   teamsData,
-  updateAll,
   socket,
-  reloadAll,
   csrfToken,
+  reloadAll,
+  reloadAllFn,
+  lessonData,
+  SingleEventData
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-async function updateEventList() {
+async function updateEventList(): Promise<void> {
   // Clear the list
   $("#event-list").empty();
 
@@ -25,113 +25,122 @@ async function updateEventList() {
   const editEnabled = $("#edit-toggle").is(":checked");
 
   for (const event of await eventData()) {
-    // Get the information for the event
+    async function filter(): Promise<boolean> {
+      function filterDate(): boolean {
+        // Filter by min. date
+        if ($("#filter-date-from").val() !== "") {
+          const filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
+          if (filterDate > parseInt(event.endDate ?? event.startDate)) {
+            return true;
+          }
+        }
+
+        // Filter by max. date
+        if ($("#filter-date-until").val() !== "") {
+          const filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
+          if (filterDate < parseInt(event.startDate)) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      // Filter by type
+      if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
+        return true;
+      }
+
+      if (filterDate()) return true;
+
+      // Filter by team
+      if (!(await joinedTeamsData()).includes(event.teamId) && event.teamId !== -1) {
+        return true;
+      }
+      return false;
+    }
     const eventId = event.eventId;
     const eventTypeId = event.eventTypeId;
+
+    if (await filter()) continue;
+
+    // Get the information for the event
     const name = event.name;
     const description = event.description;
-    const startDate = msToDisplayDate(event.startDate)
-      .split(".")
-      .slice(0, 2)
-      .join(".");
+    const startDate = msToDisplayDate(event.startDate);
     const lesson = event.lesson;
     let endDate;
     if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate).split(".").slice(0, 2).join(".");
-    } else {
+      endDate = msToDisplayDate(event.endDate);
+    }
+    else {
       endDate = null;
     }
 
-    // Filter by type
-    if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
-      continue;
-    }
-
-    // Filter by min. date
-    if ($("#filter-date-from").val() != "") {
-      const filterDate = Date.parse(
-        $("#filter-date-from").val()?.toString() ?? ""
-      );
-      if (filterDate > parseInt(event.endDate ?? event.startDate)) {
-        continue;
-      }
-    }
-
-    // Filter by max. date
-    if ($("#filter-date-until").val() != "") {
-      const filterDate = Date.parse(
-        $("#filter-date-until").val()?.toString() ?? ""
-      );
-      if (filterDate < parseInt(event.startDate)) {
-        continue;
-      }
-    }
-
-    // Filter by team
-    if (
-      !(await joinedTeamsData()).includes(event.teamId) &&
-      event.teamId != -1
-    ) {
-      continue;
-    }
-
+    const editOptionsDisplay = editEnabled ? "" : "d-none";
     // The template for an event with edit options
-    const template = $(`<div class="col p-2">
+    const template = $(`
+      <div class="col p-2">
         <div class="card event-${eventTypeId} h-100">
-          <div class="card-body p-2 d-flex">
-            <div class="d-flex flex-column me-3 event-content-wrapper">
-              <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${$.formatHtml(name)}</span>
-              <b>${startDate}${endDate ? ` - ${endDate}` : ""}${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b>
-              <span class="event-description"></span>
+          <div class="card-body p-2">
+            <div class="d-flex justify-content-between">
+              <div style="min-width: 0;">
+                <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${$.formatHtml(name)}</span>
+                <br>
+                <span>${startDate}${endDate ? ` - ${endDate}` : ""}<b>${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b></span>
+              </div>
+              <div>
+                <div class="d-flex flex-nowrap">
+                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
+                    <i class="fa-solid fa-edit event-${eventTypeId} opacity-75"></i>
+                  </button>
+                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
+                    <i class="fa-solid fa-trash event-${eventTypeId} opacity-75"></i>
+                  </button>
+                </div>
+                <div class="d-flex flex-nowrap justify-content-end">
+                  <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}">
+                    <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75"></i>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="event-edit-options ${editEnabled ? "" : "d-none"} position-absolute end-0 top-0 m-2">
-              <button class="btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
-                <i class="fa-solid fa-edit event-${eventTypeId} opacity-75"></i>
-              </button>
-              <button class="btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
-                <i class="fa-solid fa-trash event-${eventTypeId} opacity-75"></i>
-              </button>
-            </div>
+            <div class="event-description"></div>
           </div>
         </div>
-      </div>`);
+      </div>
+      `);
 
     // Add this event to the list
     $("#event-list").append(template);
 
     richTextToHtml(description ?? "", template.find(".event-description"), {
-      showMoreButton: $(
-        `<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`
-      ),
+      showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
       parseLinks: true,
+      merge: true
     });
     template.find(".event-description").trigger("addedToDom");
   }
 
   // If no events match, add an explanation text
-  if ($("#event-list").html() == "") {
-    $("#event-list").html(
-      `<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>`
-    );
+  $("#edit-toggle ~ label").toggle($("#event-list").html() !== "" && (user.permissionLevel ?? 0) >= 1);
+  $("#filter-toggle ~ label").toggle((await eventData()).length > 0);
+  if ($("#event-list").html() === "") {
+    $("#event-list").html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
   }
 };
 
-async function updateEventTypeList () {
+async function updateEventTypeList(): Promise<void> {
   // Clear the select element in the add event modal
   $("#add-event-type").empty();
-  $("#add-event-type").append(
-    '<option value="" disabled selected>Art</option>'
-  );
+  $("#add-event-type").append('<option value="" disabled selected>Art</option>');
   // Clear the select element in the edit event modal
   $("#edit-event-type").empty();
-  $("#edit-event-type").append(
-    '<option value="" disabled selected>Art</option>'
-  );
+  $("#edit-event-type").append('<option value="" disabled selected>Art</option>');
   // Clear the list for filtering by type
   $("#filter-type-list").empty();
 
-  const filterData =
-    JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+  const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
   filterData.type ??= {};
 
   (await eventTypeData()).forEach(eventType => {
@@ -140,10 +149,8 @@ async function updateEventTypeList () {
     const eventTypeName = eventType.name;
 
     filterData.type[eventTypeId] ??= true;
-    const checkedStatus: "checked" | "" = filterData.type[eventTypeId]
-      ? "checked"
-      : "";
-    if (checkedStatus != "checked") $("#filter-changed").removeClass("d-none");
+    const checkedStatus: "checked" | "" = filterData.type[eventTypeId] ? "checked" : "";
+    if (checkedStatus !== "checked") $("#filter-changed").removeClass("d-none");
 
     // Add the template for filtering by type
     const templateFilterType = `<div class="form-check">
@@ -163,8 +170,7 @@ async function updateEventTypeList () {
   // If any type filter gets changed, update the shown events
   $(".filter-type-option").on("change", function () {
     updateEventList();
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.type ??= {};
     filterData.type[$(this).data("id")] = $(this).prop("checked");
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
@@ -174,7 +180,7 @@ async function updateEventTypeList () {
   localStorage.setItem("eventFilter", JSON.stringify(filterData));
 };
 
-async function updateTeamList() {
+async function updateTeamList(): Promise<void> {
   // Clear the select element in the add event modal
   $("#add-event-team").empty();
   $("#add-event-team").append('<option value="-1" selected>Alle</option>');
@@ -193,7 +199,7 @@ async function updateTeamList() {
   });
 };
 
-function addEvent() {
+function addEvent(): void {
   //
   // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS AN EVENT
   //
@@ -236,7 +242,7 @@ function addEvent() {
         startDate: dateToMs(startDate),
         lesson: lesson,
         endDate: dateToMs(endDate) ?? null,
-        teamId: team,
+        teamId: team
       };
       // Save whether the server has responed
       let hasResponded = false;
@@ -247,24 +253,23 @@ function addEvent() {
         type: "POST",
         data: data,
         headers: {
-          "X-CSRF-Token": await csrfToken(),
+          "X-CSRF-Token": await csrfToken()
         },
         success: () => {
           // Show a success notification and update the shown events
           $("#add-event-success-toast").toast("show");
-          eventData(null);
-          loadEventData();
-          updateEventList();
         },
         error: xhr => {
           if (xhr.status === 401) {
             // The user has to be logged in but isn't
             // Show an error notification
             $navbarToasts.notLoggedIn.toast("show");
-          } else if (xhr.status === 500) {
+          }
+          else if (xhr.status === 500) {
             // An internal server error occurred
             $navbarToasts.serverError.toast("show");
-          } else {
+          }
+          else {
             $navbarToasts.unknownError.toast("show");
           }
         },
@@ -273,7 +278,7 @@ function addEvent() {
           hasResponded = true;
           // Hide the add event modal
           $("#add-event-modal").modal("hide");
-        },
+        }
       });
       setTimeout(() => {
         // Wait for 1s
@@ -281,17 +286,141 @@ function addEvent() {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 5000);
+      }, 1000);
     });
 }
 
-async function editEvent(eventId: number) {
+async function shareEvent(eventId: number): Promise<void> {
+  async function parseLessonEvent(event: SingleEventData, lesson: string): Promise<void> {
+    async function findLessonWithLessonNumber(lessonNumber: number):
+      Promise< {
+        lessonId: number;
+        lessonNumber: number;
+        weekDay: 0 | 1 | 2 | 3 | 4;
+        teamId: number;
+        subjectId: number;
+        room: string;
+        startTime: string;
+        endTime: string;
+      } | undefined > {
+      return (await lessonData()).find(lesson =>
+        lesson.lessonNumber === lessonNumber
+        && (lesson.teamId === -1 || currentJoinedTeamsData.includes(lesson.teamId))
+        && lesson.weekDay === start.getDay() - 1
+      );
+    }
+    const start = new Date(parseInt(event.startDate));
+    const end = new Date(parseInt(event.startDate));
+    const currentJoinedTeamsData = (await joinedTeamsData());
+    
+    let startLesson, endLesson;
+    if (event.lesson?.includes("-")) {
+      event.lesson = event.lesson.replace(" ", "");
+      startLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[0]));
+      endLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[1]));
+    }
+    else {
+      startLesson = endLesson = await findLessonWithLessonNumber(parseInt(lesson));
+    }
+
+    if (! (startLesson && endLesson)) {
+      $("#share-event-error-toast").toast("show");
+      return;
+    }
+    const lessonStart = parseInt(startLesson.startTime) / 1000 / 60;
+    start.setHours(Math.trunc(lessonStart / 60), lessonStart % 60);
+    
+    const lessonEnd = parseInt(endLesson.endTime) / 1000 / 60;
+    end.setHours(Math.trunc(lessonEnd / 60), lessonEnd % 60);
+    timeContent = `
+      DTSTART:${formatDateAndTime(start)}
+      DTEND:${formatDateAndTime(end)}
+    `;
+  }
+  const event = (await eventData()).find(e => e.eventId === eventId);
+  if (!event) return;
+
+  const name = event.name;
+  let description = "";
+  $(richTextToHtml(event.description ?? "")).each(function () {
+    if ($(this).is("br")) {
+      description += "\\n";
+    }
+    else {
+      description += $(this).html();
+    }
+  });
+
+  const format = (num: number): string => String(num).padStart(2, "0");
+
+  function formatDateAndTime (date: Date): string {
+    return date.getUTCFullYear().toString() +
+      format(date.getUTCMonth() + 1) +
+      format(date.getUTCDate()) + "T" +
+      format(date.getUTCHours()) +
+      format(date.getUTCMinutes()) +
+      format(date.getUTCSeconds()) + "Z";
+  };
+
+  function formatDate (date: Date): string {
+    return date.getUTCFullYear().toString() +
+      format(date.getUTCMonth() + 1) +
+      format(date.getUTCDate());
+  };
+
+  let timeContent = "";
+
+  if (event.lesson !== null && event.lesson !== "") {
+    await parseLessonEvent(event, event.lesson);
+  }
+  else {
+    if (event.endDate === null || event.endDate === "") {
+      event.endDate = event.startDate;
+    }
+    const start = new Date(parseInt(event.startDate));
+    const end = new Date(parseInt(event.endDate) + 1000 * 60 * 60 * 24);
+    timeContent = `
+      DTSTART;VALUE=DATE:${formatDate(start)}
+      DTEND;VALUE=DATE:${formatDate(end)}
+    `;
+  }
+
+  const icsContent = `
+    BEGIN:VCALENDAR
+    VERSION:2.0
+    PRODID:-//https://taskminder.de
+    BEGIN:VEVENT
+    UID:event-${eventId}@taskminder.de
+    DTSTAMP:${formatDateAndTime(new Date())}
+    ${timeContent}
+    SUMMARY:${name}
+    DESCRIPTION:${description?.replaceAll("\n", "\\n")}
+    END:VEVENT
+    END:VCALENDAR
+  `.split("\n").map(l => l.trim()).join("\n");
+
+  const blob = new Blob([icsContent], { type: "text/calendar" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "event.ics";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+
+  // Aufräumen
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function editEvent(eventId: number): Promise<void> {
   //
   // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY EDITS AN EVENT
   //
 
   // Get the data of the event
-  const event = (await eventData()).find(e => e.eventId == eventId);
+  const event = (await eventData()).find(e => e.eventId === eventId);
   if (!event) return;
 
   // Set the inputs on the already saved information
@@ -332,7 +461,7 @@ async function editEvent(eventId: number) {
         startDate: dateToMs(startDate),
         lesson: lesson,
         endDate: dateToMs(endDate),
-        teamId: team,
+        teamId: team
       };
       // Save whether the server has responed
       let hasResponded = false;
@@ -344,24 +473,23 @@ async function editEvent(eventId: number) {
         contentType: "application/json",
         data: JSON.stringify(data),
         headers: {
-          "X-CSRF-Token": await csrfToken(),
+          "X-CSRF-Token": await csrfToken()
         },
         success: () => {
           // Show a success notification and update the shown events
           $("#edit-event-success-toast").toast("show");
-          eventData(null);
-          loadEventData();
-          updateEventList();
         },
         error: xhr => {
           if (xhr.status === 401) {
             // The user has to be logged in but isn't
             // Show an error notification
             $navbarToasts.notLoggedIn.toast("show");
-          } else if (xhr.status === 500) {
+          }
+          else if (xhr.status === 500) {
             // An internal server error occurred
             $navbarToasts.serverError.toast("show");
-          } else {
+          }
+          else {
             $navbarToasts.unknownError.toast("show");
           }
         },
@@ -369,7 +497,7 @@ async function editEvent(eventId: number) {
           // The server has responded
           hasResponded = true;
           $("#edit-event-modal").modal("hide");
-        },
+        }
       });
       setTimeout(() => {
         // Wait for 1s
@@ -381,7 +509,7 @@ async function editEvent(eventId: number) {
     });
 }
 
-function deleteEvent(eventId: number) {
+function deleteEvent(eventId: number): void {
   //
   // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY DELETES AN EVENT
   //
@@ -398,7 +526,7 @@ function deleteEvent(eventId: number) {
       $("#delete-event-confirm-toast").toast("hide");
 
       const data = {
-        eventId: eventId,
+        eventId: eventId
       };
       // Save whether the server has responed
       let hasResponded = false;
@@ -409,31 +537,30 @@ function deleteEvent(eventId: number) {
         type: "POST",
         data: data,
         headers: {
-          "X-CSRF-Token": await csrfToken(),
+          "X-CSRF-Token": await csrfToken()
         },
         success: () => {
           // Show a success notification and update the shown events
           $("#delete-event-success-toast").toast("show");
-          eventData(null);
-          loadEventData();
-          updateEventList();
         },
         error: xhr => {
           if (xhr.status === 401) {
             // The user has to be logged in but isn't
             // Show an error notification
             $navbarToasts.notLoggedIn.toast("show");
-          } else if (xhr.status === 500) {
+          }
+          else if (xhr.status === 500) {
             // An internal server error occurred
             $navbarToasts.serverError.toast("show");
-          } else {
+          }
+          else {
             $navbarToasts.unknownError.toast("show");
           }
         },
         complete: () => {
           // The server has responded
           hasResponded = true;
-        },
+        }
       });
       setTimeout(() => {
         // Wait for 1s
@@ -445,30 +572,29 @@ function deleteEvent(eventId: number) {
     });
 }
 
-function updateFilters(ingoreEventTypes?: boolean) {
+function updateFilters(ingoreEventTypes?: boolean): void {
   $("#filter-changed").addClass("d-none");
 
-  const filterData =
-    JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+  const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
 
-  if (filterData.dateFrom == undefined) {
+  if (filterData.dateFrom === undefined) {
     $("#filter-date-from").val(msToInputDate(Date.now()));
-  } else {
+  }
+  else {
     $("#filter-date-from").val(filterData.dateFrom);
-    if (!isSameDay(new Date(filterData.dateFrom), new Date()))
-      $("#filter-changed").removeClass("d-none");
+    if (!isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none");
   }
 
-  if (filterData.dateUntil == undefined) {
+  if (filterData.dateUntil === undefined) {
     const nextMonth = new Date(Date.now());
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
-  } else {
+  }
+  else {
     $("#filter-date-until").val(filterData.dateUntil);
     const nextMonth = new Date(Date.now());
     nextMonth.setMonth(nextMonth.getMonth() + 1);
-    if (!isSameDay(new Date(filterData.dateUntil), nextMonth))
-      $("#filter-changed").removeClass("d-none");
+    if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
   }
 
   if (! ingoreEventTypes) {
@@ -477,30 +603,28 @@ function updateFilters(ingoreEventTypes?: boolean) {
 }
 
 $(function () {
-  addUpdateAllFunction(updateEventTypeList, updateEventList, updateTeamList);
+  reloadAllFn.set(async () => {
+    eventData.reload();
+    eventTypeData.reload();
+    joinedTeamsData.reload();
+    teamsData.reload();
+    lessonData.reload();
+    await updateEventTypeList();
+    await updateEventList();
+    await updateTeamList();
+  });
   reloadAll();
 
   // If user is logged in, show the edit toggle button
-  user.on("login", () => {
-    $("#edit-toggle-label").removeClass("d-none");
-    $("#show-add-event-button").removeClass("d-none");
-  });
-  user.on("logout", () => {
-    $("#edit-toggle-label").addClass("d-none");
-    $("#show-add-event-button").addClass("d-none");
-    $(".event-edit-options").addClass("d-none");
-    $(".event-title").css("margin-right", "0rem");
-  });
-
-  if (user.loggedIn) {
-    $("#edit-toggle-label").removeClass("d-none");
-    $("#show-add-event-button").removeClass("d-none");
-  } else {
-    $("#edit-toggle-label").addClass("d-none");
-    $("#show-add-event-button").addClass("d-none");
-    $(".event-edit-options").addClass("d-none");
-    $(".event-title").css("margin-right", "0rem");
-  }
+  user.on("change", (function _() {
+    const loggedIn = user.loggedIn;
+    $("#edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
+    $("#show-add-event-button").toggle((user.permissionLevel ?? 0) >= 1);
+    if (!loggedIn) {
+      $(".event-edit-option").addClass("d-none");
+    }
+    return _;
+  })());
 
   // Leave edit mode (if user entered it in a previous session)
   $("#edit-toggle").prop("checked", false);
@@ -508,12 +632,11 @@ $(function () {
   $("#edit-toggle").on("click", function () {
     if ($("#edit-toggle").is(":checked")) {
       // On checking the edit toggle, show the add button and edit options
-      $(".event-edit-options").removeClass("d-none");
-      $(".event-title").css("margin-right", "3.75rem");
-    } else {
+      $(".event-edit-option").removeClass("d-none");
+    }
+    else {
       // On unchecking the edit toggle, hide the add button and edit options
-      $(".event-edit-options").addClass("d-none");
-      $(".event-title").css("margin-right", "0rem");
+      $(".event-edit-option").addClass("d-none");
     }
   });
 
@@ -525,7 +648,8 @@ $(function () {
       // On checking the filter toggle, show the filter options
       $("#filter-content").removeClass("d-none");
       $("#filter-reset").removeClass("d-none");
-    } else {
+    }
+    else {
       // On checking the filter toggle, hide the filter options
       $("#filter-content").addClass("d-none");
       $("#filter-reset").addClass("d-none");
@@ -533,13 +657,13 @@ $(function () {
   });
 
   if (!localStorage.getItem("eventFilter")) {
-    localStorage.setItem("eventFilter", `{}`);
+    localStorage.setItem("eventFilter", "{}");
   }
   updateFilters(true);
   $("#filter-reset").on("click", () => {
-    localStorage.setItem("eventFilter", `{}`);
+    localStorage.setItem("eventFilter", "{}");
     updateFilters();
-    updateAll();
+    updateEventList();
   });
 
   // On changing any information in the add event modal, disable the add button if any information is empty
@@ -548,9 +672,10 @@ $(function () {
     const name = $("#add-event-name").val()?.toString().trim();
     const startDate = $("#add-event-start-date").val();
 
-    if ([name, startDate].includes("") || type == null) {
+    if ([name, startDate].includes("") || type === null) {
       $("#add-event-button").addClass("disabled");
-    } else {
+    }
+    else {
       $("#add-event-button").removeClass("disabled");
     }
 
@@ -568,9 +693,10 @@ $(function () {
     const name = $("#edit-event-name").val()?.toString().trim();
     const startDate = $("#edit-event-start-date").val();
 
-    if ([name, startDate].includes("") || type == null) {
+    if ([name, startDate].includes("") || type === null) {
       $("#edit-event-button").addClass("disabled");
-    } else {
+    }
+    else {
       $("#edit-event-button").removeClass("disabled");
     }
 
@@ -589,13 +715,19 @@ $(function () {
     });
   });
 
+  // Share the event on clicking its share icon
+  $(document).on("click", ".event-share", function () {
+    const eventId = $(this).data("id");
+    shareEvent(eventId);
+  });
+
   // Request deleting the event on clicking its delete icon
   $(document).on("click", ".event-delete", function () {
     const eventId = $(this).data("id");
     deleteEvent(eventId);
   });
 
-  // Request editing the event on clicking its delete icon
+  // Request editing the event on clicking its edit icon
   $(document).on("click", ".event-edit", function () {
     const eventId = $(this).data("id");
     editEvent(eventId);
@@ -603,8 +735,7 @@ $(function () {
 
   // On clicking the all types option, check all and update the event list
   $("#filter-type-all").on("click", () => {
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     $(".filter-type-option").prop("checked", true);
     $(".filter-type-option").each(function () {
       filterData.type[$(this).data("id")] = true;
@@ -616,8 +747,7 @@ $(function () {
 
   // On clicking the none types option, uncheck all and update the event list
   $("#filter-type-none").on("click", () => {
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.type ??= {};
     $(".filter-type-option").prop("checked", false);
     $(".filter-type-option").each(function () {
@@ -630,8 +760,7 @@ $(function () {
 
   // On changing any filter date option, update the event list
   $("#filter-date-from").on("change", () => {
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateFrom = $("#filter-date-from").val();
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
     updateFilters();
@@ -640,8 +769,7 @@ $(function () {
 
   // On changing any filter date option, update the event list
   $("#filter-date-until").on("change", () => {
-    const filterData =
-      JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.dateUntil = $("#filter-date-until").val();
     localStorage.setItem("eventFilter", JSON.stringify(filterData));
     updateFilters();
@@ -655,12 +783,10 @@ $(function () {
 
 socket.on("updateEventData", () => {
   try {
-    eventData(null);
-
-    loadEventData();
-
+    eventData.reload();
     updateEventList();
-  } catch (error) {
+  }
+  catch (error) {
     console.error("Error handling updateEventData:", error);
   }
 });

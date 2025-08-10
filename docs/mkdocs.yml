@@ -20,13 +20,13 @@ theme:
     - content.code.copy
     - content.tabs.link
   name: material
-  font: 
+  font:
     text: Quicksand
     code: Red Hat Mono
   favicon: assets/favicon.ico
   palette:
     - scheme: slate
-      toggle: 
+      toggle:
         icon: material/weather-sunny
         name: dark mode
       primary: :)
@@ -39,14 +39,16 @@ theme:
       accent: :)
 nav:
   - Home: index.md
-  - Development: development.md
-  - Production (v1-stable-v1.2.2): deploy-v1.md
-  - Production (v2-unstable): deploy-v2.md
-  - Migrations (preview): migrations.md
-  - Data Processing: data-processing.md
   - About:
-    - License: license.md
-    - Release Notes: release-notes.md
+      - License: license.md
+      - Release Notes: release-notes.md
+      - Data & Privacy: data-processing.md
+  - Development: development.md
+  - Deployment (v2): deploy-v2.md
+  - Migrations: migrations.md
+  - Old Documentation:
+      - v1: 
+        - Deployment: deploy-v1.md
 
 extra_css:
   - assets/custom.css

@@ -4,9 +4,10 @@ import { z } from "zod";
 
 export const getSubjectData = asyncHandler(async (req, res, next) => {
   try {
-    const timetableData = await subjectService.getSubjectData();
+    const timetableData = await subjectService.getSubjectData(req.session);
     res.status(200).json(timetableData);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
@@ -14,16 +15,16 @@ export const setSubjectData = asyncHandler(async (req, res, next) => {
   const setSubjectsSchema = z.object({
     subjects: z.array(
       z.object({
-        subjectId: z.union([z.coerce.number(), z.literal("")]),
+        subjectId: z.union([z.literal(""), z.coerce.number()]),
         subjectNameLong: z.string(),
         subjectNameShort: z.string(),
         subjectNameSubstitution: z.array(z.string()).nullable(),
         teacherGender: z.enum(["d", "w", "m"]),
         teacherNameLong: z.string(),
         teacherNameShort: z.string(),
-        teacherNameSubstitution: z.array(z.string()).nullable(),
+        teacherNameSubstitution: z.array(z.string()).nullable()
       })
-    ),
+    )
   });
   const parseResult = setSubjectsSchema.safeParse(req.body);
   if (!parseResult.success) {
@@ -42,15 +43,15 @@ export const setSubjectData = asyncHandler(async (req, res, next) => {
                 subjectNameShort: { type: "string" },
                 subjectNameSubstitution: {
                   type: ["array", "null"],
-                  items: { type: "string" },
+                  items: { type: "string" }
                 },
                 teacherGender: { enum: ["d", "w", "m"] },
                 teacherNameLong: { type: "string" },
                 teacherNameShort: { type: "string" },
                 teacherNameSubstitution: {
                   type: ["array", "null"],
-                  items: { type: "string" },
-                },
+                  items: { type: "string" }
+                }
               },
               required: [
                 "subjectId",
@@ -58,25 +59,26 @@ export const setSubjectData = asyncHandler(async (req, res, next) => {
                 "subjectNameShort",
                 "teacherGender",
                 "teacherNameLong",
-                "teacherNameShort",
-              ],
-            },
-          },
+                "teacherNameShort"
+              ]
+            }
+          }
         },
-        required: ["subjects"],
-      },
+        required: ["subjects"]
+      }
     });
     return;
   }
   try {
-    await subjectService.setSubjectData(parseResult.data.subjects);
+    await subjectService.setSubjectData(parseResult.data.subjects, req.session);
     res.sendStatus(200);
-  } catch (error) {
+  }
+  catch (error) {
     next(error);
   }
 });
 
 export default {
   getSubjectData,
-  setSubjectData,
+  setSubjectData
 };
