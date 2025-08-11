@@ -11,7 +11,6 @@ type RequestValidationSchema = z.ZodObject<{
 export const validate = <T extends RequestValidationSchema>(schema: T) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log(req.body);
       const parsed = await schema.parseAsync({
         body: req.body,
         query: req.query,

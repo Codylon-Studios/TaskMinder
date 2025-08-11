@@ -4,6 +4,7 @@ import prisma from "../config/prisma";
 import logger from "../utils/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { updateCacheData } from "../utils/validateFunctions";
+import { setJoinedTeamsTypeBody, setTeamsTypeBody } from "../schemas/teamSchema";
 
 const teamService = {
   async getTeamsData(session: Session & Partial<SessionData>) {
@@ -37,8 +38,8 @@ const teamService = {
     return data;
   },
 
-  async setTeamsData(teams: { teamId: number | ""; name: string }[], session: Session & Partial<SessionData>) {
-
+  async setTeamsData(reqData: setTeamsTypeBody, session: Session & Partial<SessionData>) {
+    const { teams } = reqData;
     const classId = parseInt(session.classId!);
     if (isNaN(classId)) {
       const err: RequestError = {
@@ -155,10 +156,9 @@ const teamService = {
     return teams;
   },
   
-  async setJoinedTeamsData(teams: number[], session: Session & Partial<SessionData>) {
-
+  async setJoinedTeamsData(reqData: setJoinedTeamsTypeBody, session: Session & Partial<SessionData>) {
+    const { teams } = reqData;
     const accountId = session.account!.accountId;
-
 
     if (!Array.isArray(teams)) {
       const err: RequestError = {

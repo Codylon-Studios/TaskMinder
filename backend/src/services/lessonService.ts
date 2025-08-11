@@ -4,20 +4,14 @@ import prisma from "../config/prisma";
 import logger from "../utils/logger";
 import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
+import { setLessonDataTypeBody } from "../schemas/lessonSchema";
 
 const lessonService = {
   async setLessonData(
-    lessons: {
-      lessonNumber: number;
-      weekDay: number;
-      teamId: number;
-      subjectId: number;
-      room: string;
-      startTime: number;
-      endTime: number;
-    }[],
+    reqData: setLessonDataTypeBody,
     session: Session & Partial<SessionData>
   ) {
+    const { lessons } = reqData;
     for (const lesson of lessons) {
       isValidweekDay(lesson.weekDay);
     }

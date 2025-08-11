@@ -4,6 +4,7 @@ import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/red
 import prisma from "../config/prisma";
 import { isValidGender, updateCacheData } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
+import { setSubjectsTypeBody } from "../schemas/subjectSchema";
 
 const subjectService = {
   async getSubjectData(session: Session & Partial<SessionData>) {
@@ -38,18 +39,10 @@ const subjectService = {
     return data;
   },
   async setSubjectData(
-    subjects: {
-      subjectId: number | "";
-      subjectNameLong: string;
-      subjectNameShort: string;
-      subjectNameSubstitution: string[] | null;
-      teacherGender: "d" | "w" | "m";
-      teacherNameLong: string;
-      teacherNameShort: string;
-      teacherNameSubstitution: string[] | null;
-    }[],
+    reqData: setSubjectsTypeBody,
     session: Session & Partial<SessionData>
   ) {
+    const { subjects } = reqData;
     const existingSubjects = await prisma.subjects.findMany({
       where: {
         classId: parseInt(session.classId!)
