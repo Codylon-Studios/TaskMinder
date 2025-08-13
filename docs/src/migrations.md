@@ -1,4 +1,4 @@
-# Migrations (Preview)
+# Migrations
 
 ## Migrating from v1 to v2
 
