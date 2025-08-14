@@ -936,11 +936,15 @@ user.on("change", async () => {
   $(".not-logged-in-info").toggle(!user.loggedIn).toggleClass("d-flex", !user.loggedIn);
   $("#settings-account").toggle(user.loggedIn ?? false);
 
+  $("#change-username-button").show();
+  $("#change-username").hide();
+
   $("#change-password-button").show();
   $("#change-password").hide();
 
   $("#delete-account-button").show();
   $("#delete-account").hide();
+
   if (user.classJoined !== null) {
     $(".not-joined-info").toggle(!user.classJoined).toggleClass("d-flex", !user.classJoined);
     $("#settings-student, #settings-class").toggle(user.classJoined);
@@ -1085,6 +1089,103 @@ $("#logout-button").on("click", async () => {
     },
     error: xhr => {
       if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+// Change username
+$("#change-username-button").on("click", function () {
+  $(this).hide();
+  $("#change-username").show();
+  $("#change-username input").val("");
+  $("#change-username-confirm").addClass("disabled");
+  $("#change-username-invalid-password").addClass("d-none");
+  $("#change-username-invalid-username").addClass("d-none");
+  $("#change-username-taken-username").addClass("d-none");
+});
+
+$("#change-username-cancel").on("click", () => {
+  $("#change-username").hide();
+  $("#change-username-button").show();
+});
+
+$("#change-username-password").on("input", () => {
+  $("#change-username-invalid-password").addClass("d-none");
+});
+
+function checkUsername(username: string): boolean {
+  return /^\w{4,20}$/.test(username);
+}
+
+$("#change-username-new-username").on("input", () => {
+  $("#change-username-invalid-username").addClass("d-none");
+  $("#change-username-taken-username").addClass("d-none");
+});
+
+$("#change-username-new-username").on("change", () => {
+  if (! checkUsername($("#change-username-new-username").val()?.toString() ?? "")) {
+    $("#change-username-invalid-username").removeClass("d-none");
+  }
+});
+
+$("#change-username-password, #change-username-new-username").on("input change", function () {
+  $("#change-username-confirm").toggleClass("disabled", 
+    $("#change-username-password, #change-username-new-username").map(
+      function () {
+        return $(this).val(); 
+      }
+    ).get().includes("")
+    || $("#change-username-invalid-password").is(":visible")
+    || $("#change-username-invalid-username").is(":visible")
+    || $("#change-username-taken-username").is(":visible")
+  );
+});
+
+$("#change-username-confirm").on("click", async () => {
+  const data = {
+    password: $("#change-username-password").val(),
+    newUsername: $("#change-username-new-username").val()
+  };
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/account/change_username",
+    type: "POST",
+    data: data,
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#change-username-success-toast").toast("show");
+      $("#change-username-button").show();
+      $("#change-username").hide();
+
+      authUser();
+    },
+    error: xhr => {
+      if (xhr.status === 401) {
+        $("#change-username-invalid-password").removeClass("d-none");
+        $("#change-username-confirm").addClass("disabled");
+      }
+      else if (xhr.status === 409) {
+        $("#change-username-taken-username").removeClass("d-none");
+        $("#change-username-confirm").addClass("disabled");
+      }
+      else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
       }
       else {

@@ -72,6 +72,39 @@
             </button>
             <div class="form-text mb-4">Du kannst dich jederzeit wieder anmelden. Du musst dich auf allen Geräten einzeln abmelden.</div>
 
+            <button class="btn btn-warning fw-bold" id="change-username-button">
+              <i class="fa-solid fa-user-pen"></i>
+              Nutzernamen ändern
+            </button>
+            <div id="change-username">
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content d-flex" id="change-username-invalid-password">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Das Passwort ist falsch!</span>
+              </div>
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content d-flex" id="change-username-invalid-username">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.</span>
+              </div>
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content d-flex" id="change-username-taken-username">
+                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <span class="d-block me-1">Dieser Nutzername ist schon vergeben. Bitte wähle einen anderen.</span>
+              </div>
+
+              <div class="mb-2 d-flex flex-column flex-md-row gap-2">
+                <input class="form-control w-fit-content" type="password" placeholder="Dein Passwort" id="change-username-password" />
+                <input class="form-control w-fit-content" type="password" placeholder="Dein neuer Nutzername" id="change-username-new-username" />
+              </div>
+              <button class="btn btn-secondary fw-bold" id="change-username-cancel">
+                <i class="fa-solid fa-xmark"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-warning fw-bold" id="change-username-confirm">
+                <i class="fa-solid fa-user-pen"></i>
+                Bestätigen
+              </button>
+            </div>
+            <div class="form-text mb-4">Denke daran, dass du dann immer diesen Namen benutzen musst, auch zum Beispiel beim Anmelden.</div>
+
             <button class="btn btn-warning fw-bold" id="change-password-button">
               <i class="fa-solid fa-unlock-keyhole"></i>
               Passwort ändern
@@ -470,6 +503,14 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body">Auf Wiedersehen!</div>
+      </div>
+
+      <div id="change-username-success-toast" class="toast">
+        <div class="toast-header bg-success text-white">
+          <b class="me-auto">Nutzername erfolgreich geändert</b>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">Vergiss ihn nicht!</div>
       </div>
 
       <div id="change-password-success-toast" class="toast">

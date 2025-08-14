@@ -258,7 +258,41 @@ export default {
   },
 
   async changeUsername(reqData: changeUsernameTypeBody, session: Session & Partial<SessionData>) {
-    const { newUsername } = reqData;
+    const { password, newUsername } = reqData;
+
+    const accountWithNewUsername = await prisma.account.findUnique({
+      where: {
+        username: newUsername
+      }
+    });
+
+    if (accountWithNewUsername) {
+      const err: RequestError = {
+        name: "Conflict",
+        status: 409,
+        message: "Username already exists, please choose another username.",
+        expected: true
+      };
+      throw err;
+    }
+
+    const account = await prisma.account.findUnique({
+      where: {
+        accountId: session.account!.accountId
+      }
+    });
+
+    const isPasswordValid = await bcrypt.compare(password, account!.password);
+    if (!isPasswordValid) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "Invalid credentials",
+        expected: true
+      };
+      throw err;
+    }
+
     await prisma.account.update({
       where: {
         accountId: session.account!.accountId
@@ -267,6 +301,8 @@ export default {
         username: newUsername
       }
     });
+
+    session.account = { username: newUsername, accountId: session.account!.accountId };
   },
 
   async changePassword(

@@ -35,9 +35,14 @@ export const validate = <T extends RequestValidationSchema>(schema: T) =>
     }
     catch (err) {
       if (err instanceof z.ZodError) {
+        const expectedSchema = {
+          description: '"params" is for the required URL parameters, "query" for the query parameters and "body" is the expected request body',
+          ... z.toJSONSchema(schema).properties
+        };
         res.status(400).json({
           message: "Validation failed",
-          schema: z.prettifyError(err)
+          error: z.prettifyError(err),
+          expectedSchema: expectedSchema
         });
       } 
       else {

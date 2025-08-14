@@ -35,6 +35,7 @@ export const changeUsernameSchema = z.object({
   params: z.object({}).optional(),
   query: z.object({}).optional(),
   body: z.strictObject({
+    password: z.string(),
     newUsername: z.string().refine(checkUsername, {
       message: "Username must be 4-20 characters, letters, digits, or underscore only"
     })
