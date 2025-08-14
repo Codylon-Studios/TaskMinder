@@ -1,4 +1,4 @@
-import { reloadAll, reloadAllFn } from "../../global/global.js";
+import { reloadAllFn } from "../../global/global.js";
 
 $("#back-link").on("click", () => {
   history.back();
@@ -7,5 +7,4 @@ $("#back-link").on("click", () => {
 $(() => {
   reloadAllFn.set(async () => {
   });
-  reloadAll();
 });

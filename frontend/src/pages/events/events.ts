@@ -9,73 +9,53 @@ import {
   teamsData,
   socket,
   csrfToken,
-  reloadAll,
   reloadAllFn,
   lessonData,
-  SingleEventData
+  SingleEventData,
+  EventData
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 async function updateEventList(): Promise<void> {
-  // Clear the list
-  $("#event-list").empty();
+  async function getFilteredData(): Promise<EventData> {
+    // Get the event data
+    let data = await eventData();
+    // Filter by min. date
+    const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
+    if (!isNaN(filterDateMin)) {
+      data = data.filter(e => filterDateMin <= parseInt(e.endDate ?? e.startDate));
+    }
+    // Filter by max. date
+    const filterDateMax = Date.parse($("#filter-date-until").val()?.toString() ?? "");
+    if (!isNaN(filterDateMax)) {
+      data = data.filter(e => filterDateMax >= parseInt(e.startDate));
+    }
+    // Filter by type
+    data = data.filter(e => $(`#filter-type-${e.eventTypeId}`).prop("checked"));
+    // Filter by team
+    const currentJoinedTeamsData = await joinedTeamsData();
+    data = data.filter(e => currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1);
+    
+    return data;
+  }
+
+  const newContent = $("<div></div>");
+  let showMoreButtonElements: JQuery<HTMLElement> = $();
 
   // Check if user is in edit mode
   const editEnabled = $("#edit-toggle").is(":checked");
 
-  for (const event of await eventData()) {
-    async function filter(): Promise<boolean> {
-      function filterDate(): boolean {
-        // Filter by min. date
-        if ($("#filter-date-from").val() !== "") {
-          const filterDate = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-          if (filterDate > parseInt(event.endDate ?? event.startDate)) {
-            return true;
-          }
-        }
+  const data = await getFilteredData();
 
-        // Filter by max. date
-        if ($("#filter-date-until").val() !== "") {
-          const filterDate = Date.parse($("#filter-date-until").val()?.toString() ?? "");
-          if (filterDate < parseInt(event.startDate)) {
-            return true;
-          }
-        }
-
-        return false;
-      }
-
-      // Filter by type
-      if (!$(`#filter-type-${eventTypeId}`).prop("checked")) {
-        return true;
-      }
-
-      if (filterDate()) return true;
-
-      // Filter by team
-      if (!(await joinedTeamsData()).includes(event.teamId) && event.teamId !== -1) {
-        return true;
-      }
-      return false;
-    }
+  for (const event of data) {
     const eventId = event.eventId;
     const eventTypeId = event.eventTypeId;
-
-    if (await filter()) continue;
-
-    // Get the information for the event
     const name = event.name;
     const description = event.description;
     const startDate = msToDisplayDate(event.startDate);
     const lesson = event.lesson;
-    let endDate;
-    if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate);
-    }
-    else {
-      endDate = null;
-    }
+    const endDate = event.endDate ? msToDisplayDate(event.endDate) : null;
 
     const editOptionsDisplay = editEnabled ? "" : "d-none";
     // The template for an event with edit options
@@ -112,25 +92,29 @@ async function updateEventList(): Promise<void> {
       `);
 
     // Add this event to the list
-    $("#event-list").append(template);
+    newContent.append(template);
 
-    richTextToHtml(description ?? "", template.find(".event-description"), {
+    richTextToHtml(description, template.find(".event-description"), {
       showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
       parseLinks: true,
       merge: true
     });
-    template.find(".event-description").trigger("addedToDom");
+    showMoreButtonElements = showMoreButtonElements.add(template.find(".event-description"));
   }
 
   // If no events match, add an explanation text
   $("#edit-toggle ~ label").toggle($("#event-list").html() !== "" && (user.permissionLevel ?? 0) >= 1);
   $("#filter-toggle ~ label").toggle((await eventData()).length > 0);
-  if ($("#event-list").html() === "") {
-    $("#event-list").html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
+  if (newContent.html() === "") {
+    newContent.html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
   }
+  $("#event-list").empty().append(newContent.children());
+  showMoreButtonElements.trigger("addedToDom");
 };
 
 async function updateEventTypeList(): Promise<void> {
+  const currentEventTypeData = await eventTypeData();
+
   // Clear the select element in the add event modal
   $("#add-event-type").empty();
   $("#add-event-type").append('<option value="" disabled selected>Art</option>');
@@ -143,7 +127,7 @@ async function updateEventTypeList(): Promise<void> {
   const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
   filterData.type ??= {};
 
-  (await eventTypeData()).forEach(eventType => {
+  currentEventTypeData.forEach(eventType => {
     // Get the event type data
     const eventTypeId = eventType.eventTypeId;
     const eventTypeName = eventType.name;
@@ -613,7 +597,6 @@ $(function () {
     await updateEventList();
     await updateTeamList();
   });
-  reloadAll();
 
   // If user is logged in, show the edit toggle button
   user.on("change", (function _() {

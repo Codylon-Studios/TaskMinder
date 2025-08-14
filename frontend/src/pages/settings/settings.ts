@@ -5,7 +5,6 @@ import {
   JoinedTeamsData,
   joinedTeamsData,
   msToTime,
-  reloadAll,
   SubjectData,
   subjectData,
   substitutionsData,
@@ -921,7 +920,6 @@ $(async () => {
       await updateTimetable();
     }
   });
-  if (user.loggedIn !== null) reloadAll();
 });
 
 const qrCode = new QRCode( "show-qrcode-modal-qrcode", {

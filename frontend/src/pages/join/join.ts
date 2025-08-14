@@ -1,4 +1,4 @@
-import { csrfToken, reloadAll, reloadAllFn } from "../../global/global.js";
+import { csrfToken, reloadAllFn } from "../../global/global.js";
 import { $navbarToasts, authUser, user } from "../../snippets/navbar/navbar.js";
 
 function checkClassName(className: string): boolean {
@@ -61,7 +61,6 @@ $("#create-class-credentials-back-btn").on("click", () => {
 $(() => {
   reloadAllFn.set(async () => {
   });
-  reloadAll();
 });
 
 $("#login-register-back-btn").on("click", () => {

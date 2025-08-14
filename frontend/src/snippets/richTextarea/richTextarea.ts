@@ -2,7 +2,7 @@ import { deepCompare } from "../../global/global.js";
 import { rgbToHex } from "../colorPicker/colorPicker.js";
 
 export function richTextToHtml(
-  val: string,
+  val: string | null,
   targetElement?: JQuery<HTMLElement>,
   options?: {
     showMoreButton?: boolean | JQuery<HTMLElement>;

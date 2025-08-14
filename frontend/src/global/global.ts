@@ -124,61 +124,18 @@ export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolea
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
 }
 
-export async function sendWrappedRequest(
-  url: string,
-  data: string | Record<string, unknown> | undefined,
-  successFn: () => void,
-  errorHandling: { status: number, handlerFn: () => void }[]
-): Promise<void> {
-  
-  let hasResponded = false;
-
-  $.ajax({
-    url: url,
-    type: "POST",
-    data: data,
-    headers: {
-      "X-CSRF-Token": await csrfToken()
-    },
-    success: successFn,
-    error: xhr => {
-      if (xhr.status === 500) {
-        $navbarToasts.serverError.toast("show");
-      }
-      else {
-        const match = errorHandling.find(handler => handler.status === xhr.status);
-        if (match) {
-          match.handlerFn();
-        }
-        else if (xhr.status >= 500) {
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      }
-    },
-    complete: () => {
-      hasResponded = true;
-    }
-  });
-
-  setTimeout(() => {
-    if (!hasResponded) {
-      $navbarToasts.serverError.toast("show");
-    }
-  }, 1000);
-}
-
 export async function reloadAll(): Promise<void> {
-  doneFirstReloadAll = true;
   const currentReloadAllFn = await reloadAllFn.get();
   await currentReloadAllFn();
   $("body").css({ display: "flex" });
 }
 
+let setReloadAllFn = false;
 export const reloadAllFn = createDataAccessor<() => Promise<void>>("reloadAllFn");
-let doneFirstReloadAll = false;
+reloadAllFn.on("update", () => {
+  setReloadAllFn = true;
+  if (user.changeEvents >= 1) reloadAll();
+});
 
 type ColorTheme = "dark" | "light";
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
@@ -430,7 +387,7 @@ export type SingleEventData = {
   lesson: string | null;
   teamId: number;
 };
-type EventData = SingleEventData[];
+export type EventData = SingleEventData[];
 export const eventData = createDataAccessor<EventData>("eventData", "/events/get_event_data");
 
 // Event type data
@@ -510,7 +467,7 @@ $(document).on("click", "#navbar-reload-button", () => {
 });
 
 user.on("change", async () => {
-  if (user.changeEvents > 1 || !doneFirstReloadAll) reloadAll();
+  if (user.changeEvents > 1 || setReloadAllFn) reloadAll();
 });
 
 // Change btn group selections to vertical / horizontal

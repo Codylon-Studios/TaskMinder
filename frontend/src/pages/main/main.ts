@@ -14,7 +14,6 @@ import {
   SingleEventData,
   homeworkCheckedData,
   socket,
-  reloadAll,
   msToTime,
   csrfToken,
   reloadAllFn,
@@ -1017,7 +1016,6 @@ $(() => {
     await updateSubstitutionList();
     await updateTimetable();
   });
-  reloadAll();
 });
 
 let justCheckedHomeworkId = -1;

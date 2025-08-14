@@ -10,7 +10,6 @@ import {
   subjectData,
   teamsData,
   socket,
-  reloadAll,
   csrfToken,
   reloadAllFn,
   HomeworkData
@@ -18,7 +17,7 @@ import {
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-export async function updateHomeworkList(): Promise<void> {
+async function updateHomeworkList(): Promise<void> {
   async function getFilteredData(): Promise<(HomeworkData[number] & { checked: boolean })[]> {
     // Add the check value to each homework
     let data = await Promise.all(
@@ -55,7 +54,7 @@ export async function updateHomeworkList(): Promise<void> {
   }
 
   const newContent = $("<div></div>");
-  let addedElements: JQuery<HTMLElement> = $();
+  let showMoreButtonElements: JQuery<HTMLElement> = $();
 
   // Check if user is in edit mode
   const editEnabled = $("#edit-toggle").is(":checked");
@@ -64,7 +63,7 @@ export async function updateHomeworkList(): Promise<void> {
 
   for (const homework of data) {
     function showCheckAnimation(): void {
-      if (checked && justCheckedHomeworkId === homeworkId && animations) {
+      if (homework.checked && justCheckedHomeworkId === homeworkId && animations) {
         justCheckedHomeworkId = -1;
         template.find(".homework-check-wrapper").append($("<div></div>".repeat(8)).each(
           function (id) {
@@ -78,7 +77,6 @@ export async function updateHomeworkList(): Promise<void> {
     }
 
     const homeworkId = homework.homeworkId;
-    const checked = homework.checked;
 
     // Get the information for the homework
     const subject = (await subjectData()).find(s => s.subjectId === homework.subjectId)?.subjectNameLong;
@@ -92,7 +90,7 @@ export async function updateHomeworkList(): Promise<void> {
         <div class="form-check">
           <div class="homework-check-wrapper form-check-input invisible">
             <input type="checkbox" class="form-check-input homework-check visible" id="homework-check-${homeworkId}"
-              data-id="${homeworkId}" ${checked ? "checked" : ""}>
+              data-id="${homeworkId}" ${homework.checked ? "checked" : ""}>
           </div>
           <label class="form-check-label" for="homework-check-${homeworkId}">
             <span class="fw-bold">${$.formatHtml(subject ?? "")}</span>
@@ -123,7 +121,7 @@ export async function updateHomeworkList(): Promise<void> {
       displayBlockIfNewline: true,
       merge: true
     });
-    addedElements = addedElements.add(template.find(".homework-content"));
+    showMoreButtonElements = showMoreButtonElements.add(template.find(".homework-content"));
   }
 
   // If no homeworks match, add an explanation text
@@ -133,7 +131,7 @@ export async function updateHomeworkList(): Promise<void> {
     newContent.html('<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>');
   }
   $("#homework-list").empty().append(newContent.children());
-  addedElements.trigger("addedToDom");
+  showMoreButtonElements.trigger("addedToDom");
 };
 
 async function updateSubjectList(): Promise<void> {
@@ -579,7 +577,6 @@ $(function () {
     await updateHomeworkList();
     await updateTeamList();
   });
-  reloadAll();
 
   // If user is logged in, show the edit toggle button
   user.on("change", (function _() {
