@@ -7,52 +7,53 @@ All changes are grouped by type and the latest version appears first.
 ## \[v2.0.0] - 2025-08-16
 
 ### Breaking Change
-- Database strcuture (please refer to the migration guide on docs.taskminder.de)
+- Database structure (please refer to the migration guide on docs.taskminder.de)
 
 ### Added
 - Functionality to create new classes (account required)
 - Functionality to log out, delete account, change password and username
-- Qr Code sharing of class code
-- copy paste for event/homework descriptions
-- add prisma transactions for safer database handling
-- Added homework check animation
-- Added sharing events with calendar
-- add soft deletion of accounts wth 30d auto delete from db
-- add permission levels (0,1,2,3) for classes with different permission levels
-- default setting for unregistered user and individual permissions for registered users
-- functionality to kick members from class
-- add 404 page
+- Add autocomplete for due date and team selection as soon as subject is selected
+- QR Code sharing of class code
+- Copy paste for event/homework descriptions
+- Add prisma transactions for safer database handling
+- Add homework check animation
+- Add sharing events with calendar
+- Add soft deletion of accounts wth 30d auto delete from db
+- Add permission levels (0,1,2,3) for classes with different permission levels
+- Default setting for unregistered user and individual permissions for registered users
+- Functionality to kick members from class
+- Add 404 page
 
 ### Changed
-- changed formatter to eslint formatting instead of prettier
-- improved data loading on frontend side
-- improved production handling by introducing build and run stages in Dockerfile
-- renamed tables for more generic usage
-- Updated nginx config for domain change and redirection
-- changed calendar month view: show 2 weeks before & after selected, not the whole month
-- Improved displayed dates (strings like tomorrow or weekdays)
-- moved session check and class check to extra middleware with single source of truth check with db with redis caching
-- move vaidation (zod) layer from controller to seperate middleware
+- Change formatter to eslint formatting instead of prettier
+- Improve data loading on frontend side
+- Improve production handling by introducing build and run stages in Dockerfile
+- Rename tables for more generic usage
+- Update nginx config for domain change and redirection
+- Change calendar month view: show 2 weeks before & after selected, not the whole month
+- Improve displayed dates (strings like tomorrow or weekdays)
+- Move session check and class check to extra middleware with single source of truth check with db with redis caching
+- Move vaidation (zod) layer from controller to seperate middleware
 
 ### Fixed
 #### Frontend
-- show more button on rich textarea not showing up
+- Show more button on rich textarea not showing up
 - No 404 result
-- multiple toast containers which overlap
+- Multiple toast containers which overlap
 - Homework checking is buggy on frontend
-- class settings: made more collapsible
+- Class settings: made more collapsible
 
 #### Backend
-- server not restarting on change
-- moved type packages to devDependencies in package.json
-- error on requesting unknown route
+- Server not restarting on change
+- Move type packages to devDependencies in package.json
+- Error on requesting unknown route
 
 ### Security
-- package bumping
+- Package bumping
 
 ### Removed
-- timetable validator, ajv package
-- compression package, compression now handeled by nginx
+- Timetable validator, ajv package
+- Compression package, compression now handeled by nginx
 
 ---
 
