@@ -380,11 +380,6 @@ function replaceRichTextareas(): void {
       richTextarea.find(".rich-textarea-toolbar").toggle();
     });
 
-    input.on("input change", () => {
-      textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
-      textarea.toggleClass("rich-textarea-empty", textarea.html() === "");
-    });
-
     function findReplacement(direction: "old" | "new", val: string): { old: string, new: string } | undefined {
       if (direction === "old") {
         return replacements.find(r => r.old === val);
@@ -718,6 +713,7 @@ function replaceRichTextareas(): void {
 
       updateInput();
 
+      input.trigger("input");
       textarea.toggleClass("rich-textarea-empty", textarea.html() === "");
     });
 

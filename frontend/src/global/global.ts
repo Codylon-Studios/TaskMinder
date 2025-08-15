@@ -1,5 +1,5 @@
 import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
-import { $navbarToasts, user } from "../snippets/navbar/navbar.js";
+import { user } from "../snippets/navbar/navbar.js";
 
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
@@ -523,6 +523,10 @@ if (!isSite("settings")) {
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
   }
 }
+
+$(document).on("input", ".autocomplete", function () {
+  $(this).removeClass("autocomplete");
+});
 
 declare global {
   interface JQueryStatic {

@@ -12,7 +12,8 @@ import {
   socket,
   csrfToken,
   reloadAllFn,
-  HomeworkData
+  HomeworkData,
+  lessonData
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -204,18 +205,55 @@ async function updateTeamList(): Promise<void> {
   });
 };
 
-function addHomework(): void {
+async function addHomework(): Promise<void> {
   //
   // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS A HOMEWORK
   //
 
-  // Reset the data inputs in the add homework modal
-  $("#add-homework-subject").val("");
+  // Set the data inputs in the add homework modal
+  const now = new Date();
+  const currentJoinedTeamsData = (await joinedTeamsData());
+  const timeNow = (now.getHours() * 60 + now.getMinutes() - 5) * 60 * 1000; // Pretend it's 5min earlier, in case the lesson was just over
+  const currentLessonData = await lessonData();
+  const currentLesson = currentLessonData.find(lesson => // Find the current lesson
+    (lesson.teamId === -1 || currentJoinedTeamsData.includes(lesson.teamId)) // The user is in the team
+    && lesson.weekDay === now.getDay() - 1 // The lesson is today
+    && parseInt(lesson.startTime) < timeNow && parseInt(lesson.endTime) > timeNow // The lesson is now
+  );
+  if (currentLesson) {
+    $("#add-homework-subject").val(currentLesson.subjectId).addClass("autocomplete");
+    const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === currentLesson.subjectId); // The next lessons of the subject
+
+    const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
+    const minDiff = nextLessonsWeekdays.reduce((previous, current) => {
+      let diff = (current - (now.getDay() - 1) + 7) % 7; // The difference in days
+      if (diff === 0) diff = 7;
+      return Math.min(diff, previous);
+    }, 7);
+    
+    const nextLessonDate = (new Date());
+    nextLessonDate.setDate(nextLessonDate.getDate() + minDiff);
+
+    $("#add-homework-date-submission").val(msToInputDate(nextLessonDate.getTime())).addClass("autocomplete")
+      .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
+    
+    if (currentLesson.teamId !== -1) {
+      console.log($("#add-homework-team"), currentLesson.teamId);
+      $("#add-homework-team").val(currentLesson.teamId).addClass("autocomplete")
+        .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
+    }
+    else {
+      $("#add-homework-team").val("-1");
+    }
+  }
+  else {
+    $("#add-homework-subject").val("");
+    $("#add-homework-date-submission").val("");
+    $("#add-homework-team").val("-1");
+  }
   $("#add-homework-content").val("");
   $("#add-homework-content").trigger("change");
-  $("#add-homework-date-assignment").val(msToInputDate(Date.now())); // But set the assignment date to the current date
-  $("#add-homework-date-submission").val("");
-  $("#add-homework-team").val("-1");
+  $("#add-homework-date-assignment").val(msToInputDate(Date.now())).addClass("autocomplete");
 
   // Disable the actual "add" button, because not all information is given
   $("#add-homework-button").addClass("disabled");
@@ -573,6 +611,7 @@ $(function () {
     joinedTeamsData.reload();
     subjectData.reload();
     teamsData.reload();
+    lessonData.reload();
     await updateSubjectList();
     await updateHomeworkList();
     await updateTeamList();
@@ -641,6 +680,51 @@ $(function () {
     }
     else {
       $("#add-homework-button").removeClass("disabled");
+    }
+  });
+
+  $("#add-homework-subject").on("input", async function () {
+    const currentLessonData = await lessonData();
+    const now = new Date();
+
+    // The next lessons of the new selected subject
+    const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === parseInt($(this).val()?.toString() ?? "-1"));
+
+    const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
+    const minDiff = nextLessonsWeekdays.reduce((previous, current) => {
+      let diff = (current - (now.getDay() - 1) + 7) % 7; // The difference in days
+      if (diff === 0) diff = 7;
+      return Math.min(diff, previous);
+    }, 7);
+    
+    const nextLessonDate = (new Date());
+    nextLessonDate.setDate(nextLessonDate.getDate() + minDiff);
+
+    // Only overwrite if the user hasn't decided for a specific date
+    const $submissionDate = $("#add-homework-date-submission");
+    if (nextLessonsWeekdays.length > 0) {
+      if ($submissionDate.is(".autocomplete") || $submissionDate.val() === "") {
+        $submissionDate.val(msToInputDate(nextLessonDate.getTime())).addClass("autocomplete")
+          .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
+      }
+    }
+    else {
+      $submissionDate.val("").removeClass("autocomplete");
+    }
+
+    if (nextLessons.length > 0) {
+      if ($("#add-homework-team").is(".autocomplete") || $("#add-homework-team").val() === "-1") {
+        if (nextLessons[0].teamId === -1) {
+          $("#add-homework-team").val("-1").removeClass("autocomplete");
+        }
+        else {
+          $("#add-homework-team").val(nextLessons[0].teamId).addClass("autocomplete")
+            .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
+        }
+      }
+    }
+    else {
+      $("#add-homework-team").val("-1").removeClass("autocomplete");
     }
   });
 

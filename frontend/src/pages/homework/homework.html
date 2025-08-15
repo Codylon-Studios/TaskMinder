@@ -89,6 +89,7 @@
                   <option value="" disabled selected>Fach</option>
                   <!-- Gets filled -->
                 </select>
+                <div class="autocomplete-feedback">Automatisch: Das aktuelle Fach</div>
               </div>
 
               <div class="mb-3">
@@ -99,18 +100,30 @@
               <div class="mb-3">
                 <label for="add-homework-date-assignment" class="form-label">Gib ein, wann die Hausaufgabe aufgegeben wurde</label>
                 <input type="date" class="form-control add-homework-input" id="add-homework-date-assignment" />
+                <div class="autocomplete-feedback">Automatisch: Heute</div>
               </div>
 
               <div class="mb-3">
                 <label for="add-homework-date-submission" class="form-label">Gib ein, bis wann die Hausaufgabe abgegeben werden muss</label>
                 <input type="date" class="form-control add-homework-input" id="add-homework-date-submission" />
+                <div class="autocomplete-feedback">
+                  Automatisch: Die nächste Stunde in
+                  <b></b>
+                </div>
               </div>
 
-              <label for="add-homework-team" class="form-label">Wähle ein Team für die Hausaufgabe aus (optional)</label>
-              <select class="form-select add-homework-input" id="add-homework-team">
-                <option value="" selected>Alle</option>
-                <!-- Gets filled -->
-              </select>
+              <div class="mb-3">
+                <label for="add-homework-team" class="form-label">Wähle ein Team für die Hausaufgabe aus (optional)</label>
+                <select class="form-select add-homework-input" id="add-homework-team">
+                  <option value="" selected>Alle</option>
+                  <!-- Gets filled -->
+                </select>
+                <div class="autocomplete-feedback">
+                  Automatisch: Das Team, das
+                  <b></b>
+                  hat
+                </div>
+              </div>
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
