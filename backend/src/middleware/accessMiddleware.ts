@@ -1,26 +1,125 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
+import prisma from "../config/prisma";
 import { RequestError } from "../@types/requestError";
+import { redisClient } from "../config/redis";
 
-// Middleware to enforce session-based access control
-const checkAccess = {
-  elseRedirect(req: Request, res: Response, next: NextFunction) {
-    if (req.session.classJoined) {
+const ROLES = {
+  MEMBER: 0,
+  EDITOR: 1,
+  MANAGER: 2,
+  ADMIN: 3
+} as const;
+
+type AccessRequirement = "ACCOUNT" | "CLASS" | keyof typeof ROLES;
+
+export default function checkAccess(requirements: AccessRequirement[]) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (requirements.includes("ACCOUNT")) {
+        await checkAccountAccess(req);
+      }
+
+      if (requirements.includes("CLASS")) {
+        await checkClassAccess(req, res);
+        if (res.headersSent) {
+          return;
+        }
+      }
+
+      const roleLevels = requirements.filter(
+        r => r in ROLES
+      ) as (keyof typeof ROLES)[];
+      if (roleLevels.length > 0) {
+        const requiredPermission = Math.max(...roleLevels.map(r => ROLES[r]));
+        await checkPermissionLevel(req, requiredPermission);
+      }
+
       return next();
+    } 
+    catch (err) {
+      return next(err);
     }
+  };
+}
+
+async function checkAccountAccess(req: Request): Promise<void> {
+  if (!req.session.account) {
+    throwError("Unauthorized", 401, "User not logged in");
+  }
+
+  const authUserRedis = await redisClient.get(`auth_user:${req.session.account.accountId}`);
+
+  if (!authUserRedis) {
+    const account = await prisma.account.findUnique({
+      where: { accountId: req.session.account.accountId }
+    });
+
+    if (!account) {
+      delete req.session.account;
+      throwError(
+        "Unauthorized",
+        401,
+        "Account not found. You have been logged out"
+      );
+    }
+    await redisClient.set(`auth_user:${req.session.account.accountId}`, "true");
+  }
+}
+
+async function checkClassAccess(req: Request, res: Response): Promise<void> {
+  if (!req.session.classId) {
     return res.redirect(302, "/join");
-  },
-  elseUnauthorized(req: Request, res: Response, next: NextFunction) {
-    if (req.session.classJoined) {
-      return next();
-    }
-    const err: RequestError = {
-      name: "Unauthorized",
-      status: 401,
-      message: "User hasn't joined class",
-      expected: true,
-    };
-    throw err;
-  },
-};
+  }
 
-export default checkAccess;
+  const authClassRedis = await redisClient.get(`auth_class:${req.session.classId}`);
+  if (!authClassRedis) {
+    const aClass = await prisma.class.findUnique({
+      where: { classId: parseInt(req.session.classId, 10) }
+    });
+
+    if (!aClass) {
+      delete req.session.classId;
+      throwError(
+        "Not Found",
+        404,
+        "The selected class no longer exists. Please select another class"
+      );
+    }
+    await redisClient.set(`auth_class:${req.session.classId}`, "true");
+  }
+}
+
+async function checkPermissionLevel(
+  req: Request,
+  requiredPermission: number
+): Promise<void> {
+  let effectivePermission = 0;
+
+  if (req.session.account) {
+    const account = await prisma.joinedClass.findUnique({
+      where: { accountId: req.session.account.accountId },
+      select: { permissionLevel: true }
+    });
+    effectivePermission = account?.permissionLevel ?? 0;
+  } 
+  else if (req.session.classId) {
+    const aClass = await prisma.class.findUnique({
+      where: { classId: parseInt(req.session.classId, 10) },
+      select: { defaultPermissionLevel: true }
+    });
+    effectivePermission = aClass?.defaultPermissionLevel ?? 0;
+  }
+
+  if (effectivePermission < requiredPermission) {
+    throwError(
+      "Forbidden",
+      403,
+      "The permission level is not sufficient to perform this action"
+    );
+  }
+}
+
+function throwError(name: string, status: number, message: string): never {
+  const err: RequestError = { name, status, message, expected: true };
+  throw err;
+}

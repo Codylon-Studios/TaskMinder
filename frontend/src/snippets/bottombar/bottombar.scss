@@ -5,6 +5,7 @@
 
 .bottombar-link {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 20%;
@@ -21,6 +22,11 @@
 
   & i {
     font-size: 1.2rem;
-    margin: 0.8rem;
+    margin: 0.8rem 0.8rem 0 0.8rem;
+  }
+
+  & span {
+    font-size: max(0.5rem, 1.5vw);
+    margin-bottom: 0.3rem;
   }
 }

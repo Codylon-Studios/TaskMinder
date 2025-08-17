@@ -4,6 +4,72 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.0.0] - 2025-08-16
+
+### Breaking Change
+- Database structure (please refer to the migration guide on docs.taskminder.de)
+
+### Added
+- Functionality to create new classes (account required)
+- Functionality to log out, delete account, change password and username
+- Add autocomplete for due date and team selection as soon as subject is selected
+- QR Code sharing of class code
+- Copy paste for event/homework descriptions
+- Add prisma transactions for safer database handling
+- Add homework check animation
+- Add sharing events with calendar
+- Add soft deletion of accounts wth 30d auto delete from db
+- Add permission levels (0,1,2,3) for classes with different permission levels
+- Default setting for unregistered user and individual permissions for registered users
+- Functionality to kick members from class
+- Add 404 page
+
+### Changed
+- Change formatter to eslint formatting instead of prettier
+- Improve data loading on frontend side
+- Improve production handling by introducing build and run stages in Dockerfile
+- Rename tables for more generic usage
+- Update nginx config for domain change and redirection
+- Change calendar month view: show 2 weeks before & after selected, not the whole month
+- Improve displayed dates (strings like tomorrow or weekdays)
+- Move session check and class check to extra middleware with single source of truth check with db with redis caching
+- Move vaidation (zod) layer from controller to seperate middleware
+
+### Fixed
+#### Frontend
+- Show more button on rich textarea not showing up
+- No 404 result
+- Multiple toast containers which overlap
+- Homework checking is buggy on frontend
+- Class settings: made more collapsible
+
+#### Backend
+- Server not restarting on change
+- Move type packages to devDependencies in package.json
+- Error on requesting unknown route
+
+### Security
+- Package bumping
+
+### Removed
+- Timetable validator, ajv package
+- Compression package, compression now handeled by nginx
+
+---
+
+## \[v1.2.2] - 2025-07-14
+
+### Changed
+
+* change domain to taskminder.de, update email to info@taskminder.de
+* update default legal information
+
+### Fixed
+
+* fix nginx config file and setup guide in documentation
+
+---
+
 ## \[v1.2.1] - 2025-07-14
 
 ### Added
@@ -30,19 +96,19 @@ Users must review and comply with the updated license terms before updating or c
 
 ### Added
 
-* Migrated runtime environment from Node.js to [Bun](https://bun.sh) for improved performance and native support for TypeScript.
-* Updated all scripts and tooling to be compatible with Bun.
+- Migrated runtime environment from Node.js to [Bun](https://bun.sh) for improved performance and native support for TypeScript.
+- Updated all scripts and tooling to be compatible with Bun.
 
 ### Changed
 
-* Replaced `npm` scripts with `bun` equivalents.
-* Adjusted build and deployment pipelines to support Bun.
-* run linting and formatting tools in frontend
-* LICENSE changes to clarify ownership and permissions
+- Replaced `npm` scripts with `bun` equivalents.
+- Adjusted build and deployment pipelines to support Bun.
+- run linting and formatting tools in frontend
+- LICENSE changes to clarify ownership and permissions
 
 ### Removed
 
-* Removed `package-lock.json` in favor of Bun’s dependency manager.
+- Removed `package-lock.json` in favor of Bun’s dependency manager.
 
 ---
 
@@ -50,22 +116,22 @@ Users must review and comply with the updated license terms before updating or c
 
 ### Added
 
-* Rich text support in homework and events.
-* Added release notes for v.1.1.1 and v1.1.2
-* Linting and Formatting tools -  ESLint and Prettier.
+- Rich text support in homework and events.
+- Added release notes for v.1.1.1 and v1.1.2
+- Linting and Formatting tools - ESLint and Prettier.
 
 ### Changed
 
-* Impressum and DSGVO updates
-* UI improvements
+- Impressum and DSGVO updates
+- UI improvements
 
 ### Fixed
 
-* Resolved an issue where logged-in users were unable to join multiple teams within the same class.
+- Resolved an issue where logged-in users were unable to join multiple teams within the same class.
 
 ### Security
 
-* Bump packages to close security iusses.
+- Bump packages to close security iusses.
 
 ---
 
@@ -73,7 +139,7 @@ Users must review and comply with the updated license terms before updating or c
 
 ### Fixed
 
-* fix redis cache not working correctly
+- fix redis cache not working correctly
 
 ---
 
@@ -81,17 +147,17 @@ Users must review and comply with the updated license terms before updating or c
 
 ### Added
 
-* .env.example file
+- .env.example file
 
 ### Changed
 
-* Moved docs to host on readthedocs
-* Migrate to prisma ORM, add migrations
+- Moved docs to host on readthedocs
+- Migrate to prisma ORM, add migrations
 
 ### Fixed
 
-* wrong joinedTeamsData saved locally
-* edit toggle btn doesn't always show up when logged in
+- wrong joinedTeamsData saved locally
+- edit toggle btn doesn't always show up when logged in
 
 ---
 
@@ -99,29 +165,29 @@ Users must review and comply with the updated license terms before updating or c
 
 ### Added
 
-* Support for multiline event and homework descriptions.
-* `.sql` dump compression to reduce storage usage.
-* Collapsible long events to improve UI/UX.
-* Production documentation updates for:
-  * User permission details.
-  * Switched the order of NGINX and Certbot setup.
-* `trust proxy` enabled for Express Rate Limit compatibility ([source](https://express-rate-limit.mintlify.app/guides/troubleshooting-proxy-issues)).
+- Support for multiline event and homework descriptions.
+- `.sql` dump compression to reduce storage usage.
+- Collapsible long events to improve UI/UX.
+- Production documentation updates for:
+  - User permission details.
+  - Switched the order of NGINX and Certbot setup.
+- `trust proxy` enabled for Express Rate Limit compatibility ([source](https://express-rate-limit.mintlify.app/guides/troubleshooting-proxy-issues)).
 
 ### Changed
 
-* Resized "Copy Classcode" button for better mobile experience.
-* Updated NGINX configuration for improved compatibility and performance.
+- Resized "Copy Classcode" button for better mobile experience.
+- Updated NGINX configuration for improved compatibility and performance.
 
 ### Fixed
 
-* Timetable now properly displays when no substitutions are available.
-* Backup table issue resolved by referencing the correct `.env` variable.
-* Duplicate display issue corrected in UI.
+- Timetable now properly displays when no substitutions are available.
+- Backup table issue resolved by referencing the correct `.env` variable.
+- Duplicate display issue corrected in UI.
 
 ### Security
 
-* Bump packages to close securtity iusses.
-* Escaping html to reduce attack risks.
+- Bump packages to close securtity iusses.
+- Escaping html to reduce attack risks.
 
 ---
 
@@ -129,36 +195,36 @@ Users must review and comply with the updated license terms before updating or c
 
 ### Added
 
-* Fetch, edit, and store timetable and subjects from the frontend.
-* Ability to add and edit teams.
-* Privacy Policy including *Impressum*, *Datenschutzinformation*, and contact email.
-* Forced login or class code entry before accessing content.
-* Copy class code button for easy sharing.
-* Server monitoring tools to track system health and performance metrics.
+- Fetch, edit, and store timetable and subjects from the frontend.
+- Ability to add and edit teams.
+- Privacy Policy including _Impressum_, _Datenschutzinformation_, and contact email.
+- Forced login or class code entry before accessing content.
+- Copy class code button for easy sharing.
+- Server monitoring tools to track system health and performance metrics.
 
 ### Changed
 
-* Migrated codebase from JavaScript to TypeScript for improved type safety and maintainability.
-* External content fetching moved from client-side to server-side.
-* SEO improvements to enhance discoverability.
-* Mobile navigation improved with off-canvas menu and direct login/logout buttons.
-* File compression enabled to reduce load times.
-* Documentation migrated from Notion to self-hosted MkDocs.
-* Bumped core packages, including major upgrade to Express v5.
-* Strengthened Content Security Policy (CSP) headers.
-* Established and enforced new code standards.
+- Migrated codebase from JavaScript to TypeScript for improved type safety and maintainability.
+- External content fetching moved from client-side to server-side.
+- SEO improvements to enhance discoverability.
+- Mobile navigation improved with off-canvas menu and direct login/logout buttons.
+- File compression enabled to reduce load times.
+- Documentation migrated from Notion to self-hosted MkDocs.
+- Bumped core packages, including major upgrade to Express v5.
+- Strengthened Content Security Policy (CSP) headers.
+- Established and enforced new code standards.
 
 ### Fixed
 
-* Backup table command issues resolved.
+- Backup table command issues resolved.
 
 ### Security
 
-* Added server-side rate limiter to prevent abuse.
-* Implemented CSRF middleware to protect against cross-site request forgery attacks.
+- Added server-side rate limiter to prevent abuse.
+- Implemented CSRF middleware to protect against cross-site request forgery attacks.
 
 ### Removed
 
-* Previous license replaced with updated terms (see LICENSE file).
+- Previous license replaced with updated terms (see LICENSE file).
 
 ---

@@ -1,7 +1,7 @@
 # Prometheus: 9090
 # Loki: 3100
 # Grafana: 3001
-# TaskMinder-app: 3002
+# TaskMinder-app: 3000
 # redis: redis_port.txt
 # postgres: 5432
 services:
@@ -10,7 +10,7 @@ services:
     container_name: taskminder-app
     restart: always
     ports:
-      - "3002:3000"
+      - "3000:3000"
     environment:
       - NODE_ENV=PRODUCTION
       - REDIS_HOST=redis
@@ -21,10 +21,6 @@ services:
       - db_host
       - redis_port
       - session_secret
-      - classcode
-      - dsb_user
-      - dsb_password
-      - dsb_activated
       - unsafe_deactivate_csp
       - database_url
     depends_on:
@@ -33,31 +29,18 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - /usr/src/app/node_modules
       - ./db-backups:/backups
-    command: >
-      sh -c 'export DB_USER=$(cat /run/secrets/db_user) && \
-        export DB_PASSWORD=$(cat /run/secrets/db_password) && \
-        export DB_NAME=$(cat /run/secrets/db_name) && \
-        export DB_HOST=$(cat /run/secrets/db_host) && \
-        export REDIS_PORT=$(cat /run/secrets/redis_port) && \
-        export SESSION_SECRET=$(cat /run/secrets/session_secret) && \
-        export CLASSCODE=$(cat /run/secrets/classcode) && \
-        export DSB_USER=$(cat /run/secrets/dsb_user) && \
-        export DSB_PASSWORD=$(cat /run/secrets/dsb_password) && \
-        export DSB_ACTIVATED=$(cat /run/secrets/dsb_activated) && \
-        export UNSAFE_DEACTIVATE_CSP=$(cat /run/secrets/unsafe_deactivate_csp) && \
-        export DATABASE_URL=$(cat /run/secrets/database_url) && \
-        redis-cli -h redis FLUSHALL && \
-        bunx prisma migrate deploy && \
-        bun backend/dist/server.js'
 
   postgres:
     image: postgres:14
     container_name: taskminder-postgres
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$(cat /run/secrets/db_user) -d $$(cat /run/secrets/db_name)"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $$(cat /run/secrets/db_user) -d $$(cat /run/secrets/db_name)",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -95,11 +78,11 @@ services:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
     depends_on:
       - app
 
@@ -134,7 +117,7 @@ services:
       - "3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/ 
+      - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/
       - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
     environment:
       # This is the password and user at server startup, grafana will prompt to change this upon first login
@@ -158,14 +141,6 @@ secrets:
     file: ./docker_secrets/redis_port.txt
   session_secret:
     file: ./docker_secrets/session_secret.txt
-  classcode:
-    file: ./docker_secrets/classcode.txt
-  dsb_user:
-    file: ./docker_secrets/dsb_user.txt
-  dsb_password:
-    file: ./docker_secrets/dsb_password.txt
-  dsb_activated:
-    file: ./docker_secrets/dsb_activated.txt
   unsafe_deactivate_csp:
     file: ./docker_secrets/unsafe_deactivate_csp.txt
   database_url:

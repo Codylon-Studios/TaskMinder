@@ -1,25 +1,21 @@
 import { createServer } from "http";
 import path from "path";
-import client from "prom-client";
-import compression from "compression";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
 import * as dotenv from "dotenv";
 import express, { Request, Response, NextFunction } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
-import helmet from "helmet";
-import { Pool } from "pg";
 import prisma from "./config/prisma";
 import socketIO from "./config/socket";
+import { sessionPool } from "./config/pg";
+import { httpRequestDurationMicroseconds, register } from "./config/promClient";
 import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
-import cleanupOldHomework from "./utils/homeworkCleanup";
-import {
-  csrfProtection,
-  csrfSessionInit,
-} from "./middleware/csrfProtectionMiddleware";
+import { CSPMiddleware } from "./middleware/CSPMiddleware";
+import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
+import { cleanupDeletedAccounts, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
 import events from "./routes/eventRoute";
@@ -38,25 +34,10 @@ declare module "express-session" {
       accountId: number;
       username: string;
     };
-    loggedIn: boolean;
-    classJoined: boolean;
+    classId: string;
+    csrfToken?: string;
   }
 }
-
-const register = new client.Registry();
-register.setDefaultLabels({
-  app: "taskminder-nodejs",
-});
-
-const httpRequestDurationMicroseconds = new client.Histogram({
-  name: "http_request_duration_ms",
-  help: "Duration of HTTP requests in ms",
-  labelNames: ["method", "route", "code"],
-  buckets: [50, 100, 200, 300, 400, 500, 750, 1000, 2000],
-});
-register.registerMetric(httpRequestDurationMicroseconds);
-
-client.collectDefaultMetrics({ register });
 
 prisma
   .$connect()
@@ -67,14 +48,6 @@ prisma
     logger.error("DB connection failed:", err);
     process.exit(1);
   });
-
-const sessionPool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: 5432,
-});
 
 const sessionSecret = process.env.SESSION_SECRET;
 
@@ -93,51 +66,23 @@ const limiter = rateLimit({
   limit: 70, // Max 70 requests per IP per second
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: { status: 429, message: "Too many requests, please slow down." },
+  message: { status: 429, message: "Too many requests, please slow down." }
 });
 app.use(limiter);
 
-// Content Security Policy
 if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          "default-src": ["'self'"],
-          "script-src": [
-            "'self'",
-            "'sha256-OviHjJ7w1vAv612HhIiu5g+DltgQcknWb7V6OYt6Rss='",
-            "'sha256-1kbQCzOR6DelBxT2yrtpf0N4phdVPuIOgvwMFeFkpBk='",
-          ],
-          "connect-src": ["'self'", "wss://*"],
-          "style-src": ["'self'", "'unsafe-inline'"],
-          "font-src": ["'self'"],
-          "img-src": ["'self'", "data:"],
-          "object-src": ["'none'"],
-          "frame-ancestors": ["'self'"],
-        },
-      },
-      referrerPolicy: {
-        policy: "strict-origin-when-cross-origin",
-      },
-    })
-  );
-} else {
-  logger.warn(
-    "Helmet and CSP is disabled! This is not recommended for production!"
-  );
+  app.use(CSPMiddleware());
+}
+else {
+  logger.warn("Helmet and CSP is disabled! This is not recommended for production!");
 }
 
-app.use(compression());
 app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  if (
-    req.path === "/metrics" ||
-    req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)
-  ) {
+  if (req.path === "/metrics" || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)) {
     return next();
   }
   const end = httpRequestDurationMicroseconds.startTimer();
@@ -154,7 +99,7 @@ const sessionMiddleware = session({
   store: new PgSession({
     pool: sessionPool,
     tableName: "account_sessions",
-    createTableIfMissing: true,
+    createTableIfMissing: true
   }),
   proxy: process.env.NODE_ENV !== "DEVELOPMENT",
   secret: sessionSecret,
@@ -164,9 +109,13 @@ const sessionMiddleware = session({
     sameSite: "lax",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     httpOnly: true,
-    secure: process.env.NODE_ENV !== "DEVELOPMENT",
+    secure: process.env.NODE_ENV !== "DEVELOPMENT"
   },
-  name: "UserLogin",
+  name: "UserLogin"
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ message: "service operational" });
 });
 
 app.use(sessionMiddleware);
@@ -177,9 +126,6 @@ app.get("/csrf-token", (req, res) => {
 app.use(csrfProtection);
 app.use(RequestLogger);
 
-app.get("/health", (req, res) => {
-  res.status(200).json({ message: "service operational" });
-});
 
 app.get("/metrics", async (req: Request, res: Response) => {
   res.set("Content-Type", register.contentType);
@@ -187,7 +133,7 @@ app.get("/metrics", async (req: Request, res: Response) => {
 });
 
 app.get("/", (req: Request, res: Response) => {
-  if (req.session.account && req.session.classJoined) {
+  if (req.session.account && req.session.classId) {
     return res.redirect(302, "/main");
   }
   res.redirect(302, "/join");
@@ -198,17 +144,11 @@ const pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages");
 app.get("/join", (req, res) => {
   const action = req.query.action;
 
-  if (req.session.account && req.session.classJoined) {
+  if (req.session.account && req.session.classId) {
     return res.redirect(302, "/main");
   }
 
-  if (req.session.account && !req.session.classJoined) {
-    if (action !== "join") {
-      return res.redirect(302, "/join?action=join");
-    }
-  }
-
-  if (!req.session.account && req.session.classJoined) {
+  if (!req.session.account && req.session.classId) {
     if (action !== "account") {
       return res.redirect(302, "/join?action=account");
     }
@@ -236,16 +176,20 @@ app.use("/class", classes);
 //
 // Protected routes: Redirect to /join if not logged in
 //
-app.get("/main", checkAccess.elseRedirect, (req, res) => {
+app.get("/main", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "main", "main.html"));
 });
 
-app.get("/homework", checkAccess.elseRedirect, (req, res) => {
+app.get("/homework", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "homework", "homework.html"));
 });
 
-app.get("/events", checkAccess.elseRedirect, (req, res) => {
+app.get("/events", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
+});
+
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(pagesPath, "404", "404.html"));
 });
 
 // Error Handler Middleware (Must be the last app.use)
@@ -255,6 +199,18 @@ app.use(ErrorHandler);
 cron.schedule("0 0 * * *", () => {
   logger.info("Starting scheduled homework cleanup");
   cleanupOldHomework();
+});
+
+// Schedule the cron job to run at midnight (00:00) every day
+cron.schedule("0 0 * * *", () => {
+  logger.info("Starting scheduled test class cleanup");
+  cleanupTestClasses();
+});
+
+// Schedule the cron job to run at midnight (00:00) every day
+cron.schedule("0 0 * * *", () => {
+  logger.info("Starting scheduled deleted account cleanup");
+  cleanupDeletedAccounts();
 });
 
 server.listen(3000, () => {

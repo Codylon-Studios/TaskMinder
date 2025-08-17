@@ -9,90 +9,39 @@
     <div class="load-snippet" data-target="colorPicker"></div>
 
     <div class="container">
-      <div
-        class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2"
-      >
+      <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
         <div class="d-flex gap-2">
-          <button
-            type="button"
-            class="btn btn-primary d-none"
-            id="show-add-homework-button"
-          >
+          <button type="button" class="btn btn-primary" id="show-add-homework-button">
             <i class="fa-solid fa-plus"></i>
             Neu
           </button>
           <input type="checkbox" class="btn-check" id="edit-toggle" />
-          <label
-            class="btn btn-outline-secondary d-none"
-            for="edit-toggle"
-            id="edit-toggle-label"
-          >
+          <label class="btn btn-outline-secondary" for="edit-toggle" id="edit-toggle-label">
             <i class="fa-solid fa-edit"></i>
             Bearbeiten
           </label>
 
           <input type="checkbox" class="btn-check" id="filter-toggle" />
-          <label
-            class="btn btn-outline-secondary position-relative"
-            for="filter-toggle"
-          >
+          <label class="btn btn-outline-secondary position-relative" for="filter-toggle">
             <i class="fa-solid fa-filter"></i>
             Filtern
             <span class="d-none filter-info-circle" id="filter-changed"></span>
           </label>
         </div>
-        <div
-          id="filter-content"
-          class="d-flex align-items-center flex-column flex-md-row gap-2 d-contents d-none"
-        >
+        <div id="filter-content" class="d-flex align-items-center flex-column flex-md-row gap-2 d-contents d-none">
           <div class="btn-group" id="filter-status">
-            <input
-              type="checkbox"
-              class="btn-check"
-              name="filter-status"
-              id="filter-status-unchecked"
-              checked
-            />
-            <label
-              class="btn btn-sm btn-outline-secondary"
-              for="filter-status-unchecked"
-              >Unerledigt</label
-            >
+            <input type="checkbox" class="btn-check" name="filter-status" id="filter-status-unchecked" checked />
+            <label class="btn btn-sm btn-outline-secondary" for="filter-status-unchecked">Unerledigt</label>
 
-            <input
-              type="checkbox"
-              class="btn-check"
-              name="filter-status"
-              id="filter-status-checked"
-              checked
-            />
-            <label
-              class="btn btn-sm btn-outline-secondary"
-              for="filter-status-checked"
-              >Erledigt</label
-            >
+            <input type="checkbox" class="btn-check" name="filter-status" id="filter-status-checked" checked />
+            <label class="btn btn-sm btn-outline-secondary" for="filter-status-checked">Erledigt</label>
           </div>
           <div class="dropdown">
-            <button
-              class="btn btn-sm btn-outline-secondary dropdown-toggle"
-              data-bs-toggle="dropdown"
-            >
-              Fach
-            </button>
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Fach</button>
             <div class="dropdown-menu" id="filter-subject-dropwdown">
               <div class="px-2 py-0">
-                <button
-                  class="btn btn-outline-secondary btn-sm"
-                  id="filter-subject-all"
-                >
-                  Alle
-                </button>
-                <button
-                  class="btn btn-outline-secondary btn-sm"
-                  id="filter-subject-none"
-                >
-                  Keine
-                </button>
+                <button class="btn btn-outline-secondary btn-sm" id="filter-subject-all">Alle</button>
+                <button class="btn btn-outline-secondary btn-sm" id="filter-subject-none">Keine</button>
               </div>
               <div class="dropdown-divider"></div>
               <div class="px-2 py-0" id="filter-subject-list">
@@ -101,33 +50,16 @@
             </div>
           </div>
           <div class="dropdown">
-            <button
-              class="btn btn-sm btn-outline-secondary dropdown-toggle"
-              data-bs-toggle="dropdown"
-            >
-              Datum
-            </button>
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Datum</button>
             <div class="dropdown-menu" id="filter-date-dropwdown">
               <div class="px-2 py-1">
                 <div class="d-flex align-items-center mb-3">
-                  <label class="mb-0 me-2 text-nowrap" for="filter-date-from"
-                    >Von</label
-                  >
-                  <input
-                    type="date"
-                    class="form-control form-control-sm filter-date"
-                    id="filter-date-from"
-                  />
+                  <label class="mb-0 me-2 text-nowrap" for="filter-date-from">Von</label>
+                  <input type="date" class="form-control form-control-sm filter-date" id="filter-date-from" />
                 </div>
                 <div class="d-flex align-items-center">
-                  <label class="mb-0 me-2 text-nowrap" for="filter-date-until"
-                    >Bis</label
-                  >
-                  <input
-                    type="date"
-                    class="form-control form-control-sm filter-date"
-                    id="filter-date-until"
-                  />
+                  <label class="mb-0 me-2 text-nowrap" for="filter-date-until">Bis</label>
+                  <input type="date" class="form-control form-control-sm filter-date" id="filter-date-until" />
                 </div>
               </div>
             </div>
@@ -147,79 +79,55 @@
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="add-homework-modal-label">
-                Hausaufgabe hinzufügen
-              </h5>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-              ></button>
+              <h5 class="modal-title" id="add-homework-modal-label">Hausaufgabe hinzufügen</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
               <div class="mb-3">
-                <label for="add-homework-subject" class="form-label">
-                  Wähle das Fach der Hausaufgabe aus
-                </label>
-                <select
-                  class="form-select add-homework-input"
-                  id="add-homework-subject"
-                >
+                <label for="add-homework-subject" class="form-label">Wähle das Fach der Hausaufgabe aus</label>
+                <select class="form-select add-homework-input" id="add-homework-subject">
                   <option value="" disabled selected>Fach</option>
                   <!-- Gets filled -->
                 </select>
+                <div class="autocomplete-feedback">Automatisch: Das aktuelle Fach</div>
               </div>
 
               <div class="mb-3">
-                <label for="add-homework-content" class="form-label">
-                  Füge eine Beschreibung für die Hausaufgabe hinzu
-                </label>
-                <textarea
-                  class="rich-textarea add-homework-input"
-                  id="add-homework-content"
-                ></textarea>
+                <label for="add-homework-content" class="form-label">Füge eine Beschreibung für die Hausaufgabe hinzu</label>
+                <textarea class="rich-textarea add-homework-input" id="add-homework-content"></textarea>
               </div>
 
               <div class="mb-3">
-                <label for="add-homework-date-assignment" class="form-label">
-                  Gib ein, wann die Hausaufgabe aufgegeben wurde
-                </label>
-                <input
-                  type="date"
-                  class="form-control add-homework-input"
-                  id="add-homework-date-assignment"
-                />
+                <label for="add-homework-date-assignment" class="form-label">Gib ein, wann die Hausaufgabe aufgegeben wurde</label>
+                <input type="date" class="form-control add-homework-input" id="add-homework-date-assignment" />
+                <div class="autocomplete-feedback">Automatisch: Heute</div>
               </div>
 
               <div class="mb-3">
-                <label for="add-homework-date-submission" class="form-label">
-                  Gib ein, bis wann die Hausaufgabe abgegeben werden muss
-                </label>
-                <input
-                  type="date"
-                  class="form-control add-homework-input"
-                  id="add-homework-date-submission"
-                />
+                <label for="add-homework-date-submission" class="form-label">Gib ein, bis wann die Hausaufgabe abgegeben werden muss</label>
+                <input type="date" class="form-control add-homework-input" id="add-homework-date-submission" />
+                <div class="autocomplete-feedback">
+                  Automatisch: Die nächste Stunde in
+                  <b></b>
+                </div>
               </div>
 
-              <label for="add-homework-team" class="form-label">
-                Wähle ein Team für die Hausaufgabe aus (optional)
-              </label>
-              <select
-                class="form-select add-homework-input"
-                id="add-homework-team"
-              >
-                <option value="" selected>Alle</option>
-                <!-- Gets filled -->
-              </select>
+              <div class="mb-3">
+                <label for="add-homework-team" class="form-label">Wähle ein Team für die Hausaufgabe aus (optional)</label>
+                <select class="form-select add-homework-input" id="add-homework-team">
+                  <option value="" selected>Alle</option>
+                  <!-- Gets filled -->
+                </select>
+                <div class="autocomplete-feedback">
+                  Automatisch: Das Team, das
+                  <b></b>
+                  hat
+                </div>
+              </div>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">
-                Abbrechen
-              </button>
-              <button class="btn btn-primary disabled" id="add-homework-button">
-                Hinzufügen
-              </button>
+              <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+              <button class="btn btn-primary disabled" id="add-homework-button">Hinzufügen</button>
             </div>
           </div>
         </div>
@@ -229,34 +137,20 @@
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title" id="edit-homework-modal-label">
-                Hausaufgabe bearbeiten
-              </h5>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
+              <h5 class="modal-title" id="edit-homework-modal-label">Hausaufgabe bearbeiten</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
               <div class="mb-3">
-                <label for="edit-homework-subject" class="form-label">
-                  Wähle das Fach der Hausaufgabe aus
-                </label>
-                <select
-                  class="form-select edit-homework-input"
-                  id="edit-homework-subject"
-                >
+                <label for="edit-homework-subject" class="form-label">Wähle das Fach der Hausaufgabe aus</label>
+                <select class="form-select edit-homework-input" id="edit-homework-subject">
                   <option value="" disabled selected>Fach</option>
                   <!-- Gets filled -->
                 </select>
               </div>
 
               <div class="mb-3">
-                <label for="edit-homework-content" class="form-label">
-                  Füge eine Beschreibung für die Hausaufgabe hinzu
-                </label>
+                <label for="edit-homework-content" class="form-label">Füge eine Beschreibung für die Hausaufgabe hinzu</label>
                 <textarea
                   type="text"
                   class="rich-textarea edit-homework-input"
@@ -266,48 +160,24 @@
               </div>
 
               <div class="mb-3">
-                <label for="edit-homework-date-assignment" class="form-label">
-                  Gib ein, wann die Hausaufgabe aufgegeben wurde
-                </label>
-                <input
-                  type="date"
-                  class="form-control edit-homework-input"
-                  id="edit-homework-date-assignment"
-                />
+                <label for="edit-homework-date-assignment" class="form-label">Gib ein, wann die Hausaufgabe aufgegeben wurde</label>
+                <input type="date" class="form-control edit-homework-input" id="edit-homework-date-assignment" />
               </div>
 
               <div class="mb-3">
-                <label for="edit-homework-date-submission" class="form-label">
-                  Gib ein, bis wann die Hausaufgabe abgegeben werden muss
-                </label>
-                <input
-                  type="date"
-                  class="form-control edit-homework-input"
-                  id="edit-homework-date-submission"
-                />
+                <label for="edit-homework-date-submission" class="form-label">Gib ein, bis wann die Hausaufgabe abgegeben werden muss</label>
+                <input type="date" class="form-control edit-homework-input" id="edit-homework-date-submission" />
               </div>
 
-              <label for="edit-homework-team" class="form-label">
-                Wähle ein Team für die Hausaufgabe aus (optional)
-              </label>
-              <select
-                class="form-select edit-homework-input"
-                id="edit-homework-team"
-              >
+              <label for="edit-homework-team" class="form-label">Wähle ein Team für die Hausaufgabe aus (optional)</label>
+              <select class="form-select edit-homework-input" id="edit-homework-team">
                 <option value="" selected>Alle</option>
                 <!-- Gets filled -->
               </select>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">
-                Abbrechen
-              </button>
-              <button
-                class="btn btn-primary disabled"
-                id="edit-homework-button"
-              >
-                Speichern
-              </button>
+              <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+              <button class="btn btn-primary disabled" id="edit-homework-button">Speichern</button>
             </div>
           </div>
         </div>
@@ -317,75 +187,38 @@
         <div id="add-homework-success-toast" class="toast">
           <div class="toast-header bg-success text-white">
             <b class="me-auto">Erfolgreich hinzugefügt</b>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="toast"
-            ></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
           </div>
-          <div class="toast-body">
-            Die Hausaufgabe wurde erfolgreich hinzugefügt.
-          </div>
+          <div class="toast-body">Die Hausaufgabe wurde erfolgreich hinzugefügt.</div>
         </div>
         <div id="edit-homework-success-toast" class="toast">
           <div class="toast-header bg-success text-white">
             <b class="me-auto">Erfolgreich geändert</b>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="toast"
-            ></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
           </div>
-          <div class="toast-body">
-            Die Hausaufgabe wurde erfolgreich geändert.
-          </div>
+          <div class="toast-body">Die Hausaufgabe wurde erfolgreich geändert.</div>
         </div>
         <div id="delete-homework-success-toast" class="toast">
           <div class="toast-header bg-success text-white">
             <b class="me-auto">Erfolgreich gelöscht</b>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="toast"
-            ></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
           </div>
-          <div class="toast-body">
-            Die Hausaufgabe wurde erfolgreich gelöscht.
-          </div>
+          <div class="toast-body">Die Hausaufgabe wurde erfolgreich gelöscht.</div>
         </div>
-        <div
-          id="delete-homework-confirm-toast"
-          class="toast"
-          data-bs-autohide="false"
-        >
+        <div id="delete-homework-confirm-toast" class="toast" data-bs-autohide="false">
           <div class="toast-header bg-primary text-white">
             <b class="me-auto">Bitte bestätigen</b>
-            <button
-              type="button"
-              class="btn-close btn-close-white"
-              data-bs-dismiss="toast"
-            ></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
           </div>
           <div class="toast-body">
             Möchtest du die Hausaufgabe wirklich löschen?
             <div class="mt-2 pt-2 border-top">
               <div class="row g-2 justify-content-end">
                 <div class="col-auto">
-                  <button
-                    type="button"
-                    class="btn btn-secondary btn-sm"
-                    data-bs-dismiss="toast"
-                  >
-                    Abbrechen
-                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
                 </div>
                 <div class="col-auto">
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    data-bs-dismiss="toast"
-                    id="delete-homework-confirm-toast-button"
-                  >
+                  <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" id="delete-homework-confirm-toast-button">
                     Löschen
                   </button>
                 </div>

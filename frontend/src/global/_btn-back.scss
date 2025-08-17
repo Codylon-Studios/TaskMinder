@@ -1,9 +1,11 @@
+@use "svgs";
+
 $btn-back-width: 1em !default;
 $btn-back-height: $btn-back-width !default;
 $btn-back-padding-x: 0.25em !default;
 $btn-back-padding-y: $btn-back-padding-x !default;
 $btn-back-color: $black !default;
-$btn-back-bg: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='#{$btn-back-color}'><path d='M16 8a1 1 0 0 1-1 1H3.828l4.586 4.586a1 1 0 0 1-1.414 1.414l-6.293-6.293a1 1 0 0 1 0-1.414L6.999 1.293a1 1 0 1 1 1.414 1.414L3.828 7H15a1 1 0 0 1 1 1z'/></svg>") !default;
+$btn-back-bg: svgs.$btn-back !default;
 $btn-back-focus-shadow: $focus-ring-box-shadow !default;
 $btn-back-opacity: 0.5 !default;
 $btn-back-hover-opacity: 0.75 !default;

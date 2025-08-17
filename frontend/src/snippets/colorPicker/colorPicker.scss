@@ -7,6 +7,12 @@ $fa-font-path: "/assets/fonts/fontawesome";
   width: 2rem;
   height: 2rem;
   position: relative;
+
+  &[disabled] {
+    opacity: 0.65;
+    pointer-events: none;
+    user-select: none;
+  }
 }
 
 .color-picker-popup {

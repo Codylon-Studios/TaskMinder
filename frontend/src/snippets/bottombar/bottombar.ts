@@ -1,34 +1,56 @@
-import { user } from "../navbar/navbar.js"
+import { getSite } from "../../global/global.js";
+import { user } from "../navbar/navbar.js";
 
-if (/OS (18|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
-  $(".bottombar").css("padding-bottom", "1rem")
+if (/OS (18|19|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
+  $(".bottombar").css("padding-bottom", "1rem");
 }
 
-const availableLinks = [
-  "/about",
-  "/homework",
-  "/main",
-  "/events",
-  "/settings",
-  "/join"
-]
-const siteName = location.pathname.replace(/\/$/, "")
-const siteIndex = availableLinks.indexOf(siteName) ?? -1
+const availableLinks = ["about", "homework", "main", "events", "settings", "join"];
+const siteName = getSite();
+const siteIndex = availableLinks.indexOf(siteName) ?? -1;
 
-$(".bottombar-link").eq(1).toggleClass("bottombar-link-deactivated", ! user.classJoined)
-$(".bottombar-link").eq(3).toggleClass("bottombar-link-deactivated", ! user.classJoined)
-user.on("login", () => {
-  $(".bottombar-link").eq(1).toggleClass("bottombar-link-deactivated", ! user.classJoined)
-  $(".bottombar-link").eq(3).toggleClass("bottombar-link-deactivated", ! user.classJoined)
-});
+user.on("change", (function _() {
+  $(".bottombar-link").filter(i => [1, 3].includes(i)).toggleClass("bottombar-link-deactivated", ! user.classJoined);
+  return _;
+})());
 
-$(".bottombar-link").eq(siteIndex).addClass("bottombar-current-link")
-if (siteIndex == 5) {
-  $(".bottombar-link").eq(2).addClass("bottombar-current-link")
+$(".bottombar-link").eq(siteIndex).addClass("bottombar-current-link");
+if (siteIndex === 5) {
+  $(".bottombar-link").eq(2).addClass("bottombar-current-link");
 }
 $(".bottombar-link").each(function (id) {
-  $(this).on("click", function () {
-    if ($(this).is(".bottombar-link-deactivated")) return
+  $(this).on("click", () => {
+    if ($(this).is(".bottombar-link-deactivated")) return;
     location.href = availableLinks[id];
   });
+});
+
+let startX = 0;
+let startY = 0;
+
+$(document).on("touchstart", ev => {
+  startX = ev.originalEvent?.touches[0].clientX ?? 0;
+  startY = ev.originalEvent?.touches[0].clientY ?? 0;
+});
+
+$(document).on("touchend", ev => {
+  function changeSite(): void {
+    if (diffX > 0) {
+      if (siteIndex === 0) return;
+      window.location.href = availableLinks[siteIndex === 5 ? 0: siteIndex - 1];
+    }
+    else {
+      if (siteIndex === 4) return;
+      window.location.href = availableLinks[siteIndex === 5 ? 4: siteIndex + 1];
+    }
+  }
+  const endX = ev.originalEvent?.changedTouches[0].clientX ?? 0;
+  const endY = ev.originalEvent?.changedTouches[0].clientY ?? 0;
+  
+  const diffX = endX - startX;
+  const diffY = endY - startY;
+  
+  if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 150 && (startX < 75 || startX > window.innerWidth - 75)) {
+    changeSite();
+  }
 });
