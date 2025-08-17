@@ -120,7 +120,7 @@ docker compose up -d --build
 To ensure clean future updates, reset the modified migration file:
 
 ```bash
-git reset --hard
+git restore backend/src/prisma/migrations/20250804114621_migrate_to_multiple_classes/migration.sql
 ```
 
 ---
@@ -141,22 +141,41 @@ Prisma validates migration checksums. Any change to a migration file (like editi
 
 ### Step 6: Rebuild & Restart All Containers
 
-1. Stop all containers:
+1. **Stop all containers:**
 
    ```bash
    docker compose down
    ```
 
-2. _(Optional but recommended)_ Apply system updates.
+2. **(Optional but recommended) Apply system updates.**
 
-3. Verify:
-   - **Nginx** configuration
-   - **UFW** firewall rules
+   **Ubuntu:**
 
-4. Rebuild and start all services:
+   * `sudo apt update`
+     Fetches the latest package information from the configured repositories. It doesn’t upgrade packages but updates the local cache with the newest available versions.
+   * `sudo apt list --upgradable`
+     Displays a list of packages that have newer versions available for installation.
+   * `sudo apt upgrade`
+     Installs the available updates for all installed packages.
+   * `sudo apt autoremove`
+     Removes packages that were automatically installed as dependencies and are no longer needed.
+
+3. **Clean `backup.log` file**
+   Navigate to `home/ubuntu/backup.log` and delete all lines in the file:
 
    ```bash
-   docker compose up --build
+   :1,$d
+   ```
+
+4. **Verify:**
+
+   * **Nginx** configuration
+   * **UFW** firewall rules
+
+5. **Rebuild and start all services:**
+
+   ```bash
+   docker compose up -d --build
    ```
 
 ---
