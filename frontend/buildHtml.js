@@ -87,6 +87,7 @@ async function buildDirectory(src, dest) {
         <div class="load-snippet" data-target="pwaBanner"></div>
         <div class="load-snippet" data-target="navbar"></div>
         <div class="load-snippet" data-target="footer"></div>
+        <div class="load-snippet" data-target="tutorial"></div>
       `);
 
       $("body").css({ display: "none" });

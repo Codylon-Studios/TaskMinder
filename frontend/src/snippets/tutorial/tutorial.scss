@@ -1,0 +1,30 @@
+body.tutorial {
+  * {
+    pointer-events: none;
+  }
+
+  #tutorial-box, #tutorial-box * {
+    pointer-events: all;
+
+    .disabled {
+      pointer-events: none;
+    }
+  }
+
+  .tutorial-highlight {
+    &, & * {
+      pointer-events: all;
+    }
+  }
+}
+
+#tutorial-box-wrapper {
+  z-index: 1110;
+}
+
+#tutorial-overlay {
+  position: absolute;
+  box-shadow: 0 0 0px var(--tutorial-box-shadow-size) rgba(var(--bs-body-color-rgb), 0.5);
+  z-index: 1100;
+  border-radius: 0.375rem;
+}

@@ -50,7 +50,7 @@
           <h2 class="text-center mb-4">Möchtest du einen Account nutzen?</h2>
           <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-joined-login-register-btn">Anmelden oder Registrieren</button>
           <div class="text-center mb-3">
-            <a href="/main">Ohne Account fortfahren</a>
+            <a href="#" id="decide-account-skip">Ohne Account fortfahren</a>
           </div>
           <a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#decide-account-reasons">Was bringt ein Account?</a>
           <div class="collapse mt-2" id="decide-account-reasons">
@@ -167,7 +167,15 @@
             </button>
           </div>
           <div class="form-text mb-3">Du kannst auch jederzeit später in den Einstellungen unter "Klasse" Mitglieder einladen.</div>
-          <a class="btn btn-primary w-100 fw-semibold" href="/main">Weiter zur Startseite</a>
+          <a class="btn btn-primary w-100 fw-semibold" id="invite-to-tutorial">Weiter</a>
+        </div>
+
+        <div id="tutorial-panel" class="d-none">
+          <h2 class="text-center mb-4">Möchtest du das Tutorial starten?</h2>
+          <button class="btn btn-primary w-100 fw-semibold mb-3" id="start-tutorial">Ja!</button>
+          <div class="text-center">
+            <a id="skip-tutorial" href="/main">Nein, ich kenne mich schon aus</a>
+          </div>
         </div>
       </div>
     </div>

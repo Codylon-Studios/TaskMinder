@@ -77,7 +77,8 @@ user.on("change", () => {
   if (user.loggedIn && ! justCreatedClass) {
     $("#show-login-register-btn").addClass("disabled").find("i").removeClass("d-none");
     if (user.classJoined) {
-      location.href = "/main";
+      $(".panel > div").addClass("d-none");
+      $("#tutorial-panel").removeClass("d-none")
     }
     else if (urlParams.get("action") !== "join") {
       $("#decide-action-panel").removeClass("d-none");
@@ -103,7 +104,8 @@ $("#join-class-btn").on("click", async () => {
     },
     success: res => {
       if (user.loggedIn) {
-        location.href = "/main";
+        $(".panel > div").addClass("d-none");
+        $("#tutorial-panel").removeClass("d-none")
       }
       $("#join-class-panel").addClass("d-none");
       $("#decide-account-panel").removeClass("d-none");
@@ -228,3 +230,13 @@ if (urlParams.has("class_code")) {
 else {
   $("#join-class-class-code").val("");
 }
+
+$("#invite-to-tutorial, #decide-account-skip").on("click", () => {
+  $("#invite-panel, #decide-account-panel").addClass("d-none")
+  $("#tutorial-panel").removeClass("d-none")
+})
+
+$("#start-tutorial").on("click", () => {
+  localStorage.setItem("tutorial", "true")
+  location.href = "/settings"
+})

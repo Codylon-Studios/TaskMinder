@@ -129,6 +129,19 @@ body {
   }
 }
 
+.btn-icon {
+  cursor: pointer;
+  transition: 0.15s ease-in-out;
+  opacity: 0.6;
+  padding: 0.25rem;
+  &:hover {
+    opacity: 0.8;
+  }
+  &:active {
+    opacity: 1;
+  }
+}
+
 .autocomplete-feedback {
   display: none;
   margin-top: 0.25rem;
