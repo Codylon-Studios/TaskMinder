@@ -7,7 +7,7 @@ function checkClassName(className: string): boolean {
 
 let justCreatedClass = false;
 
-const qrCode = new QRCode( "show-qrcode-modal-qrcode", {
+const qrCode = new QRCode("show-qrcode-modal-qrcode", {
   text: location.host,
   width: 300,
   height: 300
@@ -61,6 +61,11 @@ $("#create-class-credentials-back-btn").on("click", () => {
 $(() => {
   reloadAllFn.set(async () => {
   });
+  $.get("/class/get_class_info")
+    .done(res => {
+      const resClassName = res.className;
+      $("#decide-account-class-name").text(resClassName);
+    });
 });
 
 $("#login-register-back-btn").on("click", () => {
@@ -74,7 +79,7 @@ $("#login-register-back-btn").on("click", () => {
 });
 
 user.on("change", () => {
-  if (user.loggedIn && ! justCreatedClass) {
+  if (user.loggedIn && !justCreatedClass) {
     $("#show-login-register-btn").addClass("disabled").find("i").removeClass("d-none");
     if (user.classJoined) {
       location.href = "/main";
@@ -152,7 +157,7 @@ $("#create-class-btn").on("click", async () => {
     url: "/class/create_class",
     type: "POST",
     contentType: "application/json",
-    data: JSON.stringify({ 
+    data: JSON.stringify({
       classDisplayName: className,
       isTestClass: $("#create-class-is-test").prop("checked")
     }),
