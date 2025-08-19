@@ -2,7 +2,7 @@
 
 set -e
 
-
+DOCKERCMD=/usr/bin/docker
 BACKUP_DIR="/opt/TaskMinder/db-backups"
 SECRETS_DIR="/opt/TaskMinder/docker_secrets"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%S-%3NZ")
@@ -67,7 +67,7 @@ create_backup() {
     mkdir -p "$TEMP_DIR"
 
     export PGPASSWORD="$POSTGRES_PASSWORD"
-    if ! docker exec "$container_id" pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" > "$backup_file"; then
+    if ! "DOCKERCMD" exec "$container_id" pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" > "$backup_file"; then
         unset PGPASSWORD
         error "Failed to create backup for database '$POSTGRES_DB'"
     fi

@@ -3,11 +3,11 @@ import { redisClient } from "../config/redis";
 import logger from "./logger";
 
 /**
- * Deletes class records that are older than 1 day and are a TEST CLASSES
+ * Deletes class records that are older than 1 day and are TEST CLASSES
  */
 export async function cleanupTestClasses(): Promise<void> {
   try {
-    logger.setStandardPrefix("[CronJob]");
+    logger.setStandardPrefix("[CronJob Test Classes]");
 
     // Calculate the timestamp for 1 day ago (in milliseconds)
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
@@ -69,7 +69,7 @@ export async function cleanupTestClasses(): Promise<void> {
  */
 export async function cleanupDeletedAccounts(): Promise<void> {
   try {
-    logger.setStandardPrefix("[CronJob]");
+    logger.setStandardPrefix("[CronJob Deleted Accounts]");
 
     // Calculate the timestamp for 30 days ago (in milliseconds)
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -104,7 +104,7 @@ export async function cleanupDeletedAccounts(): Promise<void> {
  */
 export async function cleanupOldHomework(): Promise<void> {
   try {
-    logger.setStandardPrefix("[CronJob]");
+    logger.setStandardPrefix("[CronJob Old Homework]");
 
     // Calculate the timestamp for 60 days ago (in milliseconds)
     const sixtyDaysAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
@@ -131,5 +131,41 @@ export async function cleanupOldHomework(): Promise<void> {
   } 
   catch (error) {
     logger.error("Error during homework cleanup:", error);
+  }
+}
+
+
+/**
+ * Deletes event records that are older than 1 year based on start date
+ */
+export async function cleanupOldEvents(): Promise<void> {
+  try {
+    logger.setStandardPrefix("[CronJob Old Events]");
+
+    // Calculate the timestamp for 365 days ago (in milliseconds)
+    const aYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
+
+    // Count records to be deleted
+    const count = await prisma.event.count({
+      where: {
+        startDate: {
+          lt: aYearAgo
+        }
+      }
+    });
+
+    // Delete the records
+    const deleted = await prisma.event.deleteMany({
+      where: {
+        startDate: {
+          lt: aYearAgo
+        }
+      }
+    });
+
+    logger.info("Event cleanup completed:", deleted.count, "records deleted out of", count, "found");
+  } 
+  catch (error) {
+    logger.error("Error during event cleanup:", error);
   }
 }

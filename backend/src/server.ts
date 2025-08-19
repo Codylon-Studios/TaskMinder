@@ -15,7 +15,7 @@ import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
 import { CSPMiddleware } from "./middleware/CSPMiddleware";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
-import { cleanupDeletedAccounts, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
+import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
 import events from "./routes/eventRoute";
@@ -197,19 +197,11 @@ app.use(ErrorHandler);
 
 // Schedule the cron job to run at midnight (00:00) every day
 cron.schedule("0 0 * * *", () => {
-  logger.info("Starting scheduled homework cleanup");
+  logger.info("Starting scheduled daily cleanup");
+
   cleanupOldHomework();
-});
-
-// Schedule the cron job to run at midnight (00:00) every day
-cron.schedule("0 0 * * *", () => {
-  logger.info("Starting scheduled test class cleanup");
+  cleanupOldEvents();
   cleanupTestClasses();
-});
-
-// Schedule the cron job to run at midnight (00:00) every day
-cron.schedule("0 0 * * *", () => {
-  logger.info("Starting scheduled deleted account cleanup");
   cleanupDeletedAccounts();
 });
 
