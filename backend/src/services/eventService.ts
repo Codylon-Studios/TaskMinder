@@ -3,7 +3,7 @@ import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } fr
 import socketIO from "../config/socket";
 import sass from "sass";
 
-import prisma from "../config/prisma";
+import { default as prisma } from "../config/prisma";
 import {
   isValidColor,
   isValidTeamId,

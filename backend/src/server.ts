@@ -25,19 +25,9 @@ import substitutions from "./routes/substitutionRoute";
 import subjects from "./routes/subjectRoute";
 import teams from "./routes/teamRoute";
 import classes from "./routes/classRoute";
+import { connectRedis } from "./config/redis";
 
 dotenv.config();
-
-declare module "express-session" {
-  interface SessionData {
-    account?: {
-      accountId: number;
-      username: string;
-    };
-    classId: string;
-    csrfToken?: string;
-  }
-}
 
 prisma
   .$connect()
@@ -48,6 +38,8 @@ prisma
     logger.error("DB connection failed:", err);
     process.exit(1);
   });
+
+connectRedis();
 
 const sessionSecret = process.env.SESSION_SECRET;
 
