@@ -46,6 +46,7 @@ mock.module("../config/socket", () => ({ default: { getIO: () => mockSocketIO } 
 // Mock validateFunctions
 const mockValidateFunctions = {
   isValidTeamId: mock(),
+  isValidSubjectId: mock(),
   updateCacheData: mock(),
   BigIntreplacer: mock()
 };
@@ -66,8 +67,18 @@ describe("homeworkService", () => {
     mockRedisClient.set.mockClear();
     mockSocketIO.getIO.mockClear();
     mockSocketIO.emit.mockClear();
+    mockValidateFunctions.isValidSubjectId.mockClear();
     mockValidateFunctions.isValidTeamId.mockClear();
     mockValidateFunctions.updateCacheData.mockClear();
+    mockValidateFunctions.BigIntreplacer.mockClear();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockValidateFunctions.BigIntreplacer.mockImplementation((key: any, value: any) => {
+      if (typeof value === "bigint") {
+        return value.toString();
+      }
+      return value;
+    });
 
     // Default mock implementations
     mockPrismaClient.$transaction.mockImplementation(async callback => callback(mockPrismaClient));
@@ -78,7 +89,7 @@ describe("homeworkService", () => {
     it("should add a new homework and update cache", async () => {
       const reqData: addHomeworkTypeBody = {
         subjectId: 1,
-        content: "Test homework",
+        content: "Add Homework Test homework",
         assignmentDate: new Date().getTime(),
         submissionDate: new Date().getTime(),
         teamId: -1
@@ -90,15 +101,16 @@ describe("homeworkService", () => {
 
       await homeworkService.addHomework(reqData, session);
 
-      expect(mockValidateFunctions.isValidTeamId).toHaveBeenCalledWith(-1);
+      expect(mockValidateFunctions.isValidSubjectId).toHaveBeenCalledWith(reqData.subjectId, session);
+      expect(mockValidateFunctions.isValidTeamId).toHaveBeenCalledWith(reqData.teamId, session);
       expect(mockPrismaClient.homework.create).toHaveBeenCalledWith({
         data: {
           classId: 1,
-          content: "Test homework",
-          subjectId: 1,
+          content: reqData.content,
+          subjectId: reqData.subjectId,
           assignmentDate: reqData.assignmentDate,
           submissionDate: reqData.submissionDate,
-          teamId: -1
+          teamId: reqData.teamId
         }
       });
       expect(mockValidateFunctions.updateCacheData).toHaveBeenCalled();
@@ -189,7 +201,7 @@ describe("homeworkService", () => {
       const reqData: editHomeworkTypeBody = {
         homeworkId: 1,
         subjectId: 1,
-        content: "Updated homework",
+        content: "Edit Homework Update Cache",
         assignmentDate: new Date().getTime(),
         submissionDate: new Date().getTime(),
         teamId: -1
@@ -201,16 +213,17 @@ describe("homeworkService", () => {
 
       await homeworkService.editHomework(reqData, session);
 
-      expect(mockValidateFunctions.isValidTeamId).toHaveBeenCalledWith(-1);
+      expect(mockValidateFunctions.isValidSubjectId).toHaveBeenCalledWith(reqData.subjectId, session);
+      expect(mockValidateFunctions.isValidTeamId).toHaveBeenCalledWith(reqData.teamId, session);
       expect(mockPrismaClient.homework.update).toHaveBeenCalledWith({
         where: { homeworkId: 1 },
         data: {
           classId: 1,
-          content: "Updated homework",
-          subjectId: 1,
+          content: reqData.content,
+          subjectId: reqData.subjectId,
           assignmentDate: reqData.assignmentDate,
           submissionDate: reqData.submissionDate,
-          teamId: -1
+          teamId: reqData.teamId
         }
       });
       expect(mockValidateFunctions.updateCacheData).toHaveBeenCalled();
@@ -252,13 +265,6 @@ describe("homeworkService", () => {
       const dbData = [{ id: 1, content: "DB homework" }];
       mockRedisClient.get.mockResolvedValue(null);
       mockPrismaClient.homework.findMany.mockResolvedValue(dbData);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (mockValidateFunctions.BigIntreplacer as any).mockImplementation((key: any, value: any) => {
-        if (typeof value === "bigint") {
-          return value.toString();
-        }
-        return value;
-      });
 
       const result = await homeworkService.getHomeworkData(session);
 

@@ -2,6 +2,7 @@ import { RequestError } from "../@types/requestError";
 import { cacheExpiration, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
 import logger from "./logger";
+import { Session, SessionData } from "express-session";
 
 async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   try {
@@ -22,18 +23,19 @@ function BigIntreplacer(key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
-async function isValidTeamId(teamId: number): Promise<void> {
+async function isValidTeamId(teamId: number, session: Session & Partial<SessionData>): Promise<void> {
   if (teamId !== -1) {
     const teamExists = await prisma.team.findUnique({
       where: {
-        teamId: 1
+        teamId: teamId,
+        classId: parseInt(session.classId!, 10)
       }
     });
     if (!teamExists) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
-        message: "Invalid teamId (Team does not exist): " + teamId,
+        message: "Invalid teamId (Team does not exist) for this class: " + teamId,
         expected: true
       };
       throw err;
@@ -44,18 +46,19 @@ async function isValidTeamId(teamId: number): Promise<void> {
   }
 }
 
-async function isValidSubjectId(subjectId: number): Promise<void> {
+async function isValidSubjectId(subjectId: number, session: Session & Partial<SessionData>): Promise<void> {
   if (subjectId !== -1) {
     const subjectExists = await prisma.subjects.findUnique({
       where: {
-        subjectId: 1
+        subjectId: subjectId,
+        classId: parseInt(session.classId!, 10)
       }
     });
     if (!subjectExists) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
-        message: "Invalid subjectId (Subject does not exist): " + subjectId,
+        message: "Invalid subjectId (Subject does not exist) for this class: " + subjectId,
         expected: true
       };
       throw err;

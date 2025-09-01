@@ -43,12 +43,12 @@ const mockLogger = {
 mock.module("../utils/logger", () => ({ default: mockLogger }));
 
 // Mock validateFunctions
-mock.module("../utils/validateFunctions", () => ({
+const mockValidateFunctions = {
   isValidweekDay: mock(),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  BigIntreplacer: (key: any, value: any) => (typeof value === "bigint" ? value.toString() : value),
-  updateCacheData: mock()
-}));
+  updateCacheData: mock(),
+  BigIntreplacer: mock()
+};
+mock.module("../utils/validateFunctions", () => mockValidateFunctions);
 
 
 describe("lessonService", () => {
@@ -64,10 +64,17 @@ describe("lessonService", () => {
 
     mockLogger.error.mockClear();
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { isValidweekDay, updateCacheData } = require("../utils/validateFunctions");
-    isValidweekDay.mockClear();
-    updateCacheData.mockClear();
+    mockValidateFunctions.isValidweekDay.mockClear();
+    mockValidateFunctions.updateCacheData.mockClear();
+    mockValidateFunctions.BigIntreplacer.mockClear();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockValidateFunctions.BigIntreplacer.mockImplementation((key: any, value: any) => {
+      if (typeof value === "bigint") {
+        return value.toString();
+      }
+      return value;
+    });
 
     // Default mock implementations
     mockPrismaClient.$transaction.mockImplementation(async callback => await callback(mockPrismaClient));
@@ -88,16 +95,15 @@ describe("lessonService", () => {
 
     it("should successfully set lesson data", async () => {
       const reqData: setLessonDataTypeBody = { lessons: [lesson] };
-      const { isValidweekDay, updateCacheData } = await import("../utils/validateFunctions");
 
       await lessonService.setLessonData(reqData, session);
 
-      expect(isValidweekDay).toHaveBeenCalledWith(1);
+      expect(mockValidateFunctions.isValidweekDay).toHaveBeenCalledWith(1);
       expect(mockPrismaClient.$transaction).toHaveBeenCalled();
       expect(mockPrismaClient.lesson.deleteMany).toHaveBeenCalledWith({ where: { classId: 1 } });
       expect(mockPrismaClient.lesson.create).toHaveBeenCalled();
       expect(mockPrismaClient.lesson.findMany).toHaveBeenCalledWith({ where: { classId: 1 } });
-      expect(updateCacheData).toHaveBeenCalled();
+      expect(mockValidateFunctions.updateCacheData).toHaveBeenCalled();
     });
 
     it("should throw an error for invalid classId in session", async () => {
@@ -132,7 +138,6 @@ describe("lessonService", () => {
     it("should fetch lesson data from prisma and cache it if not cached", async () => {
       const dbData = [{ lessonId: 1, lessonNumber: 1, room: "102" }];
       const expectedData = [{ lessonId: 1, lessonNumber: 1, room: "102" }];
-      const { updateCacheData } = await import("../utils/validateFunctions");
 
       mockRedisClient.get.mockResolvedValue(null);
       mockPrismaClient.lesson.findMany.mockResolvedValue(dbData);
@@ -144,7 +149,7 @@ describe("lessonService", () => {
       expect(mockPrismaClient.lesson.findMany).toHaveBeenCalledWith({
         where: { classId: 1 }
       });
-      expect(updateCacheData).toHaveBeenCalledWith(dbData, "lesson:1");
+      expect(mockValidateFunctions.updateCacheData).toHaveBeenCalledWith(dbData, "lesson:1");
     });
 
     it("should throw an error if redis data is malformed", async () => {

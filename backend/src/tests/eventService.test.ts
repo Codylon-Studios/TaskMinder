@@ -2,7 +2,6 @@ import { mock, describe, it, expect, beforeEach } from "bun:test";
 import eventService from "../services/eventService";
 import { Session, SessionData } from "express-session";
 import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody } from "../schemas/eventSchema";
-import  { redisClient } from "../config/redis";
 
 // Mock Prisma
 const mockPrismaClient = {
@@ -66,21 +65,15 @@ const mockSass = {
 mock.module("sass", () => ({ default: mockSass }));
 
 // Mock validateFunctions
-mock.module("../utils/validateFunctions", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type
-  const BigIntreplacer = (key: any, value: any) => (typeof value === "bigint" ? value.toString() : value);
-  return {
-    lessonDateEventAtLeastOneNull: mock(),
-    isValidTeamId: mock(),
-    isValidColor: mock(),
-    updateCacheData: mock().mockImplementation(async (data, key) => {
-      const stringified = JSON.stringify(data, BigIntreplacer);
-      await redisClient.set(key, stringified, { EX: 3600 });
-    }),
-    BigIntreplacer
-  };
-});
-
+const mockValidateFunctions = {
+  isValidTeamId: mock(),
+  isValidColor: mock(),
+  isValidSubjectId: mock(),
+  updateCacheData: mock(),
+  BigIntreplacer: mock(),
+  lessonDateEventAtLeastOneNull: mock()
+};
+mock.module("../utils/validateFunctions", () => mockValidateFunctions);
 
 describe("eventService", () => {
   beforeEach(() => {
@@ -106,6 +99,20 @@ describe("eventService", () => {
 
     mockSass.compileString.mockClear();
 
+    mockValidateFunctions.isValidColor.mockClear();
+    mockValidateFunctions.isValidSubjectId.mockClear();
+    mockValidateFunctions.isValidTeamId.mockClear();
+    mockValidateFunctions.updateCacheData.mockClear();
+    mockValidateFunctions.BigIntreplacer.mockClear();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockValidateFunctions.BigIntreplacer.mockImplementation((key: any, value: any) => {
+      if (typeof value === "bigint") {
+        return value.toString();
+      }
+      return value;
+    });
+
     // Default mock implementations
     mockPrismaClient.$transaction.mockImplementation(async callback => await callback(mockPrismaClient));
     mockSocketIO.getIO.mockReturnValue(mockIO);
@@ -115,7 +122,7 @@ describe("eventService", () => {
 
   describe("getEventData", () => {
     it("should return cached event data if available", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const cachedData = [{ eventId: 1, name: "Test Event" }];
       mockRedisClient.get.mockResolvedValue(JSON.stringify(cachedData));
 
@@ -127,7 +134,7 @@ describe("eventService", () => {
     });
 
     it("should fetch event data from prisma and cache it if not cached", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const dbData = [{ eventId: 1n, name: "Test Event From DB" }];
       const expectedData = [{ eventId: "1", name: "Test Event From DB" }];
       const { updateCacheData } = await import("../utils/validateFunctions");
@@ -147,7 +154,7 @@ describe("eventService", () => {
     });
 
     it("should throw an error if redis data is malformed", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       mockRedisClient.get.mockResolvedValue("malformed json");
 
       expect(eventService.getEventData(session)).rejects.toThrow();
@@ -157,23 +164,24 @@ describe("eventService", () => {
 
   describe("addEvent", () => {
     it("should add a new event and update cache", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const reqData: addEventTypeBody = {
         eventTypeId: 1,
-        name: "New Event",
+        name: "Add New Event",
         description: "Event Description",
         startDate: new Date().getTime(),
         lesson: "1-2",
         endDate: null,
         teamId: -1
       };
-      const { updateCacheData, lessonDateEventAtLeastOneNull, isValidTeamId } = await import("../utils/validateFunctions");
-
+      
+      mockPrismaClient.event.create.mockResolvedValue(true);
+      mockPrismaClient.event.findMany.mockResolvedValue([]);
 
       await eventService.addEvent(reqData, session);
 
-      expect(lessonDateEventAtLeastOneNull).toHaveBeenCalledWith(reqData.endDate, reqData.lesson);
-      expect(isValidTeamId).toHaveBeenCalledWith(reqData.teamId);
+      expect(mockValidateFunctions.lessonDateEventAtLeastOneNull).toHaveBeenCalledWith(reqData.endDate, reqData.lesson);
+      expect(mockValidateFunctions.isValidTeamId).toHaveBeenCalledWith(reqData.teamId, session);
       expect(mockPrismaClient.event.create).toHaveBeenCalledWith({
         data: {
           classId: 1,
@@ -184,12 +192,12 @@ describe("eventService", () => {
         where: { classId: 1 },
         orderBy: { startDate: "asc" }
       });
-      expect(updateCacheData).toHaveBeenCalled();
+      expect(mockValidateFunctions.updateCacheData).toHaveBeenCalled();
       expect(mockIO.emit).toHaveBeenCalledWith("updateEventData");
     });
 
     it("should throw an error for invalid data", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const reqData = {
         eventTypeId: 1,
         name: "New Event",
@@ -208,23 +216,22 @@ describe("eventService", () => {
 
   describe("editEvent", () => {
     it("should edit an existing event and update cache", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const reqData: editEventTypeBody = {
         eventId: 1,
         eventTypeId: 1,
-        name: "Updated Event",
+        name: "Edit Updated Event",
         description: "Updated Description",
         startDate: new Date().getTime(),
         lesson: "3-4",
         endDate: null,
         teamId: -1
       };
-      const { updateCacheData, lessonDateEventAtLeastOneNull, isValidTeamId } = await import("../utils/validateFunctions");
 
       await eventService.editEvent(reqData, session);
 
-      expect(lessonDateEventAtLeastOneNull).toHaveBeenCalledWith(reqData.endDate, reqData.lesson);
-      expect(isValidTeamId).toHaveBeenCalledWith(reqData.teamId);
+      expect(mockValidateFunctions.lessonDateEventAtLeastOneNull).toHaveBeenCalledWith(reqData.endDate, reqData.lesson);
+      expect(mockValidateFunctions.isValidTeamId).toHaveBeenCalledWith(reqData.teamId, session);
       expect(mockPrismaClient.event.update).toHaveBeenCalledWith({
         where: { eventId: reqData.eventId, classId: 1 },
         data: {
@@ -241,12 +248,12 @@ describe("eventService", () => {
         where: { classId: 1 },
         orderBy: { startDate: "asc" }
       });
-      expect(updateCacheData).toHaveBeenCalled();
+      expect(mockValidateFunctions.updateCacheData).toHaveBeenCalled();
       expect(mockIO.emit).toHaveBeenCalledWith("updateEventData");
     });
 
     it("should throw an error for invalid data", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const reqData = {
         eventId: 1,
         eventTypeId: 1,
@@ -266,7 +273,7 @@ describe("eventService", () => {
 
   describe("deleteEvent", () => {
     it("should delete an event and update cache", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const reqData: deleteEventTypeBody = { eventId: 1 };
       const { updateCacheData } = await import("../utils/validateFunctions");
 
@@ -284,7 +291,7 @@ describe("eventService", () => {
     });
 
     it("should throw an error if eventId is missing", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const reqData = { eventId: undefined } as any; // should be wrong data on purpose
 
@@ -294,7 +301,7 @@ describe("eventService", () => {
 
   describe("getEventTypeData", () => {
     it("should return cached event type data if available", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const cachedData = [{ eventTypeId: "1", name: "Exam", color: "#ff0000" }];
       mockRedisClient.get.mockResolvedValue(JSON.stringify(cachedData));
 
@@ -306,7 +313,7 @@ describe("eventService", () => {
     });
 
     it("should fetch event type data from prisma and cache it if not cached", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const dbData = [{ eventTypeId: "1", name: "Exam", color: "#ff0000" }];
       const { updateCacheData } = await import("../utils/validateFunctions");
       mockRedisClient.get.mockResolvedValue(null);
@@ -324,19 +331,19 @@ describe("eventService", () => {
   });
 
   describe("setEventTypeData", () => {
-    const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+    const session = { classId: "1" } as Session & Partial<SessionData>;
 
     it("should create a new event type", async () => {
       const reqData: setEventTypesTypeBody = {
         eventTypes: [{ eventTypeId: "", name: "New Type", color: "#123456" }]
       };
-      const { isValidColor } = await import("../utils/validateFunctions");
+
       mockPrismaClient.eventType.findMany.mockResolvedValue([]);
 
       await eventService.setEventTypeData(reqData, session);
 
       expect(mockPrismaClient.$transaction).toHaveBeenCalled();
-      expect(isValidColor).toHaveBeenCalledWith("#123456");
+      expect(mockValidateFunctions.isValidColor).toHaveBeenCalledWith("#123456");
       expect(mockPrismaClient.eventType.create).toHaveBeenCalledWith({
         data: { classId: 1, name: "New Type", color: "#123456" }
       });
@@ -347,13 +354,13 @@ describe("eventService", () => {
         eventTypes: [{ eventTypeId: 1, name: "Updated Type", color: "#654321" }]
       };
       const existingTypes = [{ eventTypeId: 1, name: "Old Type", color: "#000000" }];
-      const { isValidColor } = await import("../utils/validateFunctions");
+
       mockPrismaClient.eventType.findMany.mockResolvedValue(existingTypes);
 
       await eventService.setEventTypeData(reqData, session);
 
       expect(mockPrismaClient.$transaction).toHaveBeenCalled();
-      expect(isValidColor).toHaveBeenCalledWith("#654321");
+      expect(mockValidateFunctions.isValidColor).toHaveBeenCalledWith("#654321");
       expect(mockPrismaClient.eventType.update).toHaveBeenCalledWith({
         where: { eventTypeId: 1 },
         data: { classId: 1, name: "Updated Type", color: "#654321" }
@@ -437,7 +444,7 @@ describe("eventService", () => {
   });
 
   describe("getEventTypeStyles", () => {
-    const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+    const session = { classId: "1" } as Session & Partial<SessionData>;
 
     it("should return cached event type styles if available", async () => {
       const cachedStyles = ".event { color: red; }";
@@ -469,7 +476,7 @@ describe("eventService", () => {
 
   describe("updateEventTypeStyles", () => {
     it("should generate CSS and cache it", async () => {
-      const session = { classId: "1" } as unknown as Session & Partial<SessionData>;
+      const session = { classId: "1" } as Session & Partial<SessionData>;
       const eventTypes = [{ eventTypeId: "exam", name: "Exam", color: "#ff0000" }];
       const expectedCss = ".event-exam { color: red; }";
 

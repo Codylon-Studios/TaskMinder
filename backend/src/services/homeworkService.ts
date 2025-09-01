@@ -1,7 +1,7 @@
 import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO from "../config/socket";
 import { default as prisma } from "../config/prisma";
-import { isValidTeamId, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
+import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../utils/logger";
@@ -13,7 +13,8 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    isValidTeamId(teamId);
+    isValidSubjectId(subjectId, session);
+    isValidTeamId(teamId, session);
     try {
       await prisma.homework.create({
         data: {
@@ -120,7 +121,8 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    isValidTeamId(teamId);
+    isValidSubjectId(subjectId, session);
+    isValidTeamId(teamId, session);
     try {
       await prisma.homework.update({
         where: { homeworkId: homeworkId },
