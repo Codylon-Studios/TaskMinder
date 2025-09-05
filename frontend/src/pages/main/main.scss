@@ -9,10 +9,16 @@
   margin: 0 0.1rem;
   padding: 0.2rem 0.5rem;
   border-radius: 0.5rem;
-  transition: background-color 0.3s;
   width: 2rem;
   font-weight: 500;
-  border: 3px solid transparent !important;
+  border: .1875rem solid transparent !important;
+  background-color: transparent;
+
+  &:focus-visible {
+    outline: none;
+    border: 1px solid rgb(157, 220, 228.5) !important;
+    box-shadow: 0 0 0 0.25rem rgba(59, 185, 202, 0.25);
+  }
 
   & > .weekday {
     font-size: 0.75rem;
@@ -23,32 +29,34 @@
   }
 
   &.days-overview-today span {
-    color: #dc3545 !important;
+    color: var(--bs-danger) !important;
   }
 
   &::before {
     content: "";
     height: 1.8rem;
     width: 1.8rem;
-    background: $primary;
+    background: var(--bs-primary);
     position: absolute;
     border-radius: 100%;
-    bottom: 4px;
+    bottom: .25rem;
     transition: 0.1s ease opacity;
-    opacity: 0;
+    visibility: hidden;
   }
   
   &.days-overview-today::before {
-    background: #dc3545;
+    background: var(--bs-danger);
   }
 
   &.days-overview-selected::before {
+    visibility: visible;
     opacity: 0.3;
   }
   &.days-overview-selected:not(.days-overview-selected-no-animation)::before {
     animation: 0.3s 1 select-day;
   }
   &:not(.days-overview-selected):hover::before {
+    visibility: visible;
     opacity: 0.2;
   }
 
@@ -141,6 +149,20 @@
   }
 }
 
+[data-high-contrast="true"] {
+  .days-overview-day {
+    &::before {
+      opacity: 1 !important;
+      transition: none;
+    }
+  }
+  .days-overview-selected, .days-overview-day:hover {
+    & .date {
+      color: var(--bs-body-bg) !important;
+    }
+  }
+}
+
 .calendar-special-button {
   width: 4rem;
 }
@@ -166,7 +188,7 @@
 #calendar-week-wrapper {
   overflow: hidden;
   display: grid;
-  padding-bottom: 2rem;
+  padding: 0.25rem 0.125rem 2rem 0.125rem;
 }
 
 .calendar-week {

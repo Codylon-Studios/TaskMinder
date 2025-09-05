@@ -5,11 +5,15 @@
 
 // Overwriting Bootstrap standards
 $primary: #3bb9ca;
+$primary-high-contrast: #277b86;
+$warning-high-contrast: #805f00;
+$success-high-contrast: #29b674;
+$danger-high-contrast: #ff6e7d;
 $enable-negative-margins: true;
 
 @import "../../../node_modules/bootstrap/scss/bootstrap";
 
-$navbar-top-offset: 70px;
+$navbar-top-offset: 4.375rem;
 
 $fa-font-path: "/vendor/fontawesome/fonts";
 @import "../vendor/fontawesome/scss/fontawesome";
@@ -45,22 +49,115 @@ body {
   padding: $navbar-top-offset 0 $navbar-top-offset 0;
   font-weight: 500;
 
-  --btn-color: #212529;
-  --btn-semivisible-normal: #{$semivisible-normal-light};
-  --btn-semivisible-hover: #{$semivisible-hover-light};
-  --btn-semivisible-active: #{$semivisible-active-light};
-  --btn-tertiary-normal: #{$tertiary-normal-light};
-  --btn-tertiary-hover: #{$tertiary-hover-light};
-  --btn-tertiary-active: #{$tertiary-active-light};
+  &[data-bs-theme="light"] {
+    --btn-semivisible-normal: #{$semivisible-normal-light};
+    --btn-semivisible-hover: #{$semivisible-hover-light};
+    --btn-semivisible-active: #{$semivisible-active-light};
+    --btn-tertiary-normal: #{$tertiary-normal-light};
+    --btn-tertiary-hover: #{$tertiary-hover-light};
+    --btn-tertiary-active: #{$tertiary-active-light};
+
+    & .btn-close-invert {
+      filter: invert(1);
+    }
+  }
 
   &[data-bs-theme="dark"] {
-    --btn-color: #dee2e6;
     --btn-tertiary-normal: #{$semivisible-normal-dark};
     --btn-semivisible-hover: #{$semivisible-hover-dark};
     --btn-semivisible-active: #{$semivisible-active-dark};
     --btn-tertiary-normal: #{$tertiary-normal-dark};
     --btn-tertiary-hover: #{$tertiary-hover-dark};
     --btn-tertiary-active: #{$tertiary-active-dark};
+
+    & .btn-close-invert {
+      filter: invert(0);
+    }
+  }
+}
+
+[data-high-contrast="true"] {
+  .text-secondary, .text-body-tertiary {
+    color: var(--bs-body-color) !important;
+  }
+
+  :disabled {
+    opacity: 1;
+    pointer-events: auto !important;
+    cursor: not-allowed;
+
+    &:hover {
+      position: relative;
+      z-index: 1;
+
+      &::before {
+        content: "";
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: var(--bs-danger);
+        $disabled-stripe-width: .25rem;
+        clip-path: polygon(
+          0 calc(100% - $disabled-stripe-width), 0 100%, $disabled-stripe-width 100%,
+          100% $disabled-stripe-width, 100% 0, calc(100% - $disabled-stripe-width) 0, calc(100% - $disabled-stripe-width) 0
+        );
+        z-index: -1;
+      }
+    }
+  }
+
+  &[data-bs-theme="light"] {
+    --bs-primary: #{$primary-high-contrast};
+    --bs-primary-rgb: #{to-rgb($primary-high-contrast)};
+    --bs-link-color: $primary-high-contrast;
+    --bs-link-color-rgb: #{to-rgb($primary-high-contrast)};
+    --bs-link-hover-color-rgb: #{to-rgb(shift-color($primary-high-contrast, 20%))};
+  
+    .btn-primary {
+      @include button-variant($primary-high-contrast, $primary-high-contrast)
+    }
+  
+    .btn-outline-primary {
+      @include button-outline-variant($primary-high-contrast)
+    }
+  
+    .form-check-input:checked {
+      background-color: #{$primary-high-contrast};
+      border-color: #{$primary-high-contrast};
+    }
+
+    --bs-warning: #{$warning-high-contrast};
+    --bs-warning-rgb: #{to-rgb($warning-high-contrast)};
+  }
+
+  &[data-bs-theme="dark"] {
+    .btn-outline-secondary {
+      @include button-outline-variant(#a1aab3)
+    }
+
+    --bs-success: #{$success-high-contrast};
+    --bs-success-rgb: #{to-rgb($success-high-contrast)};
+  
+    .btn-success {
+      @include button-variant($success-high-contrast, $success-high-contrast)
+    }
+  
+    .btn-outline-success {
+      @include button-outline-variant($success-high-contrast)
+    }
+
+    --bs-danger: #{$danger-high-contrast};
+    --bs-danger-rgb: #{to-rgb($danger-high-contrast)};
+  
+    .btn-danger {
+      @include button-variant($danger-high-contrast, $danger-high-contrast)
+    }
+  
+    .btn-outline-danger {
+      @include button-outline-variant($danger-high-contrast)
+    }
   }
 }
 
@@ -94,6 +191,10 @@ body {
 
 .d-contents {
   display: contents;
+}
+
+.text-body-bg {
+  color: var(--bs-body-bg) !important;
 }
 
 @each $variant in $custom-btn-variants {
@@ -133,7 +234,7 @@ body {
   display: none;
   margin-top: 0.25rem;
   font-size: 0.875em;
-  color: $primary;
+  color: var(--bs-primary);
 }
 
 .form-control, .form-select, .rich-textarea-input {
@@ -141,7 +242,12 @@ body {
     border-color: $input-focus-border-color !important;
     background-color: color.change($color: $primary, $alpha: 0.1);
     padding-right: calc(1.5em + 0.75rem);
-    background-image: svgs.$fontawesome-wand-magic-sparkles;
+
+    background-image: svgs.make-sparkling-wand(to-rgb($primary));
+    [data-high-contrast="true"][data-bs-theme="light"] & {
+      background-image: svgs.make-sparkling-wand(to-rgb($primary-high-contrast));
+    }
+    
     background-repeat: no-repeat;
     background-position: right calc(0.375em + 0.1875rem) center;
     background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
@@ -153,11 +259,11 @@ body {
 }
 
 .btn-primary {
-  color: white !important;
+  color: var(--bs-body-bg) !important;
 }
 
 .btn-check:checked + .btn-outline-primary {
-  color: white !important;
+  color: var(--bs-body-bg) !important;
 }
 
 .btn-sm-square {
@@ -177,7 +283,7 @@ body {
 }
 
 .nav-tabs .nav-link.active {
-  color: $primary;
+  color: var(--bs-primary);
 }
 
 .nav-tabs .nav-link {
@@ -214,10 +320,10 @@ footer a {
 
 @function get-circle-pos($id, $axis, $radius) {
   @if ($axis == x) {
-    @return cos(45deg * $id) * $radius + 5px;
+    @return cos(45deg * $id) * $radius + .3125rem;
   }
   @else {
-    @return sin(45deg * $id) * $radius + 5px;
+    @return sin(45deg * $id) * $radius + .3125rem;
   }
 }
 
@@ -234,29 +340,28 @@ footer a {
   & div {
     visibility: visible;
     position: absolute;
-    width: 6px;
-    height: 6px;
+    width: .375rem;
+    height: .375rem;
     border-radius: 100%;
-    background-color: $primary;
+    background-color: var(--bs-primary);
     opacity: 0;
   }
   @for $id from 0 through 7 {
     & div[data-id="#{$id}"] {
       --id: #{$id};
       animation: checkAnimation-#{$id} 0.4s ease normal;
-      background-color: $primary;
 
       @keyframes checkAnimation-#{$id} {
         0% {
-          left: get-circle-pos($id, x, 8px);
-          top:  get-circle-pos($id, y, 8px);
+          left: get-circle-pos($id, x, .5rem);
+          top:  get-circle-pos($id, y, .5rem);
         }
         50% {
           opacity: 1;
         }
         100% {
-          left: get-circle-pos($id, x, 20px);
-          top:  get-circle-pos($id, y, 20px);
+          left: get-circle-pos($id, x, 1.25rem);
+          top:  get-circle-pos($id, y, 1.25rem);
           opacity: 0;
         }
       }

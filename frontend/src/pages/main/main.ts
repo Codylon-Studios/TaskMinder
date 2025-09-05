@@ -115,7 +115,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
 
   // Append the days (All days will be added into and .calendar-week element)
   return `
-  <div class="days-overview-day ${specialClasses} cursor-pointer" data-week="${week}" data-day="${date.getDay()}">
+  <button class="days-overview-day ${specialClasses} cursor-pointer" data-week="${week}" data-day="${date.getDay()}">
     <span class="weekday">${calendarMode === "week" ? weekday : ""}</span>
     <span class="date">${date.getDate()}</span>
     <div class="events ${calendarMode}">
@@ -126,7 +126,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
         ${singleDayEvents}
       </div>
     </div>
-  </div>`;
+  </button>`;
 }
 
 async function getNewCalendarWeekContent(): Promise<string> {
@@ -1162,12 +1162,29 @@ $("#calendar-today-btn").on("click", () => {
   updateTimetable();
 });
 
+function updateCalenderMoveButtonAriaLabels(): void {
+  if (calendarMode === "week") {
+    $("#calendar-month-year-l-btn").attr("aria-label", "Vorheriger Monat");
+    $("#calendar-month-year-r-btn").attr("aria-label", "Nächster Monat");
+    $("#calendar-week-l-btn").attr("aria-label", "Vorherige Woche");
+    $("#calendar-week-r-btn").attr("aria-label", "Nächste Woche");
+  }
+  else {
+    $("#calendar-month-year-l-btn").attr("aria-label", "Vorheriges Jahr");
+    $("#calendar-month-year-r-btn").attr("aria-label", "Nächstes Jahr");
+    $("#calendar-week-l-btn").attr("aria-label", "Vorheriger Monat");
+    $("#calendar-week-r-btn").attr("aria-label", "Nächster Monat");
+  }
+}
+
 let calendarMode = localStorage.getItem("calendarMode") ?? "week";
+updateCalenderMoveButtonAriaLabels();
 $(`#calendar-${calendarMode}-btn`).addClass("d-none");
 
 $("#calendar-month-btn").on("click", () => {
   selectedNewDay = false;
   calendarMode = "month";
+  updateCalenderMoveButtonAriaLabels();
   localStorage.setItem("calendarMode", calendarMode);
   $("#calendar-week-btn").removeClass("d-none");
   $("#calendar-month-btn").addClass("d-none");
@@ -1177,6 +1194,7 @@ $("#calendar-month-btn").on("click", () => {
 $("#calendar-week-btn").on("click", () => {
   selectedNewDay = false;
   calendarMode = "week";
+  updateCalenderMoveButtonAriaLabels();
   localStorage.setItem("calendarMode", calendarMode);
   $("#calendar-month-btn").removeClass("d-none");
   $("#calendar-week-btn").addClass("d-none");

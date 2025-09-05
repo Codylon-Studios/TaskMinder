@@ -50,7 +50,7 @@ $("#create-class-continue-btn").on("click", () => {
   $("#create-class-is-test-panel").addClass("d-none");
   $("#create-class-credentials-panel").removeClass("d-none");
   $("#create-class-name").removeClass("is-invalid").val("");
-  $("#create-class-btn").addClass("disabled");
+  $("#create-class-btn").prop("disabled", true);
 });
 
 $("#create-class-credentials-back-btn").on("click", () => {
@@ -80,7 +80,7 @@ $("#login-register-back-btn").on("click", () => {
 
 user.on("change", () => {
   if (user.loggedIn && !justCreatedClass) {
-    $("#show-login-register-btn").addClass("disabled").find("i").removeClass("d-none");
+    $("#show-login-register-btn").prop("disabled", true).find("i").removeClass("d-none");
     if (user.classJoined) {
       location.href = "/main";
     }
@@ -88,7 +88,7 @@ user.on("change", () => {
       $("#decide-action-panel").removeClass("d-none");
     }
     $(".login-register-element, .login-element, .register-element").addClass("d-none");
-    $("#show-create-class-btn").removeClass("disabled").find("~ .form-text").hide();
+    $("#show-create-class-btn").prop("disabled", false).find("~ .form-text").hide();
   }
 });
 
@@ -136,14 +136,14 @@ $("#join-class-class-code").on("input", () => {
 $("#create-class-name").on("change", function () {
   if (!checkClassName($(this).val()?.toString() ?? "")) {
     $("#create-class-name").addClass("is-invalid");
-    $("#create-class-btn").addClass("disabled");
+    $("#create-class-btn").prop("disabled", true);
   }
 });
 
 $("#create-class-name").on("input", function () {
   if (checkClassName($(this).val()?.toString() ?? "")) {
     $("#create-class-name").removeClass("is-invalid");
-    $("#create-class-btn").removeClass("disabled");
+    $("#create-class-btn").prop("disabled", false);
   }
 });
 
@@ -176,10 +176,12 @@ $("#create-class-btn").on("click", async () => {
         try {
           await navigator.clipboard.writeText(location.host + `/join?class_code=${classCode}`);
 
-          $("#invite-copy-link").addClass("disabled").html("<i class=\"fa-solid fa-check-circle\"></i> Einladungslink kopiert");
+          $("#invite-copy-link").prop("disabled", true)
+            .html("<i class=\"fa-solid fa-check-circle\" aria-hidden=\"true\"></i> Einladungslink kopiert");
 
           setTimeout(() => {
-            $("#invite-copy-link").removeClass("disabled").html("<i class=\"fa-solid fa-link\"></i> Einladungslink kopieren");
+            $("#invite-copy-link").prop("disabled", false)
+              .html("<i class=\"fa-solid fa-link\" aria-hidden=\"true\"></i> Einladungslink kopieren");
           }, 2000);
         }
         catch (err) {

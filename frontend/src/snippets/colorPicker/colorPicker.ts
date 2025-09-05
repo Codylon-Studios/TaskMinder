@@ -74,18 +74,26 @@ export function rgbToHex({ red: r, green: g, blue: b }: ColorRGB): string {
   return "#" + [r, g, b].map(val => val.toString(16).padStart(2, "0")).join("");
 }
 
+function hexToCSS(hexValue: string): string {
+  const r = parseInt(hexValue.substring(1, 3), 16);
+  const g = parseInt(hexValue.substring(3, 5), 16);
+  const b = parseInt(hexValue.substring(5), 16);
+
+  return [r, g, b].toString();
+}
+
 function replaceColorPickers(): void {
   $(".color-picker:not(.color-picker-replaced)").each(function () {
     const input = $(this);
     const startColor = input.val()?.toString() ?? "#3bb9ca";
 
-    const trigger = $('<div class="rounded cursor-pointer color-picker-trigger">').css("background-color", startColor);
+    const trigger = $('<button class="rounded cursor-pointer color-picker-trigger" tabindex="0">').css("--selected-color", hexToCSS(startColor));
     input.after(trigger).addClass("color-picker-replaced");
 
     const popup = $($("#color-picker-template").html());
 
     popup.find(`.color-picker-option[data-color="${$.formatHtml(startColor)}"]`).addClass("selected");
-    popup.find(".color-picker-hex").val(startColor);
+    popup.find(".color-picker-hex").val(startColor === "auto" ? "Automatisch" : startColor);
 
     if ($(this).attr("data-show-auto-option") === "true") {
       popup.find(".color-picker-auto-option-wrapper").addClass("d-flex").removeClass("d-none");
@@ -135,15 +143,15 @@ function replaceColorPickers(): void {
     });
 
     function setHslSelection(hexColor: string): void {
-      if (hexColor === "Automatisch") return;
+      if (hexColor === "auto") return;
       const hsvColor = rgbToHsv(hexToRgb(hexColor));
       selectedHslColor = hsvColor;
       markerHue.css({
-        top: (hsvColor.hue / 360) * (hueContainer.outerHeight() ?? 0)
+        top: Math.round((hsvColor.hue / 360) * (hueContainer.outerHeight() ?? 0))
       });
       markerSaturationValue.css({
-        left: hsvColor.saturation * (saturationValueContainer.outerWidth() ?? 0),
-        top: (1 - hsvColor.value) * (saturationValueContainer.outerHeight() ?? 0)
+        left: Math.round(hsvColor.saturation * (saturationValueContainer.outerWidth() ?? 0)),
+        top: Math.round((1 - hsvColor.value) * (saturationValueContainer.outerHeight() ?? 0))
       });
       const gradientColor = `hsl(${hsvColor.hue}, 100%, 50%)`;
       saturationValueContainer.css({
@@ -162,7 +170,7 @@ function replaceColorPickers(): void {
     const markerSaturationValue = popup.find(".color-picker-marker-saturation-value");
     const saturationValueContainer = popup.find(".color-picker-saturation-value");
 
-    function moveMarkerSaturationValue(x: number, y: number): void {
+    function moveMarkerSaturationValue(x: number, y: number, isAlreadyRelative?: boolean): void {
       const containerOffset = saturationValueContainer.offset() ?? {
         left: 0,
         top: 0
@@ -170,10 +178,10 @@ function replaceColorPickers(): void {
       const containerWidth = saturationValueContainer.outerWidth() ?? 0;
       const containerHeight = saturationValueContainer.outerHeight() ?? 0;
 
-      let newX = x - containerOffset.left;
+      let newX = x - (isAlreadyRelative ? 0: containerOffset.left);
       newX = Math.max(0, Math.min(newX, containerWidth));
 
-      let newY = y - containerOffset.top;
+      let newY = y - (isAlreadyRelative ? 0: containerOffset.top);
       newY = Math.max(0, Math.min(newY, containerHeight));
 
       markerSaturationValue.css({ left: newX, top: newY });
@@ -184,7 +192,7 @@ function replaceColorPickers(): void {
       const hexColor = rgbToHex(hsvToRgb(selectedHslColor));
       popup.find(".color-picker-option").removeClass("selected");
       input.val(hexColor).trigger("change");
-      trigger.css("background-color", hexColor);
+      trigger.css("--selected-color", hexToCSS(hexColor));
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
       popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
     }
@@ -225,15 +233,40 @@ function replaceColorPickers(): void {
         markerSaturationValueDragging = false;
       });
 
+    markerSaturationValue.on("keydown", ev => {
+      let step = 5;
+      step = ev.shiftKey ? 20 : step;
+      step = ev.altKey ? 1 : step;
+      let left = parseInt(markerSaturationValue.css("left"));
+      let top = parseInt(markerSaturationValue.css("top"));
+      if (["w", "ArrowUp"].includes(ev.key)) {
+        top -= step;
+        ev.preventDefault();
+      }
+      else if (["a", "ArrowLeft"].includes(ev.key)) {
+        left -= step;
+        ev.preventDefault();
+      }
+      else if (["s", "ArrowDown"].includes(ev.key)) {
+        top += step;
+        ev.preventDefault();
+      }
+      else if (["d", "ArrowRight"].includes(ev.key)) {
+        left += step;
+        ev.preventDefault();
+      }
+      moveMarkerSaturationValue(left, top, true);
+    });
+
     let markerHueDragging = false;
     const markerHue = popup.find(".color-picker-marker-hue");
     const hueContainer = popup.find(".color-picker-hue");
 
-    function moveMarkerHue(y: number): void {
+    function moveMarkerHue(y: number, isAlreadyRelative?: boolean): void {
       const containerOffset = hueContainer.offset()?.top ?? 0;
       const containerHeight = hueContainer.outerHeight() ?? 0;
 
-      let newY = y - containerOffset;
+      let newY = y - (isAlreadyRelative ? 0 : containerOffset);
       newY = Math.max(0, Math.min(newY, containerHeight));
 
       markerHue.css({ top: newY });
@@ -253,7 +286,7 @@ function replaceColorPickers(): void {
       const hexColor = rgbToHex(hsvToRgb(selectedHslColor));
       popup.find(".color-picker-option").removeClass("selected");
       input.val(hexColor).trigger("change");
-      trigger.css("background-color", hexColor);
+      trigger.css("--selected-color", hexToCSS(hexColor));
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
       popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
     }
@@ -289,11 +322,27 @@ function replaceColorPickers(): void {
         markerHueDragging = false;
       });
 
+    markerHue.on("keydown", ev => {
+      let step = 5;
+      step = ev.shiftKey ? 20 : step;
+      step = ev.altKey ? 1 : step;
+      let top = parseInt(markerHue.css("top"));
+      if (["w", "ArrowUp"].includes(ev.key)) {
+        top -= step;
+        ev.preventDefault();
+      }
+      else if (["s", "ArrowDown"].includes(ev.key)) {
+        top += step;
+        ev.preventDefault();
+      }
+      moveMarkerHue(top, true);
+    });
+
     popup.find(".color-picker-hex").on("change", function () {
       let color = $(this).val()?.toLocaleString() ?? "#3bb9ca";
       if (
         /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ||
-        (color === "Automatisch" && input.attr("data-show-auto-option") === "true")
+        ((color === "auto" || color === "Automatisch") && input.attr("data-show-auto-option") === "true")
       ) {
         $(this).removeClass("is-invalid");
         if (/^([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) {
@@ -304,9 +353,9 @@ function replaceColorPickers(): void {
           color = "#" + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
           color = color.toLowerCase();
         }
-        $(this).val(color);
+        $(this).val(color === "auto" ? "Automatisch" : color);
         popup.find(".color-picker-option").removeClass("selected");
-        trigger.css("background-color", color);
+        trigger.css("--selected-color", hexToCSS(color));
         input.val(color).trigger("change");
         popup.find(`.color-picker-option[data-color="${$.formatHtml(color)}"]`).addClass("selected");
         setHslSelection(color);
@@ -321,8 +370,8 @@ function replaceColorPickers(): void {
       popup.find(".color-picker-option").removeClass("selected");
       $(this).addClass("selected");
       input.val(color).trigger("change");
-      trigger.css("background-color", color);
-      popup.find(".color-picker-hex").val(color).removeClass("is-invalid");
+      trigger.css("--selected-color", hexToCSS(color));
+      popup.find(".color-picker-hex").val(color === "auto" ? "Automatisch" : color).removeClass("is-invalid");
       setHslSelection(color);
     });
 
@@ -348,22 +397,12 @@ $(() => {
         if ($(this).find(".color-picker")) {
           replaceColorPickers();
           $(this).find(".color-picker").each(function () {
-            if ($(this).attr("disabled") === undefined) {
-              $(this).next().removeAttr("disabled");
-            }
-            else {
-              $(this).next().attr("disabled", "");
-            }
+            $(this).next().prop("disabled", $(this).prop("disabled"));
           });
         }
       });
       if (mutation.type === "attributes" && mutation.attributeName === "disabled" && $(mutation.target).is(".color-picker")) {
-        if ($(mutation.target).attr("disabled") === undefined) {
-          $(mutation.target).next().removeAttr("disabled");
-        }
-        else {
-          $(mutation.target).next().attr("disabled", "");
-        }
+        $(mutation.target).next().prop("disabled", $(mutation.target).prop("disabled"));
       }
     });
   }).observe(document.body, {

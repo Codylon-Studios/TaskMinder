@@ -264,7 +264,7 @@ $(() => {
   $("#login-register-modal").on("show.bs.modal", () => {
     resetLoginRegisterModal();
     $(".login-register-username").val("");
-    $(".login-register-next-button").addClass("disabled");
+    $(".login-register-next-button").prop("disabled", true);
   });
 
   // Check username
@@ -273,7 +273,7 @@ $(() => {
     $(".login-register-username").val($(this).val() ?? "");
 
     if (checkUsername($(".login-register-username").val()?.toString() ?? "")) {
-      $(".login-register-next-button").removeClass("disabled");
+      $(".login-register-next-button").prop("disabled", false);
       $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
     }
   });
@@ -283,7 +283,7 @@ $(() => {
     $(".login-register-username").val($(this).val() ?? "");
 
     if (!checkUsername($(".login-register-username").val()?.toString() ?? "")) {
-      $(".login-register-next-button").addClass("disabled");
+      $(".login-register-next-button").prop("disabled", true);
       $(".login-register-error-invalid-username").removeClass("d-none").addClass("d-flex");
     }
   });
@@ -322,7 +322,7 @@ $(() => {
     $(".register-password-repeat").val($(this).val() ?? "");
 
     if ($(".register-password").val() === $(".register-password-repeat").val()) {
-      $(".register-button").removeClass("disabled");
+      $(".register-button").prop("disabled", false);
       $(".register-error-no-matching-passwords").addClass("d-none");
       $(".register-error-no-matching-passwords").removeClass("d-flex");
     }
@@ -330,7 +330,7 @@ $(() => {
 
   $(".register-password-repeat").on("change", () => {
     if ($(".register-password").val() !== $(".register-password-repeat").val()) {
-      $(".register-button").addClass("disabled");
+      $(".register-button").prop("disabled", true);
       $(".register-error-no-matching-passwords").removeClass("d-none");
       $(".register-error-no-matching-passwords").addClass("d-flex");
     }

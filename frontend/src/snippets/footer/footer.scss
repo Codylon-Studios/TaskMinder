@@ -1,0 +1,9 @@
+#footer-copyright {
+  color: var(--bs-secondary);
+}
+
+[data-high-contrast="true"] {
+  #footer-copyright {
+    color: var(--bs-light)
+  }
+}

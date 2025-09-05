@@ -83,10 +83,14 @@ async function buildDirectory(src, dest) {
         </script>
       `);
 
-      $("body").append(`
+      $("body").prepend(`
         <div class="load-snippet" data-target="pwaBanner"></div>
         <div class="load-snippet" data-target="navbar"></div>
+      `);
+
+      $("body").append(`
         <div class="load-snippet" data-target="footer"></div>
+        <div class="load-snippet" data-target="bottombar"></div>
       `);
 
       $("body").css({ display: "none" });

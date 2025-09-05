@@ -337,6 +337,7 @@ function replaceRichTextareas(): void {
     }
 
     const input = $(this);
+    let isExternalInputChangeEvent = true;
     const richTextareaTemplate = $($("#rich-textarea-template").html());
     const richTextarea = richTextareaTemplate.filter(".rich-textarea-wrapper");
     const pasteArea = richTextareaTemplate.filter(".rich-textarea-paste-area");
@@ -347,6 +348,9 @@ function replaceRichTextareas(): void {
     }
     const pasteAreaShadowRoot = pasteAreaElement.attachShadow({ mode: "open" });
     const textarea = richTextarea.find(".rich-textarea-input");
+    $(`label[for="${$(this).attr("id")}"]`).on("click", () => {
+      textarea.trigger("focus");
+    });
 
     textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
     textarea.toggleClass("rich-textarea-empty", textarea.html() === "");
@@ -368,16 +372,24 @@ function replaceRichTextareas(): void {
       fontSize: { enabled: false, value: 16 },
       sub: false,
       sup: false,
-      color: { enabled: false, value: "Automatisch" }
+      color: { enabled: false, value: "auto" }
     };
 
     richTextarea.find(".rich-textarea-color svg").hide();
     richTextarea.find(".rich-textarea-color-enabled").hide();
-    richTextarea.find(".rich-textarea-color-picker").val("Automatisch");
+    richTextarea.find(".rich-textarea-color-picker").val("auto");
 
     richTextarea.find(".rich-textarea-toolbar").hide();
     richTextarea.find(".rich-textarea-input-toggle").on("click", function () {
       richTextarea.find(".rich-textarea-toolbar").toggle();
+    });
+
+    input.on("input change", () => {
+      if (isExternalInputChangeEvent) {
+        textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
+        textarea.toggleClass("rich-textarea-empty", textarea.html() === "");
+      }
+      isExternalInputChangeEvent = true;
     });
 
     function findReplacement(direction: "old" | "new", val: string): { old: string, new: string } | undefined {
@@ -415,7 +427,7 @@ function replaceRichTextareas(): void {
           node.addClass("sup");
           node.css("font-size", parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
         }
-        if (currentStyles.color.enabled && currentStyles.color.value !== "Automatisch") {
+        if (currentStyles.color.enabled && currentStyles.color.value !== "auto") {
           node.attr("data-color", currentStyles.color.value);
           node.css("color", currentStyles.color.value);
         }
@@ -713,6 +725,7 @@ function replaceRichTextareas(): void {
 
       updateInput();
 
+      isExternalInputChangeEvent = false;
       input.trigger("input");
       textarea.toggleClass("rich-textarea-empty", textarea.html() === "");
     });
@@ -844,7 +857,7 @@ function replaceRichTextareas(): void {
     richTextarea.find(".rich-textarea-color-picker").on("change", function () {
       const color = $(this).val()?.toString() ?? "#3bb9ca";
       currentStyles.color.value = color;
-      if (color === "Automatisch") {
+      if (color === "auto") {
         richTextarea.find(".rich-textarea-color svg").hide().find("~ span").show();
         richTextarea.find(".rich-textarea-color-enabled").hide();
       }
@@ -859,11 +872,11 @@ function replaceRichTextareas(): void {
       currentStyles.color.enabled = !currentStyles.color.enabled;
       currentStyles.color.value = newColor;
       $(this).toggleClass("enabled");
-      if (newColor !== "Automatisch") {
+      if (newColor !== "auto") {
         $(this).find(".rich-textarea-color-enabled").toggle();
       }
       forEachSelectedSpan(span => {
-        if (span.attr("data-color") === newColor || newColor === "Automatisch") {
+        if (span.attr("data-color") === newColor || newColor === "auto") {
           span.css("color", "");
           span.attr("data-color", "");
         }

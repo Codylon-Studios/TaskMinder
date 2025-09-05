@@ -43,7 +43,7 @@ textarea.rich-textarea {
 }
 
 .rich-textarea-color svg {
-  fill: #3bb9ca;
+  fill: var(--bs-primary);
   width: 1.2rem;
   height: 1.15rem;
   stroke: var(--bs-body-color);
@@ -53,7 +53,7 @@ textarea.rich-textarea {
 }
 
 .rich-textarea-color-enabled {
-  color: #3bb9ca;
+  color: var(--bs-primary);
   translate: -0.5rem 0.2rem;
   margin-right: -0.75rem;
   font-size: 0.75rem;
@@ -80,7 +80,7 @@ textarea.rich-textarea {
 }
 
 .rich-textarea-toolbar button.enabled {
-  color: #3bb9ca !important;
+  color: var(--bs-primary) !important;
 }
 
 .rich-textarea-link-enabled {

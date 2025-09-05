@@ -10,14 +10,15 @@
   justify-content: center;
   width: 20%;
   border-radius: 0;
-  cursor: pointer;
+  color: var(--bs-body-color);
+  text-decoration: none;
+
   &.bottombar-link-deactivated {
-    cursor: auto;
     opacity: 0.5;
   }
 
   &.bottombar-current-link {
-    color: #3bb9ca !important;
+    color: var(--bs-primary) !important;
   }
 
   & i {

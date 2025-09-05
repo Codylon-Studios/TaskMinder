@@ -71,16 +71,18 @@ async function updateEventList(): Promise<void> {
               </div>
               <div>
                 <div class="d-flex flex-nowrap">
-                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-edit" data-id="${eventId}">
-                    <i class="fa-solid fa-edit event-${eventTypeId} opacity-75"></i>
+                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-edit"
+                    data-id="${eventId}" aria-label="Bearbeiten">
+                    <i class="fa-solid fa-edit event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
-                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-delete" data-id="${eventId}">
-                    <i class="fa-solid fa-trash event-${eventTypeId} opacity-75"></i>
+                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-delete"
+                    data-id="${eventId}" aria-label="Löschen">
+                    <i class="fa-solid fa-trash event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
                 </div>
                 <div class="d-flex flex-nowrap justify-content-end">
-                  <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}">
-                    <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75"></i>
+                  <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
+                    <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
                 </div>
               </div>
@@ -103,8 +105,8 @@ async function updateEventList(): Promise<void> {
   }
 
   // If no events match, add an explanation text
-  $("#edit-toggle ~ label").toggle($("#event-list").html() !== "" && (user.permissionLevel ?? 0) >= 1);
-  $("#filter-toggle ~ label").toggle((await eventData()).length > 0);
+  $("#edit-toggle, #edit-toggle-label").toggle($("#event-list").html() !== "" && (user.permissionLevel ?? 0) >= 1);
+  $("#filter-toggle, #filter-toggle ~ label").toggle((await eventData()).length > 0);
   if (newContent.html() === "") {
     newContent.html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
   }
@@ -199,7 +201,7 @@ function addEvent(): void {
   $("#add-event-team").val("-1");
 
   // Disable the actual "add" button, because not all information is given
-  $("#add-event-button").addClass("disabled");
+  $("#add-event-button").prop("disabled", true);
 
   // Show the add event modal
   $("#add-event-modal").modal("show");
@@ -308,8 +310,7 @@ async function shareEvent(eventId: number): Promise<void> {
     }
 
     if (! (startLesson && endLesson)) {
-      $("#share-event-error-toast").toast("show");
-      return;
+      throw new Error();
     }
     const lessonStart = parseInt(startLesson.startTime) / 1000 / 60;
     start.setHours(Math.trunc(lessonStart / 60), lessonStart % 60);
@@ -322,7 +323,7 @@ async function shareEvent(eventId: number): Promise<void> {
     `;
   }
   const event = (await eventData()).find(e => e.eventId === eventId);
-  if (!event) return;
+  if (!event) throw new Error();
 
   const name = event.name;
   let description = "";
@@ -355,7 +356,13 @@ async function shareEvent(eventId: number): Promise<void> {
   let timeContent = "";
 
   if (event.lesson !== null && event.lesson !== "") {
-    await parseLessonEvent(event, event.lesson);
+    try {
+      await parseLessonEvent(event, event.lesson);
+    }
+    catch {
+      $("#share-event-error-toast").toast("show");
+      return;
+    }
   }
   else {
     if (event.endDate === null || event.endDate === "") {
@@ -418,7 +425,7 @@ async function editEvent(eventId: number): Promise<void> {
   $("#edit-event-team").val(event.teamId);
 
   // Enable the actual "edit" button, because all information is given
-  $("#edit-event-button").removeClass("disabled");
+  $("#edit-event-button").prop("disabled", false);
 
   // Show the edit event modal
   $("#edit-event-modal").modal("show");
@@ -656,10 +663,10 @@ $(function () {
     const startDate = $("#add-event-start-date").val();
 
     if ([name, startDate].includes("") || type === null) {
-      $("#add-event-button").addClass("disabled");
+      $("#add-event-button").prop("disabled", true);
     }
     else {
-      $("#add-event-button").removeClass("disabled");
+      $("#add-event-button").prop("disabled", false);
     }
 
     if ($(this).is("#add-event-end-date")) {
@@ -677,10 +684,10 @@ $(function () {
     const startDate = $("#edit-event-start-date").val();
 
     if ([name, startDate].includes("") || type === null) {
-      $("#edit-event-button").addClass("disabled");
+      $("#edit-event-button").prop("disabled", true);
     }
     else {
-      $("#edit-event-button").removeClass("disabled");
+      $("#edit-event-button").prop("disabled", false);
     }
 
     if ($(this).is("#edit-event-end-date")) {

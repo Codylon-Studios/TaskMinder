@@ -356,6 +356,8 @@ export const eventService = {
         $bg-transparent: color.change($color: $color, $alpha: 0.4);
         $color-darker: color.adjust($color, $lightness: -30%);
         $color-lighter: color.adjust($color, $lightness: 20%);
+        $color-more-darker: color.adjust($color, $lightness: -60%);
+        $color-more-lighter: color.adjust($color, $lightness: 40%);
 
         .card.event-#{"" + $name} {
           border-color: $color;
@@ -366,14 +368,24 @@ export const eventService = {
           background-color: $color;
         }
 
-        body {
+        span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
+          color: $color-darker;
+        }
+
+        [data-bs-theme="dark"] {
           span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-            color: $color-darker;
+            color: $color-lighter;
+          }
+        }
+
+        [data-high-contrast="true"] {
+          span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
+            color: $color-more-darker;
           }
 
           &[data-bs-theme="dark"] {
             span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-              color: $color-lighter;
+              color: $color-more-lighter;
             }
           }
         }

@@ -26,11 +26,17 @@
       <!--This button only has to be here so the navbar always has the same height-->
     </button>
 
-    <button class="btn btn-semivisible" id="login-register-button" data-bs-toggle="modal" data-bs-target="#login-register-modal">
-      <i class="fa-solid fa-right-to-bracket"></i>
+    <button
+      class="btn btn-semivisible"
+      id="login-register-button"
+      data-bs-toggle="modal"
+      data-bs-target="#login-register-modal"
+      aria-label="Anmelden oder Registrieren"
+    >
+      <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
     </button>
-    <button class="btn btn-semivisible class-page-content d-none" id="navbar-reload-button">
-      <i class="fas fa-rotate"></i>
+    <button class="btn btn-semivisible class-page-content d-none" id="navbar-reload-button" aria-label="Daten neu laden">
+      <i class="fas fa-rotate" aria-hidden="true"></i>
     </button>
   </div>
 </nav>
@@ -42,33 +48,41 @@
         <h1 class="modal-title fs-5 login-register-element">Anmelden oder Registrieren</h1>
         <h1 class="modal-title fs-5 d-none login-element">Willkommen zurück!</h1>
         <h1 class="modal-title fs-5 d-none register-element">Registriere dich!</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
       </div>
       <div class="modal-body">
         <div id="login-register-content" class="login-register-element">
+          <div class="alert alert-primary p-2 d-flex align-items-center gap-2 w-100">
+            <i class="fa-solid fa-lightbulb mx-1" aria-hidden="true"></i>
+            <span class="d-block me-1">
+              Schon angemeldet? Gib deinen Nutzernamen ein!
+              <br />
+              Noch kein Account? Gib deinen Wunschnamen ein!
+            </span>
+          </div>
           <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-register-error-invalid-username">
-            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
             <span class="d-block">Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.</span>
           </div>
-          <label for="navbar-login-register-username" class="form-label">Gib deinen Nutzernamen ein</label>
+          <label for="navbar-login-register-username" class="form-label">Gib deinen Nutzer-/Wunschnamen ein</label>
           <input type="text" class="form-control login-register-username" id="navbar-login-register-username" />
-          <div class="form-text">Gib zum Registrieren deinen Wunschnamen ein</div>
         </div>
         <div id="login-content" class="d-none login-element">
           <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-error-invalid-password">
-            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
             <span class="d-block">Das Passwort ist falsch!</span>
           </div>
           <label for="navbar-login-password" class="form-label">Gib dein Passwort ein</label>
           <input type="password" class="form-control login-password" id="navbar-login-password" />
+          <div class="form-text">Wolltest du dich registrieren? Dieser Nutzername ist leider schon vergeben. Aber es gibt noch genug andere!</div>
         </div>
         <div id="register-content" class="d-none register-element">
           <div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-no-matching-passwords">
-            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
             <span class="d-block">Die Passwörter stimmen nicht überein!</span>
           </div>
           <div class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password">
-            <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+            <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
             <span class="d-block">Das Passwort ist nicht sehr sicher!</span>
           </div>
           <div class="mb-3">
@@ -83,7 +97,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary d-none login-register-back-button">Zurück</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-        <button type="button" class="btn btn-primary disabled login-register-next-button" id="navbar-login-register-next-button">Weiter</button>
+        <button type="button" class="btn btn-primary login-register-next-button" id="navbar-login-register-next-button">Weiter</button>
         <button type="button" class="btn btn-primary d-none login-element login-button">Anmelden</button>
         <button type="button" class="btn btn-primary d-none register-element register-button">Registrieren</button>
       </div>
@@ -93,30 +107,30 @@
 
 <div class="toast-container position-fixed top-0 end-0 p-3">
   <div id="error-server-toast" class="toast">
-    <div class="toast-header bg-danger text-white">
+    <div class="toast-header bg-danger text-body-bg">
       <b class="me-auto">Serverproblem</b>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
     </div>
     <div class="toast-body">Unser Server hat gerade Probleme. Bitte versuche es später erneut.</div>
   </div>
   <div id="unknown-error-toast" class="toast">
-    <div class="toast-header bg-danger text-white">
+    <div class="toast-header bg-danger text-body-bg">
       <b class="me-auto">Unerwarteter Fehler</b>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
     </div>
     <div class="toast-body">Ein unbekannter Fehler ist aufgetreten.</div>
   </div>
   <div id="not-logged-in-toast" class="toast">
-    <div class="toast-header bg-danger text-white">
+    <div class="toast-header bg-danger text-body-bg">
       <b class="me-auto">Nicht angemeldet</b>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
     </div>
     <div class="toast-body">Du musst dafür angemeldet sein.</div>
   </div>
   <div id="login-success-toast" class="toast">
-    <div class="toast-header bg-success text-white">
+    <div class="toast-header bg-success text-body-bg">
       <b class="me-auto">Erfolgreich angemeldet</b>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
     </div>
     <div class="toast-body">
       Willkommen zurück
@@ -125,9 +139,9 @@
     </div>
   </div>
   <div id="register-success-toast" class="toast">
-    <div class="toast-header bg-success text-white">
+    <div class="toast-header bg-success text-body-bg">
       <b class="me-auto">Erfolgreich registriert</b>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
     </div>
     <div class="toast-body">
       Willkommen

@@ -101,11 +101,11 @@ async function updateHomeworkList(): Promise<void> {
         </div>
 
         <div class="homework-edit-options ms-2 text-nowrap ${editEnabled ? "" : "d-none"}">
-          <button class="btn btn-sm btn-semivisible homework-edit" data-id="${homeworkId}">
-            <i class="fa-solid fa-edit opacity-75"></i>
+          <button class="btn btn-sm btn-semivisible homework-edit" data-id="${homeworkId}" aria-label="Bearbeiten">
+            <i class="fa-solid fa-edit opacity-75" aria-hidden="true"></i>
           </button>
-          <button class="btn btn-sm btn-semivisible homework-delete" data-id="${homeworkId}">
-            <i class="fa-solid fa-trash opacity-75"></i>
+          <button class="btn btn-sm btn-semivisible homework-delete" data-id="${homeworkId}" aria-label="Löschen">
+            <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
           </button>
         </div>
       </div>
@@ -126,8 +126,8 @@ async function updateHomeworkList(): Promise<void> {
   }
 
   // If no homeworks match, add an explanation text
-  $("#edit-toggle ~ label").toggle(newContent.html() !== "" && (user.permissionLevel ?? 0) >= 1);
-  $("#filter-toggle ~ label").toggle((await homeworkData()).length > 0);
+  $("#edit-toggle, #edit-toggle-label").toggle(newContent.html() !== "" && (user.permissionLevel ?? 0) >= 1);
+  $("#filter-toggle, #filter-toggle ~ label").toggle((await homeworkData()).length > 0);
   if (newContent.html() === "") {
     newContent.html('<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>');
   }
@@ -256,7 +256,7 @@ async function addHomework(): Promise<void> {
   $("#add-homework-date-assignment").val(msToInputDate(Date.now())).addClass("autocomplete");
 
   // Disable the actual "add" button, because not all information is given
-  $("#add-homework-button").addClass("disabled");
+  $("#add-homework-button").prop("disabled", true);
 
   // Show the add homework modal
   $("#add-homework-modal").modal("show");
@@ -345,7 +345,7 @@ async function editHomework(homeworkId: number): Promise<void> {
   $("#edit-homework-team").val(homework.teamId);
 
   // Enable the actual "edit" button, because all information is given
-  $("#edit-homework-button").removeClass("disabled");
+  $("#edit-homework-button").prop("disabled", false);
 
   // Show the edit homework modal
   $("#edit-homework-modal").modal("show");
@@ -620,7 +620,7 @@ $(function () {
   // If user is logged in, show the edit toggle button
   user.on("change", (function _() {
     const loggedIn = user.loggedIn;
-    $("#edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
+    $("#edit-toggle, #edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
     $("#show-add-homework-button").toggle((user.permissionLevel ?? 0) >= 1);
     if (!loggedIn) {
       $(".homework-edit-options").addClass("d-none");
@@ -676,10 +676,10 @@ $(function () {
     const submissionDate = $("#add-homework-date-submission").val();
 
     if ([content, assignmentDate, submissionDate].includes("") || subject === null) {
-      $("#add-homework-button").addClass("disabled");
+      $("#add-homework-button").prop("disabled", true);
     }
     else {
-      $("#add-homework-button").removeClass("disabled");
+      $("#add-homework-button").prop("disabled", false);
     }
   });
 
@@ -736,10 +736,10 @@ $(function () {
     const submissionDate = $("#edit-homework-date-submission").val();
 
     if ([content, assignmentDate, submissionDate].includes("") || subject === null) {
-      $("#edit-homework-button").addClass("disabled");
+      $("#edit-homework-button").prop("disabled", true);
     }
     else {
-      $("#edit-homework-button").removeClass("disabled");
+      $("#edit-homework-button").prop("disabled", false);
     }
   });
 

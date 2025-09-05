@@ -7,11 +7,18 @@ $fa-font-path: "/assets/fonts/fontawesome";
   width: 2rem;
   height: 2rem;
   position: relative;
+  border: none;
+  background-color: rgb(var(--selected-color));
 
-  &[disabled] {
+  &:disabled {
     opacity: 0.65;
     pointer-events: none;
     user-select: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 .25rem rgba(var(--selected-color), .25);
   }
 }
 
@@ -51,6 +58,7 @@ $fa-font-path: "/assets/fonts/fontawesome";
   border: 0.0625rem solid white;
   box-shadow: 0 0 0 0.0625rem black;
   pointer-events: none;
+  background-color: transparent;
 }
 
 .color-picker-hue {
@@ -78,6 +86,7 @@ $fa-font-path: "/assets/fonts/fontawesome";
   border: 0.0625rem solid white;
   box-shadow: 0 0 0 0.0625rem black;
   pointer-events: none;
+  background-color: transparent;
 }
 
 .color-picker-hex-wrapper {
@@ -90,6 +99,7 @@ $fa-font-path: "/assets/fonts/fontawesome";
   width: 1.75rem;
   height: 1.75rem;
   display: flex !important;
+  border: none;
   justify-content: center;
 
   &:not(.color-picker-auto-option).selected {
@@ -119,6 +129,10 @@ $color-picker-colors: (
 @each $color in $color-picker-colors {
   .color-picker-option[data-color="#{$color}"] {
     background: #{$color};
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 .25rem rgba($color, .25);
+    }
   }
 }
 

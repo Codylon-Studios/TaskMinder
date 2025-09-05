@@ -13,7 +13,7 @@
       <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-primary" id="show-add-event-button">
-            <i class="fa-solid fa-plus"></i>
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
             Neu
           </button>
           <input type="checkbox" class="btn-check" id="edit-toggle" />
@@ -60,7 +60,7 @@
           </div>
         </div>
         <button class="btn btn-secondary d-none" id="filter-reset">
-          <i class="fa-solid fa-trash"></i>
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
           Zurücksetzen
         </button>
       </div>
@@ -69,12 +69,12 @@
         <!--Gets filled-->
       </div>
 
-      <div class="modal fade" id="add-event-modal">
+      <div class="modal fade" id="add-event-modal" aria-labelledby="add-event-modal-label">
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="add-event-modal-label">Ereignis hinzufügen</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
             </div>
             <div class="modal-body">
               <div class="mb-3">
@@ -91,7 +91,7 @@
               </div>
 
               <div class="mb-3">
-                <label for="add-event-description" class="form-label">Füge eine Beschreibung für das Ereignis hinzu (optional)</label>
+                <label class="form-label" for="add-event-description">Füge eine Beschreibung für das Ereignis hinzu (optional)</label>
                 <textarea
                   type="text"
                   class="rich-textarea add-event-input"
@@ -127,18 +127,18 @@
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-              <button class="btn btn-primary disabled" id="add-event-button">Hinzufügen</button>
+              <button class="btn btn-primary" id="add-event-button">Hinzufügen</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="modal fade" id="edit-event-modal">
+      <div class="modal fade" id="edit-event-modal" aria-labelledby="edit-event-modal-label">
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="edit-event-modal-label">Ereignis bearbeiten</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
             </div>
             <div class="modal-body">
               <div class="mb-3">
@@ -191,7 +191,7 @@
             </div>
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-              <button class="btn btn-primary disabled" id="edit-event-button">Speichern</button>
+              <button class="btn btn-primary" id="edit-event-button">Speichern</button>
             </div>
           </div>
         </div>
@@ -200,30 +200,30 @@
 
     <div class="toast-container position-fixed top-0 end-0 p-3">
       <div id="add-event-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Erfolgreich hinzugefügt</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">Das Ereignis wurde erfolgreich hinzugefügt.</div>
       </div>
       <div id="edit-event-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Erfolgreich geändert</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">Das Ereignis wurde erfolgreich geändert.</div>
       </div>
       <div id="delete-event-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Erfolgreich gelöscht</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">Das Ereignis wurde erfolgreich gelöscht.</div>
       </div>
       <div id="delete-event-confirm-toast" class="toast" data-bs-autohide="false">
-        <div class="toast-header bg-primary text-white">
+        <div class="toast-header bg-primary text-body-bg">
           <b class="me-auto">Bitte bestätigen</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">
           Möchtest du das Ereignis wirklich löschen?
@@ -240,13 +240,12 @@
         </div>
       </div>
       <div id="share-event-error-toast" class="toast">
-        <div class="toast-header bg-danger text-white">
+        <div class="toast-header bg-danger text-body-bg">
           <b class="me-auto">Fehler beim Teilen</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">Das Ereignis konnte nicht geteilt werden. Vielleicht ist die Zeit der angegebenen Stunde nie definiert?</div>
       </div>
     </div>
-    <div class="load-snippet" data-target="bottombar"></div>
   </body>
 </html>
