@@ -502,10 +502,10 @@ handleSmallScreenQueryChange();
     $("body").attr("data-bs-theme", "dark");
   }
 
-  if (localStorage.getItem("fontSize") == "1") {
+  if (localStorage.getItem("fontSize") === "1") {
     $("html").css("font-size", "19px");
   }
-  else if (localStorage.getItem("fontSize") == "2") {
+  else if (localStorage.getItem("fontSize") === "2") {
     $("html").css("font-size", "22px");
   }
 

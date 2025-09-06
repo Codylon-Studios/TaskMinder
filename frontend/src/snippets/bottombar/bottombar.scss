@@ -31,3 +31,23 @@
     margin-bottom: 0.3rem;
   }
 }
+
+.bottombar-overlay {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--bs-secondary-bg);
+  z-index: 1120;
+
+  animation: show 1s linear paused;
+  animation-delay: calc(-1s * var(--progress));
+
+  @keyframes show {
+    0%   { opacity: 0; }
+    20%  { opacity: 0; }
+    75% { opacity: 1; }
+    100% { opacity: 1; }
+  }
+}

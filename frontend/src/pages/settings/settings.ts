@@ -1074,13 +1074,13 @@ $("#font-size input").each(function () {
   $(this).on("click", () => {
     fontSize = $(this).val();
     localStorage.setItem("fontSize", fontSize);
-    if (fontSize == "0") {
+    if (fontSize === "0") {
       $("html").css("font-size", "16px");
     }
-    else if (fontSize == "1") {
+    else if (fontSize === "1") {
       $("html").css("font-size", "19px");
     }
-    else if (fontSize == "2") {
+    else if (fontSize === "2") {
       $("html").css("font-size", "22px");
     }
 
@@ -1101,7 +1101,7 @@ $("#display-footer-check").prop("checked", displayFooter);
 $("#display-footer-check").on("click", function () {
   displayFooter = $(this).prop("checked");
   localStorage.setItem("displayFooter", displayFooter);
-  $("footer").toggle(displayFooter)
+  $("footer").toggle(displayFooter);
   $("body").css({ paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + (displayFooter ? 0 : 70) + "px" });
 });
 

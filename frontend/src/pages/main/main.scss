@@ -13,6 +13,7 @@
   font-weight: 500;
   border: .1875rem solid transparent !important;
   background-color: transparent;
+  color: var(--bs-body-color);
 
   &:focus-visible {
     outline: none;
