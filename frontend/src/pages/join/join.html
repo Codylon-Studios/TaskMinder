@@ -35,6 +35,19 @@
             <input type="text" class="form-control" id="join-class-class-code" />
             <div class="form-text">Frag den Ersteller eurer Klasse, wenn du ihn vergessen hast</div>
           </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input mt-2" type="checkbox" id="join-class-checkbox" />
+            <label class="form-check-label" for="join-class-checkbox">
+              <div class="form-text">
+                Ich bin mindestens 16 Jahre alt oder habe die Einverständnis meiner Erziehungsberechtigten, einer Klasse auf TaskMinder beizutreten.
+                Ich habe die
+                <a href="/about#privacy-policy" target="_blank">Datenschutzerklärung</a>
+                und
+                <a href="/about#terms-of-use" target="_blank">Nutzungsbedingungen</a>
+                gelesen und akzeptiert.
+              </div>
+            </label>
+          </div>
           <button class="btn btn-primary w-100 fw-semibold" id="join-class-btn">Beitreten</button>
         </div>
 
@@ -101,7 +114,7 @@
             <label for="panel-login-password" class="form-label">Gib dein Passwort ein</label>
             <input type="password" class="form-control login-password" id="panel-login-password" />
             <div class="form-text">Wolltest du dich registrieren? Dieser Nutzername ist leider schon vergeben. Aber es gibt noch genug andere!</div>
-            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 login-element login-button" id="panel-login-button">Anmelden</button>
+            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 login-element login-button">Anmelden</button>
           </div>
           <!--REGISTER CONTENT-->
           <div class="d-none register-element">
@@ -122,9 +135,23 @@
               <input type="password" class="form-control register-password" id="panel-register-password" />
               <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
             </div>
-            <input type="password" class="form-control register-password-repeat" />
-            <div class="form-text">Gib es noch mal ein</div>
-            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 register-element register-button">Registrieren</button>
+            <div class="mb-3">
+              <input type="password" class="form-control register-password-repeat" />
+              <div class="form-text">Gib es noch mal ein</div>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input mt-2 register-checkbox" type="checkbox" id="panel-register-checkbox" />
+              <label class="form-check-label" for="panel-register-checkbox">
+                <div class="form-text">
+                  Ich bin mindestens 16 Jahre alt oder habe die Einverständnis meiner Erziehungsberechtigten, einen Account zu erstellen. Ich habe die
+                  <a href="/about#privacy-policy" target="_blank">Datenschutzerklärung</a>
+                  und
+                  <a href="/about#terms-of-use" target="_blank">Nutzungsbedingungen</a>
+                  gelesen und akzeptiert.
+                </div>
+              </label>
+            </div>
+            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 register-element register-button" disabled>Registrieren</button>
           </div>
         </div>
 

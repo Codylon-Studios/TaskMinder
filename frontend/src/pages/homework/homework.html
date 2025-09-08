@@ -83,6 +83,14 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
             </div>
             <div class="modal-body">
+              <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2 mb-3" id="add-homework-no-subjects">
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+                <span class="d-block">
+                  Es gibt in eurer Klasse noch keine Fächer!
+                  <br />
+                  <b></b>
+                </span>
+              </div>
               <div class="mb-3">
                 <label for="add-homework-subject" class="form-label">Wähle das Fach der Hausaufgabe aus</label>
                 <select class="form-select add-homework-input" id="add-homework-subject">

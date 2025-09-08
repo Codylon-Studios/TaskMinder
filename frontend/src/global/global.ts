@@ -420,12 +420,9 @@ export const csrfToken = createDataAccessor<string>("csrfToken");
 $(async () => {
   const hash = window.location.hash;
   if (hash) {
-    const $target = $(hash);
-    if ($target?.offset() !== undefined) {
-      $("html").animate({
-        scrollTop: ($target.offset()?.top ?? 0) - 70
-      });
-    }
+    setTimeout(() => {
+     document.location.href = hash;
+    }, 250)
   }
 
   if (window.location.host === "codylon.de") {

@@ -164,6 +164,12 @@ async function updateEventTypeList(): Promise<void> {
   });
 
   localStorage.setItem("eventFilter", JSON.stringify(filterData));
+
+  $("#add-event-no-types").toggleClass("d-none", currentEventTypeData.length !== 0).find("b").text(
+    (user.permissionLevel ?? 0) < 3 ?
+      "Bitte einen Admin / ein:e Manager:in, welche hinzuzufügen!" :
+      "Füge in den Einstellungen unter \"Klasse\" > \"Ereignisarten\" welche hinzu!"
+  );
 };
 
 async function updateTeamList(): Promise<void> {

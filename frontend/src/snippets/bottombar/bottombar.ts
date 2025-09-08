@@ -23,7 +23,7 @@ if (siteIndex === 5) {
   $(".bottombar-link").eq(2).addClass("bottombar-current-link");
 }
 
-$(".bottombar-overlay").hide()
+$(".bottombar-overlay").hide();
 
 let startX = 0;
 let startY = 0;
@@ -34,15 +34,15 @@ $(document).on("touchstart", ev => {
 
   let $nextLink;
   if (startX < 75) {
-    $nextLink = $(".bottombar-current-link").prevAll(":not(.bottombar-link-deactivated)").first()
+    $nextLink = $(".bottombar-current-link").prevAll(":not(.bottombar-link-deactivated)").first();
   }
   else if (startX > window.innerWidth - 75) {
-    $nextLink = $(".bottombar-current-link").nextAll(":not(.bottombar-link-deactivated)").first()
+    $nextLink = $(".bottombar-current-link").nextAll(":not(.bottombar-link-deactivated)").first();
   }
-  else return
+  else return;
 
-  $(".bottombar-overlay i").attr("class", ($nextLink.find("i").attr("class") ?? "fa-solid fa-xmark text-danger") + " fs-1")
-  $(".bottombar-overlay span").text($nextLink.find("span").text() || "Keine Seite mehr")
+  $(".bottombar-overlay i").attr("class", ($nextLink.find("i").attr("class") ?? "fa-solid fa-xmark text-danger") + " fs-1");
+  $(".bottombar-overlay span").text($nextLink.find("span").text() || "Keine Seite mehr");
 });
 
 $(document).on("touchmove", ev => {
@@ -70,7 +70,7 @@ $(document).on("touchmove", ev => {
 
 $(document).on("touchend", ev => {
   function hideOverlay(endP: number, complete?: () => unknown) {
-    const startP = parseFloat($(".bottombar-overlay").css("--progress"))
+    const startP = parseFloat($(".bottombar-overlay").css("--progress"));
     $({ p: startP }).animate(
       { p: endP },
       {
@@ -109,7 +109,7 @@ $(document).on("touchend", ev => {
     endP = 0;
   }
   
-  hideOverlay(endP, endP === 1 ? changeSite : () => {})
+  hideOverlay(endP, endP === 1 ? changeSite : () => {});
   $(".bottombar-overlay").animate({
     left: diffX > 0 || endP === 1 ? 0 : window.innerWidth,
     right: diffX < 0 || endP === 1 ? 0 : window.innerWidth

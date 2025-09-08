@@ -66,8 +66,8 @@ async function loginAccount(username: string, password: string): Promise<void> {
     },
     error: xhr => {
       if (xhr.status === 401) {
-        $(".login-error-invalid-password").removeClass("d-none");
-        $(".login-error-invalid-password").addClass("d-flex");
+        $(".login-error-invalid-password").removeClass("d-none").addClass("d-flex");
+        $(".login-button").prop("disabled", true);
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
@@ -125,27 +125,27 @@ async function checkExistingUsername(username: string): Promise<boolean> {
   });
 }
 
-function resetLoginRegisterModal(): void {
+export function resetLoginRegister(): void {
   $(".login-register-element").removeClass("d-none");
   $(".login-element").addClass("d-none");
   $(".register-element").addClass("d-none");
 
   $(".login-password").val("");
   $(".register-password").val("");
-  $(".register-password").val("");
+  $(".register-password-repeat").val("");
+  $(".register-checkbox").prop("checked", false);
 
   $(".login-register-next-button").removeClass("d-none");
   $(".login-register-back-button").addClass("d-none");
-  $(".login-button").addClass("d-none");
-  $(".register-button").addClass("d-none");
+  $(".login-button").addClass("d-none").prop("disabled", true);
+  $(".register-button").addClass("d-none").prop("disabled", true);
 
   $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
 
-  $(".login-error-invalid-password").addClass("d-none");
-  $(".login-error-invalid-password").removeClass("d-flex");
+  $(".login-error-invalid-password").addClass("d-none").removeClass("d-flex");
 
-  $(".register-error-insecure-password").addClass("d-none");
-  $(".register-error-insecure-password").removeClass("d-flex");
+  $(".register-error-insecure-password").addClass("d-none").removeClass("d-flex");
+  $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
 }
 
 function checkUsername(username: string): boolean {
@@ -259,12 +259,10 @@ $(() => {
     registerAccount(username, password);
   });
 
-  $(".login-register-username").val("");
-
   $("#login-register-modal").on("show.bs.modal", () => {
-    resetLoginRegisterModal();
     $(".login-register-username").val("");
     $(".login-register-next-button").prop("disabled", true);
+    resetLoginRegister();
   });
 
   // Check username
@@ -290,11 +288,12 @@ $(() => {
 
   // Check login password
   $(".login-password").on("input", function () {
-    // Sync multiple instances of login possibilites
-    $(".login-password").val($(this).val() ?? "");
+    $(".login-error-invalid-password").addClass("d-none").removeClass("d-flex");
+    $(".login-button").prop("disabled", false);
+  });
 
-    $(".login-error-invalid-password").addClass("d-none");
-    $(".login-error-invalid-password").removeClass("d-flex");
+  $(".login-password").on("change", function () {
+    $(".login-button").prop("disabled", $(this).val() === "");
   });
 
   // Check register password
@@ -307,12 +306,21 @@ $(() => {
       $(".register-error-insecure-password").addClass("d-none");
       $(".register-error-insecure-password").removeClass("d-flex");
     }
+
+    if ($(".register-password").val() === $(".register-password-repeat").val()) {
+      $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
+      $(".register-button").prop("disabled", ! ($(".register-checkbox").prop("checked") && $(".register-password").val() !== ""));
+    }
   });
 
   $(".register-password").on("change", () => {
     if (!checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
       $(".register-error-insecure-password").removeClass("d-none");
       $(".register-error-insecure-password").addClass("d-flex");
+    }
+
+    if ($(".register-password").val() !== $(".register-password-repeat").val() && $(".register-password-repeat").val() !== "") {
+      $(".register-error-no-matching-passwords").removeClass("d-none").addClass("d-flex");
     }
   });
 
@@ -321,19 +329,27 @@ $(() => {
     // Sync multiple instances of login possibilites
     $(".register-password-repeat").val($(this).val() ?? "");
 
-    if ($(".register-password").val() === $(".register-password-repeat").val()) {
-      $(".register-button").prop("disabled", false);
-      $(".register-error-no-matching-passwords").addClass("d-none");
-      $(".register-error-no-matching-passwords").removeClass("d-flex");
+    if ($(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== "") {
+      $(".register-button").prop("disabled", ! $(".register-checkbox").prop("checked"));
+      $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
     }
   });
 
   $(".register-password-repeat").on("change", () => {
     if ($(".register-password").val() !== $(".register-password-repeat").val()) {
       $(".register-button").prop("disabled", true);
-      $(".register-error-no-matching-passwords").removeClass("d-none");
-      $(".register-error-no-matching-passwords").addClass("d-flex");
+      $(".register-error-no-matching-passwords").removeClass("d-none").addClass("d-flex");
     }
+    if ($(".register-password").val() === "") {
+      $(".register-button").prop("disabled", true);
+    }
+  });
+
+  $(".register-checkbox").on("change", function () {
+    $(".register-checkbox").prop("checked", $(this).prop("checked"));
+    $(".register-button").prop("disabled", !(
+      $(this).prop("checked") && $(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== ""
+    ));
   });
 
   $(".login-register-next-button").on("click", async () => {
@@ -352,5 +368,5 @@ $(() => {
     });
   });
 
-  $(".login-register-back-button").on("click", resetLoginRegisterModal);
+  $(".login-register-back-button").on("click", resetLoginRegister);
 });

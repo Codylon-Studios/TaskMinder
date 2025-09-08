@@ -40,6 +40,7 @@
   right: 0;
   background-color: var(--bs-secondary-bg);
   z-index: 1120;
+  display: flex;
 
   animation: show 1s linear paused;
   animation-delay: calc(-1s * var(--progress));

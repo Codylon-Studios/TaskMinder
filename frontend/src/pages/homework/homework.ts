@@ -184,6 +184,12 @@ async function updateSubjectList(): Promise<void> {
   });
 
   localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
+
+  $("#add-homework-no-subjects").toggleClass("d-none", (await subjectData()).length !== 0).find("b").text(
+    (user.permissionLevel ?? 0) < 3 ?
+      "Bitte einen Admin / ein:e Manager:in, welche hinzuzufügen!" :
+      "Füge in den Einstellungen unter \"Klasse\" > \"Fächer\" welche hinzu!"
+  );
 };
 
 async function updateTeamList(): Promise<void> {
