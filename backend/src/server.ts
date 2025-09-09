@@ -188,6 +188,10 @@ app.get("/events", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
 });
 
+app.get("/report", checkAccess(["CLASS"]), (req, res) => {
+  res.sendFile(path.join(pagesPath, "report", "report.html"));
+});
+
 app.use((req, res) => {
   res.status(404).sendFile(path.join(pagesPath, "404", "404.html"));
 });

@@ -69,7 +69,7 @@ $(document).on("touchmove", ev => {
 });
 
 $(document).on("touchend", ev => {
-  function hideOverlay(endP: number, complete?: () => unknown) {
+  function hideOverlay(endP: number, complete?: () => unknown): void {
     const startP = parseFloat($(".bottombar-overlay").css("--progress"));
     $({ p: startP }).animate(
       { p: endP },

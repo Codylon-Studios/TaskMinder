@@ -178,7 +178,7 @@ document.head.appendChild(themeColor);
 // DATA
 type DataAccessorEventName = "update";
 type DataAccessorEventCallback = (...args: unknown[]) => void;
-type DataAccessor<DataType> = {
+export type DataAccessor<DataType> = {
   (value?: DataType | null): Promise<DataType>;
   get(): Promise<DataType>;
   getCurrent(): DataType | null;
@@ -421,8 +421,8 @@ $(async () => {
   const hash = window.location.hash;
   if (hash) {
     setTimeout(() => {
-     document.location.href = hash;
-    }, 250)
+      document.location.href = hash;
+    }, 250);
   }
 
   if (window.location.host === "codylon.de") {

@@ -1,0 +1,28 @@
+@use "sass:color";
+@use "../../global/global" as *;
+
+#attachment-table thead th:first-child {
+  width: 0;
+}
+
+#attachment-table tbody tr {
+  cursor: pointer;
+  & td {
+    white-space: pre-wrap;
+  }
+  & td:first-child i {
+    display: none;
+  }
+}
+
+#attachment-table .attachment-selected {
+  & td {
+    background-color: rgba(var(--bs-success-rgb), 0.25);
+    border-color: rgba(var(--bs-success-rgb), 0.25);
+  }
+
+  & td:first-child i {
+    display: inline-block;
+    color: var(--bs-success);
+  }
+}

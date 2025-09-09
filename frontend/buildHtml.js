@@ -30,6 +30,7 @@ async function buildDirectory(src, dest) {
         homework: "Hausaufgaben",
         join: "Beitreten",
         main: "Übersicht",
+        report: "Unangemessenen Inhalt melden",
         settings: "Einstellungen"
       };
 

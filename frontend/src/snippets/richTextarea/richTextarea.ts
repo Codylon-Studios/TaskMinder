@@ -227,6 +227,16 @@ export function richTextToHtml(
   return parsedText.html();
 }
 
+export function richTextToPlainText(val: string): string {
+  while (val.includes("<") || val.includes(">")) {
+    val = val.replace(/<(.*?)>(.*?)<\/\1>/g, "$2");
+  }
+  val = val.replaceAll("\\«", "<");
+  val = val.replaceAll("\\»", ">");
+  val = val.replaceAll("\\\\", "\\");
+  return $.escapeHtml(val);
+}
+
 function replaceRichTextareas(): void {
   $(".rich-textarea:not(.rich-textarea-replaced)").each(function () {
     // Get the selection in the textarea instead of in the text nodes of the <span> elements
