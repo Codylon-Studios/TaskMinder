@@ -41,8 +41,9 @@
     position: absolute;
     border-radius: 100%;
     bottom: .25rem;
-    transition: 0.1s ease opacity;
+    transition: 0.2s ease opacity;
     visibility: hidden;
+    opacity: 0;
   }
   
   &.days-overview-today::before {

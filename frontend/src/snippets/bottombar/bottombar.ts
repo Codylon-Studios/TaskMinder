@@ -1,13 +1,30 @@
 import { getSite } from "../../global/global.js";
 import { user } from "../navbar/navbar.js";
 
+function getTouchPosition(ev: JQuery.TouchStartEvent): {x: number, y: number} {
+  return {
+    x: ev.originalEvent?.touches[0]?.clientX ?? 0,
+    y: ev.originalEvent?.touches[0]?.clientY ?? 0
+  };
+}
+
+function getChangedTouchPosition(ev: JQuery.TouchMoveEvent | JQuery.TouchEndEvent): {x: number, y: number} {
+  return {
+    x: ev.originalEvent?.changedTouches[0]?.clientX ?? 0,
+    y: ev.originalEvent?.changedTouches[0]?.clientY ?? 0
+  };
+}
+
 if (/OS (18|19|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
   $(".bottombar").css("padding-bottom", "1rem");
 }
 
-const availableLinks = ["about", "homework", "main", "events", "settings", "join"];
+const availableLinks = ["", "homework", "main", "events", "settings"];
+const moreLinks = ["about", "report", "feedback"];
 const siteName = getSite();
-const siteIndex = availableLinks.indexOf(siteName) ?? -1;
+let siteIndex = availableLinks.indexOf(siteName) ?? -1;
+if (siteName === "join") siteIndex = 2;
+if (moreLinks.includes(siteName)) siteIndex = 0;
 
 user.on("change", (function _() {
   $(".bottombar-link").filter(i => [1, 3].includes(i))
@@ -18,19 +35,26 @@ user.on("change", (function _() {
   return _;
 })());
 
-$(".bottombar-link").eq(siteIndex).addClass("bottombar-current-link");
-if (siteIndex === 5) {
-  $(".bottombar-link").eq(2).addClass("bottombar-current-link");
+if (siteIndex === 0) {
+  $("#bottombar-more").addClass("bottombar-current-link");
+}
+else if (siteIndex !== -1) {
+  $(".bottombar-link").eq(siteIndex).addClass("bottombar-current-link");
 }
 
 $(".bottombar-overlay").hide();
 
 let startX = 0;
 let startY = 0;
+let overlayShowsMore = false;
 
 $(document).on("touchstart", ev => {
-  startX = ev.originalEvent?.touches[0].clientX ?? 0;
-  startY = ev.originalEvent?.touches[0].clientY ?? 0;
+  if (overlayShowsMore) {
+    overlayShowsMore = false;
+    return;
+  }
+
+  ({ x: startX, y: startY } = getTouchPosition(ev));
 
   let $nextLink;
   if (startX < 75) {
@@ -41,8 +65,16 @@ $(document).on("touchstart", ev => {
   }
   else return;
 
-  $(".bottombar-overlay i").attr("class", ($nextLink.find("i").attr("class") ?? "fa-solid fa-xmark text-danger") + " fs-1");
-  $(".bottombar-overlay span").text($nextLink.find("span").text() || "Keine Seite mehr");
+  if (startX < 75 && siteIndex === 1) {
+    $(".bottombar-overlay i").attr("class", "fa-solid fa-ellipsis fs-1");
+    $(".bottombar-overlay span").text("Mehr");
+    $(".bottombar-overlay div").show();
+  }
+  else {
+    $(".bottombar-overlay i").attr("class", ($nextLink.find("i").attr("class") ?? "fa-solid fa-xmark text-danger") + " fs-1");
+    $(".bottombar-overlay span").text($nextLink.find("span").text() || "Keine Seite mehr");
+    $(".bottombar-overlay div").hide();
+  }
 });
 
 $(document).on("touchmove", ev => {
@@ -50,8 +82,7 @@ $(document).on("touchmove", ev => {
     return;
   }
 
-  const posX = ev.originalEvent?.changedTouches[0].clientX ?? 0;
-  const posY = ev.originalEvent?.changedTouches[0].clientY ?? 0;
+  const { x: posX, y: posY } = getChangedTouchPosition(ev);
   
   const diffX = posX - startX;
   const diffY = posY - startY;
@@ -90,28 +121,42 @@ $(document).on("touchend", ev => {
     else if (siteIndex === 4) hideOverlay(0, $(".bottombar-overlay").hide);
     else window.location.href = availableLinks[siteIndex === 5 ? 4: siteIndex + 1];
   }
+  function hasBeenDraggedEnough(): boolean {
+    return Math.abs(diffX) > Math.abs(diffY)
+    && Math.abs(diffX) > window.innerWidth * 0.75
+    && (startX < 75 || startX > window.innerWidth - 75);
+  }
+
+
   if (ev.changedTouches.length !== 1 && ev.touches.length !== 0) {
     return;
   }
 
-  const endX = ev.originalEvent?.changedTouches[0].clientX ?? 0;
-  const endY = ev.originalEvent?.changedTouches[0].clientY ?? 0;
+  const { x: endX, y: endY } = getChangedTouchPosition(ev);
   
   const diffX = endX - startX;
   const diffY = endY - startY;
 
-  let endP;
+  let endProgress;
 
-  if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > window.innerWidth * 0.75 && (startX < 75 || startX > window.innerWidth - 75)) {
-    endP = 1;
+  if (hasBeenDraggedEnough()) {
+    endProgress = 1;
   }
   else {
-    endP = 0;
+    endProgress = 0;
   }
+
+  const getTargetLeft = (): number => diffX > 0 || endProgress === 1 ? 0 : window.innerWidth;
+  const getTargetRight = (): number => diffX < 0 || endProgress === 1 ? 0 : window.innerWidth;
   
-  hideOverlay(endP, endP === 1 ? changeSite : () => {});
   $(".bottombar-overlay").animate({
-    left: diffX > 0 || endP === 1 ? 0 : window.innerWidth,
-    right: diffX < 0 || endP === 1 ? 0 : window.innerWidth
-  }, endP === 0 ? 500 : 200, $(".bottombar-overlay").hide);
+    left: getTargetLeft(),
+    right: getTargetRight()
+  }, endProgress === 0 ? 500 : 200, $(".bottombar-overlay").hide);
+  if (! (startX < 75 && siteIndex === 1 && endProgress === 1)) {
+    hideOverlay(endProgress, endProgress === 1 ? changeSite : () => {});
+  }
+  else {
+    overlayShowsMore = true;
+  }
 });

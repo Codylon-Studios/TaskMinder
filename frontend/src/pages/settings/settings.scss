@@ -42,14 +42,6 @@
   @extend .me-3;
 }
 
-.event-type-recolored-color-display {
-  @extend .rounded, .mx-1;
-  width: 1rem;
-  height: 1rem;
-  margin-bottom: -0.1rem;
-  display: inline-block;
-}
-
 .subject-inputs-label {
   @extend .align-items-center;
   width: 5%;

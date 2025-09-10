@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="de">
   <head>
-    <meta name="description" />
+    <meta name="robots" content="noindex, follow" />
   </head>
 
   <body>
@@ -34,7 +34,7 @@
       </div>
       <div class="mb-3">
         <label for="description" class="form-label">Beschreibe den Verstoß genauer</label>
-        <textarea class="form-control" id="description"></textarea>
+        <textarea class="form-control" id="description" placeholder="Deine Beschreibung..."></textarea>
       </div>
       <div class="mb-3">
         Anhänge
@@ -44,6 +44,11 @@
           <ul class="dropdown-menu">
             <li><button class="dropdown-item" id="attach-homework" data-bs-toggle="modal" data-bs-target="#attach-modal">Hausaufgabe</button></li>
             <li><button class="dropdown-item" id="attach-event" data-bs-toggle="modal" data-bs-target="#attach-modal">Ereignis</button></li>
+            <li><button class="dropdown-item" id="attach-account" data-bs-toggle="modal" data-bs-target="#attach-modal">Nutzer(-name)</button></li>
+            <li><button class="dropdown-item" id="attach-class">Gesamte Klasse</button></li>
+            <li><button class="dropdown-item" id="attach-team" data-bs-toggle="modal" data-bs-target="#attach-modal">Team</button></li>
+            <li><button class="dropdown-item" id="attach-eventType" data-bs-toggle="modal" data-bs-target="#attach-modal">Ereignisart</button></li>
+            <li><button class="dropdown-item" id="attach-subject" data-bs-toggle="modal" data-bs-target="#attach-modal">Fach</button></li>
           </ul>
         </div>
         <div class="text-secondary fst-italic" id="attachments-list-empty">Keine Anhänge hinzugefügt</div>
@@ -51,14 +56,14 @@
       </div>
       <div class="mb-3">
         <label for="email" class="form-label">Deine E-Mail-Adresse (optional)</label>
-        <input type="email" class="form-control" id="email" />
+        <input type="email" class="form-control" id="email" placeholder="max.mustermann@example.com" />
         <div class="form-text">Wir werden dich über den Status deiner Meldung informieren und dich bei Nachfragen kontaktieren.</div>
       </div>
       <button class="btn btn-success fw-bold w-100" id="submit">Meldung absenden</button>
     </div>
 
     <div class="modal fade" id="attach-modal" tabindex="-1" aria-labelledby="attach-modal-label" aria-hidden="true">
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header">
             <h1 class="modal-title fs-5" id="attach-modal-label">Anhängen</h1>
@@ -70,15 +75,7 @@
               <div class="table-responsive">
                 <table class="table table-striped mb-0">
                   <thead>
-                    <tr>
-                      <th>Klasse</th>
-                      <th>Art</th>
-                      <th>Stunde</th>
-                      <th>Fach</th>
-                      <th>Text</th>
-                      <th>Lehrer</th>
-                      <th>Raum</th>
-                    </tr>
+                    <tr><th></th></tr>
                   </thead>
                   <tbody class="table-group-divider"></tbody>
                 </table>

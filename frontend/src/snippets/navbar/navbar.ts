@@ -172,6 +172,7 @@ $(async () => {
     if (!isSite("join")) {
       $("#login-register-button").toggle(!user.loggedIn);
     }
+    $("#nav-logout-button").toggle(user.loggedIn ?? false);
     return _;
   })());
 });
@@ -242,6 +243,40 @@ export function authUser(): void {
 
 // Check if the user is logged in for the first time
 authUser();
+
+$("#nav-logout-button").on("click", async () => {
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/account/logout",
+    type: "POST",
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#logout-success-toast").toast("show");
+      
+      authUser();
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
 
 $(() => {
   //

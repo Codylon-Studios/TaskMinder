@@ -22,7 +22,7 @@
     "dev:be:tsc": "tsc -p backend --watch --incremental",
     "dev:be:copy": "chokidar 'backend/src/**/*' -c 'bun copyFiles.js backend/src backend/dist'",
     "dev:fe": "concurrently -n 'copy,html,scss,tsc' \"bun run dev:fe:copy\" \"bun run dev:fe:html\" \"bun run dev:fe:scss\" \"bun run dev:fe:tsc\"",
-    "dev:fe:html": "chokidar 'frontend/src/**/*.html' -c 'bun frontend/buildHtml.js frontend/src frontend/dist'",
+    "dev:fe:html": "chokidar 'frontend/src/**/*.html' 'frontend/buildHtml.js' -c 'bun frontend/buildHtml.js frontend/src frontend/dist'",
     "dev:fe:scss": "sass frontend/src:frontend/dist --watch --no-source-map",
     "dev:fe:tsc": "tsc -p frontend --watch --incremental",
     "dev:fe:copy": "chokidar 'frontend/src/**/*' -c 'bun copyFiles.js frontend/src frontend/dist'",

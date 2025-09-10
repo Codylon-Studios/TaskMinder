@@ -23,6 +23,7 @@ $fa-font-path: "/vendor/fontawesome/fonts";
 
 @font-face {
   font-family: "Quicksand";
+  font-display: swap;
   src: url("/assets/fonts/Quicksand-VariableFont_wght.ttf") format("truetype");
 }
 
@@ -43,6 +44,10 @@ $semivisible-active-dark: rgba(white, 0.15);
 $tertiary-normal-dark: #2b3035;
 $tertiary-hover-dark: #393d41; //TODO
 $tertiary-active-dark: #45484b; //TODO
+
+html, body {
+  overscroll-behavior-x: none;
+}
 
 body {
   font-family: "Quicksand", Arial, Helvetica, sans-serif;
@@ -367,6 +372,14 @@ footer a {
       }
     }
   }
+}
+
+.color-display {
+  @extend .rounded, .mx-1;
+  width: 1rem;
+  height: 1rem;
+  margin-bottom: -0.1rem;
+  display: inline-block;
 }
 
 // Styles exclusively for iOS devices

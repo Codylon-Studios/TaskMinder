@@ -100,11 +100,14 @@ async function updateHomeworkList(): Promise<void> {
           <span class="ms-4 d-block">Von ${assignmentDate} auf ${submissionDate}</span>
         </div>
 
-        <div class="homework-edit-options ms-2 text-nowrap ${editEnabled ? "" : "d-none"}">
-          <button class="btn btn-sm btn-semivisible homework-edit" data-id="${homeworkId}" aria-label="Bearbeiten">
+        <div class="homework-edit-options ms-2 text-nowrap">
+          <a class="btn btn-sm btn-semivisible" aria-label="Melden" href="/report?type=homework&id=${homeworkId}" target="_blank">
+            <i class="fa-solid fa-flag opacity-75" aria-hidden="true"></i>
+          </a>
+          <button class="btn btn-sm btn-semivisible homework-edit ${editEnabled ? "" : "d-none"}" data-id="${homeworkId}" aria-label="Bearbeiten">
             <i class="fa-solid fa-edit opacity-75" aria-hidden="true"></i>
           </button>
-          <button class="btn btn-sm btn-semivisible homework-delete" data-id="${homeworkId}" aria-label="Löschen">
+          <button class="btn btn-sm btn-semivisible homework-delete ${editEnabled ? "" : "d-none"}" data-id="${homeworkId}" aria-label="Löschen">
             <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
           </button>
         </div>
@@ -629,7 +632,7 @@ $(function () {
     $("#edit-toggle, #edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
     $("#show-add-homework-button").toggle((user.permissionLevel ?? 0) >= 1);
     if (!loggedIn) {
-      $(".homework-edit-options").addClass("d-none");
+      $(".homework-edit-options button").addClass("d-none");
     }
     return _;
   })());
@@ -640,11 +643,11 @@ $(function () {
   $("#edit-toggle").on("click", function () {
     if ($("#edit-toggle").is(":checked")) {
       // On checking the edit toggle, show the add button and edit options
-      $(".homework-edit-options").removeClass("d-none");
+      $(".homework-edit-options button").removeClass("d-none");
     }
     else {
       // On unchecking the edit toggle, hide the add button and edit options
-      $(".homework-edit-options").addClass("d-none");
+      $(".homework-edit-options button").addClass("d-none");
     }
   });
 

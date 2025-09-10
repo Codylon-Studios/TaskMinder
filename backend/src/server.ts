@@ -164,6 +164,10 @@ app.get("/about", (req, res) => {
   res.sendFile(path.join(pagesPath, "about", "about.html"));
 });
 
+app.get("/feedback", checkAccess(["CLASS"]), (req, res) => {
+  res.sendFile(path.join(pagesPath, "feedback", "feedback.html"));
+});
+
 app.use("/account", account);
 app.use("/homework", homework);
 app.use("/substitutions", substitutions);

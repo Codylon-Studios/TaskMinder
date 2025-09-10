@@ -290,9 +290,9 @@ async function updateEventTypeList(): Promise<void> {
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none event-type-recolored" data-id="${eventTypeId}">
             Farbe gändert
             <span class="text-secondary fw-normal event-type-recolored-color" data-id="${eventTypeId}">
-              (<div class="event-type-recolored-color-display"></div>
+              (<div class="color-display"></div>
               zu
-              <div class="event-type-recolored-color-display"></div>)
+              <div class="color-display"></div>)
             </span>
           </span>
           <span class="text-danger fw-bold mt-2 mt-md-0 d-none event-type-deleted" data-id="${eventTypeId}">Gelöscht</span>
@@ -360,8 +360,8 @@ async function updateEventTypeList(): Promise<void> {
         if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
           const $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`);
           $recoloredElement.removeClass("d-none").find("*").removeClass("d-none");
-          $recoloredElement.find(".event-type-recolored-color-display").first().css("background-color", oldColor);
-          $recoloredElement.find(".event-type-recolored-color-display").last().css("background-color", newColor);
+          $recoloredElement.find(".color-display").first().css("background-color", oldColor);
+          $recoloredElement.find(".color-display").last().css("background-color", newColor);
         }
       }
       else {
@@ -458,7 +458,7 @@ async function updateSubjectList(): Promise<void> {
                 <input class="form-control form-control-sm subject-teacher-short-input w-100" type="text" value="${teacherNameShort}"
                   placeholder="${teacherNameShort}" data-id="${subjectId}" ${isDisabled} id="subject-teacher-short-input-${subject.subjectId}">
               </div>
-              <div class="d-flex gap-3 ${dsbActivated ? "" : "d-none"}">
+              <div class="d-flex gap-3 align-items-center ${dsbActivated ? "" : "d-none"}">
                 <b>Vertretungen</b>
                 <label for="subject-name-substitution-input-${subject.subjectId}">Fachname</label>
                 <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"

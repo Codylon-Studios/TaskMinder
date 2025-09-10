@@ -52,3 +52,18 @@
     100% { opacity: 1; }
   }
 }
+
+#bottombar-more {
+  width: 20%;
+  display: flex;
+  justify-content: center;
+
+  & a {
+    width: 100%;
+    outline: none;
+  }
+
+  &.bottombar-current-link .bottombar-link {
+    color: var(--bs-primary) !important;
+  }
+}

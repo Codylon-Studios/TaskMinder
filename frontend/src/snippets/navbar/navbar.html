@@ -1,11 +1,11 @@
 <nav class="navbar bg-body-tertiary fixed-top">
   <div class="container-fluid position-relative">
     <div class="d-flex justify-content-between align-items-center flex-grow-1">
-      <div class="d-md-none text-center flex-grow-1">
+      <div class="d-lg-none text-center flex-grow-1">
         <a class="navbar-text fs-5 text-decoration-none navbar-home-link position-absolute top-50 start-50 translate-middle" href="/">TaskMinder</a>
       </div>
-      <a class="d-none d-md-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link" href="/">TaskMinder</a>
-      <ul class="navbar-nav d-none d-md-flex flex-row me-auto">
+      <a class="d-none d-lg-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link" href="/">TaskMinder</a>
+      <ul class="navbar-nav d-none d-lg-flex flex-row me-auto">
         <li class="nav-item me-3 class-joined-content">
           <a class="nav-link" href="/homework">Hausaufgaben</a>
         </li>
@@ -17,6 +17,12 @@
         </li>
         <li class="nav-item me-3">
           <a class="nav-link" href="/about">Über TaskMinder</a>
+        </li>
+        <li class="nav-item me-3">
+          <a class="nav-link" href="/report">Inhalt Melden</a>
+        </li>
+        <li class="nav-item me-3">
+          <a class="nav-link" href="/feedback">Feedback</a>
         </li>
       </ul>
     </div>
@@ -34,6 +40,10 @@
       aria-label="Anmelden oder Registrieren"
     >
       <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+    </button>
+
+    <button class="btn btn-semivisible" id="nav-logout-button" aria-label="Abmelden">
+      <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
     </button>
     <button class="btn btn-semivisible class-page-content d-none" id="navbar-reload-button" aria-label="Daten neu laden">
       <i class="fas fa-rotate" aria-hidden="true"></i>
@@ -162,5 +172,12 @@
       <b class="username">User</b>
       !
     </div>
+  </div>
+  <div id="logout-success-toast" class="toast">
+    <div class="toast-header bg-success text-body-bg">
+      <b class="me-auto">Erfolgreich abgemeldet</b>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+    </div>
+    <div class="toast-body">Auf Wiedersehen!</div>
   </div>
 </div>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta name="robots" content="noindex, follow" />
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Feedback geben</h1>
+      <p>
+        Hast du einen Fehler oder ein Problem auf unserer Seite gefunden oder eine Idee, wie wir TaskMinder verbessern können? Dann bist du hier genau
+        richtig!
+      </p>
+      <p>
+        Wenn du problematische / unangemessene Inhalte melden möchtest, tue das bitte
+        <a href="/report" target="_blank">hier</a>
+        .
+      </p>
+
+      <div class="mb-3">
+        <label for="title" class="form-label">Gib dem Fehler / deiner Idee einen kurzen Titel</label>
+        <input class="form-control" type="text" id="title" placeholder="Titel">
+      </div>
+      <div class="mb-3">
+        <label for="description" class="form-label">Beschreibe den Fehler / deine Idee genauer</label>
+        <textarea class="form-control" id="description" placeholder="Deine Beschreibung..."></textarea>
+        <div class="form-text">Für Fehler schreibe bitte eine genaue Anleitung, wie wir den Fehler reproduzieren können.</div>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Deine E-Mail-Adresse (optional)</label>
+        <input type="email" class="form-control" id="email" placeholder="max.mustermann@example.com" />
+        <div class="form-text">Wir werden dich bei Nachfragen kontaktieren.</div>
+      </div>
+      <button class="btn btn-success fw-bold w-100" id="submit">Feedback absenden</button>
+    </div>
+
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+      <div id="feedback-success-toast" class="toast">
+        <div class="toast-header bg-success text-body-bg">
+          <b class="me-auto">Erfolgreich gesendet</b>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+        </div>
+        <div class="toast-body">Dein Feedback ist bei uns eingegangen!</div>
+      </div>
+    </div>
+  </body>
+</html>
