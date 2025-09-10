@@ -114,11 +114,6 @@ async function buildDirectory(src, dest) {
               $(el).replaceWith($new.html());
             }
           }
-          if (await exists(_join(folder, target + ".scss"))) {
-            $("head").append(
-              `<link class="preload-style" rel="preload" href="/snippets/${target}/${target}.css" as="style">`
-            );
-          }
           if (await exists(_join(folder, target + ".ts"))) {
             $("head").append(
               `<script src="/snippets/${target}/${target}.js" type="module" defer></script>`

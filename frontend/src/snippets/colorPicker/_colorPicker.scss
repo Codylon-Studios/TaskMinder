@@ -1,5 +1,5 @@
-@use "sass:color";
-@use "../../global/global" as *;
+@use "../../../../node_modules/bootstrap/scss/bootstrap" as *;
+@use "../../vendor/fontawesome/scss/fontawesome" as *;
 
 $fa-font-path: "/assets/fonts/fontawesome";
 
@@ -26,7 +26,7 @@ $fa-font-path: "/assets/fonts/fontawesome";
   @extend .position-absolute, .rounded, .p-2, .shadow, .flex-column;
   cursor: auto;
   background: var(--bs-body-bg);
-  border: 1px solid $card-border-color;
+  border: 1px solid var(--bs-border-color-translucent);
   display: flex;
   z-index: 1100;
 }
@@ -95,7 +95,9 @@ $fa-font-path: "/assets/fonts/fontawesome";
 }
 
 .color-picker-option {
-  @extend .rounded, .cursor-pointer, .m-1;
+  @extend .rounded;
+  cursor: pointer;
+  margin: .25rem;
   width: 1.75rem;
   height: 1.75rem;
   display: flex !important;

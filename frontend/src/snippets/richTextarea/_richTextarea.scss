@@ -1,5 +1,5 @@
 @use "sass:color";
-@use "../../global/global" as *;
+@use "../../../../node_modules/bootstrap/scss/bootstrap" as *;
 
 .rich-textarea-input-wrapper {
   position: relative;
