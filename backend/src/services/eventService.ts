@@ -34,7 +34,8 @@ export const eventService = {
 
     const eventData = await prisma.event.findMany({
       where: { 
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       },
       orderBy: {
         startDate: "asc"
@@ -85,7 +86,8 @@ export const eventService = {
     }
     const eventData = await prisma.event.findMany({
       where : {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       },
       orderBy: {
         startDate: "asc"
@@ -140,7 +142,8 @@ export const eventService = {
 
     const eventData = await prisma.event.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       },
       orderBy: {
         startDate: "asc"
@@ -169,16 +172,20 @@ export const eventService = {
       };
       throw err;
     }
-    await prisma.event.delete({
+    await prisma.event.update({
       where: {
         eventId: eventId,
         classId: parseInt(session.classId!)
+      },
+      data: {
+        deletedAt: Date.now()
       }
     });
 
     const eventData = await prisma.event.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       },
       orderBy: {
         startDate: "asc"
@@ -212,7 +219,8 @@ export const eventService = {
 
     const eventTypeData = await prisma.eventType.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 
@@ -241,8 +249,8 @@ export const eventService = {
       // Delete removed event types
       for (const existing of existingEventTypes) {
         if (!eventTypes.some(e => e.eventTypeId === existing.eventTypeId)) {
-          await tx.eventType.delete({
-            where: { eventTypeId: existing.eventTypeId }
+          await tx.eventType.update({
+            where: { eventTypeId: existing.eventTypeId }, data: { deletedAt: Date.now() }
           });
         }
       }
@@ -285,7 +293,8 @@ export const eventService = {
 
     const eventTypeData = await prisma.eventType.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 

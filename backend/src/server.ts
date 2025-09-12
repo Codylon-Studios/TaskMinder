@@ -15,7 +15,7 @@ import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
 import { CSPMiddleware } from "./middleware/CSPMiddleware";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
-import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
+import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses, hardDeleteData } from "./utils/dbCleanup";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
 import events from "./routes/eventRoute";
@@ -195,6 +195,7 @@ cron.schedule("0 0 * * *", () => {
   cleanupOldEvents();
   cleanupTestClasses();
   cleanupDeletedAccounts();
+  hardDeleteData();
 });
 
 server.listen(3000, () => {

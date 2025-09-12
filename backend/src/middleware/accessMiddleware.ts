@@ -74,7 +74,7 @@ async function checkClassAccess(req: Request, res: Response): Promise<void> {
   const authClassRedis = await redisClient.get(`auth_class:${req.session.classId}`);
   if (!authClassRedis) {
     const aClass = await prisma.class.findUnique({
-      where: { classId: parseInt(req.session.classId, 10) }
+      where: { classId: parseInt(req.session.classId, 10), deletedAt: null }
     });
 
     if (!aClass) {
@@ -104,7 +104,7 @@ async function checkPermissionLevel(
   } 
   else if (req.session.classId) {
     const aClass = await prisma.class.findUnique({
-      where: { classId: parseInt(req.session.classId, 10) },
+      where: { classId: parseInt(req.session.classId, 10), deletedAt: null },
       select: { defaultPermissionLevel: true }
     });
     effectivePermission = aClass?.defaultPermissionLevel ?? 0;

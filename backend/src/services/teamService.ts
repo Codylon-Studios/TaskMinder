@@ -23,7 +23,8 @@ const teamService = {
 
     const data = await prisma.team.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 
@@ -53,7 +54,8 @@ const teamService = {
 
     const existingTeams = await prisma.team.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 
@@ -61,21 +63,25 @@ const teamService = {
       await Promise.all(
         existingTeams.map(async (team: { teamId: number }) => {
           if (!teams.some(t => t.teamId === team.teamId)) {
-            // delete homework which were linked to team
-            await tx.homework.deleteMany({
-              where: { teamId: team.teamId }
+            // soft delete homework which were linked to team
+            await tx.homework.updateMany({
+              where: { teamId: team.teamId },
+              data: { deletedAt: Date.now() }
             });
-            // delete events which were linked to team
-            await tx.event.deleteMany({
-              where: { teamId: team.teamId }
+            // soft delete events which were linked to team
+            await tx.event.updateMany({
+              where: { teamId: team.teamId },
+              data: { deletedAt: Date.now() }
             });
-            // delete lessons which were linked to team
-            await tx.lesson.deleteMany({
-              where: { teamId: team.teamId }
+            // soft delete lessons which were linked to team
+            await tx.lesson.updateMany({
+              where: { teamId: team.teamId },
+              data: { deletedAt: Date.now() }
             });
-            // delete team
-            await tx.team.delete({
-              where: { teamId: team.teamId }
+            // soft delete team
+            await tx.team.update({
+              where: { teamId: team.teamId },
+              data: { deletedAt: Date.now() }
             });
           }
         })
@@ -124,7 +130,8 @@ const teamService = {
 
     const data = await prisma.team.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 

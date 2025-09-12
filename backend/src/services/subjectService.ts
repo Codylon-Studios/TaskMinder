@@ -24,7 +24,8 @@ const subjectService = {
 
     const data = await prisma.subjects.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 
@@ -45,7 +46,8 @@ const subjectService = {
     const { subjects } = reqData;
     const existingSubjects = await prisma.subjects.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 
@@ -64,12 +66,14 @@ const subjectService = {
       await Promise.all(
         existingSubjects.map(async subject => {
           if (!subjects.some(s => s.subjectId === subject.subjectId)) {
-            // delete lessons which where linked to subject
-            await tx.lesson.deleteMany({
-              where: { subjectId: subject.subjectId }
+            // soft delete lessons which where linked to subject
+            await tx.lesson.updateMany({
+              where: { subjectId: subject.subjectId },
+              data: { deletedAt: Date.now() }
             });
-            await tx.subjects.delete({
-              where: { subjectId: subject.subjectId }
+            await tx.subjects.update({
+              where: { subjectId: subject.subjectId },
+              data: { deletedAt: Date.now() }
             });
           }
         })
@@ -139,7 +143,8 @@ const subjectService = {
 
     const data = await prisma.subjects.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 

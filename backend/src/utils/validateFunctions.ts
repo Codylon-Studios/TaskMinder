@@ -28,7 +28,8 @@ async function isValidTeamId(teamId: number, session: Session & Partial<SessionD
     const teamExists = await prisma.team.findUnique({
       where: {
         teamId: teamId,
-        classId: parseInt(session.classId!, 10)
+        classId: parseInt(session.classId!, 10),
+        deletedAt: null
       }
     });
     if (!teamExists) {
@@ -51,7 +52,8 @@ async function isValidSubjectId(subjectId: number, session: Session & Partial<Se
     const subjectExists = await prisma.subjects.findUnique({
       where: {
         subjectId: subjectId,
-        classId: parseInt(session.classId!, 10)
+        classId: parseInt(session.classId!, 10),
+        deletedAt: null
       }
     });
     if (!subjectExists) {

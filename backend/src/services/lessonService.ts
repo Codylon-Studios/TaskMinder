@@ -28,27 +28,58 @@ const lessonService = {
     }
 
     await prisma.$transaction(async tx => {
-      await tx.lesson.deleteMany({
+      // Soft delete all existing lessons for this class
+      await tx.lesson.updateMany({
         where: {
-          classId: classId
+          classId: classId,
+          deletedAt: null
+        },
+        data: {
+          deletedAt: Date.now()
         }
       });
-    
+
+      // Upsert (restore or create) lessons from the new state
       for (const lesson of lessons) {
         try {
-          await tx.lesson.create({
-            data: {
+          // Try to find a soft-deleted lesson with the same unique keys
+          const existing = await tx.lesson.findFirst({
+            where: {
               classId: classId,
               lessonNumber: lesson.lessonNumber,
               weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
               teamId: lesson.teamId,
-              subjectId: lesson.subjectId,
-              room: lesson.room,
-              startTime: lesson.startTime,
-              endTime: lesson.endTime
+              subjectId: lesson.subjectId
             }
           });
-        } 
+          if (existing) {
+            // Restore and update the lesson
+            await tx.lesson.update({
+              where: { lessonId: existing.lessonId },
+              data: {
+                room: lesson.room,
+                startTime: lesson.startTime,
+                endTime: lesson.endTime,
+                deletedAt: null
+              }
+            });
+          }
+          else {
+            // Create new lesson
+            await tx.lesson.create({
+              data: {
+                classId: classId,
+                lessonNumber: lesson.lessonNumber,
+                weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
+                teamId: lesson.teamId,
+                subjectId: lesson.subjectId,
+                room: lesson.room,
+                startTime: lesson.startTime,
+                endTime: lesson.endTime
+              }
+            });
+          }
+        }
         catch {
           const err: RequestError = {
             name: "Bad Request",
@@ -64,7 +95,8 @@ const lessonService = {
 
     const lessonData = await prisma.lesson.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 
@@ -94,7 +126,8 @@ const lessonService = {
 
     const lessonData = await prisma.lesson.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
 

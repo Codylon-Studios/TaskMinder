@@ -44,6 +44,7 @@ model Event {
   endDate     BigInt?
   lesson      String?
   teamId      Int
+  deletedAt   BigInt?
   EventType   EventType @relation(fields: [eventTypeId], references: [eventTypeId], onDelete: Cascade, onUpdate: NoAction)
   Class       Class     @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
@@ -55,6 +56,7 @@ model EventType {
   classId     Int
   name        String
   color       String?
+  deletedAt   BigInt?
   Event       Event[]
   Class       Class   @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
@@ -74,6 +76,7 @@ model Class {
   dsbMobilePassword String?
   // The real name of the class to filter in the substitutions data
   dsbMobileClass String?
+  deletedAt   BigInt?
   Event       Event[]
   EventType   EventType[]
   Homework    Homework[]
@@ -91,6 +94,7 @@ model Homework {
   assignmentDate BigInt
   submissionDate BigInt
   teamId         Int
+  deletedAt   BigInt?
   Subjects       Subjects        @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade, onUpdate: NoAction)
   HomeworkCheck  HomeworkCheck[]
   Class          Class           @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
@@ -141,6 +145,7 @@ model Lesson {
   room         String
   startTime    BigInt
   endTime      BigInt
+  deletedAt   BigInt?
   Class        Class  @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([classId, teamId, weekDay, lessonNumber, subjectId])
@@ -157,6 +162,7 @@ model Subjects {
   teacherNameLong         String
   teacherNameShort        String
   teacherNameSubstitution String[]
+  deletedAt   BigInt?
   Homework                Homework[]
   Class                   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
@@ -169,6 +175,7 @@ model Team {
   teamId      Int           @id @default(autoincrement()) @map("teamId")
   classId     Int
   name        String
+  deletedAt   BigInt?
   JoinedTeams JoinedTeams[]
   Class       Class         @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 

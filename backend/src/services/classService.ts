@@ -51,7 +51,8 @@ const classService = {
     // checkAcces.checkClass middleware
     const classInfo = await prisma.class.findUnique({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       }
     });
     if (!classInfo) {
@@ -139,7 +140,8 @@ const classService = {
       code = generateRandomBase62String();
       const exists = await prisma.class.findUnique({
         where: {
-          classCode: code
+          classCode: code,
+          deletedAt: null
         }
       });
       if (!exists) {
@@ -172,7 +174,8 @@ const classService = {
     }
     const targetClass = await prisma.class.findUnique({
       where: {
-        classCode: classCode
+        classCode: classCode,
+        deletedAt: null
       }
     });
     if (!targetClass) {
@@ -305,9 +308,12 @@ const classService = {
         }
       });
 
-      await tx.class.delete({
+      await tx.class.update({
         where: {
           classId: classIdToDelete
+        },
+        data: {
+          deletedAt: Date.now()
         }
       });
       await redisClient.del(`auth_class:${classIdToDelete}`);
@@ -327,7 +333,8 @@ const classService = {
 
     await prisma.class.update({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       },
       data: {
         dsbMobileActivated: dsbMobileActivated,
@@ -344,7 +351,8 @@ const classService = {
     const { defaultPermission } = reqData;
     await prisma.class.update({
       where: {
-        classId: parseInt(session.classId!, 10)
+        classId: parseInt(session.classId!, 10),
+        deletedAt: null
       },
       data: {
         defaultPermissionLevel: defaultPermission
@@ -466,7 +474,8 @@ const classService = {
   async getUsersLoggedOutRole(session: Session & Partial<SessionData>) {
     const targetClass = await prisma.class.findUnique({
       where: {
-        classId: parseInt(session.classId!, 10)
+        classId: parseInt(session.classId!, 10),
+        deletedAt: null
       }
     });
     return targetClass!.defaultPermissionLevel;
@@ -480,7 +489,8 @@ const classService = {
     const { role } = reqData;
     await prisma.class.update({
       where: {
-        classId: parseInt(session.classId!, 10)
+        classId: parseInt(session.classId!, 10),
+        deletedAt: null
       },
       data: {
         defaultPermissionLevel: role

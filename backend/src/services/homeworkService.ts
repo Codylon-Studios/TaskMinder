@@ -38,7 +38,8 @@ const homeworkService = {
     }
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       },
       orderBy: {
         submissionDate: "asc"
@@ -96,15 +97,20 @@ const homeworkService = {
       };
       throw err;
     }
-    await prisma.homework.delete({
+    await prisma.homework.update({
       where: {
         homeworkId: homeworkId,
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
+      },
+      data: {
+        deletedAt: Date.now()
       }
     });
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       },
       orderBy: {
         submissionDate: "asc"
@@ -125,7 +131,7 @@ const homeworkService = {
     isValidTeamId(teamId, session);
     try {
       await prisma.homework.update({
-        where: { homeworkId: homeworkId },
+        where: { homeworkId: homeworkId, deletedAt: null },
         data: {
           classId: parseInt(session.classId!),
           content: content,
@@ -148,7 +154,8 @@ const homeworkService = {
 
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       },
       orderBy: {
         submissionDate: "asc"
@@ -176,7 +183,8 @@ const homeworkService = {
 
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!),
+        deletedAt: null
       },
       orderBy: {
         submissionDate: "asc"

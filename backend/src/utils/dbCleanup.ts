@@ -56,7 +56,7 @@ export async function cleanupTestClasses(): Promise<void> {
     );
 
     logger.info("Test Class cleanup completed: " + classesToDelete.length + " classes deleted, " + deletedJoins.count +
-       " join records removed, and " + updatedAccounts.count +" accounts updated."
+      " join records removed, and " + updatedAccounts.count + " accounts updated."
     );
   }
   catch (error) {
@@ -93,7 +93,7 @@ export async function cleanupDeletedAccounts(): Promise<void> {
     });
 
     logger.info("Deleted accounts cleanup completed:", deleted.count, "records deleted out of", count, "found");
-  } 
+  }
   catch (error) {
     logger.error("Error during deleted account cleanup:", error);
   }
@@ -128,7 +128,7 @@ export async function cleanupOldHomework(): Promise<void> {
     });
 
     logger.info("Homework cleanup completed:", deleted.count, "records deleted out of", count, "found");
-  } 
+  }
   catch (error) {
     logger.error("Error during homework cleanup:", error);
   }
@@ -164,8 +164,91 @@ export async function cleanupOldEvents(): Promise<void> {
     });
 
     logger.info("Event cleanup completed:", deleted.count, "records deleted out of", count, "found");
-  } 
+  }
   catch (error) {
     logger.error("Error during event cleanup:", error);
+  }
+}
+
+
+/**
+ * Hard deletes event, homework, class, subject, team records 
+ * that were previously deleted and are older than 14 days
+ */
+export async function hardDeleteData(): Promise<void> {
+  try {
+    logger.setStandardPrefix("[CronJob Hard Delete]");
+
+    // Calculate the timestamp for 14 days ago (in milliseconds)
+    const fourteenDaysAgo = BigInt(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+    // hard delete events
+    const eventResult = await prisma.event.deleteMany({
+      where: {
+        deletedAt: {
+          lte: fourteenDaysAgo
+        }
+      }
+    });
+
+    const homeworkResult = await prisma.homework.deleteMany({
+      where: {
+        deletedAt: {
+          lte: fourteenDaysAgo
+        }
+      }
+    });
+
+    const classResult = await prisma.class.deleteMany({
+      where: {
+        deletedAt: {
+          lte: fourteenDaysAgo
+        }
+      }
+    });
+
+    const subjectResult = await prisma.subjects.deleteMany({
+      where: {
+        deletedAt: {
+          lte: fourteenDaysAgo
+        }
+      }
+    });
+
+    const teamResult = await prisma.team.deleteMany({
+      where: {
+        deletedAt: {
+          lte: fourteenDaysAgo
+        }
+      }
+    });
+
+    const lessonResult = await prisma.lesson.deleteMany({
+      where: {
+        deletedAt: {
+          lte: fourteenDaysAgo
+        }
+      }
+    });
+
+    // log counts
+    logger.info("Hard delete cleanup completed:", {
+      events: eventResult.count,
+      homework: homeworkResult.count,
+      classes: classResult.count,
+      subjects: subjectResult.count,
+      teams: teamResult.count,
+      lessons: lessonResult.count,
+      total:
+        eventResult.count +
+        homeworkResult.count +
+        classResult.count +
+        subjectResult.count +
+        teamResult.count + 
+        lessonResult.count
+    });
+  }
+  catch (error) {
+    logger.error("Error during Hard deletion:", error);
   }
 }
