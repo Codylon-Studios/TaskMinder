@@ -577,25 +577,71 @@ function updateSubstitutionsMode(): void {
   updateSubstitutionList();
 }
 
-async function updateTimetable(): Promise<void> {
-  type ProcessedLesson = {
-    lessonNumber: number;
-    subjectNameLong: string;
-    subjectNameShort: string;
-    subjectNameSubstitution: string[] | null;
-    teacherName: string;
-    teacherNameSubstitution: string[] | null;
-    room: string;
-    startTime: number;
-    endTime: number;
-  };
-  type GroupedLessonData = {
-    lessonNumber: number;
-    startTime: number;
-    endTime: number;
-    lessons: ProcessedLesson[];
-  }[];
+type ProcessedLesson = {
+  lessonNumber: number;
+  subjectNameLong: string;
+  subjectNameShort: string;
+  subjectNameSubstitution: string[] | null;
+  teacherName: string;
+  teacherNameSubstitution: string[] | null;
+  room: string;
+  startTime: number;
+  endTime: number;
+};
+type GroupedLessonData = {
+  lessonNumber: number;
+  startTime: number;
+  endTime: number;
+  lessons: ProcessedLesson[];
+}[];
 
+async function getGroupedLessonData(): Promise<GroupedLessonData> {
+  const currentJoinedTeamsData = await joinedTeamsData();
+  const currentSubjectData = await subjectData();
+  let currentLessonData = await lessonData();
+
+  currentLessonData = currentLessonData.filter(l => l.weekDay === selectedDate.getDay() - 1);
+
+  const processedLessonData: ProcessedLesson[] = [];
+  for (const lesson of currentLessonData) {
+    const subject = currentSubjectData.find(s => s.subjectId === lesson.subjectId);
+    if (!subject || !(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId === -1)) continue;
+    processedLessonData.push({
+      lessonNumber: lesson.lessonNumber,
+      subjectNameLong: subject.subjectNameLong,
+      subjectNameShort: subject.subjectNameShort,
+      subjectNameSubstitution: subject.subjectNameSubstitution,
+      teacherName:
+        (subject.teacherGender === "w" ? "Frau " : "") +
+        (subject.teacherGender === "m" ? "Herr " : "") +
+        subject.teacherNameLong,
+      teacherNameSubstitution: subject.teacherNameSubstitution,
+      room: lesson.room,
+      startTime: parseInt(lesson.startTime),
+      endTime: parseInt(lesson.endTime)
+    });
+  }
+
+  let groupedLessonData: GroupedLessonData = [];
+  for (const lesson of processedLessonData) {
+    const group = groupedLessonData.find(l => l.lessonNumber === lesson.lessonNumber);
+    if (group) {
+      group.lessons.push(lesson);
+    }
+    else {
+      groupedLessonData.push({
+        lessonNumber: lesson.lessonNumber,
+        startTime: lesson.startTime,
+        endTime: lesson.endTime,
+        lessons: [lesson]
+      });
+    }
+  }
+  groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
+  return groupedLessonData;
+}
+
+async function updateTimetable(): Promise<void> {
   function getSubstitutionPlanId(): 1 | 2 | null {
     if (currentClassSubstitutionsData !== "No data") {
       if (isSameDay(selectedDate, new Date(dateToMs(currentClassSubstitutionsData.plan1.date) ?? 0))) {
@@ -609,47 +655,6 @@ async function updateTimetable(): Promise<void> {
       }
     }
     return null;
-  }
-  function getGroupedLessonData(): GroupedLessonData {
-    currentLessonData = currentLessonData.filter(l => l.weekDay === selectedDate.getDay() - 1);
-
-    const processedLessonData: ProcessedLesson[] = [];
-    for (const lesson of currentLessonData) {
-      const subject = currentSubjectData.find(s => s.subjectId === lesson.subjectId);
-      if (!subject || !(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId === -1)) continue;
-      processedLessonData.push({
-        lessonNumber: lesson.lessonNumber,
-        subjectNameLong: subject.subjectNameLong,
-        subjectNameShort: subject.subjectNameShort,
-        subjectNameSubstitution: subject.subjectNameSubstitution,
-        teacherName:
-          (subject.teacherGender === "w" ? "Frau " : "") +
-          (subject.teacherGender === "m" ? "Herr " : "") +
-          subject.teacherNameLong,
-        teacherNameSubstitution: subject.teacherNameSubstitution,
-        room: lesson.room,
-        startTime: parseInt(lesson.startTime),
-        endTime: parseInt(lesson.endTime)
-      });
-    }
-
-    let groupedLessonData: GroupedLessonData = [];
-    for (const lesson of processedLessonData) {
-      const group = groupedLessonData.find(l => l.lessonNumber === lesson.lessonNumber);
-      if (group) {
-        group.lessons.push(lesson);
-      }
-      else {
-        groupedLessonData.push({
-          lessonNumber: lesson.lessonNumber,
-          startTime: lesson.startTime,
-          endTime: lesson.endTime,
-          lessons: [lesson]
-        });
-      }
-    }
-    groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
-    return groupedLessonData;
   }
 
   $("#timetable-less").empty();
@@ -670,15 +675,8 @@ async function updateTimetable(): Promise<void> {
   const currentClassSubstitutionsData = (await classSubstitutionsData()).data;
 
   const substitutionPlanId = getSubstitutionPlanId();
-  
-  const currentJoinedTeamsData = await joinedTeamsData();
-  const currentSubjectData = await subjectData();
-  let currentLessonData = await lessonData();
 
-  if (currentLessonData[selectedDate.getDay() - 1] === undefined) {
-    return;
-  }
-  const groupedLessonData = getGroupedLessonData();
+  const groupedLessonData = await getGroupedLessonData();
 
   for (const lessonGroup of groupedLessonData) {
     async function showEvents(): Promise<void> {
@@ -737,12 +735,12 @@ async function updateTimetable(): Promise<void> {
     let addedDescriptionTemplates = $();
 
     const templateModeLess = `
-      <div class="card">
+      <div class="card" data-lesson-number="${lessonGroup.lessonNumber}">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
           <span class="text-center timetable-less-subject">
             ${lessonGroup.lessons
-    .map(lessonData => {
-      return `<span class="original">${$.formatHtml(lessonData.subjectNameShort)}</span>`;
+    .map(l => {
+      return `<span class="original">${$.formatHtml(l.subjectNameShort)}</span>`;
     })
     .join(" / ")}
           </span>
@@ -752,7 +750,7 @@ async function updateTimetable(): Promise<void> {
     const thisLessLesson = $(templateModeLess);
 
     const templateModeMore = `
-      <div class="card">
+      <div class="card" data-lesson-number="${lessonGroup.lessonNumber}">
         <div class="card-body pt-4 text-center">
           <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start">
             ${msToTime(lessonGroup.startTime)}
@@ -926,6 +924,8 @@ async function updateTimetable(): Promise<void> {
     }
     addedDescriptionTemplates.trigger("addedToDom");
   }
+
+  updateTimetableProgressBar();
 };
 
 function updateTimetableMode(): void {
@@ -948,7 +948,99 @@ function updateTimetableMode(): void {
     $("#timetable-more").addClass("d-none");
     localStorage.setItem("timetableMode", "none");
   }
+  updateTimetableProgressBar();
 }
+
+async function updateTimetableProgressBar(): Promise<void> {
+  function offsetTop($el: JQuery<HTMLElement>): number {
+    return $el.offset()?.top ?? 0;
+  }
+  function height($el: JQuery<HTMLElement>): number {
+    return $el.outerHeight() ?? 0;
+  }
+
+  if (! isSameDay(selectedDate, new Date())) {
+    $("#timetable-less, #timetable-more").addClass("timetable-today");
+    return;
+  }
+  $("#timetable-less, #timetable-more").removeClass("timetable-today");
+
+  const lessonNumbers = (await getGroupedLessonData());
+  const prevLessonNumbers = lessonNumbers.filter(l => {
+    const nowD = new Date();
+    const now = (nowD.getHours() * 60 + nowD.getMinutes()) * 60 * 1000;
+    return l.startTime <= now;
+  });
+  const nextLessonNumbers = lessonNumbers.filter(l => {
+    const nowD = new Date();
+    const now = (nowD.getHours() * 60 + nowD.getMinutes()) * 60 * 1000;
+    return now < l.endTime;
+  });
+  const currentLessonNumber = prevLessonNumbers.filter(obj => nextLessonNumbers.includes(obj));
+
+  if (currentLessonNumber.length === 1) {
+    $("#timetable-less, #timetable-more").removeClass("timetable-out-of-range");
+
+    // General
+    const start = currentLessonNumber[0].startTime;
+    const end = currentLessonNumber[0].endTime;
+    const nowD = new Date();
+    const now = (nowD.getHours() * 60 * 60 + nowD.getMinutes() * 60 + nowD.getSeconds()) * 1000;
+    const percentage = (now - start) / (end - start);
+
+    // Timetable More
+    const $el = $(`#timetable-more [data-lesson-number="${currentLessonNumber[0].lessonNumber}"]`);
+    const barPos = offsetTop($el) - offsetTop($("#timetable-more")) + percentage * height($el);
+    $("#timetable-more").css("--bar-pos", barPos + "px");
+
+    if (window.innerWidth < 1200) {
+      // Timetable Less (Vertical)
+      const $el = $(`#timetable-less [data-lesson-number="${currentLessonNumber[0].lessonNumber}"]`);
+      const barPos = offsetTop($el) - offsetTop($("#timetable-less")) + percentage * height($el);
+      $("#timetable-less").css("--bar-pos", barPos + "px");
+    }
+    else {
+      const $prev = $(prevLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
+      const $next = $(nextLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
+      const $current = $(`#timetable-less [data-lesson-number="${currentLessonNumber[0].lessonNumber}"]`);
+      $prev.css("--bar-progress", "100%");
+      $next.css("--bar-progress", "0%");
+      $current.css("--bar-progress", percentage * 100 + "%");
+    }
+  }
+  else if (prevLessonNumbers.length === 0 || nextLessonNumbers.length === 0) {
+    $("#timetable-less, #timetable-more").addClass("timetable-out-of-range");
+  }
+  else {
+    $("#timetable-less, #timetable-more").removeClass("timetable-out-of-range");
+
+    // Timetable More
+    const $prev = $(`#timetable-more [data-lesson-number="${prevLessonNumbers[prevLessonNumbers.length - 1].lessonNumber}"]`);
+    const $next = $(`#timetable-more [data-lesson-number="${nextLessonNumbers[0].lessonNumber}"]`);
+    const barPosPrev = offsetTop($prev) + height($prev);
+    const barPosNext = offsetTop($next);
+    const barPos = (barPosPrev + barPosNext) / 2 - offsetTop($("#timetable-more"));
+    $("#timetable-more").css("--bar-pos", barPos + "px");
+
+    if (window.innerWidth < 1200) {
+      // Timetable Less (Vertical)
+      const $prev = $(`#timetable-less [data-lesson-number="${prevLessonNumbers[prevLessonNumbers.length - 1].lessonNumber}"]`);
+      const $next = $(`#timetable-less [data-lesson-number="${nextLessonNumbers[0].lessonNumber}"]`);
+      const barPosPrev = offsetTop($prev) + height($prev);
+      const barPosNext = offsetTop($next);
+      const barPos = (barPosPrev + barPosNext) / 2 - offsetTop($("#timetable-less"));
+      $("#timetable-less").css("--bar-pos", barPos + "px");
+    }
+    else {
+      const $prev = $(prevLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
+      const $next = $(nextLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
+      $prev.css("--bar-progress", "100%");
+      $next.css("--bar-progress", "0%");
+    }
+  }
+}
+
+setInterval(updateTimetableProgressBar,  1000); // Update every 30s
 
 async function renameCalendarMonthYear(): Promise<void> {
   $("#calendar-month-year").text(`${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`);

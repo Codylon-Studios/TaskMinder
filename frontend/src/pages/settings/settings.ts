@@ -794,7 +794,7 @@ async function updateTimetable(): Promise<void> {
 
           <label class="d-flex align-items-center">
             Stundennummer
-          <input class="timetable-lesson-number form-control form-control-sm mx-2" type="text"
+          <input class="timetable-lesson-number form-control form-control-sm mx-2" type="number" min="1"
             value="${lesson.lessonNumber}" ${canEditClassSettings ? "" : "disabled"}>
           </label>
           <button class="btn btn-sm btn-danger timetable-lesson-delete" ${canEditClassSettings ? "" : "disabled"} aria-label="Stunde entfernen">
@@ -859,7 +859,7 @@ async function updateTimetable(): Promise<void> {
         <div class="d-flex mb-2 align-items-center">
           <label class="d-flex align-items-center">
             Stundennummer
-            <input class="timetable-lesson-number form-control form-control-sm mx-2" type="text">
+            <input class="timetable-lesson-number form-control form-control-sm mx-2" type="number" min="1">
           </label>
           <button class="btn btn-sm btn-danger timetable-lesson-delete" aria-label="Stunde entfernen">
             <i class="fa-solid fa-trash" aria-hidden="true"></i>

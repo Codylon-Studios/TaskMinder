@@ -11,18 +11,13 @@ $danger-high-contrast: #ff6e7d;
 
 $navbar-top-offset: 4.375rem;
 
-@use "../vendor/fontawesome/scss/fontawesome" with (
-  $fa-font-path: "/vendor/fontawesome/fonts"
+@use '../vendor/fontawesome/scss/variables' with (
+  $font-path: "/vendor/fontawesome/fonts",
 );
-@use "../vendor/fontawesome/scss/solid" with (
-  $fa-font-path: "/vendor/fontawesome/fonts"
-);
-@use "../vendor/fontawesome/scss/regular" with (
-  $fa-font-path: "/vendor/fontawesome/fonts"
-);
-@use "../vendor/fontawesome/scss/brands" with (
-  $fa-font-path: "/vendor/fontawesome/fonts"
-);
+
+@use '../vendor/fontawesome/scss/solid' as fa-solid;
+@use '../vendor/fontawesome/scss/regular' as fa-regular;
+@use '../vendor/fontawesome/scss/brands' as fa-brands;
 
 @use "svgs";
 @use "btn-back" as *;

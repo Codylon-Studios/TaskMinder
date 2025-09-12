@@ -210,14 +210,14 @@ for (const option of attachmentOptions) {
 
 $("#attach-class").on("click", () => {
   if ($('#attachments-list [data-type="class"]').length > 0) {
-    $('#attachments-list [data-type="class"]').remove()
+    $('#attachments-list [data-type="class"]').remove();
   }
   else {
-    $("#attachments-list").append(`<li data-type="class" class="fw-bold">Gesamte Klasse</li>`)
+    $("#attachments-list").append("<li data-type=\"class\" class=\"fw-bold\">Gesamte Klasse</li>");
   }
   $("#attachments-list-empty").toggle($("#attachments-list").children().length === 0);
   $("#submit").prop("disabled", ! allDataFilled());
-})
+});
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has("type") && urlParams.has("id")) {
