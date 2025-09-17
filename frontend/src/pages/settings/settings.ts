@@ -68,11 +68,13 @@ async function updateClassMemberList(): Promise<void> {
         <div class="d-flex flex-column flex-lg-row align-items-lg-center flex-grow-1">
           <div class="d-flex w-lg-50 pe-3 align-items-center">
             <span class="w-100">${$.formatHtml(classMember.username) + (isCurrentUser ? " <b>(Du)</b>" : "")}</span>
-            <span class="form-text mt-0">Rolle:</span>
-            <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content${isCurrentUser ? " is-current-user": ""}"
-              data-id="${classMemberId}" ${isDisabled}>
-              ${roleOptionsHtml}
-            </select>
+            <label class="form-text mt-0 d-flex align-items-center">
+              Rolle:
+              <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content${isCurrentUser ? " is-current-user": ""}"
+                data-id="${classMemberId}" ${isDisabled}>
+                ${roleOptionsHtml}
+              </select>
+            </label>
           </div>
           <span class="text-warning fw-bold mt-2 mt-lg-0 d-none me-2 class-member-changed" data-id="${classMemberId}">
             Rolle geändert
@@ -87,8 +89,8 @@ async function updateClassMemberList(): Promise<void> {
         </div>
         <div>
           <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick${isCurrentUser ? " is-current-user": ""}"
-            data-id="${classMemberId}" ${isDisabled}>
-            <i class="fa-solid fa-user-minus"></i>
+            data-id="${classMemberId}" ${isDisabled} aria-label="Nutzer entfernen">
+            <i class="fa-solid fa-user-minus" aria-hidden="true"></i>
           </button>
         </div>
       </div>
@@ -130,13 +132,15 @@ async function updateClassMemberList(): Promise<void> {
       $(`.class-member-kicked[data-id="${classMemberId}"]`).removeClass("d-none");
       $(`.class-member-changed[data-id="${classMemberId}"]`).addClass("d-none").find("*").addClass("d-none");
 
-      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo"></i>');
+      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
+        .attr("aria-label", "Nutzer doch nicht entfernen");
     }
     else {
       $(`.class-member-kicked[data-id="${classMemberId}"]`).addClass("d-none");
       $(`.class-member-role-input[data-id="${classMemberId}"]`).trigger("change");
 
-      $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-user-minus"></i>');
+      $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-user-minus" aria-hidden="true"></i>')
+        .attr("aria-label", "Nutzer entfernen");
     }
   });
 }
@@ -163,11 +167,13 @@ async function updateTeamLists(): Promise<void> {
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center">
         <div class="d-flex flex-column flex-md-row align-items-md-center">
         <div>
-          <input class="form-control form-control-sm d-inline w-fit-content me-3 team-name-input" type="text"
-            value="${$.formatHtml(team.name)}" placeholder="${$.formatHtml(team.name)}" data-id="${teamId}" ${canEditClassSettings ? "" : "disabled"}>
-          <div class="invalid-feedback">
-            Teamnamen dürfen nicht leer sein!
-          </div>
+          <label>
+            Name
+            <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 team-name-input" type="text"
+              value="${$.formatHtml(team.name)}" placeholder="${$.formatHtml(team.name)}"
+              data-id="${teamId}" ${canEditClassSettings ? "" : "disabled"}>
+            <div class="invalid-feedback">Teamnamen dürfen nicht leer sein!</div>
+          </label>
         </div>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none team-renamed" data-id="${teamId}">
             Umbenannt
@@ -176,8 +182,9 @@ async function updateTeamLists(): Promise<void> {
           <span class="text-danger fw-bold mt-2 mt-md-0 d-none team-deleted" data-id="${teamId}">Gelöscht</span>
         </div
         <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end team-delete" data-id="${teamId}" ${canEditClassSettings ? "" : "disabled"}>
-            <i class="fa-solid fa-trash"></i>
+          <button class="btn btn-sm btn-sm-square btn-danger float-end team-delete" data-id="${teamId}"
+            ${canEditClassSettings ? "" : "disabled"} aria-label="Team entfernen">
+            <i class="fa-solid fa-trash" aria-hidden="true"></i>
           </button>
         </div>
       </div>`;
@@ -196,7 +203,7 @@ async function updateTeamLists(): Promise<void> {
 
     if ($(this).val().trim() === "") {
       $(this).addClass("is-invalid");
-      $("#teams-save").addClass("disabled");
+      $("#teams-save").prop("disabled", true);
     }
 
     const teamId = $(this).data("id");
@@ -223,7 +230,7 @@ async function updateTeamLists(): Promise<void> {
     $("#teams-cancel").show();
     $(this).removeClass("is-invalid");
     if (!$(".team-name-input").hasClass("is-invalid")) {
-      $("#teams-save").removeClass("disabled");
+      $("#teams-save").prop("disabled", false);
     }
   });
 
@@ -236,13 +243,15 @@ async function updateTeamLists(): Promise<void> {
       $(`.team-deleted[data-id="${teamId}"]`).removeClass("d-none");
       $(`.team-renamed[data-id="${teamId}"]`).addClass("d-none").find("*").addClass("d-none");
 
-      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo"></i>');
+      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
+        .attr("aria-label", "Team doch nicht entfernen");
     }
     else {
       $(`.team-deleted[data-id="${teamId}"]`).addClass("d-none");
       $(`.team-name-input[data-id="${teamId}"]`).trigger("change");
 
-      $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash"></i>');
+      $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash" aria-hidden="true"></i>')
+        .attr("aria-label", "Team entfernen");
     }
   });
 }
@@ -258,13 +267,19 @@ async function updateEventTypeList(): Promise<void> {
         <div class="d-flex flex-column flex-lg-row align-items-lg-center">
           <div class="d-flex">
             <div>
-              <input class="form-control form-control-sm d-inline w-fit-content me-3 event-type-name-input" type="text"
-                value="${$.formatHtml(eventType.name)}" placeholder="${$.formatHtml(eventType.name)}"
-                data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
-              <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
+              <label>
+                Name
+                <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 event-type-name-input" type="text"
+                  value="${$.formatHtml(eventType.name)}" placeholder="${$.formatHtml(eventType.name)}"
+                  data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
+                <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
+              </label>
             </div>
-            <input type="text" value="${$.formatHtml(eventType.color)}" class="color-picker event-type-color-input"
-              data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
+            <label class="d-flex align-items-center">
+              <div class="me-2">Farbe</div>
+              <input type="text" value="${$.formatHtml(eventType.color)}" class="color-picker event-type-color-input"
+                data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
+            </label>
           </div>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none me-2 event-type-renamed" data-id="${eventTypeId}">
             Umbenannt
@@ -275,17 +290,17 @@ async function updateEventTypeList(): Promise<void> {
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none event-type-recolored" data-id="${eventTypeId}">
             Farbe gändert
             <span class="text-secondary fw-normal event-type-recolored-color" data-id="${eventTypeId}">
-              (<div class="event-type-recolored-color-display"></div>
+              (<div class="color-display"></div>
               zu
-              <div class="event-type-recolored-color-display"></div>)
+              <div class="color-display"></div>)
             </span>
           </span>
           <span class="text-danger fw-bold mt-2 mt-md-0 d-none event-type-deleted" data-id="${eventTypeId}">Gelöscht</span>
         </div
         <div>
           <button class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete"
-            data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
-            <i class="fa-solid fa-trash"></i>
+            data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"} aria-label="Ereignisart entfernen">
+            <i class="fa-solid fa-trash" aria-hidden="true"></i>
           </button>
         </div>
       </div>`;
@@ -302,7 +317,7 @@ async function updateEventTypeList(): Promise<void> {
 
     if ($(this).val().trim() === "") {
       $(this).addClass("is-invalid");
-      $("#event-types-save").addClass("disabled");
+      $("#event-types-save").prop("disabled", true);
     }
 
     const eventTypeId = $(this).data("id");
@@ -329,7 +344,7 @@ async function updateEventTypeList(): Promise<void> {
     $("#event-types-cancel").show();
     $(this).removeClass("is-invalid");
     if (!$(".event-type-name-input").hasClass("is-invalid")) {
-      $("#event-types-save").removeClass("disabled");
+      $("#event-types-save").prop("disabled", false);
     }
   });
 
@@ -345,8 +360,8 @@ async function updateEventTypeList(): Promise<void> {
         if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
           const $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`);
           $recoloredElement.removeClass("d-none").find("*").removeClass("d-none");
-          $recoloredElement.find(".event-type-recolored-color-display").first().css("background-color", oldColor);
-          $recoloredElement.find(".event-type-recolored-color-display").last().css("background-color", newColor);
+          $recoloredElement.find(".color-display").first().css("background-color", oldColor);
+          $recoloredElement.find(".color-display").last().css("background-color", newColor);
         }
       }
       else {
@@ -365,14 +380,16 @@ async function updateEventTypeList(): Promise<void> {
       $(`.event-type-renamed[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
       $(`.event-type-recolored[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
 
-      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo"></i>');
+      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
+        .attr("aria-label", "Ereginisart doch nicht entfernen");
     }
     else {
       $(`.event-type-deleted[data-id="${eventTypeId}"]`).addClass("d-none");
       $(`.event-type-name-input[data-id="${eventTypeId}"]`).trigger("change");
       $(`.event-type-color-input[data-id="${eventTypeId}"]`).trigger("change");
 
-      $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash"></i>');
+      $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash" aria-hidden="true"></i>')
+        .attr("aria-label", "Ereginisart entfernen");
     }
   });
 }
@@ -392,7 +409,7 @@ async function updateSubjectList(): Promise<void> {
       function getHtmlFromValue(value: unknown, fallback: string): string {
         return $.formatHtml(value?.toString() ?? fallback);
       }
-      const disabledState = canEditClassSettings ? "" : "disabled";
+      const isDisabled = canEditClassSettings ? "" : "disabled";
 
       const teacherGenderOptions = [
         { value: "d", label: "-" },
@@ -407,57 +424,54 @@ async function updateSubjectList(): Promise<void> {
       const teacherNameSubstitution = getHtmlFromValue(subject.teacherNameSubstitution, "keine Angabe");
       return $(`
         <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
-          <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
-            <div class="me-3 w-md-50">
-              <div class="d-flex gap-3 mb-2">
-                <div class="subject-inputs-label d-flex align-items-center">
-                  <span class="d-none d-lg-inline">Name</span>
-                  <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name des Fachs"><i class="fa-solid fa-circle-info"></i></a>
-                </div>
-                <div class="d-inline-block">
-                  <input class="form-control form-control-sm subject-name-long-input" type="text" value="${subjectNameLong}"
-                    placeholder="${subjectNameLong}" data-id="${subjectId}" ${disabledState}>
+          <div class="d-flex flex-column w-100 me-3">
+            <div class="me-3">
+              <div class="d-flex align-items-center gap-3 mb-2">
+                <b>Fach</b>
+                <label for="subject-name-long-input-${subject.subjectId}">Name</label>
+                <div class="d-inline-block w-100">
+                  <input class="form-control form-control-sm subject-name-long-input" type="text" id="subject-name-long-input-${subject.subjectId}"
+                    value="${subjectNameLong}" placeholder="${subjectNameLong}" data-id="${subjectId}" ${isDisabled}>
                   <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
                 </div>
-                <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input" type="text"
-                  value="${subjectNameShort}" placeholder="${subjectNameShort}" data-id="${subjectId}" ${disabledState}>
+                <label for="subject-name-short-input-${subject.subjectId}">Abkürzung</label>
+                <input class="form-control form-control-sm d-inline-block subject-name-short-input w-25" type="text"
+                  id="subject-name-short-input-${subject.subjectId}" value="${subjectNameShort}" placeholder="${subjectNameShort}"
+                  data-id="${subjectId}" ${isDisabled}>
               </div>
-              <div class="d-flex gap-3 ${dsbActivated ? "mb-2" : ""}">
-                <div class="subject-inputs-label d-flex align-items-center">
-                  <span class="d-none d-lg-inline">Lehrkraft</span>
-                  <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name der Lehrkraft"><i class="fa-solid fa-circle-info"></i></a>
-                </div>
-                <div class="d-inline-block">
-                  <select class="form-control form-control-sm subject-teacher-gender-input"
-                    data-id="${subjectId}" ${disabledState}>
+              <div class="d-flex gap-3 align-items-center ${dsbActivated ? "mb-2" : ""}">
+                <b>Lehrkraft</b>
+                <label for="subject-teacher-gender-input-${subject.subjectId}">Anrede</label>
+                <div class="d-inline-block w-50">
+                  <select class="form-control form-control-sm subject-teacher-gender-input" data-id="${subjectId}" ${isDisabled}
+                    id="subject-teacher-gender-input-${subject.subjectId}">
                     ${teacherGenderOptionsHtml}
                   </select>
                 </div>
-                <div class="d-inline-block">
-                  <input class="form-control form-control-sm h-fit-content subject-teacher-long-input" type="text" value="${teacherNameLong}"
-                    placeholder="${teacherNameLong}" data-id="${subjectId}" ${disabledState}>
+                <label for="subject-teacher-long-input-${subject.subjectId}">Name</label>
+                <div class="d-inline-block w-100">
+                  <input class="form-control form-control-sm subject-teacher-long-input" type="text" value="${teacherNameLong}"
+                    placeholder="${teacherNameLong}" data-id="${subjectId}" ${isDisabled} id="subject-teacher-long-input-${subject.subjectId}">
                   <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
                 </div>
-                <input class="form-control form-control-sm h-fit-content subject-teacher-short-input" type="text" value="${teacherNameShort}"
-                  placeholder="${teacherNameShort}" data-id="${subjectId}" ${disabledState}>
+                <label for="subject-teacher-short-input-${subject.subjectId}">Kürzel</label>
+                <input class="form-control form-control-sm subject-teacher-short-input w-100" type="text" value="${teacherNameShort}"
+                  placeholder="${teacherNameShort}" data-id="${subjectId}" ${isDisabled} id="subject-teacher-short-input-${subject.subjectId}">
               </div>
-              <div class="d-flex gap-3 ${dsbActivated ? "" : "d-none"}">
-                <div class="subject-inputs-label d-flex align-items-center">
-                  <span class="d-none d-lg-inline">Vertretung</span>
-                  <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Vertretungsoptionen"><i class="fa-solid fa-circle-info"></i></a>
-                </div>
+              <div class="d-flex gap-3 align-items-center ${dsbActivated ? "" : "d-none"}">
+                <b>Vertretungen</b>
+                <label for="subject-name-substitution-input-${subject.subjectId}">Fachname</label>
                 <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"
-                  type="text" value="${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "")}"
-                  placeholder="${subjectNameSubstitution}"
-                  ${disabledState}>
+                  type="text" value="${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "")}" ${isDisabled}
+                  placeholder="${subjectNameSubstitution}" id="subject-name-substitution-input-${subject.subjectId}">
+                <label for="subject-teacher-substitution-input-${subject.subjectId}">Lehrkraftname</label>
                 <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id="${subjectId}"
-                  type="text" value="${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "")}"
-                  placeholder="${teacherNameSubstitution}"
-                  ${disabledState}>
+                  type="text" value="${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "")}" ${isDisabled}
+                  placeholder="${teacherNameSubstitution}" id="subject-teacher-substitution-input-${subject.subjectId}">
               </div>
             </div>
-            <div class="w-md-50">
-              <span class="text-warning fw-bold mt-2 mt-md-0 d-none subject-changed" data-id="${subjectId}">
+            <div>
+              <div class="text-warning fw-bold mt-2 d-none subject-changed" data-id="${subjectId}">
                 Geändert
                 <span class="subject-changed-name-long">
                   ${$.formatHtml(subject.subjectNameLong)} zu <b></b>
@@ -480,14 +494,14 @@ async function updateSubjectList(): Promise<void> {
                 <span class="subject-changed-teacher-substitution">
                   ${teacherNameSubstitution} zu <b></b>
                 </span>
-              </span>
-              <span class="text-danger fw-bold mt-2 mt-md-0 d-none subject-deleted" data-id="${subjectId}">Gelöscht</span>
+              </div>
+              <div class="text-danger fw-bold mt-2 d-none subject-deleted" data-id="${subjectId}">Gelöscht</div>
             </div>
           </div
           <div>
             <button class="btn btn-sm btn-sm-square btn-danger float-end subject-delete"
-              data-id="${subjectId}" ${disabledState}>
-              <i class="fa-solid fa-trash"></i>
+              data-id="${subjectId}" ${isDisabled} aria-label="Fach entfernen">
+              <i class="fa-solid fa-trash" aria-hidden="true"></i>
             </button>
           </div>
         </div>
@@ -514,7 +528,7 @@ async function updateSubjectList(): Promise<void> {
 
     if ($(this).val().trim() === "") {
       $(this).addClass("is-invalid");
-      $("#subjects-save").addClass("disabled");
+      $("#subjects-save").prop("disabled", true);
     }
 
     const subjectId = $(this).data("id");
@@ -540,7 +554,7 @@ async function updateSubjectList(): Promise<void> {
     $("#subjects-cancel").show();
     $(this).removeClass("is-invalid");
     if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
-      $("#subjects-save").removeClass("disabled");
+      $("#subjects-save").prop("disabled", false);
     }
   });
 
@@ -598,7 +612,7 @@ async function updateSubjectList(): Promise<void> {
 
     if ($(this).val().trim() === "") {
       $(this).addClass("is-invalid");
-      $("#subjects-save").addClass("disabled");
+      $("#subjects-save").prop("disabled", true);
     }
 
     const subjectId = $(this).data("id");
@@ -624,7 +638,7 @@ async function updateSubjectList(): Promise<void> {
     $("#subjects-cancel").show();
     $(this).removeClass("is-invalid");
     if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
-      $("#subjects-save").removeClass("disabled");
+      $("#subjects-save").prop("disabled", false);
     }
   });
 
@@ -651,61 +665,63 @@ async function updateSubjectList(): Promise<void> {
     }
   });
 
-  $(document).off("change", ".subject-name-substitution-input").on("change", ".subject-name-substitution-input", async function () {
-    $("#subjects-cancel").show();
-    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
-
-    const subjectId = $(this).data("id");
-    if (subjectId !== "") {
-      const newName = $(this).val();
-      const oldName =
-          (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameSubstitution ??
-          "keine Angabe";
-      if (newName !== oldName) {
-        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-          $(`.subject-changed-name-substitution[data-id="${subjectId}"]`)
-            .removeClass("d-none")
-            .find("b")
-            .text(newName);
+  if (dsbActivated) {
+    $(document).off("change", ".subject-name-substitution-input").on("change", ".subject-name-substitution-input", async function () {
+      $("#subjects-cancel").show();
+      $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+  
+      const subjectId = $(this).data("id");
+      if (subjectId !== "") {
+        const newName = $(this).val();
+        const oldName =
+            (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameSubstitution ??
+            "keine Angabe";
+        if (newName !== oldName) {
+          if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+            $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
+            $(`.subject-changed-name-substitution[data-id="${subjectId}"]`)
+              .removeClass("d-none")
+              .find("b")
+              .text(newName);
+          }
+        }
+        else {
+          $(`.subject-changed-name-substitution[data-id="${subjectId}"]`).addClass("d-none");
+          if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
+            $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
+          }
         }
       }
-      else {
-        $(`.subject-changed-name-substitution[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
-          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
+    });
+  
+    $(document).off("change", ".subject-teacher-substitution-input").on("change", ".subject-teacher-substitution-input", async function () {
+      $("#subjects-cancel").show();
+      $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+  
+      const subjectId = $(this).data("id");
+      if (subjectId !== "") {
+        const newName = $(this).val();
+        const oldName =
+            (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameSubstitution ??
+            "keine Angabe";
+        if (newName !== oldName) {
+          if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+            $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
+            $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`)
+              .removeClass("d-none")
+              .find("b")
+              .text(newName);
+          }
+        }
+        else {
+          $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`).addClass("d-none");
+          if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
+            $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
+          }
         }
       }
-    }
-  });
-
-  $(document).off("change", ".subject-teacher-substitution-input").on("change", ".subject-teacher-substitution-input", async function () {
-    $("#subjects-cancel").show();
-    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
-
-    const subjectId = $(this).data("id");
-    if (subjectId !== "") {
-      const newName = $(this).val();
-      const oldName =
-          (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameSubstitution ??
-          "keine Angabe";
-      if (newName !== oldName) {
-        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-          $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`)
-            .removeClass("d-none")
-            .find("b")
-            .text(newName);
-        }
-      }
-      else {
-        $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
-          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
-        }
-      }
-    }
-  });
+    });
+  }
 
   $(".subject-delete").on("click", function () {
     $("#subjects-cancel").show();
@@ -716,7 +732,8 @@ async function updateSubjectList(): Promise<void> {
       $(`.subject-deleted[data-id="${subjectId}"]`).removeClass("d-none");
       $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
 
-      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo"></i>');
+      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
+        .attr("aria-label", "Fach doch nicht entfernen");
     }
     else {
       $(`.subject-deleted[data-id="${subjectId}"]`).addClass("d-none");
@@ -728,7 +745,8 @@ async function updateSubjectList(): Promise<void> {
       $(`.subject-name-substitution-input[data-id="${subjectId}"]`).trigger("change");
       $(`.subject-teacher-substitution-input[data-id="${subjectId}"]`).trigger("change");
 
-      $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash"></i>');
+      $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash" aria-hidden="true"></i>')
+        .attr("aria-label", "Fach entfernen");
     }
   });
 }
@@ -773,46 +791,53 @@ async function updateTimetable(): Promise<void> {
     const lessonTemplate = $(`
       <div class="timetable-lesson card p-2 mb-2">
         <div class="d-flex mb-2 align-items-center">
-          <label class="form-label form-label-sm mb-0 me-2">
+
+          <label class="d-flex align-items-center">
             Stundennummer
-          </label>
-          <input class="timetable-lesson-number form-control form-control-sm me-2" type="text"
+          <input class="timetable-lesson-number form-control form-control-sm mx-2" type="number" min="1"
             value="${lesson.lessonNumber}" ${canEditClassSettings ? "" : "disabled"}>
-          <button class="btn btn-sm btn-danger timetable-lesson-delete" ${canEditClassSettings ? "" : "disabled"}>
-            <i class="fa-solid fa-trash"></i>
+          </label>
+          <button class="btn btn-sm btn-danger timetable-lesson-delete" ${canEditClassSettings ? "" : "disabled"} aria-label="Stunde entfernen">
+            <i class="fa-solid fa-trash" aria-hidden="true"></i>
           </button>
         </div>
         <div class="d-flex mb-2 align-items-center">
-          <input class="timetable-start-time form-control form-control-sm me-4" type="time"
-            value="${msToTime(lesson.startTime)}" ${canEditClassSettings ? "" : "disabled"}>
-          <input class="timetable-end-time form-control form-control-sm" type="time"
-            value="${msToTime(lesson.endTime)}" ${canEditClassSettings ? "" : "disabled"}>
+          <label class="w-50 me-4">
+            Von
+            <input class="timetable-start-time form-control form-control-sm me-4" type="time"
+              value="${msToTime(lesson.startTime)}" ${canEditClassSettings ? "" : "disabled"}>
+          </label>
+          <label class="w-50">
+            Bis
+            <input class="timetable-end-time form-control form-control-sm" type="time"
+              value="${msToTime(lesson.endTime)}" ${canEditClassSettings ? "" : "disabled"}>
+          </label>
         </div>
         <div class="d-flex mb-2 align-items-center">
-          <label class="form-label form-label-sm mb-0 me-2">
+          <label class="d-flex align-items-center w-100">
             Fach
+            <select class="timetable-subject-select form-select form-select-sm ms-2" ${canEditClassSettings ? "" : "disabled"}>
+              <option value="" disabled>Fach</option>
+              <option value="-1">Pause</option>
+              ${subjectOptions}
+            </select>
           </label>
-          <select class="timetable-subject-select form-select form-select-sm" ${canEditClassSettings ? "" : "disabled"}>
-            <option value="" disabled>Fach</option>
-            <option value="-1">Pause</option>
-            ${subjectOptions}
-          </select>
         </div>
         <div class="d-flex mb-2 align-items-center">
-          <label class="form-label form-label-sm mb-0 me-2">
+          <label class="d-flex align-items-center w-100">
             Raum
+            <input class="timetable-room form-control form-control-sm ms-2" type="text" value="${$.formatHtml(lesson.room)}"
+              ${canEditClassSettings ? "" : "disabled"}>
           </label>
-          <input class="timetable-room form-control form-control-sm" type="text" value="${$.formatHtml(lesson.room)}"
-            ${canEditClassSettings ? "" : "disabled"}>
         </div>
         <div class="d-flex align-items-center">
-          <label class="form-label form-label-sm mb-0 me-2">
+          <label class="d-flex align-items-center w-100">
             Team
+            <select class="timetable-team-select form-select form-select-sm ms-2" ${canEditClassSettings ? "" : "disabled"}>
+              <option value="-1">Alle</option>
+              ${teamOptions}
+            </select>
           </label>
-          <select class="timetable-team-select form-select form-select-sm" ${canEditClassSettings ? "" : "disabled"}>
-            <option value="-1">Alle</option>
-            ${teamOptions}
-          </select>
         </div>
       </div>
     `);
@@ -832,40 +857,48 @@ async function updateTimetable(): Promise<void> {
     const lessonTemplate = $(`
       <div class="timetable-lesson card p-2 mb-2">
         <div class="d-flex mb-2 align-items-center">
-          <label class="form-label form-label-sm mb-0 me-2">
+          <label class="d-flex align-items-center">
             Stundennummer
+            <input class="timetable-lesson-number form-control form-control-sm mx-2" type="number" min="1">
           </label>
-          <input class="timetable-lesson-number form-control form-control-sm me-2" type="text">
-          <button class="btn btn-sm btn-danger timetable-lesson-delete"><i class="fa-solid fa-trash"></i></button>
+          <button class="btn btn-sm btn-danger timetable-lesson-delete" aria-label="Stunde entfernen">
+            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+          </button>
         </div>
         <div class="d-flex mb-2 align-items-center">
-          <input class="timetable-start-time form-control form-control-sm me-4" type="time">
-          <input class="timetable-end-time form-control form-control-sm" type="time">
+          <label class="w-50 me-4">
+            Von
+            <input class="timetable-start-time form-control form-control-sm" type="time">
+          </label>
+          <label class="w-50">
+            Bis
+            <input class="timetable-end-time form-control form-control-sm" type="time">
+          </label>
         </div>
         <div class="d-flex mb-2 align-items-center">
-          <label class="form-label form-label-sm mb-0 me-2">
+          <label class="d-flex align-items-center w-100">
             Fach
+            <select class="timetable-subject-select form-select form-select-sm ms-2">
+              <option value="" disabled selected>Fach</option>
+              <option value="-1">Pause</option>
+              ${subjectOptions}
+            </select>
           </label>
-          <select class="timetable-subject-select form-select form-select-sm">
-            <option value="" disabled selected>Fach</option>
-            <option value="-1">Pause</option>
-            ${subjectOptions}
-          </select>
         </div>
         <div class="d-flex mb-2 align-items-center">
-          <label class="form-label form-label-sm mb-0 me-2">
+          <label class="d-flex align-items-center w-100">
             Raum
+            <input class="timetable-room form-control form-control-sm ms-2" type="text">
           </label>
-          <input class="timetable-room form-control form-control-sm" type="text">
         </div>
         <div class="d-flex align-items-center">
-          <label class="form-label form-label-sm mb-0 me-2">
+          <label class="d-flex align-items-center w-100">
             Team
+            <select class="timetable-team-select form-select form-select-sm ms-2">
+              <option value="-1">Alle</option>
+              ${teamOptions}
+            </select>
           </label>
-          <select class="timetable-team-select form-select form-select-sm">
-            <option value="-1">Alle</option>
-            ${teamOptions}
-          </select>
         </div>
       </div>
     `);
@@ -959,7 +992,7 @@ user.on("change", async () => {
       .done(res => {
         const resClassCode = res.classCode;
         $("#class-code").val(resClassCode);
-        $("#invite-copy-link, #invite-qrcode").removeClass("disabled");
+        $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
         classCode = resClassCode;
 
         qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
@@ -967,17 +1000,17 @@ user.on("change", async () => {
       })
       .fail(() => {
         $("#class-code").val("Fehler beim Laden");
-        $("#invite-copy-link, #invite-qrcode").addClass("disabled");
+        $("#invite-copy-link, #invite-qrcode").prop("disabled", true);
       });
 
     $("#invite-copy-link").on("click", async () => {
       try {
         await navigator.clipboard.writeText(location.host + `/join?class_code=${classCode}`);
     
-        $("#invite-copy-link").addClass("disabled").html("<i class=\"fa-solid fa-check-circle\"></i> Einladungslink kopiert");
+        $("#invite-copy-link").prop("disabled", true).html("<i class=\"fa-solid fa-check-circle\" aria-hidden=\"true\"></i> Einladungslink kopiert");
     
         setTimeout(() => {
-          $("#invite-copy-link").removeClass("disabled").html("<i class=\"fa-solid fa-link\"></i> Einladungslink kopieren");
+          $("#invite-copy-link").prop("disabled", false).html("<i class=\"fa-solid fa-link\" aria-hidden=\"true\"></i> Einladungslink kopieren");
         }, 2000);
       }
       catch (err) {
@@ -1001,56 +1034,75 @@ user.on("change", async () => {
       canEditClassSettings = false;
       $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
         .find("input, button, select, .color-picker-trigger")
-        .attr("disabled", "");
+        .prop("disabled", true);
     }
     else {
       canEditClassSettings = true;
       $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
         .find("input, button, select, .color-picker-trigger")
-        .removeAttr("disabled");
+        .prop("disabled", false);
     }
     if (permissionLevel < 3) {
       canEditMemberSettings = false;
       $("#class-members-wrapper")
         .find("button, select")
-        .attr("disabled", "");
+        .prop("disabled", true);
     }
     else {
       canEditMemberSettings = true;
       $("#class-members-wrapper")
         .find("button, select")
-        .removeAttr("disabled");
+        .prop("disabled", false);
     }
-    $("#delete-class-button").toggleClass("disabled", permissionLevel !== 3);
-    $("#kick-logged-out-users-button").toggleClass("disabled", permissionLevel !== 3);
-    $("#set-logged-out-users-role-select").toggleClass("disabled", permissionLevel !== 3);
+    $("#delete-class-button").prop("disabled", permissionLevel !== 3);
+    $("#kick-logged-out-users-button").prop("disabled", permissionLevel !== 3);
+    $("#set-logged-out-users-role-select").prop("disabled", permissionLevel !== 3);
+    $(".is-current-user").prop("disabled", true);
   }
 });
 
 let animations = JSON.parse(localStorage.getItem("animations") ?? "true") ?? true;
-$("#animations input").prop("checked", animations);
-$("#animations input").on("click", function () {
+$("#animations-check").prop("checked", animations);
+$("#animations-check").on("click", function () {
   animations = $(this).prop("checked");
   localStorage.setItem("animations", animations);
 });
 
+let fontSize = JSON.parse(localStorage.getItem("fontSize") ?? "0") ?? 0;
+$(`#font-size input[value=${fontSize}]`).prop("checked", true);
+$("#font-size input").each(function () {
+  $(this).on("click", () => {
+    fontSize = $(this).val();
+    localStorage.setItem("fontSize", fontSize);
+    if (fontSize === "0") {
+      $("html").css("font-size", "16px");
+    }
+    else if (fontSize === "1") {
+      $("html").css("font-size", "19px");
+    }
+    else if (fontSize === "2") {
+      $("html").css("font-size", "22px");
+    }
+
+    $("body").css({ paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + (displayFooter ? 0 : 70) + "px" });
+  });
+});
+
+let highContrast = JSON.parse(localStorage.getItem("highContrast") ?? "false") ?? false;
+$("#high-contrast-check").prop("checked", highContrast);
+$("#high-contrast-check").on("click", function () {
+  highContrast = $(this).prop("checked");
+  localStorage.setItem("highContrast", JSON.stringify(highContrast));
+  $("body").attr("data-high-contrast", JSON.stringify(highContrast));
+});
+
 let displayFooter = JSON.parse(localStorage.getItem("displayFooter") ?? "true") ?? true;
-$("#display-footer input").prop("checked", displayFooter);
-$("#display-footer input").on("click", function () {
+$("#display-footer-check").prop("checked", displayFooter);
+$("#display-footer-check").on("click", function () {
   displayFooter = $(this).prop("checked");
   localStorage.setItem("displayFooter", displayFooter);
-  if (displayFooter) {
-    $("footer").show();
-    $("body").css({
-      paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + "px"
-    });
-  }
-  else {
-    $("footer").hide();
-    $("body").css({
-      paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + 70 + "px"
-    });
-  }
+  $("footer").toggle(displayFooter);
+  $("body").css({ paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + (displayFooter ? 0 : 70) + "px" });
 });
 
 const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
@@ -1110,7 +1162,7 @@ $("#change-username-button").on("click", function () {
   $(this).hide();
   $("#change-username").show();
   $("#change-username input").val("");
-  $("#change-username-confirm").addClass("disabled");
+  $("#change-username-confirm").prop("disabled", true);
   $("#change-username-invalid-password").addClass("d-none");
   $("#change-username-invalid-username").addClass("d-none");
   $("#change-username-taken-username").addClass("d-none");
@@ -1141,7 +1193,7 @@ $("#change-username-new-username").on("change", () => {
 });
 
 $("#change-username-password, #change-username-new-username").on("input change", function () {
-  $("#change-username-confirm").toggleClass("disabled", 
+  $("#change-username-confirm").prop("disabled", 
     $("#change-username-password, #change-username-new-username").map(
       function () {
         return $(this).val(); 
@@ -1177,11 +1229,11 @@ $("#change-username-confirm").on("click", async () => {
     error: xhr => {
       if (xhr.status === 401) {
         $("#change-username-invalid-password").removeClass("d-none");
-        $("#change-username-confirm").addClass("disabled");
+        $("#change-username-confirm").prop("disabled", true);
       }
       else if (xhr.status === 409) {
         $("#change-username-taken-username").removeClass("d-none");
-        $("#change-username-confirm").addClass("disabled");
+        $("#change-username-confirm").prop("disabled", true);
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
@@ -1207,7 +1259,7 @@ $("#change-password-button").on("click", function () {
   $(this).hide();
   $("#change-password").show();
   $("#change-password input").val("");
-  $("#change-password-confirm").addClass("disabled");
+  $("#change-password-confirm").prop("disabled", true);
   $("#change-password-invalid-password").addClass("d-none").removeClass("d-flex");
   $("#change-password-not-matching-passwords").addClass("d-none").removeClass("d-flex");
   $("#change-password-insecure-password").addClass("d-none").removeClass("d-flex");
@@ -1225,10 +1277,10 @@ $("#change-password-old").on("input", () => {
 $("#change-password-new, #change-password-repeat").on("change", function () {
   if ($("#change-password-new").val() !== $("#change-password-repeat").val()) {
     $("#change-password-not-matching-passwords").removeClass("d-none").addClass("d-flex");
-    $("#change-password-confirm").addClass("disabled");
+    $("#change-password-confirm").prop("disabled", true);
   }
   if ($(this).val() === "") {
-    $("#change-password-confirm").addClass("disabled");
+    $("#change-password-confirm").prop("disabled", true);
   }
 });
 
@@ -1263,7 +1315,7 @@ $("#change-password-old, #change-password-new, #change-password-repeat").on("inp
         || $("#change-password-invalid-password").hasClass("d-flex")
         || $("#change-password-not-matching-passwords").hasClass("d-flex"))
   ) {
-    $("#change-password-confirm").removeClass("disabled");
+    $("#change-password-confirm").prop("disabled", false);
   }
 });
 
@@ -1289,7 +1341,7 @@ $("#change-password-confirm").on("click", async () => {
     error: xhr => {
       if (xhr.status === 401) {
         $("#change-password-invalid-password").removeClass("d-none").addClass("d-flex");
-        $("#change-password-confirm").addClass("disabled");
+        $("#change-password-confirm").prop("disabled", true);
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
@@ -1315,7 +1367,7 @@ $("#delete-account-button").on("click", function () {
   $(this).hide();
   $("#delete-account").show();
   $("#delete-account-password").val("");
-  $("#delete-account-confirm").addClass("disabled");
+  $("#delete-account-confirm").prop("disabled", true);
   $("#delete-account-invalid-password").addClass("d-none").removeClass("d-flex");
   $("#delete-account-still-in-class").addClass("d-none").removeClass("d-flex");
 });
@@ -1327,14 +1379,14 @@ $("#delete-account-cancel").on("click", () => {
 
 $("#delete-account-password").on("change", function () {
   if ($(this).val() === "") {
-    $("#delete-account-confirm").addClass("disabled");
+    $("#delete-account-confirm").prop("disabled", true);
   }
 });
 
 $("#delete-account-password").on("input", function () {
   $("#delete-account-invalid-password").addClass("d-none").removeClass("d-flex");
   if ($(this).val() !== "") {
-    $("#delete-account-confirm").removeClass("disabled");
+    $("#delete-account-confirm").prop("disabled", false);
   }
 });
 
@@ -1359,11 +1411,11 @@ $("#delete-account-confirm").on("click", async () => {
     error: xhr => {
       if (xhr.status === 401) {
         $("#delete-account-invalid-password").removeClass("d-none").addClass("d-flex");
-        $("#delete-account-confirm").addClass("disabled");
+        $("#delete-account-confirm").prop("disabled", true);
       }
       else if (xhr.status === 409) {
         $("#delete-account-still-in-class").removeClass("d-none").addClass("d-flex");
-        $("#delete-account-confirm").addClass("disabled");
+        $("#delete-account-confirm").prop("disabled", true);
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
@@ -1412,7 +1464,7 @@ $("#team-selection-save").on("click", async () => {
         teamsData.reload();
         joinedTeamsData.reload();
         updateTeamLists();
-        $("#team-selection-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
+        $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
         setTimeout(() => {
           $("#team-selection-save").text("Speichern").prop("disabled", false);
         }, 1000);
@@ -1444,7 +1496,7 @@ $("#team-selection-save").on("click", async () => {
     teamsData.reload();
     joinedTeamsData.reload();
     updateTeamLists();
-    $("#team-selection-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
+    $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
     setTimeout(() => {
       $("#team-selection-save").text("Speichern").prop("disabled", false);
     }, 1000);
@@ -1456,7 +1508,7 @@ $("#team-selection-save").on("click", async () => {
 $("#leave-class-button").on("click", function () {
   $(this).hide();
   $("#leave-class").show();
-  $("#leave-class-confirm").removeClass("disabled");
+  $("#leave-class-confirm").prop("disabled", false);
   $("#leave-class-last-admin").addClass("d-none").removeClass("d-flex");
 });
 
@@ -1482,7 +1534,7 @@ $("#leave-class-confirm").on("click", async () => {
     error: xhr => {
       if (xhr.status === 409) {
         $("#leave-class-last-admin").removeClass("d-none").addClass("d-flex");
-        $("#leave-class-confirm").addClass("disabled");
+        $("#leave-class-confirm").prop("disabled", true);
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
@@ -1508,7 +1560,7 @@ $("#leave-class-confirm").on("click", async () => {
 $("#delete-class-button").on("click", function () {
   $(this).hide();
   $("#delete-class").show();
-  $("#delete-class-confirm").removeClass("disabled");
+  $("#delete-class-confirm").prop("disabled", false);
 });
 
 $("#delete-class-cancel").on("click", () => {
@@ -1716,7 +1768,7 @@ async function saveClassMembers(): Promise<void> {
           classMemberData.reload();
           updateClassMemberList();
           $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
-          $("#class-members-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
+          $("#class-members-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
           setTimeout(() => {
             $("#class-members-save").text("Speichern").prop("disabled", false);
           }, 1000);
@@ -1800,17 +1852,18 @@ $("#new-team").on("click", () => {
     <div class="card m-2 p-2 flex-row justify-content-between align-items-center">
       <div class="d-flex flex-column flex-md-row align-items-md-center">
         <div>
-          <input class="form-control form-control-sm d-inline w-fit-content me-3 team-name-input"
-            type="text" value="" placeholder="Neues Team" data-id="">
-          <div class="invalid-feedback">
-            Teamnamen dürfen nicht leer sein!
-          </div>
+          <label>
+            Name
+            <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 team-name-input"
+              type="text" value="" placeholder="Neues Team" data-id="">
+            <div class="invalid-feedback">Teamnamen dürfen nicht leer sein!</div>
+          </label>
         </div>
         <span class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</span>
       </div
       <div>
-        <button class="btn btn-sm btn-sm-square btn-danger float-end new-team-delete" data-id="">
-          <i class="fa-solid fa-trash"></i>
+        <button class="btn btn-sm btn-sm-square btn-danger float-end new-team-delete" data-id="" aria-label="Team entfernen">
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
         </button>
       </div>
     </div>`;
@@ -1822,7 +1875,7 @@ $("#new-team").on("click", () => {
     .on("focusout", function () {
       if ($(this).val()?.toString().trim() === "") {
         $(this).addClass("is-invalid");
-        $("#teams-save").addClass("disabled");
+        $("#teams-save").prop("disabled", true);
       }
     });
 
@@ -1870,7 +1923,7 @@ async function saveTeams(): Promise<void> {
       joinedTeamsData.reload();
       updateTeamLists();
       $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
-      $("#teams-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
+      $("#teams-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
         $("#teams-save").text("Speichern").prop("disabled", false);
       }, 1000);
@@ -1945,19 +1998,23 @@ $("#new-event-type").on("click", () => {
       <div class="d-flex flex-column flex-md-row align-items-md-center">
         <div class="d-flex">
           <div>
-            <input class="form-control form-control-sm d-inline w-fit-content me-3 event-type-name-input"
-              type="text" value="" placeholder="Neue Ereignisart" data-id="">
-            <div class="invalid-feedback">
-              Der Name darf nicht leer sein!
-            </div>
+            <label>
+              Name
+              <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 event-type-name-input"
+                type="text" value="" placeholder="Neue Ereignisart" data-id="">
+              <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
+            </label>
           </div>
-          <input type="text" value="#3bb9ca" class="color-picker event-type-color-input" data-id="">
+          <label class="d-flex align-items-center">
+            <div class="me-2">Farbe</div>
+            <input type="text" value="#3bb9ca" class="color-picker event-type-color-input" data-id="">
+          </label>
         </div>
         <span class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</span>
       </div
       <div>
-        <button class="btn btn-sm btn-sm-square btn-danger float-end new-event-type-delete" data-id="">
-          <i class="fa-solid fa-trash"></i>
+        <button class="btn btn-sm btn-sm-square btn-danger float-end new-event-type-delete" data-id="" aria-label="Ereignisart entfernen">
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
         </button>
       </div>
     </div>`;
@@ -1969,7 +2026,7 @@ $("#new-event-type").on("click", () => {
     .on("focusout", function () {
       if ($(this).val()?.toString().trim() === "") {
         $(this).addClass("is-invalid");
-        $("#event-types-save").addClass("disabled");
+        $("#event-types-save").prop("disabled", true);
       }
     });
 
@@ -2019,7 +2076,7 @@ async function saveEventTypes(): Promise<void> {
       eventTypeData.reload();
       updateEventTypeList();
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
-      $("#event-types-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
+      $("#event-types-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
         $("#event-types-save").text("Speichern").prop("disabled", false);
       }, 1000);
@@ -2089,61 +2146,61 @@ $("#new-subject").on("click", () => {
 
   $("#subjects-list .no-subjects").remove();
 
+  const uuid = crypto.randomUUID();
+
   const template = `
     <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="">
-        <div class="d-flex flex-column flex-md-row align-items-md-center w-100 me-3">
-          <div class="me-3 w-md-50">
-            <div class="d-flex gap-3 mb-2">
-              <div class="subject-inputs-label d-flex align-items-center">
-                <span class="d-none d-lg-inline">Name</span>
-                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name des Fachs"><i class="fa-solid fa-circle-info"></i></a>
-              </div>
-              <div class="d-inline-block">
+        <div class="d-flex flex-column w-100 me-3">
+          <div class="me-3">
+            <div class="d-flex align-items-center gap-3 mb-2">
+              <b>Fach</b>
+              <label for="subject-name-long-input-${uuid}">Name</label>
+              <div class="d-inline-block w-100">
                 <input class="form-control form-control-sm subject-name-long-input"
-                  type="text" placeholder="Fachname (lang)" data-id="">
+                  type="text" placeholder="Fachname (lang)" data-id="" id="subject-name-long-input-${uuid}">
                 <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
               </div>
-              <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input"
-                type="text" placeholder="kurz" data-id="">
+              <label for="subject-name-short-input-${uuid}">Abkürzung</label>
+              <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input w-25"
+                type="text" placeholder="kurz" data-id="" id="subject-name-short-input-${uuid}">
             </div>
             <div class="d-flex gap-3 ${dsbActivated ? "mb-2" : ""}">
-              <div class="subject-inputs-label d-flex align-items-center">
-                <span class="d-none d-lg-inline">Lehrkraft</span>
-                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Name der Lehrkraft"><i class="fa-solid fa-circle-info"></i></a>
-              </div>
-              <div class="d-inline-block">
-                <select class="form-control form-control-sm subject-teacher-gender-input" data-id="">
+              <b>Lehrkraft</b>
+              <label for="subject-teacher-gender-input-${uuid}">Anrede</label>
+              <div class="d-inline-block w-50">
+                <select class="form-control form-control-sm subject-teacher-gender-input" data-id="" id="subject-teacher-gender-input-${uuid}">
                   <option value="d" selected>-</option>
                   <option value="w">Frau</option>
                   <option value="m">Herr</option>
                 </select>
               </div>
-              <div class="d-inline-block">
+              <label for="subject-teacher-long-input-${uuid}">Anrede</label>
+              <div class="d-inline-block w-100">
                 <input class="form-control form-control-sm h-fit-content subject-teacher-long-input"
-                  type="text" placeholder="Lehrkraftname (lang)" data-id="">
+                  type="text" placeholder="Lehrkraftname (lang)" data-id="" id="subject-teacher-long-input-${uuid}">
                 <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
               </div>
-              <input class="form-control form-control-sm h-fit-content subject-teacher-short-input"
-                type="text" placeholder="kurz" data-id="">
+              <label for="subject-teacher-short-input-${uuid}">Kürzel</label>
+              <input class="form-control form-control-sm h-fit-content subject-teacher-short-input w-100"
+                type="text" placeholder="kurz" data-id="" id="subject-teacher-short-input-${uuid}">
             </div>
             <div class="d-flex gap-3 ${dsbActivated ? "" : "d-none"}">
-              <div class="subject-inputs-label d-flex align-items-center">
-                <span class="d-none d-lg-inline">Vertretung</span>
-                <a class="d-lg-none" data-bs-toggle="tooltip" data-bs-title="Vertretungsoptionen"><i class="fa-solid fa-circle-info"></i></a>
-              </div>
+              <b>Vertretungen</b>
+              <label for="subject-name-substitution-input-${uuid}">Fachname</label>
               <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id=""
-                type="text" placeholder="Fachname (Vertretung)">
+                type="text" placeholder="Fachname (Vertretung)" id="subject-name-substitution-input-${uuid}">
+              <label for="subject-teacher-substitution-input-${uuid}">Lehrkraftname</label>
               <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id=""
-                type="text" placeholder="Lehrkraftname (Vertretung)">
+                type="text" placeholder="Lehrkraftname (Vertretung)" id="subject-teacher-substitution-input-${uuid}">
             </div>
           </div>
-          <div class="w-md-50">
-            <span class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</span>
+          <div>
+            <div class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</div>
           </div>
         </div
         <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end new-subject-delete" data-id="">
-            <i class="fa-solid fa-trash"></i>
+          <button class="btn btn-sm btn-sm-square btn-danger float-end new-subject-delete" data-id="" aria-label="Fach entfernen">
+            <i class="fa-solid fa-trash" aria-hidden="true"></i>
           </button>
         </div>
       </div>`;
@@ -2156,7 +2213,7 @@ $("#new-subject").on("click", () => {
     .on("focusout", function () {
       if ($(this).val()?.toString().trim() === "") {
         $(this).addClass("is-invalid");
-        $("#subjects-save").addClass("disabled");
+        $("#subjects-save").prop("disabled", true);
       }
     });
 
@@ -2230,7 +2287,7 @@ async function saveSubjects(): Promise<void> {
       subjectData.reload();
       updateSubjectList();
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
-      $("#subjects-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
+      $("#subjects-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
         $("#subjects-save").text("Speichern").prop("disabled", false);
       }, 1000);
@@ -2339,7 +2396,7 @@ $("#timetable-save").on("click", async () => {
       lessonData.reload();
       updateTimetable();
       $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none");
-      $("#timetable-save").html('<i class="fa-solid fa-circle-check"></i>').prop("disabled", true);
+      $("#timetable-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
         $("#timetable-save").text("Speichern").prop("disabled", false);
       }, 1000);

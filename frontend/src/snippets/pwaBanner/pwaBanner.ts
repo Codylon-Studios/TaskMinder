@@ -12,7 +12,7 @@ $(() => {
     $("body, .navbar").css({ marginTop: "80px" });
     $(".pwa-banner-close").on("click", () => {
       $(".pwa-banner").removeClass("d-flex").addClass("d-none");
-      $("body, .navbar").css({ marginTop: "0px" });
+      $("body, .navbar").css({ marginTop: "0" });
       localStorage.setItem("showPwaBanner", "false");
     });
   }

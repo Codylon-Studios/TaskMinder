@@ -1,33 +1,27 @@
 <template id="color-picker-template">
-  <div class="color-picker-popup">
-    <div class="color-picker-hsl-wrapper">
+  <div class="color-picker-popup text-body">
+    <div class="small mb-1">Farbauswahl:</div>
+    <div class="color-picker-hsv-wrapper">
       <div class="color-picker-saturation-value">
-        <div class="color-picker-marker-saturation-value"></div>
+        <button aria-label="Bewegbare Auswahl der Sättigung und des Farbwerts" class="color-picker-marker-saturation-value"></button>
       </div>
       <div class="color-picker-hue">
-        <div class="color-picker-marker-hue"></div>
+        <button aria-label="Bewegbare Auswahl des Farbtons" class="color-picker-marker-hue"></button>
       </div>
     </div>
     <div class="color-picker-hex-wrapper">
-      <input class="form-control form-control-sm color-picker-hex" placeholder="#123abc" type="text" />
-      <div class="invalid-feedback">Ungültige Hex-Farbe!</div>
+      <label>
+        <div class="small mb-1">Hexfarbe:</div>
+        <input class="form-control form-control-sm color-picker-hex" placeholder="#123abc" type="text" />
+        <div class="invalid-feedback">Ungültige Hex-Farbe!</div>
+      </label>
     </div>
-    <div class="d-flex flex-row">
-      <div class="color-picker-option" data-color="#ffee33"></div>
-      <div class="color-picker-option" data-color="#ff9955"></div>
-      <div class="color-picker-option" data-color="#ff4433"></div>
-      <div class="color-picker-option" data-color="#ff55aa"></div>
-      <div class="color-picker-option" data-color="#9955ff"></div>
+    <div class="small mb-1">Farbvorschläge:</div>
+    <div class="d-flex flex-wrap color-picker-suggestions"></div>
+    <div class="color-picker-auto-option-wrapper d-none">
+      <button class="color-picker-option color-picker-auto-option btn-tertiary d-flex align-items-center" data-color="auto">Automatisch</button>
     </div>
-    <div class="d-flex flex-row">
-      <div class="color-picker-option" data-color="#5599ff"></div>
-      <div class="color-picker-option" data-color="#44ddee"></div>
-      <div class="color-picker-option" data-color="#44dd33"></div>
-      <div class="color-picker-option" data-color="#449933"></div>
-      <div class="color-picker-option" data-color="#888888"></div>
-    </div>
-    <div class="color-picker-auto-option-wrapper d-none flex-row">
-      <div class="color-picker-option color-picker-auto-option btn-tertiary" data-color="Automatisch">Automatisch</div>
-    </div>
+    <div class="small mb-1">Gespeicherte Farben:</div>
+    <div class="d-flex flex-wrap align-items-center color-picker-saved"></div>
   </div>
 </template>
