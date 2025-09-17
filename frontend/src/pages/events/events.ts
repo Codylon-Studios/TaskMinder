@@ -55,9 +55,21 @@ async function updateEventList(): Promise<void> {
     const description = event.description;
     const startDate = msToDisplayDate(event.startDate);
     const lesson = event.lesson;
-    const endDate = event.endDate ? msToDisplayDate(event.endDate) : null;
 
     const editOptionsDisplay = editEnabled ? "" : "d-none";
+    const timeSpan = $("<span></span>");
+    if (event.endDate !== null) {
+      const endDate = msToDisplayDate(event.endDate);
+      if (isSameDay(new Date(parseInt(event.startDate)), new Date(parseInt(event.endDate)))) {
+        timeSpan.append("<b>Ganztägig</b> ", startDate);
+      }
+      else {
+        timeSpan.append(startDate, " - ", endDate);
+      }
+    }
+    else if (lesson !== null) {
+      timeSpan.append(startDate, ` <b>(${$.escapeHtml(lesson)}. Stunde)</b>`);
+    }
     // The template for an event with edit options
     const template = $(`
       <div class="col p-2">
@@ -67,7 +79,7 @@ async function updateEventList(): Promise<void> {
               <div style="min-width: 0;">
                 <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${$.formatHtml(name)}</span>
                 <br>
-                <span>${startDate}${endDate ? ` - ${endDate}` : ""}<b>${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b></span>
+                <span>${timeSpan.html()}</span>
               </div>
               <div>
                 <div class="d-flex flex-nowrap">

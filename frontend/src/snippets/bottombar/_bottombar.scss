@@ -1,5 +1,5 @@
 .bottombar {
-  border: 0 solid rgba(0, 0, 0, 0.25);
+  border: 0 solid rgba(var(--bs-body-color-rgb), .2);
   border-top-width: 0.5px;
 }
 

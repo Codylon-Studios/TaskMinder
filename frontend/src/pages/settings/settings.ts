@@ -435,7 +435,7 @@ async function updateSubjectList(): Promise<void> {
                   <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
                 </div>
                 <label for="subject-name-short-input-${subject.subjectId}">Abkürzung</label>
-                <input class="form-control form-control-sm d-inline-block subject-name-short-input" type="text"
+                <input class="form-control form-control-sm d-inline-block subject-name-short-input w-25" type="text"
                   id="subject-name-short-input-${subject.subjectId}" value="${subjectNameShort}" placeholder="${subjectNameShort}"
                   data-id="${subjectId}" ${isDisabled}>
               </div>
@@ -2161,7 +2161,7 @@ $("#new-subject").on("click", () => {
                 <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
               </div>
               <label for="subject-name-short-input-${uuid}">Abkürzung</label>
-              <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input"
+              <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input w-25"
                 type="text" placeholder="kurz" data-id="" id="subject-name-short-input-${uuid}">
             </div>
             <div class="d-flex gap-3 ${dsbActivated ? "mb-2" : ""}">

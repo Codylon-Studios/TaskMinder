@@ -92,6 +92,10 @@ function replaceColorPickers(): void {
 
     const popup = $($("#color-picker-template").html());
 
+    popup.find(".color-picker-suggestions").html(suggestedColorsHtml);
+    popup.find(".color-picker-saved").html(savedColorsHtml);
+    popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(startColor));
+
     popup.find(`.color-picker-option[data-color="${$.formatHtml(startColor)}"]`).addClass("selected");
     popup.find(".color-picker-hex").val(startColor === "auto" ? "Automatisch" : startColor);
 
@@ -114,9 +118,12 @@ function replaceColorPickers(): void {
       }
 
       function getOptimalYPosition(): "above" | "below" {
+        function height($el: JQuery<HTMLElement>): number {
+          return $el.outerHeight() ?? 0;
+        }
         return (
           // Not enough space below
-          yBelow + offset.top + (popup.outerHeight() ?? 0) - ($(window).scrollTop() ?? 0) > ($(window).height() ?? 0) &&
+          yBelow + offset.top + height(popup) - window.scrollY > window.innerHeight - height($(".bottombar")) &&
           // Enough space above
           yAbove + offset.top - ($(window).scrollTop() ?? 0) >= 0
         ) ? "above" : "below";
@@ -139,13 +146,13 @@ function replaceColorPickers(): void {
         })
         .toggle();
 
-      setHslSelection(input.val() as string);
+      setHsvSelection(input.val() as string);
     });
 
-    function setHslSelection(hexColor: string): void {
+    function setHsvSelection(hexColor: string): void {
       if (hexColor === "auto") return;
       const hsvColor = rgbToHsv(hexToRgb(hexColor));
-      selectedHslColor = hsvColor;
+      selectedHsvColor = hsvColor;
       markerHue.css({
         top: Math.round((hsvColor.hue / 360) * (hueContainer.outerHeight() ?? 0))
       });
@@ -162,7 +169,7 @@ function replaceColorPickers(): void {
       });
     }
 
-    let selectedHslColor = rgbToHsv(hexToRgb(startColor));
+    let selectedHsvColor = rgbToHsv(hexToRgb(startColor));
 
     let suppressClick = false;
 
@@ -186,15 +193,16 @@ function replaceColorPickers(): void {
 
       markerSaturationValue.css({ left: newX, top: newY });
 
-      selectedHslColor.saturation = newX / containerWidth;
-      selectedHslColor.value = 1 - newY / containerHeight;
+      selectedHsvColor.saturation = newX / containerWidth;
+      selectedHsvColor.value = 1 - newY / containerHeight;
 
-      const hexColor = rgbToHex(hsvToRgb(selectedHslColor));
+      const hexColor = rgbToHex(hsvToRgb(selectedHsvColor));
       popup.find(".color-picker-option").removeClass("selected");
       input.val(hexColor).trigger("change");
       trigger.css("--selected-color", hexToCSS(hexColor));
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
       popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
+      popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(hexColor));
     }
 
     saturationValueContainer
@@ -271,9 +279,9 @@ function replaceColorPickers(): void {
 
       markerHue.css({ top: newY });
 
-      selectedHslColor.hue = (newY / containerHeight) * 360;
+      selectedHsvColor.hue = (newY / containerHeight) * 360;
 
-      const hue = selectedHslColor.hue;
+      const hue = selectedHsvColor.hue;
       const color = `hsl(${hue}, 100%, 50%)`;
 
       saturationValueContainer.css({
@@ -283,12 +291,13 @@ function replaceColorPickers(): void {
         linear-gradient(${color} 0%, ${color} 100%)`
       });
 
-      const hexColor = rgbToHex(hsvToRgb(selectedHslColor));
+      const hexColor = rgbToHex(hsvToRgb(selectedHsvColor));
       popup.find(".color-picker-option").removeClass("selected");
       input.val(hexColor).trigger("change");
       trigger.css("--selected-color", hexToCSS(hexColor));
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
       popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
+      popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(hexColor));
     }
 
     hueContainer
@@ -357,22 +366,50 @@ function replaceColorPickers(): void {
         popup.find(".color-picker-option").removeClass("selected");
         trigger.css("--selected-color", hexToCSS(color));
         input.val(color).trigger("change");
-        popup.find(`.color-picker-option[data-color="${$.formatHtml(color)}"]`).addClass("selected");
-        setHslSelection(color);
+        popup.find(`.color-picker-option[data-color="${color}"]`).addClass("selected");
+        setHsvSelection(color);
+        popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(color));
       }
       else {
         $(this).addClass("is-invalid");
       }
     });
 
-    popup.find(".color-picker-option").on("click", function () {
+    popup.on("click", ".color-picker-option", function () {
       const color = $(this).data("color");
       popup.find(".color-picker-option").removeClass("selected");
-      $(this).addClass("selected");
+      popup.find(`.color-picker-option[data-color="${color}"]`).addClass("selected");
       input.val(color).trigger("change");
       trigger.css("--selected-color", hexToCSS(color));
       popup.find(".color-picker-hex").val(color === "auto" ? "Automatisch" : color).removeClass("is-invalid");
-      setHslSelection(color);
+      setHsvSelection(color);
+      popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(color));
+    });
+
+    $(popup).on("click", ".color-picker-save", function (ev) {
+      const color = input.val()?.toString() ?? "auto";
+      if (color === "auto") return;
+      if (savedColors.includes(color)) {
+        savedColors.splice(savedColors.indexOf(color), 1);
+      }
+      else {
+        savedColors.push(color);
+      }
+      localStorage.setItem("savedColors", JSON.stringify(savedColors));
+      savedColorsHtml = `
+        <button class="btn btn-tertiary color-picker-save" aria-label="Speichern">
+          <i class="fas ${popup.find(`.color-picker-saved [data-color="${input.val()}"]`).length > 0 ? "far" : ""} fa-bookmark" aria-hidden="true">
+          </i>
+        </button>` + savedColors.map(c =>`
+          <button class="color-picker-option fa-solid" data-color="${c}" style="background:${c}" aria-label="${c}"></button>
+        `).join("");
+      $(".color-picker-saved").html(savedColorsHtml);
+      $(".color-picker").each(function () {
+        $(this).next()
+          .find(`[data-color="${$(this).val()}"]`).addClass("selected")
+          .find(".color-picker-save i").toggleClass("far", !savedColors.includes($(this).val()?.toString() ?? ""));
+      });
+      ev.preventDefault();
     });
 
     popup.on("click", ev => {
@@ -389,6 +426,30 @@ function replaceColorPickers(): void {
     });
   });
 }
+
+const suggestedColors = [
+  {color: "#ffee33", label: "Gelb"},
+  {color: "#ff9955", label: "Orange"},
+  {color: "#ff4433", label: "Rot"},
+  {color: "#ff55aa", label: "Pink"},
+  {color: "#9955ff", label: "Lila"},
+  {color: "#5599ff", label: "Blau"},
+  {color: "#44ddee", label: "Hellblau"},
+  {color: "#44dd33", label: "Hellgrün"},
+  {color: "#449933", label: "Grün"},
+  {color: "#888888", label: "Grau"}
+];
+const suggestedColorsHtml = suggestedColors.map(o =>
+  `<button class="color-picker-option fa-solid" data-color="${o.color}" aria-label="${o.label}"></button>`
+).join("");
+
+const savedColors: string[] = JSON.parse(localStorage.getItem("savedColors") ?? "[]") ?? [];
+let savedColorsHtml = `
+  <button class="btn btn-tertiary color-picker-save" aria-label="Speichern">
+    <i class="fas far fa-bookmark" aria-hidden="true"></i>
+  </button>` + savedColors.map(c =>`
+    <button class="color-picker-option fa-solid" data-color="${c}" aria-label="${c}" style="background:${c}"></button>
+  `).join("");
 
 $(() => {
   new MutationObserver(mutationsList => {

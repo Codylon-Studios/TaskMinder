@@ -213,7 +213,7 @@ async function checkHomework(homeworkId: number): Promise<void> {
 
     // Post the request
     $.ajax({
-      url: "/homework/check",
+      url: "/homework/check_homework",
       type: "POST",
       data: data,
       headers: {
@@ -430,12 +430,18 @@ async function updateEventList(): Promise<void> {
     const description = event.description;
     const startDate = msToDisplayDate(event.startDate);
     const lesson = event.lesson;
-    let endDate;
-    if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate);
+    const timeSpan = $("<span></span>");
+    if (event.endDate !== null) {
+      const endDate = msToDisplayDate(event.endDate);
+      if (isSameDay(new Date(parseInt(event.startDate)), new Date(parseInt(event.endDate)))) {
+        timeSpan.append("<b>Ganztägig</b> ", startDate);
+      }
+      else {
+        timeSpan.append(startDate, " - ", endDate);
+      }
     }
-    else {
-      endDate = null;
+    else if (lesson !== null) {
+      timeSpan.append(startDate, ` <b>(${$.escapeHtml(lesson)}. Stunde)</b>`);
     }
 
     // The template for an event
@@ -444,7 +450,7 @@ async function updateEventList(): Promise<void> {
           <div class="card-body p-2">
             <div class="d-flex flex-column">
               <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
-              <span>${startDate}${endDate ? ` - ${endDate}` : ""}<b>${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b></span>
+              <span>${timeSpan.html()}</span>
               <span class="event-description"></span>
             </div>
           </div>
@@ -885,7 +891,7 @@ async function updateTimetable(): Promise<void> {
 
     await showEvents();
 
-    const lastLessLesson = $("#timetable-less").find(".card:last()");
+    const lastLessLesson = $("#timetable-less").find(".card").last();
     if (lastLessLesson.length > 0) {
       const lastLessonHtml = lastLessLesson[0].outerHTML.replace(/\s+/g, "");
       const thisLessonHtml = thisLessLesson[0].outerHTML.replace(/\s+/g, "");
@@ -923,6 +929,10 @@ async function updateTimetable(): Promise<void> {
       $("#timetable-more").append(thisMoreLesson);
     }
     addedDescriptionTemplates.trigger("addedToDom");
+  }
+
+  if ($("#timetable-less").html() === "") {
+    $("#timetable-less, #timetable-more").html("<div class=\"text-secondary text-center\">Kein Stundenplan für diesen Tag.</div>");
   }
 
   updateTimetableProgressBar();

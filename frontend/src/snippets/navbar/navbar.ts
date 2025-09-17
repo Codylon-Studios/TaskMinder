@@ -312,9 +312,6 @@ $(() => {
   });
 
   $(".login-register-username").on("change", function () {
-    // Sync multiple instances of login possibilites
-    $(".login-register-username").val($(this).val() ?? "");
-
     if (!checkUsername($(".login-register-username").val()?.toString() ?? "")) {
       $(".login-register-next-button").prop("disabled", true);
       $(".login-register-error-invalid-username").removeClass("d-none").addClass("d-flex");
@@ -323,6 +320,9 @@ $(() => {
 
   // Check login password
   $(".login-password").on("input", function () {
+    // Sync multiple instances of login possibilites
+    $(".login-password").val($(this).val() ?? "");
+
     $(".login-error-invalid-password").addClass("d-none").removeClass("d-flex");
     $(".login-button").prop("disabled", false);
   });

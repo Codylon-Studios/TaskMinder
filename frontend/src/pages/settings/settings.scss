@@ -6,12 +6,12 @@
 }
 
 .display-toggle {
-  @extend .btn,
-    .btn-semivisible,
-    .btn-sm-square,
-    .d-inline-flex,
-    .justify-content-center,
-    .align-items-center;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   span {
     transition: transform 0.2s ease;
   }
@@ -35,56 +35,16 @@
 .event-type-name-new-input,
 .subject-name-long-input,
 .subject-name-long-new-input {
-  @extend .pe-2;
+  padding-right: 0.5rem;
 }
 
 .event-type-color-input + .color-picker-trigger {
-  @extend .me-3;
-}
-
-.subject-inputs-label {
-  @extend .align-items-center;
-  width: 5%;
-
-  @include media-breakpoint-up(lg) {
-    width: 20% !important;
-  }
-
-  & a {
-    @extend .text-secondary;
-  }
-}
-
-div:has(> .subject-name-long-input) {
-  width: 50%;
-}
-
-.subject-name-short-input {
-  width: 25%;
-}
-
-div:has(> .subject-teacher-gender-input) {
-  width: 15%;
-}
-
-div:has(> .subject-teacher-long-input) {
-  width: 31.5%;
-}
-
-.subject-teacher-short-input {
-  width: 25%;
-}
-
-.subject-name-substitution-input {
-  width: 37.5%;
-}
-
-.subject-teacher-substitution-input {
-  width: 37.5%;
+  margin-right: 1rem;
 }
 
 .subject-changed span {
-  @extend .text-secondary, .fw-normal;
+  color: var(--bs-secondary);
+  font-weight: 400;
 }
 
 .subject-changed span:not(.d-none) {

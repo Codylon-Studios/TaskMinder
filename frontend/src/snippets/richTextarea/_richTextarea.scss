@@ -10,7 +10,6 @@
 }
 
 .rich-textarea-input {
-  @extend .form-control;
   overflow-y: auto;
   white-space: pre-wrap;
   word-wrap: break-word;
