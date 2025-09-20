@@ -3,7 +3,7 @@ import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } fr
 import socketIO from "../config/socket";
 import sass from "sass";
 
-import prisma from "../config/prisma";
+import { default as prisma } from "../config/prisma";
 import {
   isValidColor,
   isValidTeamId,
@@ -59,7 +59,7 @@ export const eventService = {
   ) {
     const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    isValidTeamId(teamId);
+    isValidTeamId(teamId, session);
     try {
       await prisma.event.create({
         data: {
@@ -110,7 +110,7 @@ export const eventService = {
   ) {
     const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    isValidTeamId(teamId);
+    isValidTeamId(teamId, session);
     try {
       await prisma.event.update({
         where: { 

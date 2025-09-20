@@ -1,6 +1,6 @@
 import { RequestError } from "../@types/requestError";
 import { Session, SessionData } from "express-session";
-import prisma from "../config/prisma";
+import { default as prisma } from "../config/prisma";
 import { BigIntreplacer } from "../utils/validateFunctions";
 import { sessionPool } from "../config/pg";
 import logger from "../utils/logger";

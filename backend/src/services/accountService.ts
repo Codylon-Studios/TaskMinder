@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import prisma from "../config/prisma";
+import { default as prisma } from "../config/prisma";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import { redisClient } from "../config/redis";

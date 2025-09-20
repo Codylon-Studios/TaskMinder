@@ -1,4 +1,4 @@
-name: "CI test for main"
+name: "Testing for main"
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         run: bun install
-
+        
       - name: Rename example to real html file for testing
         run: |
           if [ -f frontend/src/snippets/personalData/personalData.html.example ]; then
@@ -37,16 +37,5 @@ jobs:
       - name: Build project
         run: bun run build
 
-      - name: Write secrets to files for Docker Compose
-        run: |
-          mkdir -p docker_secrets
-          echo "${{ secrets.DB_HOST }}" > docker_secrets/db_host.txt
-          echo "${{ secrets.DB_NAME }}" > docker_secrets/db_name.txt
-          echo "${{ secrets.DB_PASSWORD }}" > docker_secrets/db_password.txt
-          echo "${{ secrets.DB_USER }}" > docker_secrets/db_user.txt
-          echo "${{ secrets.REDIS_PORT }}" > docker_secrets/redis_port.txt
-          echo "${{ secrets.SESSION_SECRET }}" > docker_secrets/session_secret.txt
-          echo "${{ secrets.UNSAFE_DEACTIVATE_CSP }}" > docker_secrets/unsafe_deactivate_csp.txt
-
-      - name: Build Docker Compose
-        run: docker compose build
+      - name: Run tests
+        run: bun run test

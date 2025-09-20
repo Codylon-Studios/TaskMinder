@@ -956,11 +956,12 @@ $(async () => {
   });
 });
 
-const qrCode = new QRCode( "show-qrcode-modal-qrcode", {
+const qrCode = new QRCode("show-qrcode-modal-qrcode", {
   text: location.host,
   width: 300,
   height: 300
 });
+$("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten")
 
 $(".cancel-btn").hide();
 
@@ -998,6 +999,7 @@ user.on("change", async () => {
 
         qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
         $("#show-qrcode-modal-title b").text(res.className);
+        $("#class-settings-name").text(res.className);
       })
       .fail(() => {
         $("#class-code").val("Fehler beim Laden");

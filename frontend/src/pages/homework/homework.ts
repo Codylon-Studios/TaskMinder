@@ -177,6 +177,9 @@ async function updateSubjectList(): Promise<void> {
     $("#edit-homework-subject").append(templateFormSelect);
   }));
 
+  $("#add-homework-subject").append('<option value="-1">Sonstiges</option>');
+  $("#edit-homework-subject").append('<option value="-1">Sonstiges</option>');
+
   // If any subject filter gets changed, update the shown homework
   $(".filter-subject-option").on("change", function () {
     updateHomeworkList();
@@ -248,18 +251,17 @@ async function addHomework(): Promise<void> {
       .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
     
     if (currentLesson.teamId !== -1) {
-      console.log($("#add-homework-team"), currentLesson.teamId);
       $("#add-homework-team").val(currentLesson.teamId).addClass("autocomplete")
         .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
     }
     else {
-      $("#add-homework-team").val("-1");
+      $("#add-homework-team").val("-1").removeClass("autocomplete");
     }
   }
   else {
-    $("#add-homework-subject").val("");
-    $("#add-homework-date-submission").val("");
-    $("#add-homework-team").val("-1");
+    $("#add-homework-subject").val("").removeClass("autocomplete");
+    $("#add-homework-date-submission").val("").removeClass("autocomplete");
+    $("#add-homework-team").val("-1").removeClass("autocomplete");
   }
   $("#add-homework-content").val("");
   $("#add-homework-content").trigger("change");
@@ -697,8 +699,13 @@ $(function () {
     const currentLessonData = await lessonData();
     const now = new Date();
 
+    const selectedSubjectId = $(this).val()?.toString()
+    if (selectedSubjectId == "-1" || selectedSubjectId == undefined) {
+      return
+    }
+
     // The next lessons of the new selected subject
-    const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === parseInt($(this).val()?.toString() ?? "-1"));
+    const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === parseInt(selectedSubjectId));
 
     const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
     const minDiff = nextLessonsWeekdays.reduce((previous, current) => {

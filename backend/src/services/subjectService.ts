@@ -1,7 +1,7 @@
 import { RequestError } from "../@types/requestError";
 import logger from "../utils/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
-import prisma from "../config/prisma";
+import { default as prisma } from "../config/prisma";
 import { isValidGender, updateCacheData } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { setSubjectsTypeBody } from "../schemas/subjectSchema";
