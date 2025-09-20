@@ -13,8 +13,8 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    isValidSubjectId(subjectId, session);
-    isValidTeamId(teamId, session);
+    await isValidSubjectId(subjectId, session);
+    await isValidTeamId(teamId, session);
     try {
       await prisma.homework.create({
         data: {
@@ -96,12 +96,23 @@ const homeworkService = {
       };
       throw err;
     }
-    await prisma.homework.delete({
-      where: {
-        homeworkId: homeworkId,
-        classId: parseInt(session.classId!)
-      }
-    });
+    try {
+      await prisma.homework.delete({
+        where: {
+          homeworkId: homeworkId,
+          classId: parseInt(session.classId!)
+        }
+      });
+    }
+    catch {
+      const err: RequestError = {
+        name: "Not found",
+        status: 404,
+        message: "No homework exists with this ID",
+        expected: true
+      };
+      throw err;
+    }
     const data = await prisma.homework.findMany({
       where: {
         classId: parseInt(session.classId!)
@@ -121,8 +132,8 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    isValidSubjectId(subjectId, session);
-    isValidTeamId(teamId, session);
+    await isValidSubjectId(subjectId, session);
+    await isValidTeamId(teamId, session);
     try {
       await prisma.homework.update({
         where: { homeworkId: homeworkId },
