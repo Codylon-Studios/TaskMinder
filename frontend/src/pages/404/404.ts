@@ -1,3 +1,4 @@
+import "./404.scss";
 import { reloadAllFn } from "../../global/global.js";
 
 $("#back-link").on("click", () => {

@@ -1,1 +1,7 @@
 @use "../../global/global" as *;
+
+// Ensure CSS file is generated for this page
+.events-page {
+  // This rule ensures Vite generates a CSS file
+  display: block;
+}

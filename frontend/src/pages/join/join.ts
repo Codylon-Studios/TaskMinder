@@ -1,3 +1,4 @@
+import "./join.scss";
 import { csrfToken, reloadAllFn } from "../../global/global.js";
 import { $navbarToasts, authUser, resetLoginRegister, user } from "../../snippets/navbar/navbar.js";
 
