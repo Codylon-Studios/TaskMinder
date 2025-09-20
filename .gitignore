@@ -1,5 +1,6 @@
 # Ignore redis binary dump (dump.rdb) files
 *.rdb
+useful.md
 # Ignore built /site after mkdocs build
 /site
 # Ignore database backups
