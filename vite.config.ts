@@ -5,7 +5,7 @@ import { DevMiddleware } from "./frontend/src/build/devMiddleware";
 import { BuildHooks } from "./frontend/src/build/buildHooks";
 
 // Function to discover all HTML and TypeScript files in the pages directory and snippets
-function getPageEntries() {
+function getPageEntries(): Record<string, string> {
   const pagesDir = resolve(__dirname, "frontend/src/pages");
   const snippetsDir = resolve(__dirname, "frontend/src/snippets");
   const globalDir = resolve(__dirname, "frontend/src/global");
@@ -14,6 +14,7 @@ function getPageEntries() {
   try {
     // Add global.ts entry
     const globalTsFile = resolve(globalDir, "global.ts");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     if (require("fs").existsSync(globalTsFile)) {
       entries["global"] = globalTsFile;
     }
@@ -44,6 +45,7 @@ function getPageEntries() {
       
       // Check if TypeScript file exists
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         if (require("fs").existsSync(tsFile)) {
           // Add TypeScript file as entry point for JS generation
           entries[`snippet-${snippetDir}`] = tsFile;
@@ -195,12 +197,6 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        // Include paths for SCSS imports
-        includePaths: [
-          resolve(__dirname, "frontend/src"),
-          resolve(__dirname, "frontend/src/global"),
-          resolve(__dirname, "frontend/src/snippets")
-        ]
       }
     }
   },

@@ -1,5 +1,4 @@
-import { io } from "socket.io-client";
-type Socket = any;
+import { io, Socket } from "socket.io-client";
 import { user } from "../snippets/navbar/navbar.js";
 
 crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` => {

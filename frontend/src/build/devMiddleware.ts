@@ -19,7 +19,7 @@ export class DevMiddleware {
     this.options = options;
   }
 
-  async setup() {
+  async setup(): Promise<void> {
     // Set up HTML processing middleware
     this.server.middlewares.use("/pages", async (req, res, next) => {
       if (req.url?.endsWith(".html")) {
@@ -126,7 +126,7 @@ export class DevMiddleware {
     await this.setupSnippetWatching();
   }
 
-  private async setupSnippetWatching() {
+  private async setupSnippetWatching(): Promise<void> {
     // Watch all snippet files
     const snippetPatterns = [
       resolve(this.options.sourceDir, "snippets/**/*.html"),
@@ -181,7 +181,7 @@ export class DevMiddleware {
     });
   }
 
-  private async buildSnippetDependencyMap() {
+  private async buildSnippetDependencyMap(): Promise<void> {
     this.snippetDependencies.clear();
 
     try {

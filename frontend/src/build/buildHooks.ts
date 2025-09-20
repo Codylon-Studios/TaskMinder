@@ -27,7 +27,7 @@ export class BuildHooks {
     this.processor = new HtmlProcessor(context);
   }
 
-  async processAllHtmlFiles() {
+  async processAllHtmlFiles(): Promise<void> {
     console.log("Processing HTML files for build...");
     
     try {
@@ -47,7 +47,7 @@ export class BuildHooks {
     }
   }
 
-  private async processHtmlFile(htmlFilePath: string) {
+  private async processHtmlFile(htmlFilePath: string): Promise<void> {
     try {
       const content = await readFile(htmlFilePath, "utf8");
       const processedHtml = await this.processor.processHtml(htmlFilePath, content);
@@ -70,7 +70,7 @@ export class BuildHooks {
     }
   }
 
-  async copyVendorAssets() {
+  async copyVendorAssets(): Promise<void> {
     console.log("Copying vendor assets...");
     
     try {
@@ -98,7 +98,7 @@ export class BuildHooks {
     }
   }
 
-  async copyStaticAssets() {
+  async copyStaticAssets(): Promise<void> {
     console.log("Copying static assets...");
     
     try {
@@ -128,7 +128,7 @@ export class BuildHooks {
     }
   }
 
-  async copyAssets() {
+  async copyAssets(): Promise<void> {
     console.log("Copying assets...");
     
     try {
@@ -166,7 +166,7 @@ export class BuildHooks {
     }
   }
 
-  async updateManifestAssetReferences() {
+  async updateManifestAssetReferences(): Promise<void> {
     console.log("Updating manifest asset references...");
     
     try {
@@ -185,7 +185,7 @@ export class BuildHooks {
           
           // Update all icon references
           if (manifest.icons && Array.isArray(manifest.icons)) {
-            manifest.icons = manifest.icons.map((icon: any) => {
+            manifest.icons = manifest.icons.map((icon: { src: string; sizes?: string; type?: string }) => {
               if (icon.src === "/assets/app-icon.png") {
                 return { ...icon, src: `/assets/${hashedIconFile}` };
               }

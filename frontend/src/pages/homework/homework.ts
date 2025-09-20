@@ -699,9 +699,9 @@ $(function () {
     const currentLessonData = await lessonData();
     const now = new Date();
 
-    const selectedSubjectId = $(this).val()?.toString()
-    if (selectedSubjectId == "-1" || selectedSubjectId == undefined) {
-      return
+    const selectedSubjectId = $(this).val()?.toString();
+    if (selectedSubjectId === "-1" || selectedSubjectId === undefined) {
+      return;
     }
 
     // The next lessons of the new selected subject
