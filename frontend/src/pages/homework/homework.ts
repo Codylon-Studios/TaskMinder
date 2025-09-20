@@ -1,3 +1,4 @@
+import "./homework.scss";
 import {
   dateToMs,
   getHomeworkCheckStatus,

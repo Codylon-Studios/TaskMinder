@@ -1,3 +1,4 @@
+import "./about.scss";
 import { reloadAllFn } from "../../global/global.js";
 
 class LicenseDisplay extends HTMLElement {

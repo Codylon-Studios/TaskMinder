@@ -1,3 +1,4 @@
+import "./feedback.scss";
 import { csrfToken, reloadAllFn } from "../../global/global.js";
 import { $navbarToasts } from "../../snippets/navbar/navbar.js";
 

@@ -1,3 +1,4 @@
+import "./settings.scss";
 import {
   colorTheme,
   EventTypeData,

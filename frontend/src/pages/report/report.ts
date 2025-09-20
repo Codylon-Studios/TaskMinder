@@ -1,3 +1,4 @@
+import "./report.scss";
 import {
   classMemberData,
   csrfToken,

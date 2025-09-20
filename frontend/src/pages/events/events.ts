@@ -1,3 +1,4 @@
+import "./events.scss";
 import {
   dateToMs,
   eventData,
