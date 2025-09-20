@@ -6,6 +6,10 @@ if (/OS (18|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
   bottombarHeight += 16;
 }
 
+const fontSize = JSON.parse(localStorage.getItem("fontSize") ?? "0") ?? 0;
+if (fontSize === 1) bottombarHeight *= 19 / 16;
+else if (fontSize === 2) bottombarHeight *= 11 / 8;
+
 if (localStorage.getItem("displayFooter") === "false") {
   $("footer").hide();
   $("body").css({

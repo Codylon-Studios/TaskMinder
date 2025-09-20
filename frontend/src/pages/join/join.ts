@@ -1,5 +1,5 @@
 import { csrfToken, reloadAllFn } from "../../global/global.js";
-import { $navbarToasts, authUser, user } from "../../snippets/navbar/navbar.js";
+import { $navbarToasts, authUser, resetLoginRegister, user } from "../../snippets/navbar/navbar.js";
 
 function checkClassName(className: string): boolean {
   return /^[\wÄÖÜäöü\s\-.]{2,50}$/.test(className);
@@ -12,21 +12,31 @@ const qrCode = new QRCode("show-qrcode-modal-qrcode", {
   width: 300,
   height: 300
 });
+$("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten")
 
 $("#show-join-class-btn").on("click", () => {
   $("#decide-action-panel").addClass("d-none");
   $("#join-class-panel").removeClass("d-none");
+  $("#join-class-class-code").val("");
+  $("#join-class-checkbox").prop("checked", false);
+  $("#join-class-btn").prop("disabled", true);
 });
 
 $("#show-login-register-btn").on("click", () => {
   $("#decide-action-panel").addClass("d-none");
   $("#login-register-panel").removeClass("d-none");
+  $(".login-register-username").val("");
+  $(".login-register-next-button").prop("disabled", true);
+  resetLoginRegister();
   $(".login-register-element").removeClass("d-none");
 });
 
 $("#show-joined-login-register-btn").on("click", () => {
   $("#decide-account-panel").addClass("d-none");
   $("#login-register-panel").removeClass("d-none");
+  $(".login-register-username").val("");
+  $(".login-register-next-button").prop("disabled", true);
+  resetLoginRegister();
   $(".login-register-element").removeClass("d-none");
 });
 
@@ -50,7 +60,7 @@ $("#create-class-continue-btn").on("click", () => {
   $("#create-class-is-test-panel").addClass("d-none");
   $("#create-class-credentials-panel").removeClass("d-none");
   $("#create-class-name").removeClass("is-invalid").val("");
-  $("#create-class-btn").addClass("disabled");
+  $("#create-class-btn").prop("disabled", true);
 });
 
 $("#create-class-credentials-back-btn").on("click", () => {
@@ -80,7 +90,7 @@ $("#login-register-back-btn").on("click", () => {
 
 user.on("change", () => {
   if (user.loggedIn && !justCreatedClass) {
-    $("#show-login-register-btn").addClass("disabled").find("i").removeClass("d-none");
+    $("#show-login-register-btn").prop("disabled", true).find("i").removeClass("d-none");
     if (user.classJoined) {
       location.href = "/main";
     }
@@ -88,7 +98,7 @@ user.on("change", () => {
       $("#decide-action-panel").removeClass("d-none");
     }
     $(".login-register-element, .login-element, .register-element").addClass("d-none");
-    $("#show-create-class-btn").removeClass("disabled").find("~ .form-text").hide();
+    $("#show-create-class-btn").prop("disabled", false).find("~ .form-text").hide();
   }
 });
 
@@ -121,6 +131,7 @@ $("#join-class-btn").on("click", async () => {
     error: xhr => {
       if (xhr.status === 404) {
         $("#error-invalid-class-code").removeClass("d-none");
+        $("#join-class-btn").prop("disabled", true);
       }
       else if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
@@ -129,21 +140,37 @@ $("#join-class-btn").on("click", async () => {
   });
 });
 
-$("#join-class-class-code").on("input", () => {
+$("#join-class-class-code").on("input", function () {
   $("#error-invalid-class-code").addClass("d-none");
+  if ($(this).val() !== "" && $("#join-class-checkbox").prop("checked")) {
+    $("#join-class-btn").prop("disabled", false);
+  }
+});
+
+$("#join-class-class-code").on("change", function () {
+  $("#join-class-btn").prop("disabled");
+  if (!($(this).val() !== "" && $("#join-class-checkbox").prop("checked") && ! $("#error-invalid-class-code").is(":visible"))) {
+    $("#join-class-btn").prop("disabled", true);
+  }
+});
+
+$("#join-class-checkbox").on("input", function () {
+  $("#join-class-btn").prop("disabled", !(
+    $("#join-class-class-code").val() !== "" && $(this).prop("checked") && ! $("#error-invalid-class-code").is(":visible")
+  ));
 });
 
 $("#create-class-name").on("change", function () {
   if (!checkClassName($(this).val()?.toString() ?? "")) {
     $("#create-class-name").addClass("is-invalid");
-    $("#create-class-btn").addClass("disabled");
+    $("#create-class-btn").prop("disabled", true);
   }
 });
 
 $("#create-class-name").on("input", function () {
   if (checkClassName($(this).val()?.toString() ?? "")) {
     $("#create-class-name").removeClass("is-invalid");
-    $("#create-class-btn").removeClass("disabled");
+    $("#create-class-btn").prop("disabled", false);
   }
 });
 
@@ -176,10 +203,12 @@ $("#create-class-btn").on("click", async () => {
         try {
           await navigator.clipboard.writeText(location.host + `/join?class_code=${classCode}`);
 
-          $("#invite-copy-link").addClass("disabled").html("<i class=\"fa-solid fa-check-circle\"></i> Einladungslink kopiert");
+          $("#invite-copy-link").prop("disabled", true)
+            .html("<i class=\"fa-solid fa-check-circle\" aria-hidden=\"true\"></i> Einladungslink kopiert");
 
           setTimeout(() => {
-            $("#invite-copy-link").removeClass("disabled").html("<i class=\"fa-solid fa-link\"></i> Einladungslink kopieren");
+            $("#invite-copy-link").prop("disabled", false)
+              .html("<i class=\"fa-solid fa-link\" aria-hidden=\"true\"></i> Einladungslink kopieren");
           }, 2000);
         }
         catch (err) {
@@ -220,6 +249,9 @@ const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get("action") === "join" || urlParams.has("class_code")) {
   $("#decide-action-panel").addClass("d-none");
   $("#join-class-panel").removeClass("d-none");
+  $("#join-class-class-code").val("");
+  $("#join-class-checkbox").prop("checked", false);
+  $("#join-class-btn").prop("disabled", true);
 }
 else if (urlParams.get("action") === "account") {
   $("#decide-action-panel").addClass("d-none");
@@ -228,7 +260,6 @@ else if (urlParams.get("action") === "account") {
 
 if (urlParams.has("class_code")) {
   $("#join-class-class-code").val(urlParams.get("class_code") ?? "");
-  $("#join-class-btn").trigger("click");
 }
 else {
   $("#join-class-class-code").val("");

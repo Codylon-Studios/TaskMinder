@@ -1,6 +1,14 @@
 import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
 import { user } from "../snippets/navbar/navbar.js";
 
+crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+    const r = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
+    const v = c === "x" ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  }) as `${string}-${string}-${string}-${string}-${string}`;
+};
+
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
 }
@@ -170,7 +178,7 @@ document.head.appendChild(themeColor);
 // DATA
 type DataAccessorEventName = "update";
 type DataAccessorEventCallback = (...args: unknown[]) => void;
-type DataAccessor<DataType> = {
+export type DataAccessor<DataType> = {
   (value?: DataType | null): Promise<DataType>;
   get(): Promise<DataType>;
   getCurrent(): DataType | null;
@@ -412,27 +420,9 @@ export const csrfToken = createDataAccessor<string>("csrfToken");
 $(async () => {
   const hash = window.location.hash;
   if (hash) {
-    const $target = $(hash);
-    if ($target?.offset() !== undefined) {
-      $("html").animate({
-        scrollTop: ($target.offset()?.top ?? 0) - 70
-      });
-    }
-  }
-
-  if (window.location.host === "codylon.de") {
-    $(".toast-container").eq(0).append($(`
-      <div id="from-codylon-toast" class="toast">
-        <div class="toast-header bg-warning text-white">
-          <b class="me-auto">Domain wurde geändert</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">
-          Unsere Domain hat von <b>codylon.de</b> zu <b>taskminder.de</b> gewechselt.
-          Bitte ändere deine Lesezeichen, Links oder so. Danke!
-        </div>
-      </div>
-    `).toast("show"));
+    setTimeout(() => {
+      document.location.href = hash;
+    }, 250);
   }
 
   $('[data-bs-toggle="tooltip"]').tooltip();
@@ -488,11 +478,20 @@ handleSmallScreenQueryChange();
 
 (async () => {
   if ((await colorTheme()) === "light") {
-    document.body.setAttribute("data-bs-theme", "light");
+    $("body").attr("data-bs-theme", "light");
   }
   else {
-    document.body.setAttribute("data-bs-theme", "dark");
+    $("body").attr("data-bs-theme", "dark");
   }
+
+  if (localStorage.getItem("fontSize") === "1") {
+    $("html").css("font-size", "19px");
+  }
+  else if (localStorage.getItem("fontSize") === "2") {
+    $("html").css("font-size", "22px");
+  }
+
+  $("body").attr("data-high-contrast", localStorage.getItem("highContrast"));
 })();
 
 if (!isSite("settings")) {

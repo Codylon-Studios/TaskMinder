@@ -1,4 +1,5 @@
 @use "svgs";
+@use "../../../node_modules/bootstrap/scss/bootstrap" as *;
 
 $btn-back-width: 1em !default;
 $btn-back-height: $btn-back-width !default;

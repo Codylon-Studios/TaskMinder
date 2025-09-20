@@ -13,8 +13,8 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    isValidSubjectId(subjectId, session);
-    isValidTeamId(teamId, session);
+    await isValidSubjectId(subjectId, session);
+    await isValidTeamId(teamId, session);
     try {
       await prisma.homework.create({
         data: {
@@ -127,8 +127,8 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    isValidSubjectId(subjectId, session);
-    isValidTeamId(teamId, session);
+    await isValidSubjectId(subjectId, session);
+    await isValidTeamId(teamId, session);
     try {
       await prisma.homework.update({
         where: { homeworkId: homeworkId, deletedAt: null },

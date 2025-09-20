@@ -1,4 +1,3 @@
-@use "sass:color";
 @use "../../global/global" as *;
 
 .days-overview-day {
@@ -9,10 +8,17 @@
   margin: 0 0.1rem;
   padding: 0.2rem 0.5rem;
   border-radius: 0.5rem;
-  transition: background-color 0.3s;
   width: 2rem;
   font-weight: 500;
-  border: 3px solid transparent !important;
+  border: .1875rem solid transparent !important;
+  background-color: transparent;
+  color: var(--bs-body-color);
+
+  &:focus-visible {
+    outline: none;
+    border: 1px solid rgb(157, 220, 228.5) !important;
+    box-shadow: 0 0 0 0.25rem rgba(59, 185, 202, 0.25);
+  }
 
   & > .weekday {
     font-size: 0.75rem;
@@ -23,32 +29,35 @@
   }
 
   &.days-overview-today span {
-    color: #dc3545 !important;
+    color: var(--bs-danger) !important;
   }
 
   &::before {
     content: "";
     height: 1.8rem;
     width: 1.8rem;
-    background: $primary;
+    background: var(--bs-primary);
     position: absolute;
     border-radius: 100%;
-    bottom: 4px;
-    transition: 0.1s ease opacity;
+    bottom: .25rem;
+    transition: 0.2s ease opacity;
+    visibility: hidden;
     opacity: 0;
   }
   
   &.days-overview-today::before {
-    background: #dc3545;
+    background: var(--bs-danger);
   }
 
   &.days-overview-selected::before {
+    visibility: visible;
     opacity: 0.3;
   }
   &.days-overview-selected:not(.days-overview-selected-no-animation)::before {
     animation: 0.3s 1 select-day;
   }
   &:not(.days-overview-selected):hover::before {
+    visibility: visible;
     opacity: 0.2;
   }
 
@@ -141,6 +150,20 @@
   }
 }
 
+[data-high-contrast="true"] {
+  .days-overview-day {
+    &::before {
+      opacity: 1 !important;
+      transition: none;
+    }
+  }
+  .days-overview-selected, .days-overview-day:hover {
+    & .date {
+      color: var(--bs-body-bg) !important;
+    }
+  }
+}
+
 .calendar-special-button {
   width: 4rem;
 }
@@ -166,7 +189,7 @@
 #calendar-week-wrapper {
   overflow: hidden;
   display: grid;
-  padding-bottom: 2rem;
+  padding: 0.25rem 0.125rem 2rem 0.125rem;
 }
 
 .calendar-week {
@@ -175,6 +198,57 @@
 
 .calendar-week-move-button {
   transform: translateY(-1rem);
+}
+
+#timetable-less, #timetable-more {
+  &:not(.timetable-today):not(.timetable-out-of-range) {
+    position: relative;
+
+    &::before {
+      content: "";
+      position: absolute;
+      background: var(--bs-primary);
+      border: .15rem solid rgba(var(--bs-primary-rgb), .5);
+      border-radius: .2rem;
+      z-index: 1;
+      background-clip: padding-box;
+
+      width: 100%;
+      height: .4rem;
+      top: var(--bar-pos);
+      left: 0;
+      transform: translateY(-.2rem);
+    }
+    .card-body {
+      z-index: 1;
+    }
+  }
+}
+
+@media (min-width: 1200px) {
+  #timetable-less::before {
+    content: none !important;
+  }
+  #timetable-less .card {
+    position: relative;
+
+    &::before {
+      content: "";
+      position: absolute;
+      background:
+        linear-gradient(to right, var(--bs-primary) var(--bar-progress), rgba(var(--bs-secondary-rgb), .6) var(--bar-progress)) content-box,
+        linear-gradient(to right, rgba(var(--bs-primary-rgb), .5) var(--bar-progress), rgba(var(--bs-secondary-rgb), .3) var(--bar-progress)) border-box;
+      border: .15rem solid transparent;
+      border-radius: .2rem;
+      z-index: 1;
+
+      width: 100%;
+      height: .4rem;
+      top: 80%;
+      left: 0;
+      transform: translateY(-.2rem);
+    }
+  }
 }
 
 #filter-homework-mode {

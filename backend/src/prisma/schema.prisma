@@ -95,7 +95,6 @@ model Homework {
   submissionDate BigInt
   teamId         Int
   deletedAt   BigInt?
-  Subjects       Subjects        @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade, onUpdate: NoAction)
   HomeworkCheck  HomeworkCheck[]
   Class          Class           @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
@@ -163,7 +162,6 @@ model Subjects {
   teacherNameShort        String
   teacherNameSubstitution String[]
   deletedAt   BigInt?
-  Homework                Homework[]
   Class                   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([classId, subjectNameLong])

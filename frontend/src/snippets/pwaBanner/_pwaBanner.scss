@@ -10,15 +10,24 @@ body {
 }
 
 .pwa-banner {
+  font-size: 16px;
   height: 80px;
   background-color: var(--pwa-banner-bg-color);
   border-bottom: 1px solid rgb(var(--pwa-banner-border-color));
+  padding: 0 16px;
 
   & .pwa-banner-close {
+    margin-right: 8px;
+    border: none;
+    background: transparent;
+    padding: 0;
+  }
+
+  & .pwa-banner-close svg {
     color: rgb(var(--pwa-banner-border-color));
     width: 10px;
     height: 10px;
-    cursor: pointer;
+    display: block;
   }
 
   & .pwa-banner-img {
@@ -27,6 +36,7 @@ body {
     border-radius: 22.5%;
     background-image: url("/assets/app-icon.png");
     background-size: cover;
+    margin-right: 16px;
 
     &::before {
       content: "";
@@ -41,7 +51,7 @@ body {
   }
 
   & div {
-    font-size: 0.75rem;
+    font-size: 0.75em;
 
     & span {
       display: inline-flex;
@@ -50,14 +60,14 @@ body {
 
     & img {
       color: #2075e0;
-      width: 1.5rem;
-      height: 1.5rem;
+      width: 2em;
+      height: 2em;
     }
 
     & svg {
       color: #2075e0;
-      width: 1.5rem;
-      height: 1.5rem;
+      width: 2em;
+      height: 2em;
     }
   }
 }
