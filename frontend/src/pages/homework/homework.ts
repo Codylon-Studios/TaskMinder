@@ -17,6 +17,7 @@ import {
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
+import "./homework.scss";
 
 async function updateHomeworkList(): Promise<void> {
   async function getFilteredData(): Promise<(HomeworkData[number] & { checked: boolean })[]> {
@@ -698,9 +699,9 @@ $(function () {
     const currentLessonData = await lessonData();
     const now = new Date();
 
-    const selectedSubjectId = $(this).val()?.toString()
-    if (selectedSubjectId == "-1" || selectedSubjectId == undefined) {
-      return
+    const selectedSubjectId = $(this).val()?.toString();
+    if (selectedSubjectId === "-1" || selectedSubjectId === undefined) {
+      return;
     }
 
     // The next lessons of the new selected subject

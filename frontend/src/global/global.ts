@@ -1,4 +1,4 @@
-import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
+import { io, Socket } from "socket.io-client";
 import { user } from "../snippets/navbar/navbar.js";
 
 crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` => {

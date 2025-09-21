@@ -1,3 +1,5 @@
+import "./_pwaBanner.scss";
+
 function isIos(): boolean {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }

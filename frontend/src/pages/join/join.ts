@@ -1,5 +1,6 @@
 import { csrfToken, reloadAllFn } from "../../global/global.js";
 import { $navbarToasts, authUser, resetLoginRegister, user } from "../../snippets/navbar/navbar.js";
+import "./join.scss";
 
 function checkClassName(className: string): boolean {
   return /^[\wÄÖÜäöü\s\-.]{2,50}$/.test(className);
@@ -12,7 +13,7 @@ const qrCode = new QRCode("show-qrcode-modal-qrcode", {
   width: 300,
   height: 300
 });
-$("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten")
+$("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten");
 
 $("#show-join-class-btn").on("click", () => {
   $("#decide-action-panel").addClass("d-none");

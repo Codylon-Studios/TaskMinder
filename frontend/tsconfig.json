@@ -11,5 +11,5 @@
     "moduleResolution": "Node",
     "allowJs": true,
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "public/vendor"],
 }

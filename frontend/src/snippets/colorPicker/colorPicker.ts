@@ -1,3 +1,5 @@
+import "./_colorPicker.scss";
+
 type ColorRGB = {
   red: number;
   green: number;

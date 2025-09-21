@@ -1,5 +1,6 @@
 import { getSite } from "../../global/global.js";
 import { user } from "../navbar/navbar.js";
+import "./_bottombar.scss";
 
 function getTouchPosition(ev: JQuery.TouchStartEvent): {x: number, y: number} {
   return {

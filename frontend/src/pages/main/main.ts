@@ -21,6 +21,7 @@ import {
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
+import "./main.scss";
 
 async function getCalendarDayHtml(date: Date, week: number, multiEventPositions: (number | null)[]): Promise<string> {
   async function applyEvents(): Promise<void> {

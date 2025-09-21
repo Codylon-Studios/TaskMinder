@@ -1,5 +1,6 @@
 import { csrfToken, reloadAllFn } from "../../global/global.js";
 import { $navbarToasts } from "../../snippets/navbar/navbar.js";
+import "./feedback.scss";
 
 $(async () => {
   reloadAllFn.set(async () => {

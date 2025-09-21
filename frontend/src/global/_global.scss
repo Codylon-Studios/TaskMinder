@@ -11,13 +11,13 @@ $danger-high-contrast: #ff6e7d;
 
 $navbar-top-offset: 4.375rem;
 
-@use '../vendor/fontawesome/scss/variables' with (
+@use '../../public/vendor/fontawesome/scss/variables' with (
   $font-path: "/vendor/fontawesome/fonts",
 );
 
-@use '../vendor/fontawesome/scss/solid' as fa-solid;
-@use '../vendor/fontawesome/scss/regular' as fa-regular;
-@use '../vendor/fontawesome/scss/brands' as fa-brands;
+@use '../../public/vendor/fontawesome/scss/solid' as fa-solid;
+@use '../../public/vendor/fontawesome/scss/regular' as fa-regular;
+@use '../../public/vendor/fontawesome/scss/brands' as fa-brands;
 
 @use "svgs";
 @use "btn-back" as *;
@@ -26,7 +26,7 @@ $navbar-top-offset: 4.375rem;
 @font-face {
   font-family: "Quicksand";
   font-display: swap;
-  src: url("/assets/fonts/Quicksand-VariableFont_wght.ttf") format("truetype");
+  src: url("../../public/assets/fonts/Quicksand-VariableFont_wght.ttf") format("truetype");
 }
 
 $custom-btn-variants: (semivisible, tertiary);

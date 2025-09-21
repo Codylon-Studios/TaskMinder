@@ -1,5 +1,6 @@
 import { deepCompare } from "../../global/global.js";
 import { rgbToHex } from "../colorPicker/colorPicker.js";
+import "./_richTextarea.scss";
 
 export function richTextToHtml(
   val: string | null,

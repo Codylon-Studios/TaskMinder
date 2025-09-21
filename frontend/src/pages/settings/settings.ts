@@ -18,6 +18,7 @@ import {
   classMemberData
 } from "../../global/global.js";
 import { $navbarToasts, authUser, user } from "../../snippets/navbar/navbar.js";
+import "./settings.scss";
 
 async function updateColorTheme(): Promise<void> {
   if ($("#color-theme-dark").prop("checked")) {
@@ -960,7 +961,7 @@ const qrCode = new QRCode("show-qrcode-modal-qrcode", {
   width: 300,
   height: 300
 });
-$("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten")
+$("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten");
 
 $(".cancel-btn").hide();
 

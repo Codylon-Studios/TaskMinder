@@ -12,6 +12,7 @@ import {
 } from "../../global/global.js";
 import { $navbarToasts } from "../../snippets/navbar/navbar.js";
 import { richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
+import "./report.scss";
 
 $(async () => {
   reloadAllFn.set(async () => {

@@ -1,3 +1,4 @@
+import "./_footer.scss";
 import { colorTheme, isSite } from "../../global/global.js";
 
 const bottombarShown = window.innerWidth < 992 && $(".bottombar").length > 0;

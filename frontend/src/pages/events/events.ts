@@ -16,6 +16,7 @@ import {
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
+import "./events.scss";
 
 async function updateEventList(): Promise<void> {
   async function getFilteredData(): Promise<EventData> {
