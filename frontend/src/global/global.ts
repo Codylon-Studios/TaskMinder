@@ -9,6 +9,31 @@ crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` =>
   }) as `${string}-${string}-${string}-${string}-${string}`;
 };
 
+(() => {
+  let colorTheme;
+  const themeColor = document.createElement("meta");
+  themeColor.name = "theme-color";
+  if (localStorage.getItem("colorTheme") === "dark") {
+    colorTheme = "dark";
+  }
+  else if (localStorage.getItem("colorTheme") === "light") {
+    colorTheme = "light";
+  }
+  else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    colorTheme = "dark";
+  }
+  else {
+    colorTheme = "light";
+  }
+  if (colorTheme === "light") {
+    themeColor.content = "#f8f9fa";
+  }
+  else {
+    document.getElementsByTagName("html")[0].style.background = "#212529";
+    themeColor.content = "#2b3035";
+  }
+})();
+
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
 }
@@ -36,10 +61,10 @@ export function msToDisplayDate(ms: number | string): string {
 
   switch (diff) {
   case -1: return `<b>gestern</b>, ${dateStr}`;
-  case 0:  return `<b>heute</b>, ${dateStr}`;
-  case 1:  return `<b>morgen</b>, ${dateStr}`;
-  case 2:  return `<b>übermorgen</b>, ${dateStr}`;
-  default: 
+  case 0: return `<b>heute</b>, ${dateStr}`;
+  case 1: return `<b>morgen</b>, ${dateStr}`;
+  case 2: return `<b>übermorgen</b>, ${dateStr}`;
+  default:
     if (diff < -1 || diff > 6) {
       return `<b>${dateStr}</b>`;
     }
@@ -97,7 +122,7 @@ export function deepCompare(a: unknown, b: unknown): boolean {
   function deepCompareArray(a: unknown[], b: unknown[]): boolean {
     if (a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) {
-      if (! deepCompare(a[i], b[i])) return false;
+      if (!deepCompare(a[i], b[i])) return false;
     }
     return true;
   }
@@ -107,8 +132,8 @@ export function deepCompare(a: unknown, b: unknown): boolean {
     if (keysA.length !== keysB.length) return false;
 
     for (const key of keysA) {
-      if (! keysB.includes(key)) return false;
-      if (! deepCompare((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) return false;
+      if (!keysB.includes(key)) return false;
+      if (!deepCompare((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) return false;
     }
     return true;
   }
@@ -192,7 +217,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
   const eventName = `dataLoaded:${name}`;
   let data: DataType | null = null;
   const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
-  
+
   const reloadFunction = typeof reload === "string" ? () => {
     $.get(reload, data => {
       accessor.set(data);
@@ -332,7 +357,7 @@ export type CoreSubstitutionsData =
     plan1: SubstitutionPlan;
     plan2: SubstitutionPlan;
     updated: string;
-    }
+  }
   | "No data";
 export type SubstitutionsData = {
   data: CoreSubstitutionsData;
@@ -343,7 +368,7 @@ export const substitutionsData = createDataAccessor<SubstitutionsData>("substitu
 async function loadClassSubstitutionsData(): Promise<void> {
   const currentSubstitutionsData = await substitutionsData();
   if (currentSubstitutionsData.data === "No data") {
-    classSubstitutionsData({data: "No data", realClassName: currentSubstitutionsData.realClassName});
+    classSubstitutionsData({ data: "No data", realClassName: currentSubstitutionsData.realClassName });
     return;
   }
 
@@ -354,7 +379,7 @@ async function loadClassSubstitutionsData(): Promise<void> {
       /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class) // TODO @Fabian: filter by class
     );
   }
-  classSubstitutionsData({data: data, realClassName: currentSubstitutionsData.realClassName});
+  classSubstitutionsData({ data: data, realClassName: currentSubstitutionsData.realClassName });
 }
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", loadClassSubstitutionsData);
 

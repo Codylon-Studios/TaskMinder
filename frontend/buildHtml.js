@@ -55,7 +55,9 @@ async function buildDirectory(src, dest) {
           })
         </script>
       `);
+      
       // Color theme script
+      /*
       $("head").append(`
         <script>
           (() => {
@@ -84,6 +86,7 @@ async function buildDirectory(src, dest) {
           })();
         </script>
       `);
+      */
 
       $("body").prepend(`
         <div class="load-snippet" data-target="pwaBanner"></div>
