@@ -30,6 +30,7 @@ function htmlInjectPlugin() {
         <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
         <link rel="manifest" href="/static/manifest.json">
         <script src="/vendor/qrcode/qrcode.min.js"></script>
+        <script src="/assets/preloadConverter.js" type="module" defer></script>
         <title>${titleMap[fileName] || fileName} · TaskMinder</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -218,6 +219,9 @@ export default defineConfig({
 
         // Add global libraries entry point
         inputs["libraries"] = resolve(__dirname, "src/global/libraries.ts");
+        
+        // Add preload converter utility
+        inputs["preloadConverter"] = resolve(__dirname, "src/utils/preloadConverter.ts");
 
         // Add snippet JS/TS files synchronously
         const snippetsDir = resolve(__dirname, "src/snippets");
