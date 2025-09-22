@@ -29,9 +29,7 @@ function htmlInjectPlugin() {
       $("head").append(`
         <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
         <link rel="manifest" href="/static/manifest.json">
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+        <script src="/vendor/qrcode/qrcode.min.js"></script>
         <title>${titleMap[fileName] || fileName} · TaskMinder</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -142,6 +140,10 @@ function htmlInjectPlugin() {
 
 export default defineConfig({
   base: "/",
+  define: {
+    // Make jQuery available globally
+    global: "globalThis"
+  },
   plugins: [
     {
       ...htmlInjectPlugin(),
@@ -213,6 +215,9 @@ export default defineConfig({
           homework: resolve(__dirname, "src/pages/homework/homework.html"),
           "404": resolve(__dirname, "src/pages/404/404.html")
         };
+
+        // Add global libraries entry point
+        inputs["libraries"] = resolve(__dirname, "src/global/libraries.ts");
 
         // Add snippet JS/TS files synchronously
         const snippetsDir = resolve(__dirname, "src/snippets");

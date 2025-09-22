@@ -1,3 +1,5 @@
+// Import jQuery and Bootstrap from npm packages
+import "./libraries.js";
 import { io, Socket } from "socket.io-client";
 import { user } from "../snippets/navbar/navbar.js";
 
