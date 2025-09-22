@@ -152,52 +152,42 @@ export default defineConfig({
     },
     {
       name: "fix-html-output-paths",
-      writeBundle: {
-        sequential: true,
-        async handler() {
-          const distDir = path.resolve(__dirname, "dist");
-          const srcPagesDir = path.join(distDir, "src", "pages");
-          const pagesDir = path.join(distDir, "pages");
-          
-          // Ensure pages directory exists
-          await fs.ensureDir(pagesDir);
-          
-          if (await fs.pathExists(srcPagesDir)) {
-            // Get all page directories
-            const pageDirs = await fs.readdir(srcPagesDir);
-            
-            for (const pageDir of pageDirs) {
-              const pagePath = path.join(srcPagesDir, pageDir);
-              const stat = await fs.stat(pagePath);
-              
-              if (stat.isDirectory()) {
-                const htmlFile = path.join(pagePath, `${pageDir}.html`);
-                
-                if (await fs.pathExists(htmlFile)) {
-                  // Read the HTML content
-                  let htmlContent = await fs.readFile(htmlFile, "utf-8");
-                  
-                  // Fix asset paths to be absolute from root
-                  htmlContent = htmlContent
-                    .replace(/href="\.\/assets\//g, 'href="/assets/')
-                    .replace(/src="\.\/assets\//g, 'src="/assets/')
-                    .replace(/href="assets\//g, 'href="/assets/')
-                    .replace(/src="assets\//g, 'src="/assets/');
-                  
-                  // Write to the pages directory
-                  const targetFile = path.join(pagesDir, `${pageDir}.html`);
-                  await fs.writeFile(targetFile, htmlContent);
-                  
-                  console.log(`✓ Moved and fixed paths for ${pageDir}.html`);
-                }
-              }
+      enforce: "post",
+      async writeBundle() {
+        const distDir = path.resolve(__dirname, "dist");
+        const srcDirInDist = path.join(distDir, "src");
+
+        if (!(await fs.pathExists(srcDirInDist))) {
+          return;
+        }
+
+        const srcPagesDir = path.join(srcDirInDist, "pages");
+        const destPagesDir = path.join(distDir, "pages");
+
+        if (await fs.pathExists(srcPagesDir)) {
+          // Move pages directory contents
+          await fs.copy(srcPagesDir, destPagesDir, { overwrite: true });
+
+          // Now, fix paths inside the moved HTML files
+          const pageDirs = await fs.readdir(destPagesDir);
+
+          for (const pageDir of pageDirs) {
+            const destPageDirPath = path.join(destPagesDir, pageDir);
+            const htmlFilePath = path.join(destPageDirPath, `${pageDir}.html`);
+
+            if (await fs.pathExists(htmlFilePath)) {
+              let htmlContent = await fs.readFile(htmlFilePath, "utf-8");
+
+              // Adjust asset paths to be relative to the root
+              htmlContent = htmlContent.replace(/(\.\.\/)+assets\//g, "/assets/");
+
+              await fs.writeFile(htmlFilePath, htmlContent);
             }
-            
-            // Remove the src directory
-            await fs.remove(path.join(distDir, "src"));
-            console.log("✓ Removed src directory from dist");
           }
         }
+
+        // Clean up the now-empty 'dist/src' directory
+        await fs.remove(srcDirInDist);
       }
     }
   ],

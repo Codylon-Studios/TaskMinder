@@ -145,19 +145,19 @@ app.get("/join", (req, res) => {
       return res.redirect(302, "/join?action=account");
     }
   }
-  res.sendFile(path.join(pagesPath, "join.html"));
+  res.sendFile(path.join(pagesPath, "join", "join.html"));
 });
 
 app.get("/settings", (req, res) => {
-  res.sendFile(path.join(pagesPath, "settings.html"));
+  res.sendFile(path.join(pagesPath, "settings", "settings.html"));
 });
 
 app.get("/about", (req, res) => {
-  res.sendFile(path.join(pagesPath, "about.html"));
+  res.sendFile(path.join(pagesPath, "about", "about.html"));
 });
 
 app.get("/feedback", checkAccess(["CLASS"]), (req, res) => {
-  res.sendFile(path.join(pagesPath, "feedback.html"));
+  res.sendFile(path.join(pagesPath, "feedback", "feedback.html"));
 });
 
 app.use("/account", account);
@@ -173,23 +173,23 @@ app.use("/class", classes);
 // Protected routes: Redirect to /join if not logged in
 //
 app.get("/main", checkAccess(["CLASS"]), (req, res) => {
-  res.sendFile(path.join(pagesPath, "main.html"));
+  res.sendFile(path.join(pagesPath, "main", "main.html"));
 });
 
 app.get("/homework", checkAccess(["CLASS"]), (req, res) => {
-  res.sendFile(path.join(pagesPath, "homework.html"));
+  res.sendFile(path.join(pagesPath, "homework", "homework.html"));
 });
 
 app.get("/events", checkAccess(["CLASS"]), (req, res) => {
-  res.sendFile(path.join(pagesPath, "events.html"));
+  res.sendFile(path.join(pagesPath, "events", "events.html"));
 });
 
 app.get("/report", checkAccess(["CLASS"]), (req, res) => {
-  res.sendFile(path.join(pagesPath, "report.html"));
+  res.sendFile(path.join(pagesPath, "report", "report.html"));
 });
 
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(pagesPath, "404.html"));
+  res.status(404).sendFile(path.join(pagesPath, "404", "404.html"));
 });
 
 // Error Handler Middleware (Must be the last app.use)
