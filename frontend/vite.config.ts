@@ -202,7 +202,11 @@ export default defineConfig({
     }
   ],
   build: {
+    cssMinify: "esbuild",
+    sourcemap: true,
+    minify: true,
     rollupOptions: {
+      treeshake: true,
       input: (() => {
         // Dynamic input generation (synchronous)
         const inputs: Record<string, string> = {
@@ -221,7 +225,7 @@ export default defineConfig({
         inputs["libraries"] = resolve(__dirname, "src/global/libraries.ts");
         
         // Add preload converter utility
-        inputs["preloadConverter"] = resolve(__dirname, "src/utils/preloadConverter.ts");
+        inputs["preloadConverter"] = resolve(__dirname, "src/global/preloadConverter.ts");
 
         // Add snippet JS/TS files synchronously
         const snippetsDir = resolve(__dirname, "src/snippets");
