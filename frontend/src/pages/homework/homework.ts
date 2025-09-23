@@ -698,13 +698,13 @@ $(function () {
     const currentLessonData = await lessonData();
     const now = new Date();
 
-    const selectedSubjectId = $(this).val()?.toString()
-    if (selectedSubjectId == "-1" || selectedSubjectId == undefined) {
-      return
+    const selectedSubjectId = $(this).val()?.toString();
+    if (["-1", undefined].includes(selectedSubjectId)) {
+      return;
     }
 
     // The next lessons of the new selected subject
-    const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === parseInt(selectedSubjectId));
+    const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === parseInt(selectedSubjectId!));
 
     const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
     const minDiff = nextLessonsWeekdays.reduce((previous, current) => {

@@ -387,7 +387,7 @@ function replaceColorPickers(): void {
     });
 
     $(popup).on("click", ".color-picker-save", function (ev) {
-      const color = input.val()?.toString() ?? "auto";
+      const color = $.escapeHtml(input.val()?.toString() ?? "auto");
       if (color === "auto") return;
       if (savedColors.includes(color)) {
         savedColors.splice(savedColors.indexOf(color), 1);

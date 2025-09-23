@@ -336,25 +336,27 @@ export type CoreSubstitutionsData =
   | "No data";
 export type SubstitutionsData = {
   data: CoreSubstitutionsData;
-  realClassName: string | null;
+  substitutionClassName: string | null;
 };
 
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", "/substitutions/get_substitutions_data");
 async function loadClassSubstitutionsData(): Promise<void> {
   const currentSubstitutionsData = await substitutionsData();
   if (currentSubstitutionsData.data === "No data") {
-    classSubstitutionsData({data: "No data", realClassName: currentSubstitutionsData.realClassName});
+    classSubstitutionsData({data: "No data", substitutionClassName: currentSubstitutionsData.substitutionClassName});
     return;
   }
 
   const data = structuredClone(currentSubstitutionsData.data);
+  const className = currentSubstitutionsData.substitutionClassName ?? "";
+  const [_, classNumber, classLetter] = /^(\d*)([a-zA-Z]*)$/.exec(className) ?? []
   for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
     const key = ("plan" + planId) as "plan1" | "plan2";
     data[key].substitutions = data[key].substitutions.filter((entry: Record<string, string>) =>
-      /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class) // TODO @Fabian: filter by class
+      (new RegExp(`^${classNumber}[a-zA-Z]*${classLetter}[a-zA-Z]*`)).test(entry.class)
     );
   }
-  classSubstitutionsData({data: data, realClassName: currentSubstitutionsData.realClassName});
+  classSubstitutionsData({data: data, substitutionClassName: currentSubstitutionsData.substitutionClassName});
 }
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", loadClassSubstitutionsData);
 

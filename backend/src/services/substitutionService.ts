@@ -101,14 +101,14 @@ export async function loadSubstitutionData(
 // This approach improves performance while still keeping data reasonably fresh.
 export async function getSubstitutionData(session: Session & Partial<SessionData>): Promise<{
     data: SubstitutionData | "No data";
-    realClassName: string | null;
+    substitutionClassName: string | null;
 }> {
   const substitutionClass = await prisma.class.findUnique({
     where: { classId: parseInt(session.classId!) }
   });
 
   if (!substitutionClass || !substitutionClass.dsbMobileActivated || !substitutionClass.dsbMobileUser || !substitutionClass.dsbMobilePassword) {
-    return { data: "No data", realClassName: null};
+    return { data: "No data", substitutionClassName: null};
   }
 
   const { dsbMobileUser, dsbMobilePassword, classId } = substitutionClass;
@@ -118,8 +118,8 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
 
   if (!cachedEntry) {
     const data =  await loadSubstitutionData(dsbMobileUser, dsbMobilePassword, cacheKey);
-    const realClassName = substitutionClass.dsbMobileClass;
-    return {data, realClassName};
+    const substitutionClassName = substitutionClass.dsbMobileClass;
+    return {data, substitutionClassName: substitutionClassName};
   }
 
   const { data, timestamp } = JSON.parse(cachedEntry);
@@ -131,8 +131,8 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
         logger.error(`Background refresh failed for key ${cacheKey}:`, err);
       });
   }
-  const realClassName = substitutionClass.dsbMobileClass;
+  const substitutionClassName = substitutionClass.dsbMobileClass;
 
-  return {data, realClassName};
+  return {data, substitutionClassName: substitutionClassName};
 }
 export default { getSubstitutionData };

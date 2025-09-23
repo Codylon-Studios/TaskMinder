@@ -770,23 +770,22 @@ async function updateTimetable(): Promise<void> {
     .map(lessonData => {
       return `<span class="original">${$.formatHtml(lessonData.subjectNameLong)}</span>`;
     })
-    .join(" / ")}
-            </span>
+    .join(" / ")}</span>
+
             <span>
               <span class="text-center timetable-more-room">
               ${lessonGroup.lessons
     .map(lessonData => {
       return `<span class="original">${$.formatHtml(lessonData.room)}</span>`;
     })
-    .join(" / ")}
-              </span>,
+    .join(" / ")}</span>,
+
               <span class="text-center timetable-more-teacher">
               ${lessonGroup.lessons
     .map(lessonData => {
       return `<span class="original">${$.formatHtml(lessonData.teacherName)}</span>`;
     })
-    .join(" / ")}
-              </span>
+    .join(" / ")}</span>
             </span>
           </div>
         </div>
@@ -893,8 +892,14 @@ async function updateTimetable(): Promise<void> {
 
     const lastLessLesson = $("#timetable-less").find(".card").last();
     if (lastLessLesson.length > 0) {
-      const lastLessonHtml = lastLessLesson[0].outerHTML.replace(/\s+/g, "");
-      const thisLessonHtml = thisLessLesson[0].outerHTML.replace(/\s+/g, "");
+      const lastLessonCopy = $(lastLessLesson[0].outerHTML);
+      lastLessonCopy.attr("data-lesson-number", "");
+      const lastLessonHtml = lastLessonCopy[0].outerHTML.replace(/\s+/g, "");
+
+      const thisLessonCopy = $(thisLessLesson[0].outerHTML);
+      thisLessonCopy.attr("data-lesson-number", "");
+      const thisLessonHtml = thisLessonCopy[0].outerHTML.replace(/\s+/g, "");
+
       if (lastLessonHtml === thisLessonHtml) {
         lastLessLesson.addClass("wide");
       }
@@ -908,13 +913,13 @@ async function updateTimetable(): Promise<void> {
 
     const lastMoreLesson = $("#timetable-more").find(".card:last()");
     if (lastMoreLesson.length > 0) {
-      // Remove the times
+      // Remove the lessonNumbers & times
       const lastLessonCopy = $(lastMoreLesson[0].outerHTML);
-      lastLessonCopy.find(".timetable-more-time").html("");
+      lastLessonCopy.attr("data-lesson-number", "").find(".timetable-more-time").html("");
       const lastLessonHtml = lastLessonCopy[0].outerHTML.replace(/\s+/g, "");
 
       const thisLessonCopy = $(thisMoreLesson[0].outerHTML);
-      thisLessonCopy.find(".timetable-more-time").html("");
+      thisLessonCopy.attr("data-lesson-number", "").find(".timetable-more-time").html("");
       const thisLessonHtml = thisLessonCopy[0].outerHTML.replace(/\s+/g, "");
 
       if (lastLessonHtml === thisLessonHtml) {
@@ -1050,7 +1055,7 @@ async function updateTimetableProgressBar(): Promise<void> {
   }
 }
 
-setInterval(updateTimetableProgressBar,  1000); // Update every 30s
+setInterval(updateTimetableProgressBar,  30 * 1000); // Update every 30s
 
 async function renameCalendarMonthYear(): Promise<void> {
   $("#calendar-month-year").text(`${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`);

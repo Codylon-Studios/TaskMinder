@@ -31,7 +31,7 @@ function toggleAttachmentRow($row: JQuery<HTMLElement>): void {
   }
   else {
     $("#attachments-list").append(`
-      <li data-type="${$row.attr("data-type")}" data-id="${$row.attr("data-id")}">
+      <li data-type="${$.escapeHtml($row.attr("data-type") ?? "")}" data-id="${$row.attr("data-id")}">
         <b>${attachmentOptions.find(a => a.type === $row.attr("data-type"))?.name}: </b>
         ${$row.children(":not(:first)").map(function () {
     return $(this).html();

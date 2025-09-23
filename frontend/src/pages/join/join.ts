@@ -12,7 +12,7 @@ const qrCode = new QRCode("show-qrcode-modal-qrcode", {
   width: 300,
   height: 300
 });
-$("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten")
+$("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten");
 
 $("#show-join-class-btn").on("click", () => {
   $("#decide-action-panel").addClass("d-none");
