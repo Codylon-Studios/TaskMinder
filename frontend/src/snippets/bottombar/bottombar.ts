@@ -20,7 +20,7 @@ if (/OS (18|19|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
 }
 
 const availableLinks = ["", "homework", "main", "events", "settings"];
-const moreLinks = ["about", "report", "feedback"];
+const moreLinks = ["about"];
 const siteName = getSite();
 let siteIndex = availableLinks.indexOf(siteName) ?? -1;
 if (siteName === "join") siteIndex = 2;

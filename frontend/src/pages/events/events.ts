@@ -96,9 +96,6 @@ async function updateEventList(): Promise<void> {
                   <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
                     <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
-                  <a class="btn btn-sm btn-semivisible" aria-label="Melden" href="/report?type=event&id=${eventId}" target="_blank">
-                    <i class="fa-solid fa-flag event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-                  </a>
                 </div>
               </div>
             </div>

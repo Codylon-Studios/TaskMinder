@@ -156,10 +156,6 @@ app.get("/about", (req, res) => {
   res.sendFile(path.join(pagesPath, "about", "about.html"));
 });
 
-app.get("/feedback", checkAccess(["CLASS"]), (req, res) => {
-  res.sendFile(path.join(pagesPath, "feedback", "feedback.html"));
-});
-
 app.use("/account", account);
 app.use("/homework", homework);
 app.use("/substitutions", substitutions);
@@ -182,10 +178,6 @@ app.get("/homework", checkAccess(["CLASS"]), (req, res) => {
 
 app.get("/events", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
-});
-
-app.get("/report", checkAccess(["CLASS"]), (req, res) => {
-  res.sendFile(path.join(pagesPath, "report", "report.html"));
 });
 
 app.use((req, res) => {

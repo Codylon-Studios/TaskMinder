@@ -101,9 +101,6 @@ async function updateHomeworkList(): Promise<void> {
         </div>
 
         <div class="homework-edit-options ms-2 text-nowrap">
-          <a class="btn btn-sm btn-semivisible" aria-label="Melden" href="/report?type=homework&id=${homeworkId}" target="_blank">
-            <i class="fa-solid fa-flag opacity-75" aria-hidden="true"></i>
-          </a>
           <button class="btn btn-sm btn-semivisible homework-edit ${editEnabled ? "" : "d-none"}" data-id="${homeworkId}" aria-label="Bearbeiten">
             <i class="fa-solid fa-edit opacity-75" aria-hidden="true"></i>
           </button>
