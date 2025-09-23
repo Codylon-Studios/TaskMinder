@@ -4,7 +4,7 @@ export const createClassSchema = z.object({
   params: z.object({}).optional(),
   query: z.object({}).optional(),
   body: z.strictObject({
-    classDisplayName: z.string(),
+    classDisplayName: z.string().trim().min(1),
     isTestClass: z.boolean()
   })
 });
@@ -59,9 +59,9 @@ export const updateDSBMobileDataSchema = z.object({
   query: z.object({}).optional(),
   body: z.strictObject({
     dsbMobileActivated: z.boolean(),
-    dsbMobileUser: z.string().nullable(),
-    dsbMobilePassword: z.string().nullable(),
-    dsbMobileClass: z.string().nullable()
+    dsbMobileUser: z.string().trim().min(1).nullable(),
+    dsbMobilePassword: z.string().trim().min(1).nullable(),
+    dsbMobileClass: z.string().trim().min(1).nullable()
   })
 });
 
@@ -74,6 +74,13 @@ export const setUsersLoggedOutRoleSchema = z.object({
   })
 });
 
+export const changeClassNameSchema = z.object({
+  params: z.object({}).optional(),
+  query: z.object({}).optional(),
+  body: z.strictObject({
+    classDisplayName: z.string().trim().min(1)
+  })
+});
 
 export type createClassType = z.infer<typeof createClassSchema>;
 export type joinClassType = z.infer<typeof joinClassSchema>;
@@ -82,6 +89,7 @@ export type setClassMembersPermissionsType = z.infer<typeof setClassMembersPermi
 export type kickClassMembersType = z.infer<typeof kickClassMembersSchema>;
 export type updateDSBMobileDataType = z.infer<typeof updateDSBMobileDataSchema>;
 export type setUsersLoggedOutRoleType = z.infer<typeof setUsersLoggedOutRoleSchema>;
+export type changeClassNameType = z.infer<typeof changeClassNameSchema>;
 
 export type createClassTypeBody = z.infer<typeof createClassSchema>["body"];
 export type joinClassTypeBody = z.infer<typeof joinClassSchema>["body"];
@@ -90,3 +98,4 @@ export type setClassMembersPermissionsTypeBody = z.infer<typeof setClassMembersP
 export type kickClassMembersTypeBody = z.infer<typeof kickClassMembersSchema>["body"];
 export type updateDSBMobileDataTypeBody = z.infer<typeof updateDSBMobileDataSchema>["body"];
 export type setUsersLoggedOutRoleTypeBody = z.infer<typeof setUsersLoggedOutRoleSchema>["body"];
+export type changeClassNameTypeBody = z.infer<typeof changeClassNameSchema>["body"];

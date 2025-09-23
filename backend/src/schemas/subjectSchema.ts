@@ -7,12 +7,12 @@ export const setSubjectsSchema = z.object({
     subjects: z.array(
       z.object({
         subjectId: z.union([z.literal(""), z.coerce.number()]),
-        subjectNameLong: z.string(),
-        subjectNameShort: z.string(),
+        subjectNameLong: z.string().trim().min(1),
+        subjectNameShort: z.string().trim().min(1),
         subjectNameSubstitution: z.array(z.string()).nullable(),
         teacherGender: z.enum(["d", "w", "m"]),
-        teacherNameLong: z.string(),
-        teacherNameShort: z.string(),
+        teacherNameLong: z.string().trim().min(1),
+        teacherNameShort: z.string().trim().min(1),
         teacherNameSubstitution: z.array(z.string()).nullable()
       })
     )

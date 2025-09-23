@@ -21,16 +21,6 @@ export const createClass = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const generateClassCode = asyncHandler(async (req, res, next) => {
-  try {
-    const classCode = await classService.generateClassCode(req.session);
-    res.status(200).json(classCode);
-  } 
-  catch (error) {
-    next(error);
-  }
-});
-
 export const joinClass = asyncHandler(async (req, res, next) => {
   try {
     const className = await classService.joinClass(req.body, req.session);
@@ -145,10 +135,39 @@ export const kickLoggedOutUsers = asyncHandler(async (req, res, next) => {
   }
 });
 
+export const changeClassName = asyncHandler(async (req, res, next) => {
+  try {
+    await classService.changeClassName(req.body, req.session);
+    res.sendStatus(200);
+  } 
+  catch (error) {
+    next(error);
+  }
+});
+
+export const changeClassCode = asyncHandler(async (req, res, next) => {
+  try {
+    const code = await classService.changeClassCode(req.session);
+    res.status(200).json(code);
+  } 
+  catch (error) {
+    next(error);
+  }
+});
+
+export const upgradeTestClass = asyncHandler(async (req, res, next) => {
+  try {
+    await classService.upgradeTestClass(req.session);
+    res.sendStatus(200);
+  } 
+  catch (error) {
+    next(error);
+  }
+});
+
 export default {
   getClassInfo,
   createClass,
-  generateClassCode,
   joinClass,
   leaveClass,
   deleteClass,
@@ -159,5 +178,8 @@ export default {
   updateDSBMobileData,
   getUsersLoggedOutRole,
   setUsersLoggedOutRole,
-  kickLoggedOutUsers
+  kickLoggedOutUsers,
+  changeClassName,
+  changeClassCode,
+  upgradeTestClass
 };

@@ -5,10 +5,10 @@ export const addEventSchema = z.object({
   query: z.object({}).optional(),
   body: z.strictObject({
     eventTypeId: z.coerce.number(),
-    name: z.string(),
-    description: z.string().nullable(),
+    name: z.string().trim().min(1),
+    description: z.string().trim().min(1).nullable(),
     startDate: z.coerce.number(),
-    lesson: z.string().nullable(),
+    lesson: z.string().trim().min(1).nullable(),
     endDate: z.preprocess(val => {
       if (val === "") return null;
       return val;
@@ -24,10 +24,10 @@ export const editEventSchema = z.object({
   body: z.strictObject({
     eventId: z.coerce.number(),
     eventTypeId: z.coerce.number(),
-    name: z.string(),
-    description: z.string().nullable(),
+    name: z.string().trim().min(1),
+    description: z.string().trim().min(1).nullable(),
     startDate: z.coerce.number(),
-    lesson: z.string().nullable(),
+    lesson: z.string().trim().min(1).nullable(),
     endDate: z.coerce.number().nullable(),
     teamId: z.coerce.number()
   })
@@ -50,7 +50,7 @@ export const setEventTypesSchema = z.object({
     eventTypes: z.array(
       z.object({
         eventTypeId: z.union([z.literal(""), z.coerce.number()]),
-        name: z.string(),
+        name: z.string().trim().min(1),
         color: z.string().regex(/^#[0-9a-fA-F]{6}$/)
       })
     )

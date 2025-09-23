@@ -2,6 +2,7 @@ import { mock, describe, it, expect, beforeEach } from "bun:test";
 import classService from "../services/classService";
 import { Session, SessionData } from "express-session";
 import { 
+  changeClassNameTypeBody,
   changeDefaultPermissionTypeBody, 
   createClassTypeBody, 
   joinClassTypeBody, 
@@ -231,23 +232,6 @@ describe("classService", () => {
     });
   });
 
-  describe("generateClassCode", () => {
-    it("should return a unique class code", async () => {
-      const session = {} as Session & Partial<SessionData>;
-      mockPrismaClient.class.findUnique.mockResolvedValue(null);
-      const code = await classService.generateClassCode(session);
-      expect(code).toBeDefined();
-      expect(code.length).toBe(20);
-    });
-
-    it("should throw an error if user is logged into a class", async () => {
-      const session = { classId: "1" } as Session & Partial<SessionData>;
-      expect(classService.generateClassCode(session)).rejects.toThrow(
-        "User logged into class"
-      );
-    });
-  });
-
   describe("updateDSBMobileData", () => {
     it("should update DSB mobile data", async () => {
       const reqData: updateDSBMobileDataTypeBody = { 
@@ -327,6 +311,165 @@ describe("classService", () => {
       mockSessionPool.query.mockResolvedValue({ rowCount: 1 });
       await classService.kickLoggedOutUsers(session);
       expect(mockSessionPool.query).toHaveBeenCalled();
+    });
+  });
+
+  describe("changeClassName", () => {
+    it("should successfully change the class name", async () => {
+      const reqData: changeClassNameTypeBody = { classDisplayName: "New Class Name" };
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      await classService.changeClassName(reqData, session);
+
+      expect(mockPrismaClient.class.update).toHaveBeenCalledWith({
+        where: { classId: 1 },
+        data: { className: "New Class Name" }
+      });
+    });
+
+    it("should handle empty class name by trimming (validation handled by schema)", async () => {
+      const reqData: changeClassNameTypeBody = { classDisplayName: "   Updated Name   " };
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      await classService.changeClassName(reqData, session);
+
+      expect(mockPrismaClient.class.update).toHaveBeenCalledWith({
+        where: { classId: 1 },
+        data: { className: "   Updated Name   " }
+      });
+    });
+
+    it("should handle database errors gracefully", async () => {
+      const reqData: changeClassNameTypeBody = { classDisplayName: "New Name" };
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      mockPrismaClient.class.update.mockRejectedValue(new Error("Database error"));
+
+      expect(classService.changeClassName(reqData, session)).rejects.toThrow("Database error");
+    });
+  });
+
+  describe("changeClassCode", () => {
+    it("should successfully generate and update a new class code", async () => {
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      // Mock that the first generated code is unique
+      mockPrismaClient.class.findUnique.mockResolvedValue(null);
+      mockPrismaClient.class.update.mockResolvedValue({ classCode: "new-unique-code" });
+
+      const result = await classService.changeClassCode(session);
+
+      expect(result).toBeDefined();
+      expect(typeof result).toBe("string");
+      expect(result.length).toBe(20); // Default length from generateRandomBase62String
+      expect(mockPrismaClient.class.findUnique).toHaveBeenCalledWith({
+        where: { classCode: result }
+      });
+      expect(mockPrismaClient.class.update).toHaveBeenCalledWith({
+        where: { classId: 1 },
+        data: { classCode: result }
+      });
+    });
+
+    it("should retry when generated code already exists", async () => {
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      // Mock that first code exists, second doesn't
+      mockPrismaClient.class.findUnique
+        .mockResolvedValueOnce({ classId: 2, classCode: "existing-code" }) // First call - code exists
+        .mockResolvedValueOnce(null); // Second call - code is unique
+
+      const result = await classService.changeClassCode(session);
+
+      expect(result).toBeDefined();
+      expect(mockPrismaClient.class.findUnique).toHaveBeenCalledTimes(2);
+      expect(mockPrismaClient.class.update).toHaveBeenCalledWith({
+        where: { classId: 1 },
+        data: { classCode: result }
+      });
+    });
+
+    it("should throw error after maximum attempts with non-unique codes", async () => {
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      // Mock that all generated codes already exist
+      mockPrismaClient.class.findUnique.mockResolvedValue({ classId: 2, classCode: "existing-code" });
+
+      expect(classService.changeClassCode(session)).rejects.toMatchObject({
+        name: "Server Error",
+        status: 500,
+        message: "Could not generate unique class code",
+        additionalInformation: "All randomly generated class codes were already in use, please try again",
+        expected: false
+      });
+
+      expect(mockPrismaClient.class.findUnique).toHaveBeenCalledTimes(10); // maxAttempts
+      expect(mockPrismaClient.class.update).not.toHaveBeenCalled();
+    });
+
+    it("should handle database update errors", async () => {
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      mockPrismaClient.class.findUnique.mockResolvedValue(null);
+      mockPrismaClient.class.update.mockRejectedValue(new Error("Database update failed"));
+
+      expect(classService.changeClassCode(session)).rejects.toThrow("Database update failed");
+    });
+
+    it("should handle database lookup errors", async () => {
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      mockPrismaClient.class.findUnique.mockRejectedValue(new Error("Database lookup failed"));
+
+      expect(classService.changeClassCode(session)).rejects.toThrow("Database lookup failed");
+    });
+
+    it("should generate base62 string with correct character set", async () => {
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      mockPrismaClient.class.findUnique.mockResolvedValue(null);
+      mockPrismaClient.class.update.mockResolvedValue({ classCode: "test-code" });
+
+      const result = await classService.changeClassCode(session);
+
+      // Check that result contains only valid base62 characters (0-9, A-Z, a-z)
+      const base62Regex = /^[0-9A-Za-z]+$/;
+      expect(base62Regex.test(result)).toBe(true);
+    });
+  });
+
+  describe("upgradeTestClass", () => {
+    it("should successfully upgrade a test class to a regular class", async () => {
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      await classService.upgradeTestClass(session);
+
+      expect(mockPrismaClient.class.update).toHaveBeenCalledWith({
+        where: { classId: 1 },
+        data: { isTestClass: false }
+      });
+    });
+
+    it("should handle database errors gracefully", async () => {
+      const session = { classId: "1" } as Session & Partial<SessionData>;
+
+      mockPrismaClient.class.update.mockRejectedValue(new Error("Database error"));
+
+      expect(classService.upgradeTestClass(session)).rejects.toThrow("Database error");
+    });
+
+    it("should work with different class IDs", async () => {
+      const session = { classId: "42" } as Session & Partial<SessionData>;
+
+      // Reset the mock to resolve successfully for this test
+      mockPrismaClient.class.update.mockResolvedValue({ classId: 42, isTestClass: false });
+
+      await classService.upgradeTestClass(session);
+
+      expect(mockPrismaClient.class.update).toHaveBeenCalledWith({
+        where: { classId: 42 },
+        data: { isTestClass: false }
+      });
     });
   });
 });
