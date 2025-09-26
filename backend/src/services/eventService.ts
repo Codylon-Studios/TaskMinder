@@ -213,6 +213,9 @@ export const eventService = {
     const eventTypeData = await prisma.eventType.findMany({
       where: {
         classId: parseInt(session.classId!)
+      },
+      orderBy: {
+        name: "asc"
       }
     });
 

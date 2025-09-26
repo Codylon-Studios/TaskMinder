@@ -33,7 +33,7 @@ const lessonService = {
           classId: classId
         }
       });
-    
+
       for (const lesson of lessons) {
         try {
           await tx.lesson.create({
@@ -48,7 +48,7 @@ const lessonService = {
               endTime: lesson.endTime
             }
           });
-        } 
+        }
         catch {
           const err: RequestError = {
             name: "Bad Request",
@@ -60,7 +60,7 @@ const lessonService = {
         }
       }
     });
-    
+
 
     const lessonData = await prisma.lesson.findMany({
       where: {
@@ -95,8 +95,12 @@ const lessonService = {
     const lessonData = await prisma.lesson.findMany({
       where: {
         classId: parseInt(session.classId!)
+      },
+      orderBy: {
+        lessonNumber: "asc"
       }
     });
+
 
     try {
       await updateCacheData(lessonData, getLessonDataCacheKey);
