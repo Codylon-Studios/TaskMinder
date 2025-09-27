@@ -247,6 +247,9 @@ export const eventService = {
           await tx.eventType.delete({
             where: { eventTypeId: existing.eventTypeId }
           });
+          await tx.event.deleteMany({
+            where: { eventTypeId: existing.eventTypeId }
+          });
         }
       }
 

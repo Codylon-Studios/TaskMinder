@@ -1028,13 +1028,13 @@ async function updateTimetableProgress(): Promise<void> {
     $("#timetable-less, #timetable-more").addClass("timetable-out-of-range");
 
     if (nextLessonNumbers.length > 0) {
-      const firstLessonGroup = nextLessonNumbers[0]
+      const firstLessonGroup = nextLessonNumbers[0];
       const timeLeft = getTimeString(firstLessonGroup.startTime - now);
 
 
       function matchesLessonNumber(substitution: Record<string, string>, lessonNumber: number): boolean {
         if (substitution.lesson.includes("-")) {
-          const [start, end] = substitution.lesson.replace(" ", "").split("-").map(Number)
+          const [start, end] = substitution.lesson.replace(" ", "").split("-").map(Number);
           if (start > lessonNumber || lessonNumber > end) {
             return false;
           }
@@ -1055,8 +1055,8 @@ async function updateTimetableProgress(): Promise<void> {
           if (matchesLessonNumber(substitution, firstLessonGroup.lessonNumber)) {
             for (const lesson of firstLessonGroup.lessons) {
               if (matchesTeacher(substitution, lesson)) {
-                lesson.subjectNameLong = substitution.subject
-                lesson.room = substitution.room
+                lesson.subjectNameLong = substitution.subject;
+                lesson.room = substitution.room;
               }
             }
           }

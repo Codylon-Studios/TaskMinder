@@ -197,14 +197,14 @@ async function getGroupedLessonData(date: Date): Promise<GroupedLessonData> {
   const processedLessonData: ProcessedLesson[] = [];
   for (const lesson of currentLessonData) {
     if (!(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId === -1)) continue;
-    let subject = currentSubjectData.find(s => s.subjectId === lesson.subjectId) ?? {
+    const subject = currentSubjectData.find(s => s.subjectId === lesson.subjectId) ?? {
       subjectNameLong: "Pause",
       subjectNameShort: "Pause",
       subjectNameSubstitution: null,
       teacherGender: "d",
       teacherNameLong: "",
       teacherNameSubstitution: null
-    }
+    };
 
     processedLessonData.push({
       lessonNumber: lesson.lessonNumber,
@@ -244,15 +244,15 @@ async function getGroupedLessonData(date: Date): Promise<GroupedLessonData> {
 
 export async function getTimetableData(date: Date) {
   if ([0, 6].includes(date.getDay())) {
-    return null
+    return null;
   }
   const x = await getGroupedLessonData(date);
-  console.log(x)
+  console.log(x);
 }
 
 setTimeout(() => {
-  getTimetableData(new Date())
-}, 10)
+  getTimetableData(new Date());
+}, 10);
 
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);

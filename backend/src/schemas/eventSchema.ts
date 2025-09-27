@@ -6,9 +6,9 @@ export const addEventSchema = z.object({
   body: z.strictObject({
     eventTypeId: z.coerce.number(),
     name: z.string().trim().min(1),
-    description: z.string().trim().min(1).nullable(),
+    description: z.string().trim().min(1).nullable().or(z.literal("")),
     startDate: z.coerce.number(),
-    lesson: z.string().trim().min(1).nullable(),
+    lesson: z.string().trim().min(1).nullable().or(z.literal("")),
     endDate: z.preprocess(val => {
       if (val === "") return null;
       return val;
@@ -25,9 +25,9 @@ export const editEventSchema = z.object({
     eventId: z.coerce.number(),
     eventTypeId: z.coerce.number(),
     name: z.string().trim().min(1),
-    description: z.string().trim().min(1).nullable(),
+    description: z.string().trim().min(1).nullable().or(z.literal("")),
     startDate: z.coerce.number(),
-    lesson: z.string().trim().min(1).nullable(),
+    lesson: z.string().trim().min(1).nullable().or(z.literal("")),
     endDate: z.coerce.number().nullable(),
     teamId: z.coerce.number()
   })

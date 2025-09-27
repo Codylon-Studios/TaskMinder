@@ -4,6 +4,31 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.1.0] - 2025-09-27
+
+### Added
+* Add `prisma.config.ts` to Dockerfile
+* Add event cleanup cron job (365 days)
+* Tests for services in backend
+* Accessibility features
+* ToS
+
+### Fixed
+* Fix bug where a joined class user (not logged in) visiting `/join` or `/` would get the hardcoded `10d - className` value
+* Fixed check for team/subject (now validates specific `teamId`, `subjectId`, and `classId`)
+
+### Changed
+* Update documentation
+* Scripts improvements through `GITCMD` and `DOCKERCMD`
+* Frontend improvements
+* Improve SEO
+* Change `classCode`, `className`, upgrade test classes to normal classes
+
+### Removed
+* Remove unused packages
+
+---
+
 ## \[v2.0.0] - 2025-08-16
 
 ### Breaking Change

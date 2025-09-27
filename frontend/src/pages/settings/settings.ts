@@ -1076,7 +1076,7 @@ user.on("change", async () => {
         .find("button, select")
         .prop("disabled", false);
     }
-    $("#change-class-name-button").prop("disabled", permissionLevel < 2);
+    $("#change-class-name-button").toggle(permissionLevel >= 2);
     $(`#change-class-code,
        #upgrade-test-class,
        #delete-class-button,
