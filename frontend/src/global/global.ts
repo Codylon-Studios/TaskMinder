@@ -85,6 +85,23 @@ export function msToTime(ms: number | string): string {
     .padStart(2, "0")}:${((num / 1000 / 60) % 60).toString().padStart(2, "0")}`;
 }
 
+export function getTimeLeftString(timeLeft: number): string {
+  if (timeLeft < 60 * 60 * 1000) {
+    const mins = Math.floor(timeLeft / 60 / 1000);
+    return mins + " Minute" + (mins > 1 ? "n" : "");
+  }
+  else {
+    const hours = Math.floor(timeLeft / 60 / 60 / 1000);
+    const mins = Math.floor((timeLeft % (60 * 60 * 1000)) / 60 / 1000);
+    if (mins === 0) {
+      return hours + " Stunde" + (hours > 1 ? "n" : "");
+    }
+    else {
+      return hours + " Stunde" + (hours > 1 ? "n und " : " und ") + mins + " Minute" + (mins > 1 ? "n" : "");
+    }
+  }
+}
+
 export function isSameDay(date1: Date, date2: Date): boolean {
   return (
     date1.getFullYear() === date2.getFullYear() &&
@@ -127,6 +144,115 @@ export function deepCompare(a: unknown, b: unknown): boolean {
 
   return false;
 }
+
+export function escapeHTML(str: string): string {
+  return str.replace(/[&<>"']/g, char => {
+    switch (char) {
+    case "&": return "&amp;";
+    case "<": return "&lt;";
+    case ">": return "&gt;";
+    case '"': return "&quot;";
+    case "'": return "&#39;";
+    default: return char;
+    }
+  });
+}
+
+export const formatHTML = (html?: string, options?: {
+    multiNewlineStartNewline?: boolean;
+  }): string => {
+  let escaped = escapeHTML(html ?? "");
+  if (options?.multiNewlineStartNewline) {
+    if (/\n/.test(escaped)) escaped = "\n" + escaped;
+  }
+  const newlines = escaped.replace(/\n/g, "<br>");
+  return newlines;
+};
+
+type ProcessedLesson = {
+  lessonNumber: number;
+  subjectNameLong: string;
+  subjectNameShort: string;
+  subjectNameSubstitution: string[] | null;
+  teacherName: string;
+  teacherNameSubstitution: string[] | null;
+  room: string;
+  startTime: number;
+  endTime: number;
+};
+type GroupedLessonData = {
+  lessonNumber: number;
+  startTime: number;
+  endTime: number;
+  lessons: ProcessedLesson[];
+}[];
+
+async function getGroupedLessonData(date: Date): Promise<GroupedLessonData> {
+  const currentJoinedTeamsData = await joinedTeamsData();
+  const currentSubjectData = await subjectData();
+  let currentLessonData = await lessonData();
+
+  currentLessonData = currentLessonData.filter(l => l.weekDay === date.getDay() - 1);
+
+  const processedLessonData: ProcessedLesson[] = [];
+  for (const lesson of currentLessonData) {
+    if (!(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId === -1)) continue;
+    let subject = currentSubjectData.find(s => s.subjectId === lesson.subjectId) ?? {
+      subjectNameLong: "Pause",
+      subjectNameShort: "Pause",
+      subjectNameSubstitution: null,
+      teacherGender: "d",
+      teacherNameLong: "",
+      teacherNameSubstitution: null
+    }
+
+    processedLessonData.push({
+      lessonNumber: lesson.lessonNumber,
+      startTime: parseInt(lesson.startTime),
+      endTime: parseInt(lesson.endTime),
+      
+      subjectNameLong: subject.subjectNameLong,
+      subjectNameShort: subject.subjectNameShort,
+      subjectNameSubstitution: subject.subjectNameSubstitution,
+      teacherName:
+        (subject.teacherGender === "w" ? "Frau " : "") +
+        (subject.teacherGender === "m" ? "Herr " : "") +
+        subject.teacherNameLong,
+      teacherNameSubstitution: subject.teacherNameSubstitution,
+      room: lesson.room
+    });
+  }
+
+  let groupedLessonData: GroupedLessonData = [];
+  for (const lesson of processedLessonData) {
+    const group = groupedLessonData.find(l => l.lessonNumber === lesson.lessonNumber);
+    if (group) {
+      group.lessons.push(lesson);
+    }
+    else {
+      groupedLessonData.push({
+        lessonNumber: lesson.lessonNumber,
+        startTime: lesson.startTime,
+        endTime: lesson.endTime,
+        lessons: [lesson]
+      });
+    }
+  }
+  groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
+  return groupedLessonData;
+}
+
+export async function getTimetableData(date: Date) {
+  if ([0, 6].includes(date.getDay())) {
+    return null
+  }
+  const x = await getGroupedLessonData(date);
+  console.log(x)
+}
+
+setTimeout(() => {
+  getTimetableData(new Date())
+}, 10)
 
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
@@ -349,7 +475,7 @@ async function loadClassSubstitutionsData(): Promise<void> {
 
   const data = structuredClone(currentSubstitutionsData.data);
   const className = currentSubstitutionsData.substitutionClassName ?? "";
-  const [_, classNumber, classLetter] = /^(\d*)([a-zA-Z]*)$/.exec(className) ?? []
+  const [, classNumber, classLetter] = /^(\d*)([a-zA-Z]*)$/.exec(className) ?? [];
   for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
     const key = ("plan" + planId) as "plan1" | "plan2";
     data[key].substitutions = data[key].substitutions.filter((entry: Record<string, string>) =>
@@ -528,28 +654,3 @@ if (!isSite("settings")) {
 $(document).on("input", ".autocomplete", function () {
   $(this).removeClass("autocomplete");
 });
-
-declare global {
-  interface JQueryStatic {
-    escapeHtml(html: string): string;
-    formatHtml(
-      html: string,
-      options?: {
-        multiNewlineStartNewline?: boolean;
-      },
-    ): string;
-  }
-}
-
-$.escapeHtml = html => {
-  return $("<div>").text(html).html();
-};
-
-$.formatHtml = (html, options?) => {
-  let escaped = $.escapeHtml(html);
-  if (options?.multiNewlineStartNewline) {
-    if (/\n/.test(escaped)) escaped = "\n" + escaped;
-  }
-  const newlines = escaped.replace(/\n/g, "<br>");
-  return newlines;
-};

@@ -1,4 +1,4 @@
-import { getSite } from "../../global/global.js";
+import { escapeHTML, getSite } from "../../global/global.js";
 import { user } from "../navbar/navbar.js";
 
 function getTouchPosition(ev: JQuery.TouchStartEvent): {x: number, y: number} {
@@ -30,7 +30,7 @@ user.on("change", (function _() {
   $(".bottombar-link").filter(i => [1, 3].includes(i))
     .toggleClass("bottombar-link-deactivated", ! user.classJoined)
     .each(function () {
-      $(this).attr("href", user.classJoined ? $.escapeHtml(($(this).attr("data-href")) ?? "") ?? "#" : null);
+      $(this).attr("href", user.classJoined ? escapeHTML(($(this).attr("data-href")) ?? "") ?? "#" : null);
     });
   return _;
 })());

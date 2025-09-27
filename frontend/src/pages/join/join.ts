@@ -1,10 +1,6 @@
 import { csrfToken, reloadAllFn } from "../../global/global.js";
 import { $navbarToasts, authUser, resetLoginRegister, user } from "../../snippets/navbar/navbar.js";
 
-function checkClassName(className: string): boolean {
-  return /^[\wÄÖÜäöü\s\-.]{2,50}$/.test(className);
-}
-
 let justCreatedClass = false;
 
 const qrCode = new QRCode("show-qrcode-modal-qrcode", {
@@ -160,18 +156,9 @@ $("#join-class-checkbox").on("input", function () {
   ));
 });
 
-$("#create-class-name").on("change", function () {
-  if (!checkClassName($(this).val()?.toString() ?? "")) {
-    $("#create-class-name").addClass("is-invalid");
-    $("#create-class-btn").prop("disabled", true);
-  }
-});
-
 $("#create-class-name").on("input", function () {
-  if (checkClassName($(this).val()?.toString() ?? "")) {
-    $("#create-class-name").removeClass("is-invalid");
-    $("#create-class-btn").prop("disabled", false);
-  }
+  $("#create-class-name").toggleClass("is-invalid", ($(this).val()?.toString()?? "") === "");
+  $("#create-class-btn").prop("disabled", ($(this).val()?.toString()?? "") === "");
 });
 
 $("#create-class-btn").on("click", async () => {

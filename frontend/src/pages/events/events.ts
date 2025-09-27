@@ -12,7 +12,8 @@ import {
   reloadAllFn,
   lessonData,
   SingleEventData,
-  EventData
+  EventData,
+  escapeHTML
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -68,7 +69,7 @@ async function updateEventList(): Promise<void> {
       }
     }
     else if (lesson !== null) {
-      timeSpan.append(startDate, ` <b>(${$.escapeHtml(lesson)}. Stunde)</b>`);
+      timeSpan.append(startDate, ` <b>(${escapeHTML(lesson)}. Stunde)</b>`);
     }
     // The template for an event with edit options
     const template = $(`
@@ -77,7 +78,7 @@ async function updateEventList(): Promise<void> {
           <div class="card-body p-2">
             <div class="d-flex justify-content-between">
               <div style="min-width: 0;">
-                <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${$.formatHtml(name)}</span>
+                <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${escapeHTML(name)}</span>
                 <br>
                 <span>${timeSpan.html()}</span>
               </div>
@@ -154,13 +155,13 @@ async function updateEventTypeList(): Promise<void> {
     const templateFilterType = `<div class="form-check">
         <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
         <label class="form-check-label" for="filter-type-${eventTypeId}">
-          ${$.formatHtml(eventTypeName)}
+          ${escapeHTML(eventTypeName)}
         </label>
       </div>`;
     $("#filter-type-list").append(templateFilterType);
 
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${eventTypeId}">${$.formatHtml(eventTypeName)}</option>`;
+    const templateFormSelect = `<option value="${eventTypeId}">${escapeHTML(eventTypeName)}</option>`;
     $("#add-event-type").append(templateFormSelect);
     $("#edit-event-type").append(templateFormSelect);
   });
@@ -197,7 +198,7 @@ async function updateTeamList(): Promise<void> {
     const teamName = team.name;
 
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${team.teamId}">${$.formatHtml(teamName)}</option>`;
+    const templateFormSelect = `<option value="${team.teamId}">${escapeHTML(teamName)}</option>`;
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
   });

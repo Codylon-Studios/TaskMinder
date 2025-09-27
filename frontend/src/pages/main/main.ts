@@ -17,7 +17,9 @@ import {
   msToTime,
   csrfToken,
   reloadAllFn,
-  CoreSubstitutionsData
+  CoreSubstitutionsData,
+  getTimeLeftString as getTimeString,
+  escapeHTML
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -282,9 +284,6 @@ async function updateHomeworkList(): Promise<void> {
 
   for (const homework of await homeworkData()) {
     async function filter(): Promise<boolean> {
-      if (currentSubjectData.find(s => s.subjectId === homework.subjectId) === undefined) {
-        return true;
-      }
       if ($("#homework-mode-tomorrow").prop("checked")) {
         const tomorrow = new Date(selectedDate);
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -328,7 +327,7 @@ async function updateHomeworkList(): Promise<void> {
     const homeworkId = homework.homeworkId;
 
     // Get the information for the homework
-    const subject = currentSubjectData.find(s => s.subjectId === homework.subjectId)?.subjectNameLong;
+    const subject = currentSubjectData.find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
     const assignmentDate = new Date(parseInt(homework.assignmentDate));
     const submissionDate = new Date(parseInt(homework.submissionDate));
@@ -344,7 +343,7 @@ async function updateHomeworkList(): Promise<void> {
             data-id="${homeworkId}" ${checked ? "checked" : ""}>
         </div>
         <label class="form-check-label" for="homework-check-${homeworkId}">
-          <span class="fw-bold">${$.formatHtml(subject ?? "")}</span>
+          <span class="fw-bold">${escapeHTML(subject)}</span>
         </label>
         <span class="homework-content"></span>
       </div>
@@ -441,7 +440,7 @@ async function updateEventList(): Promise<void> {
       }
     }
     else if (lesson !== null) {
-      timeSpan.append(startDate, ` <b>(${$.escapeHtml(lesson)}. Stunde)</b>`);
+      timeSpan.append(startDate, ` <b>(${escapeHTML(lesson)}. Stunde)</b>`);
     }
 
     // The template for an event
@@ -449,7 +448,7 @@ async function updateEventList(): Promise<void> {
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2">
             <div class="d-flex flex-column">
-              <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
+              <span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span>
               <span>${timeSpan.html()}</span>
               <span class="event-description"></span>
             </div>
@@ -545,12 +544,12 @@ async function updateSubstitutionList(): Promise<void> {
     const template = `
     <tr>
       ${substitutionsMode === "all" ? `<td>${substitution.class}</td>` : ""}
-      <td>${$.formatHtml(substitution.type)}</td>
-      <td>${$.formatHtml(substitution.lesson)}</td>
-      <td>${$.formatHtml(substitution.subject)}</td>
-      <td>${$.formatHtml(substitution.text)}</td>
-      <td>${$.formatHtml(substitution.teacher)}&nbsp;(${$.formatHtml(substitution.teacherOld)})</td>
-      <td>${$.formatHtml(substitution.room)}</td>
+      <td>${escapeHTML(substitution.type)}</td>
+      <td>${escapeHTML(substitution.lesson)}</td>
+      <td>${escapeHTML(substitution.subject)}</td>
+      <td>${escapeHTML(substitution.text)}</td>
+      <td>${escapeHTML(substitution.teacher)}&nbsp;(${escapeHTML(substitution.teacherOld)})</td>
+      <td>${escapeHTML(substitution.room)}</td>
     </tr>`;
     $("#substitutions-list").append(template);
   });
@@ -670,13 +669,17 @@ async function updateTimetable(): Promise<void> {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
     $("#timetable-mode-wrapper").addClass("d-none");
+    $("#timetable-feedback")
+      .find("i").hide().filter("#timetable-feedback-happy").show().end().end()
+      .find("span").text("Heute keine Schule!");
+    updateTimetableProgress();
     return;
   }
 
   $("#timetable-less").removeClass("d-none");
   $("#timetable-more").removeClass("d-none");
   $("#timetable-mode-wrapper").removeClass("d-none");
-  updateTimetableMode();
+  updateShownTimetable();
 
   const currentClassSubstitutionsData = (await classSubstitutionsData()).data;
 
@@ -719,7 +722,7 @@ async function updateTimetable(): Promise<void> {
           continue;
         }
 
-        const eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${$.formatHtml(event.name)}</span>`;
+        const eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${escapeHTML(event.name)}</span>`;
         thisLessLesson.find(".card-body").append(eventName);
         thisMoreLesson.find(".card-body").append(eventName);
 
@@ -746,7 +749,7 @@ async function updateTimetable(): Promise<void> {
           <span class="text-center timetable-less-subject">
             ${lessonGroup.lessons
     .map(l => {
-      return `<span class="original">${$.formatHtml(l.subjectNameShort)}</span>`;
+      return `<span class="original">${escapeHTML(l.subjectNameShort)}</span>`;
     })
     .join(" / ")}
           </span>
@@ -768,7 +771,7 @@ async function updateTimetable(): Promise<void> {
             <span class="fw-semibold text-center timetable-more-subject">
               ${lessonGroup.lessons
     .map(lessonData => {
-      return `<span class="original">${$.formatHtml(lessonData.subjectNameLong)}</span>`;
+      return `<span class="original">${escapeHTML(lessonData.subjectNameLong)}</span>`;
     })
     .join(" / ")}</span>
 
@@ -776,14 +779,14 @@ async function updateTimetable(): Promise<void> {
               <span class="text-center timetable-more-room">
               ${lessonGroup.lessons
     .map(lessonData => {
-      return `<span class="original">${$.formatHtml(lessonData.room)}</span>`;
+      return `<span class="original">${escapeHTML(lessonData.room)}</span>`;
     })
     .join(" / ")}</span>,
 
               <span class="text-center timetable-more-teacher">
               ${lessonGroup.lessons
     .map(lessonData => {
-      return `<span class="original">${$.formatHtml(lessonData.teacherName)}</span>`;
+      return `<span class="original">${escapeHTML(lessonData.teacherName)}</span>`;
     })
     .join(" / ")}</span>
             </span>
@@ -807,10 +810,10 @@ async function updateTimetable(): Promise<void> {
                 lessSubjectElement.addClass("line-through-" + color);
                 if (substitution.subject !== "-") {
                   moreSubjectElement.after(
-                    ` <span class="text-${color} fw-bold">${$.formatHtml(substitution.subject)}</span>`
+                    ` <span class="text-${color} fw-bold">${escapeHTML(substitution.subject)}</span>`
                   );
                   lessSubjectElement.after(
-                    ` <span class="text-${color} fw-bold">${$.formatHtml(substitution.subject)}</span>`
+                    ` <span class="text-${color} fw-bold">${escapeHTML(substitution.subject)}</span>`
                   );
                 }
               }
@@ -824,7 +827,7 @@ async function updateTimetable(): Promise<void> {
               if (substitution.room !== lesson.room) {
                 roomElement.addClass("line-through-" + color);
                 if (substitution.room !== "-") {
-                  roomElement.after(` <span class="text-${color} fw-bold">${$.formatHtml(substitution.room)}</span>`);
+                  roomElement.after(` <span class="text-${color} fw-bold">${escapeHTML(substitution.room)}</span>`);
                 }
               }
   
@@ -834,7 +837,7 @@ async function updateTimetable(): Promise<void> {
                 teacherElement.addClass("line-through-" + color);
                 if (substitution.teacher !== "-") {
                   teacherElement.after(
-                    ` <span class="text-${color} fw-bold">${$.formatHtml(substitution.teacher)}</span>`
+                    ` <span class="text-${color} fw-bold">${escapeHTML(substitution.teacher)}</span>`
                   );
                 }
               }
@@ -845,7 +848,7 @@ async function updateTimetable(): Promise<void> {
 
             const color = substitution.type === "Entfall" ? "red" : "yellow";
 
-            const substitutionTypeText = `<div class="text-${color} text-center fw-bold mt-2">${$.formatHtml(substitution.type)}</div>`;
+            const substitutionTypeText = `<div class="text-${color} text-center fw-bold mt-2">${escapeHTML(substitution.type)}</div>`;
             thisLessLesson.find(".card-body").append(substitutionTypeText);
             thisMoreLesson.find(".card-body").append(substitutionTypeText);
 
@@ -855,7 +858,7 @@ async function updateTimetable(): Promise<void> {
             if (substitution.text !== "-") {
               thisMoreLesson
                 .find(".card-body")
-                .append(`<div class="text-${color} text-center">${$.formatHtml(substitution.text)}</div>`);
+                .append(`<div class="text-${color} text-center">${escapeHTML(substitution.text)}</div>`);
             }
 
             if (substitution.type === "Entfall") {
@@ -940,10 +943,10 @@ async function updateTimetable(): Promise<void> {
     $("#timetable-less, #timetable-more").html("<div class=\"text-secondary text-center\">Kein Stundenplan für diesen Tag.</div>");
   }
 
-  updateTimetableProgressBar();
+  updateTimetableProgress();
 };
 
-function updateTimetableMode(): void {
+function updateShownTimetable(): void {
   if ([0, 6].includes(selectedDate.getDay())) {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
@@ -963,10 +966,9 @@ function updateTimetableMode(): void {
     $("#timetable-more").addClass("d-none");
     localStorage.setItem("timetableMode", "none");
   }
-  updateTimetableProgressBar();
 }
 
-async function updateTimetableProgressBar(): Promise<void> {
+async function updateTimetableProgress(): Promise<void> {
   function offsetTop($el: JQuery<HTMLElement>): number {
     return $el.offset()?.top ?? 0;
   }
@@ -974,21 +976,22 @@ async function updateTimetableProgressBar(): Promise<void> {
     return $el.outerHeight() ?? 0;
   }
 
+  const nowD = new Date();
+  const now = (nowD.getHours() * 60 * 60 + nowD.getMinutes() * 60 + nowD.getSeconds()) * 1000;
+
   if (! isSameDay(selectedDate, new Date())) {
     $("#timetable-less, #timetable-more").addClass("timetable-today");
+    $("#timetable-feedback").addClass("d-none");
     return;
   }
   $("#timetable-less, #timetable-more").removeClass("timetable-today");
+  $("#timetable-feedback").removeClass("d-none");
 
   const lessonNumbers = (await getGroupedLessonData());
   const prevLessonNumbers = lessonNumbers.filter(l => {
-    const nowD = new Date();
-    const now = (nowD.getHours() * 60 + nowD.getMinutes()) * 60 * 1000;
     return l.startTime <= now;
   });
   const nextLessonNumbers = lessonNumbers.filter(l => {
-    const nowD = new Date();
-    const now = (nowD.getHours() * 60 + nowD.getMinutes()) * 60 * 1000;
     return now < l.endTime;
   });
   const currentLessonNumber = prevLessonNumbers.filter(obj => nextLessonNumbers.includes(obj));
@@ -999,8 +1002,6 @@ async function updateTimetableProgressBar(): Promise<void> {
     // General
     const start = currentLessonNumber[0].startTime;
     const end = currentLessonNumber[0].endTime;
-    const nowD = new Date();
-    const now = (nowD.getHours() * 60 * 60 + nowD.getMinutes() * 60 + nowD.getSeconds()) * 1000;
     const percentage = (now - start) / (end - start);
 
     // Timetable More
@@ -1023,8 +1024,60 @@ async function updateTimetableProgressBar(): Promise<void> {
       $current.css("--bar-progress", percentage * 100 + "%");
     }
   }
-  else if (prevLessonNumbers.length === 0 || nextLessonNumbers.length === 0) {
+  else if (prevLessonNumbers.length === 0) {
     $("#timetable-less, #timetable-more").addClass("timetable-out-of-range");
+
+    if (nextLessonNumbers.length > 0) {
+      const firstLessonGroup = nextLessonNumbers[0]
+      const timeLeft = getTimeString(firstLessonGroup.startTime - now);
+
+
+      function matchesLessonNumber(substitution: Record<string, string>, lessonNumber: number): boolean {
+        if (substitution.lesson.includes("-")) {
+          const [start, end] = substitution.lesson.replace(" ", "").split("-").map(Number)
+          if (start > lessonNumber || lessonNumber > end) {
+            return false;
+          }
+        }
+        else if (parseInt(substitution.lesson) !== lessonNumber) {
+          return false;
+        }
+        return true;
+      }
+
+      function matchesTeacher(substitution: Record<string, string>, lesson: ProcessedLesson): boolean {
+        return (lesson.teacherNameSubstitution ?? []).includes(substitution.teacherOld);
+      }
+
+      const currentClassSubstitutionsData = (await classSubstitutionsData()).data;
+      if (currentClassSubstitutionsData !== "No data") {
+        for (const substitution of currentClassSubstitutionsData.plan1.substitutions) {
+          if (matchesLessonNumber(substitution, firstLessonGroup.lessonNumber)) {
+            for (const lesson of firstLessonGroup.lessons) {
+              if (matchesTeacher(substitution, lesson)) {
+                lesson.subjectNameLong = substitution.subject
+                lesson.room = substitution.room
+              }
+            }
+          }
+        }
+      }
+
+      $("#timetable-feedback")
+        .find("i").hide().filter("#timetable-feedback-info").show().end().end()
+        .find("span").html(`
+          Der Unterricht beginnt in <b>${timeLeft}</b>
+          mit ${nextLessonNumbers[0].lessons.map(l => `<b>${escapeHTML(l.subjectNameLong)}</b>`).join(" / ")}
+          im Raum ${nextLessonNumbers[0].lessons.map(l => `<b>${escapeHTML(l.room)}</b>`).join(" / ")}
+        `);
+    }
+  }
+  else if (nextLessonNumbers.length === 0) {
+    $("#timetable-less, #timetable-more").addClass("timetable-out-of-range");
+
+    $("#timetable-feedback")
+      .find("i").hide().filter("#timetable-feedback-happy").show().end().end()
+      .find("span").text("Der Schultag ist zu Ende!");
   }
   else {
     $("#timetable-less, #timetable-more").removeClass("timetable-out-of-range");
@@ -1055,7 +1108,7 @@ async function updateTimetableProgressBar(): Promise<void> {
   }
 }
 
-setInterval(updateTimetableProgressBar,  30 * 1000); // Update every 30s
+setInterval(updateTimetableProgress,  30 * 1000); // Update every 30s
 
 async function renameCalendarMonthYear(): Promise<void> {
   $("#calendar-month-year").text(`${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`);
@@ -1368,7 +1421,8 @@ $("#filter-homework-mode").on("input", () => {
 
 $("#timetable-mode input").each(function () {
   $(this).on("click", () => {
-    updateTimetableMode();
+    updateShownTimetable();
+    updateTimetableProgress();
   });
   $(this).prop("checked", false);
 });

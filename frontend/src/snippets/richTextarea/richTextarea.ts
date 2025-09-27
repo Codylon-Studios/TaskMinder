@@ -1,4 +1,4 @@
-import { deepCompare } from "../../global/global.js";
+import { deepCompare, escapeHTML } from "../../global/global.js";
 import { rgbToHex } from "../colorPicker/colorPicker.js";
 
 export function richTextToHtml(
@@ -234,7 +234,7 @@ export function richTextToPlainText(val: string): string {
   val = val.replaceAll("\\«", "<");
   val = val.replaceAll("\\»", ">");
   val = val.replaceAll("\\\\", "\\");
-  return $.escapeHtml(val);
+  return escapeHTML(val);
 }
 
 function replaceRichTextareas(): void {
@@ -415,7 +415,7 @@ function replaceRichTextareas(): void {
       { old: "-->", new: "⭢" },
       { old: "<--", new: "⭠" },
       { old: "<->", new: "⭤" },
-      { old: "...", new: "…" }
+      { old: "*", new: "☆" }
     ];
 
     textarea.on("beforeinput", async e => {

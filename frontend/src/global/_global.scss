@@ -202,6 +202,10 @@ body {
   color: var(--bs-body-bg) !important;
 }
 
+.word-wrap-break {
+  word-wrap: break-word
+}
+
 @each $variant in $custom-btn-variants {
   .btn-#{$variant} {
     @include button-variant(white, $primary);

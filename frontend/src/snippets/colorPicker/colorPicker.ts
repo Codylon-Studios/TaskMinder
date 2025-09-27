@@ -1,3 +1,5 @@
+import { escapeHTML } from "../../global/global.js";
+
 type ColorRGB = {
   red: number;
   green: number;
@@ -96,7 +98,7 @@ function replaceColorPickers(): void {
     popup.find(".color-picker-saved").html(savedColorsHtml);
     popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(startColor));
 
-    popup.find(`.color-picker-option[data-color="${$.formatHtml(startColor)}"]`).addClass("selected");
+    popup.find(`.color-picker-option[data-color="${escapeHTML(startColor)}"]`).addClass("selected");
     popup.find(".color-picker-hex").val(startColor === "auto" ? "Automatisch" : startColor);
 
     if ($(this).attr("data-show-auto-option") === "true") {
@@ -201,7 +203,7 @@ function replaceColorPickers(): void {
       input.val(hexColor).trigger("change");
       trigger.css("--selected-color", hexToCSS(hexColor));
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
-      popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
+      popup.find(`.color-picker-option[data-color="${escapeHTML(hexColor)}"]`).addClass("selected");
       popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(hexColor));
     }
 
@@ -296,7 +298,7 @@ function replaceColorPickers(): void {
       input.val(hexColor).trigger("change");
       trigger.css("--selected-color", hexToCSS(hexColor));
       popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
-      popup.find(`.color-picker-option[data-color="${$.formatHtml(hexColor)}"]`).addClass("selected");
+      popup.find(`.color-picker-option[data-color="${escapeHTML(hexColor)}"]`).addClass("selected");
       popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(hexColor));
     }
 
@@ -387,7 +389,7 @@ function replaceColorPickers(): void {
     });
 
     $(popup).on("click", ".color-picker-save", function (ev) {
-      const color = $.escapeHtml(input.val()?.toString() ?? "auto");
+      const color = escapeHTML(input.val()?.toString() ?? "auto");
       if (color === "auto") return;
       if (savedColors.includes(color)) {
         savedColors.splice(savedColors.indexOf(color), 1);

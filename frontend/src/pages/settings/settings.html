@@ -271,18 +271,43 @@
               </div>
             </div>
 
-            <span class="fs-3">
+            <div class="fs-3 mb-2 d-flex align-items-center">
               Klasse
-              <b id="class-settings-name"></b>
-            </span>
+              <b id="class-settings-name" class="ms-1"></b>
+              <button class="btn btn-tertiary fw-semibold ms-2" id="change-class-name-button">
+                <i class="fa-solid fa-pencil" aria-hidden="true"></i>
+                Umbenennen
+              </button>
+            </div>
 
-            <div class="row align-items-center mb-2">
+            <div class="mb-2" id="change-class-name">
+              <div class="mb-2">
+                <input class="form-control w-fit-content" type="text" placeholder="Der neue Name" id="change-class-name-new-class-name" />
+                <div class="invalid-feedback">Der Klassenname darf nicht leer sein!</div>
+              </div>
+              <button class="btn btn-secondary fw-bold" id="change-class-name-cancel">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-primary fw-bold" id="change-class-name-confirm">
+                <i class="fa-solid fa-pencil" aria-hidden="true"></i>
+                Bestätigen
+              </button>
+            </div>
+
+            <div class="row mb-2">
               <div class="col-12 col-lg-auto">
                 <label for="class-code" class="col-form-label mb-0">Euer Klassencode</label>
               </div>
               <div class="col-12 col-lg" id="class-code-container">
-                <div class="d-flex gap-2 flex-column flex-lg-row">
+                <div class="d-flex gap-2 flex-column flex-lg-row mb-2">
                   <input id="class-code" type="text" class="form-control user-select-all" value="" readonly />
+                  <button class="btn btn-primary w-100 fw-semibold" id="change-class-code">
+                    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                    Neuen Klassencode anfordern
+                  </button>
+                </div>
+                <div class="d-flex gap-2 flex-column flex-lg-row">
                   <button class="btn btn-primary w-100 fw-semibold" id="invite-copy-link">
                     <i class="fa-solid fa-link" aria-hidden="true"></i>
                     Einladungslink kopieren
@@ -297,6 +322,17 @@
             <div class="form-text mb-4">
               Um die Inhalte eurer Klasse zu sehen, müssen deine Mitschülerinnen und Mitschüler den Klassencode eingeben. Du kannst ihnen auch den
               Einladungslink schicken oder sie den QR-Code einscannen lassen.
+            </div>
+
+            <div class="alert alert-danger p-2 align-items-center gap-2 w-100 d-none d-flex" id="test-class-alert">
+              <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+              <span class="d-block me-1 w-100">
+                Eure Klasse ist noch eine Testklasse. In
+                <span class="text-danger fw-bold" id="upgrade-test-class-time-left">24 Stunden</span>
+                werden alle Daten gelöscht!
+                <button class="btn btn-danger w-100 fw-bold mt-2" id="upgrade-test-class">Testklasse zu normaler Klasse machen</button>
+                <div class="form-text text-center">Alle Daten werden dann für immer behalten.</div>
+              </span>
             </div>
 
             <button class="btn btn-danger fw-bold" id="delete-class-button">

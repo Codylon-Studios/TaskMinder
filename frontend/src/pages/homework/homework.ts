@@ -13,7 +13,8 @@ import {
   csrfToken,
   reloadAllFn,
   HomeworkData,
-  lessonData
+  lessonData,
+  escapeHTML
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -46,7 +47,7 @@ async function updateHomeworkList(): Promise<void> {
       data = data.filter(h => h.checked);
     }
     // Filter by subject
-    data = data.filter(h => $(`#filter-subject-${h.subjectId}`).prop("checked"));
+    data = data.filter(h => $(`#filter-subject-${h.subjectId}`).prop("checked") || h.subjectId === -1);
     // Filter by team
     const currentJoinedTeamsData = await joinedTeamsData();
     data = data.filter(h => currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1);
@@ -80,7 +81,7 @@ async function updateHomeworkList(): Promise<void> {
     const homeworkId = homework.homeworkId;
 
     // Get the information for the homework
-    const subject = (await subjectData()).find(s => s.subjectId === homework.subjectId)?.subjectNameLong;
+    const subject = (await subjectData()).find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
     const assignmentDate = msToDisplayDate(homework.assignmentDate);
     const submissionDate = msToDisplayDate(homework.submissionDate);
@@ -94,7 +95,7 @@ async function updateHomeworkList(): Promise<void> {
               data-id="${homeworkId}" ${homework.checked ? "checked" : ""}>
           </div>
           <label class="form-check-label" for="homework-check-${homeworkId}">
-            <span class="fw-bold">${$.formatHtml(subject ?? "")}</span>
+            <span class="fw-bold">${escapeHTML(subject)}</span>
           </label>
           <span class="homework-content"></span>
           <span class="ms-4 d-block">Von ${assignmentDate} auf ${submissionDate}</span>
@@ -162,13 +163,13 @@ async function updateSubjectList(): Promise<void> {
         <input type="checkbox" class="form-check-input filter-subject-option"
           id="filter-subject-${subjectId}" data-id="${subjectId}" ${checkedStatus}>
         <label class="form-check-label" for="filter-subject-${subjectId}">
-          ${$.formatHtml(subjectName)}
+          ${escapeHTML(subjectName)}
         </label>
       </div>`;
     $("#filter-subject-list").append(templateFilterSubject);
 
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${subjectId}">${$.formatHtml(subjectName)}</option>`;
+    const templateFormSelect = `<option value="${subjectId}">${escapeHTML(subjectName)}</option>`;
     $("#add-homework-subject").append(templateFormSelect);
     $("#edit-homework-subject").append(templateFormSelect);
   }));
@@ -208,7 +209,7 @@ async function updateTeamList(): Promise<void> {
     const teamName = team.name;
 
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${team.teamId}">${$.formatHtml(teamName)}</option>`;
+    const templateFormSelect = `<option value="${team.teamId}">${escapeHTML(teamName)}</option>`;
     $("#add-homework-team").append(templateFormSelect);
     $("#edit-homework-team").append(templateFormSelect);
   });

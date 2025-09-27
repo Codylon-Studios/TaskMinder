@@ -15,7 +15,9 @@ import {
   LessonData,
   csrfToken,
   reloadAllFn,
-  classMemberData
+  classMemberData,
+  getTimeLeftString,
+  escapeHTML
 } from "../../global/global.js";
 import { $navbarToasts, authUser, user } from "../../snippets/navbar/navbar.js";
 
@@ -67,7 +69,7 @@ async function updateClassMemberList(): Promise<void> {
       <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${classMemberId}">
         <div class="d-flex flex-column flex-lg-row align-items-lg-center flex-grow-1">
           <div class="d-flex w-lg-50 pe-3 align-items-center">
-            <span class="w-100">${$.formatHtml(classMember.username) + (isCurrentUser ? " <b>(Du)</b>" : "")}</span>
+            <span class="w-100">${escapeHTML(classMember.username) + (isCurrentUser ? " <b>(Du)</b>" : "")}</span>
             <label class="form-text mt-0 d-flex align-items-center">
               Rolle:
               <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content${isCurrentUser ? " is-current-user": ""}"
@@ -158,7 +160,7 @@ async function updateTeamLists(): Promise<void> {
       <div class="form-check">
         <input type="checkbox" class="form-check-input" data-id="${teamId}" id="team-selection-team-${teamId}" ${selected ? "checked" : ""}>
         <label class="form-check-label" for="team-selection-team-${teamId}">
-          ${$.formatHtml(team.name)}
+          ${escapeHTML(team.name)}
         </label>
       </div>`;
     newTeamSelectionContent += template;
@@ -170,14 +172,14 @@ async function updateTeamLists(): Promise<void> {
           <label>
             Name
             <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 team-name-input" type="text"
-              value="${$.formatHtml(team.name)}" placeholder="${$.formatHtml(team.name)}"
+              value="${escapeHTML(team.name)}" placeholder="${escapeHTML(team.name)}"
               data-id="${teamId}" ${canEditClassSettings ? "" : "disabled"}>
             <div class="invalid-feedback">Teamnamen dürfen nicht leer sein!</div>
           </label>
         </div>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none team-renamed" data-id="${teamId}">
             Umbenannt
-            <span class="text-secondary fw-normal team-renamed-name" data-id="${teamId}">(${$.formatHtml(team.name)} zu <b></b>)</span>
+            <span class="text-secondary fw-normal team-renamed-name" data-id="${teamId}">(${escapeHTML(team.name)} zu <b></b>)</span>
           </span>
           <span class="text-danger fw-bold mt-2 mt-md-0 d-none team-deleted" data-id="${teamId}">Gelöscht</span>
         </div
@@ -270,21 +272,21 @@ async function updateEventTypeList(): Promise<void> {
               <label>
                 Name
                 <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 event-type-name-input" type="text"
-                  value="${$.formatHtml(eventType.name)}" placeholder="${$.formatHtml(eventType.name)}"
+                  value="${escapeHTML(eventType.name)}" placeholder="${escapeHTML(eventType.name)}"
                   data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
                 <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
               </label>
             </div>
             <label class="d-flex align-items-center">
               <div class="me-2">Farbe</div>
-              <input type="text" value="${$.formatHtml(eventType.color)}" class="color-picker event-type-color-input"
+              <input type="text" value="${escapeHTML(eventType.color)}" class="color-picker event-type-color-input"
                 data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
             </label>
           </div>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none me-2 event-type-renamed" data-id="${eventTypeId}">
             Umbenannt
             <span class="text-secondary fw-normal event-type-renamed-name" data-id="${eventTypeId}">
-              (${$.formatHtml(eventType.name)} zu <b></b>)
+              (${escapeHTML(eventType.name)} zu <b></b>)
             </span>
           </span>
           <span class="text-warning fw-bold mt-2 mt-md-0 d-none event-type-recolored" data-id="${eventTypeId}">
@@ -407,7 +409,7 @@ async function updateSubjectList(): Promise<void> {
 
     function getTemplate(): JQuery<HTMLElement> {
       function getHtmlFromValue(value: unknown, fallback: string): string {
-        return $.formatHtml(value?.toString() ?? fallback);
+        return escapeHTML(value?.toString() ?? fallback);
       }
       const isDisabled = canEditClassSettings ? "" : "disabled";
 
@@ -462,11 +464,11 @@ async function updateSubjectList(): Promise<void> {
                 <b>Vertretungen</b>
                 <label for="subject-name-substitution-input-${subject.subjectId}">Fachname</label>
                 <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"
-                  type="text" value="${$.formatHtml(subject.subjectNameSubstitution?.toString() ?? "")}" ${isDisabled}
+                  type="text" value="${escapeHTML(subject.subjectNameSubstitution?.toString() ?? "")}" ${isDisabled}
                   placeholder="${subjectNameSubstitution}" id="subject-name-substitution-input-${subject.subjectId}">
                 <label for="subject-teacher-substitution-input-${subject.subjectId}">Lehrkraftname</label>
                 <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id="${subjectId}"
-                  type="text" value="${$.formatHtml(subject.teacherNameSubstitution?.toString() ?? "")}" ${isDisabled}
+                  type="text" value="${escapeHTML(subject.teacherNameSubstitution?.toString() ?? "")}" ${isDisabled}
                   placeholder="${teacherNameSubstitution}" id="subject-teacher-substitution-input-${subject.subjectId}">
               </div>
             </div>
@@ -474,10 +476,10 @@ async function updateSubjectList(): Promise<void> {
               <div class="text-warning fw-bold mt-2 d-none subject-changed" data-id="${subjectId}">
                 Geändert
                 <span class="subject-changed-name-long">
-                  ${$.formatHtml(subject.subjectNameLong)} zu <b></b>
+                  ${escapeHTML(subject.subjectNameLong)} zu <b></b>
                 </span>
                 <span class="subject-changed-name-short">
-                  ${$.formatHtml(subject.subjectNameShort)} zu <b></b>
+                  ${escapeHTML(subject.subjectNameShort)} zu <b></b>
                 </span>
                 <span class="subject-changed-name-substitution">
                   ${subjectNameSubstitution} zu <b></b>
@@ -486,10 +488,10 @@ async function updateSubjectList(): Promise<void> {
                   ${{ w: "Frau", m: "Herr", d: "Keine Anrede" }[subject.teacherGender]} zu <b></b>
                 </span>
                 <span class="subject-changed-teacher-long">
-                  ${$.formatHtml(subject.teacherNameLong)} zu <b></b>
+                  ${escapeHTML(subject.teacherNameLong)} zu <b></b>
                 </span>
                 <span class="subject-changed-teacher-short">
-                  ${$.formatHtml(subject.teacherNameShort)} zu <b></b>
+                  ${escapeHTML(subject.teacherNameShort)} zu <b></b>
                 </span>
                 <span class="subject-changed-teacher-substitution">
                   ${teacherNameSubstitution} zu <b></b>
@@ -509,10 +511,10 @@ async function updateSubjectList(): Promise<void> {
     }
 
     const subjectId = subject.subjectId;
-    const subjectNameLong = $.formatHtml(subject.subjectNameLong);
-    const subjectNameShort = $.formatHtml(subject.subjectNameShort);
-    const teacherNameLong = $.formatHtml(subject.teacherNameLong);
-    const teacherNameShort = $.formatHtml(subject.teacherNameShort);
+    const subjectNameLong = escapeHTML(subject.subjectNameLong);
+    const subjectNameShort = escapeHTML(subject.subjectNameShort);
+    const teacherNameLong = escapeHTML(subject.teacherNameLong);
+    const teacherNameShort = escapeHTML(subject.teacherNameShort);
     const template = getTemplate();
     template.find(".subject-changed").last().find("span").addClass("d-none").attr("data-id", subjectId);
     newSubjectsContent += template[0].outerHTML;
@@ -756,13 +758,13 @@ async function updateTimetable(): Promise<void> {
 
   let subjectOptions = "";
   (await subjectData()).forEach(subject => {
-    subjectOptions += `<option value="${subject.subjectId}">${$.formatHtml(subject.subjectNameLong)}</option>`;
+    subjectOptions += `<option value="${subject.subjectId}">${escapeHTML(subject.subjectNameLong)}</option>`;
   });
 
   let teamOptions = "";
 
   (await teamsData()).forEach(team => {
-    teamOptions += `<option value="${team.teamId}">${$.formatHtml(team.name)}</option>`;
+    teamOptions += `<option value="${team.teamId}">${escapeHTML(team.name)}</option>`;
   });
 
   for (let dayId = 0; dayId < 5; dayId++) {
@@ -826,7 +828,7 @@ async function updateTimetable(): Promise<void> {
         <div class="d-flex mb-2 align-items-center">
           <label class="d-flex align-items-center w-100">
             Raum
-            <input class="timetable-room form-control form-control-sm ms-2" type="text" value="${$.formatHtml(lesson.room)}"
+            <input class="timetable-room form-control form-control-sm ms-2" type="text" value="${escapeHTML(lesson.room)}"
               ${canEditClassSettings ? "" : "disabled"}>
           </label>
         </div>
@@ -932,9 +934,21 @@ async function updateTimetable(): Promise<void> {
   });
 }
 
+function updateTestClassTimeLeft(): void {
+  if (isTestClass) {
+    const timeLeft = 24 * 60 * 60 * 1000 - (Date.now() - testClassTimeCreated);
+    $("#upgrade-test-class-time-left").text(getTimeLeftString(timeLeft));
+  }
+}
+
+setInterval(updateTestClassTimeLeft, 1000);
+
 let dsbActivated = false;
 let canEditClassSettings = false;
 let canEditMemberSettings = false;
+
+let isTestClass = false;
+let testClassTimeCreated = 0;
 
 $(async () => {
   reloadAllFn.set(async () => {
@@ -984,6 +998,7 @@ user.on("change", async () => {
   if (user.classJoined) {
     $("#leave-class").hide();
     $("#delete-class").hide();
+    $("#change-class-name").hide();
     $("#kick-logged-out-users").hide();
     $("#set-logged-out-users-role").hide();
 
@@ -999,6 +1014,11 @@ user.on("change", async () => {
         qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
         $("#show-qrcode-modal-title b").text(res.className);
         $("#class-settings-name").text(res.className);
+
+        isTestClass = res.isTestClass;
+        $("#test-class-alert").toggleClass("d-none", !isTestClass);
+        testClassTimeCreated = parseInt(res.classCreated);
+        updateTestClassTimeLeft();
       })
       .fail(() => {
         $("#class-code").val("Fehler beim Laden");
@@ -1007,7 +1027,7 @@ user.on("change", async () => {
 
     $("#invite-copy-link").on("click", async () => {
       try {
-        await navigator.clipboard.writeText(location.host + `/join?class_code=${classCode}`);
+        await navigator.clipboard.writeText(location.host + `/join?class_code=${$("#class-code").val()}`);
     
         $("#invite-copy-link").prop("disabled", true).html("<i class=\"fa-solid fa-check-circle\" aria-hidden=\"true\"></i> Einladungslink kopiert");
     
@@ -1056,9 +1076,12 @@ user.on("change", async () => {
         .find("button, select")
         .prop("disabled", false);
     }
-    $("#delete-class-button").prop("disabled", permissionLevel !== 3);
-    $("#kick-logged-out-users-button").prop("disabled", permissionLevel !== 3);
-    $("#set-logged-out-users-role-select").prop("disabled", permissionLevel !== 3);
+    $("#change-class-name-button").prop("disabled", permissionLevel < 2);
+    $(`#change-class-code,
+       #upgrade-test-class,
+       #delete-class-button,
+       #kick-logged-out-users-button,
+       #set-logged-out-users-role-select`).prop("disabled", permissionLevel !== 3);
     $(".is-current-user").prop("disabled", true);
   }
 });
@@ -1557,6 +1580,144 @@ $("#leave-class-confirm").on("click", async () => {
   }, 1000);
 });
 
+
+// Change classname
+$("#change-class-name-button").on("click", function () {
+  $(this).hide();
+  $("#change-class-name").show();
+  $("#change-class-name input").val("");
+  $("#change-class-name-confirm").prop("disabled", true);
+});
+
+$("#change-class-name-cancel").on("click", () => {
+  $("#change-class-name").hide();
+  $("#change-class-name-button").show();
+});
+
+$("#change-class-name-new-class-name").on("input", () => {
+  if ($("#change-class-name-new-class-name").val()?.toString()) {
+    $("#change-class-name-new-class-name").removeClass("is-invalid");
+    $("#change-class-name-confirm").prop("disabled", false);
+  }
+});
+
+$("#change-class-name-new-class-name").on("input change", () => {
+  if (! $("#change-class-name-new-class-name").val()?.toString()) {
+    $("#change-class-name-new-class-name").addClass("is-invalid");
+    $("#change-class-name-confirm").prop("disabled", true);
+  }
+});
+
+$("#change-class-name-confirm").on("click", async () => {
+  const className = $("#change-class-name-new-class-name").val()?.toString() ?? "";
+  const data = {
+    classDisplayName: className
+  };
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/class/change_class_name",
+    type: "POST",
+    data: data,
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#change-class-name-button").show();
+      $("#change-class-name").hide();
+
+      $("#show-qrcode-modal-title b").text(className);
+      $("#class-settings-name").text(className);
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+
+// Change classcode
+$("#change-class-code").on("click", async () => {
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/class/change_class_code",
+    type: "POST",
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: res => {
+      $("#class-code").val(res);
+      $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
+      qrCode.makeCode(location.host + `/join?class_code=${res}`);
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+// Upgrade test class
+$("#upgrade-test-class").on("click", async () => {
+  let hasResponded = false;
+
+  $.ajax({
+    url: "/class/upgrade_test_class",
+    type: "POST",
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#test-class-alert").addClass("d-none");
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
+        $navbarToasts.serverError.toast("show");
+      }
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
+    }
+  });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
 // Delete class
 
 $("#delete-class-button").on("click", function () {
@@ -1820,13 +1981,13 @@ $("#class-members-save").on("click", () => {
   else {
     $("#class-members-save-confirm-container, #class-members-save-confirm").removeClass("d-none");
     if (deleted.length === 1) {
-      $("#class-members-save-confirm-list").html(`wird der Schüler / die Schülerin <b>${$.formatHtml(deleted[0])}</b>`);
+      $("#class-members-save-confirm-list").html(`wird der Schüler / die Schülerin <b>${escapeHTML(deleted[0])}</b>`);
     }
     else {
       $("#class-members-save-confirm-list").html(
         "werden die Schüler:innen " +
           deleted
-            .map(e => `<b>${$.formatHtml(e)}</b>`)
+            .map(s => `<b>${escapeHTML(s)}</b>`)
             .join(", ")
             .replace(/,(?!.*,)/, " und")
       );
@@ -1965,13 +2126,13 @@ $("#teams-save").on("click", () => {
   else {
     $("#teams-save-confirm-container, #teams-save-confirm").removeClass("d-none");
     if (deleted.length === 1) {
-      $("#teams-save-confirm-list").html(`des Teams <b>${$.formatHtml(deleted[0])}</b>`);
+      $("#teams-save-confirm-list").html(`des Teams <b>${escapeHTML(deleted[0])}</b>`);
     }
     else {
       $("#teams-save-confirm-list").html(
         "der Teams " +
           deleted
-            .map(e => `<b>${$.formatHtml(e)}</b>`)
+            .map(t => `<b>${escapeHTML(t)}</b>`)
             .join(", ")
             .replace(/,(?!.*,)/, " und")
       );
@@ -2118,13 +2279,13 @@ $("#event-types-save").on("click", () => {
   else {
     $("#event-types-save-confirm-container, #event-types-save-confirm").removeClass("d-none");
     if (deleted.length === 1) {
-      $("#event-types-save-confirm-list").html(`der Art <b>${$.formatHtml(deleted[0])}</b>`);
+      $("#event-types-save-confirm-list").html(`der Art <b>${escapeHTML(deleted[0])}</b>`);
     }
     else {
       $("#event-types-save-confirm-list").html(
         "der Arten " +
           deleted
-            .map(e => `<b>${$.formatHtml(e)}</b>`)
+            .map(e => `<b>${escapeHTML(e)}</b>`)
             .join(", ")
             .replace(/,(?!.*,)/, " und")
       );
@@ -2329,13 +2490,13 @@ $("#subjects-save").on("click", () => {
   else {
     $("#subjects-save-confirm-container, #subjects-save-confirm").removeClass("d-none");
     if (deleted.length === 1) {
-      $("#subjects-save-confirm-list").html(`des Fachs <b>${$.formatHtml(deleted[0])}</b>`);
+      $("#subjects-save-confirm-list").html(`des Fachs <b>${escapeHTML(deleted[0])}</b>`);
     }
     else {
       $("#subjects-save-confirm-list").html(
         "der Fächer " +
           deleted
-            .map(e => `<b>${$.formatHtml(e)}</b>`)
+            .map(s => `<b>${escapeHTML(s)}</b>`)
             .join(", ")
             .replace(/,(?!.*,)/, " und")
       );

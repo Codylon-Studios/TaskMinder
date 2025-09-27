@@ -32,7 +32,7 @@ router.post("/kick_logged_out_users", checkAccess(["CLASS", "ADMIN"]), classCont
 // temp disable route
 // eslint-disable-next-line
 //router.post("/update_dsb_mobile_data", checkAccess(["ACCOUNT", "CLASS", "MANAGER"]), validate(updateDSBMobileDataSchema), classController.updateDSBMobileData);
-router.post("/change_class_name", checkAccess(["CLASS", "ADMIN"]), validate(changeClassNameSchema), classController.changeClassName);
+router.post("/change_class_name", checkAccess(["CLASS", "MANAGER"]), validate(changeClassNameSchema), classController.changeClassName);
 router.post("/change_class_code", checkAccess(["CLASS", "ADMIN"]), classController.changeClassCode);
 router.post("/upgrade_test_class", checkAccess(["CLASS", "ADMIN"]), classController.upgradeTestClass);
 
