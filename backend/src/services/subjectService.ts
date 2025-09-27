@@ -1,7 +1,7 @@
 import { RequestError } from "../@types/requestError";
 import logger from "../utils/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
-import prisma from "../config/prisma";
+import { default as prisma } from "../config/prisma";
 import { isValidGender, updateCacheData } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { setSubjectsTypeBody } from "../schemas/subjectSchema";
@@ -25,6 +25,9 @@ const subjectService = {
     const data = await prisma.subjects.findMany({
       where: {
         classId: parseInt(session.classId!)
+      },
+      orderBy: {
+        subjectNameLong: "asc"
       }
     });
 
@@ -66,6 +69,9 @@ const subjectService = {
           if (!subjects.some(s => s.subjectId === subject.subjectId)) {
             // delete lessons which where linked to subject
             await tx.lesson.deleteMany({
+              where: { subjectId: subject.subjectId }
+            });
+            await tx.homework.deleteMany({
               where: { subjectId: subject.subjectId }
             });
             await tx.subjects.delete({

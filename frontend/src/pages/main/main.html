@@ -1,20 +1,20 @@
 <!doctype html>
 <html lang="de">
   <head>
-    <meta name="description" content="Synchronize homework, events and more with your classmates!" />
+    <meta name="robots" content="noindex, follow" />
     <link class="preload-style" rel="preload" href="/events/event_type_styles" as="style" />
   </head>
   <body>
     <div class="load-snippet" data-target="richTextarea"></div>
     <div class="container">
-      <div class="container-fluid d-flex justify-content-center align-items-center mb-3">
+      <div class="container-fluid d-flex justify-content-center align-items-center mb-2">
         <button class="btn btn-sm fw-bold btn-primary me-2 calendar-special-button" id="calendar-today-btn">Heute</button>
         <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-l-btn">
-          <i class="fa-solid fa-chevron-left fa-width-auto"></i>
+          <i class="fa-solid fa-chevron-left fa-width-auto" aria-hidden="true"></i>
         </button>
         <div class="mx-2 text-center" id="calendar-month-year">Dezember 2024</div>
         <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-r-btn">
-          <i class="fa-solid fa-chevron-right fa-width-auto"></i>
+          <i class="fa-solid fa-chevron-right fa-width-auto" aria-hidden="true"></i>
         </button>
         <button class="btn btn-sm fw-bold btn-primary ms-2 calendar-special-button" id="calendar-month-btn">Monat</button>
         <button class="btn btn-sm fw-bold btn-primary ms-2 calendar-special-button" id="calendar-week-btn">Woche</button>
@@ -22,14 +22,14 @@
 
       <div class="container-fluid d-flex justify-content-center align-items-center">
         <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-l-btn">
-          <i class="fa-solid fa-chevron-left fa-width-auto"></i>
+          <i class="fa-solid fa-chevron-left fa-width-auto" aria-hidden="true"></i>
         </button>
         <div class="mx-1 user-select-none" id="calendar-week-wrapper">
           <div class="calendar-week calendar-old" id="calendar-week-old"></div>
           <div class="d-none calendar-week calendar-new" id="calendar-week-new"></div>
         </div>
         <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-r-btn">
-          <i class="fa-solid fa-chevron-right fa-width-auto"></i>
+          <i class="fa-solid fa-chevron-right fa-width-auto" aria-hidden="true"></i>
         </button>
       </div>
 
@@ -55,7 +55,10 @@
 
       <div class="container-fluid mb-3">
         <div class="mb-2 d-flex align-items-center">
-          <h5>Ereignisse</h5>
+          <h5>
+            Ereignisse
+            <a href="/events" aria-label="Seite für Ereignisse öffnen"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+          </h5>
         </div>
         <div class="ms-3" id="event-list">
           <!--Gets filled-->
@@ -64,7 +67,10 @@
 
       <div class="container-fluid mb-3">
         <div class="mb-2 d-flex align-items-center">
-          <h5>Hausaufgaben</h5>
+          <h5>
+            Hausaufgaben
+            <a href="/homework" aria-label="Seite für Hausaufgaben öffnen"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+          </h5>
         </div>
         <div
           class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row"
@@ -89,7 +95,8 @@
         <div class="mb-2 d-flex align-items-center">
           <h5 class="mb-1">Vertretungen</h5>
           <div class="ms-2 text-secondary">
-            <i class="fa-solid fa-clock-rotate-left"></i>
+            <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+            <span class="visually-hidden">Zuletzt aktualisiert:</span>
             <span id="substitutions-updated">Keine Daten empfangen</span>
           </div>
         </div>
@@ -133,6 +140,5 @@
         </div>
       </div>
     </div>
-    <div class="load-snippet" data-target="bottombar"></div>
   </body>
 </html>

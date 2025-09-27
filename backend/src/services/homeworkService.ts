@@ -1,13 +1,11 @@
-import { connectRedis, redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
+import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO from "../config/socket";
-import prisma from "../config/prisma";
-import { isValidTeamId, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
+import { default as prisma } from "../config/prisma";
+import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../utils/logger";
 import { addHomeworkTypeBody, checkHomeworkTypeBody, deleteHomeworkTypeBody, editHomeworkTypeBody } from "../schemas/homeworkSchema";
-
-connectRedis();
 
 const homeworkService = {
   async addHomework(
@@ -15,7 +13,8 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    isValidTeamId(teamId);
+    await isValidSubjectId(subjectId, session);
+    await isValidTeamId(teamId, session);
     try {
       await prisma.homework.create({
         data: {
@@ -97,12 +96,23 @@ const homeworkService = {
       };
       throw err;
     }
-    await prisma.homework.delete({
-      where: {
-        homeworkId: homeworkId,
-        classId: parseInt(session.classId!)
-      }
-    });
+    try {
+      await prisma.homework.delete({
+        where: {
+          homeworkId: homeworkId,
+          classId: parseInt(session.classId!)
+        }
+      });
+    }
+    catch {
+      const err: RequestError = {
+        name: "Not found",
+        status: 404,
+        message: "No homework exists with this ID",
+        expected: true
+      };
+      throw err;
+    }
     const data = await prisma.homework.findMany({
       where: {
         classId: parseInt(session.classId!)
@@ -122,7 +132,8 @@ const homeworkService = {
     session: Session & Partial<SessionData>
   ) {
     const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
-    isValidTeamId(teamId);
+    await isValidSubjectId(subjectId, session);
+    await isValidTeamId(teamId, session);
     try {
       await prisma.homework.update({
         where: { homeworkId: homeworkId },

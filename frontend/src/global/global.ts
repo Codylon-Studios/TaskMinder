@@ -1,6 +1,14 @@
 import { io, Socket } from "../vendor/socket/socket.io.esm.min.js";
 import { user } from "../snippets/navbar/navbar.js";
 
+crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+    const r = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
+    const v = c === "x" ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  }) as `${string}-${string}-${string}-${string}-${string}`;
+};
+
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
 }
@@ -77,6 +85,23 @@ export function msToTime(ms: number | string): string {
     .padStart(2, "0")}:${((num / 1000 / 60) % 60).toString().padStart(2, "0")}`;
 }
 
+export function getTimeLeftString(timeLeft: number): string {
+  if (timeLeft < 60 * 60 * 1000) {
+    const mins = Math.floor(timeLeft / 60 / 1000);
+    return mins + " Minute" + (mins > 1 ? "n" : "");
+  }
+  else {
+    const hours = Math.floor(timeLeft / 60 / 60 / 1000);
+    const mins = Math.floor((timeLeft % (60 * 60 * 1000)) / 60 / 1000);
+    if (mins === 0) {
+      return hours + " Stunde" + (hours > 1 ? "n" : "");
+    }
+    else {
+      return hours + " Stunde" + (hours > 1 ? "n und " : " und ") + mins + " Minute" + (mins > 1 ? "n" : "");
+    }
+  }
+}
+
 export function isSameDay(date1: Date, date2: Date): boolean {
   return (
     date1.getFullYear() === date2.getFullYear() &&
@@ -119,6 +144,115 @@ export function deepCompare(a: unknown, b: unknown): boolean {
 
   return false;
 }
+
+export function escapeHTML(str: string): string {
+  return str.replace(/[&<>"']/g, char => {
+    switch (char) {
+    case "&": return "&amp;";
+    case "<": return "&lt;";
+    case ">": return "&gt;";
+    case '"': return "&quot;";
+    case "'": return "&#39;";
+    default: return char;
+    }
+  });
+}
+
+export const formatHTML = (html?: string, options?: {
+    multiNewlineStartNewline?: boolean;
+  }): string => {
+  let escaped = escapeHTML(html ?? "");
+  if (options?.multiNewlineStartNewline) {
+    if (/\n/.test(escaped)) escaped = "\n" + escaped;
+  }
+  const newlines = escaped.replace(/\n/g, "<br>");
+  return newlines;
+};
+
+type ProcessedLesson = {
+  lessonNumber: number;
+  subjectNameLong: string;
+  subjectNameShort: string;
+  subjectNameSubstitution: string[] | null;
+  teacherName: string;
+  teacherNameSubstitution: string[] | null;
+  room: string;
+  startTime: number;
+  endTime: number;
+};
+type GroupedLessonData = {
+  lessonNumber: number;
+  startTime: number;
+  endTime: number;
+  lessons: ProcessedLesson[];
+}[];
+
+async function getGroupedLessonData(date: Date): Promise<GroupedLessonData> {
+  const currentJoinedTeamsData = await joinedTeamsData();
+  const currentSubjectData = await subjectData();
+  let currentLessonData = await lessonData();
+
+  currentLessonData = currentLessonData.filter(l => l.weekDay === date.getDay() - 1);
+
+  const processedLessonData: ProcessedLesson[] = [];
+  for (const lesson of currentLessonData) {
+    if (!(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId === -1)) continue;
+    const subject = currentSubjectData.find(s => s.subjectId === lesson.subjectId) ?? {
+      subjectNameLong: "Pause",
+      subjectNameShort: "Pause",
+      subjectNameSubstitution: null,
+      teacherGender: "d",
+      teacherNameLong: "",
+      teacherNameSubstitution: null
+    };
+
+    processedLessonData.push({
+      lessonNumber: lesson.lessonNumber,
+      startTime: parseInt(lesson.startTime),
+      endTime: parseInt(lesson.endTime),
+      
+      subjectNameLong: subject.subjectNameLong,
+      subjectNameShort: subject.subjectNameShort,
+      subjectNameSubstitution: subject.subjectNameSubstitution,
+      teacherName:
+        (subject.teacherGender === "w" ? "Frau " : "") +
+        (subject.teacherGender === "m" ? "Herr " : "") +
+        subject.teacherNameLong,
+      teacherNameSubstitution: subject.teacherNameSubstitution,
+      room: lesson.room
+    });
+  }
+
+  let groupedLessonData: GroupedLessonData = [];
+  for (const lesson of processedLessonData) {
+    const group = groupedLessonData.find(l => l.lessonNumber === lesson.lessonNumber);
+    if (group) {
+      group.lessons.push(lesson);
+    }
+    else {
+      groupedLessonData.push({
+        lessonNumber: lesson.lessonNumber,
+        startTime: lesson.startTime,
+        endTime: lesson.endTime,
+        lessons: [lesson]
+      });
+    }
+  }
+  groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
+  return groupedLessonData;
+}
+
+export async function getTimetableData(date: Date) {
+  if ([0, 6].includes(date.getDay())) {
+    return null;
+  }
+  const x = await getGroupedLessonData(date);
+  console.log(x);
+}
+
+setTimeout(() => {
+  getTimetableData(new Date());
+}, 10);
 
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
@@ -170,7 +304,7 @@ document.head.appendChild(themeColor);
 // DATA
 type DataAccessorEventName = "update";
 type DataAccessorEventCallback = (...args: unknown[]) => void;
-type DataAccessor<DataType> = {
+export type DataAccessor<DataType> = {
   (value?: DataType | null): Promise<DataType>;
   get(): Promise<DataType>;
   getCurrent(): DataType | null;
@@ -328,25 +462,27 @@ export type CoreSubstitutionsData =
   | "No data";
 export type SubstitutionsData = {
   data: CoreSubstitutionsData;
-  realClassName: string | null;
+  substitutionClassName: string | null;
 };
 
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", "/substitutions/get_substitutions_data");
 async function loadClassSubstitutionsData(): Promise<void> {
   const currentSubstitutionsData = await substitutionsData();
   if (currentSubstitutionsData.data === "No data") {
-    classSubstitutionsData({data: "No data", realClassName: currentSubstitutionsData.realClassName});
+    classSubstitutionsData({data: "No data", substitutionClassName: currentSubstitutionsData.substitutionClassName});
     return;
   }
 
   const data = structuredClone(currentSubstitutionsData.data);
+  const className = currentSubstitutionsData.substitutionClassName ?? "";
+  const [, classNumber, classLetter] = /^(\d*)([a-zA-Z]*)$/.exec(className) ?? [];
   for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
     const key = ("plan" + planId) as "plan1" | "plan2";
     data[key].substitutions = data[key].substitutions.filter((entry: Record<string, string>) =>
-      /^10[a-zA-Z]*d[a-zA-Z]*/.test(entry.class) // TODO @Fabian: filter by class
+      (new RegExp(`^${classNumber}[a-zA-Z]*${classLetter}[a-zA-Z]*`)).test(entry.class)
     );
   }
-  classSubstitutionsData({data: data, realClassName: currentSubstitutionsData.realClassName});
+  classSubstitutionsData({data: data, substitutionClassName: currentSubstitutionsData.substitutionClassName});
 }
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", loadClassSubstitutionsData);
 
@@ -412,27 +548,9 @@ export const csrfToken = createDataAccessor<string>("csrfToken");
 $(async () => {
   const hash = window.location.hash;
   if (hash) {
-    const $target = $(hash);
-    if ($target?.offset() !== undefined) {
-      $("html").animate({
-        scrollTop: ($target.offset()?.top ?? 0) - 70
-      });
-    }
-  }
-
-  if (window.location.host === "codylon.de") {
-    $(".toast-container").eq(0).append($(`
-      <div id="from-codylon-toast" class="toast">
-        <div class="toast-header bg-warning text-white">
-          <b class="me-auto">Domain wurde geändert</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">
-          Unsere Domain hat von <b>codylon.de</b> zu <b>taskminder.de</b> gewechselt.
-          Bitte ändere deine Lesezeichen, Links oder so. Danke!
-        </div>
-      </div>
-    `).toast("show"));
+    setTimeout(() => {
+      document.location.href = hash;
+    }, 250);
   }
 
   $('[data-bs-toggle="tooltip"]').tooltip();
@@ -488,11 +606,20 @@ handleSmallScreenQueryChange();
 
 (async () => {
   if ((await colorTheme()) === "light") {
-    document.body.setAttribute("data-bs-theme", "light");
+    $("body").attr("data-bs-theme", "light");
   }
   else {
-    document.body.setAttribute("data-bs-theme", "dark");
+    $("body").attr("data-bs-theme", "dark");
   }
+
+  if (localStorage.getItem("fontSize") === "1") {
+    $("html").css("font-size", "19px");
+  }
+  else if (localStorage.getItem("fontSize") === "2") {
+    $("html").css("font-size", "22px");
+  }
+
+  $("body").attr("data-high-contrast", localStorage.getItem("highContrast"));
 })();
 
 if (!isSite("settings")) {
@@ -527,28 +654,3 @@ if (!isSite("settings")) {
 $(document).on("input", ".autocomplete", function () {
   $(this).removeClass("autocomplete");
 });
-
-declare global {
-  interface JQueryStatic {
-    escapeHtml(html: string): string;
-    formatHtml(
-      html: string,
-      options?: {
-        multiNewlineStartNewline?: boolean;
-      },
-    ): string;
-  }
-}
-
-$.escapeHtml = html => {
-  return $("<div>").text(html).html();
-};
-
-$.formatHtml = (html, options?) => {
-  let escaped = $.escapeHtml(html);
-  if (options?.multiNewlineStartNewline) {
-    if (/\n/.test(escaped)) escaped = "\n" + escaped;
-  }
-  const newlines = escaped.replace(/\n/g, "<br>");
-  return newlines;
-};

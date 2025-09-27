@@ -29,6 +29,7 @@ COPY --from=builder /usr/src/app/backend/src/prisma ./backend/src/prisma
 COPY --from=builder /usr/src/app/backend/dist ./backend/dist
 COPY --from=builder /usr/src/app/frontend/dist ./frontend/dist
 COPY --from=builder /usr/src/app/copyFiles.js ./copyFiles.js
+COPY --from=builder /usr/src/app/prisma.config.ts ./prisma.config.ts
 
 # ---- Add and configure the entrypoint script ----
 COPY entrypoint.sh /usr/local/bin/

@@ -27,9 +27,11 @@ async function buildDirectory(src, dest) {
         404: "Nicht gefunden",
         about: "Über",
         events: "Ereignisse",
+        feedback: "Feedback",
         homework: "Hausaufgaben",
         join: "Beitreten",
         main: "Übersicht",
+        report: "Unangemessenen Inhalt melden",
         settings: "Einstellungen"
       };
 
@@ -38,7 +40,7 @@ async function buildDirectory(src, dest) {
         <link rel="manifest" href="/static/manifest.json">
         <script src="/vendor/jquery/jquery.min.js" type="module" defer></script>
         <script src="/vendor/bootstrap/bootstrap.bundle.min.js" type="module" defer></script>
-        <script src="/vendor/qrcode/qrcode.min.js"></script>
+        <script src="/vendor/qrcode/qrcode.min.js" defer></script>
         <script src="/global/global.js" type="module" defer></script>
         <link class="preload-style" rel="preload" href="/pages/${fileName}/${fileName}.css" as="style">
         <script src="/pages/${fileName}/${fileName}.js" type="module" defer></script>
@@ -83,10 +85,14 @@ async function buildDirectory(src, dest) {
         </script>
       `);
 
-      $("body").append(`
+      $("body").prepend(`
         <div class="load-snippet" data-target="pwaBanner"></div>
         <div class="load-snippet" data-target="navbar"></div>
+      `);
+
+      $("body").append(`
         <div class="load-snippet" data-target="footer"></div>
+        <div class="load-snippet" data-target="bottombar"></div>
       `);
 
       $("body").css({ display: "none" });
@@ -107,11 +113,6 @@ async function buildDirectory(src, dest) {
             else {
               $(el).replaceWith($new.html());
             }
-          }
-          if (await exists(_join(folder, target + ".scss"))) {
-            $("head").append(
-              `<link class="preload-style" rel="preload" href="/snippets/${target}/${target}.css" as="style">`
-            );
           }
           if (await exists(_join(folder, target + ".ts"))) {
             $("head").append(

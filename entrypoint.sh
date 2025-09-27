@@ -4,14 +4,29 @@ set -e
 # ==============================================================================
 # ----- Load Docker Secrets into Environment Variables -----
 # ==============================================================================
-export DB_USER=$(cat /run/secrets/db_user)
-export DB_PASSWORD=$(cat /run/secrets/db_password)
-export DB_NAME=$(cat /run/secrets/db_name)
-export DB_HOST=$(cat /run/secrets/db_host)
-export REDIS_PORT=$(cat /run/secrets/redis_port)
-export SESSION_SECRET=$(cat /run/secrets/session_secret)
-export UNSAFE_DEACTIVATE_CSP=$(cat /run/secrets/unsafe_deactivate_csp)
-export DATABASE_URL=$(cat /run/secrets/database_url)
+DB_USER="$(cat /run/secrets/db_user)"
+export DB_USER
+
+DB_PASSWORD="$(cat /run/secrets/db_password)"
+export DB_PASSWORD
+
+DB_NAME="$(cat /run/secrets/db_name)"
+export DB_NAME
+
+DB_HOST="$(cat /run/secrets/db_host)"
+export DB_HOST
+
+REDIS_PORT="$(cat /run/secrets/redis_port)"
+export REDIS_PORT
+
+SESSION_SECRET="$(cat /run/secrets/session_secret)"
+export SESSION_SECRET
+
+UNSAFE_DEACTIVATE_CSP="$(cat /run/secrets/unsafe_deactivate_csp)"
+export UNSAFE_DEACTIVATE_CSP
+
+DATABASE_URL="$(cat /run/secrets/database_url)"
+export DATABASE_URL
 
 # ==============================================================================
 # ----- One time v2 deployment cmds -----

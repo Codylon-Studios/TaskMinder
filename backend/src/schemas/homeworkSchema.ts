@@ -5,7 +5,7 @@ export const addHomeworkSchema = z.object({
   query: z.object({}).optional(),
   body: z.strictObject({
     subjectId: z.coerce.number(),
-    content: z.string(),
+    content: z.string().trim().min(1),
     assignmentDate: z.coerce.number(),
     submissionDate: z.coerce.number(),
     teamId: z.coerce.number()
@@ -36,7 +36,7 @@ export const editHomeworkSchema = z.object({
   body: z.strictObject({
     homeworkId: z.coerce.number(),
     subjectId: z.coerce.number(),
-    content: z.string(),
+    content: z.string().trim().min(1),
     assignmentDate: z.coerce.number(),
     submissionDate: z.coerce.number(),
     teamId: z.coerce.number()

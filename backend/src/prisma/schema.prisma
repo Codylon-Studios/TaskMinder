@@ -91,7 +91,6 @@ model Homework {
   assignmentDate BigInt
   submissionDate BigInt
   teamId         Int
-  Subjects       Subjects        @relation(fields: [subjectId], references: [subjectId], onDelete: Cascade, onUpdate: NoAction)
   HomeworkCheck  HomeworkCheck[]
   Class          Class           @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
@@ -157,7 +156,6 @@ model Subjects {
   teacherNameLong         String
   teacherNameShort        String
   teacherNameSubstitution String[]
-  Homework                Homework[]
   Class                   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([classId, subjectNameLong])

@@ -3,7 +3,7 @@ import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } fr
 import socketIO from "../config/socket";
 import sass from "sass";
 
-import prisma from "../config/prisma";
+import { default as prisma } from "../config/prisma";
 import {
   isValidColor,
   isValidTeamId,
@@ -59,7 +59,7 @@ export const eventService = {
   ) {
     const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    isValidTeamId(teamId);
+    isValidTeamId(teamId, session);
     try {
       await prisma.event.create({
         data: {
@@ -110,7 +110,7 @@ export const eventService = {
   ) {
     const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    isValidTeamId(teamId);
+    isValidTeamId(teamId, session);
     try {
       await prisma.event.update({
         where: { 
@@ -213,6 +213,9 @@ export const eventService = {
     const eventTypeData = await prisma.eventType.findMany({
       where: {
         classId: parseInt(session.classId!)
+      },
+      orderBy: {
+        name: "asc"
       }
     });
 
@@ -242,6 +245,9 @@ export const eventService = {
       for (const existing of existingEventTypes) {
         if (!eventTypes.some(e => e.eventTypeId === existing.eventTypeId)) {
           await tx.eventType.delete({
+            where: { eventTypeId: existing.eventTypeId }
+          });
+          await tx.event.deleteMany({
             where: { eventTypeId: existing.eventTypeId }
           });
         }
@@ -356,6 +362,8 @@ export const eventService = {
         $bg-transparent: color.change($color: $color, $alpha: 0.4);
         $color-darker: color.adjust($color, $lightness: -30%);
         $color-lighter: color.adjust($color, $lightness: 20%);
+        $color-more-darker: color.adjust($color, $lightness: -60%);
+        $color-more-lighter: color.adjust($color, $lightness: 40%);
 
         .card.event-#{"" + $name} {
           border-color: $color;
@@ -366,14 +374,24 @@ export const eventService = {
           background-color: $color;
         }
 
-        body {
+        span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
+          color: $color-darker;
+        }
+
+        [data-bs-theme="dark"] {
           span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-            color: $color-darker;
+            color: $color-lighter;
+          }
+        }
+
+        [data-high-contrast="true"] {
+          span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
+            color: $color-more-darker;
           }
 
           &[data-bs-theme="dark"] {
             span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-              color: $color-lighter;
+              color: $color-more-lighter;
             }
           }
         }

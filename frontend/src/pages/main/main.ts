@@ -17,7 +17,9 @@ import {
   msToTime,
   csrfToken,
   reloadAllFn,
-  CoreSubstitutionsData
+  CoreSubstitutionsData,
+  getTimeLeftString as getTimeString,
+  escapeHTML
 } from "../../global/global.js";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -115,7 +117,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
 
   // Append the days (All days will be added into and .calendar-week element)
   return `
-  <div class="days-overview-day ${specialClasses} cursor-pointer" data-week="${week}" data-day="${date.getDay()}">
+  <button class="days-overview-day ${specialClasses} cursor-pointer" data-week="${week}" data-day="${date.getDay()}">
     <span class="weekday">${calendarMode === "week" ? weekday : ""}</span>
     <span class="date">${date.getDate()}</span>
     <div class="events ${calendarMode}">
@@ -126,7 +128,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
         ${singleDayEvents}
       </div>
     </div>
-  </div>`;
+  </button>`;
 }
 
 async function getNewCalendarWeekContent(): Promise<string> {
@@ -213,7 +215,7 @@ async function checkHomework(homeworkId: number): Promise<void> {
 
     // Post the request
     $.ajax({
-      url: "/homework/check",
+      url: "/homework/check_homework",
       type: "POST",
       data: data,
       headers: {
@@ -282,9 +284,6 @@ async function updateHomeworkList(): Promise<void> {
 
   for (const homework of await homeworkData()) {
     async function filter(): Promise<boolean> {
-      if (currentSubjectData.find(s => s.subjectId === homework.subjectId) === undefined) {
-        return true;
-      }
       if ($("#homework-mode-tomorrow").prop("checked")) {
         const tomorrow = new Date(selectedDate);
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -328,7 +327,7 @@ async function updateHomeworkList(): Promise<void> {
     const homeworkId = homework.homeworkId;
 
     // Get the information for the homework
-    const subject = currentSubjectData.find(s => s.subjectId === homework.subjectId)?.subjectNameLong;
+    const subject = currentSubjectData.find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
     const assignmentDate = new Date(parseInt(homework.assignmentDate));
     const submissionDate = new Date(parseInt(homework.submissionDate));
@@ -344,7 +343,7 @@ async function updateHomeworkList(): Promise<void> {
             data-id="${homeworkId}" ${checked ? "checked" : ""}>
         </div>
         <label class="form-check-label" for="homework-check-${homeworkId}">
-          <span class="fw-bold">${$.formatHtml(subject ?? "")}</span>
+          <span class="fw-bold">${escapeHTML(subject)}</span>
         </label>
         <span class="homework-content"></span>
       </div>
@@ -430,12 +429,18 @@ async function updateEventList(): Promise<void> {
     const description = event.description;
     const startDate = msToDisplayDate(event.startDate);
     const lesson = event.lesson;
-    let endDate;
-    if (event.endDate) {
-      endDate = msToDisplayDate(event.endDate);
+    const timeSpan = $("<span></span>");
+    if (event.endDate !== null) {
+      const endDate = msToDisplayDate(event.endDate);
+      if (isSameDay(new Date(parseInt(event.startDate)), new Date(parseInt(event.endDate)))) {
+        timeSpan.append("<b>Ganztägig</b> ", startDate);
+      }
+      else {
+        timeSpan.append(startDate, " - ", endDate);
+      }
     }
-    else {
-      endDate = null;
+    else if (lesson !== null) {
+      timeSpan.append(startDate, ` <b>(${escapeHTML(lesson)}. Stunde)</b>`);
     }
 
     // The template for an event
@@ -443,8 +448,8 @@ async function updateEventList(): Promise<void> {
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2">
             <div class="d-flex flex-column">
-              <span class="fw-bold event-${eventTypeId}">${$.formatHtml(name)}</span>
-              <span>${startDate}${endDate ? ` - ${endDate}` : ""}<b>${lesson ? ` (${$.formatHtml(lesson)}. Stunde)` : ""}</b></span>
+              <span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span>
+              <span>${timeSpan.html()}</span>
               <span class="event-description"></span>
             </div>
           </div>
@@ -539,12 +544,12 @@ async function updateSubstitutionList(): Promise<void> {
     const template = `
     <tr>
       ${substitutionsMode === "all" ? `<td>${substitution.class}</td>` : ""}
-      <td>${$.formatHtml(substitution.type)}</td>
-      <td>${$.formatHtml(substitution.lesson)}</td>
-      <td>${$.formatHtml(substitution.subject)}</td>
-      <td>${$.formatHtml(substitution.text)}</td>
-      <td>${$.formatHtml(substitution.teacher)}&nbsp;(${$.formatHtml(substitution.teacherOld)})</td>
-      <td>${$.formatHtml(substitution.room)}</td>
+      <td>${escapeHTML(substitution.type)}</td>
+      <td>${escapeHTML(substitution.lesson)}</td>
+      <td>${escapeHTML(substitution.subject)}</td>
+      <td>${escapeHTML(substitution.text)}</td>
+      <td>${escapeHTML(substitution.teacher)}&nbsp;(${escapeHTML(substitution.teacherOld)})</td>
+      <td>${escapeHTML(substitution.room)}</td>
     </tr>`;
     $("#substitutions-list").append(template);
   });
@@ -577,25 +582,71 @@ function updateSubstitutionsMode(): void {
   updateSubstitutionList();
 }
 
-async function updateTimetable(): Promise<void> {
-  type ProcessedLesson = {
-    lessonNumber: number;
-    subjectNameLong: string;
-    subjectNameShort: string;
-    subjectNameSubstitution: string[] | null;
-    teacherName: string;
-    teacherNameSubstitution: string[] | null;
-    room: string;
-    startTime: number;
-    endTime: number;
-  };
-  type GroupedLessonData = {
-    lessonNumber: number;
-    startTime: number;
-    endTime: number;
-    lessons: ProcessedLesson[];
-  }[];
+type ProcessedLesson = {
+  lessonNumber: number;
+  subjectNameLong: string;
+  subjectNameShort: string;
+  subjectNameSubstitution: string[] | null;
+  teacherName: string;
+  teacherNameSubstitution: string[] | null;
+  room: string;
+  startTime: number;
+  endTime: number;
+};
+type GroupedLessonData = {
+  lessonNumber: number;
+  startTime: number;
+  endTime: number;
+  lessons: ProcessedLesson[];
+}[];
 
+async function getGroupedLessonData(): Promise<GroupedLessonData> {
+  const currentJoinedTeamsData = await joinedTeamsData();
+  const currentSubjectData = await subjectData();
+  let currentLessonData = await lessonData();
+
+  currentLessonData = currentLessonData.filter(l => l.weekDay === selectedDate.getDay() - 1);
+
+  const processedLessonData: ProcessedLesson[] = [];
+  for (const lesson of currentLessonData) {
+    const subject = currentSubjectData.find(s => s.subjectId === lesson.subjectId);
+    if (!subject || !(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId === -1)) continue;
+    processedLessonData.push({
+      lessonNumber: lesson.lessonNumber,
+      subjectNameLong: subject.subjectNameLong,
+      subjectNameShort: subject.subjectNameShort,
+      subjectNameSubstitution: subject.subjectNameSubstitution,
+      teacherName:
+        (subject.teacherGender === "w" ? "Frau " : "") +
+        (subject.teacherGender === "m" ? "Herr " : "") +
+        subject.teacherNameLong,
+      teacherNameSubstitution: subject.teacherNameSubstitution,
+      room: lesson.room,
+      startTime: parseInt(lesson.startTime),
+      endTime: parseInt(lesson.endTime)
+    });
+  }
+
+  let groupedLessonData: GroupedLessonData = [];
+  for (const lesson of processedLessonData) {
+    const group = groupedLessonData.find(l => l.lessonNumber === lesson.lessonNumber);
+    if (group) {
+      group.lessons.push(lesson);
+    }
+    else {
+      groupedLessonData.push({
+        lessonNumber: lesson.lessonNumber,
+        startTime: lesson.startTime,
+        endTime: lesson.endTime,
+        lessons: [lesson]
+      });
+    }
+  }
+  groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
+  return groupedLessonData;
+}
+
+async function updateTimetable(): Promise<void> {
   function getSubstitutionPlanId(): 1 | 2 | null {
     if (currentClassSubstitutionsData !== "No data") {
       if (isSameDay(selectedDate, new Date(dateToMs(currentClassSubstitutionsData.plan1.date) ?? 0))) {
@@ -610,47 +661,6 @@ async function updateTimetable(): Promise<void> {
     }
     return null;
   }
-  function getGroupedLessonData(): GroupedLessonData {
-    currentLessonData = currentLessonData.filter(l => l.weekDay === selectedDate.getDay() - 1);
-
-    const processedLessonData: ProcessedLesson[] = [];
-    for (const lesson of currentLessonData) {
-      const subject = currentSubjectData.find(s => s.subjectId === lesson.subjectId);
-      if (!subject || !(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId === -1)) continue;
-      processedLessonData.push({
-        lessonNumber: lesson.lessonNumber,
-        subjectNameLong: subject.subjectNameLong,
-        subjectNameShort: subject.subjectNameShort,
-        subjectNameSubstitution: subject.subjectNameSubstitution,
-        teacherName:
-          (subject.teacherGender === "w" ? "Frau " : "") +
-          (subject.teacherGender === "m" ? "Herr " : "") +
-          subject.teacherNameLong,
-        teacherNameSubstitution: subject.teacherNameSubstitution,
-        room: lesson.room,
-        startTime: parseInt(lesson.startTime),
-        endTime: parseInt(lesson.endTime)
-      });
-    }
-
-    let groupedLessonData: GroupedLessonData = [];
-    for (const lesson of processedLessonData) {
-      const group = groupedLessonData.find(l => l.lessonNumber === lesson.lessonNumber);
-      if (group) {
-        group.lessons.push(lesson);
-      }
-      else {
-        groupedLessonData.push({
-          lessonNumber: lesson.lessonNumber,
-          startTime: lesson.startTime,
-          endTime: lesson.endTime,
-          lessons: [lesson]
-        });
-      }
-    }
-    groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
-    return groupedLessonData;
-  }
 
   $("#timetable-less").empty();
   $("#timetable-more").empty();
@@ -659,26 +669,23 @@ async function updateTimetable(): Promise<void> {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
     $("#timetable-mode-wrapper").addClass("d-none");
+    $("#timetable-feedback")
+      .find("i").hide().filter("#timetable-feedback-happy").show().end().end()
+      .find("span").text("Heute keine Schule!");
+    updateTimetableProgress();
     return;
   }
 
   $("#timetable-less").removeClass("d-none");
   $("#timetable-more").removeClass("d-none");
   $("#timetable-mode-wrapper").removeClass("d-none");
-  updateTimetableMode();
+  updateShownTimetable();
 
   const currentClassSubstitutionsData = (await classSubstitutionsData()).data;
 
   const substitutionPlanId = getSubstitutionPlanId();
-  
-  const currentJoinedTeamsData = await joinedTeamsData();
-  const currentSubjectData = await subjectData();
-  let currentLessonData = await lessonData();
 
-  if (currentLessonData[selectedDate.getDay() - 1] === undefined) {
-    return;
-  }
-  const groupedLessonData = getGroupedLessonData();
+  const groupedLessonData = await getGroupedLessonData();
 
   for (const lessonGroup of groupedLessonData) {
     async function showEvents(): Promise<void> {
@@ -715,7 +722,7 @@ async function updateTimetable(): Promise<void> {
           continue;
         }
 
-        const eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${$.formatHtml(event.name)}</span>`;
+        const eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${escapeHTML(event.name)}</span>`;
         thisLessLesson.find(".card-body").append(eventName);
         thisMoreLesson.find(".card-body").append(eventName);
 
@@ -737,12 +744,12 @@ async function updateTimetable(): Promise<void> {
     let addedDescriptionTemplates = $();
 
     const templateModeLess = `
-      <div class="card">
+      <div class="card" data-lesson-number="${lessonGroup.lessonNumber}">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
           <span class="text-center timetable-less-subject">
             ${lessonGroup.lessons
-    .map(lessonData => {
-      return `<span class="original">${$.formatHtml(lessonData.subjectNameShort)}</span>`;
+    .map(l => {
+      return `<span class="original">${escapeHTML(l.subjectNameShort)}</span>`;
     })
     .join(" / ")}
           </span>
@@ -752,7 +759,7 @@ async function updateTimetable(): Promise<void> {
     const thisLessLesson = $(templateModeLess);
 
     const templateModeMore = `
-      <div class="card">
+      <div class="card" data-lesson-number="${lessonGroup.lessonNumber}">
         <div class="card-body pt-4 text-center">
           <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start">
             ${msToTime(lessonGroup.startTime)}
@@ -764,25 +771,24 @@ async function updateTimetable(): Promise<void> {
             <span class="fw-semibold text-center timetable-more-subject">
               ${lessonGroup.lessons
     .map(lessonData => {
-      return `<span class="original">${$.formatHtml(lessonData.subjectNameLong)}</span>`;
+      return `<span class="original">${escapeHTML(lessonData.subjectNameLong)}</span>`;
     })
-    .join(" / ")}
-            </span>
+    .join(" / ")}</span>
+
             <span>
               <span class="text-center timetable-more-room">
               ${lessonGroup.lessons
     .map(lessonData => {
-      return `<span class="original">${$.formatHtml(lessonData.room)}</span>`;
+      return `<span class="original">${escapeHTML(lessonData.room)}</span>`;
     })
-    .join(" / ")}
-              </span>,
+    .join(" / ")}</span>,
+
               <span class="text-center timetable-more-teacher">
               ${lessonGroup.lessons
     .map(lessonData => {
-      return `<span class="original">${$.formatHtml(lessonData.teacherName)}</span>`;
+      return `<span class="original">${escapeHTML(lessonData.teacherName)}</span>`;
     })
-    .join(" / ")}
-              </span>
+    .join(" / ")}</span>
             </span>
           </div>
         </div>
@@ -804,10 +810,10 @@ async function updateTimetable(): Promise<void> {
                 lessSubjectElement.addClass("line-through-" + color);
                 if (substitution.subject !== "-") {
                   moreSubjectElement.after(
-                    ` <span class="text-${color} fw-bold">${$.formatHtml(substitution.subject)}</span>`
+                    ` <span class="text-${color} fw-bold">${escapeHTML(substitution.subject)}</span>`
                   );
                   lessSubjectElement.after(
-                    ` <span class="text-${color} fw-bold">${$.formatHtml(substitution.subject)}</span>`
+                    ` <span class="text-${color} fw-bold">${escapeHTML(substitution.subject)}</span>`
                   );
                 }
               }
@@ -821,7 +827,7 @@ async function updateTimetable(): Promise<void> {
               if (substitution.room !== lesson.room) {
                 roomElement.addClass("line-through-" + color);
                 if (substitution.room !== "-") {
-                  roomElement.after(` <span class="text-${color} fw-bold">${$.formatHtml(substitution.room)}</span>`);
+                  roomElement.after(` <span class="text-${color} fw-bold">${escapeHTML(substitution.room)}</span>`);
                 }
               }
   
@@ -831,7 +837,7 @@ async function updateTimetable(): Promise<void> {
                 teacherElement.addClass("line-through-" + color);
                 if (substitution.teacher !== "-") {
                   teacherElement.after(
-                    ` <span class="text-${color} fw-bold">${$.formatHtml(substitution.teacher)}</span>`
+                    ` <span class="text-${color} fw-bold">${escapeHTML(substitution.teacher)}</span>`
                   );
                 }
               }
@@ -842,7 +848,7 @@ async function updateTimetable(): Promise<void> {
 
             const color = substitution.type === "Entfall" ? "red" : "yellow";
 
-            const substitutionTypeText = `<div class="text-${color} text-center fw-bold mt-2">${$.formatHtml(substitution.type)}</div>`;
+            const substitutionTypeText = `<div class="text-${color} text-center fw-bold mt-2">${escapeHTML(substitution.type)}</div>`;
             thisLessLesson.find(".card-body").append(substitutionTypeText);
             thisMoreLesson.find(".card-body").append(substitutionTypeText);
 
@@ -852,7 +858,7 @@ async function updateTimetable(): Promise<void> {
             if (substitution.text !== "-") {
               thisMoreLesson
                 .find(".card-body")
-                .append(`<div class="text-${color} text-center">${$.formatHtml(substitution.text)}</div>`);
+                .append(`<div class="text-${color} text-center">${escapeHTML(substitution.text)}</div>`);
             }
 
             if (substitution.type === "Entfall") {
@@ -887,10 +893,16 @@ async function updateTimetable(): Promise<void> {
 
     await showEvents();
 
-    const lastLessLesson = $("#timetable-less").find(".card:last()");
+    const lastLessLesson = $("#timetable-less").find(".card").last();
     if (lastLessLesson.length > 0) {
-      const lastLessonHtml = lastLessLesson[0].outerHTML.replace(/\s+/g, "");
-      const thisLessonHtml = thisLessLesson[0].outerHTML.replace(/\s+/g, "");
+      const lastLessonCopy = $(lastLessLesson[0].outerHTML);
+      lastLessonCopy.attr("data-lesson-number", "");
+      const lastLessonHtml = lastLessonCopy[0].outerHTML.replace(/\s+/g, "");
+
+      const thisLessonCopy = $(thisLessLesson[0].outerHTML);
+      thisLessonCopy.attr("data-lesson-number", "");
+      const thisLessonHtml = thisLessonCopy[0].outerHTML.replace(/\s+/g, "");
+
       if (lastLessonHtml === thisLessonHtml) {
         lastLessLesson.addClass("wide");
       }
@@ -904,13 +916,13 @@ async function updateTimetable(): Promise<void> {
 
     const lastMoreLesson = $("#timetable-more").find(".card:last()");
     if (lastMoreLesson.length > 0) {
-      // Remove the times
+      // Remove the lessonNumbers & times
       const lastLessonCopy = $(lastMoreLesson[0].outerHTML);
-      lastLessonCopy.find(".timetable-more-time").html("");
+      lastLessonCopy.attr("data-lesson-number", "").find(".timetable-more-time").html("");
       const lastLessonHtml = lastLessonCopy[0].outerHTML.replace(/\s+/g, "");
 
       const thisLessonCopy = $(thisMoreLesson[0].outerHTML);
-      thisLessonCopy.find(".timetable-more-time").html("");
+      thisLessonCopy.attr("data-lesson-number", "").find(".timetable-more-time").html("");
       const thisLessonHtml = thisLessonCopy[0].outerHTML.replace(/\s+/g, "");
 
       if (lastLessonHtml === thisLessonHtml) {
@@ -926,9 +938,15 @@ async function updateTimetable(): Promise<void> {
     }
     addedDescriptionTemplates.trigger("addedToDom");
   }
+
+  if ($("#timetable-less").html() === "") {
+    $("#timetable-less, #timetable-more").html("<div class=\"text-secondary text-center\">Kein Stundenplan für diesen Tag.</div>");
+  }
+
+  updateTimetableProgress();
 };
 
-function updateTimetableMode(): void {
+function updateShownTimetable(): void {
   if ([0, 6].includes(selectedDate.getDay())) {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
@@ -949,6 +967,148 @@ function updateTimetableMode(): void {
     localStorage.setItem("timetableMode", "none");
   }
 }
+
+async function updateTimetableProgress(): Promise<void> {
+  function offsetTop($el: JQuery<HTMLElement>): number {
+    return $el.offset()?.top ?? 0;
+  }
+  function height($el: JQuery<HTMLElement>): number {
+    return $el.outerHeight() ?? 0;
+  }
+
+  const nowD = new Date();
+  const now = (nowD.getHours() * 60 * 60 + nowD.getMinutes() * 60 + nowD.getSeconds()) * 1000;
+
+  if (! isSameDay(selectedDate, new Date())) {
+    $("#timetable-less, #timetable-more").addClass("timetable-today");
+    $("#timetable-feedback").addClass("d-none");
+    return;
+  }
+  $("#timetable-less, #timetable-more").removeClass("timetable-today");
+  $("#timetable-feedback").removeClass("d-none");
+
+  const lessonNumbers = (await getGroupedLessonData());
+  const prevLessonNumbers = lessonNumbers.filter(l => {
+    return l.startTime <= now;
+  });
+  const nextLessonNumbers = lessonNumbers.filter(l => {
+    return now < l.endTime;
+  });
+  const currentLessonNumber = prevLessonNumbers.filter(obj => nextLessonNumbers.includes(obj));
+
+  if (currentLessonNumber.length === 1) {
+    $("#timetable-less, #timetable-more").removeClass("timetable-out-of-range");
+
+    // General
+    const start = currentLessonNumber[0].startTime;
+    const end = currentLessonNumber[0].endTime;
+    const percentage = (now - start) / (end - start);
+
+    // Timetable More
+    const $el = $(`#timetable-more [data-lesson-number="${currentLessonNumber[0].lessonNumber}"]`);
+    const barPos = offsetTop($el) - offsetTop($("#timetable-more")) + percentage * height($el);
+    $("#timetable-more").css("--bar-pos", barPos + "px");
+
+    if (window.innerWidth < 1200) {
+      // Timetable Less (Vertical)
+      const $el = $(`#timetable-less [data-lesson-number="${currentLessonNumber[0].lessonNumber}"]`);
+      const barPos = offsetTop($el) - offsetTop($("#timetable-less")) + percentage * height($el);
+      $("#timetable-less").css("--bar-pos", barPos + "px");
+    }
+    else {
+      const $prev = $(prevLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
+      const $next = $(nextLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
+      const $current = $(`#timetable-less [data-lesson-number="${currentLessonNumber[0].lessonNumber}"]`);
+      $prev.css("--bar-progress", "100%");
+      $next.css("--bar-progress", "0%");
+      $current.css("--bar-progress", percentage * 100 + "%");
+    }
+  }
+  else if (prevLessonNumbers.length === 0) {
+    $("#timetable-less, #timetable-more").addClass("timetable-out-of-range");
+
+    if (nextLessonNumbers.length > 0) {
+      const firstLessonGroup = nextLessonNumbers[0];
+      const timeLeft = getTimeString(firstLessonGroup.startTime - now);
+
+
+      function matchesLessonNumber(substitution: Record<string, string>, lessonNumber: number): boolean {
+        if (substitution.lesson.includes("-")) {
+          const [start, end] = substitution.lesson.replace(" ", "").split("-").map(Number);
+          if (start > lessonNumber || lessonNumber > end) {
+            return false;
+          }
+        }
+        else if (parseInt(substitution.lesson) !== lessonNumber) {
+          return false;
+        }
+        return true;
+      }
+
+      function matchesTeacher(substitution: Record<string, string>, lesson: ProcessedLesson): boolean {
+        return (lesson.teacherNameSubstitution ?? []).includes(substitution.teacherOld);
+      }
+
+      const currentClassSubstitutionsData = (await classSubstitutionsData()).data;
+      if (currentClassSubstitutionsData !== "No data") {
+        for (const substitution of currentClassSubstitutionsData.plan1.substitutions) {
+          if (matchesLessonNumber(substitution, firstLessonGroup.lessonNumber)) {
+            for (const lesson of firstLessonGroup.lessons) {
+              if (matchesTeacher(substitution, lesson)) {
+                lesson.subjectNameLong = substitution.subject;
+                lesson.room = substitution.room;
+              }
+            }
+          }
+        }
+      }
+
+      $("#timetable-feedback")
+        .find("i").hide().filter("#timetable-feedback-info").show().end().end()
+        .find("span").html(`
+          Der Unterricht beginnt in <b>${timeLeft}</b>
+          mit ${nextLessonNumbers[0].lessons.map(l => `<b>${escapeHTML(l.subjectNameLong)}</b>`).join(" / ")}
+          im Raum ${nextLessonNumbers[0].lessons.map(l => `<b>${escapeHTML(l.room)}</b>`).join(" / ")}
+        `);
+    }
+  }
+  else if (nextLessonNumbers.length === 0) {
+    $("#timetable-less, #timetable-more").addClass("timetable-out-of-range");
+
+    $("#timetable-feedback")
+      .find("i").hide().filter("#timetable-feedback-happy").show().end().end()
+      .find("span").text("Der Schultag ist zu Ende!");
+  }
+  else {
+    $("#timetable-less, #timetable-more").removeClass("timetable-out-of-range");
+
+    // Timetable More
+    const $prev = $(`#timetable-more [data-lesson-number="${prevLessonNumbers[prevLessonNumbers.length - 1].lessonNumber}"]`);
+    const $next = $(`#timetable-more [data-lesson-number="${nextLessonNumbers[0].lessonNumber}"]`);
+    const barPosPrev = offsetTop($prev) + height($prev);
+    const barPosNext = offsetTop($next);
+    const barPos = (barPosPrev + barPosNext) / 2 - offsetTop($("#timetable-more"));
+    $("#timetable-more").css("--bar-pos", barPos + "px");
+
+    if (window.innerWidth < 1200) {
+      // Timetable Less (Vertical)
+      const $prev = $(`#timetable-less [data-lesson-number="${prevLessonNumbers[prevLessonNumbers.length - 1].lessonNumber}"]`);
+      const $next = $(`#timetable-less [data-lesson-number="${nextLessonNumbers[0].lessonNumber}"]`);
+      const barPosPrev = offsetTop($prev) + height($prev);
+      const barPosNext = offsetTop($next);
+      const barPos = (barPosPrev + barPosNext) / 2 - offsetTop($("#timetable-less"));
+      $("#timetable-less").css("--bar-pos", barPos + "px");
+    }
+    else {
+      const $prev = $(prevLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
+      const $next = $(nextLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
+      $prev.css("--bar-progress", "100%");
+      $next.css("--bar-progress", "0%");
+    }
+  }
+}
+
+setInterval(updateTimetableProgress,  30 * 1000); // Update every 30s
 
 async function renameCalendarMonthYear(): Promise<void> {
   $("#calendar-month-year").text(`${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`);
@@ -1162,12 +1322,29 @@ $("#calendar-today-btn").on("click", () => {
   updateTimetable();
 });
 
+function updateCalenderMoveButtonAriaLabels(): void {
+  if (calendarMode === "week") {
+    $("#calendar-month-year-l-btn").attr("aria-label", "Vorheriger Monat");
+    $("#calendar-month-year-r-btn").attr("aria-label", "Nächster Monat");
+    $("#calendar-week-l-btn").attr("aria-label", "Vorherige Woche");
+    $("#calendar-week-r-btn").attr("aria-label", "Nächste Woche");
+  }
+  else {
+    $("#calendar-month-year-l-btn").attr("aria-label", "Vorheriges Jahr");
+    $("#calendar-month-year-r-btn").attr("aria-label", "Nächstes Jahr");
+    $("#calendar-week-l-btn").attr("aria-label", "Vorheriger Monat");
+    $("#calendar-week-r-btn").attr("aria-label", "Nächster Monat");
+  }
+}
+
 let calendarMode = localStorage.getItem("calendarMode") ?? "week";
+updateCalenderMoveButtonAriaLabels();
 $(`#calendar-${calendarMode}-btn`).addClass("d-none");
 
 $("#calendar-month-btn").on("click", () => {
   selectedNewDay = false;
   calendarMode = "month";
+  updateCalenderMoveButtonAriaLabels();
   localStorage.setItem("calendarMode", calendarMode);
   $("#calendar-week-btn").removeClass("d-none");
   $("#calendar-month-btn").addClass("d-none");
@@ -1177,6 +1354,7 @@ $("#calendar-month-btn").on("click", () => {
 $("#calendar-week-btn").on("click", () => {
   selectedNewDay = false;
   calendarMode = "week";
+  updateCalenderMoveButtonAriaLabels();
   localStorage.setItem("calendarMode", calendarMode);
   $("#calendar-month-btn").removeClass("d-none");
   $("#calendar-week-btn").addClass("d-none");
@@ -1243,7 +1421,8 @@ $("#filter-homework-mode").on("input", () => {
 
 $("#timetable-mode input").each(function () {
   $(this).on("click", () => {
-    updateTimetableMode();
+    updateShownTimetable();
+    updateTimetableProgress();
   });
   $(this).prop("checked", false);
 });

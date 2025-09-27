@@ -1,7 +1,10 @@
 <!doctype html>
 <html lang="de">
   <head>
-    <meta name="description" content="Log in or create/join a class to synchronize homework events and more with your classmates!" />
+    <meta
+      name="description"
+      content="TaskMinder ist eine Website zur schnellen und einfachen Verwaltung von Hausaufgaben, Ereignissen und mehr - innerhalb einer Klasse synchronisiert!"
+    />
   </head>
 
   <body>
@@ -11,13 +14,13 @@
           <h2 class="text-center mb-4">Was möchtest du tun?</h2>
           <button class="btn btn-primary w-100 fw-semibold mb-3 position-relative" id="show-login-register-btn">
             Anmelden oder Registrieren
-            <i class="fas fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none"></i>
+            <i class="fas fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none" aria-hidden="true"></i>
           </button>
           <button class="btn btn-primary w-100 fw-semibold mb-3 position-relative" id="show-join-class-btn">
             Klasse beitreten
-            <i class="fa-solid fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none"></i>
+            <i class="fa-solid fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none" aria-hidden="true"></i>
           </button>
-          <button class="btn btn-primary w-100 fw-semibold disabled" id="show-create-class-btn">Klasse erstellen</button>
+          <button class="btn btn-primary w-100 fw-semibold" disabled id="show-create-class-btn">Klasse erstellen</button>
           <div class="form-text">Du brauchst einen Account, um eine Klasse zu erstellen.</div>
         </div>
 
@@ -27,7 +30,7 @@
             <h2 class="text-center mb-0 flex-grow-1">Klasse beitreten</h2>
           </div>
           <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2" id="error-invalid-class-code">
-            <i class="fa-solid fa-circle-exclamation mx-1"></i>
+            <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
             <span class="d-block">Der Klassencode ist ungültig!</span>
           </div>
           <div class="mb-3">
@@ -35,15 +38,28 @@
             <input type="text" class="form-control" id="join-class-class-code" />
             <div class="form-text">Frag den Ersteller eurer Klasse, wenn du ihn vergessen hast</div>
           </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input mt-2" type="checkbox" id="join-class-checkbox" />
+            <label class="form-check-label" for="join-class-checkbox">
+              <div class="form-text">
+                Ich bin mindestens 16 Jahre alt oder habe die Einverständnis meiner Erziehungsberechtigten, einer Klasse auf TaskMinder beizutreten.
+                Ich habe die
+                <a href="/about#privacy-policy" target="_blank">Datenschutzerklärung</a>
+                und
+                <a href="/about#terms-of-use" target="_blank">Nutzungsbedingungen</a>
+                gelesen und akzeptiert.
+              </div>
+            </label>
+          </div>
           <button class="btn btn-primary w-100 fw-semibold" id="join-class-btn">Beitreten</button>
         </div>
 
         <div id="decide-account-panel" class="d-none">
           <div class="alert alert-success p-2 d-flex align-items-center gap-2">
-            <i class="fa-solid fa-circle-check mx-1"></i>
+            <i class="fa-solid fa-circle-check mx-1" aria-hidden="true"></i>
             <span class="d-block">
               Du bist der Klasse
-              <b id="decide-account-class-name">10d</b>
+              <b id="decide-account-class-name"></b>
               beigetreten!
             </span>
           </div>
@@ -72,14 +88,21 @@
               <button class="btn-back" id="login-register-back-btn"></button>
               <h2 class="text-center mb-0 flex-grow-1">Anmelden oder Registrieren</h2>
             </div>
+            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 w-100">
+              <i class="fa-solid fa-lightbulb mx-1" aria-hidden="true"></i>
+              <span class="d-block me-1">
+                Schon angemeldet? Gib deinen Nutzernamen ein!
+                <br />
+                Noch kein Account? Gib deinen Wunschnamen ein!
+              </span>
+            </div>
             <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-register-error-invalid-username">
-              <i class="fa-solid fa-circle-exclamation mx-1"></i>
+              <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
               <span class="d-block">Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.</span>
             </div>
-            <label for="panel-login-register-username" class="form-label">Gib deinen Nutzernamen ein</label>
+            <label for="panel-login-register-username" class="form-label">Gib deinen Nutzer-/Wunschnamen ein</label>
             <input type="text" class="form-control login-register-username" id="panel-login-register-username" />
-            <div class="form-text">Gib zum Registrieren deinen Wunschnamen ein</div>
-            <button class="btn btn-primary disabled w-100 fw-semibold mt-2 login-register-next-button" id="login-register-next-button">Weiter</button>
+            <button class="btn btn-primary w-100 fw-semibold mt-2 login-register-next-button" disabled id="login-register-next-button">Weiter</button>
           </div>
           <!--LOGIN CONTENT-->
           <div class="d-none login-element">
@@ -88,12 +111,13 @@
               <h2 class="text-center mb-0 flex-grow-1">Anmelden</h2>
             </div>
             <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-error-invalid-password">
-              <i class="fa-solid fa-circle-exclamation mx-1"></i>
+              <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
               <span class="d-block">Das Passwort ist falsch!</span>
             </div>
             <label for="panel-login-password" class="form-label">Gib dein Passwort ein</label>
             <input type="password" class="form-control login-password" id="panel-login-password" />
-            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 login-element login-button" id="panel-login-button">Anmelden</button>
+            <div class="form-text">Wolltest du dich registrieren? Dieser Nutzername ist leider schon vergeben. Aber es gibt noch genug andere!</div>
+            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 login-element login-button">Anmelden</button>
           </div>
           <!--REGISTER CONTENT-->
           <div class="d-none register-element">
@@ -102,11 +126,11 @@
               <h2 class="text-center mb-0 flex-grow-1">Registrieren</h2>
             </div>
             <div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-no-matching-passwords">
-              <i class="fa-solid fa-circle-exclamation mx-1"></i>
+              <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
               <span class="d-block">Die Passwörter stimmen nicht überein!</span>
             </div>
             <div class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password">
-              <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+              <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
               <span class="d-block">Das Passwort ist nicht sicher!</span>
             </div>
             <div class="mb-3">
@@ -114,9 +138,23 @@
               <input type="password" class="form-control register-password" id="panel-register-password" />
               <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
             </div>
-            <input type="password" class="form-control register-password-repeat" />
-            <div class="form-text">Gib es noch mal ein</div>
-            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 register-element register-button">Registrieren</button>
+            <div class="mb-3">
+              <input type="password" class="form-control register-password-repeat" />
+              <div class="form-text">Gib es noch mal ein</div>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input mt-2 register-checkbox" type="checkbox" id="panel-register-checkbox" />
+              <label class="form-check-label" for="panel-register-checkbox">
+                <div class="form-text">
+                  Ich bin mindestens 16 Jahre alt oder habe die Einverständnis meiner Erziehungsberechtigten, einen Account zu erstellen. Ich habe die
+                  <a href="/about#privacy-policy" target="_blank">Datenschutzerklärung</a>
+                  und
+                  <a href="/about#terms-of-use" target="_blank">Nutzungsbedingungen</a>
+                  gelesen und akzeptiert.
+                </div>
+              </label>
+            </div>
+            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 register-element register-button" disabled>Registrieren</button>
           </div>
         </div>
 
@@ -145,9 +183,7 @@
           <div class="mb-3">
             <label class="form-label" for="create-class-name">Gib einen Namen für deine Klasse an</label>
             <input type="text" class="form-control" id="create-class-name" placeholder="z.B. 10d" />
-            <div class="invalid-feedback">
-              Klassennamen dürfen nur aus Buchstaben, Zahlen, Leerzeichen, "_", "-" und "." bestehen und müssen 2 bis 20 Zeichen lang sein.
-            </div>
+            <div class="invalid-feedback">Der Klassenname darf nicht leer sein!</div>
           </div>
           <button class="btn btn-primary w-100 fw-semibold" id="create-class-btn">Klasse erstellen</button>
         </div>
@@ -158,11 +194,11 @@
           </div>
           <div class="d-flex gap-2 flex-column flex-md-row">
             <button class="btn btn-primary w-100 fw-semibold" id="invite-copy-link">
-              <i class="fa-solid fa-link"></i>
+              <i class="fa-solid fa-link" aria-hidden="true"></i>
               Einladungslink kopieren
             </button>
             <button class="btn btn-primary w-100 fw-semibold" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
-              <i class="fa-solid fa-qrcode"></i>
+              <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
               QR-Code anzeigen
             </button>
           </div>
@@ -171,7 +207,7 @@
         </div>
       </div>
     </div>
-    <div class="modal fade" id="show-qrcode-modal" tabindex="-1">
+    <div class="modal fade" id="show-qrcode-modal" tabindex="-1" aria-labelledby="show-qrcode-modal-title">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -180,7 +216,7 @@
               <b></b>
               auf TaskMinder bei!
             </h1>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
           </div>
           <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
           <div class="modal-footer">
@@ -189,6 +225,5 @@
         </div>
       </div>
     </div>
-    <div class="load-snippet" data-target="bottombar"></div>
   </body>
 </html>

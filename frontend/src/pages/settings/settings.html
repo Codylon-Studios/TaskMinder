@@ -1,7 +1,10 @@
 <!doctype html>
 <html lang="de">
   <head>
-    <meta name="description" content="Log in or create/join a class to synchronize homework events and more with your classmates!." />
+    <meta
+      name="description"
+      content="Das sind die Einstellungen für TaskMinder: Du kannst das Erscheinungsbild anpassen oder die Klasse verwalten."
+    />
   </head>
 
   <body>
@@ -18,9 +21,9 @@
       <div class="tab-content container">
         <div class="tab-pane fade show active" id="nav-settings-app">
           <div class="d-flex align-items-center mb-2">
-            <label class="me-3" for="animations">Animationen</label>
+            <label class="me-3" for="animations-check">Animationen</label>
             <div class="form-check form-switch fs-5 mb-0" id="animations">
-              <input class="form-check-input mt-0" type="checkbox" />
+              <input class="form-check-input mt-0" id="animations-check" type="checkbox" />
             </div>
           </div>
           <div class="form-text mb-4">Aktiviert / deaktiviert Animationen in der App wie zum Beispiel beim Kalender.</div>
@@ -31,7 +34,7 @@
               <input type="radio" class="btn-check" name="color-theme" id="color-theme-auto" checked />
               <label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-auto">Automatisch</label>
 
-              <input type="radio" class="btn-check" name="color-theme" id="color-theme-light" checked />
+              <input type="radio" class="btn-check" name="color-theme" id="color-theme-light" />
               <label class="btn btn-sm btn-outline-primary fw-semibold" for="color-theme-light">Hell</label>
 
               <input type="radio" class="btn-check" name="color-theme" id="color-theme-dark" />
@@ -41,9 +44,32 @@
           <div class="form-text mb-4">Bestimmt das Farbthema der App. Bei Automatisch folgt das Farbthema dem deines Geräts.</div>
 
           <div class="d-flex align-items-center mb-2">
-            <label class="me-3" for="display-footer">Fußzeile</label>
+            <label class="me-3" for="high-contrast-check">Erhöhter Kontrast</label>
+            <div class="form-check form-switch fs-5 mb-0" id="high-contrast">
+              <input id="high-contrast-check" class="form-check-input mt-0" type="checkbox" />
+            </div>
+          </div>
+          <div class="form-text mb-4">Erhöht den Farbkontrast der App für bessere Lesbarkeit.</div>
+
+          <div class="d-flex align-items-center mb-2">
+            <label class="me-3" for="font-size">Schriftgröße</label>
+            <div class="btn-group" id="font-size">
+              <input type="radio" class="btn-check" name="font-size" id="font-size-normal" value="0" checked />
+              <label class="btn btn-sm btn-outline-primary fw-semibold" for="font-size-normal">Normal</label>
+
+              <input type="radio" class="btn-check" name="font-size" id="font-size-large" value="1" />
+              <label class="btn btn-sm btn-outline-primary fw-semibold" for="font-size-large">Groß</label>
+
+              <input type="radio" class="btn-check" name="font-size" id="font-size-very-large" value="2" />
+              <label class="btn btn-sm btn-outline-primary fw-semibold" for="font-size-very-large">Sehr groß</label>
+            </div>
+          </div>
+          <div class="form-text mb-4">Erhöht die Schriftgröße für bessere Lesbarkeit.</div>
+
+          <div class="d-flex align-items-center mb-2">
+            <label class="me-3" for="display-footer-check">Fußzeile</label>
             <div class="form-check form-switch fs-5 mb-0" id="display-footer">
-              <input class="form-check-input mt-0" type="checkbox" />
+              <input id="display-footer-check" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="form-text mb-4">
@@ -53,7 +79,7 @@
 
         <div class="tab-pane fade" id="nav-settings-account">
           <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-logged-in-info">
-            <i class="fa-solid fa-circle-xmark mx-1"></i>
+            <i class="fa-solid fa-circle-xmark mx-1" aria-hidden="true"></i>
             <div>
               <div class="d-block">Für diese Einstellungen musst du angemeldet sein.</div>
               <div class="d-block">Du kannst dich über das Icon oben rechts anmelden oder registrieren.</div>
@@ -62,31 +88,31 @@
 
           <div id="settings-account">
             <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
-              <i class="fa-solid fa-circle-info mx-1"></i>
+              <i class="fa-solid fa-circle-info mx-1" aria-hidden="true"></i>
               <div class="d-block">Diese Einstellungen betreffen deinen gesamten Account, auch geräteübergreifend.</div>
             </div>
 
             <button class="btn btn-primary fw-bold" id="logout-button">
-              <i class="fa-solid fa-right-from-bracket"></i>
+              <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
               Abmelden
             </button>
             <div class="form-text mb-4">Du kannst dich jederzeit wieder anmelden. Du musst dich auf allen Geräten einzeln abmelden.</div>
 
             <button class="btn btn-warning fw-bold" id="change-username-button">
-              <i class="fa-solid fa-user-pen"></i>
+              <i class="fa-solid fa-user-pen" aria-hidden="true"></i>
               Nutzernamen ändern
             </button>
             <div id="change-username">
               <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content d-flex" id="change-username-invalid-password">
-                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                 <span class="d-block me-1">Das Passwort ist falsch!</span>
               </div>
               <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content d-flex" id="change-username-invalid-username">
-                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                 <span class="d-block me-1">Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.</span>
               </div>
               <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content d-flex" id="change-username-taken-username">
-                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                 <span class="d-block me-1">Dieser Nutzername ist schon vergeben. Bitte wähle einen anderen.</span>
               </div>
 
@@ -95,31 +121,31 @@
                 <input class="form-control w-fit-content" type="password" placeholder="Dein neuer Nutzername" id="change-username-new-username" />
               </div>
               <button class="btn btn-secondary fw-bold" id="change-username-cancel">
-                <i class="fa-solid fa-xmark"></i>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 Abbrechen
               </button>
               <button class="btn btn-warning fw-bold" id="change-username-confirm">
-                <i class="fa-solid fa-user-pen"></i>
+                <i class="fa-solid fa-user-pen" aria-hidden="true"></i>
                 Bestätigen
               </button>
             </div>
             <div class="form-text mb-4">Denke daran, dass du dann immer diesen Namen benutzen musst, auch zum Beispiel beim Anmelden.</div>
 
             <button class="btn btn-warning fw-bold" id="change-password-button">
-              <i class="fa-solid fa-unlock-keyhole"></i>
+              <i class="fa-solid fa-unlock-keyhole" aria-hidden="true"></i>
               Passwort ändern
             </button>
             <div id="change-password">
               <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-invalid-password">
-                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                 <span class="d-block me-1">Das Passwort ist falsch!</span>
               </div>
               <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-not-matching-passwords">
-                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                 <span class="d-block me-1">Die Passwörter stimmen nicht überein!</span>
               </div>
               <div class="alert alert-warning p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-insecure-password">
-                <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+                <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
                 <span class="d-block me-1">Das Passwort ist nicht sehr sicher!</span>
               </div>
 
@@ -129,38 +155,38 @@
                 <input class="form-control w-fit-content" type="password" placeholder="Wiederhole dein neues Passwort" id="change-password-repeat" />
               </div>
               <button class="btn btn-secondary fw-bold" id="change-password-cancel">
-                <i class="fa-solid fa-xmark"></i>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 Abbrechen
               </button>
               <button class="btn btn-warning fw-bold" id="change-password-confirm">
-                <i class="fa-solid fa-unlock-keyhole"></i>
+                <i class="fa-solid fa-unlock-keyhole" aria-hidden="true"></i>
                 Bestätigen
               </button>
             </div>
             <div class="form-text mb-4">Achtung, das kann nicht rückgängig gemacht werden!</div>
 
             <button class="btn btn-danger fw-bold" id="delete-account-button">
-              <i class="fa-solid fa-user-slash"></i>
+              <i class="fa-solid fa-user-slash" aria-hidden="true"></i>
               Account löschen
             </button>
             <div id="delete-account">
               <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="delete-account-invalid-password">
-                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                 <span class="d-block me-1">Das Passwort ist falsch!</span>
               </div>
               <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="delete-account-still-in-class">
-                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                 <span class="d-block me-1">Du bist noch in einer Klasse. Bitte verlasse sie zuerst unter "Schüler".</span>
               </div>
               <div class="mb-2">
                 <input class="form-control w-fit-content" type="password" placeholder="Dein Passwort" id="delete-account-password" />
               </div>
               <button class="btn btn-secondary fw-bold" id="delete-account-cancel">
-                <i class="fa-solid fa-xmark"></i>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 Abbrechen
               </button>
               <button class="btn btn-danger fw-bold" id="delete-account-confirm">
-                <i class="fa-solid fa-user-slash"></i>
+                <i class="fa-solid fa-user-slash" aria-hidden="true"></i>
                 Bestätigen
               </button>
             </div>
@@ -170,7 +196,7 @@
 
         <div class="tab-pane fade" id="nav-settings-student">
           <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
-            <i class="fa-solid fa-circle-xmark mx-1"></i>
+            <i class="fa-solid fa-circle-xmark mx-1" aria-hidden="true"></i>
             <div>
               <div class="d-block">Für diese Einstellungen musst du einer Klasse beigetreten sein.</div>
               <div class="d-block">
@@ -181,7 +207,7 @@
 
           <div id="settings-student">
             <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
-              <i class="fa-solid fa-circle-info mx-1"></i>
+              <i class="fa-solid fa-circle-info mx-1" aria-hidden="true"></i>
               <div class="d-block">Wenn du einen Account hast, werden diese Einstellungen mit anderen angemeldeten Geräten synchronisiert.</div>
             </div>
 
@@ -199,22 +225,22 @@
             <div class="form-text mb-4">Du kannst die verfügbaren Teams deiner Klasse unter "Klasse" einstellen.</div>
 
             <button class="btn btn-danger fw-bold" id="leave-class-button">
-              <i class="fa-solid fa-right-from-bracket"></i>
+              <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
               Klasse verlassen
             </button>
             <div id="leave-class">
               <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="leave-class-last-admin">
-                <i class="fa-solid fa-circle-exclamation mx-1"></i>
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                 <span class="d-block me-1">
                   Du bist der letzte Admin in der Klasse. Bitte lösche die Klasse oder ernenne einen anderen Nutzer zum Admin.
                 </span>
               </div>
               <button class="btn btn-secondary fw-bold" id="leave-class-cancel">
-                <i class="fa-solid fa-xmark"></i>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 Abbrechen
               </button>
               <button class="btn btn-danger fw-bold" id="leave-class-confirm">
-                <i class="fa-solid fa-right-from-bracket"></i>
+                <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
                 Bestätigen
               </button>
             </div>
@@ -224,7 +250,7 @@
 
         <div class="tab-pane fade" id="nav-settings-class">
           <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
-            <i class="fa-solid fa-circle-xmark mx-1"></i>
+            <i class="fa-solid fa-circle-xmark mx-1" aria-hidden="true"></i>
             <div>
               <div class="d-block">Für diese Einstellungen musst du einer Klasse beigetreten sein.</div>
               <div class="d-block">
@@ -235,7 +261,7 @@
 
           <div id="settings-class">
             <div class="alert alert-warning p-2 d-flex align-items-center gap-2 width-fit-content">
-              <i class="fa-solid fa-triangle-exclamation mx-1"></i>
+              <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
               <div>
                 <div class="d-block">
                   Diese Einstellungen betreffen die ganze Klasse!
@@ -245,19 +271,49 @@
               </div>
             </div>
 
-            <div class="row align-items-center mb-2">
+            <div class="fs-3 mb-2 d-flex align-items-center">
+              Klasse
+              <b id="class-settings-name" class="ms-1"></b>
+              <button class="btn btn-tertiary fw-semibold ms-2" id="change-class-name-button">
+                <i class="fa-solid fa-pencil" aria-hidden="true"></i>
+                Umbenennen
+              </button>
+            </div>
+
+            <div class="mb-2" id="change-class-name">
+              <div class="mb-2">
+                <input class="form-control w-fit-content" type="text" placeholder="Der neue Name" id="change-class-name-new-class-name" />
+                <div class="invalid-feedback">Der Klassenname darf nicht leer sein!</div>
+              </div>
+              <button class="btn btn-secondary fw-bold" id="change-class-name-cancel">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-primary fw-bold" id="change-class-name-confirm">
+                <i class="fa-solid fa-pencil" aria-hidden="true"></i>
+                Bestätigen
+              </button>
+            </div>
+
+            <div class="row mb-2">
               <div class="col-12 col-lg-auto">
-                <label for="class-code-container" class="col-form-label mb-0">Euer Klassencode</label>
+                <label for="class-code" class="col-form-label mb-0">Euer Klassencode</label>
               </div>
               <div class="col-12 col-lg" id="class-code-container">
-                <div class="d-flex gap-2 flex-column flex-lg-row">
+                <div class="d-flex gap-2 flex-column flex-lg-row mb-2">
                   <input id="class-code" type="text" class="form-control user-select-all" value="" readonly />
+                  <button class="btn btn-primary w-100 fw-semibold" id="change-class-code">
+                    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                    Neuen Klassencode anfordern
+                  </button>
+                </div>
+                <div class="d-flex gap-2 flex-column flex-lg-row">
                   <button class="btn btn-primary w-100 fw-semibold" id="invite-copy-link">
-                    <i class="fa-solid fa-link"></i>
+                    <i class="fa-solid fa-link" aria-hidden="true"></i>
                     Einladungslink kopieren
                   </button>
                   <button class="btn btn-primary w-100 fw-semibold" id="invite-qrcode" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
-                    <i class="fa-solid fa-qrcode"></i>
+                    <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                     QR-Code anzeigen
                   </button>
                 </div>
@@ -265,30 +321,46 @@
             </div>
             <div class="form-text mb-4">
               Um die Inhalte eurer Klasse zu sehen, müssen deine Mitschülerinnen und Mitschüler den Klassencode eingeben. Du kannst ihnen auch den
-              Einladungslink schicken.
+              Einladungslink schicken oder sie den QR-Code einscannen lassen.
+            </div>
+
+            <div class="alert alert-danger p-2 align-items-center gap-2 w-100 d-none d-flex" id="test-class-alert">
+              <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+              <span class="d-block me-1 w-100">
+                Eure Klasse ist noch eine Testklasse. In
+                <span class="text-danger fw-bold" id="upgrade-test-class-time-left">24 Stunden</span>
+                werden alle Daten gelöscht!
+                <button class="btn btn-danger w-100 fw-bold mt-2" id="upgrade-test-class">Testklasse zu normaler Klasse machen</button>
+                <div class="form-text text-center">Alle Daten werden dann für immer behalten.</div>
+              </span>
             </div>
 
             <button class="btn btn-danger fw-bold" id="delete-class-button">
-              <i class="fa-solid fa-users-slash"></i>
+              <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
               Klasse löschen
             </button>
             <div id="delete-class">
               <button class="btn btn-secondary fw-bold" id="delete-class-cancel">
-                <i class="fa-solid fa-xmark"></i>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 Abbrechen
               </button>
               <button class="btn btn-danger fw-bold" id="delete-class-confirm">
-                <i class="fa-solid fa-users-slash"></i>
+                <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
                 Bestätigen
               </button>
             </div>
             <div class="form-text mb-4">Achtung, das kann nicht rückgängig gemacht werden!</div>
 
+            <div class="alert alert-primary p-2 d-flex d-md-none align-items-center gap-2 w-fit-content">
+              <i class="fa-solid fa-lightbulb mx-1" aria-hidden="true"></i>
+              <span class="d-block me-1">Auf einem breiterem Bildschirm ist die Bearbeitung einfacher!</span>
+            </div>
+
             <div class="mb-4">
               <h5>
-                <span class="display-toggle" id="class-members-toggle">
+                <button class="display-toggle btn btn-semivisible" id="class-members-toggle">
                   <span class="fa fa-caret-right"></span>
-                </span>
+                </button>
                 Klassenmitglieder:innen
               </h5>
               <div id="class-members-wrapper">
@@ -324,16 +396,16 @@
                 </div>
 
                 <button class="btn btn-danger fw-bold" id="kick-logged-out-users-button">
-                  <i class="fa-solid fa-users-slash"></i>
+                  <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
                   Alle unangemeldeten Nutzer entfernen
                 </button>
                 <div id="kick-logged-out-users">
                   <button class="btn btn-secondary fw-bold" id="kick-logged-out-users-cancel">
-                    <i class="fa-solid fa-xmark"></i>
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                     Abbrechen
                   </button>
                   <button class="btn btn-danger fw-bold" id="kick-logged-out-users-confirm">
-                    <i class="fa-solid fa-users-slash"></i>
+                    <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
                     Bestätigen
                   </button>
                 </div>
@@ -351,11 +423,11 @@
                   </div>
                   <div id="set-logged-out-users-role">
                     <button class="btn btn-secondary fw-bold" id="set-logged-out-users-role-cancel">
-                      <i class="fa-solid fa-xmark"></i>
+                      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                       Abbrechen
                     </button>
                     <button class="btn btn-primary fw-bold" id="set-logged-out-users-role-confirm">
-                      <i class="fa-solid fa-check"></i>
+                      <i class="fa-solid fa-check" aria-hidden="true"></i>
                       Bestätigen
                     </button>
                   </div>
@@ -366,9 +438,9 @@
 
             <div class="mb-4">
               <h5>
-                <span class="display-toggle" id="teams-toggle">
+                <button class="display-toggle btn btn-semivisible" id="teams-toggle">
                   <span class="fa fa-caret-right"></span>
-                </span>
+                </button>
                 Teams
               </h5>
               <div id="teams-wrapper">
@@ -394,9 +466,9 @@
 
             <div class="mb-4">
               <h5>
-                <span class="display-toggle" id="event-types-toggle">
+                <button class="display-toggle btn btn-semivisible" id="event-types-toggle">
                   <span class="fa fa-caret-right"></span>
-                </span>
+                </button>
                 Ereignisarten
               </h5>
               <div id="event-types-wrapper">
@@ -421,12 +493,17 @@
             </div>
             <div class="mb-4">
               <h5>
-                <span class="display-toggle" id="subjects-toggle">
+                <button class="display-toggle btn btn-semivisible" id="subjects-toggle">
                   <span class="fa fa-caret-right"></span>
-                </span>
+                </button>
                 Fächer
               </h5>
               <div id="subjects-wrapper">
+                <div class="alert alert-warning p-2 d-flex align-items-center gap-2 w-fit-content">
+                  <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
+                  <span class="d-block me-1">Bitte deine Lehrkräfte um Erlaubnis, bevor du ihre Namen einträgst.</span>
+                </div>
+
                 <div class="mb-2" id="subjects-list">
                   <!--Gets filled-->
                 </div>
@@ -453,13 +530,13 @@
 
             <div class="mb-4">
               <h5>
-                <span class="display-toggle" id="timetable-toggle">
+                <button class="display-toggle btn btn-semivisible" id="timetable-toggle">
                   <span class="fa fa-caret-right"></span>
-                </span>
+                </button>
                 Stundenplan
               </h5>
               <div id="timetable-wrapper">
-                <div class="mb-2 row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 p-2" id="timetable">
+                <div class="mb-2 row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-5 p-2" id="timetable">
                   <!--Gets filled-->
                 </div>
                 <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="timetable-cancel">Abbrechen</button>
@@ -477,7 +554,7 @@
       </div>
     </div>
 
-    <div class="modal fade" id="show-qrcode-modal" tabindex="-1">
+    <div class="modal fade" id="show-qrcode-modal" tabindex="-1" aria-labelledby="show-qrcode-modal-title">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -486,7 +563,7 @@
               <b></b>
               auf TaskMinder bei!
             </h1>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
           </div>
           <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
           <div class="modal-footer">
@@ -497,34 +574,26 @@
     </div>
 
     <div class="toast-container position-fixed top-0 end-0 p-3">
-      <div id="logout-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
-          <b class="me-auto">Erfolgreich abgemeldet</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body">Auf Wiedersehen!</div>
-      </div>
-
       <div id="change-username-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Nutzername erfolgreich geändert</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">Vergiss ihn nicht!</div>
       </div>
 
       <div id="change-password-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Passwort erfolgreich geändert</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">Vergiss es nicht!</div>
       </div>
 
       <div id="delete-account-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Account erfolgreich gelöscht</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">
           Wenn dir TaskMinder nicht gefallen hat, kontaktiere uns gerne und gib uns Feedback, damit wir TaskMinder noch besser gestalten können.
@@ -532,17 +601,17 @@
       </div>
 
       <div id="leave-class-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Klasse erfolgreich verlassen</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">Du hast die Klasse erfolgreich verlassen</div>
       </div>
 
       <div id="delete-class-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Klasse erfolgreich gelöscht</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">
           Wenn dir TaskMinder nicht gefallen hat, kontaktiere uns gerne und gib uns Feedback, damit wir TaskMinder noch besser gestalten können.
@@ -550,22 +619,20 @@
       </div>
 
       <div id="kick-logged-out-users-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Erfolg!</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">Alle unangemeldeten Nutzer wurden aus der Klasse entfernt.</div>
       </div>
 
       <div id="set-logged-out-users-role-success-toast" class="toast">
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-success text-body-bg">
           <b class="me-auto">Erfolg!</b>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
         </div>
         <div class="toast-body">Die Rolle für unangemeldete Nutzer wurde aktualisiert.</div>
       </div>
     </div>
-
-    <div class="load-snippet" data-target="bottombar"></div>
   </body>
 </html>

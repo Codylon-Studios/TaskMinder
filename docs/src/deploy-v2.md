@@ -340,12 +340,16 @@ Your TaskMinder server should now be running at:
 
 ## 11. What's Next?
 
-- Create an account to add your subjects, teams, and timetable.
+- Create an account to set up a class and add your subjects, teams, and timetable.
 - Visit [https://monitoring.example.com](https://monitoring.example.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
 
 ---
 
 ## 12. Subsequent Updates
+
+An additional script named deploy.sh is located in the project’s root folder. It automatically pulls the latest updates from GitHub and redeploys the server.
+Use this script only for non-major version updates (e.g., v1.1.2 → v1.2.3). For major upgrades, please follow the official migration guides on (docs.taskminder.de)[https://docs.taskminder.de].
+Before running the script, ensure that the configuration variables in the .sh file are set correctly.
 
 run:
 
@@ -357,38 +361,3 @@ cd /opt/Taskminder
 to automatically pull the changes from the github repository, build and restart Docker containers.
 
 ---
-
-## Database Restoration Procedure
-
-Use this procedure to restore the database to a specific point in time from an existing backup file.
-
-> **CAUTION:** Restoring the database is a destructive operation. It will **overwrite all current data** in the database with the data from the backup file. Proceed with caution and ensure you are restoring the correct file.
-
-### List Available Backups
-
-Identify the backup file you wish to restore from. The files are located in `/opt/TaskMinder/db-backups/`.
-
-To see the most recent backups first, run:
-
-```bash
-ls -lt /opt/TaskMinder/db-backups/
-```
-
-### Run the Restore Script
-
-Execute the `db_restore.sh` script with `sudo` and provide the backup file you chose.
-
-```bash
-sudo /opt/TaskMinder/backup-cmds/db_restore.sh <backup-filename>
-```
-
-**Example:**
-If you want to restore a file named `backup-2023-10-27_15-00-00.sql.gz`, you would run:
-
-```bash
-sudo /opt/TaskMinder/backup-cmds/db_restore.sh backup-2023-10-27_15-00-00.sql.gz
-```
-
-### Verify the Restoration
-
-After the script completes, connect to the application or database and verify that the data has been restored to the expected state.

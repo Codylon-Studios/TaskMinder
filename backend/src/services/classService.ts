@@ -1,16 +1,18 @@
 import { RequestError } from "../@types/requestError";
 import { Session, SessionData } from "express-session";
-import prisma from "../config/prisma";
+import { default as prisma } from "../config/prisma";
 import { BigIntreplacer } from "../utils/validateFunctions";
 import { sessionPool } from "../config/pg";
 import logger from "../utils/logger";
 import { redisClient } from "../config/redis";
 import { 
+  changeClassNameTypeBody,
   changeDefaultPermissionTypeBody, 
   createClassTypeBody, 
   joinClassTypeBody, 
   kickClassMembersTypeBody, 
   setClassMembersPermissionsTypeBody, 
+  setUsersLoggedOutRoleTypeBody, 
   updateDSBMobileDataTypeBody 
 } from "../schemas/classSchema";
 
@@ -121,44 +123,6 @@ const classService = {
       throw err;
     }
   },
-  async generateClassCode(session: Session & Partial<SessionData>) {
-    if (session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    //generate new class code, look if already used -> if not, return value
-    // Try until a unique code is found
-    let code: string;
-    const maxAttempts = 10;
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      code = generateRandomBase62String();
-      const exists = await prisma.class.findUnique({
-        where: {
-          classCode: code
-        }
-      });
-      if (!exists) {
-        return code;
-      }
-    }
-
-    // If unique code wasn't found after 10 tries, fail gracefully
-    const err: RequestError = {
-      name: "Server Error",
-      status: 500,
-      message: "Could not generate unique class code",
-      additionalInformation:
-        "All randomly generated class codes were already in use",
-      expected: false
-    };
-    throw err;
-  },
-
   async joinClass(reqData: joinClassTypeBody, session: Session & Partial<SessionData>) {
     const { classCode } = reqData;
     if (session.classId) {
@@ -472,9 +436,7 @@ const classService = {
     return targetClass!.defaultPermissionLevel;
   },
   async setUsersLoggedOutRole(
-    reqData: {
-      role: number;
-    },
+    reqData: setUsersLoggedOutRoleTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { role } = reqData;
@@ -514,6 +476,70 @@ const classService = {
       };
       throw err;
     }
+  },
+  async changeClassName(
+    reqData: changeClassNameTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const { classDisplayName } = reqData;
+    await prisma.class.update({
+      where: {
+        classId: parseInt(session.classId!, 10)
+      },
+      data: {
+        className: classDisplayName
+      }
+    });
+  },
+  async changeClassCode(
+    session: Session & Partial<SessionData>
+  ) {
+    //generate new class code, look if already used -> if not, return value
+    // Try until a unique code is found
+    let code: string;
+    const maxAttempts = 10;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      code = generateRandomBase62String();
+      const exists = await prisma.class.findUnique({
+        where: {
+          classCode: code
+        }
+      });
+      if (!exists) {
+        await prisma.class.update({
+          where: {
+            classId: parseInt(session.classId!, 10)
+          },
+          data: {
+            classCode: code
+          }
+        });
+        return code;
+      }
+    }
+
+    // If unique code wasn't found after 10 tries, fail gracefully
+    const err: RequestError = {
+      name: "Server Error",
+      status: 500,
+      message: "Could not generate unique class code",
+      additionalInformation:
+        "All randomly generated class codes were already in use, please try again",
+      expected: false
+    };
+    throw err;
+  },
+  async upgradeTestClass(
+    session: Session & Partial<SessionData>
+  ){
+    await prisma.class.update({
+      where: {
+        classId: parseInt(session.classId!, 10)
+      },
+      data: {
+        isTestClass: false
+      }
+    });
   }
 };
 

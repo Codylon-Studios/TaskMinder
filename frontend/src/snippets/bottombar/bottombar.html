@@ -1,22 +1,36 @@
 <div class="bottombar bg-body-tertiary fixed-bottom row d-lg-none">
-  <div class="bottombar-link">
-    <i class="fa-solid fa-circle-info"></i>
-    <span>Info</span>
+  <div class="dropdown-center p-0" id="bottombar-more">
+    <a class="bottombar-link" data-bs-toggle="dropdown" href="#">
+      <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
+      <span>Mehr</span>
+    </a>
+    <ul class="dropdown-menu m-1">
+      <li><a class="dropdown-item" href="/about">Über TaskMinder</a></li>
+    </ul>
   </div>
-  <div class="bottombar-link">
-    <i class="fa-solid fa-list-check"></i>
+  <a class="bottombar-link" data-href="/homework">
+    <i class="fa-solid fa-list-check" aria-hidden="true"></i>
     <span>Hausaufgaben</span>
-  </div>
-  <div class="bottombar-link">
-    <i class="fa-solid fa-house"></i>
+  </a>
+  <a class="bottombar-link" href="/main">
+    <i class="fa-solid fa-house" aria-hidden="true"></i>
     <span>Startseite</span>
-  </div>
-  <div class="bottombar-link">
-    <i class="fa-solid fa-calendar"></i>
+  </a>
+  <a class="bottombar-link" data-href="/events">
+    <i class="fa-solid fa-calendar" aria-hidden="true"></i>
     <span>Ereignisse</span>
-  </div>
-  <div class="bottombar-link">
-    <i class="fa-solid fa-gear"></i>
+  </a>
+  <a class="bottombar-link" href="/settings">
+    <i class="fa-solid fa-gear" aria-hidden="true"></i>
     <span>Einstellungen</span>
+  </a>
+</div>
+<div class="bottombar-overlay align-items-center justify-content-center flex-column gap-2 text-center">
+  <i aria-hidden="true"></i>
+  <span class="fs-1"></span>
+  <div>
+    <a href="/about">Über TaskMinder</a>
+    <br />
+    <a class="text-secondary" href="#" id="bottombar-more-cancel">Abbrechen</a>
   </div>
 </div>

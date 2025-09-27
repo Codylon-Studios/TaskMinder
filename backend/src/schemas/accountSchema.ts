@@ -8,7 +8,7 @@ export const registerAccountSchema = z.object({
     username: z.string().refine(checkUsername, {
       message: "Username must be 4-20 characters, letters, digits, or underscore only"
     }),
-    password: z.string()
+    password: z.string().trim().min(4)
   })
 });
 
@@ -19,7 +19,7 @@ export const loginAccountSchema = z.object({
     username: z.string().refine(checkUsername, {
       message: "Username must be 4-20 characters, letters, digits, or underscore only"
     }),
-    password: z.string()
+    password: z.string().trim().min(4)
   })
 });
 
@@ -27,7 +27,7 @@ export const deleteAccountSchema = z.object({
   params: z.object({}).optional(),
   query: z.object({}).optional(),
   body: z.strictObject({
-    password: z.string()
+    password: z.string().trim().min(4)
   })
 });
 
@@ -35,7 +35,7 @@ export const changeUsernameSchema = z.object({
   params: z.object({}).optional(),
   query: z.object({}).optional(),
   body: z.strictObject({
-    password: z.string(),
+    password: z.string().trim().min(4),
     newUsername: z.string().refine(checkUsername, {
       message: "Username must be 4-20 characters, letters, digits, or underscore only"
     })
@@ -47,8 +47,8 @@ export const changePasswordSchema = z.object({
   params: z.object({}).optional(),
   query: z.object({}).optional(),
   body: z.strictObject({
-    oldPassword: z.string(),
-    newPassword: z.string()
+    oldPassword: z.string().trim().min(4),
+    newPassword: z.string().trim().min(4)
   })
 });
 

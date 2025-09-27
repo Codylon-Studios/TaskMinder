@@ -2,19 +2,20 @@
   <div class="rich-textarea-wrapper">
     <div class="rich-textarea-toolbar card mb-2">
       <div class="d-flex flex-wrap gap-2 p-2">
-        <button class="rich-textarea-bold btn btn-tertiary">
-          <i class="fa-solid fa-bold"></i>
+        <button class="rich-textarea-bold btn btn-tertiary" aria-label="Fett">
+          <i class="fa-solid fa-bold" aria-hidden="true"></i>
         </button>
-        <button class="rich-textarea-underline btn btn-tertiary">
-          <i class="fa-solid fa-underline"></i>
+        <button class="rich-textarea-underline btn btn-tertiary" aria-label="Unterstrichen">
+          <i class="fa-solid fa-underline" aria-hidden="true"></i>
         </button>
-        <button class="rich-textarea-italic btn btn-tertiary">
-          <i class="fa-solid fa-italic"></i>
+        <button class="rich-textarea-italic btn btn-tertiary" aria-label="Kursiv">
+          <i class="fa-solid fa-italic" aria-hidden="true"></i>
         </button>
 
         <div class="btn-group dropdown">
           <button class="rich-textarea-font-size btn btn-tertiary d-flex align-items-center">
-            <i class="fa-solid fa-text-height"></i>
+            <i class="fa-solid fa-text-height" aria-hidden="true"></i>
+            <span class="visually-hidden">Textgröße</span>
             <span class="text-secondary ms-1">(16)</span>
           </button>
           <button class="btn btn-tertiary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
@@ -22,23 +23,26 @@
           </button>
           <div class="dropdown-menu rich-textarea-font-size-dropdown">
             <div class="px-2 py-0 text-center">
-              <span class="text-secondary">Normal: 16</span>
-              <input type="range" class="form-range mt-2" placeholder="16" value="16" min="8" max="24" />
+              <label>
+                Schriftgröße:
+                <input type="range" class="form-range mt-2" placeholder="16" value="16" min="8" max="24" />
+              </label>
+              <span class="form-text">Normal: 16</span>
             </div>
           </div>
         </div>
 
         <div class="btn-group">
-          <button class="rich-textarea-sub btn btn-tertiary">
-            <i class="fa-solid fa-subscript"></i>
+          <button class="rich-textarea-sub btn btn-tertiary" aria-label="Tiefgestellt">
+            <i class="fa-solid fa-subscript" aria-hidden="true"></i>
           </button>
-          <button class="rich-textarea-sup btn btn-tertiary">
-            <i class="fa-solid fa-superscript"></i>
+          <button class="rich-textarea-sup btn btn-tertiary" aria-label="Hochgestellt">
+            <i class="fa-solid fa-superscript" aria-hidden="true"></i>
           </button>
         </div>
 
         <div class="btn-group">
-          <button class="rich-textarea-color btn btn-tertiary d-flex align-items-center">
+          <button class="rich-textarea-color btn btn-tertiary d-flex align-items-center" aria-label="Textfarbe">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 676 612" stroke-width="50">
               <path
                 d="M339.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L568.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S517.7-4.4 499.1 9.6L262.4 187.2c-24 18-38.2 46.1-38.4 76.1
@@ -46,10 +50,10 @@
                 s14.3 32 32 32l144 0c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"
               />
             </svg>
-            <i class="rich-textarea-color-enabled fas fa-circle-check"></i>
+            <i class="rich-textarea-color-enabled fas fa-circle-check" aria-hidden="true"></i>
             <span class="fa-stack">
-              <i class="fas fa-paintbrush fa-stack-1x"></i>
-              <i class="fas fa-slash fa-stack-1x"></i>
+              <i class="fas fa-paintbrush fa-stack-1x" aria-hidden="true"></i>
+              <i class="fas fa-slash fa-stack-1x" aria-hidden="true"></i>
             </span>
           </button>
           <button class="btn btn-tertiary dropdown-toggle dropdown-toggle-split rich-textarea-color-picker-toggle">
@@ -59,8 +63,8 @@
         </div>
 
         <div class="btn-group dropdown">
-          <button class="rich-textarea-link btn btn-tertiary">
-            <i class="fa-solid fa-link"></i>
+          <button class="rich-textarea-link btn btn-tertiary" aria-label="Link">
+            <i class="fa-solid fa-link" aria-hidden="true"></i>
           </button>
           <button class="btn btn-tertiary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
             <span class="visually-hidden">Toggle Dropdown</span>
@@ -71,29 +75,35 @@
                 Aktuell:
                 <b></b>
               </span>
-              <input type="text" class="form-control form-control-sm" placeholder="https://www.example.com" />
+              <label>
+                Linkadresse:
+                <input type="text" class="form-control form-control-sm" placeholder="https://www.example.com" />
+              </label>
             </div>
           </div>
         </div>
 
-        <button class="rich-textarea-clear btn btn-tertiary">
-          <i class="fa-solid fa-eraser"></i>
+        <button class="rich-textarea-clear btn btn-tertiary" aria-label="Stile löschen">
+          <i class="fa-solid fa-eraser" aria-hidden="true"></i>
         </button>
       </div>
     </div>
     <div class="rich-textarea-input-wrapper">
-      <div contenteditable="true" spellcheck="false" class="rich-textarea-input"></div>
-      <button class="rich-textarea-input-toggle btn btn-tertiary position-absolute top-0 end-0 m-1 d-flex align-items-center justify-content-center">
-        <i class="fa-solid fa-font"></i>
+      <div contenteditable="true" spellcheck="false" class="rich-textarea-input form-control"></div>
+      <button
+        class="rich-textarea-input-toggle btn btn-tertiary position-absolute top-0 end-0 m-1 d-flex align-items-center justify-content-center"
+        aria-label="Stileinstellungen"
+      >
+        <i class="fa-solid fa-font" aria-hidden="true"></i>
       </button>
     </div>
   </div>
   <div class="rich-textarea-paste-area">This is for pasting content (Elements have to be in the real DOM to have correct display of styles)</div>
   <div class="toast-container">
     <div id="rich-textarea-unsupported-input-type" class="toast">
-      <div class="toast-header bg-warning text-white">
+      <div class="toast-header bg-warning text-body-bg">
         <b class="me-auto">InputType nicht verfügbar</b>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
       </div>
       <div class="toast-body">
         Leider ist der
@@ -108,24 +118,27 @@
       </div>
     </div>
     <div id="rich-textarea-pasting-error" class="toast">
-      <div class="toast-header bg-danger text-white">
+      <div class="toast-header bg-danger text-body-bg">
         <b class="me-auto">Fehler beim Einfügen</b>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
       </div>
       <div class="toast-body">Es gab einen Fehler beim Versuch, Text einzufügen. Vielleicht hast du der Website keine Berechtigung gegeben?</div>
     </div>
     <div id="rich-textarea-unsafe-link" class="toast">
-      <div class="toast-header bg-warning text-white">
-        <span class="me-auto fw-bold">
+      <div class="toast-header bg-warning text-body-bg">
+        <span class="me-auto w-100 fw-bold">
           Fremder Link:
-          <b></b>
+          <b class="word-wrap-break"></b>
         </span>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
       </div>
       <div class="toast-body">
-        Achtung, dieser Link führt auf eine andere Website (
+        Achtung, dieser Link führt auf eine andere Website:
+        <br />
         <b></b>
-        ). Klicke nur auf öffnen, wenn du diese Website kennst.
+        <br />
+        <br />
+        Klicke nur auf öffnen, wenn du diese Website kennst.
         <div class="mt-2 pt-2 border-top">
           <div class="row g-2 justify-content-end">
             <div class="col-auto">

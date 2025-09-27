@@ -7,7 +7,7 @@ export const setTeamsSchema = z.object({
     teams: z.array(
       z.object({
         teamId: z.union([z.literal(""), z.coerce.number()]),
-        name: z.string()
+        name: z.string().trim().min(1)
       })
     )
   })
