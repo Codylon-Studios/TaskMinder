@@ -88,7 +88,7 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.2.19 (last checked: August 8, 2025).
+You should see at least Bun 1.2.23 (last checked: September 29, 2025).
 
 [Bun Versions]: https://bun.sh/blog
 
