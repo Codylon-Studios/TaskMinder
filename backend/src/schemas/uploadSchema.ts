@@ -35,9 +35,28 @@ export const deleteUploadFileSchema = z.object({
   })
 });
 
+export const renameUploadFileGroupSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: strictObject({
+    groupId: z.coerce.number(),
+    newGroupName: z.string().trim().min(1)
+  })
+});
+
+export const deleteUploadFileGroupSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: strictObject({
+    groupId: z.coerce.number()
+  })
+});
+
 export type getUploadFileType = z.infer<typeof getUploadFileSchema>;
 export type renameUploadFileType = z.infer<typeof renameUploadFileSchema>;
 export type deleteUploadFileType = z.infer<typeof deleteUploadFileSchema>;
 
 export type renameUploadFileTypeBody = z.infer<typeof renameUploadFileSchema>["body"];
 export type deleteUploadFileTypeBody = z.infer<typeof deleteUploadFileSchema>["body"];
+export type renameUploadFileGroupTypeBody = z.infer<typeof renameUploadFileGroupSchema>["body"];
+export type deleteUploadFileGroupTypeBody = z.infer<typeof deleteUploadFileGroupSchema>["body"];

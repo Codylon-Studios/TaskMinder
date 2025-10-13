@@ -106,6 +106,8 @@ export const normalizeFiles = async (req: Request,
   else {
     req.allFiles = [];
   }
+  // mirror normalized files to res.locals to avoid TS Request augmentation needs
+  res.locals.allFiles = req.allFiles;
   next();
 };
 
@@ -200,12 +202,15 @@ export const secureFileFilter = (
 //
 // Middleware to verify actual file type using MIME sniffing (magic bytes)
 //
+// eslint-disable-next-line complexity
 export const verifyFileType = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  if (!req.file) {
+  // now supports multiple files via normalizeFiles
+  const files: Express.Multer.File[] = (req.allFiles ?? (Array.isArray(req.files) ? req.files as Express.Multer.File[] : req.file ? [req.file] : []));
+  if (!files || files.length === 0) {
     const err: RequestError = {
       name: "Bad Request",
       status: 400,
@@ -215,47 +220,48 @@ export const verifyFileType = async (
     return next(err);
   }
 
-  const filePath = req.file.path;
   try {
-    // Dynamically import ESM module from CJS context
     const { fileTypeFromFile } = await getFileTypeModule();
-    const detectedType = await fileTypeFromFile(filePath);
+    const verifiedMimes: string[] = [];
 
-    // Verify detected MIME type is allowed
-    if (!detectedType || !ALLOWED_MIMES.includes(detectedType.mime)) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: `Actual file type ${detectedType?.mime || "unknown"} not allowed`,
-        expected: true
-      };
-      return next(err);
+    for (const f of files) {
+      const detectedType = await fileTypeFromFile(f.path);
+
+      if (!detectedType || !ALLOWED_MIMES.includes(detectedType.mime)) {
+        const err: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: `Actual file type ${detectedType?.mime || "unknown"} not allowed`,
+          expected: true
+        };
+        throw err;
+      }
+
+      if (detectedType.mime !== f.mimetype) {
+        const err: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: `File type mismatch: claimed ${f.mimetype}, actual ${detectedType.mime}`,
+          expected: true
+        };
+        throw err;
+      }
+      verifiedMimes.push(detectedType.mime);
     }
 
-    // Verify detected type matches what client claimed
-    if (detectedType.mime !== req.file.mimetype) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: `File type mismatch: claimed ${req.file.mimetype}, actual ${detectedType.mime}`,
-        expected: true
-      };
-      return next(err);
-    }
-
-    res.locals.verifiedMime = detectedType.mime;
+    res.locals.verifiedMimes = verifiedMimes;
     next();
   }
   catch (error) {
     logger.error("Error during file type verification:", error);
-    // Delete the temporary file if it exists
-    if (req.file.path) {
-      await fs.unlink(req.file.path).catch(err => {
-        if (err.code !== "ENOENT") {
-          logger.error(`Error deleting temp file ${req.file?.path}`, err);
-        }
-      });
-    }
+    // delete any temp files
+    await Promise.all(((req.allFiles ?? []) as Express.Multer.File[]).map(async f => {
+      if (f.path) {
+        await fs.unlink(f.path).catch(err => {
+          if (err.code !== "ENOENT") logger.error(`Error deleting temp file ${f.path}`, err);
+        });
+      }
+    }));
     next(error);
   }
 };
@@ -321,19 +327,23 @@ export const antivirusScan = async (
     return next();
   }
 
+  // eslint-disable-next-line max-len
+  const files: Express.Multer.File[] = res.locals.allFiles ?? req.allFiles ?? (Array.isArray(req.files) ? req.files as Express.Multer.File[] : req.file ? [req.file] : []);
   try {
-    await scanFileClamAV(req.file.path, req.file.originalname);
+    for (const f of files) {
+      await scanFileClamAV(f.path, f.originalname);
+    }
     next();
   }
   catch (error) {
-    // If an error occurs, delete the temp file
-    if (req.file.path) {
-      await fs.unlink(req.file.path).catch(err => {
+    // quarantine handled inside scan; cleanup others
+    await Promise.all(files.map(async f => {
+      await fs.unlink(f.path).catch(err => {
         if (err.code !== "ENOENT") {
-          logger.error(`Error deleting temp file ${req.file?.path}`, err);
+          logger.error(`Error deleting temp file ${f.path}`, err);
         }
       });
-    }
+    }));
     next(error);
   }
 };
@@ -341,126 +351,136 @@ export const antivirusScan = async (
 /**
  * Middleware to sanitize images by re-encoding them with sharp.
  */
+// eslint-disable-next-line complexity
 export const sanitizeImage = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  if (!req.file.mimetype.startsWith("image/")) {
-    return next();
-  }
-
-  const tempFilePath = req.file.path;
-  const sanitizedPath = path.join(SANITIZED_DIR, `sanitized-${path.basename(tempFilePath)}`);
+  // eslint-disable-next-line max-len
+  const files: Express.Multer.File[] = res.locals.allFiles ?? req.allFiles ?? (Array.isArray(req.files) ? req.files as Express.Multer.File[] : req.file ? [req.file] : []);
+  if (!files || files.length === 0) return next();
 
   try {
-    const sharpInstance = sharp(tempFilePath, {
-      limitInputPixels: MAX_IMAGE_PIXELS
-    }).rotate(); // Auto-rotate based on EXIF (then strip it), protection against decompression bombs
+    for (const f of files) {
+      if (!f.mimetype.startsWith("image/")) continue;
 
-    if (req.file.mimetype === "image/png") {
-      await sharpInstance.png({ compressionLevel: 9, effort: 8 }).toFile(sanitizedPath);
+      const tempFilePath = f.path;
+      const sanitizedPath = path.join(SANITIZED_DIR, `sanitized-${path.basename(tempFilePath)}`);
+
+      try {
+        const sharpInstance = sharp(tempFilePath, {
+          limitInputPixels: MAX_IMAGE_PIXELS
+        }).rotate();
+
+        if (f.mimetype === "image/png") {
+          await sharpInstance.png({ compressionLevel: 9, effort: 8 }).toFile(sanitizedPath);
+        }
+        else {
+          await sharpInstance.jpeg({ quality: 90 }).toFile(sanitizedPath);
+        }
+
+        await fs.unlink(tempFilePath);
+        await fs.rename(sanitizedPath, tempFilePath);
+
+        const stats = await fs.stat(tempFilePath);
+        f.size = stats.size;
+      }
+      catch (err) {
+        logger.error("[IMAGE_SANITIZATION_ERROR]", err);
+        // cleanup both files and any sanitized artifact
+        await fs.unlink(f.path).catch(e => {
+          if (e.code !== "ENOENT") logger.error(`Error deleting temp file ${f.path}`, e);
+        });
+        await fs.unlink(sanitizedPath).catch(e => {
+          if (e.code !== "ENOENT") logger.error(`Error deleting sanitized file ${sanitizedPath}`, e);
+        });
+        throw err;
+      }
     }
-    else {
-      await sharpInstance.jpeg({ quality: 90 }).toFile(sanitizedPath);
-    }
-
-    // Replace the original temp file with the sanitized version
-    await fs.unlink(tempFilePath);
-    await fs.rename(sanitizedPath, tempFilePath);
-
-    // Update the file size on the request object
-    const stats = await fs.stat(tempFilePath);
-    req.file.size = stats.size;
-
     next();
   }
-  catch (error) {
-    logger.error("[IMAGE_SANITIZATION_ERROR]", error);
-    if (req.file.path) {
-      await fs.unlink(req.file.path).catch(err => {
-        if (err.code !== "ENOENT") logger.error(`Error deleting temp file ${req.file?.path}`, err);
-      });
-    }
-    await fs.unlink(sanitizedPath).catch(err => {
-      if (err.code !== "ENOENT") logger.error(`Error deleting sanitized file ${sanitizedPath}`, err);
-    });
-
+  catch {
     const err: RequestError = {
       name: "Internal Server Error",
       status: 500,
       message: "Error processing image file.",
       expected: true
     };
-    next(err);
+    throw err;
   }
 };
 
 /**
  * Middleware to sanitize PDFs using Ghostscript to remove active content.
  */
+// eslint-disable-next-line complexity
 export const sanitizePDF = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  if (req.file.mimetype !== "application/pdf" || !gsCommand) {
-    return next();
-  }
+  if (!gsCommand) return next();
 
-  const tempFilePath = req.file.path;
-  const sanitizedPath = path.join(SANITIZED_DIR, `sanitized-${path.basename(tempFilePath)}`);
+  // eslint-disable-next-line max-len
+  const files: Express.Multer.File[] = res.locals.allFiles ?? req.allFiles ?? (Array.isArray(req.files) ? req.files as Express.Multer.File[] : req.file ? [req.file] : []);
+  if (!files || files.length === 0) return next();
 
   try {
+    for (const f of files) {
+      if (f.mimetype !== "application/pdf") continue;
 
-    const gsArgs = [
-      "-dPDFA=1", // Convert to PDF/A-1
-      "-dBATCH", // Exit after processing
-      "-dPDFSETTINGS=/ebook", // final image resulution of 150 DPI
-      "-dNOPAUSE", // Don't pause between pages
-      "-dNOOUTERSAVE", // Security setting
-      "-dSAFER", // Restrict file operations
-      "-sDEVICE=pdfwrite", // Output device
-      "-sColorConversionStrategy=UseDeviceIndependentColor",
-      "-dPDFACompatibilityPolicy=1", // Silently convert non-compliant content
-      `-sOutputFile=${sanitizedPath}`,
-      tempFilePath
-    ];
+      const tempFilePath = f.path;
+      const sanitizedPath = path.join(SANITIZED_DIR, `sanitized-${path.basename(tempFilePath)}`);
 
-    await execFileAsync(gsCommand, gsArgs, { timeout: GHOSTSCRIPT_TIMEOUT });
+      try {
+        const gsArgs = [
+          "-dPDFA=1",
+          "-dBATCH",
+          "-dPDFSETTINGS=/ebook",
+          "-dNOPAUSE",
+          "-dNOOUTERSAVE",
+          "-dSAFER",
+          "-sDEVICE=pdfwrite",
+          "-sColorConversionStrategy=UseDeviceIndependentColor",
+          "-dPDFACompatibilityPolicy=1",
+          `-sOutputFile=${sanitizedPath}`,
+          tempFilePath
+        ];
 
-    const stats = await fs.stat(sanitizedPath).catch(() => null);
-    if (!stats || stats.size === 0) {
-      throw new Error("Ghostscript failed to create a valid sanitized PDF.");
+        await execFileAsync(gsCommand, gsArgs, { timeout: GHOSTSCRIPT_TIMEOUT });
+
+        const stats = await fs.stat(sanitizedPath).catch(() => null);
+        if (!stats || stats.size === 0) {
+          throw new Error("Ghostscript failed to create a valid sanitized PDF.");
+        }
+
+        await fs.unlink(tempFilePath);
+        await fs.rename(sanitizedPath, tempFilePath);
+
+        f.size = (await fs.stat(tempFilePath)).size;
+      }
+      catch (err) {
+        logger.error("[PDF_SANITIZATION_ERROR]", err);
+        await fs.unlink(f.path).catch(e => {
+          if (e.code !== "ENOENT") logger.error(`Error deleting temp file ${f.path}`, e);
+        });
+        await fs.unlink(sanitizedPath).catch(e => {
+          if (e.code !== "ENOENT") logger.error(`Error deleting sanitized file ${sanitizedPath}`, e);
+        });
+        throw err;
+      }
     }
-
-    // Replace original with sanitized version
-    await fs.unlink(tempFilePath);
-    await fs.rename(sanitizedPath, tempFilePath);
-
-    // Update the file size on the request object
-    req.file.size = (await fs.stat(tempFilePath)).size;
-
     next();
   }
-  catch (error) {
-    logger.error("[PDF_SANITIZATION_ERROR]", error);
-    if (req.file.path) {
-      await fs.unlink(req.file.path).catch(err => {
-        if (err.code !== "ENOENT") logger.error(`Error deleting temp file ${req.file?.path}`, err);
-      });
-    }
-    await fs.unlink(sanitizedPath).catch(err => {
-      if (err.code !== "ENOENT") logger.error(`Error deleting sanitized file ${sanitizedPath}`, err);
-    });
-
+  catch {
     const err: RequestError = {
       name: "Internal Server Error",
       status: 500,
       message: "Error processing PDF file.",
       expected: true
     };
-    next(err);
+    throw err;
   }
 };
 
@@ -470,5 +490,6 @@ export default {
   verifyFileType,
   antivirusScan,
   sanitizeImage,
-  sanitizePDF
+  sanitizePDF,
+  normalizeFiles
 };

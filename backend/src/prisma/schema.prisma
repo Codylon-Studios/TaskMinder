@@ -15,6 +15,7 @@ model Account {
   JoinedClass   JoinedClass?
   JoinedTeams   JoinedTeams[]
   files         FileData[]
+  fileGroups    FileGroup[]
 
   @@map("account")
 }
@@ -86,6 +87,7 @@ model Class {
   Subjects    Subjects[]
   Team        Team[]
   files       FileData[]
+  FileGroup   FileGroup[]
 }
 
 model Homework {
@@ -183,12 +185,28 @@ model FileData {
   fileId         Int      @id @default(autoincrement())
   accountId      Int?
   classId        Int
+  fileGroupId    Int?
   originalName   String   // e.g. for download/display name
   storedFileName String   // unique UUID name on disk
   mimeType       String
   size           Int
   createdAt      BigInt
 
-  Account Account? @relation(fields: [accountId], references: [accountId], onDelete: NoAction, onUpdate: NoAction)
-  Class   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+  Account   Account?   @relation(fields: [accountId], references: [accountId], onDelete: NoAction, onUpdate: NoAction)
+  Class     Class      @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+  FileGroup FileGroup? @relation(fields: [fileGroupId], references: [fileGroupId], onDelete: SetNull, onUpdate: NoAction)
+}
+
+model FileGroup {
+  fileGroupId Int      @id @default(autoincrement()) @map("fileGroupId")
+  classId     Int
+  name        String
+  createdAt   BigInt
+  createdBy   Int?
+  Class       Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+  Account     Account? @relation(fields: [createdBy], references: [accountId], onDelete: SetNull, onUpdate: NoAction)
+  files       FileData[]
+
+  @@unique([classId, name])
+  @@map("fileGroup")
 }

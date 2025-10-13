@@ -64,12 +64,34 @@ export const deleteUploadFile = asyncHandler(async (req, res, next) => {
 
 export const setUploadFile = asyncHandler(async (req, res, next) => {
   try {
-    const verifiedMime = res.locals.verifiedMime as string;
-    // req.file certainly exists because of verifyFileType middleware
-    const tempFileData = req.file!;
-    await uploadService.setUploadFile(tempFileData, verifiedMime, req.session);
+    const verifiedMimes = (res.locals.verifiedMimes as string[]) ?? [];
+    const files: Express.Multer.File[] = (res.locals.allFiles as Express.Multer.File[]) ?? [];
+    const fileGroupName: string | undefined = req.body?.fileGroupName?.toString()?.trim() || undefined;
+
+    await uploadService.setUploadFile(files, verifiedMimes, req.session, fileGroupName);
     res.sendStatus(201);
   }
+  catch (error) {
+    next(error);
+  }
+});
+
+// new: rename/delete group
+export const renameUploadFileGroup = asyncHandler(async (req, res, next) => {
+  try {
+    await uploadService.renameFileGroup(req.body, req.session);
+    res.sendStatus(200);
+  } 
+  catch (error) {
+    next(error);
+  }
+});
+
+export const deleteUploadFileGroup = asyncHandler(async (req, res, next) => {
+  try {
+    await uploadService.deleteFileGroup(req.body, req.session);
+    res.sendStatus(200);
+  } 
   catch (error) {
     next(error);
   }
@@ -80,5 +102,8 @@ export default {
   getUploadFile,
   renameUploadFile,
   deleteUploadFile,
-  setUploadFile
+  setUploadFile,
+  // new
+  renameUploadFileGroup,
+  deleteUploadFileGroup
 };

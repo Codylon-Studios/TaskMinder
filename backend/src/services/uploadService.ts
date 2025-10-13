@@ -9,6 +9,7 @@ import mime from "mime";
 import logger from "../utils/logger";
 import { RequestError } from "../@types/requestError";
 import { deleteUploadFileTypeBody, getUploadFileType, renameUploadFileTypeBody } from "../schemas/uploadSchema";
+import { deleteUploadFileGroupTypeBody, renameUploadFileGroupTypeBody } from "../schemas/uploadSchema";
 
 
 type GetUploadFileInput = {
@@ -27,35 +28,63 @@ type GetUploadFileResult = {
 };
 
 const uploadService = {
+  // eslint-disable-next-line complexity
   async setUploadFile(
-    fileData: Express.Multer.File,
-    verifiedMime: string,
-    session: Session & Partial<SessionData>
+    // now accepts multiple and verified mime list
+    files: Express.Multer.File[],
+    verifiedMimes: string[],
+    session: Session & Partial<SessionData>,
+    fileGroupName?: string
   ) {
-    const finalExtension = mime.extension(verifiedMime);
-    const finalFilename = `${randomUUID()}.${finalExtension}`;
-    const tempFilePath = fileData.path;
+    if (!files || files.length === 0) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "No file was uploaded",
+        expected: true
+      };
+      throw err;
+    }
 
+    // group name required if uploading multiple files
+    if (files.length > 1 && !fileGroupName) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "fileGroupName is required when uploading multiple files",
+        expected: true
+      };
+      throw err;
+    }
+
+    const classIdNum = parseInt(session.classId!, 10);
     const finalDirectory = path.join(FINAL_UPLOADS_DIR, session.classId!);
-    const finalFilePath = path.join(finalDirectory, finalFilename);
+    await fs.mkdir(finalDirectory, { recursive: true });
 
-    const stat = await fs.stat(tempFilePath);
-    const actualBytes = stat.size;
-    const actualBytesBig: bigint = BigInt(actualBytes);
+    // actual sizes after sanitization
+    const fileSizes: number[] = [];
+    for (const f of files) {
+      const stat = await fs.stat(f.path);
+      fileSizes.push(stat.size);
+    }
+    const totalBytes = fileSizes.reduce((acc, n) => acc + BigInt(n), BigInt(0));
 
-    // check if quota is reached
+    // quota re-check using actual bytes
     const classQuota = await prisma.class.findUnique({
-      where: {
-        classId: parseInt(session.classId!, 10)
-      },
-      select: {
-        storageQuotaBytes: true,
-        storageUsedBytes: true
-      }
+      where: { classId: classIdNum },
+      select: { storageQuotaBytes: true, storageUsedBytes: true }
     });
-
-    if (classQuota!.storageUsedBytes + actualBytesBig > classQuota!.storageQuotaBytes) {
-      await fs.unlink(fileData.path);
+    if (!classQuota) {
+      throw {
+        name: "Not Found",
+        status: 404,
+        message: "Class not found",
+        expected: true
+      } as RequestError;
+    }
+    if (classQuota.storageUsedBytes + totalBytes > classQuota.storageQuotaBytes) {
+      // cleanup temp files
+      await Promise.all(files.map(f => fs.unlink(f.path).catch(() => {})));
       const err: RequestError = {
         name: "Insufficient Storage",
         status: 507,
@@ -65,49 +94,101 @@ const uploadService = {
       throw err;
     }
 
-    await fs.mkdir(finalDirectory, { recursive: true });
+    // create file group if applicable
+    let fileGroupId: number | null = null;
+    if (fileGroupName) {
+      // enforce unique per class
+      const existing = await prisma.fileGroup.findFirst({
+        where: {
+          classId: classIdNum,
+          name: fileGroupName
+        },
+        select: { fileGroupId: true }
+      });
+      if (existing) {
+        const err: RequestError = {
+          name: "Conflict",
+          status: 409,
+          message: "A file group with this name already exists in the class.",
+          expected: true
+        };
+        // cleanup temp files
+        await Promise.all(files.map(f => fs.unlink(f.path).catch(() => {})));
+        throw err;
+      }
+      const created = await prisma.fileGroup.create({
+        data: {
+          classId: classIdNum,
+          name: fileGroupName,
+          createdAt: BigInt(Date.now()),
+          createdBy: session.account?.accountId ?? null
+        }
+      });
+      fileGroupId = created.fileGroupId;
+    }
 
+    // plan moves
+    const finalFilenames: string[] = files.map((_, i) => {
+      const ext = mime.extension(verifiedMimes[i]) || "bin";
+      return `${randomUUID()}.${ext}`;
+    });
+    const finalPaths = finalFilenames.map(n => path.join(finalDirectory, n));
+
+    // move and create DB in a transaction
+    const moved: string[] = [];
     try {
-      await fs.rename(tempFilePath, finalFilePath);
+      // move files first
+      for (let i = 0; i < files.length; i++) {
+        await fs.rename(files[i].path, finalPaths[i]);
+        moved.push(finalPaths[i]);
+      }
 
       await prisma.$transaction(async tx => {
-        await tx.fileData.create({
-          data: {
-            accountId: session.account!.accountId,
-            classId: parseInt(session.classId!, 10),
-            originalName: fileData.originalname,
-            storedFileName: finalFilename,
-            mimeType: verifiedMime,
-            size: actualBytes,
-            createdAt: BigInt(Date.now())
-          }
-        });
-        // increase storage count in class
+        for (let i = 0; i < files.length; i++) {
+          await tx.fileData.create({
+            data: {
+              accountId: session.account!.accountId,
+              classId: classIdNum,
+              fileGroupId: fileGroupId ?? undefined,
+              originalName: files[i].originalname,
+              storedFileName: finalFilenames[i],
+              mimeType: verifiedMimes[i],
+              size: fileSizes[i],
+              createdAt: BigInt(Date.now())
+            }
+          });
+        }
         await tx.class.update({
-          where: { classId: parseInt(session.classId!, 10) },
-          data: { storageUsedBytes: { increment: actualBytesBig } }
+          where: { classId: classIdNum },
+          data: { storageUsedBytes: { increment: totalBytes } }
         });
       });
     }
     catch (error) {
-      logger.error("Failed to create file metadata in DB. Cleaning up orphaned file.", error);
-      await fs.unlink(finalFilePath);
+      logger.error("Failed to create file metadata in DB. Cleaning up orphaned files.", error);
+      // cleanup moved files
+      await Promise.all(moved.map(p => fs.unlink(p).catch(() => {})));
+      // cleanup any remaining temp files not moved
+      await Promise.all(files.map(f => fs.unlink(f.path).catch(() => {})));
+      // rollback group if it was just created with no files
+      if (fileGroupId) {
+        await prisma.fileGroup.delete({ where: { fileGroupId } }).catch(() => {});
+      }
       const err: RequestError = {
         name: "Internal Server Error",
         status: 500,
-        message: "Falied to create file metadata in database",
+        message: "Failed to store file(s)",
         expected: false
       };
       throw err;
     }
   },
+
   async getUploadDataList(isGetAllData: boolean, session: Session & Partial<SessionData>) {
     const classId = parseInt(session.classId!, 10);
 
     const totalUploads = await prisma.fileData.count({
-      where: {
-        classId: classId
-      }
+      where: { classId }
     });
 
     if (totalUploads === 0) {
@@ -118,40 +199,27 @@ const uploadService = {
       };
     }
 
-    let fileMetaData;
+    // include Account username and group info
+    const include = {
+      Account: { select: { username: true } },
+      FileGroup: { select: { fileGroupId: true, name: true } }
+    } as const;
 
+    const orderBy = { createdAt: "desc" } as const;
+
+    let fileMetaData;
     if (isGetAllData) {
       fileMetaData = await prisma.fileData.findMany({
-        where: {
-          classId: classId
-        },
-        include: {
-          Account: {
-            select: {
-              username: true
-            }
-          }
-        },
-        orderBy: {
-          createdAt: "desc"
-        }
+        where: { classId },
+        include,
+        orderBy
       });
-    }
+    } 
     else {
       fileMetaData = await prisma.fileData.findMany({
-        where: {
-          classId: classId
-        },
-        include: {
-          Account: {
-            select: {
-              username: true
-            }
-          }
-        },
-        orderBy: {
-          createdAt: "desc"
-        },
+        where: { classId },
+        include,
+        orderBy,
         take: 50
       });
     }
@@ -162,7 +230,10 @@ const uploadService = {
       originalName: file.originalName,
       createdAt: file.createdAt,
       mimeType: file.mimeType,
-      size: file.size
+      size: file.size,
+      // group info
+      fileGroupId: file.FileGroup?.fileGroupId ?? null,
+      fileGroupName: file.FileGroup?.name ?? null
     }));
 
     const hasMore = !isGetAllData && totalUploads > 50;
@@ -173,6 +244,7 @@ const uploadService = {
       hasMore
     };
   },
+
   async getUploadFile({ fileIdParam, action, classId }: GetUploadFileInput): Promise<GetUploadFileResult> {
 
     const fileData = await prisma.fileData.findUnique({ where: { fileId: fileIdParam } });
@@ -293,6 +365,91 @@ const uploadService = {
         where: { classId: foundFile.classId },
         data: { storageUsedBytes: { decrement: BigInt(foundFile.size) } }
       });
+    });
+  },
+  // new: rename file group
+  async renameFileGroup(
+    body: renameUploadFileGroupTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const classId = parseInt(session.classId!, 10);
+    const { groupId, newGroupName } = body;
+
+    const group = await prisma.fileGroup.findUnique({ where: { fileGroupId: groupId } });
+    if (!group || group.classId !== classId) {
+      throw {
+        name: "Not Found",
+        status: 404,
+        message: "File group not found.",
+        expected: true
+      } as RequestError;
+    }
+
+    // enforce unique per class
+    const existing = await prisma.fileGroup.findFirst({
+      where: {
+        classId,
+        name: newGroupName,
+        NOT: { fileGroupId: groupId }
+      },
+      select: { fileGroupId: true }
+    });
+    if (existing) {
+      throw {
+        name: "Conflict",
+        status: 409,
+        message: "A file group with this name already exists.",
+        expected: true
+      } as RequestError;
+    }
+
+    await prisma.fileGroup.update({
+      where: { fileGroupId: groupId },
+      data: { name: newGroupName }
+    });
+  },
+
+  // new: delete file group (and its files)
+  async deleteFileGroup(
+    body: deleteUploadFileGroupTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const classId = parseInt(session.classId!, 10);
+    const { groupId } = body;
+
+    const group = await prisma.fileGroup.findUnique({
+      where: { fileGroupId: groupId },
+      include: { files: true }
+    });
+    if (!group || group.classId !== classId) {
+      throw {
+        name: "Not Found",
+        status: 404,
+        message: "File group not found.",
+        expected: true
+      } as RequestError;
+    }
+
+    // delete files from disk
+    await Promise.all(group.files.map(f => {
+      const p = path.join(FINAL_UPLOADS_DIR, classId.toString(), f.storedFileName);
+      return fs.unlink(p).catch(err => {
+        if (err.code !== "ENOENT") logger.error(`Error deleting file on disk ${p}`, err);
+      });
+    }));
+
+    const totalBytes = group.files.reduce((acc, f) => acc + BigInt(f.size), BigInt(0));
+
+    // delete rows and decrement storage
+    await prisma.$transaction(async tx => {
+      await tx.fileData.deleteMany({ where: { fileGroupId: groupId } });
+      await tx.fileGroup.delete({ where: { fileGroupId: groupId } });
+      if (totalBytes > 0n) {
+        await tx.class.update({
+          where: { classId },
+          data: { storageUsedBytes: { decrement: totalBytes } }
+        });
+      }
     });
   }
 };
