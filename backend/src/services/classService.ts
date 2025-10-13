@@ -91,14 +91,15 @@ const classService = {
       classCreated: Date.now(),
       isTestClass: isTestClass,
       dsbMobileActivated: false,
-      defaultPermissionLevel: 0 // default setting when creating class is 0 - read only
+      storageQuotaBytes: isTestClass ? 20 * 1024 * 1024 : 5 * 1024 * 1024 * 1024, // 20MB (TestClass) or 5 GB (normal class)
+      storageUsedBytes: 0,
+      defaultPermissionLevel: 0 // default setting when creating class is 0 - member status
     };
     try {
       return await prisma.$transaction(async tx => {
         const createdClass = await tx.class.create({
           data: baseData
         });
-
         session.classId = createdClass.classId.toString();
 
         // add user to classJoined table

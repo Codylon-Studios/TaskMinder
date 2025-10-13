@@ -1,8 +1,8 @@
 import z from "zod";
 
 export const addEventSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     eventTypeId: z.coerce.number(),
     name: z.string().trim().min(1),
@@ -19,8 +19,8 @@ export const addEventSchema = z.object({
 
 
 export const editEventSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     eventId: z.coerce.number(),
     eventTypeId: z.coerce.number(),
@@ -35,8 +35,8 @@ export const editEventSchema = z.object({
 
 
 export const deleteEventSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     eventId: z.coerce.number()
   })
@@ -44,8 +44,8 @@ export const deleteEventSchema = z.object({
 
 
 export const setEventTypesSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     eventTypes: z.array(
       z.object({

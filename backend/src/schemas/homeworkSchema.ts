@@ -1,8 +1,8 @@
 import z from "zod";
 
 export const addHomeworkSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     subjectId: z.coerce.number(),
     content: z.string().trim().min(1),
@@ -13,8 +13,8 @@ export const addHomeworkSchema = z.object({
 });
 
 export const checkHomeworkSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     homeworkId: z.coerce.number(),
     checkStatus: z.string()
@@ -22,8 +22,8 @@ export const checkHomeworkSchema = z.object({
 });
 
 export const deleteHomeworkSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     homeworkId: z.coerce.number()
   })
@@ -31,8 +31,8 @@ export const deleteHomeworkSchema = z.object({
 
 
 export const editHomeworkSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     homeworkId: z.coerce.number(),
     subjectId: z.coerce.number(),

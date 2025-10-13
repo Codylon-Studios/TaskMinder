@@ -3,6 +3,7 @@
 # Ignore built /site after mkdocs build
 /site
 useful.md
+/data
 # Ignore database backups
 /db-backups
 # Ignore sensitive data

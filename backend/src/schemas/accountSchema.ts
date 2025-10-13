@@ -2,8 +2,8 @@ import z from "zod";
 import { checkUsername } from "../utils/validateFunctions";
 
 export const registerAccountSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     username: z.string().refine(checkUsername, {
       message: "Username must be 4-20 characters, letters, digits, or underscore only"
@@ -13,8 +13,8 @@ export const registerAccountSchema = z.object({
 });
 
 export const loginAccountSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     username: z.string().refine(checkUsername, {
       message: "Username must be 4-20 characters, letters, digits, or underscore only"
@@ -24,16 +24,16 @@ export const loginAccountSchema = z.object({
 });
 
 export const deleteAccountSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     password: z.string().trim().min(4)
   })
 });
 
 export const changeUsernameSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     password: z.string().trim().min(4),
     newUsername: z.string().refine(checkUsername, {
@@ -44,8 +44,8 @@ export const changeUsernameSchema = z.object({
 
 
 export const changePasswordSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     oldPassword: z.string().trim().min(4),
     newPassword: z.string().trim().min(4)
@@ -53,8 +53,8 @@ export const changePasswordSchema = z.object({
 });
 
 export const checkUsernameSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     username: z.string().refine(checkUsername, {
       message: "Username must be 4-20 characters, letters, digits, or underscore only"

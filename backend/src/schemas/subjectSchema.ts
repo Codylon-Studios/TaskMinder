@@ -1,8 +1,8 @@
 import z from "zod";
 
 export const setSubjectsSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     subjects: z.array(
       z.object({

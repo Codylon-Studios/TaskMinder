@@ -15,6 +15,7 @@ import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
 import { CSPMiddleware } from "./middleware/CSPMiddleware";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
+import { initializeUploadServices } from "./middleware/uploadMiddleware";
 import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
@@ -40,6 +41,7 @@ prisma
   });
 
 connectRedis();
+initializeUploadServices();
 
 const sessionSecret = process.env.SESSION_SECRET;
 

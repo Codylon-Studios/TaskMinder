@@ -3,91 +3,91 @@ import { default as prisma } from "../config/prisma";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import { redisClient } from "../config/redis";
-import { 
-  changePasswordTypeBody, 
-  changeUsernameTypeBody, 
-  checkUsernameTypeBody, 
-  deleteAccountTypeBody, 
-  loginAccountTypeBody, 
-  registerAccountTypeBody 
+import {
+  changePasswordTypeBody,
+  changeUsernameTypeBody,
+  checkUsernameTypeBody,
+  deleteAccountTypeBody,
+  loginAccountTypeBody,
+  registerAccountTypeBody
 } from "../schemas/accountSchema";
 
 const SALTROUNDS = 10;
 
 export default {
-  async getAuth( session: Session & Partial<SessionData>) {
-  type AuthResponse = {
-    loggedIn: boolean;
-    classJoined: boolean;
-    account?: {
-      username: string;
+  async getAuth(session: Session & Partial<SessionData>) {
+    type AuthResponse = {
+      loggedIn: boolean;
+      classJoined: boolean;
+      account?: {
+        username: string;
+      };
+      permissionLevel?: number;
     };
-    permissionLevel?: number;
-  };
 
-  if (!session) {
-    return { loggedIn: false, classJoined: false };
-  }
-
-  const res: AuthResponse = {
-    loggedIn: false,
-    classJoined: false
-  };
-
-  let accountId: number | undefined;
-
-  if (session.account) {
-    const accountInDb = await prisma.account.findUnique({
-      where: { accountId: session.account.accountId },
-      select: { accountId: true, username: true }
-    });
-
-    if (accountInDb) {
-      res.loggedIn = true;
-      res.account = { username: accountInDb.username };
-      accountId = accountInDb.accountId;
-      session.account = { accountId: accountInDb.accountId, username: accountInDb.username };
+    if (!session) {
+      return { loggedIn: false, classJoined: false };
     }
-    else {
-      delete session.account;
+
+    const res: AuthResponse = {
+      loggedIn: false,
+      classJoined: false
+    };
+
+    let accountId: number | undefined;
+
+    if (session.account) {
+      const accountInDb = await prisma.account.findUnique({
+        where: { accountId: session.account.accountId },
+        select: { accountId: true, username: true }
+      });
+
+      if (accountInDb) {
+        res.loggedIn = true;
+        res.account = { username: accountInDb.username };
+        accountId = accountInDb.accountId;
+        session.account = { accountId: accountInDb.accountId, username: accountInDb.username };
+      }
+      else {
+        delete session.account;
+      }
     }
-  }
 
-  if (res.loggedIn && accountId) {
-    const joinedClass = await prisma.joinedClass.findUnique({
-      where: { accountId: accountId },
-      select: { permissionLevel: true, classId: true }
-    });
+    if (res.loggedIn && accountId) {
+      const joinedClass = await prisma.joinedClass.findUnique({
+        where: { accountId: accountId },
+        select: { permissionLevel: true, classId: true }
+      });
 
-    if (joinedClass) {
-      res.classJoined = true;
-      res.permissionLevel = joinedClass.permissionLevel;
-      session.classId = joinedClass.classId.toString();
-    } 
-    else {
-      delete session.classId;
-      res.classJoined = false;
+      if (joinedClass) {
+        res.classJoined = true;
+        res.permissionLevel = joinedClass.permissionLevel;
+        session.classId = joinedClass.classId.toString();
+      }
+      else {
+        delete session.classId;
+        res.classJoined = false;
+      }
     }
-  } 
 
-  else if (!res.loggedIn && session.classId) {
-    const classId = parseInt(session.classId, 10);
-    const classInDb = await prisma.class.findUnique({
-      where: { classId: classId },
-      select: { defaultPermissionLevel: true }
-    });
+    else if (!res.loggedIn && session.classId) {
+      const classId = parseInt(session.classId, 10);
+      const classInDb = await prisma.class.findUnique({
+        where: { classId: classId },
+        select: { defaultPermissionLevel: true }
+      });
 
-    if (classInDb) {
-      res.classJoined = true;
-      res.permissionLevel = classInDb.defaultPermissionLevel;
-    } 
-    else {
-      delete session.classId;
-      res.classJoined = false;
+      if (classInDb) {
+        res.classJoined = true;
+        res.permissionLevel = classInDb.defaultPermissionLevel;
+      }
+      else {
+        delete session.classId;
+        res.classJoined = false;
+      }
     }
-  }
-  
-  return res;
+
+    return res;
   },
   async registerAccount(reqData: registerAccountTypeBody, session: Session & Partial<SessionData>) {
     const { username, password } = reqData;
@@ -240,18 +240,28 @@ export default {
       };
       throw err;
     }
-    await prisma.deletedAccount.create({
-      data: {
-        deletedUsername: account!.username,
-        deletedPassword: account!.password,
-        deletedAccountId: account!.accountId,
-        deletedOn: Date.now()
-      }
-    });
-    await prisma.account.delete({
-      where: {
-        accountId: session.account!.accountId
-      }
+    await prisma.$transaction(async tx => {
+      await tx.deletedAccount.create({
+        data: {
+          deletedUsername: account!.username,
+          deletedPassword: account!.password,
+          deletedAccountId: account!.accountId,
+          deletedOn: Date.now()
+        }
+      });
+      await tx.fileData.updateMany({
+        where: {
+          accountId: account!.accountId
+        },
+        data: {
+          accountId: null
+        }
+      });
+      await tx.account.delete({
+        where: {
+          accountId: session.account!.accountId
+        }
+      });
     });
     await redisClient.del(`auth_user:${account!.accountId}`);
     delete session.account;

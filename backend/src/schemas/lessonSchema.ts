@@ -1,8 +1,8 @@
 import z from "zod";
 
 export const setLessonDataSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     lessons: z.array(
       z.object({

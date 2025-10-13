@@ -1,8 +1,8 @@
 import z from "zod";
 
 export const createClassSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     classDisplayName: z.string().trim().min(1),
     isTestClass: z.boolean()
@@ -11,16 +11,16 @@ export const createClassSchema = z.object({
 
 
 export const joinClassSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     classCode: z.string()
   })
 });
 
 export const changeDefaultPermissionSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     defaultPermission: z.coerce.number()
   })
@@ -28,8 +28,8 @@ export const changeDefaultPermissionSchema = z.object({
 
 
 export const setClassMembersPermissionsSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     classMembers: z.array(
       z.object({
@@ -42,8 +42,8 @@ export const setClassMembersPermissionsSchema = z.object({
 
 
 export const kickClassMembersSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     classMembers: z.array(
       z.object({
@@ -55,8 +55,8 @@ export const kickClassMembersSchema = z.object({
 
 
 export const updateDSBMobileDataSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     dsbMobileActivated: z.boolean(),
     dsbMobileUser: z.string().trim().min(1).nullable(),
@@ -67,16 +67,16 @@ export const updateDSBMobileDataSchema = z.object({
 
 
 export const setUsersLoggedOutRoleSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     role: z.coerce.number().int().min(0).max(3)
   })
 });
 
 export const changeClassNameSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     classDisplayName: z.string().trim().min(1)
   })

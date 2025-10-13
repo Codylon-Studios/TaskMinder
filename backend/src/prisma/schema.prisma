@@ -14,6 +14,7 @@ model Account {
   HomeworkCheck HomeworkCheck[]
   JoinedClass   JoinedClass?
   JoinedTeams   JoinedTeams[]
+  files         FileData[]
 
   @@map("account")
 }
@@ -69,6 +70,9 @@ model Class {
   classCreated BigInt
   isTestClass Boolean
   defaultPermissionLevel Int
+  storageUsedBytes BigInt
+  // total storage quota for this class, specified in bytes
+  storageQuotaBytes BigInt
   dsbMobileActivated Boolean
   dsbMobileUser String?
   dsbMobilePassword String?
@@ -81,6 +85,7 @@ model Class {
   Lesson      Lesson[]
   Subjects    Subjects[]
   Team        Team[]
+  files       FileData[]
 }
 
 model Homework {
@@ -172,4 +177,18 @@ model Team {
 
   @@unique([classId, name])
   @@map("team")
+}
+
+model FileData {
+  fileId         Int      @id @default(autoincrement())
+  accountId      Int?
+  classId        Int
+  originalName   String   // e.g. for download/display name
+  storedFileName String   // unique UUID name on disk
+  mimeType       String
+  size           Int
+  createdAt      BigInt
+
+  Account Account? @relation(fields: [accountId], references: [accountId], onDelete: NoAction, onUpdate: NoAction)
+  Class   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
 }

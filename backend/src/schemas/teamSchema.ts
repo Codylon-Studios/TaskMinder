@@ -1,8 +1,8 @@
 import z, { strictObject } from "zod";
 
 export const setTeamsSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: z.strictObject({
     teams: z.array(
       z.object({
@@ -14,8 +14,8 @@ export const setTeamsSchema = z.object({
 });
 
 export const setJoinedTeamsSchema = z.object({
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
+  params: z.object({}),
+  query: z.object({}),
   body: strictObject({
     teams: z.array(z.number())
   })
