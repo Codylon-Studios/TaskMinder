@@ -17,8 +17,9 @@ FROM oven/bun:1.2-alpine AS production
 # Install only RUNTIME system dependencies
 RUN apk update && apk upgrade --no-cache && \
 	apk add --no-cache \
-	postgresql-client \
-	redis
+	redis \
+	clamav \
+  ghostscript
 
 WORKDIR /usr/src/app
 

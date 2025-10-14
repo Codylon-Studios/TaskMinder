@@ -182,23 +182,6 @@ Create a new file in the same directory named `personalData.html` (i.e., `fronte
 
 ---
 
-### Setup DB Migrations
-
-Since v1.2.2 on develop, the initial migration file (0_init) has changed. Please follow this guide to update the database:
-
-Since you have created the database before, we can now seed the initial database. This will create the 
-necessary tables for the migration phase:
-
-```
-psql -X -U DB_USER DB_NAME < backend/src/prisma/seed.sql
-```
-
-Next mark the initial migration as applied: 
-
-```
-bunx prisma migrate resolve --applied 0_init
-```
-
 ### Applying database changes
 
 Run `bunx prisma migrate dev` to apply schema changes from previously pulled commits to your local database.
