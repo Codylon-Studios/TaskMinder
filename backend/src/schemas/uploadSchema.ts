@@ -18,6 +18,14 @@ export const getUploadFileSchema = z.object({
   body: z.strictObject({})
 });
 
+export const setUploadFileSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: z.strictObject({
+    fileGroupName: z.string().nullable()
+  })
+});
+
 export const renameUploadFileSchema = z.object({
   params: z.object({}),
   query: z.object({}),
@@ -56,6 +64,7 @@ export type getUploadFileType = z.infer<typeof getUploadFileSchema>;
 export type renameUploadFileType = z.infer<typeof renameUploadFileSchema>;
 export type deleteUploadFileType = z.infer<typeof deleteUploadFileSchema>;
 
+export type setUploadFileTypeBody = z.infer<typeof setUploadFileSchema>["body"];
 export type renameUploadFileTypeBody = z.infer<typeof renameUploadFileSchema>["body"];
 export type deleteUploadFileTypeBody = z.infer<typeof deleteUploadFileSchema>["body"];
 export type renameUploadFileGroupTypeBody = z.infer<typeof renameUploadFileGroupSchema>["body"];

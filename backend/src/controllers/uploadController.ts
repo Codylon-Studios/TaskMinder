@@ -64,11 +64,10 @@ export const deleteUploadFile = asyncHandler(async (req, res, next) => {
 
 export const setUploadFile = asyncHandler(async (req, res, next) => {
   try {
-    const verifiedMimes = (res.locals.verifiedMimes as string[]) ?? [];
-    const files: Express.Multer.File[] = (res.locals.allFiles as Express.Multer.File[]) ?? [];
-    const fileGroupName: string | undefined = req.body?.fileGroupName?.toString()?.trim() || undefined;
+    const verifiedMimes = (res.locals.verifiedMimes as string[]);
+    const files: Express.Multer.File[] = (res.locals.allFiles as Express.Multer.File[]);
 
-    await uploadService.setUploadFile(files, verifiedMimes, req.session, fileGroupName);
+    await uploadService.setUploadFile(files, verifiedMimes, req.session, req.body);
     res.sendStatus(201);
   }
   catch (error) {
@@ -76,7 +75,6 @@ export const setUploadFile = asyncHandler(async (req, res, next) => {
   }
 });
 
-// new: rename/delete group
 export const renameUploadFileGroup = asyncHandler(async (req, res, next) => {
   try {
     await uploadService.renameFileGroup(req.body, req.session);
@@ -103,7 +101,6 @@ export default {
   renameUploadFile,
   deleteUploadFile,
   setUploadFile,
-  // new
   renameUploadFileGroup,
   deleteUploadFileGroup
 };

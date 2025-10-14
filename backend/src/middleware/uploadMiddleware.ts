@@ -72,41 +72,41 @@ export const initializeUploadServices = async (): Promise<void> => {
     gsCommand = "gs";
   }
   catch {
-    try {
-      await execFileAsync("which ghostscript");
-      gsCommand = "ghostscript";
-    }
-    catch {
-      logger.warn("Ghostscript not found. PDF sanitization is DISABLED. Server security degraded.");
-    }
+    logger.warn("Ghostscript not found. PDF sanitization is DISABLED. Server security degraded.");
   }
 };
 
-// normalizes your request into one consistent format:
-// always req.allFiles = [ ... ] (even for one file).
-// Now every later middleware can just assume:
-// for (const file of req.allFiles) { ... }
+// normalizes file requests into one consistent format
 export const normalizeFiles = async (req: Request,
   res: Response,
   next: NextFunction): Promise<void> => {
 
+  if (!req.file && !req.files) {
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "No file was uploaded",
+      expected: true
+    };
+    return next(err);
+  }
+
   if (req.file) {
     req.allFiles = [req.file];
-  } 
+  }
   else if (req.files) {
     // Multer array() or fields() could give different shapes
     if (Array.isArray(req.files)) {
       req.allFiles = req.files;
-    } 
+    }
     else {
       // If fields() was used: { field1: [..], field2: [..] }
       req.allFiles = Object.values(req.files).flat();
     }
-  } 
+  }
   else {
     req.allFiles = [];
   }
-  // mirror normalized files to res.locals to avoid TS Request augmentation needs
   res.locals.allFiles = req.allFiles;
   next();
 };
@@ -202,23 +202,13 @@ export const secureFileFilter = (
 //
 // Middleware to verify actual file type using MIME sniffing (magic bytes)
 //
-// eslint-disable-next-line complexity
 export const verifyFileType = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  // now supports multiple files via normalizeFiles
-  const files: Express.Multer.File[] = (req.allFiles ?? (Array.isArray(req.files) ? req.files as Express.Multer.File[] : req.file ? [req.file] : []));
-  if (!files || files.length === 0) {
-    const err: RequestError = {
-      name: "Bad Request",
-      status: 400,
-      message: "No file was uploaded",
-      expected: true
-    };
-    return next(err);
-  }
+  // assume normalizeFiles runs before this middleware in the route
+  const files: Express.Multer.File[] = res.locals.allFiles as Express.Multer.File[];
 
   try {
     const { fileTypeFromFile } = await getFileTypeModule();
@@ -234,7 +224,7 @@ export const verifyFileType = async (
           message: `Actual file type ${detectedType?.mime || "unknown"} not allowed`,
           expected: true
         };
-        throw err;
+        return next(err);
       }
 
       if (detectedType.mime !== f.mimetype) {
@@ -244,7 +234,7 @@ export const verifyFileType = async (
           message: `File type mismatch: claimed ${f.mimetype}, actual ${detectedType.mime}`,
           expected: true
         };
-        throw err;
+        return next(err);
       }
       verifiedMimes.push(detectedType.mime);
     }
@@ -255,7 +245,7 @@ export const verifyFileType = async (
   catch (error) {
     logger.error("Error during file type verification:", error);
     // delete any temp files
-    await Promise.all(((req.allFiles ?? []) as Express.Multer.File[]).map(async f => {
+    await Promise.all((res.locals.allFiles as Express.Multer.File[]).map(async f => {
       if (f.path) {
         await fs.unlink(f.path).catch(err => {
           if (err.code !== "ENOENT") logger.error(`Error deleting temp file ${f.path}`, err);
@@ -296,7 +286,7 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
           logger.error(`Error moving file to quarantine ${filePath}`, err);
         }
       });
-      logger.warn(`[VIRUS_DETECTED] File quarantined to ${quarantinePath}. Original name: ${originalName}`);
+      logger.warn(`File quarantined to ${quarantinePath}. Original name: ${originalName}`);
 
       const err: RequestError = {
         name: "Virus Detected",
@@ -309,8 +299,14 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
     }
     else {
       // Any other non-zero exit code is a ClamAV error.
-      logger.error("[CLAMAV_SCAN_ERROR] ClamAV failed to scan the file.", scanError);
-      throw new Error("Could not scan file for malware.");
+      logger.error("ClamAV failed to scan the file.", scanError);
+      const err: RequestError = {
+        name: "Internal Server Error",
+        status: 500,
+        message: "Could not scan file for malware",
+        expected: true
+      };
+      throw err;
     }
   }
 };
@@ -326,9 +322,8 @@ export const antivirusScan = async (
   if (!clamavEnabled) {
     return next();
   }
-
-  // eslint-disable-next-line max-len
-  const files: Express.Multer.File[] = res.locals.allFiles ?? req.allFiles ?? (Array.isArray(req.files) ? req.files as Express.Multer.File[] : req.file ? [req.file] : []);
+  // assume normalizeFiles ran and supplied res.locals.allFiles
+  const files: Express.Multer.File[] = res.locals.allFiles as Express.Multer.File[];
   try {
     for (const f of files) {
       await scanFileClamAV(f.path, f.originalname);
@@ -351,15 +346,13 @@ export const antivirusScan = async (
 /**
  * Middleware to sanitize images by re-encoding them with sharp.
  */
-// eslint-disable-next-line complexity
 export const sanitizeImage = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  // eslint-disable-next-line max-len
-  const files: Express.Multer.File[] = res.locals.allFiles ?? req.allFiles ?? (Array.isArray(req.files) ? req.files as Express.Multer.File[] : req.file ? [req.file] : []);
-  if (!files || files.length === 0) return next();
+  // assume normalizeFiles ran and supplied res.locals.allFiles
+  const files: Express.Multer.File[] = res.locals.allFiles as Express.Multer.File[];
 
   try {
     for (const f of files) {
@@ -388,33 +381,33 @@ export const sanitizeImage = async (
       }
       catch (err) {
         logger.error("[IMAGE_SANITIZATION_ERROR]", err);
-        // cleanup both files and any sanitized artifact
+        // cleanup both files and any sanitized artifact (best effort cleanup)
         await fs.unlink(f.path).catch(e => {
           if (e.code !== "ENOENT") logger.error(`Error deleting temp file ${f.path}`, e);
         });
         await fs.unlink(sanitizedPath).catch(e => {
           if (e.code !== "ENOENT") logger.error(`Error deleting sanitized file ${sanitizedPath}`, e);
         });
-        throw err;
+        return next(err as Error);
       }
     }
-    next();
+    return next();
   }
-  catch {
+  catch (error) {
+    logger.error("Sharp failed to sanitize the file: ", error);
     const err: RequestError = {
       name: "Internal Server Error",
       status: 500,
       message: "Error processing image file.",
       expected: true
     };
-    throw err;
+    return next(err);
   }
 };
 
 /**
  * Middleware to sanitize PDFs using Ghostscript to remove active content.
  */
-// eslint-disable-next-line complexity
 export const sanitizePDF = async (
   req: Request,
   res: Response,
@@ -422,9 +415,8 @@ export const sanitizePDF = async (
 ): Promise<void> => {
   if (!gsCommand) return next();
 
-  // eslint-disable-next-line max-len
-  const files: Express.Multer.File[] = res.locals.allFiles ?? req.allFiles ?? (Array.isArray(req.files) ? req.files as Express.Multer.File[] : req.file ? [req.file] : []);
-  if (!files || files.length === 0) return next();
+  // assume normalizeFiles ran and supplied res.locals.allFiles
+  const files: Express.Multer.File[] = res.locals.allFiles as Express.Multer.File[];
 
   try {
     for (const f of files) {
@@ -452,7 +444,7 @@ export const sanitizePDF = async (
 
         const stats = await fs.stat(sanitizedPath).catch(() => null);
         if (!stats || stats.size === 0) {
-          throw new Error("Ghostscript failed to create a valid sanitized PDF.");
+          throw next(new Error("Ghostscript failed to create a valid sanitized PDF."));
         }
 
         await fs.unlink(tempFilePath);
@@ -462,16 +454,17 @@ export const sanitizePDF = async (
       }
       catch (err) {
         logger.error("[PDF_SANITIZATION_ERROR]", err);
+        // best-effort cleanup
         await fs.unlink(f.path).catch(e => {
           if (e.code !== "ENOENT") logger.error(`Error deleting temp file ${f.path}`, e);
         });
         await fs.unlink(sanitizedPath).catch(e => {
           if (e.code !== "ENOENT") logger.error(`Error deleting sanitized file ${sanitizedPath}`, e);
         });
-        throw err;
+        return next(err as Error);
       }
     }
-    next();
+    return next();
   }
   catch {
     const err: RequestError = {
@@ -480,7 +473,7 @@ export const sanitizePDF = async (
       message: "Error processing PDF file.",
       expected: true
     };
-    throw err;
+    return next(err);
   }
 };
 

@@ -202,11 +202,10 @@ model FileGroup {
   classId     Int
   name        String
   createdAt   BigInt
-  createdBy   Int?
+  accountId   Int?
   Class       Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
-  Account     Account? @relation(fields: [createdBy], references: [accountId], onDelete: SetNull, onUpdate: NoAction)
+  Account     Account? @relation(fields: [accountId], references: [accountId], onDelete: SetNull, onUpdate: NoAction)
   files       FileData[]
 
-  @@unique([classId, name])
   @@map("fileGroup")
 }

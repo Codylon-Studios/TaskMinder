@@ -8,7 +8,7 @@ import prisma from "../config/prisma";
 import mime from "mime";
 import logger from "../utils/logger";
 import { RequestError } from "../@types/requestError";
-import { deleteUploadFileTypeBody, getUploadFileType, renameUploadFileTypeBody } from "../schemas/uploadSchema";
+import { deleteUploadFileTypeBody, getUploadFileType, renameUploadFileTypeBody, setUploadFileTypeBody } from "../schemas/uploadSchema";
 import { deleteUploadFileGroupTypeBody, renameUploadFileGroupTypeBody } from "../schemas/uploadSchema";
 
 
@@ -30,22 +30,12 @@ type GetUploadFileResult = {
 const uploadService = {
   // eslint-disable-next-line complexity
   async setUploadFile(
-    // now accepts multiple and verified mime list
     files: Express.Multer.File[],
     verifiedMimes: string[],
     session: Session & Partial<SessionData>,
-    fileGroupName?: string
+    body: setUploadFileTypeBody
   ) {
-    if (!files || files.length === 0) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "No file was uploaded",
-        expected: true
-      };
-      throw err;
-    }
-
+    const { fileGroupName } = body;
     // group name required if uploading multiple files
     if (files.length > 1 && !fileGroupName) {
       const err: RequestError = {
@@ -74,16 +64,8 @@ const uploadService = {
       where: { classId: classIdNum },
       select: { storageQuotaBytes: true, storageUsedBytes: true }
     });
-    if (!classQuota) {
-      throw {
-        name: "Not Found",
-        status: 404,
-        message: "Class not found",
-        expected: true
-      } as RequestError;
-    }
-    if (classQuota.storageUsedBytes + totalBytes > classQuota.storageQuotaBytes) {
-      // cleanup temp files
+    // quota is exceeded
+    if (classQuota!.storageUsedBytes + totalBytes > classQuota!.storageQuotaBytes) {
       await Promise.all(files.map(f => fs.unlink(f.path).catch(() => {})));
       const err: RequestError = {
         name: "Insufficient Storage",
@@ -97,31 +79,12 @@ const uploadService = {
     // create file group if applicable
     let fileGroupId: number | null = null;
     if (fileGroupName) {
-      // enforce unique per class
-      const existing = await prisma.fileGroup.findFirst({
-        where: {
-          classId: classIdNum,
-          name: fileGroupName
-        },
-        select: { fileGroupId: true }
-      });
-      if (existing) {
-        const err: RequestError = {
-          name: "Conflict",
-          status: 409,
-          message: "A file group with this name already exists in the class.",
-          expected: true
-        };
-        // cleanup temp files
-        await Promise.all(files.map(f => fs.unlink(f.path).catch(() => {})));
-        throw err;
-      }
       const created = await prisma.fileGroup.create({
         data: {
           classId: classIdNum,
           name: fileGroupName,
           createdAt: BigInt(Date.now()),
-          createdBy: session.account?.accountId ?? null
+          accountId: session.account?.accountId ?? null
         }
       });
       fileGroupId = created.fileGroupId;
@@ -149,7 +112,7 @@ const uploadService = {
             data: {
               accountId: session.account!.accountId,
               classId: classIdNum,
-              fileGroupId: fileGroupId ?? undefined,
+              fileGroupId: fileGroupId,
               originalName: files[i].originalname,
               storedFileName: finalFilenames[i],
               mimeType: verifiedMimes[i],
@@ -367,7 +330,6 @@ const uploadService = {
       });
     });
   },
-  // new: rename file group
   async renameFileGroup(
     body: renameUploadFileGroupTypeBody,
     session: Session & Partial<SessionData>
@@ -385,31 +347,11 @@ const uploadService = {
       } as RequestError;
     }
 
-    // enforce unique per class
-    const existing = await prisma.fileGroup.findFirst({
-      where: {
-        classId,
-        name: newGroupName,
-        NOT: { fileGroupId: groupId }
-      },
-      select: { fileGroupId: true }
-    });
-    if (existing) {
-      throw {
-        name: "Conflict",
-        status: 409,
-        message: "A file group with this name already exists.",
-        expected: true
-      } as RequestError;
-    }
-
     await prisma.fileGroup.update({
       where: { fileGroupId: groupId },
       data: { name: newGroupName }
     });
   },
-
-  // new: delete file group (and its files)
   async deleteFileGroup(
     body: deleteUploadFileGroupTypeBody,
     session: Session & Partial<SessionData>
