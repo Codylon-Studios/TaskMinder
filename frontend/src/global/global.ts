@@ -43,6 +43,18 @@ export function isSite(...sites: (string | RegExp)[]): boolean {
   });
 }
 
+export function isValidSite(site: string): boolean {
+  return [
+    "404",
+    "about",
+    "events",
+    "homework",
+    "join",
+    "main",
+    "settings"
+  ].includes(site)
+}
+
 export function msToDisplayDate(ms: number | string): string {
   const num = typeof ms === "string" ? parseInt(ms) : ms;
   const date = new Date(num);
@@ -206,7 +218,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
         subjectNameShort: "Pause",
         subjectNameSubstitution: [],
         teacherGender: "d",
-        teacherNameLong: "-",
+        teacherNameLong: "",
         teacherNameSubstitution: []
       };
 
@@ -242,7 +254,10 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
       const substitutions = currentSubstitutionsData.data["plan" + planId as "plan1" | "plan2"].substitutions;
       for (const substitution of substitutions) {
         lessonsWithSubstitutions = lessonsWithSubstitutions.map(l => {
-          if (matchesLessonNumber(l.lessonNumber, substitution.lesson) && (l.teacherNameSubstitution ?? []).includes(substitution.teacherOld)) {
+          if (
+            matchesLessonNumber(l.lessonNumber, substitution.lesson)
+            && (l.teacherNameSubstitution.includes(substitution.teacherOld) || l.subjectId === -1)
+          ) {
             return {
               ...l,
               substitution
@@ -377,6 +392,7 @@ async function loadClassSubstitutionsData(): Promise<void> {
   }
   classSubstitutionsData({data: data, substitutionClassName: currentSubstitutionsData.substitutionClassName});
 }
+
 async function loadHomeworkCheckedData(): Promise<void> {
   if (user.loggedIn) {
     // If the user is logged in, get the data from the server
@@ -413,17 +429,20 @@ export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: 
 }
 
 export async function reloadAll(): Promise<void> {
-  const currentReloadAllFn = await reloadAllFn.get();
-  await currentReloadAllFn();
+  if (!user.isAuthed) {
+    user.on("change", async () => {
+      reloadAll();
+    });
+    user.auth()
+    return
+  }
+  const s = getSite()
+  const mod = await import(`../../pages/${s}/${s}.js`);
+  if (mod.reloadAllFn) {
+    await mod.reloadAllFn();
+  }
   $("body").css({ display: "flex" });
 }
-
-let setReloadAllFn = false;
-export const reloadAllFn = createDataAccessor<() => Promise<void>>("reloadAllFn");
-reloadAllFn.on("update", () => {
-  setReloadAllFn = true;
-  if (user.changeEvents >= 1) reloadAll();
-});
 
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
 
@@ -567,6 +586,31 @@ new MutationObserver(mutationsList => {
   subtree: true
 });
 
+$(document).on("shown.bs.toast", ev => {
+  const $toast = $(ev.target);
+  if ($toast.attr("data-bs-autohide") === "false") {
+    return;
+  }
+
+  const $bar = $toast.find(".toast-progress-bar");
+  if (!$bar.length) return;
+
+  $bar.addClass("playing");
+
+  $toast.on("mouseenter.toastProgress", () => {
+    $bar.removeClass("playing");
+  });
+
+  $toast.on("mouseleave.toastProgress", () => {
+    setTimeout(() => {
+      $bar.addClass("playing");
+    }, 1000);
+  });
+
+  $toast.one("hidden.bs.toast", () => $toast.off(".toastProgress"));
+});
+
+
 try {
   const res = await fetch("/csrf-token");
   if (!res.ok) {
@@ -620,10 +664,6 @@ setTimeout(() => {
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", () => {
   reloadAll();
-});
-
-user.on("change", async () => {
-  if (user.changeEvents > 1 || setReloadAllFn) reloadAll();
 });
 
 // Change btn group selections to vertical / horizontal

@@ -1,4 +1,5 @@
 import { escapeHTML, getSite } from "../../global/global.js";
+import { replaceSitePJAX } from "../loadingBar/loadingBar.js";
 import { user } from "../navbar/navbar.js";
 
 function getTouchPosition(ev: JQuery.TouchStartEvent): {x: number, y: number} {
@@ -15,16 +16,29 @@ function getChangedTouchPosition(ev: JQuery.TouchMoveEvent | JQuery.TouchEndEven
   };
 }
 
+export async function init() {
+  siteName = getSite();
+  siteIndex = availableLinks.indexOf(siteName) ?? -1;
+  if (siteName === "join") siteIndex = 2;
+  if (moreLinks.includes(siteName)) siteIndex = 0;
+
+  $("#bottombar-more, .bottombar-link").removeClass("bottombar-current-link")
+  if (siteIndex === 0) {
+    $("#bottombar-more").addClass("bottombar-current-link");
+  }
+  else if (siteIndex !== -1) {
+    $(".bottombar-link").eq(siteIndex).addClass("bottombar-current-link");
+  }
+}
+
 if (/OS (18|19|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
   $(".bottombar").css("padding-bottom", "1rem");
 }
 
 const availableLinks = ["", "homework", "main", "events", "settings"];
 const moreLinks = ["about"];
-const siteName = getSite();
-let siteIndex = availableLinks.indexOf(siteName) ?? -1;
-if (siteName === "join") siteIndex = 2;
-if (moreLinks.includes(siteName)) siteIndex = 0;
+let siteName: string;
+let siteIndex: number;
 
 user.on("change", (function _() {
   $(".bottombar-link").filter(i => [1, 3].includes(i))
@@ -34,13 +48,6 @@ user.on("change", (function _() {
     });
   return _;
 })());
-
-if (siteIndex === 0) {
-  $("#bottombar-more").addClass("bottombar-current-link");
-}
-else if (siteIndex !== -1) {
-  $(".bottombar-link").eq(siteIndex).addClass("bottombar-current-link");
-}
 
 $(".bottombar-overlay").hide();
 
@@ -113,13 +120,19 @@ $(document).on("touchend", ev => {
       }
     );
   }
-  function changeSite(): void {
+  async function changeSite(): Promise<void> {
     if (diffX > 0) {
       if (siteIndex === 0) hideOverlay(0, $(".bottombar-overlay").hide);
-      else window.location.href = availableLinks[siteIndex === 5 ? 0 : siteIndex - 1];
+      else {
+        await replaceSitePJAX(availableLinks[siteIndex === 5 ? 0 : siteIndex - 1])
+        $(".bottombar-overlay").css("--progress", "0").hide();
+      }
     }
     else if (siteIndex === 4) hideOverlay(0, $(".bottombar-overlay").hide);
-    else window.location.href = availableLinks[siteIndex === 5 ? 4 : siteIndex + 1];
+    else {
+      await replaceSitePJAX(availableLinks[siteIndex === 5 ? 4 : siteIndex + 1]);
+      $(".bottombar-overlay").css("--progress", "0").hide();
+    }
   }
   function hasBeenDraggedEnough(): boolean {
     return Math.abs(diffX) > Math.abs(diffY)
@@ -160,3 +173,7 @@ $(document).on("touchend", ev => {
     overlayShowsMore = true;
   }
 });
+
+$("#bottombar-more-cancel").on("click", ev => {
+  ev.preventDefault()
+})

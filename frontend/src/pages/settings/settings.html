@@ -8,9 +8,7 @@
   </head>
 
   <body>
-    <div class="load-snippet" data-target="colorPicker"></div>
-
-    <div class="container">
+    <div class="container" id="app">
       <div class="nav nav-tabs mb-3">
         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#nav-settings-app">App</button>
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-account">Account</button>
@@ -200,7 +198,7 @@
             <div>
               <div class="d-block">Für diese Einstellungen musst du einer Klasse beigetreten sein.</div>
               <div class="d-block">
-                <a href="/join?action=join">Klasse beitreten</a>
+                <a href="/join?action=join" data-pjax>Klasse beitreten</a>
               </div>
             </div>
           </div>
@@ -254,7 +252,7 @@
             <div>
               <div class="d-block">Für diese Einstellungen musst du einer Klasse beigetreten sein.</div>
               <div class="d-block">
-                <a href="/join?action=join">Klasse beitreten</a>
+                <a href="/join?action=join" data-pjax>Klasse beitreten</a>
               </div>
             </div>
           </div>
@@ -552,86 +550,93 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="modal fade" id="show-qrcode-modal" tabindex="-1" aria-labelledby="show-qrcode-modal-title">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h1 class="modal-title fs-5" id="show-qrcode-modal-title">
-              Trete der Klasse
-              <b></b>
-              auf TaskMinder bei!
-            </h1>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+      <div class="modal fade" id="show-qrcode-modal" tabindex="-1" aria-labelledby="show-qrcode-modal-title">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h1 class="modal-title fs-5" id="show-qrcode-modal-title">
+                Trete der Klasse
+                <b></b>
+                auf TaskMinder bei!
+              </h1>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
+            </div>
           </div>
-          <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
+        </div>
+      </div>
+
+      <div class="toast-container">
+        <div id="change-username-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Nutzername erfolgreich geändert</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Vergiss ihn nicht!</div>
+        </div>
+
+        <div id="change-password-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Passwort erfolgreich geändert</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Vergiss es nicht!</div>
+        </div>
+
+        <div id="delete-account-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Account erfolgreich gelöscht</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">
+            Wenn dir TaskMinder nicht gefallen hat, kontaktiere uns gerne und gib uns Feedback, damit wir TaskMinder noch besser gestalten können.
           </div>
         </div>
-      </div>
-    </div>
 
-    <div class="toast-container position-fixed top-0 end-0 p-3">
-      <div id="change-username-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Nutzername erfolgreich geändert</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+        <div id="leave-class-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Klasse erfolgreich verlassen</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Du hast die Klasse erfolgreich verlassen</div>
         </div>
-        <div class="toast-body">Vergiss ihn nicht!</div>
-      </div>
 
-      <div id="change-password-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Passwort erfolgreich geändert</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+        <div id="delete-class-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Klasse erfolgreich gelöscht</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">
+            Wenn dir TaskMinder nicht gefallen hat, kontaktiere uns gerne und gib uns Feedback, damit wir TaskMinder noch besser gestalten können.
+          </div>
         </div>
-        <div class="toast-body">Vergiss es nicht!</div>
-      </div>
 
-      <div id="delete-account-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Account erfolgreich gelöscht</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+        <div id="kick-logged-out-users-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Erfolg!</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Alle unangemeldeten Nutzer wurden aus der Klasse entfernt.</div>
         </div>
-        <div class="toast-body">
-          Wenn dir TaskMinder nicht gefallen hat, kontaktiere uns gerne und gib uns Feedback, damit wir TaskMinder noch besser gestalten können.
-        </div>
-      </div>
 
-      <div id="leave-class-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Klasse erfolgreich verlassen</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+        <div id="set-logged-out-users-role-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Erfolg!</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Die Rolle für unangemeldete Nutzer wurde aktualisiert.</div>
         </div>
-        <div class="toast-body">Du hast die Klasse erfolgreich verlassen</div>
-      </div>
-
-      <div id="delete-class-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Klasse erfolgreich gelöscht</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-        </div>
-        <div class="toast-body">
-          Wenn dir TaskMinder nicht gefallen hat, kontaktiere uns gerne und gib uns Feedback, damit wir TaskMinder noch besser gestalten können.
-        </div>
-      </div>
-
-      <div id="kick-logged-out-users-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Erfolg!</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-        </div>
-        <div class="toast-body">Alle unangemeldeten Nutzer wurden aus der Klasse entfernt.</div>
-      </div>
-
-      <div id="set-logged-out-users-role-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Erfolg!</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-        </div>
-        <div class="toast-body">Die Rolle für unangemeldete Nutzer wurde aktualisiert.</div>
       </div>
     </div>
   </body>

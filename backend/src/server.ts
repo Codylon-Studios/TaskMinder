@@ -183,7 +183,19 @@ app.get("/events", checkAccess(["CLASS"]), (req, res) => {
 });
 
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(pagesPath, "404", "404.html"));
+  const ext = path.extname(req.path);
+
+  switch (ext) {
+    case ".css":
+      res.sendFile(path.join(pagesPath, "404", "404.css"));
+      break;
+    case ".js":
+      res.sendFile(path.join(pagesPath, "404", "404.js"));
+      break;
+    default:
+      res.sendFile(path.join(pagesPath, "404", "404.html"));
+      break;
+  }
 });
 
 // Error Handler Middleware (Must be the last app.use)

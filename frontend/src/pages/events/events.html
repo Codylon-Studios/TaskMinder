@@ -2,14 +2,10 @@
 <html lang="de">
   <head>
     <meta name="robots" content="noindex, follow" />
-    <link class="preload-style" rel="preload" href="/events/event_type_styles" as="style" />
   </head>
 
   <body>
-    <div class="load-snippet" data-target="richTextarea"></div>
-    <div class="load-snippet" data-target="colorPicker"></div>
-
-    <div class="container">
+    <div class="container" id="app">
       <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-primary" id="show-add-event-button">
@@ -204,55 +200,59 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="toast-container position-fixed top-0 end-0 p-3">
-      <div id="add-event-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Erfolgreich hinzugefügt</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+      <div class="toast-container">
+        <div id="add-event-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Erfolgreich hinzugefügt</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Das Ereignis wurde erfolgreich hinzugefügt.</div>
         </div>
-        <div class="toast-body">Das Ereignis wurde erfolgreich hinzugefügt.</div>
-      </div>
-      <div id="edit-event-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Erfolgreich geändert</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+        <div id="edit-event-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Erfolgreich geändert</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Das Ereignis wurde erfolgreich geändert.</div>
         </div>
-        <div class="toast-body">Das Ereignis wurde erfolgreich geändert.</div>
-      </div>
-      <div id="delete-event-success-toast" class="toast">
-        <div class="toast-header bg-success text-body-bg">
-          <b class="me-auto">Erfolgreich gelöscht</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+        <div id="delete-event-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
+          <div class="toast-header bg-success text-body-bg">
+            <b class="me-auto">Erfolgreich gelöscht</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Das Ereignis wurde erfolgreich gelöscht.</div>
         </div>
-        <div class="toast-body">Das Ereignis wurde erfolgreich gelöscht.</div>
-      </div>
-      <div id="delete-event-confirm-toast" class="toast" data-bs-autohide="false">
-        <div class="toast-header bg-primary text-body-bg">
-          <b class="me-auto">Bitte bestätigen</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-        </div>
-        <div class="toast-body">
-          Möchtest du das Ereignis wirklich löschen?
-          <div class="mt-2 pt-2 border-top">
-            <div class="row g-2 justify-content-end">
-              <div class="col-auto">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
-              </div>
-              <div class="col-auto">
-                <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" id="delete-event-confirm-toast-button">Löschen</button>
+        <div id="delete-event-confirm-toast" class="toast" data-bs-autohide="false">
+          <div class="toast-header bg-primary text-body-bg">
+            <b class="me-auto">Bitte bestätigen</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">
+            Möchtest du das Ereignis wirklich löschen?
+            <div class="mt-2 pt-2 border-top">
+              <div class="row g-2 justify-content-end">
+                <div class="col-auto">
+                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
+                </div>
+                <div class="col-auto">
+                  <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" id="delete-event-confirm-toast-button">Löschen</button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <div id="share-event-error-toast" class="toast">
-        <div class="toast-header bg-danger text-body-bg">
-          <b class="me-auto">Fehler beim Teilen</b>
-          <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+        <div id="share-event-error-toast" class="toast">
+          <div class="toast-progress-bar bg-danger"></div>
+          <div class="toast-header bg-danger text-body-bg">
+            <b class="me-auto">Fehler beim Teilen</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Das Ereignis konnte nicht geteilt werden. Vielleicht ist die Zeit der angegebenen Stunde nie definiert?</div>
         </div>
-        <div class="toast-body">Das Ereignis konnte nicht geteilt werden. Vielleicht ist die Zeit der angegebenen Stunde nie definiert?</div>
       </div>
     </div>
   </body>

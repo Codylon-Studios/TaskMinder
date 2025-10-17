@@ -2,21 +2,23 @@
   <div class="container-fluid position-relative">
     <div class="d-flex justify-content-between align-items-center flex-grow-1">
       <div class="d-lg-none text-center flex-grow-1">
-        <a class="navbar-text fs-5 text-decoration-none navbar-home-link position-absolute top-50 start-50 translate-middle" href="/">TaskMinder</a>
+        <a class="navbar-text fs-5 text-decoration-none navbar-home-link position-absolute top-50 start-50 translate-middle" href="/" data-pjax>
+          TaskMinder
+        </a>
       </div>
-      <a class="d-none d-lg-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link" href="/">TaskMinder</a>
+      <a class="d-none d-lg-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link" href="/" data-pjax>TaskMinder</a>
       <ul class="navbar-nav d-none d-lg-flex flex-row me-auto">
         <li class="nav-item me-3 class-joined-content">
-          <a class="nav-link" href="/homework">Hausaufgaben</a>
+          <a class="nav-link" href="/homework" data-pjax>Hausaufgaben</a>
         </li>
         <li class="nav-item me-3 class-joined-content">
-          <a class="nav-link" href="/events">Ereignisse</a>
+          <a class="nav-link" href="/events" data-pjax>Ereignisse</a>
         </li>
         <li class="nav-item me-3">
-          <a class="nav-link" href="/settings">Einstellungen</a>
+          <a class="nav-link" href="/settings" data-pjax>Einstellungen</a>
         </li>
         <li class="nav-item me-3">
-          <a class="nav-link" href="/about">Über TaskMinder</a>
+          <a class="nav-link" href="/about" data-pjax>Über TaskMinder</a>
         </li>
       </ul>
     </div>
@@ -103,9 +105,9 @@
             <label class="form-check-label" for="navbar-register-checkbox">
               <div class="form-text">
                 Ich bin mindestens 16 Jahre alt oder habe die Einverständnis meiner Erziehungsberechtigten, einen Account zu erstellen. Ich habe die
-                <a href="/about#privacy-policy" target="_blank">Datenschutzerklärung</a>
+                <a href="/about#privacy-policy" target="_blank" data-pjax>Datenschutzerklärung</a>
                 und
-                <a href="/about#terms-of-use" target="_blank">Nutzungsbedingungen</a>
+                <a href="/about#terms-of-use" target="_blank" data-pjax>Nutzungsbedingungen</a>
                 gelesen und akzeptiert.
               </div>
             </label>
@@ -123,8 +125,9 @@
   </div>
 </div>
 
-<div class="toast-container position-fixed top-0 end-0 p-3">
+<div class="toast-container">
   <div id="error-server-toast" class="toast">
+    <div class="toast-progress-bar bg-danger"></div>
     <div class="toast-header bg-danger text-body-bg">
       <b class="me-auto">Serverproblem</b>
       <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
@@ -132,6 +135,7 @@
     <div class="toast-body">Unser Server hat gerade Probleme. Bitte versuche es später erneut.</div>
   </div>
   <div id="unknown-error-toast" class="toast">
+    <div class="toast-progress-bar bg-danger"></div>
     <div class="toast-header bg-danger text-body-bg">
       <b class="me-auto">Unerwarteter Fehler</b>
       <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
@@ -139,6 +143,7 @@
     <div class="toast-body">Ein unbekannter Fehler ist aufgetreten.</div>
   </div>
   <div id="not-logged-in-toast" class="toast">
+    <div class="toast-progress-bar bg-danger"></div>
     <div class="toast-header bg-danger text-body-bg">
       <b class="me-auto">Nicht angemeldet</b>
       <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
@@ -146,6 +151,7 @@
     <div class="toast-body">Du musst dafür angemeldet sein.</div>
   </div>
   <div id="login-success-toast" class="toast">
+    <div class="toast-progress-bar bg-success"></div>
     <div class="toast-header bg-success text-body-bg">
       <b class="me-auto">Erfolgreich angemeldet</b>
       <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
@@ -157,6 +163,7 @@
     </div>
   </div>
   <div id="register-success-toast" class="toast">
+    <div class="toast-progress-bar bg-success"></div>
     <div class="toast-header bg-success text-body-bg">
       <b class="me-auto">Erfolgreich registriert</b>
       <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
@@ -168,6 +175,7 @@
     </div>
   </div>
   <div id="logout-success-toast" class="toast">
+    <div class="toast-progress-bar bg-success"></div>
     <div class="toast-header bg-success text-body-bg">
       <b class="me-auto">Erfolgreich abgemeldet</b>
       <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>

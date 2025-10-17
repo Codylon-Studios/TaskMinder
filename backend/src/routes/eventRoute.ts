@@ -12,6 +12,6 @@ router.post("/edit_event", checkAccess(["CLASS", "EDITOR"]), validate(editEventS
 router.post("/delete_event", checkAccess(["CLASS", "EDITOR"]), validate(deleteEventSchema), eventController.deleteEvent);
 router.get("/get_event_type_data", checkAccess(["CLASS"]), eventController.getEventTypeData);
 router.post("/set_event_type_data", checkAccess(["CLASS", "MANAGER"]), validate(setEventTypesSchema), eventController.setEventTypeData);
-router.get("/event_type_styles", checkAccess(["CLASS"]), eventController.getEventTypeStyles);
+router.get("/event_type_styles", eventController.getEventTypeStyles);
 
 export default router;

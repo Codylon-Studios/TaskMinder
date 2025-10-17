@@ -308,8 +308,11 @@ export const eventService = {
   },
 
   async getEventTypeStyles(session: Session & Partial<SessionData>) {
+    if (!session.classId) {
+      return ""
+    }
 
-    const setEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId!);
+    const setEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId);
 
     const cachedEventTypeStyles = await redisClient.get(setEventTypeStylesCacheKey);
 

@@ -42,7 +42,9 @@ async function buildDirectory(src, dest) {
         <script src="/vendor/bootstrap/bootstrap.bundle.min.js" type="module" defer></script>
         <script src="/vendor/qrcode/qrcode.min.js" defer></script>
         <script src="/global/global.js" type="module" defer></script>
-        <link class="preload-style" rel="preload" href="/pages/${fileName}/${fileName}.css" as="style">
+        <link class="preload-style" rel="preload" href="/pages/${fileName}/${fileName}.css" as="style" data-site="${fileName}">
+        <link class="preload-style" rel="preload" href="/global/global.css" as="style" />
+        <link class="preload-style" rel="preload" href="/events/event_type_styles" as="style" />
         <script src="/pages/${fileName}/${fileName}.js" type="module" defer></script>
         <title>${titleMap[fileName]} · TaskMinder</title>
         <meta charset="utf-8">
@@ -93,6 +95,10 @@ async function buildDirectory(src, dest) {
       $("body").append(`
         <div class="load-snippet" data-target="footer"></div>
         <div class="load-snippet" data-target="bottombar"></div>
+
+        <div class="load-snippet" data-target="richTextarea"></div>
+        <div class="load-snippet" data-target="colorPicker"></div>
+        <div class="load-snippet" data-target="loadingBar"></div>
       `);
 
       $("body").css({ display: "none" });
@@ -113,6 +119,9 @@ async function buildDirectory(src, dest) {
             else {
               $(el).replaceWith($new.html());
             }
+          }
+          else {
+            $(el).remove()
           }
           if (await exists(_join(folder, target + ".ts"))) {
             $("head").append(

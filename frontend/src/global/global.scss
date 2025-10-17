@@ -82,6 +82,10 @@ body {
 }
 
 [data-high-contrast="true"] {
+  .opacity-50 {
+    opacity: 1 !important;
+  }
+  
   .text-secondary, .text-body-tertiary {
     color: var(--bs-body-color) !important;
   }
@@ -170,6 +174,12 @@ body {
   scroll-margin-top: $navbar-top-offset;
 }
 
+.spinner-border {
+  --bs-spinner-width: 1rem;
+  --bs-spinner-height: 1rem;
+  --bs-spinner-border-width: 0.125rem;
+}
+
 .w-fit-content {
   width: fit-content;
 }
@@ -204,6 +214,43 @@ body {
 
 .word-wrap-break {
   word-wrap: break-word
+}
+
+.toast-progress-bar {
+  position: relative;
+  height: 0.25rem;
+  border-top-left-radius: calc(var(--bs-toast-border-radius) - var(--bs-toast-border-width));
+  border-top-right-radius: calc(var(--bs-toast-border-radius) - var(--bs-toast-border-width));
+  overflow: hidden;
+  --toast-progress-duration: 5000ms;
+  --toast-resume-delay: 1000ms;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    background-color: rgba(var(--bs-body-color-rgb), 0.35);
+    transform: translateX(0%);
+    animation: toast-progress 5s linear forwards;
+    animation-play-state: paused;
+  }
+
+  &.playing::before {
+    animation-play-state: running;
+  }
+
+  & ~ .toast-header {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+}
+
+@keyframes toast-progress {
+  from { transform: translateX(0%); }
+  to   { transform: translateX(-100%); }
 }
 
 @each $variant in $custom-btn-variants {

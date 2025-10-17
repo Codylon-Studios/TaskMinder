@@ -8,219 +8,221 @@
   </head>
 
   <body>
-    <div class="container d-flex justify-content-center">
-      <div class="card p-4 shadow-sm mt-5 panel">
-        <div id="decide-action-panel">
-          <h2 class="text-center mb-4">Was möchtest du tun?</h2>
-          <button class="btn btn-primary w-100 fw-semibold mb-3 position-relative" id="show-login-register-btn">
-            Anmelden oder Registrieren
-            <i class="fas fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none" aria-hidden="true"></i>
-          </button>
-          <button class="btn btn-primary w-100 fw-semibold mb-3 position-relative" id="show-join-class-btn">
-            Klasse beitreten
-            <i class="fa-solid fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none" aria-hidden="true"></i>
-          </button>
-          <button class="btn btn-primary w-100 fw-semibold" disabled id="show-create-class-btn">Klasse erstellen</button>
-          <div class="form-text">Du brauchst einen Account, um eine Klasse zu erstellen.</div>
-        </div>
+    <div class="container" id="app">
+      <div class="d-flex justify-content-center">
+        <div class="card p-4 shadow-sm mt-5 panel">
+          <div id="decide-action-panel">
+            <h2 class="text-center mb-4">Was möchtest du tun?</h2>
+            <button class="btn btn-primary w-100 fw-semibold mb-3 position-relative" id="show-login-register-btn">
+              Anmelden oder Registrieren
+              <i class="fas fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none" aria-hidden="true"></i>
+            </button>
+            <button class="btn btn-primary w-100 fw-semibold mb-3 position-relative" id="show-join-class-btn">
+              Klasse beitreten
+              <i class="fa-solid fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none" aria-hidden="true"></i>
+            </button>
+            <button class="btn btn-primary w-100 fw-semibold" disabled id="show-create-class-btn">Klasse erstellen</button>
+            <div class="form-text">Du brauchst einen Account, um eine Klasse zu erstellen.</div>
+          </div>
 
-        <div id="join-class-panel" class="d-none">
-          <div class="d-flex align-items-center mb-4">
-            <button class="btn-back" id="join-class-back-btn"></button>
-            <h2 class="text-center mb-0 flex-grow-1">Klasse beitreten</h2>
-          </div>
-          <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2" id="error-invalid-class-code">
-            <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-            <span class="d-block">Der Klassencode ist ungültig!</span>
-          </div>
-          <div class="mb-3">
-            <label for="join-class-class-code" class="form-label">Gib den Klassencode ein</label>
-            <input type="text" class="form-control" id="join-class-class-code" />
-            <div class="form-text">Frag den Ersteller eurer Klasse, wenn du ihn vergessen hast</div>
-          </div>
-          <div class="form-check mb-3">
-            <input class="form-check-input mt-2" type="checkbox" id="join-class-checkbox" />
-            <label class="form-check-label" for="join-class-checkbox">
-              <div class="form-text">
-                Ich bin mindestens 16 Jahre alt oder habe die Einverständnis meiner Erziehungsberechtigten, einer Klasse auf TaskMinder beizutreten.
-                Ich habe die
-                <a href="/about#privacy-policy" target="_blank">Datenschutzerklärung</a>
-                und
-                <a href="/about#terms-of-use" target="_blank">Nutzungsbedingungen</a>
-                gelesen und akzeptiert.
-              </div>
-            </label>
-          </div>
-          <button class="btn btn-primary w-100 fw-semibold" id="join-class-btn">Beitreten</button>
-        </div>
-
-        <div id="decide-account-panel" class="d-none">
-          <div class="alert alert-success p-2 d-flex align-items-center gap-2">
-            <i class="fa-solid fa-circle-check mx-1" aria-hidden="true"></i>
-            <span class="d-block">
-              Du bist der Klasse
-              <b id="decide-account-class-name"></b>
-              beigetreten!
-            </span>
-          </div>
-          <h2 class="text-center mb-4">Möchtest du einen Account nutzen?</h2>
-          <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-joined-login-register-btn">Anmelden oder Registrieren</button>
-          <div class="text-center mb-3">
-            <a href="/main">Ohne Account fortfahren</a>
-          </div>
-          <a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#decide-account-reasons">Was bringt ein Account?</a>
-          <div class="collapse mt-2" id="decide-account-reasons">
-            <div class="align-items-center gap-2 d-flex">
-              <div class="fw-bold text-primary me-2">+</div>
-              <div>Synchronisation deiner Daten (Einstellungen, erledigte Hausaufgaben, gewählte Teams) auf verschiedenen Geräten</div>
-            </div>
-            <div class="align-items-center gap-2 d-flex">
-              <div class="fw-bold text-primary me-2">+</div>
-              <div>Möglichkeit für erweiterte Berechtigungen in der Klasse (Wenn die Admins es erlauben)</div>
-            </div>
-          </div>
-        </div>
-
-        <div id="login-register-panel" class="d-none">
-          <!--LOGIN REGISTER CONTENT-->
-          <div class="d-none login-register-element">
+          <div id="join-class-panel" class="d-none">
             <div class="d-flex align-items-center mb-4">
-              <button class="btn-back" id="login-register-back-btn"></button>
-              <h2 class="text-center mb-0 flex-grow-1">Anmelden oder Registrieren</h2>
+              <button class="btn-back" id="join-class-back-btn"></button>
+              <h2 class="text-center mb-0 flex-grow-1">Klasse beitreten</h2>
             </div>
-            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 w-100">
-              <i class="fa-solid fa-lightbulb mx-1" aria-hidden="true"></i>
-              <span class="d-block me-1">
-                Schon angemeldet? Gib deinen Nutzernamen ein!
-                <br />
-                Noch kein Account? Gib deinen Wunschnamen ein!
-              </span>
-            </div>
-            <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-register-error-invalid-username">
+            <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2" id="error-invalid-class-code">
               <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-              <span class="d-block">Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.</span>
-            </div>
-            <label for="panel-login-register-username" class="form-label">Gib deinen Nutzer-/Wunschnamen ein</label>
-            <input type="text" class="form-control login-register-username" id="panel-login-register-username" />
-            <button class="btn btn-primary w-100 fw-semibold mt-2 login-register-next-button" disabled id="login-register-next-button">Weiter</button>
-          </div>
-          <!--LOGIN CONTENT-->
-          <div class="d-none login-element">
-            <div class="d-flex align-items-center mb-4">
-              <button class="btn-back login-register-back-button"></button>
-              <h2 class="text-center mb-0 flex-grow-1">Anmelden</h2>
-            </div>
-            <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-error-invalid-password">
-              <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-              <span class="d-block">Das Passwort ist falsch!</span>
-            </div>
-            <label for="panel-login-password" class="form-label">Gib dein Passwort ein</label>
-            <input type="password" class="form-control login-password" id="panel-login-password" />
-            <div class="form-text">Wolltest du dich registrieren? Dieser Nutzername ist leider schon vergeben. Aber es gibt noch genug andere!</div>
-            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 login-element login-button">Anmelden</button>
-          </div>
-          <!--REGISTER CONTENT-->
-          <div class="d-none register-element">
-            <div class="d-flex align-items-center mb-4">
-              <button class="btn-back login-register-back-button"></button>
-              <h2 class="text-center mb-0 flex-grow-1">Registrieren</h2>
-            </div>
-            <div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-no-matching-passwords">
-              <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-              <span class="d-block">Die Passwörter stimmen nicht überein!</span>
-            </div>
-            <div class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password">
-              <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
-              <span class="d-block">Das Passwort ist nicht sicher!</span>
+              <span class="d-block">Der Klassencode ist ungültig!</span>
             </div>
             <div class="mb-3">
-              <label for="panel-register-password" class="form-label">Gib dein Passwort ein</label>
-              <input type="password" class="form-control register-password" id="panel-register-password" />
-              <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
+              <label for="join-class-class-code" class="form-label">Gib den Klassencode ein</label>
+              <input type="text" class="form-control" id="join-class-class-code" />
+              <div class="form-text">Frag den Ersteller eurer Klasse, wenn du ihn vergessen hast</div>
             </div>
-            <div class="mb-3">
-              <input type="password" class="form-control register-password-repeat" />
-              <div class="form-text">Gib es noch mal ein</div>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input mt-2 register-checkbox" type="checkbox" id="panel-register-checkbox" />
-              <label class="form-check-label" for="panel-register-checkbox">
+            <div class="form-check mb-3">
+              <input class="form-check-input mt-2" type="checkbox" id="join-class-checkbox" />
+              <label class="form-check-label" for="join-class-checkbox">
                 <div class="form-text">
-                  Ich bin mindestens 16 Jahre alt oder habe die Einverständnis meiner Erziehungsberechtigten, einen Account zu erstellen. Ich habe die
-                  <a href="/about#privacy-policy" target="_blank">Datenschutzerklärung</a>
+                  Ich bin mindestens 16 Jahre alt oder habe die Einverständnis meiner Erziehungsberechtigten, einer Klasse auf TaskMinder beizutreten.
+                  Ich habe die
+                  <a href="/about#privacy-policy" target="_blank" data-pjax>Datenschutzerklärung</a>
                   und
-                  <a href="/about#terms-of-use" target="_blank">Nutzungsbedingungen</a>
+                  <a href="/about#terms-of-use" target="_blank" data-pjax>Nutzungsbedingungen</a>
                   gelesen und akzeptiert.
                 </div>
               </label>
             </div>
-            <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 register-element register-button" disabled>Registrieren</button>
+            <button class="btn btn-primary w-100 fw-semibold" id="join-class-btn">Beitreten</button>
           </div>
-        </div>
 
-        <div id="create-class-is-test-panel" class="d-none">
-          <div class="d-flex align-items-center mb-4">
-            <button class="btn-back" id="create-class-is-test-back-btn"></button>
-            <h2 class="text-center mb-0 flex-grow-1">Klasse erstellen</h2>
+          <div id="decide-account-panel" class="d-none">
+            <div class="alert alert-success p-2 d-flex align-items-center gap-2">
+              <i class="fa-solid fa-circle-check mx-1" aria-hidden="true"></i>
+              <span class="d-block">
+                Du bist der Klasse
+                <b id="decide-account-class-name"></b>
+                beigetreten!
+              </span>
+            </div>
+            <h2 class="text-center mb-4">Möchtest du einen Account nutzen?</h2>
+            <button class="btn btn-primary w-100 fw-semibold mb-3" id="show-joined-login-register-btn">Anmelden oder Registrieren</button>
+            <div class="text-center mb-3">
+              <a href="/main" data-pjax>Ohne Account fortfahren</a>
+            </div>
+            <a class="text-decoration-none" href="#" data-bs-toggle="collapse" data-bs-target="#decide-account-reasons">Was bringt ein Account?</a>
+            <div class="collapse mt-2" id="decide-account-reasons">
+              <div class="align-items-center gap-2 d-flex">
+                <div class="fw-bold text-primary me-2">+</div>
+                <div>Synchronisation deiner Daten (Einstellungen, erledigte Hausaufgaben, gewählte Teams) auf verschiedenen Geräten</div>
+              </div>
+              <div class="align-items-center gap-2 d-flex">
+                <div class="fw-bold text-primary me-2">+</div>
+                <div>Möglichkeit für erweiterte Berechtigungen in der Klasse (Wenn die Admins es erlauben)</div>
+              </div>
+            </div>
           </div>
-          <label class="form-check-label mb-3 fs-5">
-            <input type="checkbox" class="form-check-input me-2" id="create-class-is-test" />
-            Als Testklasse erstellen
-          </label>
-          <div class="mb-3" style="text-align: justify">
-            Bitte erstelle eine Testklasse, wenn du noch nicht sicher bist, ob du TaskMinder benutzen möchtest. Beide Typen haben die gleichen
-            Funktionen, aber eine Testklasse wird nach 24 Stunden gelöscht. Dein Account bleibt danach aber weiter bestehen und, wenn du möchtest,
-            kannst du danach einfach eine normale Klasse erstellen.
-          </div>
-          <button class="btn btn-primary w-100 fw-semibold" id="create-class-continue-btn">Weiter</button>
-        </div>
 
-        <div id="create-class-credentials-panel" class="d-none">
-          <div class="d-flex align-items-center mb-4">
-            <button class="btn-back" id="create-class-credentials-back-btn"></button>
-            <h2 class="text-center mb-0 flex-grow-1">Klasse erstellen</h2>
+          <div id="login-register-panel" class="d-none">
+            <!--LOGIN REGISTER CONTENT-->
+            <div class="d-none login-register-element">
+              <div class="d-flex align-items-center mb-4">
+                <button class="btn-back" id="login-register-back-btn"></button>
+                <h2 class="text-center mb-0 flex-grow-1">Anmelden oder Registrieren</h2>
+              </div>
+              <div class="alert alert-primary p-2 d-flex align-items-center gap-2 w-100">
+                <i class="fa-solid fa-lightbulb mx-1" aria-hidden="true"></i>
+                <span class="d-block me-1">
+                  Schon angemeldet? Gib deinen Nutzernamen ein!
+                  <br />
+                  Noch kein Account? Gib deinen Wunschnamen ein!
+                </span>
+              </div>
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-register-error-invalid-username">
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+                <span class="d-block">Dieser Nutzername ist nicht möglich. Bitte benutze 4 bis 20 Buchstaben, Zahlen oder Unterstriche.</span>
+              </div>
+              <label for="panel-login-register-username" class="form-label">Gib deinen Nutzer-/Wunschnamen ein</label>
+              <input type="text" class="form-control login-register-username" id="panel-login-register-username" />
+              <button class="btn btn-primary w-100 fw-semibold mt-2 login-register-next-button" disabled id="login-register-next-button">Weiter</button>
+            </div>
+            <!--LOGIN CONTENT-->
+            <div class="d-none login-element">
+              <div class="d-flex align-items-center mb-4">
+                <button class="btn-back login-register-back-button"></button>
+                <h2 class="text-center mb-0 flex-grow-1">Anmelden</h2>
+              </div>
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 login-error-invalid-password">
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+                <span class="d-block">Das Passwort ist falsch!</span>
+              </div>
+              <label for="panel-login-password" class="form-label">Gib dein Passwort ein</label>
+              <input type="password" class="form-control login-password" id="panel-login-password" />
+              <div class="form-text">Wolltest du dich registrieren? Dieser Nutzername ist leider schon vergeben. Aber es gibt noch genug andere!</div>
+              <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 login-element login-button">Anmelden</button>
+            </div>
+            <!--REGISTER CONTENT-->
+            <div class="d-none register-element">
+              <div class="d-flex align-items-center mb-4">
+                <button class="btn-back login-register-back-button"></button>
+                <h2 class="text-center mb-0 flex-grow-1">Registrieren</h2>
+              </div>
+              <div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-no-matching-passwords">
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+                <span class="d-block">Die Passwörter stimmen nicht überein!</span>
+              </div>
+              <div class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password">
+                <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
+                <span class="d-block">Das Passwort ist nicht sicher!</span>
+              </div>
+              <div class="mb-3">
+                <label for="panel-register-password" class="form-label">Gib dein Passwort ein</label>
+                <input type="password" class="form-control register-password" id="panel-register-password" />
+                <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
+              </div>
+              <div class="mb-3">
+                <input type="password" class="form-control register-password-repeat" />
+                <div class="form-text">Gib es noch mal ein</div>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input mt-2 register-checkbox" type="checkbox" id="panel-register-checkbox" />
+                <label class="form-check-label" for="panel-register-checkbox">
+                  <div class="form-text">
+                    Ich bin mindestens 16 Jahre alt oder habe die Einverständnis meiner Erziehungsberechtigten, einen Account zu erstellen. Ich habe die
+                    <a href="/about#privacy-policy" target="_blank" data-pjax>Datenschutzerklärung</a>
+                    und
+                    <a href="/about#terms-of-use" target="_blank" data-pjax>Nutzungsbedingungen</a>
+                    gelesen und akzeptiert.
+                  </div>
+                </label>
+              </div>
+              <button type="button" class="btn btn-primary w-100 fw-semibold mt-2 register-element register-button" disabled>Registrieren</button>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label" for="create-class-name">Gib einen Namen für deine Klasse an</label>
-            <input type="text" class="form-control" id="create-class-name" placeholder="z.B. 10d" />
-            <div class="invalid-feedback">Der Klassenname darf nicht leer sein!</div>
-          </div>
-          <button class="btn btn-primary w-100 fw-semibold" id="create-class-btn">Klasse erstellen</button>
-        </div>
 
-        <div id="invite-panel" class="d-none">
-          <div class="d-flex align-items-center mb-4">
-            <h2 class="text-center mb-0 flex-grow-1">Mitglieder einladen</h2>
+          <div id="create-class-is-test-panel" class="d-none">
+            <div class="d-flex align-items-center mb-4">
+              <button class="btn-back" id="create-class-is-test-back-btn"></button>
+              <h2 class="text-center mb-0 flex-grow-1">Klasse erstellen</h2>
+            </div>
+            <label class="form-check-label mb-3 fs-5">
+              <input type="checkbox" class="form-check-input me-2" id="create-class-is-test" />
+              Als Testklasse erstellen
+            </label>
+            <div class="mb-3" style="text-align: justify">
+              Bitte erstelle eine Testklasse, wenn du noch nicht sicher bist, ob du TaskMinder benutzen möchtest. Beide Typen haben die gleichen
+              Funktionen, aber eine Testklasse wird nach 24 Stunden gelöscht. Dein Account bleibt danach aber weiter bestehen und, wenn du möchtest,
+              kannst du danach einfach eine normale Klasse erstellen.
+            </div>
+            <button class="btn btn-primary w-100 fw-semibold" id="create-class-continue-btn">Weiter</button>
           </div>
-          <div class="d-flex gap-2 flex-column flex-md-row">
-            <button class="btn btn-primary w-100 fw-semibold" id="invite-copy-link">
-              <i class="fa-solid fa-link" aria-hidden="true"></i>
-              Einladungslink kopieren
-            </button>
-            <button class="btn btn-primary w-100 fw-semibold" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
-              <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
-              QR-Code anzeigen
-            </button>
+
+          <div id="create-class-credentials-panel" class="d-none">
+            <div class="d-flex align-items-center mb-4">
+              <button class="btn-back" id="create-class-credentials-back-btn"></button>
+              <h2 class="text-center mb-0 flex-grow-1">Klasse erstellen</h2>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="create-class-name">Gib einen Namen für deine Klasse an</label>
+              <input type="text" class="form-control" id="create-class-name" placeholder="z.B. 10d" />
+              <div class="invalid-feedback">Der Klassenname darf nicht leer sein!</div>
+            </div>
+            <button class="btn btn-primary w-100 fw-semibold" id="create-class-btn">Klasse erstellen</button>
           </div>
-          <div class="form-text mb-3">Du kannst auch jederzeit später in den Einstellungen unter "Klasse" Mitglieder einladen.</div>
-          <a class="btn btn-primary w-100 fw-semibold" href="/main">Weiter zur Startseite</a>
+
+          <div id="invite-panel" class="d-none">
+            <div class="d-flex align-items-center mb-4">
+              <h2 class="text-center mb-0 flex-grow-1">Mitglieder einladen</h2>
+            </div>
+            <div class="d-flex gap-2 flex-column flex-md-row">
+              <button class="btn btn-primary w-100 fw-semibold" id="invite-copy-link">
+                <i class="fa-solid fa-link" aria-hidden="true"></i>
+                Einladungslink kopieren
+              </button>
+              <button class="btn btn-primary w-100 fw-semibold" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
+                <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+                QR-Code anzeigen
+              </button>
+            </div>
+            <div class="form-text mb-3">Du kannst auch jederzeit später in den Einstellungen unter "Klasse" Mitglieder einladen.</div>
+            <a class="btn btn-primary w-100 fw-semibold" href="/main" data-pjax>Weiter zur Startseite</a>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal fade" id="show-qrcode-modal" tabindex="-1" aria-labelledby="show-qrcode-modal-title">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h1 class="modal-title fs-5" id="show-qrcode-modal-title">
-              Trete der Klasse
-              <b></b>
-              auf TaskMinder bei!
-            </h1>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
-          </div>
-          <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
+      <div class="modal fade" id="show-qrcode-modal" tabindex="-1" aria-labelledby="show-qrcode-modal-title">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h1 class="modal-title fs-5" id="show-qrcode-modal-title">
+                Trete der Klasse
+                <b></b>
+                auf TaskMinder bei!
+              </h1>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
+            </div>
           </div>
         </div>
       </div>

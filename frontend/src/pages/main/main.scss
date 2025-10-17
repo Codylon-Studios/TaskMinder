@@ -1,5 +1,3 @@
-@use "../../global/global" as *;
-
 .days-overview-day {
   display: flex;
   flex-direction: column;
@@ -56,9 +54,11 @@
   &.days-overview-selected:not(.days-overview-selected-no-animation)::before {
     animation: 0.3s 1 select-day;
   }
-  &:not(.days-overview-selected):hover::before {
-    visibility: visible;
-    opacity: 0.2;
+  @media (hover: hover) {
+    &:not(.days-overview-selected):hover::before {
+      visibility: visible;
+      opacity: 0.2;
+    }
   }
 
   @keyframes select-day {
