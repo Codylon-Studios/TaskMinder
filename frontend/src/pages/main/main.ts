@@ -29,15 +29,15 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
     for (const event of await eventData()) {
       function handleMultiDayEvent(endDate: string): void {
         if (!multiEventPositions.includes(event.eventId)) {
-          if (multiEventPositions.indexOf(null) === -1) {
-            multiEventPositions.push(event.eventId);
-          }
-          else {
+          if (multiEventPositions.includes(null)) {
             multiEventPositions.splice(multiEventPositions.indexOf(null), 1, event.eventId);
           }
+          else {
+            multiEventPositions.push(event.eventId);
+          }
         }
-        if (isSameDay(new Date(parseInt(event.startDate)), date)) {
-          if (isSameDay(new Date(parseInt(endDate)), date)) {
+        if (isSameDay(new Date(Number.parseInt(event.startDate)), date)) {
+          if (isSameDay(new Date(Number.parseInt(endDate)), date)) {
             multiDayEventsArr[multiEventPositions.indexOf(event.eventId)] =
               `<div class="event event-single event-${event.eventTypeId}"></div>`;
           }
@@ -46,11 +46,11 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
               `<div class="event event-start event-${event.eventTypeId}"></div>`;
           }
         }
-        else if (isSameDay(new Date(parseInt(endDate)), date)) {
+        else if (isSameDay(new Date(Number.parseInt(endDate)), date)) {
           multiDayEventsArr[multiEventPositions.indexOf(event.eventId)] =
             `<div class="event event-end event-${event.eventTypeId}"></div>`;
         }
-        else if (parseInt(event.startDate) < date.getTime() && parseInt(endDate) > date.getTime()) {
+        else if (Number.parseInt(event.startDate) < date.getTime() && Number.parseInt(endDate) > date.getTime()) {
           multiDayEventsArr[multiEventPositions.indexOf(event.eventId)] =
             `<div class="event event-middle event-${event.eventTypeId}"></div>`;
         }
@@ -66,7 +66,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
       }
   
       if (event.endDate === null) {
-        if (isSameDay(new Date(parseInt(event.startDate)), date)) {
+        if (isSameDay(new Date(Number.parseInt(event.startDate)), date)) {
           singleDayEvents += `<div class="col"><div class="event event-${event.eventTypeId}"></div></div>`;
         }
       }
@@ -77,11 +77,11 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
 
     // Multi day events
     for (const event of multiDayEventsArr) {
-      if (!event) {
-        multiDayEvents += '<div class="event"></div>';
+      if (event) {
+        multiDayEvents += event;
       }
       else {
-        multiDayEvents += event;
+        multiDayEvents += '<div class="event"></div>';
       }
     }
   }
@@ -162,7 +162,7 @@ async function getNewCalendarWeekContent(): Promise<string> {
       const weekDates = (await monthDates())[week];
       newCalendarWeekContent += '<div class="d-flex position-relative mb-4">';
       for (let i = 0; i < 7; i++) {
-        newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], parseInt(week), multiEventPositions);
+        newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], Number.parseInt(week), multiEventPositions);
       }
       newCalendarWeekContent += "</div>";
     }
@@ -329,8 +329,8 @@ async function updateHomeworkList(): Promise<void> {
     // Get the information for the homework
     const subject = currentSubjectData.find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
-    const assignmentDate = new Date(parseInt(homework.assignmentDate));
-    const submissionDate = new Date(parseInt(homework.submissionDate));
+    const assignmentDate = new Date(Number.parseInt(homework.assignmentDate));
+    const submissionDate = new Date(Number.parseInt(homework.submissionDate));
     const checked = await getHomeworkCheckStatus(homeworkId);
 
     if (await filter()) continue;
@@ -418,8 +418,8 @@ async function updateEventList(): Promise<void> {
       return false;
     }
 
-    const msStartDate = parseInt(event.startDate);
-    const msEndDate = parseInt(event.endDate ?? event.startDate);
+    const msStartDate = Number.parseInt(event.startDate);
+    const msEndDate = Number.parseInt(event.endDate ?? event.startDate);
 
     if (await filter()) continue;
 
@@ -432,7 +432,7 @@ async function updateEventList(): Promise<void> {
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
       const endDate = msToDisplayDate(event.endDate);
-      if (isSameDay(new Date(parseInt(event.startDate)), new Date(parseInt(event.endDate)))) {
+      if (isSameDay(new Date(Number.parseInt(event.startDate)), new Date(Number.parseInt(event.endDate)))) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
       else {
@@ -594,7 +594,7 @@ async function updateTimetable(): Promise<void> {
 
   const timetableData = await loadTimetableData(selectedDate);
 
-  timetableData.forEach(multiLesson => {
+  for (const multiLesson of timetableData) {
     if (! multiLesson.lessons.some(l => l.subjectId !== -1 || l.substitution !== undefined || l.events !== undefined)) {
       return;
     }
@@ -765,7 +765,7 @@ async function updateTimetable(): Promise<void> {
       });
       $(this).trigger("addedToDom");
     });
-  });
+  };
 
   if ($("#timetable-less").html() === "") {
     $("#timetable-less, #timetable-more").html("<div class=\"text-secondary text-center\">Kein Stundenplan für diesen Tag.</div>");
@@ -797,6 +797,26 @@ function updateShownTimetable(): void {
 }
 
 async function updateTimetableFeedback(): Promise<void> {
+  function getCurrentLessons(): void {
+    for (const l of timetableData) {
+      const isReal = l.lessons.some(l => (l.subjectId !== -1 || l.substitution) && l.substitution?.type !== "Entfall");
+      if (isReal) realLessonsLeft = true;
+      if (l.startTime < now && isReal) hasBegun = true;
+      
+      if (foundNextLesson) return;
+      if (l.endTime > now) {
+        if (l.startTime < now) {
+          currentLesson = l;
+          realLessonsLeft = false;
+          isCurrentLessonReal = isReal;
+        }
+        else {
+          nextLesson = l;
+          foundNextLesson = true;
+        }
+      }
+    };
+  }
   function lessonToText(l: TimetableData, showMoreInfo: boolean): string {
     return (
       (l.lessons[0].events
@@ -852,24 +872,7 @@ async function updateTimetableFeedback(): Promise<void> {
   let realLessonsLeft = false;
   let isCurrentLessonReal = false;
 
-  timetableData.forEach(l => {
-    const isReal = l.lessons.some(l => (l.subjectId !== -1 || l.substitution) && l.substitution?.type !== "Entfall");
-    if (isReal) realLessonsLeft = true;
-    if (l.startTime < now && isReal) hasBegun = true;
-    
-    if (foundNextLesson) return;
-    if (l.endTime > now) {
-      if (l.startTime < now) {
-        currentLesson = l;
-        realLessonsLeft = false;
-        isCurrentLessonReal = isReal;
-      }
-      else {
-        nextLesson = l;
-        foundNextLesson = true;
-      }
-    }
-  });
+  getCurrentLessons();
   
   if (!realLessonsLeft) {
     if (isCurrentLessonReal) {
@@ -1152,8 +1155,8 @@ export async function init(): Promise<void> {
 
     $(document).on("click", ".days-overview-day", async function () {
       selectedNewDay = true;
-      const day = parseInt($(this).data("day"));
-      const newSelectedDate = (await monthDates())[parseInt($(this).data("week"))][day === 0 ? 6 : day - 1];
+      const day = Number.parseInt($(this).data("day"));
+      const newSelectedDate = (await monthDates())[Number.parseInt($(this).data("week"))][day === 0 ? 6 : day - 1];
       if (isSameDay(selectedDate, newSelectedDate)) {
         return;
       }
@@ -1263,7 +1266,7 @@ export async function init(): Promise<void> {
   });
 }
 
-export const reloadAllFn = async () => {
+export const reloadAllFn = async (): Promise<void> => {
   eventData.reload();
   joinedTeamsData.reload();
   homeworkData.reload();

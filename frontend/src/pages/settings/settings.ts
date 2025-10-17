@@ -11,10 +11,19 @@ import {
   csrfToken,
   classMemberData,
   getTimeLeftString,
-  escapeHTML
+  escapeHTML,
+  getInputValue
 } from "../../global/global.js";
-import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData } from "../../global/types";
+import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+
+function checkUsername(username: string): boolean {
+  return /^\w{4,20}$/.test(username);
+}
+
+function checkSecurePassword(password: string): boolean {
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
+}
 
 async function updateColorTheme(): Promise<void> {
   if ($("#color-theme-dark").prop("checked")) {
@@ -26,7 +35,7 @@ async function updateColorTheme(): Promise<void> {
     localStorage.setItem("colorTheme", "light");
   }
   else {
-    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
       colorTheme("dark");
     }
     else {
@@ -37,12 +46,12 @@ async function updateColorTheme(): Promise<void> {
 
   if ((await colorTheme()) === "light") {
     $("html").css({ background: "#ffffff" });
-    document.body.setAttribute("data-bs-theme", "light");
+    document.body.dataset["bs-theme"] = "light";
     $('meta[name="theme-color"]').attr("content", "#f8f9fa");
   }
   else {
     $("html").css({ background: "#212529" });
-    document.body.setAttribute("data-bs-theme", "dark");
+    document.body.dataset["bs-theme"] = "dark";
     $('meta[name="theme-color"]').attr("content", "#2b3035");
   }
 }
@@ -102,21 +111,19 @@ async function updateClassMemberList(): Promise<void> {
     $("#class-members-cancel").show();
 
     const classMemberId = $(this).data("id");
-    const newRole = parseInt($(this).val()) as 0 | 1 | 2 | 3;
+    const newRole = Number.parseInt($(this).val()) as ClassMemberPermissionLevel;
     const oldRole = (await classMemberData()).find(classMember => classMember.accountId === classMemberId)?.permissionLevel ?? 0;
-    if (newRole !== oldRole) {
-      if ($(`.class-member-kicked[data-id="${classMemberId}"]`).hasClass("d-none")) {
-        $(`.class-member-changed[data-id="${classMemberId}"]`).removeClass("d-none");
-        $(`.class-member-changed-role[data-id="${classMemberId}"]`)
-          .removeClass("d-none")
-          .find("b")
-          .removeClass("d-none")
-          .text(roles[newRole]);
-      }
-    }
-    else {
+    if (newRole === oldRole) {
       $(`.class-member-changed[data-id="${classMemberId}"]`).addClass("d-none");
       $(`.class-member-changed-role[data-id="${classMemberId}"]`).addClass("d-none");
+    }
+    else if ($(`.class-member-kicked[data-id="${classMemberId}"]`).hasClass("d-none")) {
+      $(`.class-member-changed[data-id="${classMemberId}"]`).removeClass("d-none");
+      $(`.class-member-changed-role[data-id="${classMemberId}"]`)
+        .removeClass("d-none")
+        .find("b")
+        .removeClass("d-none")
+        .text(roles[newRole]);
     }
   });
 
@@ -207,18 +214,16 @@ async function updateTeamLists(): Promise<void> {
     if (teamId !== "") {
       const newName = $(this).val();
       const oldName = (await teamsData()).find(team => team.teamId === teamId)?.name;
-      if (newName !== oldName) {
-        if ($(`.team-deleted[data-id="${teamId}"]`).hasClass("d-none")) {
-          $(`.team-renamed[data-id="${teamId}"]`)
-            .removeClass("d-none")
-            .find("*")
-            .removeClass("d-none")
-            .find("b")
-            .text(newName);
-        }
-      }
-      else {
+      if (newName === oldName) {
         $(`.team-renamed[data-id="${teamId}"]`).addClass("d-none").find("*").addClass("d-none");
+      }
+      else if ($(`.team-deleted[data-id="${teamId}"]`).hasClass("d-none")) {
+        $(`.team-renamed[data-id="${teamId}"]`)
+          .removeClass("d-none")
+          .find("*")
+          .removeClass("d-none")
+          .find("b")
+          .text(newName);
       }
     }
   });
@@ -321,18 +326,16 @@ async function updateEventTypeList(): Promise<void> {
     if (eventTypeId !== "") {
       const newName = $(this).val();
       const oldName = (await eventTypeData()).find(eventType => eventType.eventTypeId === eventTypeId)?.name;
-      if (newName !== oldName) {
-        if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
-          $(`.event-type-renamed[data-id="${eventTypeId}"]`)
-            .removeClass("d-none")
-            .find("*")
-            .removeClass("d-none")
-            .find("b")
-            .text(newName);
-        }
-      }
-      else {
+      if (newName === oldName) {
         $(`.event-type-renamed[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
+      }
+      else if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
+        $(`.event-type-renamed[data-id="${eventTypeId}"]`)
+          .removeClass("d-none")
+          .find("*")
+          .removeClass("d-none")
+          .find("b")
+          .text(newName);
       }
     }
   });
@@ -353,16 +356,14 @@ async function updateEventTypeList(): Promise<void> {
     if (eventTypeId !== "") {
       const newColor = $(this).val();
       const oldColor = (await eventTypeData()).find(eventType => eventType.eventTypeId === eventTypeId)?.color ?? "";
-      if (newColor !== oldColor) {
-        if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
-          const $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`);
-          $recoloredElement.removeClass("d-none").find("*").removeClass("d-none");
-          $recoloredElement.find(".color-display").first().css("background-color", oldColor);
-          $recoloredElement.find(".color-display").last().css("background-color", newColor);
-        }
-      }
-      else {
+      if (newColor === oldColor) {
         $(`.event-type-recolored[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
+      }
+      else if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
+        const $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`);
+        $recoloredElement.removeClass("d-none").find("*").removeClass("d-none");
+        $recoloredElement.find(".color-display").first().css("background-color", oldColor);
+        $recoloredElement.find(".color-display").last().css("background-color", newColor);
       }
     }
   });
@@ -532,17 +533,15 @@ async function updateSubjectList(): Promise<void> {
     if (subjectId !== "") {
       const newName = $(this).val();
       const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameLong;
-      if (newName !== oldName) {
-        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-          $(`.subject-changed-name-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
-        }
-      }
-      else {
+      if (newName === oldName) {
         $(`.subject-changed-name-long[data-id="${subjectId}"]`).addClass("d-none");
         if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
+      }
+      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
+        $(`.subject-changed-name-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
       }
     }
   });
@@ -563,17 +562,15 @@ async function updateSubjectList(): Promise<void> {
     if (subjectId !== "") {
       const newName = $(this).val();
       const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameShort;
-      if (newName !== oldName) {
-        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-          $(`.subject-changed-name-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
-        }
-      }
-      else {
+      if (newName === oldName) {
         $(`.subject-changed-name-short[data-id="${subjectId}"]`).addClass("d-none");
         if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
+      }
+      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
+        $(`.subject-changed-name-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
       }
     }
   });
@@ -586,20 +583,18 @@ async function updateSubjectList(): Promise<void> {
     if (subjectId !== "") {
       const newGender = $(this).val() as "d" | "w" | "m";
       const oldGender = (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherGender;
-      if (newGender !== oldGender) {
-        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-          $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`)
-            .removeClass("d-none")
-            .find("b")
-            .text({ d: "Keine Anrede", w: "Frau", m: "Herr" }[newGender]);
-        }
-      }
-      else {
+      if (newGender === oldGender) {
         $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`).addClass("d-none");
         if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
+      }
+      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
+        $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`)
+          .removeClass("d-none")
+          .find("b")
+          .text({ d: "Keine Anrede", w: "Frau", m: "Herr" }[newGender]);
       }
     }
   });
@@ -616,17 +611,15 @@ async function updateSubjectList(): Promise<void> {
     if (subjectId !== "") {
       const newName = $(this).val();
       const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameLong;
-      if (newName !== oldName) {
-        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-          $(`.subject-changed-teacher-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
-        }
-      }
-      else {
+      if (newName === oldName) {
         $(`.subject-changed-teacher-long[data-id="${subjectId}"]`).addClass("d-none");
         if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
+      }
+      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
+        $(`.subject-changed-teacher-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
       }
     }
   });
@@ -647,17 +640,15 @@ async function updateSubjectList(): Promise<void> {
     if (subjectId !== "") {
       const newName = $(this).val();
       const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameShort;
-      if (newName !== oldName) {
-        if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-          $(`.subject-changed-teacher-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
-        }
-      }
-      else {
+      if (newName === oldName) {
         $(`.subject-changed-teacher-short[data-id="${subjectId}"]`).addClass("d-none");
         if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
           $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
         }
+      }
+      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
+        $(`.subject-changed-teacher-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
       }
     }
   });
@@ -673,20 +664,18 @@ async function updateSubjectList(): Promise<void> {
         const oldName =
             (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameSubstitution ??
             "keine Angabe";
-        if (newName !== oldName) {
-          if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-            $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-            $(`.subject-changed-name-substitution[data-id="${subjectId}"]`)
-              .removeClass("d-none")
-              .find("b")
-              .text(newName);
-          }
-        }
-        else {
+        if (newName === oldName) {
           $(`.subject-changed-name-substitution[data-id="${subjectId}"]`).addClass("d-none");
           if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
             $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
           }
+        }
+        else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
+          $(`.subject-changed-name-substitution[data-id="${subjectId}"]`)
+            .removeClass("d-none")
+            .find("b")
+            .text(newName);
         }
       }
     });
@@ -701,20 +690,18 @@ async function updateSubjectList(): Promise<void> {
         const oldName =
             (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameSubstitution ??
             "keine Angabe";
-        if (newName !== oldName) {
-          if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-            $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-            $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`)
-              .removeClass("d-none")
-              .find("b")
-              .text(newName);
-          }
-        }
-        else {
+        if (newName === oldName) {
           $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`).addClass("d-none");
           if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
             $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
           }
+        }
+        else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
+          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
+          $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`)
+            .removeClass("d-none")
+            .find("b")
+            .text(newName);
         }
       }
     });
@@ -752,15 +739,15 @@ async function updateTimetable(): Promise<void> {
   const newTimetableContent = $("<div></div>");
 
   let subjectOptions = "";
-  (await subjectData()).forEach(subject => {
+  for (const subject of (await subjectData())) {
     subjectOptions += `<option value="${subject.subjectId}">${escapeHTML(subject.subjectNameLong)}</option>`;
-  });
+  }
 
   let teamOptions = "";
 
-  (await teamsData()).forEach(team => {
+  for (const team of (await teamsData())) {
     teamOptions += `<option value="${team.teamId}">${escapeHTML(team.name)}</option>`;
-  });
+  };
 
   for (let dayId = 0; dayId < 5; dayId++) {
     const dayTemplate = $(`
@@ -910,10 +897,10 @@ async function updateTimetable(): Promise<void> {
 
     const lessonList = $(this).parent().find(".timetable-lesson-list");
     const previousLesson = lessonList.find(".timetable-lesson").last();
-    let lessonNumber = parseInt(previousLesson.find(".timetable-lesson-number").val()?.toString() ?? "0") + 1;
+    let lessonNumber = Number.parseInt(previousLesson.find(".timetable-lesson-number").val()?.toString() ?? "0") + 1;
     lessonTemplate.find(".timetable-lesson-number").val(lessonNumber);
     lessonTemplate.find(".timetable-lesson-number").on("change", () => {
-      lessonNumber = parseInt(lessonTemplate.find(".timetable-lesson-number").val()?.toString() ?? "1");
+      lessonNumber = Number.parseInt(lessonTemplate.find(".timetable-lesson-number").val()?.toString() ?? "1");
       updateTimeInputs($(this));
     });
     lessonTemplate.find(".timetable-start-time").val(previousLesson.find(".timetable-end-time").val() ?? "--:--");
@@ -975,7 +962,7 @@ async function updateOnUserChange(): Promise<void> {
 
         isTestClass = res.isTestClass;
         $("#test-class-alert").toggleClass("d-none", !isTestClass);
-        testClassTimeCreated = parseInt(res.classCreated);
+        testClassTimeCreated = Number.parseInt(res.classCreated);
         updateTestClassTimeLeft();
       })
       .fail(() => {
@@ -1108,7 +1095,7 @@ export async function init(): Promise<void> {
     });
 
     const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
-    (async () => document.body.setAttribute("data-bs-theme", await colorTheme()))();
+    (async () => $("body").attr("data-bs-theme", await colorTheme()))();
     
     $("#color-theme-auto").prop("checked", colorThemeSetting === "auto");
     $("#color-theme-dark").prop("checked", colorThemeSetting === "dark");
@@ -1120,8 +1107,8 @@ export async function init(): Promise<void> {
       });
     });
 
-    window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
+    globalThis.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
+    globalThis.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
 
     // ACCOUNT SETTINGS
 
@@ -1179,10 +1166,6 @@ export async function init(): Promise<void> {
     $("#change-username-password").on("input", () => {
       $("#change-username-invalid-password").addClass("d-none");
     });
-
-    function checkUsername(username: string): boolean {
-      return /^\w{4,20}$/.test(username);
-    }
 
     $("#change-username-new-username").on("input", () => {
       $("#change-username-invalid-username").addClass("d-none");
@@ -1292,10 +1275,6 @@ export async function init(): Promise<void> {
         $("#change-password-not-matching-passwords").addClass("d-none").removeClass("d-flex");
       }
     });
-
-    function checkSecurePassword(password: string): boolean {
-      return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
-    }
 
     $("#change-password-new").on("change", () => {
       if (! checkSecurePassword($("#change-password-new").val()?.toString() ?? "")) {
@@ -1445,7 +1424,7 @@ export async function init(): Promise<void> {
       const newJoinedTeamsData: JoinedTeamsData = [];
       $("#team-selection-list input").each(function () {
         if ($(this).prop("checked")) {
-          newJoinedTeamsData.push(parseInt($(this).data("id")));
+          newJoinedTeamsData.push(Number.parseInt($(this).data("id")));
         }
       });
 
@@ -1812,7 +1791,7 @@ export async function init(): Promise<void> {
         url: "/class/set_logged_out_users_role",
         type: "POST",
         contentType: "application/json",
-        data: JSON.stringify({role: parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0")}),
+        data: JSON.stringify({role: Number.parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0")}),
         headers: {
           "X-CSRF-Token": await csrfToken()
         },
@@ -1862,7 +1841,7 @@ export async function init(): Promise<void> {
       $("#class-members-cancel").hide();
 
       const classMembersKickData: { accountId: number }[] = [];
-      const classMembersPermissionsData: {accountId: number, permissionLevel: 0 | 1 | 2 | 3 }[] = [];
+      const classMembersPermissionsData: {accountId: number, permissionLevel: ClassMemberPermissionLevel }[] = [];
 
       $(".class-member-role-input").each(function () {
         if ($(this).closest(".card").find(".class-member-kick.btn-success").length > 0) {
@@ -1873,7 +1852,7 @@ export async function init(): Promise<void> {
         else {
           classMembersPermissionsData.push({
             accountId: $(this).data("id"),
-            permissionLevel: parseInt($(this).val()?.toString() ?? "") as 0 | 1 | 2 | 3
+            permissionLevel: Number.parseInt($(this).val()?.toString() ?? "") as ClassMemberPermissionLevel
           });
         }
       });
@@ -2504,15 +2483,12 @@ export async function init(): Promise<void> {
         $(this)
           .find(".timetable-lesson")
           .each(function () {
-            function getInputValue(element: JQuery<HTMLElement>, fallback: string): string {
-              return element.val()?.toString() ?? fallback;
-            }
             newTimetableData.push({
               lessonId: -1,
-              lessonNumber: parseInt(getInputValue($(this).find(".timetable-lesson-number"), "1")),
+              lessonNumber: Number.parseInt(getInputValue($(this).find(".timetable-lesson-number"), "1")),
               weekDay: weekDay as 0 | 1 | 2 | 3 | 4,
-              teamId: parseInt(getInputValue($(this).find(".timetable-team-select"), "-1")),
-              subjectId: parseInt(getInputValue($(this).find(".timetable-subject-select"), "-1")),
+              teamId: Number.parseInt(getInputValue($(this).find(".timetable-team-select"), "-1")),
+              subjectId: Number.parseInt(getInputValue($(this).find(".timetable-subject-select"), "-1")),
               room: getInputValue($(this).find(".timetable-room"), ""),
               startTime: timeToMs(getInputValue($(this).find(".timetable-start-time"), "0:0")) + "",
               endTime: timeToMs(getInputValue($(this).find(".timetable-end-time"), "0:0")) + ""
@@ -2569,7 +2545,7 @@ export async function init(): Promise<void> {
   });
 }
 
-export const reloadAllFn = async () => {
+export const reloadAllFn = async (): Promise<void> => {
   if (user.classJoined) {
     classMemberData.reload();
     teamsData.reload();

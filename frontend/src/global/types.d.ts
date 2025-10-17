@@ -24,10 +24,11 @@ type DataAccessor<DataType> = {
 //  ╰───────────╯
 
 // Class Members
+type ClassMemberPermissionLevel = 0 | 1 | 2 | 3
 type ClassMemberData = {
   accountId: number;
   username: string;
-  permissionLevel: 0 | 1 | 2 | 3 | null;
+  permissionLevel: ClassMemberPermissionLevel | null;
 }[];
 
 // Events

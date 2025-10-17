@@ -216,6 +216,13 @@ body {
   word-wrap: break-word
 }
 
+@include media-breakpoint-down(sm) {
+  .offcanvas.offcanvas-start {
+    width: 100%;
+    border-right: none;
+  }
+}
+
 .toast-progress-bar {
   position: relative;
   height: 0.25rem;

@@ -30,13 +30,13 @@ async function updateHomeworkList(): Promise<void> {
     );
     // Filter by min. date
     const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-    if (!isNaN(filterDateMin)) {
-      data = data.filter(h => filterDateMin <= parseInt(h.submissionDate));
+    if (! Number.isNaN(filterDateMin)) {
+      data = data.filter(h => filterDateMin <= Number.parseInt(h.submissionDate));
     }
     // Filter by max. date
     const filterDateMax = Date.parse($("#filter-date-until").val()?.toString() ?? "");
-    if (!isNaN(filterDateMax)) {
-      data = data.filter(h => filterDateMax >= parseInt(h.assignmentDate));
+    if (! Number.isNaN(filterDateMax)) {
+      data = data.filter(h => filterDateMax >= Number.parseInt(h.assignmentDate));
     }
     // Filter by checked status
     if (! $("#filter-status-checked").prop("checked")) {
@@ -79,16 +79,19 @@ async function updateHomeworkList(): Promise<void> {
         ));
       }
     }
+    function showNextWeek(): void {
+      if (!nextWeek && Number.parseInt(homework.submissionDate) > today.getTime()) {
+        nextWeek = true;
+        newContent.append(`
+          <hr class="border-2 text-primary mb-0 mt-2">
+          <div class="form-text text-primary opacity-50 mt-0">Nächste Woche</div>
+        `);
+      }
+    }
 
     const today = new Date();
     today.setDate(today.getDate() + 7 - today.getDay());
-    if (!nextWeek && parseInt(homework.submissionDate) > today.getTime()) {
-      nextWeek = true;
-      newContent.append(`
-        <hr class="border-2 text-primary mb-0 mt-2">
-        <div class="form-text text-primary opacity-50 mt-0">Nächste Woche</div>
-      `);
-    }
+    showNextWeek();
 
     const homeworkId = homework.homeworkId;
 
@@ -155,7 +158,7 @@ async function updateHomeworkFeedback(): Promise<void> {
 
   const todoHomeworkData = (await homeworkData()).filter(h =>
     (currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1)
-    && (Date.now() <= parseInt(h.submissionDate) || isSameDay(new Date(), new Date(parseInt(h.submissionDate))))
+    && (Date.now() <= Number.parseInt(h.submissionDate) || isSameDay(new Date(), new Date(Number.parseInt(h.submissionDate))))
   );
 
   let todo = 0;
@@ -208,7 +211,7 @@ async function chooseRandomHomework(excludeId?: number): Promise<void> {
   const currentSubjectData = await subjectData();
 
   const currentHomeworkData = (await homeworkData()).filter(h =>
-    (currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1) && Date.now() <= parseInt(h.submissionDate) && h.homeworkId !== excludeId
+    (currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1) && Date.now() <= Number.parseInt(h.submissionDate) && h.homeworkId !== excludeId
   );
 
   const todoHomework: HomeworkData = [];
@@ -320,7 +323,7 @@ async function updateSubjectList(): Promise<void> {
   const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
   filterData.subject ??= {};
 
-  await Promise.all((await subjectData()).map(subject => {
+  for (const subject of await subjectData()) {
     // Get the subject data
     const subjectId = subject.subjectId;
     const subjectName = subject.subjectNameLong;
@@ -343,7 +346,7 @@ async function updateSubjectList(): Promise<void> {
     const templateFormSelect = `<option value="${subjectId}">${escapeHTML(subjectName)}</option>`;
     $("#add-homework-subject").append(templateFormSelect);
     $("#edit-homework-subject").append(templateFormSelect);
-  }));
+  };
 
   $("#add-homework-subject").append('<option value="-1">Sonstiges</option>');
   $("#edit-homework-subject").append('<option value="-1">Sonstiges</option>');
@@ -375,7 +378,7 @@ async function updateTeamList(): Promise<void> {
   $("#edit-homework-team").empty();
   $("#edit-homework-team").append('<option value="-1" selected>Alle</option>');
 
-  (await teamsData()).forEach(team => {
+  for (const team of (await teamsData())) {
     // Get the team data
     const teamName = team.name;
 
@@ -383,7 +386,7 @@ async function updateTeamList(): Promise<void> {
     const templateFormSelect = `<option value="${team.teamId}">${escapeHTML(teamName)}</option>`;
     $("#add-homework-team").append(templateFormSelect);
     $("#edit-homework-team").append(templateFormSelect);
-  });
+  };
 };
 
 async function addHomework(): Promise<void> {
@@ -399,7 +402,7 @@ async function addHomework(): Promise<void> {
   const currentLesson = currentLessonData.find(lesson => // Find the current lesson
     (lesson.teamId === -1 || currentJoinedTeamsData.includes(lesson.teamId)) // The user is in the team
     && lesson.weekDay === now.getDay() - 1 // The lesson is today
-    && parseInt(lesson.startTime) < timeNow && parseInt(lesson.endTime) > timeNow // The lesson is now
+    && Number.parseInt(lesson.startTime) < timeNow && Number.parseInt(lesson.endTime) > timeNow // The lesson is now
   );
   if (currentLesson) {
     $("#add-homework-subject").val(currentLesson.subjectId).addClass("autocomplete");
@@ -418,12 +421,12 @@ async function addHomework(): Promise<void> {
     $("#add-homework-date-submission").val(msToInputDate(nextLessonDate.getTime())).addClass("autocomplete")
       .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
     
-    if (currentLesson.teamId !== -1) {
-      $("#add-homework-team").val(currentLesson.teamId).addClass("autocomplete")
-        .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
+    if (currentLesson.teamId === -1) {
+      $("#add-homework-team").val("-1").removeClass("autocomplete");
     }
     else {
-      $("#add-homework-team").val("-1").removeClass("autocomplete");
+      $("#add-homework-team").val(currentLesson.teamId).addClass("autocomplete")
+        .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
     }
   }
   else {
@@ -858,7 +861,7 @@ export async function init(): Promise<void> {
         }
 
         // The next lessons of the new selected subject
-        const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === parseInt(selectedSubjectId!));
+        const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === Number.parseInt(selectedSubjectId!));
 
         const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
         const minDiff = nextLessonsWeekdays.reduce((previous, current) => {
@@ -1025,7 +1028,7 @@ export async function init(): Promise<void> {
   });
 }
 
-export const reloadAllFn = async () => {
+export const reloadAllFn = async (): Promise<void> => {
   homeworkCheckedData.reload();
   homeworkData.reload();
   joinedTeamsData.reload();

@@ -29,10 +29,10 @@ export function richTextToHtml(
       parsedText.find("span[data-link-url]").each(function () {
         const url = $(this)
           .attr("data-link-url")
-          ?.replaceAll("\\«", "<")
-          .replaceAll("\\»", ">")
-          .replaceAll("\\;", ";")
-          .replaceAll("\\\\", "\\");
+          ?.replaceAll(String.raw`\«`, "<")
+          .replaceAll(String.raw`\»`, ">")
+          .replaceAll(String.raw`\;`, ";")
+          .replaceAll(String.raw`\\`, "\\");
         if (url && url !== "") {
           const sanitizedUrl = sanitizeHtml(url);
           const neighbourLinkElements = $(this)
@@ -50,7 +50,7 @@ export function richTextToHtml(
               $("#rich-textarea-unsafe-link-confirm")
                 .off("click")
                 .on("click", () => {
-                  window.open(sanitizedUrl, "_blank", "noopener,noreferrer");
+                  globalThis.open(sanitizedUrl, "_blank", "noopener,noreferrer");
                 });
             })
             .on("mouseenter", function () {
@@ -110,11 +110,11 @@ export function richTextToHtml(
         span.css("font-size", fsMatch.args[0] + "px");
       }
       if (activeTags.some(tag => tag.tagName === "sub")) {
-        span.css("font-size", parseInt(fsMatch?.args[0] ?? "16") * 0.83);
+        span.css("font-size", Number.parseInt(fsMatch?.args[0] ?? "16") * 0.83);
         span.addClass("sub");
       }
       if (activeTags.some(tag => tag.tagName === "sup")) {
-        span.css("font-size", parseInt(fsMatch?.args[0] ?? "16") * 0.83);
+        span.css("font-size", Number.parseInt(fsMatch?.args[0] ?? "16") * 0.83);
         span.addClass("sup");
       }
     }
@@ -136,7 +136,7 @@ export function richTextToHtml(
     if (aMatch) {
       span.attr(
         "data-link-url",
-        aMatch.args[0].replaceAll("\\", "\\\\").replaceAll(";", "\\;").replaceAll("<", "\\«").replaceAll(">", "\\»")
+        aMatch.args[0].replaceAll("\\", "\\\\").replaceAll(";", String.raw`\;`).replaceAll("<", String.raw`\«`).replaceAll(">", String.raw`\»`)
       );
     }
     parsedText.append(span[0].outerHTML);
@@ -231,8 +231,8 @@ export function richTextToPlainText(val: string): string {
   while (val.includes("<") || val.includes(">")) {
     val = val.replace(/<(.*?)>(.*?)<\/\1>/g, "$2");
   }
-  val = val.replaceAll("\\«", "<");
-  val = val.replaceAll("\\»", ">");
+  val = val.replaceAll(String.raw`\«`, "<");
+  val = val.replaceAll(String.raw`\»`, ">");
   val = val.replaceAll("\\\\", "\\");
   return escapeHTML(val);
 }
@@ -298,10 +298,10 @@ function replaceRichTextareas(): void {
 
         handleControlChars(this);
         
-        let singleValue = $(this).text().replaceAll("\\", "\\\\").replaceAll("<", "\\«").replaceAll(">", "\\»");
+        let singleValue = $(this).text().replaceAll("\\", "\\\\").replaceAll("<", String.raw`\«`).replaceAll(">", String.raw`\»`);
 
         handleSimpleStyleToggles(this);
-        const fontSize = parseInt($(this).attr("data-font-size") ?? "16");
+        const fontSize = Number.parseInt($(this).attr("data-font-size") ?? "16");
         if (fontSize !== 16) {
           singleValue = `<fs;${fontSize}>${singleValue}</fs;${fontSize}>`;
         }
@@ -332,7 +332,7 @@ function replaceRichTextareas(): void {
     }
     function forEachSelectedSpan(func: (span: JQuery<HTMLElement>) => void): void {
       const ranges = extractSelectedRanges();
-      window.getSelection()?.removeAllRanges();
+      globalThis.getSelection()?.removeAllRanges();
       for (const range of ranges) {
         if (textarea[0].contains(range.startContainer) && textarea[0].contains(range.endContainer)) {
           const selectedSpans = textarea.find("span, br").slice(range.startOffset, range.endOffset);
@@ -342,7 +342,7 @@ function replaceRichTextareas(): void {
 
           updateInput();
         }
-        window.getSelection()?.addRange(range);
+        globalThis.getSelection()?.addRange(range);
       }
     }
 
@@ -431,11 +431,11 @@ function replaceRichTextareas(): void {
         }
         if (currentStyles.sub) {
           node.addClass("sub");
-          node.css("font-size", parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
+          node.css("font-size", Number.parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
         }
         if (currentStyles.sup) {
           node.addClass("sup");
-          node.css("font-size", parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
+          node.css("font-size", Number.parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
         }
         if (currentStyles.color.enabled && currentStyles.color.value !== "auto") {
           node.attr("data-color", currentStyles.color.value);
@@ -488,24 +488,24 @@ function replaceRichTextareas(): void {
 
         range.setStartAfter(newNode.last()[0]);
         range.setEndAfter(newNode.last()[0]);
-        window.getSelection()?.removeAllRanges();
-        window.getSelection()?.addRange(range);
+        globalThis.getSelection()?.removeAllRanges();
+        globalThis.getSelection()?.addRange(range);
       }
       function deleteSelectedRanges(): void {
         for (const range of ranges) {
           let toRemove: JQuery<HTMLElement>;
-          if (range.startOffset !== range.endOffset) {
-            toRemove = textarea.find("span, br").slice(range.startOffset, range.endOffset);
+          if (range.startOffset === range.endOffset) {
+            continue;
           }
           else {
-            continue;
+            toRemove = textarea.find("span, br").slice(range.startOffset, range.endOffset);
           }
           const additional = toRemove.filter("span.newline").prev();
           toRemove = toRemove.add(additional);
           toRemove.remove();
 
-          window.getSelection()?.removeAllRanges();
-          window.getSelection()?.addRange(range);
+          globalThis.getSelection()?.removeAllRanges();
+          globalThis.getSelection()?.addRange(range);
         }
       }
       function deleteAtRange(): void {
@@ -531,9 +531,9 @@ function replaceRichTextareas(): void {
           }
         }
 
-        window.getSelection()?.removeAllRanges();
+        globalThis.getSelection()?.removeAllRanges();
         for (const range of ranges) {
-          window.getSelection()?.addRange(range);
+          globalThis.getSelection()?.addRange(range);
         }
       }
       async function pasteAtRange(): Promise<void> {
@@ -549,7 +549,7 @@ function replaceRichTextareas(): void {
                 textNodes.push(node);
               }
               else {
-                node.childNodes.forEach(recurse);
+                for (const cn of node.childNodes) recurse(cn);
               }
             }
         
@@ -626,8 +626,8 @@ function replaceRichTextareas(): void {
               if (! parentElement) return;
 
               const computedStyle = getComputedStyle(parentElement);
-              const spans = $(node.textContent?.split("").map(c => c !== "" ? `<span>${c}</span>` : "").join("") ?? "");
-              if (parseInt(computedStyle.fontWeight) > 500) {
+              const spans = $(node.textContent?.split("").map(c => c === "" ? "" : `<span>${c}</span>`).join("") ?? "");
+              if (Number.parseInt(computedStyle.fontWeight) > 500) {
                 spans.css("font-weight", "700");
               }
               // Get the underline style. As it isn't inehrited normally, you need to iterate over the parents
@@ -637,21 +637,26 @@ function replaceRichTextareas(): void {
               if (computedStyle.fontStyle === "italic") {
                 spans.css("font-style", "italic");
               }
-              let fontSize = parseInt(computedStyle.fontSize);
+              let fontSize = Number.parseInt(computedStyle.fontSize);
               spans.css("font-size", Math.round(fontSize) + "px");
               applySubAndSup(parentElement);
               spans.attr("data-font-size", fontSize);
               let color = computedStyle.color;
               if (! ["rgb(33, 37, 41)", "rgb(222, 226, 230)"].includes(color)) {
                 color = color.substring(4, color.length - 1);
-                const colors = color.split(", ").map(v => parseInt(v));
+                const colors = color.split(", ").map(v => Number.parseInt(v));
                 const hex = rgbToHex({ red: colors[0], green: colors[1], blue: colors[2] });
                 spans.attr("data-color", hex);
                 spans.css("color", hex);
               }
               const link = isLink(parentElement);
               if (link) {
-                spans.attr( "data-link-url", link.replaceAll("\\", "\\\\").replaceAll(";", "\\;").replaceAll("<", "\\«").replaceAll(">", "\\»") );
+                spans.attr("data-link-url",
+                  link.replaceAll("\\", "\\\\")
+                    .replaceAll(";", String.raw`\;`)
+                    .replaceAll("<", String.raw`\«`)
+                    .replaceAll(">", String.raw`\»`)
+                );
               }
               result.append(spans);
             }
@@ -691,7 +696,7 @@ function replaceRichTextareas(): void {
             insertAtRange(await extractStyledTextFromBlob(html));
           }
           else if (plain) {
-            insertAtRange((await plain.text()).split("").map(c => c !== "" ? `<span>${c}</span>` : "").join("") ?? "");
+            insertAtRange((await plain.text()).split("").map(c => c === "" ? "" : `<span>${c}</span>`).join("") ?? "");
           }
           else {
             $("#rich-textarea-pasting-error").toast("show");
@@ -788,11 +793,11 @@ function replaceRichTextareas(): void {
 
     richTextarea.find(".rich-textarea-font-size-dropdown input").on("input", function () {
       richTextarea.find(".rich-textarea-font-size span").text(`(${$(this).val()})`);
-      currentStyles.fontSize.value = parseInt($(this).val()?.toString() ?? "16");
+      currentStyles.fontSize.value = Number.parseInt($(this).val()?.toString() ?? "16");
     });
 
     richTextarea.find(".rich-textarea-font-size").on("click", function () {
-      const newFontSize = parseInt(
+      const newFontSize = Number.parseInt(
         richTextarea.find(".rich-textarea-font-size-dropdown input").val()?.toString() ?? "16"
       );
       if (!newFontSize) return;
@@ -800,7 +805,7 @@ function replaceRichTextareas(): void {
       currentStyles.fontSize.value = newFontSize;
       $(this).toggleClass("enabled");
       forEachSelectedSpan(span => {
-        if (parseInt(span.attr("data-font-size") ?? "16") === newFontSize) {
+        if (Number.parseInt(span.attr("data-font-size") ?? "16") === newFontSize) {
           span.attr("data-font-size", 16);
           if (span.hasClass("sub") || span.hasClass("sup")) {
             span.css("font-size", 16 * 0.83);
@@ -835,7 +840,7 @@ function replaceRichTextareas(): void {
         else {
           span.addClass("sub");
           span.removeClass("sup");
-          span.css("font-size", parseInt(span.attr("data-font-size") ?? "16") * 0.83 + "px");
+          span.css("font-size", Number.parseInt(span.attr("data-font-size") ?? "16") * 0.83 + "px");
         }
       });
     });
@@ -854,7 +859,7 @@ function replaceRichTextareas(): void {
         else {
           span.addClass("sup");
           span.removeClass("sub");
-          span.css("font-size", parseInt(span.attr("data-font-size") ?? "16") * 0.83 + "px");
+          span.css("font-size", Number.parseInt(span.attr("data-font-size") ?? "16") * 0.83 + "px");
         }
       });
     });
@@ -899,7 +904,7 @@ function replaceRichTextareas(): void {
 
     richTextarea.find(".rich-textarea-link").on("click", () => {
       let newUrl = richTextarea.find(".rich-textarea-link-dropdown input").val()?.toString() ?? "";
-      newUrl = newUrl.replaceAll("\\", "\\\\").replaceAll(";", "\\;").replaceAll("<", "\\«").replaceAll(">", "\\»");
+      newUrl = newUrl.replaceAll("\\", "\\\\").replaceAll(";", String.raw`\;`).replaceAll("<", String.raw`\«`).replaceAll(">", String.raw`\»`);
       forEachSelectedSpan(span => {
         if (span.attr("data-link-url") === newUrl || newUrl === "") {
           span.css("link-url", "");
@@ -960,9 +965,9 @@ function replaceRichTextareas(): void {
             .addClass("rich-textarea-link-enabled");
           richTextarea.find(".rich-textarea-link").addClass("enabled");
           const displayedUrl = commonLinkUrl
-            .replaceAll("\\«", "<")
-            .replaceAll("\\»", ">")
-            .replaceAll("\\;", ";")
+            .replaceAll(String.raw`\«`, "<")
+            .replaceAll(String.raw`\»`, ">")
+            .replaceAll(String.raw`\;`, ";")
             .replaceAll("\\\\", "\\");
           richTextarea.find(".rich-textarea-link-dropdown span").show().find("b").text(displayedUrl);
         }
@@ -975,13 +980,13 @@ function replaceRichTextareas(): void {
 
 $(() => {
   new MutationObserver(mutationsList => {
-    mutationsList.forEach(mutation => {
+    for (const mutation of mutationsList) {
       $(mutation.addedNodes).each(function () {
-        if ($(this).find(".rich-textarea")) {
+        if ($(this).find(".rich-textarea").length > 0) {
           replaceRichTextareas();
         }
       });
-    });
+    };
   }).observe(document.body, {
     childList: true,
     subtree: true

@@ -31,7 +31,7 @@ async function init(): Promise<void> {
 
   $("title").text(titleMap[s as keyof typeof titleMap] + " · TaskMinder");
 
-  if ($(`link[data-site="${s}]`).length === 0) {
+  if ($(`link[data-site="${s}"]`).length === 0) {
     $("head").append(`<link rel="stylesheet" href="/pages/${s}/${s}.css" data-site="${s}">`);
   }
   
@@ -42,6 +42,13 @@ async function init(): Promise<void> {
   await initBottombar();
   await initNavbar();
   await reloadAll();
+
+  setTimeout(() => {
+    const hash = globalThis.location.hash;
+    if (hash) {
+      document.location.href = hash;
+    }
+  }, 250);
 }
 
 function startLoadingBar(): NodeJS.Timeout {
@@ -64,16 +71,18 @@ function finishLoadingBar(interval: NodeJS.Timeout): void {
 
 export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promise<void> {
   const interval = startLoadingBar();
+  const urlPathname = (new URL(url, globalThis.location.origin)).pathname;
+  const hash = (new URL(url, globalThis.location.origin)).hash;
 
   try {
-    const cachedHtml = getCachedHtml(url);
+    const cachedHtml = getCachedHtml(urlPathname);
     let app;
     let resUrl;
     let toasts;
 
     if (cachedHtml) {
       app =  cachedHtml;
-      resUrl = url;
+      resUrl = (new URL(url, globalThis.location.origin)).pathname;
     }
     else {
       const res = await fetch(url);
@@ -82,11 +91,12 @@ export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promi
       toasts = $(doc).filter(".toast-container").children();
       resUrl = res.url;
     }
+    console.log(resUrl);
     
-    cacheHtml((new URL(resUrl, window.location.origin)).pathname, app);
+    cacheHtml((new URL(resUrl, globalThis.location.origin)).pathname, app);
 
     if (pushHistory ?? true) {
-      window.history.pushState({}, "", resUrl);
+      globalThis.history.pushState({}, "", resUrl + hash);
     }
 
     $("#app-prepend").empty().append(app);
@@ -133,6 +143,6 @@ $(document).on("click", "a[data-pjax]", async function (e) {
   replaceSitePJAX($(this).attr("href") ?? location.href);
 });
 
-window.addEventListener("popstate", async () => {
+globalThis.addEventListener("popstate", async () => {
   replaceSitePJAX(location.href, false);
 });

@@ -157,7 +157,7 @@ function checkSecurePassword(password: string): boolean {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
-export async function init() {
+export async function init(): Promise<void> {
   $("#login-register-button").toggleClass("d-none", isSite("join"));
 
   $("#nav-logout-button").on("click", async () => {
@@ -395,9 +395,8 @@ export const user = {
   },
 
   trigger(event: UserEventName, ...args: unknown[]) {
-    const callbacks = this._eventListeners[event];
-    if (callbacks) {
-      callbacks.forEach(cb => cb(...args));
+    for (const cb of this._eventListeners[event]) {
+      cb(...args);
     }
     return this;
   }

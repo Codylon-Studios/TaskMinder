@@ -57,7 +57,7 @@ export function isValidSite(site: string): boolean {
 }
 
 export function msToDisplayDate(ms: number | string): string {
-  const num = typeof ms === "string" ? parseInt(ms) : ms;
+  const num = typeof ms === "string" ? Number.parseInt(ms) : ms;
   const date = new Date(num);
 
   const day = String(date.getDate());
@@ -87,7 +87,7 @@ export function msToDisplayDate(ms: number | string): string {
 
 export function msToInputDate(ms: number | string): string {
   if (ms === "") return "";
-  const num = typeof ms === "string" ? parseInt(ms) : ms;
+  const num = typeof ms === "string" ? Number.parseInt(ms) : ms;
   const date = new Date(num);
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -110,12 +110,12 @@ export function dateToMs(dateStr: string): number | null {
 }
 
 export function timeToMs(timeStr: string): number {
-  const time = timeStr.split(":").map(v => parseInt(v));
+  const time = timeStr.split(":").map(v => Number.parseInt(v));
   return (time[0] * 60 + time[1]) * 60 * 1000;
 }
 
 export function msToTime(ms: number | string): string {
-  const num = typeof ms === "string" ? parseInt(ms) : ms;
+  const num = typeof ms === "string" ? Number.parseInt(ms) : ms;
   return `${Math.trunc(num / 1000 / 60 / 60)
     .toString()
     .padStart(2, "0")}:${((num / 1000 / 60) % 60).toString().padStart(2, "0")}`;
@@ -194,6 +194,11 @@ export function escapeHTML(str: string): string {
   });
 }
 
+
+export function getInputValue(element: JQuery<HTMLElement>, fallback?: string): string {
+  return element.val()?.toString() ?? (fallback ?? "");
+}
+
 export function getCirclePath(cx: number, cy: number, r: number, a: number, full?: boolean): string {
   if (full) {
     return `M${cx} ${cy - r} A${r} ${r} 0 1 1 ${cx} ${cy + r} A${r} ${r} 0 1 1 ${cx} ${cy - r} Z`;
@@ -225,8 +230,8 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 
       return {
         lessonNumber: l.lessonNumber,
-        startTime: parseInt(l.startTime),
-        endTime: parseInt(l.endTime),
+        startTime: Number.parseInt(l.startTime),
+        endTime: Number.parseInt(l.endTime),
         room: l.room,
 
         subjectId: l.subjectId,
@@ -274,7 +279,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   
   currentEventData.filter(e =>
     (currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1)
-    && isSameDay(new Date(parseInt(e.startDate)), date)
+    && isSameDay(new Date(Number.parseInt(e.startDate)), date)
   ).forEach(e => {
     lessonsWithEvents = lessonsWithEvents.map(l => {
       if (matchesLessonNumber(l.lessonNumber, e.lesson ?? "")) {
@@ -343,7 +348,12 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   }
 
   const multiLessonGroups: TimetableData[] = groupedLessonData.reduce((acc: TimetableData[], curr) => {
-    const last = acc[acc.length - 1];
+    const last = acc.at(-1);
+
+    if (!last) {
+      acc.push({ startLessonNumber: curr.lessonNumber, endLessonNumber: curr.lessonNumber, ...curr });
+      return acc;
+    }
 
     if (isDoubleLesson(curr, last)) {
       last.endLessonNumber = curr.lessonNumber;
@@ -423,7 +433,7 @@ export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: 
       return false;
     }
   }
-  else if (parseInt(testForLessonNumbers) !== lessonNumber) {
+  else if (Number.parseInt(testForLessonNumbers) !== lessonNumber) {
     return false;
   }
   return true;
@@ -455,7 +465,7 @@ if (localStorage.getItem("colorTheme") === "dark") {
 else if (localStorage.getItem("colorTheme") === "light") {
   colorTheme("light");
 }
-else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+else if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
   colorTheme("dark");
 }
 else {
@@ -497,7 +507,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
     async function getNotNullValue(): Promise<DataType> {
       if (data === null) {
         await new Promise(resolve => {
-          $(window).on(eventName, resolve);
+          $(globalThis).on(eventName, resolve);
         });
         return await getNotNullValue();
       }
@@ -513,7 +523,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
   accessor.set = (value: DataType | null) => {
     data = value;
     if (value !== null) {
-      $(window).trigger(eventName);
+      $(globalThis).trigger(eventName);
     }
     accessor.trigger("update");
     return accessor;
@@ -528,13 +538,13 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
   accessor.trigger = (event: DataAccessorEventName, ...args: unknown[]) => {
     const callbacks = _eventListeners[event];
     if (callbacks) {
-      callbacks.forEach(cb => cb(...args));
+      for (const cb of callbacks) cb(...args);
     }
     return accessor;
   };
 
   accessor.reload = () => {
-    if (reloadFunction instanceof Function) {
+    if (typeof reloadFunction === "function") {
       accessor.set(null);
       reloadFunction();
     }
@@ -567,21 +577,14 @@ export const teamsData = createDataAccessor<TeamsData>("teamsData", "/teams/get_
 // CSRF token
 export const csrfToken = createDataAccessor<string>("csrfToken");
 
-const hash = window.location.hash;
-if (hash) {
-  setTimeout(() => {
-    document.location.href = hash;
-  }, 250);
-}
-
 $('[data-bs-toggle="tooltip"]').tooltip();
 new MutationObserver(mutationsList => {
-  mutationsList.forEach(mutation => {
+  for (const mutation of mutationsList) {
     $(mutation.addedNodes).each(function () {
       $(this).find('[data-bs-toggle="tooltip"]').tooltip();
       $(this).filter('[data-bs-toggle="tooltip"]').tooltip();
     });
-  });
+  };
 }).observe(document.body, {
   childList: true,
   subtree: true
@@ -668,7 +671,7 @@ $(document).on("click", "#navbar-reload-button", () => {
 });
 
 // Change btn group selections to vertical / horizontal
-const smallScreenQuery = window.matchMedia("(max-width: 575px)");
+const smallScreenQuery = globalThis.matchMedia("(max-width: 575px)");
 
 function handleSmallScreenQueryChange(): void {
   if (smallScreenQuery.matches) {
@@ -706,7 +709,7 @@ if (!isSite("settings")) {
 
   if (colorThemeSetting === "auto") {
     async function updateColorTheme(): Promise<void> {
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
         colorTheme("dark");
       }
       else {
@@ -715,18 +718,18 @@ if (!isSite("settings")) {
 
       if ((await colorTheme()) === "light") {
         document.getElementsByTagName("html")[0].style.background = "#ffffff";
-        document.body.setAttribute("data-bs-theme", "light");
+        document.body.dataset["bs-theme"] = "light";
         $('meta[name="theme-color"]').attr("content", "#f8f9fa");
       }
       else {
         document.getElementsByTagName("html")[0].style.background = "#212529";
-        document.body.setAttribute("data-bs-theme", "dark");
+        document.body.dataset["bs-theme"] = "dark";
         $('meta[name="theme-color"]').attr("content", "#2b3035");
       }
     }
 
-    window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
+    globalThis.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
+    globalThis.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
   }
 }
 

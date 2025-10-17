@@ -22,13 +22,13 @@ async function updateEventList(): Promise<void> {
     let data = await eventData();
     // Filter by min. date
     const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-    if (!isNaN(filterDateMin)) {
-      data = data.filter(e => filterDateMin <= parseInt(e.endDate ?? e.startDate));
+    if (! Number.isNaN(filterDateMin)) {
+      data = data.filter(e => filterDateMin <= Number.parseInt(e.endDate ?? e.startDate));
     }
     // Filter by max. date
     const filterDateMax = Date.parse($("#filter-date-until").val()?.toString() ?? "");
-    if (!isNaN(filterDateMax)) {
-      data = data.filter(e => filterDateMax >= parseInt(e.startDate));
+    if (! Number.isNaN(filterDateMax)) {
+      data = data.filter(e => filterDateMax >= Number.parseInt(e.startDate));
     }
     // Filter by type
     data = data.filter(e => $(`#filter-type-${e.eventTypeId}`).prop("checked"));
@@ -59,7 +59,7 @@ async function updateEventList(): Promise<void> {
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
       const endDate = msToDisplayDate(event.endDate);
-      if (isSameDay(new Date(parseInt(event.startDate)), new Date(parseInt(event.endDate)))) {
+      if (isSameDay(new Date(Number.parseInt(event.startDate)), new Date(Number.parseInt(event.endDate)))) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
       else {
@@ -140,7 +140,7 @@ async function updateEventTypeList(): Promise<void> {
   const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
   filterData.type ??= {};
 
-  currentEventTypeData.forEach(eventType => {
+  for (const eventType of currentEventTypeData) {
     // Get the event type data
     const eventTypeId = eventType.eventTypeId;
     const eventTypeName = eventType.name;
@@ -162,7 +162,7 @@ async function updateEventTypeList(): Promise<void> {
     const templateFormSelect = `<option value="${eventTypeId}">${escapeHTML(eventTypeName)}</option>`;
     $("#add-event-type").append(templateFormSelect);
     $("#edit-event-type").append(templateFormSelect);
-  });
+  };
 
   // If any type filter gets changed, update the shown events
   $(".filter-type-option").on("change", function () {
@@ -191,7 +191,7 @@ async function updateTeamList(): Promise<void> {
   $("#edit-event-team").empty();
   $("#edit-event-team").append('<option value="-1" selected>Alle</option>');
 
-  (await teamsData()).forEach(team => {
+  for (const team of (await teamsData())) {
     // Get the team data
     const teamName = team.name;
 
@@ -199,7 +199,7 @@ async function updateTeamList(): Promise<void> {
     const templateFormSelect = `<option value="${team.teamId}">${escapeHTML(teamName)}</option>`;
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
-  });
+  }
 };
 
 function addEvent(): void {
@@ -312,27 +312,27 @@ async function shareEvent(eventId: number): Promise<void> {
         && lesson.weekDay === start.getDay() - 1
       );
     }
-    const start = new Date(parseInt(event.startDate));
-    const end = new Date(parseInt(event.startDate));
+    const start = new Date(Number.parseInt(event.startDate));
+    const end = new Date(Number.parseInt(event.startDate));
     const currentJoinedTeamsData = (await joinedTeamsData());
     
     let startLesson, endLesson;
     if (event.lesson?.includes("-")) {
       event.lesson = event.lesson.replace(" ", "");
-      startLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[0]));
-      endLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[1]));
+      startLesson = await findLessonWithLessonNumber(Number.parseInt(event.lesson.split("-")[0]));
+      endLesson = await findLessonWithLessonNumber(Number.parseInt(event.lesson.split("-")[1]));
     }
     else {
-      startLesson = endLesson = await findLessonWithLessonNumber(parseInt(lesson));
+      startLesson = endLesson = await findLessonWithLessonNumber(Number.parseInt(lesson));
     }
 
     if (! (startLesson && endLesson)) {
-      throw new Error();
+      throw new Error("startLesson or endLesson is undefined");
     }
-    const lessonStart = parseInt(startLesson.startTime) / 1000 / 60;
+    const lessonStart = Number.parseInt(startLesson.startTime) / 1000 / 60;
     start.setHours(Math.trunc(lessonStart / 60), lessonStart % 60);
     
-    const lessonEnd = parseInt(endLesson.endTime) / 1000 / 60;
+    const lessonEnd = Number.parseInt(endLesson.endTime) / 1000 / 60;
     end.setHours(Math.trunc(lessonEnd / 60), lessonEnd % 60);
     timeContent = `
       DTSTART:${formatDateAndTime(start)}
@@ -340,13 +340,13 @@ async function shareEvent(eventId: number): Promise<void> {
     `;
   }
   const event = (await eventData()).find(e => e.eventId === eventId);
-  if (!event) throw new Error();
+  if (!event) throw new Error("No event with this id found");
 
   const name = event.name;
   let description = "";
   $(richTextToHtml(event.description ?? "")).each(function () {
     if ($(this).is("br")) {
-      description += "\\n";
+      description += String.raw`\n`;
     }
     else {
       description += $(this).html();
@@ -385,8 +385,8 @@ async function shareEvent(eventId: number): Promise<void> {
     if (event.endDate === null || event.endDate === "") {
       event.endDate = event.startDate;
     }
-    const start = new Date(parseInt(event.startDate));
-    const end = new Date(parseInt(event.endDate) + 1000 * 60 * 60 * 24);
+    const start = new Date(Number.parseInt(event.startDate));
+    const end = new Date(Number.parseInt(event.endDate) + 1000 * 60 * 60 * 24);
     timeContent = `
       DTSTART;VALUE=DATE:${formatDate(start)}
       DTEND;VALUE=DATE:${formatDate(end)}
@@ -402,7 +402,7 @@ async function shareEvent(eventId: number): Promise<void> {
     DTSTAMP:${formatDateAndTime(new Date())}
     ${timeContent}
     SUMMARY:${name}
-    DESCRIPTION:${description?.replaceAll("\n", "\\n")}
+    DESCRIPTION:${description?.replaceAll("\n", String.raw`\n`)}
     END:VEVENT
     END:VCALENDAR
   `.split("\n").map(l => l.trim()).join("\n");
@@ -418,7 +418,7 @@ async function shareEvent(eventId: number): Promise<void> {
   a.click();
 
   // Aufräumen
-  document.body.removeChild(a);
+  a.remove();
   URL.revokeObjectURL(url);
 }
 
@@ -791,7 +791,7 @@ export async function init(): Promise<void> {
   });
 }
 
-export const reloadAllFn = async () => {
+export const reloadAllFn = async (): Promise<void> => {
   eventData.reload();
   eventTypeData.reload();
   joinedTeamsData.reload();

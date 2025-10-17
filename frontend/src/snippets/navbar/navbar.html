@@ -1,6 +1,6 @@
 <nav class="navbar bg-body-tertiary fixed-top">
   <div class="container-fluid position-relative">
-    <button class="btn btn-semivisible" data-bs-toggle="offcanvas" data-bs-target="#navbar-offcanvas" aria-label="Mehr Links anzeigen">
+    <button class="btn btn-semivisible me-2" data-bs-toggle="offcanvas" data-bs-target="#navbar-offcanvas" aria-label="Mehr Links anzeigen">
       <i class="fas fa-bars" aria-hidden="true"></i>
     </button>
 
@@ -13,6 +13,9 @@
       <a class="d-none d-lg-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link" href="/" data-pjax>TaskMinder</a>
       <ul class="navbar-nav d-none d-lg-flex flex-row me-auto">
         <li class="nav-item me-3 class-joined-content">
+          <a class="nav-link" href="/uploads" data-pjax>Dateien</a>
+        </li>
+        <li class="nav-item me-3 class-joined-content">
           <a class="nav-link" href="/homework" data-pjax>Hausaufgaben</a>
         </li>
         <li class="nav-item me-3 class-joined-content">
@@ -21,16 +24,8 @@
         <li class="nav-item me-3">
           <a class="nav-link" href="/settings" data-pjax>Einstellungen</a>
         </li>
-        <li class="nav-item me-3">
-          <a class="nav-link" href="/about" data-pjax>Über TaskMinder</a>
-        </li>
       </ul>
     </div>
-
-    <button class="btn invisible">
-      :D
-      <!--This button only has to be here so the navbar always has the same height-->
-    </button>
 
     <button
       class="btn btn-semivisible"
@@ -53,19 +48,17 @@
 
 <div class="offcanvas offcanvas-start" tabindex="-1" id="navbar-offcanvas" aria-labelledby="navbar-offcanvas-label">
   <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="navbar-offcanvas-label">Offcanvas</h5>
+    <h5 class="offcanvas-title" id="navbar-offcanvas-label">TaskMinder</h5>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Schließen"></button>
   </div>
   <div class="offcanvas-body">
-    <div>Some text as placeholder. In real life you can have the elements you have chosen. Like, text, images, lists, etc.</div>
-    <div class="dropdown mt-3">
-      <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">Dropdown button</button>
-      <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="#">Action</a></li>
-        <li><a class="dropdown-item" href="#">Another action</a></li>
-        <li><a class="dropdown-item" href="#">Something else here</a></li>
-      </ul>
-    </div>
+    <i class="fas fa-info-circle fs-5 text-secondary" aria-hidden="true"></i>
+    <a href="/about" data-pjax>Über TaskMinder</a>
+    <div class="form-text mb-3">Rechtliche Hinweise & allgemeine Infos</div>
+
+    <i class="fas fa-mug-hot fs-5 text-secondary" aria-hidden="true"></i>
+    <a href="https://ko-fi.com/taskminder" target="_blank">Ko-Fi</a>
+    <div class="form-text">Unterstütze TaskMinder finanziell!</div>
   </div>
 </div>
 

@@ -1,4 +1,4 @@
-import { escapeHTML, getSite } from "../../global/global.js";
+import { getSite } from "../../global/global.js";
 import { replaceSitePJAX } from "../loadingBar/loadingBar.js";
 import { user } from "../navbar/navbar.js";
 
@@ -16,38 +16,20 @@ function getChangedTouchPosition(ev: JQuery.TouchMoveEvent | JQuery.TouchEndEven
   };
 }
 
-export async function init() {
+export async function init(): Promise<void> {
   siteName = getSite();
-  siteIndex = availableLinks.indexOf(siteName) ?? -1;
-  if (siteName === "join") siteIndex = 2;
-  if (moreLinks.includes(siteName)) siteIndex = 0;
-
-  $("#bottombar-more, .bottombar-link").removeClass("bottombar-current-link");
-  if (siteIndex === 0) {
-    $("#bottombar-more").addClass("bottombar-current-link");
-  }
-  else if (siteIndex !== -1) {
-    $(".bottombar-link").eq(siteIndex).addClass("bottombar-current-link");
-  }
+  $(".bottombar-link").removeClass("bottombar-current-link").filter(`[href="/${siteName}"]`).addClass("bottombar-current-link");
 }
 
 if (/OS (18|19|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
   $(".bottombar").css("padding-bottom", "1rem");
 }
-
-const availableLinks = ["", "homework", "main", "events", "settings"];
-const moreLinks = ["about"];
 let siteName: string;
-let siteIndex: number;
 
-user.on("change", (function _() {
-  $(".bottombar-link").filter(i => [1, 3].includes(i))
-    .toggleClass("bottombar-link-deactivated", ! user.classJoined)
-    .each(function () {
-      $(this).attr("href", user.classJoined ? escapeHTML(($(this).attr("data-href")) ?? "") ?? "#" : null);
-    });
-  return _;
-})());
+user.on("change", () => {
+  $(".bottombar-joined").toggle(user.classJoined ?? false);
+  $(".bottombar-not-joined").toggle(! user.classJoined);
+});
 
 $(".bottombar-overlay").hide();
 
@@ -65,23 +47,16 @@ $(document).on("touchstart", ev => {
 
   let $nextLink;
   if (startX < 75) {
-    $nextLink = $(".bottombar-current-link").prevAll(":not(.bottombar-link-deactivated)").first();
+    $nextLink = $(".row:visible > .bottombar-current-link").prevAll().first();
   }
-  else if (startX > window.innerWidth - 75) {
-    $nextLink = $(".bottombar-current-link").nextAll(":not(.bottombar-link-deactivated)").first();
+  else if (startX > globalThis.innerWidth - 75) {
+    $nextLink = $(".row:visible > .bottombar-current-link").nextAll().first();
   }
   else return;
 
-  if (startX < 75 && siteIndex === 1) {
-    $(".bottombar-overlay i").attr("class", "fa-solid fa-ellipsis fs-1");
-    $(".bottombar-overlay span").text("Mehr");
-    $(".bottombar-overlay div").show();
-  }
-  else {
-    $(".bottombar-overlay i").attr("class", ($nextLink.find("i").attr("class") ?? "fa-solid fa-xmark text-danger") + " fs-1");
-    $(".bottombar-overlay span").text($nextLink.find("span").text() || "Keine Seite mehr");
-    $(".bottombar-overlay div").hide();
-  }
+  $(".bottombar-overlay i").attr("class", ($nextLink.find("i").attr("class") ?? "fa-solid fa-xmark text-danger") + " fs-1");
+  $(".bottombar-overlay span").text($nextLink.find("span").text() || "Keine Seite mehr");
+  $(".bottombar-overlay div").hide();
 });
 
 $(document).on("touchmove", ev => {
@@ -94,11 +69,11 @@ $(document).on("touchmove", ev => {
   const diffX = posX - startX;
   const diffY = posY - startY;
   
-  if (Math.abs(diffX) > Math.abs(diffY) && (startX < 75 || startX > window.innerWidth - 75)) {
+  if (Math.abs(diffX) > Math.abs(diffY) && (startX < 75 || startX > globalThis.innerWidth - 75)) {
     $(".bottombar-overlay").css({
-      "--progress": Math.abs(diffX) / window.innerWidth,
+      "--progress": Math.abs(diffX) / globalThis.innerWidth,
       left: diffX > 0 ? 0 : posX,
-      right: diffX < 0 ? 0 : window.innerWidth - posX
+      right: diffX < 0 ? 0 : globalThis.innerWidth - posX
     }).show();
   }
   else {
@@ -108,7 +83,7 @@ $(document).on("touchmove", ev => {
 
 $(document).on("touchend", ev => {
   function hideOverlay(endP: number, complete?: () => unknown): void {
-    const startP = parseFloat($(".bottombar-overlay").css("--progress"));
+    const startP = Number.parseFloat($(".bottombar-overlay").css("--progress"));
     $({ p: startP }).animate(
       { p: endP },
       {
@@ -122,22 +97,26 @@ $(document).on("touchend", ev => {
   }
   async function changeSite(): Promise<void> {
     if (diffX > 0) {
-      if (siteIndex === 0) hideOverlay(0, $(".bottombar-overlay").hide);
+      const prev = $(".row:visible > .bottombar-current-link").prevAll().first();
+      if (prev.length === 0) hideOverlay(0, $(".bottombar-overlay").hide);
       else {
-        await replaceSitePJAX(availableLinks[siteIndex === 5 ? 0 : siteIndex - 1]);
+        await replaceSitePJAX(prev.attr("href") ?? siteName);
         $(".bottombar-overlay").css("--progress", "0").hide();
       }
     }
-    else if (siteIndex === 4) hideOverlay(0, $(".bottombar-overlay").hide);
     else {
-      await replaceSitePJAX(availableLinks[siteIndex === 5 ? 4 : siteIndex + 1]);
-      $(".bottombar-overlay").css("--progress", "0").hide();
+      const next = $(".row:visible > .bottombar-current-link").nextAll().first();
+      if (next.length === 0) hideOverlay(0, $(".bottombar-overlay").hide);
+      else {
+        await replaceSitePJAX(next.attr("href") ?? siteName);
+        $(".bottombar-overlay").css("--progress", "0").hide();
+      }
     }
   }
   function hasBeenDraggedEnough(): boolean {
     return Math.abs(diffX) > Math.abs(diffY)
-    && Math.abs(diffX) > window.innerWidth * 0.75
-    && (startX < 75 || startX > window.innerWidth - 75);
+    && Math.abs(diffX) > globalThis.innerWidth * 0.75
+    && (startX < 75 || startX > globalThis.innerWidth - 75);
   }
 
 
@@ -159,19 +138,14 @@ $(document).on("touchend", ev => {
     endProgress = 0;
   }
 
-  const getTargetLeft = (): number => diffX > 0 || endProgress === 1 ? 0 : window.innerWidth;
-  const getTargetRight = (): number => diffX < 0 || endProgress === 1 ? 0 : window.innerWidth;
+  const getTargetLeft = (): number => diffX > 0 || endProgress === 1 ? 0 : globalThis.innerWidth;
+  const getTargetRight = (): number => diffX < 0 || endProgress === 1 ? 0 : globalThis.innerWidth;
   
   $(".bottombar-overlay").animate({
     left: getTargetLeft(),
     right: getTargetRight()
   }, endProgress === 0 ? 500 : 200, $(".bottombar-overlay").hide);
-  if (! (startX < 75 && siteIndex === 1 && endProgress === 1)) {
-    hideOverlay(endProgress, endProgress === 1 ? changeSite : () => {});
-  }
-  else {
-    overlayShowsMore = true;
-  }
+  hideOverlay(endProgress, endProgress === 1 ? changeSite : undefined);
 });
 
 $("#bottombar-more-cancel").on("click", ev => {

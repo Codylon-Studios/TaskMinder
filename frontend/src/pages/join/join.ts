@@ -232,7 +232,7 @@ export async function init(): Promise<void> {
       }, 1000);
     });
 
-    urlParams = new URLSearchParams(window.location.search);
+    urlParams = new URLSearchParams(globalThis.location.search);
 
     if (urlParams.get("action") === "join" || urlParams.has("class_code")) {
       $("#decide-action-panel").addClass("d-none");
