@@ -5,6 +5,6 @@ export async function init(): Promise<void> {
       history.back();
     });
 
-    res()
-  })
+    res();
+  });
 }

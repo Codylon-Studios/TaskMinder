@@ -1108,7 +1108,7 @@ export async function init(): Promise<void> {
     });
 
     const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
-    (async () => document.body.setAttribute("data-bs-theme", await colorTheme()))()
+    (async () => document.body.setAttribute("data-bs-theme", await colorTheme()))();
     
     $("#color-theme-auto").prop("checked", colorThemeSetting === "auto");
     $("#color-theme-dark").prop("checked", colorThemeSetting === "dark");
@@ -2565,8 +2565,8 @@ export async function init(): Promise<void> {
       }, 5000);
     });
 
-    res()
-  })
+    res();
+  });
 }
 
 export const reloadAllFn = async () => {
@@ -2585,7 +2585,7 @@ export const reloadAllFn = async () => {
     await updateTimetable();
   }
 
-  await updateOnUserChange()
+  await updateOnUserChange();
 };
 
 let dsbActivated: boolean;

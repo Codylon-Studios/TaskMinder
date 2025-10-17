@@ -51,8 +51,9 @@ export function isValidSite(site: string): boolean {
     "homework",
     "join",
     "main",
-    "settings"
-  ].includes(site)
+    "settings",
+    "uploads"
+  ].includes(site);
 }
 
 export function msToDisplayDate(ms: number | string): string {
@@ -433,10 +434,10 @@ export async function reloadAll(): Promise<void> {
     user.on("change", async () => {
       reloadAll();
     });
-    user.auth()
-    return
+    user.auth();
+    return;
   }
-  const s = getSite()
+  const s = getSite();
   const mod = await import(`../../pages/${s}/${s}.js`);
   if (mod.reloadAllFn) {
     await mod.reloadAllFn();

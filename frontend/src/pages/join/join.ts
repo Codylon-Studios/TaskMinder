@@ -6,7 +6,7 @@ function changeContentOnLogin(): void {
   if (user.loggedIn && !justCreatedClass) {
     $("#show-login-register-btn").prop("disabled", true).find("i").removeClass("d-none");
     if (user.classJoined) {
-      openSitePJAX("/main")
+      openSitePJAX("/main");
     }
     else if (urlParams.get("action") !== "join") {
       $("#decide-action-panel").removeClass("d-none");
@@ -115,7 +115,7 @@ export async function init(): Promise<void> {
         },
         success: res => {
           if (user.loggedIn) {
-            openSitePJAX("/main")
+            openSitePJAX("/main");
           }
           $("#join-class-panel").addClass("d-none");
           $("#decide-account-panel").removeClass("d-none");
@@ -253,11 +253,11 @@ export async function init(): Promise<void> {
       $("#join-class-class-code").val("");
     }
 
-    res()
-  })
+    res();
+  });
 }
 
-export const reloadAllFn = changeContentOnLogin
+export const reloadAllFn = changeContentOnLogin;
 
 let justCreatedClass: boolean;
 let urlParams: URLSearchParams;

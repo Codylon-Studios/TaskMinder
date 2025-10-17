@@ -182,19 +182,23 @@ app.get("/events", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
 });
 
+app.get("/uploads", checkAccess(["CLASS"]), (req, res) => {
+  res.sendFile(path.join(pagesPath, "uploads", "uploads.html"));
+});
+
 app.use((req, res) => {
   const ext = path.extname(req.path);
 
   switch (ext) {
-    case ".css":
-      res.sendFile(path.join(pagesPath, "404", "404.css"));
-      break;
-    case ".js":
-      res.sendFile(path.join(pagesPath, "404", "404.js"));
-      break;
-    default:
-      res.sendFile(path.join(pagesPath, "404", "404.html"));
-      break;
+  case ".css":
+    res.sendFile(path.join(pagesPath, "404", "404.css"));
+    break;
+  case ".js":
+    res.sendFile(path.join(pagesPath, "404", "404.js"));
+    break;
+  default:
+    res.sendFile(path.join(pagesPath, "404", "404.html"));
+    break;
   }
 });
 

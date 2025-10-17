@@ -811,21 +811,21 @@ async function updateTimetableFeedback(): Promise<void> {
         : "")
 
       + l.lessons.map(l => {
-          if (l.substitution) {
-            if (l.substitution.type === "Entfall") {
-              return `<b class="text-danger">Entfall</b> (Eigentlich ${l.subjectNameLong})`;
-            }
-            const sameSubject = l.subjectNameSubstitution.includes(l.substitution.subject);
-            const sameRoom = l.room === l.substitution.room;
-            return `
+        if (l.substitution) {
+          if (l.substitution.type === "Entfall") {
+            return `<b class="text-danger">Entfall</b> (Eigentlich ${l.subjectNameLong})`;
+          }
+          const sameSubject = l.subjectNameSubstitution.includes(l.substitution.subject);
+          const sameRoom = l.room === l.substitution.room;
+          return `
               ${sameSubject ? l.subjectNameLong : `<b class="text-yellow">${l.substitution.subject}</b>`}
               ${showMoreInfo ? "in " + (sameRoom ? l.room : `<b class="text-yellow">${l.substitution.room}</b>`) : ""}
             ` + (sameSubject ? "" : `(Eigentlich ${l.subjectNameLong})`);
-          }
-          else {
-            return `<b>${l.subjectNameLong}</b>` + (showMoreInfo && l.subjectId !== -1 ? ` in <b>${l.room}</b>` : "");
-          }
         }
+        else {
+          return `<b>${l.subjectNameLong}</b>` + (showMoreInfo && l.subjectId !== -1 ? ` in <b>${l.room}</b>` : "");
+        }
+      }
 
       ).join(" bzw. ")
     );
@@ -1259,8 +1259,8 @@ export async function init(): Promise<void> {
       }
     });
     
-    res()
-  })
+    res();
+  });
 }
 
 export const reloadAllFn = async () => {

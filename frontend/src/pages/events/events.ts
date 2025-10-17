@@ -787,8 +787,8 @@ export async function init(): Promise<void> {
       }
     });
 
-    res()
-  })
+    res();
+  });
 }
 
 export const reloadAllFn = async () => {
@@ -801,5 +801,5 @@ export const reloadAllFn = async () => {
   await updateEventList();
   await updateTeamList();
 
-  toggleShownButtons()
+  toggleShownButtons();
 };

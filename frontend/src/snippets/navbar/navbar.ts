@@ -158,7 +158,7 @@ function checkSecurePassword(password: string): boolean {
 }
 
 export async function init() {
-  $("#login-register-button").toggleClass("d-none", isSite("join"))
+  $("#login-register-button").toggleClass("d-none", isSite("join"));
 
   $("#nav-logout-button").on("click", async () => {
     let hasResponded = false;

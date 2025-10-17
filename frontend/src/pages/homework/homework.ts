@@ -80,14 +80,14 @@ async function updateHomeworkList(): Promise<void> {
       }
     }
 
-    const today = new Date()
-    today.setDate(today.getDate() + 7 - today.getDay())
+    const today = new Date();
+    today.setDate(today.getDate() + 7 - today.getDay());
     if (!nextWeek && parseInt(homework.submissionDate) > today.getTime()) {
-      nextWeek = true
+      nextWeek = true;
       newContent.append(`
         <hr class="border-2 text-primary mb-0 mt-2">
         <div class="form-text text-primary opacity-50 mt-0">Nächste Woche</div>
-      `)
+      `);
     }
 
     const homeworkId = homework.homeworkId;
@@ -913,7 +913,9 @@ export async function init(): Promise<void> {
         }
       });
 
-      $(document).on("click", "#homework-feedback-random", () => {chooseRandomHomework()});
+      $(document).on("click", "#homework-feedback-random", () => {
+        chooseRandomHomework();
+      });
 
       // Don't close the dropdown when the user clicked inside of it
       $(".dropdown-menu").each(function () {
@@ -1019,8 +1021,8 @@ export async function init(): Promise<void> {
       }
     });
 
-    res()
-  })
+    res();
+  });
 }
 
 export const reloadAllFn = async () => {

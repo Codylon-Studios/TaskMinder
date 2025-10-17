@@ -32,7 +32,8 @@ async function buildDirectory(src, dest) {
         join: "Beitreten",
         main: "Übersicht",
         report: "Unangemessenen Inhalt melden",
-        settings: "Einstellungen"
+        settings: "Einstellungen",
+        uploads: "Dateien"
       };
 
       $("head").append(`
@@ -121,7 +122,7 @@ async function buildDirectory(src, dest) {
             }
           }
           else {
-            $(el).remove()
+            $(el).remove();
           }
           if (await exists(_join(folder, target + ".ts"))) {
             $("head").append(

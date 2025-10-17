@@ -22,7 +22,7 @@ export async function init() {
   if (siteName === "join") siteIndex = 2;
   if (moreLinks.includes(siteName)) siteIndex = 0;
 
-  $("#bottombar-more, .bottombar-link").removeClass("bottombar-current-link")
+  $("#bottombar-more, .bottombar-link").removeClass("bottombar-current-link");
   if (siteIndex === 0) {
     $("#bottombar-more").addClass("bottombar-current-link");
   }
@@ -124,7 +124,7 @@ $(document).on("touchend", ev => {
     if (diffX > 0) {
       if (siteIndex === 0) hideOverlay(0, $(".bottombar-overlay").hide);
       else {
-        await replaceSitePJAX(availableLinks[siteIndex === 5 ? 0 : siteIndex - 1])
+        await replaceSitePJAX(availableLinks[siteIndex === 5 ? 0 : siteIndex - 1]);
         $(".bottombar-overlay").css("--progress", "0").hide();
       }
     }
@@ -175,5 +175,5 @@ $(document).on("touchend", ev => {
 });
 
 $("#bottombar-more-cancel").on("click", ev => {
-  ev.preventDefault()
-})
+  ev.preventDefault();
+});

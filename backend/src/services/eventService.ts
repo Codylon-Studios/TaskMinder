@@ -309,7 +309,7 @@ export const eventService = {
 
   async getEventTypeStyles(session: Session & Partial<SessionData>) {
     if (!session.classId) {
-      return ""
+      return "";
     }
 
     const setEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId);
