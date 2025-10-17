@@ -1,16 +1,5 @@
 import { escapeHTML } from "../../global/global.js";
-
-type ColorRGB = {
-  red: number;
-  green: number;
-  blue: number;
-}
-
-type ColorHSV = {
-  hue: number;
-  saturation: number;
-  value: number;
-}
+import { ColorRGB, ColorHSV } from "./types";
 
 function hsvToRgb({ hue: h, saturation: s, value: v }: ColorHSV): ColorRGB {
   h /= 60;

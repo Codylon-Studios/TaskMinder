@@ -12,10 +12,10 @@ import {
   socket,
   csrfToken,
   reloadAllFn,
-  HomeworkData,
   lessonData,
   escapeHTML
 } from "../../global/global.js";
+import { HomeworkData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 

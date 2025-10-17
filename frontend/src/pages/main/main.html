@@ -50,6 +50,12 @@
         </div>
       </div>
 
+      <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content" id="timetable-feedback">
+        <i class="fas fa-circle-info mx-1 fs-5" aria-hidden="true" id="timetable-feedback-info"></i>
+        <i class="far fa-face-smile-beam mx-1 fs-5" aria-hidden="true" id="timetable-feedback-happy"></i>
+        <span class="d-block">NICHTS</span>
+      </div>
+
       <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xl-row gap-2" id="timetable-less"></div>
       <div class="container-fluid mb-3 d-flex flex-wrap flex-column gap-3 d-none" id="timetable-more"></div>
 
@@ -57,7 +63,9 @@
         <div class="mb-2 d-flex align-items-center">
           <h5>
             Ereignisse
-            <a href="/events" aria-label="Seite für Ereignisse öffnen"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+            <a href="/events" aria-label="Seite für Ereignisse öffnen">
+              <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true"></i>
+            </a>
           </h5>
         </div>
         <div class="ms-3" id="event-list">
@@ -69,7 +77,9 @@
         <div class="mb-2 d-flex align-items-center">
           <h5>
             Hausaufgaben
-            <a href="/homework" aria-label="Seite für Hausaufgaben öffnen"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+            <a href="/homework" aria-label="Seite für Hausaufgaben öffnen">
+              <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true"></i>
+            </a>
           </h5>
         </div>
         <div
@@ -127,7 +137,7 @@
                     <th>Stunde</th>
                     <th>Fach</th>
                     <th>Text</th>
-                    <th>Lehrer</th>
+                    <th>Lehrer:in</th>
                     <th>Raum</th>
                   </tr>
                 </thead>

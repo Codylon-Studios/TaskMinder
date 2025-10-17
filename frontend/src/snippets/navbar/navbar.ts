@@ -1,4 +1,5 @@
 import { csrfToken, isSite } from "../../global/global.js";
+import { UserEventCallback, UserEventName } from "./types.js";
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 async function registerAccount(username: string, password: string): Promise<void> {
@@ -176,9 +177,6 @@ $(async () => {
     return _;
   })());
 });
-
-type UserEventName = "change";
-type UserEventCallback = (...args: unknown[]) => void;
 
 export const user = {
   loggedIn: null as boolean | null,

@@ -11,10 +11,9 @@ import {
   csrfToken,
   reloadAllFn,
   lessonData,
-  SingleEventData,
-  EventData,
   escapeHTML
 } from "../../global/global.js";
+import { EventData, SingleEventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 

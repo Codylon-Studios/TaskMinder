@@ -1,24 +1,20 @@
 import {
   colorTheme,
-  EventTypeData,
   eventTypeData,
-  JoinedTeamsData,
   joinedTeamsData,
   msToTime,
-  SubjectData,
   subjectData,
   substitutionsData,
-  TeamsData,
   teamsData,
   lessonData,
   timeToMs,
-  LessonData,
   csrfToken,
   reloadAllFn,
   classMemberData,
   getTimeLeftString,
   escapeHTML
 } from "../../global/global.js";
+import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData } from "../../global/types";
 import { $navbarToasts, authUser, user } from "../../snippets/navbar/navbar.js";
 
 async function updateColorTheme(): Promise<void> {
