@@ -7,8 +7,8 @@ ADD COLUMN "storageUsedBytes" BIGINT NOT NULL DEFAULT 0;
 -- Update all existing rows
 UPDATE "public"."Class"
 SET "storageQuotaBytes" = CASE 
-  WHEN "isTestClass" = true THEN 20971520 
-  ELSE 5368709120 
+  WHEN "isTestClass" = true THEN 20971520 -- 20 MB
+  ELSE 1073741824 -- 1 GB
 END;
 
 -- AlterTable
@@ -58,5 +58,18 @@ ALTER TABLE "public"."fileGroup" ADD CONSTRAINT "fileGroup_classId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "public"."fileGroup" ADD CONSTRAINT "fileGroup_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "public"."account"("accountId") ON DELETE SET NULL ON UPDATE NO ACTION;
+
+-- DropForeignKey
+ALTER TABLE "public"."fileGroup" DROP CONSTRAINT "fileGroup_createdBy_fkey";
+
+-- DropIndex
+DROP INDEX "public"."fileGroup_classId_name_key";
+
+-- AlterTable
+ALTER TABLE "public"."fileGroup" DROP COLUMN "createdBy",
+ADD COLUMN "accountId" INTEGER;
+
+-- AddForeignKey
+ALTER TABLE "public"."fileGroup" ADD CONSTRAINT "fileGroup_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "public"."account"("accountId") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 COMMIT; -- End transaction

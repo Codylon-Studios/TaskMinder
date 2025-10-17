@@ -91,7 +91,7 @@ const classService = {
       classCreated: Date.now(),
       isTestClass: isTestClass,
       dsbMobileActivated: false,
-      storageQuotaBytes: isTestClass ? 20 * 1024 * 1024 : 5 * 1024 * 1024 * 1024, // 20MB (TestClass) or 5 GB (normal class)
+      storageQuotaBytes: isTestClass ? 20 * 1024 * 1024 : 1 * 1024 * 1024 * 1024, // 20MB (test class) or 1 GB (normal class)
       storageUsedBytes: 0,
       defaultPermissionLevel: 0 // default setting when creating class is 0 - member status
     };
