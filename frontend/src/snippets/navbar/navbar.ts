@@ -239,9 +239,6 @@ export function authUser(): void {
   });
 }
 
-// Check if the user is logged in for the first time
-authUser();
-
 $("#nav-logout-button").on("click", async () => {
   let hasResponded = false;
 
@@ -277,6 +274,9 @@ $("#nav-logout-button").on("click", async () => {
 });
 
 $(() => {
+  // Check if the user is logged in for the first time
+  authUser();
+
   //
   //LOGIN -- REGISTER
   //

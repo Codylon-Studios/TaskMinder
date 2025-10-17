@@ -176,10 +176,10 @@ function replaceColorPickers(): void {
       const containerWidth = saturationValueContainer.outerWidth() ?? 0;
       const containerHeight = saturationValueContainer.outerHeight() ?? 0;
 
-      let newX = x - (isAlreadyRelative ? 0: containerOffset.left);
+      let newX = x - (isAlreadyRelative ? 0 : containerOffset.left);
       newX = Math.max(0, Math.min(newX, containerWidth));
 
-      let newY = y - (isAlreadyRelative ? 0: containerOffset.top);
+      let newY = y - (isAlreadyRelative ? 0 : containerOffset.top);
       newY = Math.max(0, Math.min(newY, containerHeight));
 
       markerSaturationValue.css({ left: newX, top: newY });

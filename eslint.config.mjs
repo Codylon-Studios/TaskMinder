@@ -37,6 +37,7 @@ export default tseslint.config(
     rules: {
       "semi": ["error", "always"],
       "indent": ["error", 2],
+      "space-infix-ops": "error",
       "brace-style": ["error", "stroustrup"],
       "comma-dangle": ["error", "never"],
       "arrow-parens": ["error", "as-needed"],

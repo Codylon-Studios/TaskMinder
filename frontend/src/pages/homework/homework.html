@@ -71,6 +71,14 @@
         </button>
       </div>
 
+      <div class="container-fluid">
+        <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content" id="homework-feedback">
+          <i class="fas fa-circle-check mx-1 fs-5" aria-hidden="true" id="homework-feedback-done"></i>
+          <div id="homework-feedback-outer-circle"><div id="homework-feedback-inner-circle"></div></div>
+          <div class="d-flex align-items-center" id="homework-feedback-body"></div>
+        </div>
+      </div>
+
       <div class="container-fluid mt-3" id="homework-list">
         <!--Gets filled-->
       </div>
@@ -186,6 +194,30 @@
             <div class="modal-footer">
               <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
               <button class="btn btn-primary" id="edit-homework-button">Speichern</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="random-homework-modal" aria-labelledby="random-homework-modal-label">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="random-homework-modal-label">Zufällige Hausaufgabe auswählen</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+              <div class="ratio ratio-1x1 w-100 my-3" id="random-homework-wheel">
+                <div id="random-homework-wheel-rotate"></div>
+                <svg id="random-homework-wheel-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 466 466">
+                  <path d="M 203 5 h 60 L 233 30 z"></path>
+                </svg>
+              </div>
+              <div id="random-homework-result"></div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary flex-fill" data-bs-dismiss="modal">Fertig</button>
+              <button class="btn btn-primary flex-fill" id="random-homework-next">Erledigt und nächste wählen</button>
             </div>
           </div>
         </div>

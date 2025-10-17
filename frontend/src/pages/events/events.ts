@@ -262,6 +262,8 @@ function addEvent(): void {
         success: () => {
           // Show a success notification and update the shown events
           $("#add-event-success-toast").toast("show");
+          // Hide the add event modal
+          $("#add-event-modal").modal("hide");
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -280,8 +282,6 @@ function addEvent(): void {
         complete: () => {
           // The server has responded
           hasResponded = true;
-          // Hide the add event modal
-          $("#add-event-modal").modal("hide");
         }
       });
       setTimeout(() => {
@@ -487,6 +487,7 @@ async function editEvent(eventId: number): Promise<void> {
         success: () => {
           // Show a success notification and update the shown events
           $("#edit-event-success-toast").toast("show");
+          $("#edit-event-modal").modal("hide");
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -505,7 +506,6 @@ async function editEvent(eventId: number): Promise<void> {
         complete: () => {
           // The server has responded
           hasResponded = true;
-          $("#edit-event-modal").modal("hide");
         }
       });
       setTimeout(() => {

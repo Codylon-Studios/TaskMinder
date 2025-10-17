@@ -445,7 +445,7 @@ async function updateEventList(): Promise<void> {
     }
 
     // The template for an event
-    const template = $(`<div class="col p-2">
+    const template = $(`<div class="col py-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2">
             <div class="d-flex flex-column">

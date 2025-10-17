@@ -116,10 +116,10 @@ $(document).on("touchend", ev => {
   function changeSite(): void {
     if (diffX > 0) {
       if (siteIndex === 0) hideOverlay(0, $(".bottombar-overlay").hide);
-      else window.location.href = availableLinks[siteIndex === 5 ? 0: siteIndex - 1];
+      else window.location.href = availableLinks[siteIndex === 5 ? 0 : siteIndex - 1];
     }
     else if (siteIndex === 4) hideOverlay(0, $(".bottombar-overlay").hide);
-    else window.location.href = availableLinks[siteIndex === 5 ? 4: siteIndex + 1];
+    else window.location.href = availableLinks[siteIndex === 5 ? 4 : siteIndex + 1];
   }
   function hasBeenDraggedEnough(): boolean {
     return Math.abs(diffX) > Math.abs(diffY)

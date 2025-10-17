@@ -157,8 +157,8 @@ $("#join-class-checkbox").on("input", function () {
 });
 
 $("#create-class-name").on("input", function () {
-  $("#create-class-name").toggleClass("is-invalid", ($(this).val()?.toString()?? "") === "");
-  $("#create-class-btn").prop("disabled", ($(this).val()?.toString()?? "") === "");
+  $("#create-class-name").toggleClass("is-invalid", ($(this).val()?.toString() ?? "") === "");
+  $("#create-class-btn").prop("disabled", ($(this).val()?.toString() ?? "") === "");
 });
 
 $("#create-class-btn").on("click", async () => {

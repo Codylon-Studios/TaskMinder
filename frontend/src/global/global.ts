@@ -181,6 +181,15 @@ export function escapeHTML(str: string): string {
   });
 }
 
+export function getCirclePath(cx: number, cy: number, r: number, a: number, full?: boolean): string {
+  if (full) {
+    return `M${cx} ${cy - r} A${r} ${r} 0 1 1 ${cx} ${cy + r} A${r} ${r} 0 1 1 ${cx} ${cy - r} Z`;
+  }
+  const x = cx + r * Math.sin(Math.PI / 180 * a);
+  const y = cy - r * Math.cos(Math.PI / 180 * a);
+  return `M${cx} ${cy} l0 ${-r} A${r} ${r} 0 ${a % 360 > 180 ? 1 : 0} 1 ${x} ${y} Z`;
+}
+
 export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   const currentJoinedTeamsData = await joinedTeamsData();
   const currentSubjectData = await subjectData();
@@ -333,7 +342,6 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 
   return multiLessonGroups;
 }
-
 
 async function loadJoinedTeamsData(): Promise<void> {
   if (user.loggedIn) {

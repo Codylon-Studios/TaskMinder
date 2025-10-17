@@ -13,7 +13,8 @@ import {
   csrfToken,
   reloadAllFn,
   lessonData,
-  escapeHTML
+  escapeHTML,
+  getCirclePath
 } from "../../global/global.js";
 import { HomeworkData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -134,7 +135,168 @@ async function updateHomeworkList(): Promise<void> {
   }
   $("#homework-list").empty().append(newContent.children());
   showMoreButtonElements.trigger("addedToDom");
+
+  updateHomeworkFeedback();
 };
+
+async function updateHomeworkFeedback(): Promise<void> {
+  const currentJoinedTeamsData = await joinedTeamsData();
+
+  const todoHomeworkData = (await homeworkData()).filter(h =>
+    (currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1)
+    && (Date.now() <= parseInt(h.submissionDate) || isSameDay(new Date(), new Date(h.submissionDate)))
+  );
+
+  let todo = 0;
+  for (const h of todoHomeworkData) {
+    if (!await getHomeworkCheckStatus(h.homeworkId)) {
+      todo++;
+    }
+  }
+  const total = todoHomeworkData.length;
+
+  if (todo > 0) {
+    $("#homework-feedback-body").html(`
+      <span>Du musst noch <b>${todo}</b> von <b>${total}</b> Hausaufgaben machen.</span>
+      ${todo > 1 ? '<button id="homework-feedback-random" class="btn btn-primary btn-sm fw-bold ms-2">Zufällige auswählen</button>' : ""}
+    `);
+    $("#homework-feedback-done").hide();
+    $("#homework-feedback-outer-circle").show();
+
+    const halfSize = ($("#homework-feedback-inner-circle").outerWidth() ?? 0) / 2;
+    const percentage = 1 - todo / total;
+    let animationPercentage = (homeworkFeedbackLastPercentage && animations) ? homeworkFeedbackLastPercentage : percentage;
+
+    const baseChange = 0.1 / total;
+    function animateCircle(): void {
+      if (Math.abs(animationPercentage - percentage) < baseChange) {
+        animationPercentage = percentage;
+        $("#homework-feedback-inner-circle").css("clip-path", `path("${getCirclePath(halfSize, halfSize, halfSize, animationPercentage * 360)}")`);
+        homeworkFeedbackLastPercentage = percentage;
+        return;
+      }
+
+      const change = (animationPercentage < percentage ? baseChange : -baseChange);
+      animationPercentage += change;
+
+      $("#homework-feedback-inner-circle").css("clip-path", `path("${getCirclePath(halfSize, halfSize, halfSize, animationPercentage * 360)}")`);
+
+      requestAnimationFrame(animateCircle);
+    }
+    animateCircle();
+  }
+  else {
+    $("#homework-feedback-body").html("Super, du hast alle Hausaufgaben erledigt!");
+    $("#homework-feedback-outer-circle").hide();
+    $("#homework-feedback-done").show();
+  }
+}
+
+async function chooseRandomHomework(): Promise<void> {
+  const currentJoinedTeamsData = await joinedTeamsData();
+  const currentSubjectData = await subjectData();
+
+  const currentHomeworkData = (await homeworkData()).filter(h =>
+    (currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1) && Date.now() <= parseInt(h.submissionDate)
+  );
+
+  const todoHomework: HomeworkData = [];
+  for (const h of currentHomeworkData) {
+    if (!await getHomeworkCheckStatus(h.homeworkId)) {
+      todoHomework.push(h);
+    }
+  }
+  const todo = todoHomework.length;
+
+  $("#random-homework-wheel").toggle(animations);
+  $("#random-homework-result").empty();
+  $("#random-homework-modal").modal("show");
+  $("#random-homework-next").prop("disabled", true);
+  const full = todo === 1;
+  const angle = 360 / todo;
+  const r = ($("#random-homework-wheel-rotate").outerWidth() ?? 0) / 2;
+  const diff = todo > 5 ? 360 / todoHomework.length : 30;
+  $("#random-homework-wheel-rotate").empty().append(todoHomework.map((h, i) => {
+    const subject = currentSubjectData.find(s => s.subjectId === h.subjectId) ?? {subjectNameLong: "Sonstiges", subjectNameShort: "Sonstiges"};
+    const subjectName = subject.subjectNameLong.length >= 25 ? subject.subjectNameShort : subject.subjectNameLong;
+    return $(`
+        <div>
+          <div class="random-homework-wheel-option w-100 h-100"></div>
+          <span class="position-absolute translate-middle fw-bold">
+            ${escapeHTML(subjectName)}
+          </span>
+        </div>
+      `)
+      .find("div").css({
+        "clip-path": `path("${getCirclePath(r, r, r, angle, full)}")`,
+        "--hue": 187 + diff * i,
+        "rotate": angle * i + "deg"
+      }).end()
+      .find("span").css({
+        "left": r + (full ? 0 : 0.75 * r * Math.sin(Math.PI / 180 * angle * (i + 0.5))),
+        "top":  r - (full ? 0 : 0.75 * r * Math.cos(Math.PI / 180 * angle * (i + 0.5))),
+        "rotate": angle * (i + 0.5) + "deg"
+      }).end();
+  }));
+
+  let constantSpin = Math.random() * 90 + 90;
+  let rotation = animations ? 0 : Math.random() * 360;
+  let speed = 4;
+
+  function rotateWheel(): void {
+    $("#random-homework-wheel-rotate").css("rotate", Math.round(rotation) + "deg");
+    if (speed < 0.5) {
+      showResult();
+      return;
+    }
+    if (full || !animations) {
+      showResult();
+      return;
+    }
+    rotation += speed;
+    if (constantSpin > 0) constantSpin --;
+    else speed -= Math.random() / (speed * 5);
+    requestAnimationFrame(rotateWheel);
+  }
+  rotateWheel();
+
+  async function showResult(): Promise<void> {
+    const h = todoHomework[full ? 0 : Math.floor((360 - rotation % 360) / 360 * todo)];
+    const subject = (await subjectData()).find(s => s.subjectId === h.subjectId)?.subjectNameLong ?? "Sonstiges";
+    const content = h.content;
+    const assignmentDate = msToDisplayDate(h.assignmentDate);
+    const submissionDate = msToDisplayDate(h.submissionDate);
+    $("#random-homework-result").html(`
+      <h5>Ausgewählte Hausaufgabe:</h5>
+      <div>
+        <span class="fw-bold">${escapeHTML(subject)}</span>
+        <span class="homework-content"></span>
+        <span class="ms-4 d-block">Von ${assignmentDate} auf ${submissionDate}</span>
+      </div>
+    `);
+
+    const $contentEl = $("#random-homework-result").find(".homework-content");
+    richTextToHtml(content, $contentEl, {
+      showMoreButton: true,
+      parseLinks: true,
+      displayBlockIfNewline: true,
+      merge: true
+    });
+    $contentEl.trigger("addedToDom");
+
+    $("#random-homework-next").prop("disabled", false).off("click").on("click", async () => {
+      checkHomework(h.homeworkId, true);
+      if (todo === 1) {
+        $("#random-homework-modal").modal("hide");
+      }
+      else {
+        setTimeout(() => {
+          chooseRandomHomework();
+        }, 100);
+      }
+    });
+  }
+}
 
 async function updateSubjectList(): Promise<void> {
   // Clear the select element in the add homework modal
@@ -304,8 +466,8 @@ async function addHomework(): Promise<void> {
         success: () => {
           // Show a success notification and update the shown homework
           $("#add-homework-success-toast").toast("show");
-          homeworkData.reload();
-          updateHomeworkList();
+          // Hide the add homework modal
+          $("#add-homework-modal").modal("hide");
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -324,8 +486,6 @@ async function addHomework(): Promise<void> {
         complete: () => {
           // The server has responded
           hasResponded = true;
-          // Hide the add homework modal
-          $("#add-homework-modal").modal("hide");
         }
       });
       setTimeout(() => {
@@ -393,8 +553,7 @@ async function editHomework(homeworkId: number): Promise<void> {
         success: () => {
           // Show a success notification and update the shown homework
           $("#edit-homework-success-toast").toast("show");
-          homeworkData.reload();
-          updateHomeworkList();
+          $("#edit-homework-modal").modal("hide");
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -413,7 +572,6 @@ async function editHomework(homeworkId: number): Promise<void> {
         complete: () => {
           // The server has responded
           hasResponded = true;
-          $("#edit-homework-modal").modal("hide");
         }
       });
       setTimeout(() => {
@@ -491,10 +649,10 @@ function deleteHomework(homeworkId: number): void {
     });
 }
 
-async function checkHomework(homeworkId: number): Promise<void> {
+async function checkHomework(homeworkId: number, checkStatus?: boolean): Promise<void> {
   justCheckedHomeworkId = homeworkId;
   // Save whether the user has checked or unchecked the homework
-  const checkStatus = $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
+  checkStatus ??= $(`.homework-check[data-id="${homeworkId}"]`).prop("checked");
 
   // Check whether the user is logged in
   if (user.loggedIn) {
@@ -612,6 +770,7 @@ function updateFilters(ignoreSubjects?: boolean): void {
 
 let justCheckedHomeworkId = -1;
 const animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
+let homeworkFeedbackLastPercentage = null as null | number;
 
 $(function () {
   reloadAllFn.set(async () => {
@@ -756,6 +915,8 @@ $(function () {
       $("#edit-homework-button").prop("disabled", false);
     }
   });
+
+  $(document).on("click", "#homework-feedback-random", chooseRandomHomework);
 
   // Don't close the dropdown when the user clicked inside of it
   $(".dropdown-menu").each(function () {

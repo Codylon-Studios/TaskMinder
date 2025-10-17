@@ -68,7 +68,7 @@ async function updateClassMemberList(): Promise<void> {
             <span class="w-100">${escapeHTML(classMember.username) + (isCurrentUser ? " <b>(Du)</b>" : "")}</span>
             <label class="form-text mt-0 d-flex align-items-center">
               Rolle:
-              <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content${isCurrentUser ? " is-current-user": ""}"
+              <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content${isCurrentUser ? " is-current-user" : ""}"
                 data-id="${classMemberId}" ${isDisabled}>
                 ${roleOptionsHtml}
               </select>
@@ -86,7 +86,7 @@ async function updateClassMemberList(): Promise<void> {
           </span>
         </div>
         <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick${isCurrentUser ? " is-current-user": ""}"
+          <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick${isCurrentUser ? " is-current-user" : ""}"
             data-id="${classMemberId}" ${isDisabled} aria-label="Nutzer entfernen">
             <i class="fa-solid fa-user-minus" aria-hidden="true"></i>
           </button>

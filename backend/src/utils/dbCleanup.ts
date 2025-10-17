@@ -56,7 +56,7 @@ export async function cleanupTestClasses(): Promise<void> {
     );
 
     logger.info("Test Class cleanup completed: " + classesToDelete.length + " classes deleted, " + deletedJoins.count +
-       " join records removed, and " + updatedAccounts.count +" accounts updated."
+       " join records removed, and " + updatedAccounts.count + " accounts updated."
     );
   }
   catch (error) {
