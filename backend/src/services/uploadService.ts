@@ -1,15 +1,13 @@
 import { Session, SessionData } from "express-session";
-import { randomUUID } from "crypto";
 import path from "path";
-import { FINAL_UPLOADS_DIR } from "../middleware/uploadMiddleware";
+import { FINAL_UPLOADS_DIR } from "../config/upload";
 import fs from "fs/promises";
 import { ReadStream, createReadStream } from "fs";
 import prisma from "../config/prisma";
-import mime from "mime";
 import logger from "../utils/logger";
 import { RequestError } from "../@types/requestError";
-import { deleteUploadFileTypeBody, getUploadFileType, renameUploadFileTypeBody, setUploadFileTypeBody } from "../schemas/uploadSchema";
-import { deleteUploadFileGroupTypeBody, renameUploadFileGroupTypeBody } from "../schemas/uploadSchema";
+import { deleteUploadTypeBody, getUploadFileType, renameUploadTypeBody, setUploadFileTypeBody } from "../schemas/uploadSchema";
+import { queueJob, QUEUE_KEYS } from "../config/redis";
 
 
 type GetUploadFileInput = {
@@ -28,130 +26,90 @@ type GetUploadFileResult = {
 };
 
 const uploadService = {
-  // eslint-disable-next-line complexity
-  async setUploadFile(
+  async queueFileUpload(
     files: Express.Multer.File[],
-    verifiedMimes: string[],
     session: Session & Partial<SessionData>,
-    body: setUploadFileTypeBody
+    body: setUploadFileTypeBody,
+    reservedBytes: bigint
   ) {
-    const { fileGroupName } = body;
-    // group name required if uploading multiple files
-    if (files.length > 1 && !fileGroupName) {
+    const { uploadName, uploadType, teamId } = body;
+    const classIdNum = parseInt(session.classId!, 10);
+    const accountId = session.account?.accountId ?? null;
+
+    // Create Upload record with "queued" status and reserved bytes
+    const upload = await prisma.upload.create({
+      data: {
+        uploadName,
+        uploadType,
+        status: "queued",
+        teamId,
+        classId: classIdNum,
+        accountId,
+        reservedBytes,
+        createdAt: Date.now()
+      }
+    });
+
+    // Prepare job data
+    const jobData = {
+      uploadId: upload.uploadId,
+      classId: classIdNum,
+      tempFiles: files.map(f => ({
+        path: f.path,
+        originalName: f.originalname,
+        mimetype: f.mimetype,
+        size: f.size
+      }))
+    };
+
+    // Queue the job
+    await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
+
+    logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s)`);
+
+    return {
+      uploadId: upload.uploadId,
+      filesCount: files.length
+    };
+  },
+
+  async getUploadStatus(uploadId: number, session: Session & Partial<SessionData>) {
+    const classIdNum = parseInt(session.classId!, 10);
+
+    const upload = await prisma.upload.findUnique({
+      where: { uploadId },
+      include: {
+        Files: true
+      }
+    });
+
+    if (!upload || upload.classId !== classIdNum) {
       const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "fileGroupName is required when uploading multiple files",
+        name: "Not Found",
+        status: 404,
+        message: "Upload not found",
         expected: true
       };
       throw err;
     }
 
-    const classIdNum = parseInt(session.classId!, 10);
-    const finalDirectory = path.join(FINAL_UPLOADS_DIR, session.classId!);
-    await fs.mkdir(finalDirectory, { recursive: true });
-
-    // actual sizes after sanitization
-    const fileSizes: number[] = [];
-    for (const f of files) {
-      const stat = await fs.stat(f.path);
-      fileSizes.push(stat.size);
-    }
-    const totalBytes = fileSizes.reduce((acc, n) => acc + BigInt(n), BigInt(0));
-
-    // quota re-check using actual bytes
-    const classQuota = await prisma.class.findUnique({
-      where: { classId: classIdNum },
-      select: { storageQuotaBytes: true, storageUsedBytes: true }
-    });
-    // quota is exceeded
-    if (classQuota!.storageUsedBytes + totalBytes > classQuota!.storageQuotaBytes) {
-      await Promise.all(files.map(f => fs.unlink(f.path).catch(() => {})));
-      const err: RequestError = {
-        name: "Insufficient Storage",
-        status: 507,
-        message: "Class quota was exceeded",
-        expected: false
-      };
-      throw err;
-    }
-
-    // create file group if applicable
-    let fileGroupId: number | null = null;
-    if (fileGroupName) {
-      const created = await prisma.fileGroup.create({
-        data: {
-          classId: classIdNum,
-          name: fileGroupName,
-          createdAt: BigInt(Date.now()),
-          accountId: session.account?.accountId ?? null
-        }
-      });
-      fileGroupId = created.fileGroupId;
-    }
-
-    // plan moves
-    const finalFilenames: string[] = files.map((_, i) => {
-      const ext = mime.extension(verifiedMimes[i]) || "bin";
-      return `${randomUUID()}.${ext}`;
-    });
-    const finalPaths = finalFilenames.map(n => path.join(finalDirectory, n));
-
-    // move and create DB in a transaction
-    const moved: string[] = [];
-    try {
-      // move files first
-      for (let i = 0; i < files.length; i++) {
-        await fs.rename(files[i].path, finalPaths[i]);
-        moved.push(finalPaths[i]);
-      }
-
-      await prisma.$transaction(async tx => {
-        for (let i = 0; i < files.length; i++) {
-          await tx.fileData.create({
-            data: {
-              accountId: session.account!.accountId,
-              classId: classIdNum,
-              fileGroupId: fileGroupId,
-              originalName: files[i].originalname,
-              storedFileName: finalFilenames[i],
-              mimeType: verifiedMimes[i],
-              size: fileSizes[i],
-              createdAt: BigInt(Date.now())
-            }
-          });
-        }
-        await tx.class.update({
-          where: { classId: classIdNum },
-          data: { storageUsedBytes: { increment: totalBytes } }
-        });
-      });
-    }
-    catch (error) {
-      logger.error("Failed to create file metadata in DB. Cleaning up orphaned files.", error);
-      // cleanup moved files
-      await Promise.all(moved.map(p => fs.unlink(p).catch(() => {})));
-      // cleanup any remaining temp files not moved
-      await Promise.all(files.map(f => fs.unlink(f.path).catch(() => {})));
-      // rollback group if it was just created with no files
-      if (fileGroupId) {
-        await prisma.fileGroup.delete({ where: { fileGroupId } }).catch(() => {});
-      }
-      const err: RequestError = {
-        name: "Internal Server Error",
-        status: 500,
-        message: "Failed to store file(s)",
-        expected: false
-      };
-      throw err;
-    }
+    return {
+      uploadId: upload.uploadId,
+      status: upload.status,
+      uploadName: upload.uploadName,
+      filesCount: upload.Files.length,
+      errorReason: upload.errorReason
+    };
   },
 
-  async getUploadDataList(isGetAllData: boolean, session: Session & Partial<SessionData>) {
+  async getUploadMetadata(isGetAllData: boolean, session: Session & Partial<SessionData>) {
     const classId = parseInt(session.classId!, 10);
 
-    const totalUploads = await prisma.fileData.count({
-      where: { classId }
+    const totalUploads = await prisma.upload.count({
+      where: { 
+        classId,
+        status: "completed" // Only show completed uploads
+      }
     });
 
     if (totalUploads === 0) {
@@ -162,57 +120,64 @@ const uploadService = {
       };
     }
 
-    // include Account username and group info
     const include = {
       Account: { select: { username: true } },
-      FileGroup: { select: { fileGroupId: true, name: true } }
+      Files: true,
+      Team: { select: { name: true } }
     } as const;
 
-    const orderBy = { createdAt: "desc" } as const;
+    const orderBy = { uploadId: "desc" } as const;
 
-    let fileMetaData;
+    let uploads;
     if (isGetAllData) {
-      fileMetaData = await prisma.fileData.findMany({
-        where: { classId },
+      uploads = await prisma.upload.findMany({
+        where: { classId, status: "completed" },
         include,
         orderBy
       });
     } 
     else {
-      fileMetaData = await prisma.fileData.findMany({
-        where: { classId },
+      uploads = await prisma.upload.findMany({
+        where: { classId, status: "completed" },
         include,
         orderBy,
         take: 50
       });
     }
 
-    const uploads = fileMetaData.map(file => ({
-      fileId: file.fileId,
-      accountName: file.Account?.username ?? null,
-      originalName: file.originalName,
-      createdAt: file.createdAt,
-      mimeType: file.mimeType,
-      size: file.size,
-      // group info
-      fileGroupId: file.FileGroup?.fileGroupId ?? null,
-      fileGroupName: file.FileGroup?.name ?? null
+    const uploadList = uploads.map(upload => ({
+      uploadId: upload.uploadId,
+      uploadName: upload.uploadName,
+      uploadType: upload.uploadType,
+      accountName: upload.Account?.username ?? null,
+      teamName: upload.Team.name,
+      filesCount: upload.Files.length,
+      files: upload.Files.map(f => ({
+        fileMetaDataId: f.fileMetaDataId,
+        mimeType: f.mimeType,
+        size: f.size,
+        createdAt: f.createdAt
+      }))
     }));
 
     const hasMore = !isGetAllData && totalUploads > 50;
 
     return {
       totalUploads,
-      uploads,
+      uploads: uploadList,
       hasMore
     };
   },
 
   async getUploadFile({ fileIdParam, action, classId }: GetUploadFileInput): Promise<GetUploadFileResult> {
+    const fileData = await prisma.fileMetadata.findUnique({
+      where: { fileMetaDataId: fileIdParam },
+      include: {
+        Upload: true
+      }
+    });
 
-    const fileData = await prisma.fileData.findUnique({ where: { fileId: fileIdParam } });
-
-    if (!fileData || fileData.classId !== parseInt(classId, 10)) {
+    if (!fileData || fileData.Upload.classId !== parseInt(classId, 10)) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
@@ -223,7 +188,7 @@ const uploadService = {
     }
 
     const disposition = action === "download" ? "attachment" : "inline";
-    const safeOriginalName = fileData.originalName.replace(/"/g, '\\"');
+    const safeOriginalName = fileData.storedFileName.replace(/"/g, '\\"');
     const headers = {
       "Content-Type": fileData.mimeType,
       "Content-Disposition": `${disposition}; filename="${safeOriginalName}"`,
@@ -232,16 +197,16 @@ const uploadService = {
 
     const finalFilePath = path.join(
       FINAL_UPLOADS_DIR,
-      fileData.classId.toString(),
+      fileData.Upload.classId.toString(),
       fileData.storedFileName
     );
 
     try {
       await fs.access(finalFilePath, fs.constants.R_OK);
-    }
+    } 
     catch (e) {
       if ((e as NodeJS.ErrnoException).code === "ENOENT") {
-        logger.error(`File not found on disk, but exists in DB: ${finalFilePath}`);
+        logger.error(`File not found on disk: ${finalFilePath}`);
         const err: RequestError = {
           name: "Not Found",
           status: 404,
@@ -254,142 +219,70 @@ const uploadService = {
     }
 
     const stream = createReadStream(finalFilePath);
-
     return { stream, headers };
   },
-  async renameUploadFile(
-    body: renameUploadFileTypeBody,
-    session: Session & Partial<SessionData>) {
+  async renameUpload(
+    body: renameUploadTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const { uploadId, newUploadName } = body;
+    const classIdNum = parseInt(session.classId!, 10);
 
-    const { fileId, newFileName } = body;
-
-    const foundFile = await prisma.fileData.findUnique({
-      where: {
-        fileId: fileId
-      }
+    await prisma.upload.update({
+      where: { uploadId: uploadId, classId: classIdNum },
+      data: { uploadName: newUploadName }
     });
-    // answer with same status code to confuse potential hackers
-    if (!foundFile || foundFile.classId !== parseInt(session.classId!, 10)) {
+  },
+  async deleteUpload(
+    body: deleteUploadTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const { uploadId } = body;
+    const classIdNum = parseInt(session.classId!, 10);
+
+    const uploadData = await prisma.upload.findUnique({
+      where: { uploadId },
+      include: { Files: true }
+    });
+
+    if (!uploadData || uploadData.classId !== classIdNum) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
-        message: "File not found on server.",
+        message: "Upload not found.",
         expected: true
       };
       throw err;
     }
 
-    await prisma.fileData.update({
-      where: {
-        fileId: fileId,
-        classId: parseInt(session.classId!, 10)
-      },
-      data: {
-        originalName: newFileName
-      }
-    });
-  },
-  async deleteUploadFile(
-    body: deleteUploadFileTypeBody,
-    session: Session & Partial<SessionData>
-  ) {
-    const { fileId } = body;
-
-    const foundFile = await prisma.fileData.findUnique({
-      where: {
-        fileId: fileId
-      }
-    });
-    // answer with same status code to confuse potential hackers
-    if (!foundFile || foundFile.classId !== parseInt(session.classId!, 10)) {
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "File not found on server.",
-        expected: true
-      };
-      throw err;
+    // Delete all physical files from disk
+    const classDir = path.join(FINAL_UPLOADS_DIR, classIdNum.toString());
+    for (const file of uploadData.Files) {
+      const filePath = path.join(classDir, file.storedFileName);
+      await fs.unlink(filePath).catch(() => {});
     }
 
-    const finalFilePath = path.join(
-      FINAL_UPLOADS_DIR,
-      foundFile.classId.toString(),
-      foundFile.storedFileName
-    );
-    await fs.unlink(finalFilePath);
+    // Calculate actual size (for completed uploads) or reserved size (for failed/queued)
+    const sizeToRelease = uploadData.status === "completed"
+      ? BigInt(uploadData.Files.reduce((sum, file) => sum + file.size, 0))
+      : uploadData.reservedBytes;
 
     await prisma.$transaction(async tx => {
-      await tx.fileData.delete({
-        where: {
-          fileId: fileId
-        }
+      // Delete all file metadata records
+      await tx.fileMetadata.deleteMany({
+        where: { uploadId }
       });
-      await tx.class.update({
-        where: { classId: foundFile.classId },
-        data: { storageUsedBytes: { decrement: BigInt(foundFile.size) } }
+
+      // Delete the upload record
+      await tx.upload.delete({
+        where: { uploadId }
       });
-    });
-  },
-  async renameFileGroup(
-    body: renameUploadFileGroupTypeBody,
-    session: Session & Partial<SessionData>
-  ) {
-    const classId = parseInt(session.classId!, 10);
-    const { groupId, newGroupName } = body;
 
-    const group = await prisma.fileGroup.findUnique({ where: { fileGroupId: groupId } });
-    if (!group || group.classId !== classId) {
-      throw {
-        name: "Not Found",
-        status: 404,
-        message: "File group not found.",
-        expected: true
-      } as RequestError;
-    }
-
-    await prisma.fileGroup.update({
-      where: { fileGroupId: groupId },
-      data: { name: newGroupName }
-    });
-  },
-  async deleteFileGroup(
-    body: deleteUploadFileGroupTypeBody,
-    session: Session & Partial<SessionData>
-  ) {
-    const classId = parseInt(session.classId!, 10);
-    const { groupId } = body;
-
-    const group = await prisma.fileGroup.findUnique({
-      where: { fileGroupId: groupId },
-      include: { files: true }
-    });
-    if (!group || group.classId !== classId) {
-      throw {
-        name: "Not Found",
-        status: 404,
-        message: "File group not found.",
-        expected: true
-      } as RequestError;
-    }
-
-    // delete files from disk
-    await Promise.all(group.files.map(f => {
-      const p = path.join(FINAL_UPLOADS_DIR, classId.toString(), f.storedFileName);
-      return fs.unlink(p).catch(err => {
-        if (err.code !== "ENOENT") logger.error(`Error deleting file on disk ${p}`, err);
-      });
-    }));
-
-    const totalBytes = group.files.reduce((acc, f) => acc + BigInt(f.size), BigInt(0));
-
-    // delete rows and decrement storage
-    await prisma.$transaction(async tx => {
-      await tx.fileData.deleteMany({ where: { fileGroupId: groupId } });
-      await tx.fileGroup.delete({ where: { fileGroupId: groupId } });
-      if (totalBytes > 0n) {
+      // Update class storage usage
+      if (sizeToRelease > 0n) {
         await tx.class.update({
-          where: { classId },
-          data: { storageUsedBytes: { decrement: totalBytes } }
+          where: { classId: classIdNum },
+          data: { storageUsedBytes: { decrement: sizeToRelease } }
         });
       }
     });

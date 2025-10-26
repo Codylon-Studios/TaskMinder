@@ -249,7 +249,7 @@ export default {
           deletedOn: Date.now()
         }
       });
-      await tx.fileData.updateMany({
+      await tx.upload.updateMany({
         where: {
           accountId: account!.accountId
         },

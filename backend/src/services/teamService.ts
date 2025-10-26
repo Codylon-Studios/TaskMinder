@@ -5,6 +5,9 @@ import logger from "../utils/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { updateCacheData } from "../utils/validateFunctions";
 import { setJoinedTeamsTypeBody, setTeamsTypeBody } from "../schemas/teamSchema";
+import fs from "fs/promises";
+import path from "path";
+import { FINAL_UPLOADS_DIR } from "../config/upload";
 
 const teamService = {
   async getTeamsData(session: Session & Partial<SessionData>) {
@@ -61,6 +64,43 @@ const teamService = {
       await Promise.all(
         existingTeams.map(async (team: { teamId: number }) => {
           if (!teams.some(t => t.teamId === team.teamId)) {
+            // Get all uploads for this team to delete files
+            const uploads = await tx.upload.findMany({
+              where: { teamId: team.teamId },
+              include: { Files: true }
+            });
+            // Delete physical files from disk
+            const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
+            for (const upload of uploads) {
+              for (const file of upload.Files) {
+                const filePath = path.join(classDir, file.storedFileName);
+                await fs.unlink(filePath).catch(() => {});
+              }
+              // Calculate storage to release
+              const sizeToRelease = upload.status === "completed"
+                ? BigInt(upload.Files.reduce((sum, file) => sum + file.size, 0))
+                : upload.reservedBytes;
+              // Update class storage usage
+              if (sizeToRelease > 0n) {
+                await tx.class.update({
+                  where: { classId },
+                  data: { storageUsedBytes: { decrement: sizeToRelease } }
+                });
+              }
+            }
+            // Delete file metadata records
+            await tx.fileMetadata.deleteMany({
+              where: {
+                uploadId: {
+                  in: uploads.map(u => u.uploadId)
+                }
+              }
+            });
+            // Delete upload records
+            await tx.upload.deleteMany({
+              where: { teamId: team.teamId }
+            });
+
             // delete homework which were linked to team
             await tx.homework.deleteMany({
               where: { teamId: team.teamId }

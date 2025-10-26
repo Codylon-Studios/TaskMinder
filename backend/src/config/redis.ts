@@ -12,6 +12,10 @@ export const CACHE_KEY_PREFIXES = {
   TEAMS: "teams_data"
 };
 
+export const QUEUE_KEYS = {
+  FILE_PROCESSING: "file_processing_queue"
+};
+
 export const generateCacheKey = (baseKey: string, classId: string): string => {
   if (!baseKey || !classId) {
     logger.error("Base Key or/and ClassId missing to generate redis cache key");
@@ -66,4 +70,17 @@ export const disconnectRedis = async (): Promise<void> => {
     logger.error("Unknown error disconnecting from Redis!");
     throw new Error();
   }
+};
+
+export const queueJob = async (queueKey: string, jobData: unknown): Promise<void> => {
+  await redisClient.lPush(queueKey, JSON.stringify(jobData));
+};
+
+export const dequeueJob = async (queueKey: string): Promise<unknown | null> => {
+  const job = await redisClient.rPop(queueKey);
+  return job ? JSON.parse(job) : null;
+};
+
+export const getQueueLength = async (queueKey: string): Promise<number> => {
+  return await redisClient.lLen(queueKey);
 };

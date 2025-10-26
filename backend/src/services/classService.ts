@@ -5,6 +5,9 @@ import { BigIntreplacer } from "../utils/validateFunctions";
 import { sessionPool } from "../config/pg";
 import logger from "../utils/logger";
 import { redisClient } from "../config/redis";
+import fs from "fs/promises";
+import path from "path";
+import { FINAL_UPLOADS_DIR } from "../config/upload";
 import { 
   changeClassNameTypeBody,
   changeDefaultPermissionTypeBody, 
@@ -264,6 +267,34 @@ const classService = {
     await prisma.$transaction(async tx => {
       const classIdToDelete = parseInt(session.classId!);
 
+      // Delete all file metadata and upload records for this class
+      const uploads = await tx.upload.findMany({
+        where: { classId: classIdToDelete },
+        include: { Files: true }
+      });
+      // Delete physical files from disk
+      const classDir = path.join(FINAL_UPLOADS_DIR, classIdToDelete.toString());
+      try {
+        await fs.rm(classDir, { recursive: true, force: true });
+        logger.info(`Deleted class directory: ${classDir}`);
+      } 
+      catch (error) {
+        logger.error(`Error deleting class directory ${classDir}:`, error);
+        // Continue with database cleanup even if file deletion fails
+      }
+      // Delete file metadata records
+      await tx.fileMetadata.deleteMany({
+        where: {
+          uploadId: {
+            in: uploads.map(u => u.uploadId)
+          }
+        }
+      });
+      // Delete upload records
+      await tx.upload.deleteMany({
+        where: { classId: classIdToDelete }
+      });
+
       await tx.joinedClass.deleteMany({
         where: {
           classId: classIdToDelete
@@ -275,6 +306,7 @@ const classService = {
           classId: classIdToDelete
         }
       });
+      
       await redisClient.del(`auth_class:${classIdToDelete}`);
       delete session.classId;
     });

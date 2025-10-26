@@ -15,8 +15,8 @@ import { ErrorHandler } from "./middleware/errorMiddleware";
 import RequestLogger from "./middleware/loggerMiddleware";
 import { CSPMiddleware } from "./middleware/CSPMiddleware";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
-import { initializeUploadServices } from "./middleware/uploadMiddleware";
-import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
+import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses, cleanupStuckUploads } from "./utils/dbCleanup";
+import { initializeUploadWorkerServices, startUploadWorker } from "./utils/uploadProcessWorker";
 import logger from "./utils/logger";
 import account from "./routes/accountRoute";
 import events from "./routes/eventRoute";
@@ -26,6 +26,7 @@ import substitutions from "./routes/substitutionRoute";
 import subjects from "./routes/subjectRoute";
 import teams from "./routes/teamRoute";
 import classes from "./routes/classRoute";
+import uploads from "./routes/uploadRoute";
 import { connectRedis } from "./config/redis";
 
 dotenv.config();
@@ -41,7 +42,8 @@ prisma
   });
 
 connectRedis();
-initializeUploadServices();
+initializeUploadWorkerServices();
+startUploadWorker();
 
 const sessionSecret = process.env.SESSION_SECRET;
 
@@ -166,6 +168,7 @@ app.use("/events", events);
 app.use("/subjects", subjects);
 app.use("/lessons", lessons);
 app.use("/class", classes);
+app.use("/uploads", uploads);
 
 //
 // Protected routes: Redirect to /join if not logged in
@@ -214,6 +217,14 @@ cron.schedule("0 0 * * *", () => {
   cleanupTestClasses();
   cleanupDeletedAccounts();
 });
+
+// Run stuck upload cleanup every 10 minutes
+setInterval(() => {
+  logger.info("Running stuck upload cleanup");
+  cleanupStuckUploads().catch(err => {
+    logger.error("Stuck upload cleanup failed:", err);
+  });
+}, 10 * 60 * 1000); // 10 minutes
 
 server.listen(3000, () => {
   logger.success("Server running at http://localhost:3000");

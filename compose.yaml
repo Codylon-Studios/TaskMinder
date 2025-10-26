@@ -30,6 +30,7 @@ services:
         condition: service_healthy
     volumes:
       - ./db-backups:/backups
+      - clamav-data:/var/lib/clamav
 
   postgres:
     image: postgres:14
@@ -153,3 +154,4 @@ volumes:
   loki-data:
   promtail-positions:
   grafana-data:
+  clamav-data:
