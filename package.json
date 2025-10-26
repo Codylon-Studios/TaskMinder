@@ -70,7 +70,7 @@
     "@types/bootstrap": "5.2.10",
     "@types/bun": "1.2.22",
     "@types/connect-pg-simple": "7.0.3",
-    "@types/express": "5.0.3",
+    "@types/express": "5.0.4",
     "@types/express-session": "1.18.2",
     "@types/jquery": "3.5.33",
     "@types/multer": "2.0.0",
