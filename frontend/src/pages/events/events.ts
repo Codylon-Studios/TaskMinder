@@ -10,7 +10,8 @@ import {
   socket,
   csrfToken,
   lessonData,
-  escapeHTML
+  escapeHTML,
+  dateDaysDifference
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -55,7 +56,6 @@ async function updateEventList(): Promise<void> {
     const startDate = msToDisplayDate(event.startDate);
     const lesson = event.lesson;
 
-    const editOptionsDisplay = editEnabled ? "" : "d-none";
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
       const endDate = msToDisplayDate(event.endDate);
@@ -76,17 +76,17 @@ async function updateEventList(): Promise<void> {
           <div class="card-body p-2">
             <div class="d-flex justify-content-between">
               <div style="min-width: 0;">
-                <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${escapeHTML(name)}</span>
+                <span class="fw-bold event-${eventTypeId} event-title">${escapeHTML(name)}</span>
                 <br>
                 <span>${timeSpan.html()}</span>
               </div>
               <div>
                 <div class="d-flex flex-nowrap">
-                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-edit"
+                  <button class="edit-option btn btn-sm btn-semivisible event-edit"
                     data-id="${eventId}" aria-label="Bearbeiten">
                     <i class="fa-solid fa-edit event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
-                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-delete"
+                  <button class="edit-option btn btn-sm btn-semivisible event-delete"
                     data-id="${eventId}" aria-label="Löschen">
                     <i class="fa-solid fa-trash event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
@@ -103,6 +103,7 @@ async function updateEventList(): Promise<void> {
         </div>
       </div>
       `);
+    template.find(".edit-option").toggle(editEnabled);
 
     // Add this event to the list
     newContent.append(template);
@@ -417,7 +418,6 @@ async function shareEvent(eventId: number): Promise<void> {
   document.body.appendChild(a);
   a.click();
 
-  // Aufräumen
   a.remove();
   URL.revokeObjectURL(url);
 }
@@ -581,29 +581,22 @@ function deleteEvent(eventId: number): void {
 }
 
 function updateFilters(ingoreEventTypes?: boolean): void {
-  $("#filter-changed").addClass("d-none");
+  $("#filter-changed").hide();
 
   const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
 
-  if (filterData.dateFrom === undefined) {
-    $("#filter-date-from").val(msToInputDate(Date.now()));
-  }
-  else {
-    $("#filter-date-from").val(filterData.dateFrom);
-    if (!isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none");
-  }
+  filterData.dateFromOffset ??= 0
+  const dateFrom = new Date();
+  dateFrom.setDate(dateFrom.getDate() + filterData.dateFromOffset);
+  $("#filter-date-from").val(msToInputDate(dateFrom.getTime()));
+  if (filterData.dateFromOffset !== 0) $("#filter-changed").show()
 
-  if (filterData.dateUntil === undefined) {
-    const nextMonth = new Date(Date.now());
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
-  }
-  else {
-    $("#filter-date-until").val(filterData.dateUntil);
-    const nextMonth = new Date(Date.now());
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
-  }
+  filterData.dateUntilOffset ??= 0
+  const dateUntil = new Date();
+  dateUntil.setMonth(dateUntil.getMonth() + 1)
+  dateUntil.setDate(dateUntil.getDate() + filterData.dateUntilOffset);
+  $("#filter-date-until").val(msToInputDate(dateUntil.getTime()));
+  if (filterData.dateUntilOffset !== 0) $("#filter-changed").show()
 
   if (! ingoreEventTypes) {
     updateEventTypeList();
@@ -615,42 +608,24 @@ function toggleShownButtons(): void {
   $("#edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
   $("#show-add-event-button").toggle((user.permissionLevel ?? 0) >= 1);
   if (!loggedIn) {
-    $(".event-edit-option").addClass("d-none");
+    $(".edit-option").addClass("d-none");
   }
 }
 
 export async function init(): Promise<void> {
   return new Promise(res => {
     $(async function () {
-      // Leave edit mode (if user entered it in a previous session)
-      $("#edit-toggle").prop("checked", false);
-
       $("#edit-toggle").on("click", function () {
-        if ($("#edit-toggle").is(":checked")) {
-          // On checking the edit toggle, show the add button and edit options
-          $(".event-edit-option").removeClass("d-none");
-        }
-        else {
-          // On unchecking the edit toggle, hide the add button and edit options
-          $(".event-edit-option").addClass("d-none");
-        }
+        $(".edit-option").toggle($("#edit-toggle").is(":checked"));
       });
-
-      // Leave filter mode (if user entered it in a previous session)
-      $("#filter-toggle").prop("checked", false);
+      $("#edit-toggle").prop("checked", false);
+      $(".edit-option").hide()
 
       $("#filter-toggle").on("click", function () {
-        if ($("#filter-toggle").is(":checked")) {
-          // On checking the filter toggle, show the filter options
-          $("#filter-content").removeClass("d-none");
-          $("#filter-reset").removeClass("d-none");
-        }
-        else {
-          // On checking the filter toggle, hide the filter options
-          $("#filter-content").addClass("d-none");
-          $("#filter-reset").addClass("d-none");
-        }
+        $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
       });
+      $("#filter-toggle").prop("checked", false);
+      $("#filter-content, #filter-reset").hide()
 
       if (!localStorage.getItem("eventFilter")) {
         localStorage.setItem("eventFilter", "{}");
@@ -713,20 +688,17 @@ export async function init(): Promise<void> {
 
       // Share the event on clicking its share icon
       $(document).on("click", ".event-share", function () {
-        const eventId = $(this).data("id");
-        shareEvent(eventId);
+        shareEvent($(this).data("id"));
       });
 
       // Request deleting the event on clicking its delete icon
       $(document).on("click", ".event-delete", function () {
-        const eventId = $(this).data("id");
-        deleteEvent(eventId);
+        deleteEvent($(this).data("id"));
       });
 
       // Request editing the event on clicking its edit icon
       $(document).on("click", ".event-edit", function () {
-        const eventId = $(this).data("id");
-        editEvent(eventId);
+        editEvent($(this).data("id"));
       });
 
       // On clicking the all types option, check all and update the event list
@@ -755,19 +727,30 @@ export async function init(): Promise<void> {
       });
 
       // On changing any filter date option, update the event list
-      $("#filter-date-from").on("change", () => {
+      $("#filter-date-from").on("change", function () {
+        const selectedDate = new Date($(this).val()?.toString() ?? "");
+        const normalDate = new Date();
+        const diff = dateDaysDifference(selectedDate, normalDate)
+
         const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        filterData.dateFrom = $("#filter-date-from").val();
+        filterData.dateFromOffset = diff;
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
+
         updateFilters();
         updateEventList();
       });
 
       // On changing any filter date option, update the event list
-      $("#filter-date-until").on("change", () => {
+      $("#filter-date-until").on("change", function () {
+        const selectedDate = new Date($(this).val()?.toString() ?? "");
+        const normalDate = new Date();
+        normalDate.setMonth(normalDate.getMonth() + 1)
+        const diff = dateDaysDifference(selectedDate, normalDate)
+
         const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        filterData.dateUntil = $("#filter-date-until").val();
+        filterData.dateUntilOffset = diff;
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
+        
         updateFilters();
         updateEventList();
       });

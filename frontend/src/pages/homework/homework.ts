@@ -116,16 +116,17 @@ async function updateHomeworkList(): Promise<void> {
           <span class="ms-4 d-block">Von ${assignmentDate} auf ${submissionDate}</span>
         </div>
 
-        <div class="homework-edit-options ms-2 text-nowrap">
-          <button class="btn btn-sm btn-semivisible homework-edit ${editEnabled ? "" : "d-none"}" data-id="${homeworkId}" aria-label="Bearbeiten">
+        <div class="ms-2 text-nowrap">
+          <button class="edit-option btn btn-sm btn-semivisible homework-edit" data-id="${homeworkId}" aria-label="Bearbeiten">
             <i class="fa-solid fa-edit opacity-75" aria-hidden="true"></i>
           </button>
-          <button class="btn btn-sm btn-semivisible homework-delete ${editEnabled ? "" : "d-none"}" data-id="${homeworkId}" aria-label="Löschen">
+          <button class="edit-option btn btn-sm btn-semivisible homework-delete" data-id="${homeworkId}" aria-label="Löschen">
             <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
           </button>
         </div>
       </div>
     `);
+    template.find(".edit-option").toggle(editEnabled)
     
     showCheckAnimation();
 
@@ -785,7 +786,7 @@ function toggleShownButtons(): void {
   $("#edit-toggle, #edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
   $("#show-add-homework-button").toggle((user.permissionLevel ?? 0) >= 1);
   if (!loggedIn) {
-    $(".homework-edit-options button").addClass("d-none");
+    $(".edit-option").addClass("d-none");
   }
 }
 
@@ -796,35 +797,17 @@ export async function init(): Promise<void> {
     homeworkFeedbackLastPercentage = null as null | number;
 
     $(function () {
-      // Leave edit mode (if user entered it in a previous session)
-      $("#edit-toggle").prop("checked", false);
-
       $("#edit-toggle").on("click", function () {
-        if ($("#edit-toggle").is(":checked")) {
-          // On checking the edit toggle, show the add button and edit options
-          $(".homework-edit-options button").removeClass("d-none");
-        }
-        else {
-          // On unchecking the edit toggle, hide the add button and edit options
-          $(".homework-edit-options button").addClass("d-none");
-        }
+        $(".edit-option").toggle($("#edit-toggle").is(":checked"));
       });
-
-      // Leave filter mode (if user entered it in a previous session)
-      $("#filter-toggle").prop("checked", false);
+      $("#edit-toggle").prop("checked", false);
+      $(".edit-option").hide()
 
       $("#filter-toggle").on("click", function () {
-        if ($("#filter-toggle").is(":checked")) {
-          // On checking the filter toggle, show the filter options
-          $("#filter-content").removeClass("d-none");
-          $("#filter-reset").removeClass("d-none");
-        }
-        else {
-          // On checking the filter toggle, hide the filter options
-          $("#filter-content").addClass("d-none");
-          $("#filter-reset").addClass("d-none");
-        }
+        $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
       });
+      $("#filter-toggle").prop("checked", false);
+      $("#filter-content, #filter-reset").hide()
 
       if (!localStorage.getItem("homeworkFilter")) {
         localStorage.setItem("homeworkFilter", "{}");
@@ -929,20 +912,17 @@ export async function init(): Promise<void> {
 
       // Request deleting the homework on clicking its delete icon
       $(document).on("click", ".homework-delete", function () {
-        const homeworkId = $(this).data("id");
-        deleteHomework(homeworkId);
+        deleteHomework($(this).data("id"));
       });
 
       // Request editing the homework on clicking its delete icon
       $(document).on("click", ".homework-edit", function () {
-        const homeworkId = $(this).data("id");
-        editHomework(homeworkId);
+        editHomework($(this).data("id"));
       });
 
       // Request checking the homework on clicking its checkbox
       $(document).on("click", ".homework-check", function () {
-        const homeworkId = $(this).data("id");
-        checkHomework(homeworkId);
+        checkHomework($(this).data("id"));
       });
 
       // On changing the filter unchecked option, update the homework list & saved filters

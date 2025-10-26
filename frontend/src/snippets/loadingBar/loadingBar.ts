@@ -91,7 +91,6 @@ export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promi
       toasts = $(doc).filter(".toast-container").children();
       resUrl = res.url;
     }
-    console.log(resUrl);
     
     cacheHtml((new URL(resUrl, globalThis.location.origin)).pathname, app);
 

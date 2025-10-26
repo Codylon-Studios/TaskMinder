@@ -204,8 +204,12 @@ body {
   cursor: pointer;
 }
 
-.d-contents {
-  display: contents;
+.ds-flex {
+  display: flex;
+}
+
+.ds-none {
+  display: none;
 }
 
 .text-body-bg {

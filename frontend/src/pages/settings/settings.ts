@@ -46,12 +46,12 @@ async function updateColorTheme(): Promise<void> {
 
   if ((await colorTheme()) === "light") {
     $("html").css({ background: "#ffffff" });
-    document.body.dataset["bs-theme"] = "light";
+    document.body.dataset.bsTheme = "light";
     $('meta[name="theme-color"]').attr("content", "#f8f9fa");
   }
   else {
     $("html").css({ background: "#212529" });
-    document.body.dataset["bs-theme"] = "dark";
+    document.body.dataset.bsTheme = "dark";
     $('meta[name="theme-color"]').attr("content", "#2b3035");
   }
 }

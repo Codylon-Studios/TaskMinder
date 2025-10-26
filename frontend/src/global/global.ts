@@ -121,6 +121,14 @@ export function msToTime(ms: number | string): string {
     .padStart(2, "0")}:${((num / 1000 / 60) % 60).toString().padStart(2, "0")}`;
 }
 
+export function dateDaysDifference(date1: Date, date2: Date) {
+  const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
+
+  const diffMs = utc1 - utc2;
+  return diffMs / (1000 * 60 * 60 * 24);
+}
+
 export function getTimeLeftString(timeLeft: number): string {
   if (timeLeft < 60 * 60 * 1000) {
     const mins = Math.floor(timeLeft / 60 / 1000);
@@ -718,12 +726,12 @@ if (!isSite("settings")) {
 
       if ((await colorTheme()) === "light") {
         document.getElementsByTagName("html")[0].style.background = "#ffffff";
-        document.body.dataset["bs-theme"] = "light";
+        document.body.dataset.bsTheme = "light";
         $('meta[name="theme-color"]').attr("content", "#f8f9fa");
       }
       else {
         document.getElementsByTagName("html")[0].style.background = "#212529";
-        document.body.dataset["bs-theme"] = "dark";
+        document.body.dataset.bsTheme = "dark";
         $('meta[name="theme-color"]').attr("content", "#2b3035");
       }
     }
