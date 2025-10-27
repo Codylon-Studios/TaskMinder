@@ -1,9 +1,10 @@
 import z, { strictObject } from "zod";
+import { FileTypes } from "../config/upload";
 
-export const getUploadFileMetadataSchema = z.object({
+export const getUploadMetadataSchema = z.object({
   params: z.object({}),
   query: z.object({
-    all: z.boolean()
+    all: z.enum(["true", "false"]).optional().transform(val => val === "true")
   }),
   body: z.strictObject({})
 });
@@ -18,54 +19,49 @@ export const getUploadFileSchema = z.object({
   body: z.strictObject({})
 });
 
-export const setUploadFileSchema = z.object({
+export const uploadFileSchema = z.object({
   params: z.object({}),
   query: z.object({}),
   body: z.strictObject({
-    fileGroupName: z.string().nullable()
+    uploadName: z.string(),
+    uploadType: z.enum(FileTypes),
+    teamId: z.coerce.number(),
+    // Files are handled by multer/form-data
+    files: z.any().optional()
   })
 });
 
-export const renameUploadFileSchema = z.object({
+export const renameUploadSchema = z.object({
   params: z.object({}),
   query: z.object({}),
   body: strictObject({
-    fileId: z.coerce.number(),
-    newFileName: z.string().trim().min(1)
+    uploadId: z.coerce.number(),
+    newUploadName: z.string().trim().min(1)
   })
 });
 
-export const deleteUploadFileSchema = z.object({
+export const deleteUploadSchema = z.object({
   params: z.object({}),
   query: z.object({}),
   body: strictObject({
-    fileId: z.coerce.number()
+    uploadId: z.coerce.number()
   })
 });
 
-export const renameUploadFileGroupSchema = z.object({
-  params: z.object({}),
-  query: z.object({}),
-  body: strictObject({
-    groupId: z.coerce.number(),
-    newGroupName: z.string().trim().min(1)
-  })
-});
 
-export const deleteUploadFileGroupSchema = z.object({
-  params: z.object({}),
+export const getUploadStatusSchema = z.object({
+  params: z.object({
+    uploadId: z.coerce.number()
+  }),
   query: z.object({}),
-  body: strictObject({
-    groupId: z.coerce.number()
-  })
+  body: z.strictObject({})
 });
 
 export type getUploadFileType = z.infer<typeof getUploadFileSchema>;
-export type renameUploadFileType = z.infer<typeof renameUploadFileSchema>;
-export type deleteUploadFileType = z.infer<typeof deleteUploadFileSchema>;
+export type renameUploadType = z.infer<typeof renameUploadSchema>;
+export type deleteUploadType = z.infer<typeof deleteUploadSchema>;
+export type getUploadStatusType = z.infer<typeof getUploadStatusSchema>;
 
-export type setUploadFileTypeBody = z.infer<typeof setUploadFileSchema>["body"];
-export type renameUploadFileTypeBody = z.infer<typeof renameUploadFileSchema>["body"];
-export type deleteUploadFileTypeBody = z.infer<typeof deleteUploadFileSchema>["body"];
-export type renameUploadFileGroupTypeBody = z.infer<typeof renameUploadFileGroupSchema>["body"];
-export type deleteUploadFileGroupTypeBody = z.infer<typeof deleteUploadFileGroupSchema>["body"];
+export type setUploadFileTypeBody = z.infer<typeof uploadFileSchema>["body"];
+export type renameUploadTypeBody = z.infer<typeof renameUploadSchema>["body"];
+export type deleteUploadTypeBody = z.infer<typeof deleteUploadSchema>["body"];

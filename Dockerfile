@@ -1,7 +1,7 @@
 # ==============================================================================
 # ---------- Build Stage ----------
 # ==============================================================================
-FROM oven/bun:1.2-alpine AS builder
+FROM oven/bun:1.3-alpine AS builder
 WORKDIR /usr/src/app
 COPY package.json bun.lock ./
 RUN --mount=type=cache,target=/root/.bun bun install
@@ -12,7 +12,7 @@ RUN bun install --production
 # ==============================================================================
 # ---------- Production Stage ----------
 # ==============================================================================
-FROM oven/bun:1.2-alpine AS production
+FROM oven/bun:1.3-alpine AS production
 
 # Install only RUNTIME system dependencies
 RUN apk update && apk upgrade --no-cache && \
@@ -35,6 +35,11 @@ COPY --from=builder /usr/src/app/prisma.config.ts ./prisma.config.ts
 # ---- Add and configure the entrypoint script ----
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# ---- Ensure ClamAV directories have correct permissions ----
+RUN mkdir -p /var/lib/clamav && \
+    chown -R bun:bun /var/lib/clamav && \
+    chmod -R 755 /var/lib/clamav
 
 # Set ownership for the app user
 RUN chown -R bun:bun /usr/src/app

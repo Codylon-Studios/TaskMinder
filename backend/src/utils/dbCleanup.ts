@@ -1,6 +1,9 @@
 import prisma from "../config/prisma";
 import { redisClient } from "../config/redis";
 import logger from "./logger";
+import fs from "fs/promises";
+import path from "path";
+import { FINAL_UPLOADS_DIR } from "../config/upload";
 
 /**
  * Deletes class records that are older than 1 day and are TEST CLASSES
@@ -31,7 +34,40 @@ export async function cleanupTestClasses(): Promise<void> {
 
     const classIdsToDelete = classesToDelete.map(c => c.classId);
 
-    const [updatedAccounts, deletedJoins] = await prisma.$transaction([
+    // Delete physical files for each class
+    for (const classId of classIdsToDelete) {
+      const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
+      try {
+        await fs.rm(classDir, { recursive: true, force: true });
+        logger.info(`Deleted class directory: ${classDir}`);
+      } 
+      catch (error) {
+        logger.error(`Error deleting class directory ${classDir}:`, error);
+        // Continue with database cleanup even if file deletion fails
+      }
+    }
+
+    const [deletedFileMetadata, deletedUploads, deletedJoins ] = await prisma.$transaction([
+      // Delete all file metadata for uploads in these classes
+      prisma.fileMetadata.deleteMany({
+        where: {
+          Upload: {
+            classId: {
+              in: classIdsToDelete
+            }
+          }
+        }
+      }),
+
+      // Delete all uploads for these classes
+      prisma.upload.deleteMany({
+        where: {
+          classId: {
+            in: classIdsToDelete
+          }
+        }
+      }),
+
       prisma.joinedClass.deleteMany({
         where: {
           classId: {
@@ -55,8 +91,11 @@ export async function cleanupTestClasses(): Promise<void> {
       )
     );
 
-    logger.info("Test Class cleanup completed: " + classesToDelete.length + " classes deleted, " + deletedJoins.count +
-       " join records removed, and " + updatedAccounts.count + " accounts updated."
+    logger.info(
+      `Test Class cleanup completed: ${classesToDelete.length} classes deleted, ` +
+      `${deletedFileMetadata.count} file metadata records removed, ` +
+      `${deletedUploads.count} uploads removed, ` +
+      `${deletedJoins.count} join records removed.`
     );
   }
   catch (error) {
@@ -167,5 +206,64 @@ export async function cleanupOldEvents(): Promise<void> {
   } 
   catch (error) {
     logger.error("Error during event cleanup:", error);
+  }
+}
+
+
+/**
+ * Cleans up uploads stuck in "processing" status for more than 10 minutes
+ * and releases their reserved storage
+ */
+export async function cleanupStuckUploads(): Promise<void> {
+  try {
+    logger.setStandardPrefix("[CronJob Stuck Uploads]");
+
+    // 10 minutes ago
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+
+    const stuckUploads = await prisma.upload.findMany({
+      where: {
+        status: "processing",
+        createdAt: {
+          lt: tenMinutesAgo
+        }
+      },
+      select: {
+        uploadId: true,
+        classId: true,
+        reservedBytes: true
+      }
+    });
+
+    if (stuckUploads.length === 0) {
+      logger.info("No stuck uploads found");
+      return;
+    }
+
+    // Release reserved storage and mark as failed
+    for (const upload of stuckUploads) {
+      await prisma.$transaction(async tx => {
+        if (upload.reservedBytes > 0n) {
+          await tx.class.update({
+            where: { classId: upload.classId },
+            data: { storageUsedBytes: { decrement: upload.reservedBytes } }
+          });
+        }
+
+        await tx.upload.update({
+          where: { uploadId: upload.uploadId },
+          data: {
+            status: "failed",
+            errorReason: "processing_timeout",
+            reservedBytes: 0n
+          }
+        });
+      });
+    }
+
+    logger.info(`Cleaned up ${stuckUploads.length} stuck uploads`);
+  } 
+  catch (error) {
+    logger.error("Error during stuck upload cleanup:", error);
   }
 }

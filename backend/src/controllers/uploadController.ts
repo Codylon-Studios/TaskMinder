@@ -3,11 +3,10 @@ import asyncHandler from "express-async-handler";
 import logger from "../utils/logger";
 import { getUploadFileType } from "../schemas/uploadSchema";
 
-
-export const getUploadDataList = asyncHandler(async (req, res, next) => {
+export const getUploadMetadata = asyncHandler(async (req, res, next) => {
   try {
     const isGetAllData = req.query.all === "true";
-    const uploadData = await uploadService.getUploadDataList(isGetAllData, req.session);
+    const uploadData = await uploadService.getUploadMetadata(isGetAllData, req.session);
     res.status(200).json(uploadData);
   }
   catch (error) {
@@ -42,9 +41,9 @@ export const getUploadFile = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const renameUploadFile = asyncHandler(async (req, res, next) => {
+export const renameUpload = asyncHandler(async (req, res, next) => {
   try {
-    await uploadService.renameUploadFile(req.body, req.session);
+    await uploadService.renameUpload(req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -52,9 +51,9 @@ export const renameUploadFile = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const deleteUploadFile = asyncHandler(async (req, res, next) => {
+export const deleteUpload = asyncHandler(async (req, res, next) => {
   try {
-    await uploadService.deleteUploadFile(req.body, req.session);
+    await uploadService.deleteUpload(req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -64,43 +63,39 @@ export const deleteUploadFile = asyncHandler(async (req, res, next) => {
 
 export const setUploadFile = asyncHandler(async (req, res, next) => {
   try {
-    const verifiedMimes = (res.locals.verifiedMimes as string[]);
     const files: Express.Multer.File[] = (res.locals.allFiles as Express.Multer.File[]);
-
-    await uploadService.setUploadFile(files, verifiedMimes, req.session, req.body);
-    res.sendStatus(201);
+    const reservedBytes = res.locals.reservedBytes as bigint;
+    
+    const result = await uploadService.queueFileUpload(files, req.session, req.body, reservedBytes);
+    
+    res.status(200).json({
+      uploadId: result.uploadId,
+      status: "queued",
+      filesCount: files.length,
+      message: "Files uploaded successfully and queued for processing"
+    });
   }
   catch (error) {
     next(error);
   }
 });
 
-export const renameUploadFileGroup = asyncHandler(async (req, res, next) => {
+export const getUploadStatus = asyncHandler(async (req, res, next) => {
   try {
-    await uploadService.renameFileGroup(req.body, req.session);
-    res.sendStatus(200);
-  } 
-  catch (error) {
-    next(error);
+    const uploadId = parseInt(req.params.uploadId, 10);
+    const status = await uploadService.getUploadStatus(uploadId, req.session);
+    res.status(200).json(status);
   }
-});
-
-export const deleteUploadFileGroup = asyncHandler(async (req, res, next) => {
-  try {
-    await uploadService.deleteFileGroup(req.body, req.session);
-    res.sendStatus(200);
-  } 
   catch (error) {
     next(error);
   }
 });
 
 export default {
-  getUploadDataList,
+  getUploadMetadata,
   getUploadFile,
-  renameUploadFile,
-  deleteUploadFile,
+  renameUpload,
+  deleteUpload,
   setUploadFile,
-  renameUploadFileGroup,
-  deleteUploadFileGroup
+  getUploadStatus
 };

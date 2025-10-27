@@ -3,44 +3,34 @@ import uploadController from "../controllers/uploadController";
 import checkAccess from "../middleware/accessMiddleware";
 import uploadMiddleware from "../middleware/uploadMiddleware";
 import { validate } from "../middleware/validationMiddleware";
-import { deleteUploadFileSchema, getUploadFileSchema, renameUploadFileSchema, setUploadFileSchema } from "../schemas/uploadSchema";
-import { deleteUploadFileGroupSchema, renameUploadFileGroupSchema } from "../schemas/uploadSchema";
+import { 
+  deleteUploadSchema, 
+  getUploadFileSchema, 
+  getUploadMetadataSchema, 
+  getUploadStatusSchema, 
+  renameUploadSchema, 
+  uploadFileSchema 
+} from "../schemas/uploadSchema";
 
 const router = express.Router();
 
-// gets pagination list of file data
-router.get("/get_upload_files", checkAccess(["CLASS", "MEMBER"]), uploadController.getUploadDataList);
-// upload file route
+// get metadata of all files
+router.get("/upload/metadata", checkAccess(["CLASS", "MEMBER"]), validate(getUploadMetadataSchema), uploadController.getUploadMetadata);
+// upload file route - only temp storage and queuing
 router.post(
-  "/set_upload_file", 
+  "/upload", 
   checkAccess(["CLASS", "EDITOR"]),
-  validate(setUploadFileSchema),
+  validate(uploadFileSchema),
   uploadMiddleware.preflightStorageQuotaCheck,
-  uploadMiddleware.secureUpload.array("upload_file", 20),
+  uploadMiddleware.secureUpload.array("files", 20),
   uploadMiddleware.normalizeFiles,
-  uploadMiddleware.verifyFileType,
-  uploadMiddleware.antivirusScan,
-  uploadMiddleware.sanitizeImage,
-  uploadMiddleware.sanitizePDF,
   uploadController.setUploadFile
 );
+// get upload status
+router.get("/upload/status/:uploadId", checkAccess(["CLASS", "MEMBER"]), validate(getUploadStatusSchema), uploadController.getUploadStatus);
 // get single file (preview or download)
-router.get("/get_single_file/:fileId", checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
-
-router.post("/rename_upload_file", checkAccess(["CLASS", "EDITOR"]), validate(renameUploadFileSchema), uploadController.renameUploadFile);
-router.post("/delete_upload_file", checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadFileSchema), uploadController.deleteUploadFile);
-
-router.post(
-  "/rename_upload_file_group", 
-  checkAccess(["CLASS", "EDITOR"]), 
-  validate(renameUploadFileGroupSchema), 
-  uploadController.renameUploadFileGroup
-);
-router.post(
-  "/delete_upload_file_group", 
-  checkAccess(["CLASS", "EDITOR"]),
-  validate(deleteUploadFileGroupSchema), 
-  uploadController.deleteUploadFileGroup
-);
+router.get("/upload/:fileId", checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
+router.post("/upload/rename", checkAccess(["CLASS", "EDITOR"]), validate(renameUploadSchema), uploadController.renameUpload);
+router.post("/upload/delete", checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);
 
 export default router;
