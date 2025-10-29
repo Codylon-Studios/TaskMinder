@@ -51,7 +51,6 @@ export const deleteClass = asyncHandler(async (req, res, next) => {
   }
 });
 
-// for unregistered users
 export const changeDefaultPermission = asyncHandler(async (req, res, next) => {
   try {
     await classService.changeDefaultPermission(req.body, req.session);
@@ -62,7 +61,6 @@ export const changeDefaultPermission = asyncHandler(async (req, res, next) => {
   }
 });
 
-// for registered users
 export const setClassMembersPermissions = asyncHandler(
   async (req, res, next) => {
     try {
@@ -109,16 +107,6 @@ export const getUsersLoggedOutRole = asyncHandler(async (req, res, next) => {
   try {
     const usersLoggedOutRole = await classService.getUsersLoggedOutRole(req.session);
     res.status(200).json(usersLoggedOutRole);
-  } 
-  catch (error) {
-    next(error);
-  }
-});
-
-export const setUsersLoggedOutRole = asyncHandler(async (req, res, next) => {
-  try {
-    await classService.setUsersLoggedOutRole(req.body, req.session);
-    res.sendStatus(200);
   } 
   catch (error) {
     next(error);
@@ -177,7 +165,6 @@ export default {
   kickClassMembers,
   updateDSBMobileData,
   getUsersLoggedOutRole,
-  setUsersLoggedOutRole,
   kickLoggedOutUsers,
   changeClassName,
   changeClassCode,

@@ -8,6 +8,7 @@ import { setJoinedTeamsTypeBody, setTeamsTypeBody } from "../schemas/teamSchema"
 import fs from "fs/promises";
 import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload";
+import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 const teamService = {
   async getTeamsData(session: Session & Partial<SessionData>) {
@@ -172,6 +173,8 @@ const teamService = {
 
     try {
       await updateCacheData(data, setTeamsDataCacheKey);
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);

@@ -55,7 +55,6 @@ if (!sessionSecret) {
 const app = express();
 app.set("trust proxy", 1);
 const server = createServer(app);
-socketIO.initialize(server);
 
 const limiter = rateLimit({
   windowMs: 1000, // 1 second
@@ -113,6 +112,8 @@ const sessionMiddleware = session({
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "service operational" });
 });
+
+socketIO.initialize(server, sessionMiddleware);
 
 app.use(sessionMiddleware);
 app.use(csrfSessionInit);

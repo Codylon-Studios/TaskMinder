@@ -1,4 +1,4 @@
-import { csrfToken } from "../../global/global.js";
+import { csrfToken, socket } from "../../global/global.js";
 import { replaceSitePJAX as openSitePJAX } from "../../snippets/loadingBar/loadingBar.js";
 import { $navbarToasts, resetLoginRegister, user } from "../../snippets/navbar/navbar.js";
 
@@ -124,6 +124,9 @@ export async function init(): Promise<void> {
           $(".navbar-home-link").attr("href", "/main");
           const className = res;
           $("#decide-account-class-name").text(className);
+          // Force socket to reconnect so it picks up the new session.classId
+          socket.disconnect();
+          socket.connect();
         },
         error: xhr => {
           if (xhr.status === 404) {
@@ -146,14 +149,14 @@ export async function init(): Promise<void> {
 
     $("#join-class-class-code").on("change", function () {
       $("#join-class-btn").prop("disabled");
-      if (!($(this).val() !== "" && $("#join-class-checkbox").prop("checked") && ! $("#error-invalid-class-code").is(":visible"))) {
+      if (!($(this).val() !== "" && $("#join-class-checkbox").prop("checked") && !$("#error-invalid-class-code").is(":visible"))) {
         $("#join-class-btn").prop("disabled", true);
       }
     });
 
     $("#join-class-checkbox").on("input", function () {
       $("#join-class-btn").prop("disabled", !(
-        $("#join-class-class-code").val() !== "" && $(this).prop("checked") && ! $("#error-invalid-class-code").is(":visible")
+        $("#join-class-class-code").val() !== "" && $(this).prop("checked") && !$("#error-invalid-class-code").is(":visible")
       ));
     });
 
@@ -185,7 +188,9 @@ export async function init(): Promise<void> {
           const classCode = res;
           qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
           $("#create-class-credentials-panel").addClass("d-none");
-
+          // Force socket to reconnect so it picks up the new session.classId
+          socket.disconnect();
+          socket.connect();
           $("#invite-panel").removeClass("d-none");
           $("#invite-copy-link").on("click", async () => {
             try {

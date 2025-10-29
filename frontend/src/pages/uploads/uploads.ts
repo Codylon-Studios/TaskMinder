@@ -625,13 +625,13 @@ export async function init(): Promise<void> {
         $(".edit-option").toggle($("#edit-toggle").is(":checked"));
       });
       $("#edit-toggle").prop("checked", false);
-      $(".edit-option").hide()
+      $(".edit-option").hide();
 
       $("#filter-toggle").on("click", function () {
         $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
       });
       $("#filter-toggle").prop("checked", false);
-      $("#filter-content, #filter-reset").hide()
+      $("#filter-content, #filter-reset").hide();
 
       if (!localStorage.getItem("eventFilter")) {
         localStorage.setItem("eventFilter", "{}");

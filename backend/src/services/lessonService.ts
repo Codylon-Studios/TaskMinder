@@ -5,6 +5,7 @@ import logger from "../utils/logger";
 import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lessonSchema";
+import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 const lessonService = {
   async setLessonData(
@@ -72,6 +73,8 @@ const lessonService = {
 
     try {
       await updateCacheData(lessonData, setLessonDataCacheKey);
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);

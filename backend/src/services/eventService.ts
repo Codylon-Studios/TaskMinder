@@ -1,6 +1,6 @@
 import logger from "../utils/logger";
 import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
-import socketIO from "../config/socket";
+import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import sass from "sass";
 
 import { default as prisma } from "../config/prisma";
@@ -96,7 +96,7 @@ export const eventService = {
     try {
       await updateCacheData(eventData, addEventDataCacheKey);
       const io = socketIO.getIO();
-      io.emit("updateEventData");
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
@@ -150,7 +150,7 @@ export const eventService = {
     try {
       await updateCacheData(eventData, editEventDataCacheKey);
       const io = socketIO.getIO();
-      io.emit("updateEventData");
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
@@ -188,7 +188,7 @@ export const eventService = {
     try {
       await updateCacheData(eventData, deleteEventDataCacheKey);
       const io = socketIO.getIO();
-      io.emit("updateEventData");
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);
@@ -299,6 +299,8 @@ export const eventService = {
 
     try {
       await updateCacheData(eventTypeData, setEventTypeDataCacheKey);
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENT_TYPES);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);

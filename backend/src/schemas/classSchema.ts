@@ -22,7 +22,7 @@ export const changeDefaultPermissionSchema = z.object({
   params: z.object({}),
   query: z.object({}),
   body: z.strictObject({
-    defaultPermission: z.coerce.number()
+    role: z.coerce.number().int().min(0).max(3)
   })
 });
 
@@ -66,14 +66,6 @@ export const updateDSBMobileDataSchema = z.object({
 });
 
 
-export const setUsersLoggedOutRoleSchema = z.object({
-  params: z.object({}),
-  query: z.object({}),
-  body: z.strictObject({
-    role: z.coerce.number().int().min(0).max(3)
-  })
-});
-
 export const changeClassNameSchema = z.object({
   params: z.object({}),
   query: z.object({}),
@@ -88,7 +80,6 @@ export type changeDefaultPermissionType = z.infer<typeof changeDefaultPermission
 export type setClassMembersPermissionsType = z.infer<typeof setClassMembersPermissionsSchema>;
 export type kickClassMembersType = z.infer<typeof kickClassMembersSchema>;
 export type updateDSBMobileDataType = z.infer<typeof updateDSBMobileDataSchema>;
-export type setUsersLoggedOutRoleType = z.infer<typeof setUsersLoggedOutRoleSchema>;
 export type changeClassNameType = z.infer<typeof changeClassNameSchema>;
 
 export type createClassTypeBody = z.infer<typeof createClassSchema>["body"];
@@ -97,5 +88,4 @@ export type changeDefaultPermissionTypeBody = z.infer<typeof changeDefaultPermis
 export type setClassMembersPermissionsTypeBody = z.infer<typeof setClassMembersPermissionsSchema>["body"];
 export type kickClassMembersTypeBody = z.infer<typeof kickClassMembersSchema>["body"];
 export type updateDSBMobileDataTypeBody = z.infer<typeof updateDSBMobileDataSchema>["body"];
-export type setUsersLoggedOutRoleTypeBody = z.infer<typeof setUsersLoggedOutRoleSchema>["body"];
 export type changeClassNameTypeBody = z.infer<typeof changeClassNameSchema>["body"];

@@ -8,8 +8,7 @@ import {
   createClassSchema, 
   joinClassSchema, 
   kickClassMembersSchema, 
-  setClassMembersPermissionsSchema, 
-  setUsersLoggedOutRoleSchema 
+  setClassMembersPermissionsSchema
 } from "../schemas/classSchema";
 
 const router = express.Router();
@@ -26,8 +25,6 @@ router.post("/set_class_members_permission", checkAccess(["CLASS", "ADMIN"]), va
 router.post("/kick_class_members", checkAccess(["CLASS", "ADMIN"]), validate(kickClassMembersSchema), classController.kickClassMembers);
 router.get("/get_class_members", checkAccess(["CLASS"]), classController.getClassMembers);
 router.get("/get_logged_out_users_role", checkAccess(["CLASS"]), classController.getUsersLoggedOutRole);
-// eslint-disable-next-line
-router.post("/set_logged_out_users_role", checkAccess(["CLASS", "ADMIN"]), validate(setUsersLoggedOutRoleSchema),classController.setUsersLoggedOutRole);
 router.post("/kick_logged_out_users", checkAccess(["CLASS", "ADMIN"]), classController.kickLoggedOutUsers);
 // temp disable route
 // eslint-disable-next-line

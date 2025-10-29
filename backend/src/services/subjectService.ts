@@ -5,6 +5,7 @@ import { default as prisma } from "../config/prisma";
 import { isValidGender, updateCacheData } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { setSubjectsTypeBody } from "../schemas/subjectSchema";
+import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 const subjectService = {
   async getSubjectData(session: Session & Partial<SessionData>) {
@@ -153,6 +154,8 @@ const subjectService = {
 
     try {
       await updateCacheData(data, setSubjectDataCacheKey);
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.SUBJECTS);
     }
     catch (err) {
       logger.error("Error updating Redis cache:", err);

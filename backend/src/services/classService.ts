@@ -8,16 +8,16 @@ import { redisClient } from "../config/redis";
 import fs from "fs/promises";
 import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload";
-import { 
+import {
   changeClassNameTypeBody,
-  changeDefaultPermissionTypeBody, 
-  createClassTypeBody, 
-  joinClassTypeBody, 
-  kickClassMembersTypeBody, 
-  setClassMembersPermissionsTypeBody, 
-  setUsersLoggedOutRoleTypeBody, 
-  updateDSBMobileDataTypeBody 
+  changeDefaultPermissionTypeBody,
+  createClassTypeBody,
+  joinClassTypeBody,
+  kickClassMembersTypeBody,
+  setClassMembersPermissionsTypeBody,
+  updateDSBMobileDataTypeBody
 } from "../schemas/classSchema";
+import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 function generateRandomBase62String(length: number = 20): string {
   const chars: string[] = [];
@@ -181,7 +181,7 @@ const classService = {
               permissionLevel: targetClass.defaultPermissionLevel
             }
           });
-        } 
+        }
         else {
           await tx.joinedClass.create({
             data: {
@@ -194,8 +194,10 @@ const classService = {
       });
     }
     session.classId = targetClass.classId.toString();
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.MEMBERS);
     return targetClass.className;
-    
+
   },
   async leaveClass(session: Session & Partial<SessionData>) {
     if (session.account) {
@@ -262,6 +264,8 @@ const classService = {
     }
 
     delete session.classId;
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.MEMBERS);
   },
   async deleteClass(session: Session & Partial<SessionData>) {
     await prisma.$transaction(async tx => {
@@ -277,7 +281,7 @@ const classService = {
       try {
         await fs.rm(classDir, { recursive: true, force: true });
         logger.info(`Deleted class directory: ${classDir}`);
-      } 
+      }
       catch (error) {
         logger.error(`Error deleting class directory ${classDir}:`, error);
         // Continue with database cleanup even if file deletion fails
@@ -306,9 +310,14 @@ const classService = {
           classId: classIdToDelete
         }
       });
-      
+
       await redisClient.del(`auth_class:${classIdToDelete}`);
+      const room = `class:${session.classId}`;
       delete session.classId;
+      // Make all sockets in the room leave it
+      const io = socketIO.getIO();
+      const sockets = await io.in(room).fetchSockets();
+      sockets.forEach(socket => socket.leave(room));
     });
   },
   async updateDSBMobileData(
@@ -334,20 +343,6 @@ const classService = {
       }
     });
   },
-  async changeDefaultPermission(
-    reqData: changeDefaultPermissionTypeBody,
-    session: Session & Partial<SessionData>
-  ) {
-    const { defaultPermission } = reqData;
-    await prisma.class.update({
-      where: {
-        classId: parseInt(session.classId!, 10)
-      },
-      data: {
-        defaultPermissionLevel: defaultPermission
-      }
-    });
-  },
   async setClassMembersPermissions(
     reqData: setClassMembersPermissionsTypeBody,
     session: Session & Partial<SessionData>
@@ -356,7 +351,7 @@ const classService = {
     await prisma.$transaction(async tx => {
       for (const member of classMembers) {
         await tx.joinedClass.updateMany({
-          where: { 
+          where: {
             accountId: member.accountId,
             classId: parseInt(session.classId!, 10)
           },
@@ -384,6 +379,8 @@ const classService = {
         throw err;
       }
     });
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.MEMBERS);
   },
   async getClassMembers(session: Session & Partial<SessionData>) {
     const classMembers = await prisma.joinedClass.findMany({
@@ -430,7 +427,7 @@ const classService = {
               accountId: classMember.accountId
             }
           });
-        } 
+        }
         catch {
           const err: RequestError = {
             name: "Bad Request",
@@ -459,6 +456,8 @@ const classService = {
         throw err;
       }
     });
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.MEMBERS);
   },
   async getUsersLoggedOutRole(session: Session & Partial<SessionData>) {
     const targetClass = await prisma.class.findUnique({
@@ -468,8 +467,8 @@ const classService = {
     });
     return targetClass!.defaultPermissionLevel;
   },
-  async setUsersLoggedOutRole(
-    reqData: setUsersLoggedOutRoleTypeBody,
+  async changeDefaultPermission(
+    reqData: changeDefaultPermissionTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { role } = reqData;
@@ -481,6 +480,8 @@ const classService = {
         defaultPermissionLevel: role
       }
     });
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.DEFAULT_PERMISSION);
   },
   async kickLoggedOutUsers(
     session: Session & Partial<SessionData>
@@ -499,7 +500,7 @@ const classService = {
 
       const result = await sessionPool.query(deleteQuery);
       logger.info(`Successfully deleted ${result.rowCount} unregistered user sessions for class ${classId}.`);
-    } 
+    }
     catch {
       const err: RequestError = {
         name: "Internal Server Error",
@@ -523,6 +524,8 @@ const classService = {
         className: classDisplayName
       }
     });
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.CLASS_NAMES);
   },
   async changeClassCode(
     session: Session & Partial<SessionData>
@@ -547,6 +550,8 @@ const classService = {
             classCode: code
           }
         });
+        const io = socketIO.getIO();
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.CLASS_CODES);
         return code;
       }
     }
@@ -564,7 +569,7 @@ const classService = {
   },
   async upgradeTestClass(
     session: Session & Partial<SessionData>
-  ){
+  ) {
     await prisma.class.update({
       where: {
         classId: parseInt(session.classId!, 10)
@@ -573,6 +578,8 @@ const classService = {
         isTestClass: false
       }
     });
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPGRADE_TEST_CLASS);
   }
 };
 

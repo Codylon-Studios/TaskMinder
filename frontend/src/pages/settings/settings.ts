@@ -12,7 +12,8 @@ import {
   classMemberData,
   getTimeLeftString,
   escapeHTML,
-  getInputValue
+  getInputValue,
+  socket
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -1510,7 +1511,9 @@ export async function init(): Promise<void> {
         },
         success: () => {
           $("#leave-class-success-toast").toast("show");
-          
+          // Force socket to reconnect so it picks up the new session.classId
+          socket.disconnect();
+          socket.connect();
           user.auth();
         },
         error: xhr => {
@@ -1699,7 +1702,9 @@ export async function init(): Promise<void> {
         },
         success: () => {
           $("#delete-class-success-toast").toast("show");
-          
+          // Force socket to reconnect so it picks up the new session.classId
+          socket.disconnect();
+          socket.connect();
           user.auth();
         },
         error: xhr => {
@@ -1788,7 +1793,7 @@ export async function init(): Promise<void> {
       let hasResponded = false;
 
       $.ajax({
-        url: "/class/set_logged_out_users_role",
+        url: "/class/change_default_permission",
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify({role: Number.parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0")}),

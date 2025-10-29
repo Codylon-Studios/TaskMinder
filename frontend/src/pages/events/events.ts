@@ -585,18 +585,18 @@ function updateFilters(ingoreEventTypes?: boolean): void {
 
   const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
 
-  filterData.dateFromOffset ??= 0
+  filterData.dateFromOffset ??= 0;
   const dateFrom = new Date();
   dateFrom.setDate(dateFrom.getDate() + filterData.dateFromOffset);
   $("#filter-date-from").val(msToInputDate(dateFrom.getTime()));
-  if (filterData.dateFromOffset !== 0) $("#filter-changed").show()
+  if (filterData.dateFromOffset !== 0) $("#filter-changed").show();
 
-  filterData.dateUntilOffset ??= 0
+  filterData.dateUntilOffset ??= 0;
   const dateUntil = new Date();
-  dateUntil.setMonth(dateUntil.getMonth() + 1)
+  dateUntil.setMonth(dateUntil.getMonth() + 1);
   dateUntil.setDate(dateUntil.getDate() + filterData.dateUntilOffset);
   $("#filter-date-until").val(msToInputDate(dateUntil.getTime()));
-  if (filterData.dateUntilOffset !== 0) $("#filter-changed").show()
+  if (filterData.dateUntilOffset !== 0) $("#filter-changed").show();
 
   if (! ingoreEventTypes) {
     updateEventTypeList();
@@ -619,13 +619,13 @@ export async function init(): Promise<void> {
         $(".edit-option").toggle($("#edit-toggle").is(":checked"));
       });
       $("#edit-toggle").prop("checked", false);
-      $(".edit-option").hide()
+      $(".edit-option").hide();
 
       $("#filter-toggle").on("click", function () {
         $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
       });
       $("#filter-toggle").prop("checked", false);
-      $("#filter-content, #filter-reset").hide()
+      $("#filter-content, #filter-reset").hide();
 
       if (!localStorage.getItem("eventFilter")) {
         localStorage.setItem("eventFilter", "{}");
@@ -730,7 +730,7 @@ export async function init(): Promise<void> {
       $("#filter-date-from").on("change", function () {
         const selectedDate = new Date($(this).val()?.toString() ?? "");
         const normalDate = new Date();
-        const diff = dateDaysDifference(selectedDate, normalDate)
+        const diff = dateDaysDifference(selectedDate, normalDate);
 
         const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
         filterData.dateFromOffset = diff;
@@ -744,8 +744,8 @@ export async function init(): Promise<void> {
       $("#filter-date-until").on("change", function () {
         const selectedDate = new Date($(this).val()?.toString() ?? "");
         const normalDate = new Date();
-        normalDate.setMonth(normalDate.getMonth() + 1)
-        const diff = dateDaysDifference(selectedDate, normalDate)
+        normalDate.setMonth(normalDate.getMonth() + 1);
+        const diff = dateDaysDifference(selectedDate, normalDate);
 
         const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
         filterData.dateUntilOffset = diff;

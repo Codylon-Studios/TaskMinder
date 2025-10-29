@@ -48,19 +48,9 @@ export const deleteUploadSchema = z.object({
   })
 });
 
-
-export const getUploadStatusSchema = z.object({
-  params: z.object({
-    uploadId: z.coerce.number()
-  }),
-  query: z.object({}),
-  body: z.strictObject({})
-});
-
 export type getUploadFileType = z.infer<typeof getUploadFileSchema>;
 export type renameUploadType = z.infer<typeof renameUploadSchema>;
 export type deleteUploadType = z.infer<typeof deleteUploadSchema>;
-export type getUploadStatusType = z.infer<typeof getUploadStatusSchema>;
 
 export type setUploadFileTypeBody = z.infer<typeof uploadFileSchema>["body"];
 export type renameUploadTypeBody = z.infer<typeof renameUploadSchema>["body"];

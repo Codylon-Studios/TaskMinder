@@ -73,42 +73,12 @@ const uploadService = {
     };
   },
 
-  async getUploadStatus(uploadId: number, session: Session & Partial<SessionData>) {
-    const classIdNum = parseInt(session.classId!, 10);
-
-    const upload = await prisma.upload.findUnique({
-      where: { uploadId },
-      include: {
-        Files: true
-      }
-    });
-
-    if (!upload || upload.classId !== classIdNum) {
-      const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "Upload not found",
-        expected: true
-      };
-      throw err;
-    }
-
-    return {
-      uploadId: upload.uploadId,
-      status: upload.status,
-      uploadName: upload.uploadName,
-      filesCount: upload.Files.length,
-      errorReason: upload.errorReason
-    };
-  },
-
   async getUploadMetadata(isGetAllData: boolean, session: Session & Partial<SessionData>) {
     const classId = parseInt(session.classId!, 10);
 
     const totalUploads = await prisma.upload.count({
       where: { 
-        classId,
-        status: "completed" // Only show completed uploads
+        classId
       }
     });
 
@@ -126,22 +96,22 @@ const uploadService = {
       Team: { select: { name: true } }
     } as const;
 
-    const orderBy = { uploadId: "desc" } as const;
+    const orderBy = { createdAt: "desc" } as const;
 
     let uploads;
     if (isGetAllData) {
       uploads = await prisma.upload.findMany({
-        where: { classId, status: "completed" },
+        where: { classId },
         include,
         orderBy
       });
     } 
     else {
       uploads = await prisma.upload.findMany({
-        where: { classId, status: "completed" },
+        where: { classId },
         include,
         orderBy,
-        take: 50
+        take: 100
       });
     }
 
@@ -149,9 +119,12 @@ const uploadService = {
       uploadId: upload.uploadId,
       uploadName: upload.uploadName,
       uploadType: upload.uploadType,
+      status: upload.status,
+      errorReason: upload.errorReason,
       accountName: upload.Account?.username ?? null,
       teamName: upload.Team.name,
       filesCount: upload.Files.length,
+      createdAt: upload.createdAt,
       files: upload.Files.map(f => ({
         fileMetaDataId: f.fileMetaDataId,
         mimeType: f.mimeType,
@@ -160,7 +133,7 @@ const uploadService = {
       }))
     }));
 
-    const hasMore = !isGetAllData && totalUploads > 50;
+    const hasMore = !isGetAllData && totalUploads > 100;
 
     return {
       totalUploads,

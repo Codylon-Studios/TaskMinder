@@ -1,5 +1,5 @@
 import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
-import socketIO from "../config/socket";
+import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import { default as prisma } from "../config/prisma";
 import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
@@ -47,7 +47,7 @@ const homeworkService = {
     const addHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     await updateCacheData(data, addHomeworkDataCacheKey);
     const io = socketIO.getIO();
-    io.emit("updateHomeworkData");
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async checkHomework(reqData: checkHomeworkTypeBody, session: Session & Partial<SessionData>) {
@@ -82,7 +82,7 @@ const homeworkService = {
     });
 
     const io = socketIO.getIO();
-    io.emit("updateHomeworkData");
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async deleteHomework(reqData: deleteHomeworkTypeBody, session: Session & Partial<SessionData>) {
@@ -124,7 +124,7 @@ const homeworkService = {
     const deleteHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     await updateCacheData(data, deleteHomeworkDataCacheKey);
     const io = socketIO.getIO();
-    io.emit("updateHomeworkData");
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async editHomework(
@@ -168,7 +168,7 @@ const homeworkService = {
     const editHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     await updateCacheData(data, editHomeworkDataCacheKey);
     const io = socketIO.getIO();
-    io.emit("updateHomeworkData");
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async getHomeworkData(session: Session & Partial<SessionData>) {

@@ -3,20 +3,21 @@ import logger from "./logger";
 import prisma from "../config/prisma";
 import fs from "fs/promises";
 import path from "path";
-import { 
-  FINAL_UPLOADS_DIR, 
-  QUARANTINE_DIR, 
-  SANITIZED_DIR, 
-  CLAMSCAN_TIMEOUT, 
-  GHOSTSCRIPT_TIMEOUT, 
-  MAX_IMAGE_PIXELS, 
-  TEMP_DIR 
+import {
+  FINAL_UPLOADS_DIR,
+  QUARANTINE_DIR,
+  SANITIZED_DIR,
+  CLAMSCAN_TIMEOUT,
+  GHOSTSCRIPT_TIMEOUT,
+  MAX_IMAGE_PIXELS,
+  TEMP_DIR
 } from "../config/upload";
 import { execFile, ExecException } from "child_process";
 import { promisify } from "util";
 import sharp from "sharp";
 import mime from "mime-types";
 import { randomUUID } from "crypto";
+import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 const execFileAsync = promisify(execFile);
 
@@ -67,7 +68,7 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
     await execFileAsync("which", ["clamscan"]);
     clamavEnabled = true;
     logger.info("ClamAV enabled for worker");
-  } 
+  }
   catch {
     logger.warn("ClamAV not found in worker. Antivirus scanning is DISABLED. Server security degraded.");
   }
@@ -76,7 +77,7 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
     await execFileAsync("which", ["gs"]);
     gsCommand = "gs";
     logger.info("Ghostscript enabled for worker");
-  } 
+  }
   catch {
     logger.warn("Ghostscript not found in worker. PDF sanitization is DISABLED. Server security degraded.");
   }
@@ -87,15 +88,15 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
 
   try {
     await execFileAsync("clamscan", ["--no-summary", filePath], { timeout: CLAMSCAN_TIMEOUT });
-  } 
+  }
   catch (error) {
     const scanError = error as ExecException & { stdout?: string; stderr?: string };
     if (scanError.code === 1 && scanError.stdout?.includes("FOUND")) {
       const quarantinePath = path.join(QUARANTINE_DIR, `${Date.now()}-${path.basename(originalName)}`);
-      await fs.rename(filePath, quarantinePath).catch(() => {});
+      await fs.rename(filePath, quarantinePath).catch(() => { });
       logger.warn(`File quarantined: ${quarantinePath}`);
       throw new Error("virus_detected");
-    } 
+    }
     else {
       logger.error("ClamAV scan failed", scanError);
       throw new Error("scan_failed");
@@ -120,7 +121,7 @@ const sanitizeImage = async (filePath: string, mimetype: string): Promise<number
 
     if (mimetype === "image/png") {
       await sharpInstance.png({ compressionLevel: 9, effort: 8 }).toFile(sanitizedPath);
-    } 
+    }
     else {
       await sharpInstance.jpeg({ quality: 90 }).toFile(sanitizedPath);
     }
@@ -130,9 +131,9 @@ const sanitizeImage = async (filePath: string, mimetype: string): Promise<number
 
     const stats = await fs.stat(filePath);
     return stats.size;
-  } 
+  }
   catch {
-    await fs.unlink(sanitizedPath).catch(() => {});
+    await fs.unlink(sanitizedPath).catch(() => { });
     throw new Error("image_sanitization_failed");
   }
 };
@@ -168,9 +169,9 @@ const sanitizePDF = async (filePath: string): Promise<number> => {
     await fs.rename(sanitizedPath, filePath);
 
     return stats.size;
-  } 
+  }
   catch {
-    await fs.unlink(sanitizedPath).catch(() => {});
+    await fs.unlink(sanitizedPath).catch(() => { });
     throw new Error("pdf_sanitization_failed");
   }
 };
@@ -183,7 +184,7 @@ const processFile = async (file: FileProcessingJob["tempFiles"][0], classId: num
   let finalSize = file.size;
   if (file.mimetype.startsWith("image/")) {
     finalSize = await sanitizeImage(file.path, file.mimetype);
-  } 
+  }
   else if (file.mimetype === "application/pdf") {
     finalSize = await sanitizePDF(file.path);
   }
@@ -258,7 +259,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
       // Adjust class storage (can be positive or negative)
       await tx.class.update({
         where: { classId },
-        data: { 
+        data: {
           storageUsedBytes: storageAdjustment >= 0n
             ? { increment: storageAdjustment }
             : { decrement: -storageAdjustment }
@@ -268,24 +269,27 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
       // Mark upload as completed and clear reservation
       await tx.upload.update({
         where: { uploadId },
-        data: { 
+        data: {
           status: "completed",
           reservedBytes: 0n
         }
       });
     });
 
+    const io = socketIO.getIO();
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    
     logger.info(`Successfully processed upload ${uploadId} with ${processedFiles.length} file(s)`);
-  } 
+  }
   catch (error) {
     logger.error(`Failed to process upload ${uploadId}:`, error);
 
     // Clean up all temp files
-    await Promise.all(tempFiles.map(f => fs.unlink(f.path).catch(() => {})));
+    await Promise.all(tempFiles.map(f => fs.unlink(f.path).catch(() => { })));
 
     // Mark upload as failed and release reserved storage
     const errorReason = error instanceof Error ? error.message : "unknown_error";
-    
+
     await prisma.$transaction(async tx => {
       const upload = await tx.upload.findUnique({
         where: { uploadId },
@@ -308,6 +312,8 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
           reservedBytes: 0n
         }
       });
+      const io = socketIO.getIO();
+      io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
     });
   }
 };
@@ -329,12 +335,12 @@ export const startUploadWorker = async (): Promise<void> => {
 
       if (job) {
         await processJob(job);
-      } 
+      }
       else {
         // No jobs, wait a bit before checking again
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
-    } 
+    }
     catch (error) {
       logger.error("Worker error:", error);
       await new Promise(resolve => setTimeout(resolve, 5000));

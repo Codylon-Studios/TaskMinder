@@ -80,22 +80,10 @@ export const setUploadFile = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const getUploadStatus = asyncHandler(async (req, res, next) => {
-  try {
-    const uploadId = parseInt(req.params.uploadId, 10);
-    const status = await uploadService.getUploadStatus(uploadId, req.session);
-    res.status(200).json(status);
-  }
-  catch (error) {
-    next(error);
-  }
-});
-
 export default {
   getUploadMetadata,
   getUploadFile,
   renameUpload,
   deleteUpload,
-  setUploadFile,
-  getUploadStatus
+  setUploadFile
 };

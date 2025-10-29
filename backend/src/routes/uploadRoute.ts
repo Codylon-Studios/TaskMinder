@@ -6,8 +6,7 @@ import { validate } from "../middleware/validationMiddleware";
 import { 
   deleteUploadSchema, 
   getUploadFileSchema, 
-  getUploadMetadataSchema, 
-  getUploadStatusSchema, 
+  getUploadMetadataSchema,
   renameUploadSchema, 
   uploadFileSchema 
 } from "../schemas/uploadSchema";
@@ -26,8 +25,6 @@ router.post(
   uploadMiddleware.normalizeFiles,
   uploadController.setUploadFile
 );
-// get upload status
-router.get("/upload/status/:uploadId", checkAccess(["CLASS", "MEMBER"]), validate(getUploadStatusSchema), uploadController.getUploadStatus);
 // get single file (preview or download)
 router.get("/upload/:fileId", checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
 router.post("/upload/rename", checkAccess(["CLASS", "EDITOR"]), validate(renameUploadSchema), uploadController.renameUpload);
