@@ -44,12 +44,21 @@ const teamService = {
 
   async setTeamsData(reqData: setTeamsTypeBody, session: Session & Partial<SessionData>) {
     const { teams } = reqData;
-    const classId = parseInt(session.classId!);
-    if (isNaN(classId)) {
+
+    const classId = parseInt(session.classId!, 10);
+    // variable to check if cache should be reloaded (e.g. on team deletion)
+    let dataChanged = false;
+    // track if teams were deleted (affects homework, events, lessons)
+    let teamsDeleted = false;
+
+    // Check for duplicate team names
+    const teamNames = teams.map(t => t.name.trim().toLowerCase());
+    const uniqueNames = new Set(teamNames);
+    if (teamNames.length !== uniqueNames.size) {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
-        message: "Invalid classId in session",
+        message: "Duplicate team names are not allowed",
         expected: true
       };
       throw err;
@@ -65,6 +74,8 @@ const teamService = {
       await Promise.all(
         existingTeams.map(async (team: { teamId: number }) => {
           if (!teams.some(t => t.teamId === team.teamId)) {
+            dataChanged = true;
+            teamsDeleted = true;
             // Get all uploads for this team to delete files
             const uploads = await tx.upload.findMany({
               where: { teamId: team.teamId },
@@ -75,7 +86,7 @@ const teamService = {
             for (const upload of uploads) {
               for (const file of upload.Files) {
                 const filePath = path.join(classDir, file.storedFileName);
-                await fs.unlink(filePath).catch(() => {});
+                await fs.unlink(filePath).catch(() => { });
               }
               // Calculate storage to release
               const sizeToRelease = upload.status === "completed"
@@ -114,6 +125,10 @@ const teamService = {
             await tx.lesson.deleteMany({
               where: { teamId: team.teamId }
             });
+            // delete joined teams (team memberships) - already done with cascade, but here explicitly again
+            await tx.joinedTeams.deleteMany({
+              where: { teamId: team.teamId }
+            });
             // delete team
             await tx.team.delete({
               where: { teamId: team.teamId }
@@ -134,6 +149,7 @@ const teamService = {
         }
         try {
           if (team.teamId === "") {
+            dataChanged = true;
             await tx.team.create({
               data: {
                 classId: classId,
@@ -142,6 +158,11 @@ const teamService = {
             });
           }
           else {
+            // Check if name actually changed
+            const existingTeam = existingTeams.find(t => t.teamId === team.teamId);
+            if (!existingTeam || existingTeam.name !== team.name) {
+              dataChanged = true;
+            }
             await tx.team.update({
               where: { teamId: team.teamId },
               data: {
@@ -163,33 +184,58 @@ const teamService = {
       }
     });
 
-    const data = await prisma.team.findMany({
-      where: {
-        classId: parseInt(session.classId!)
+    if (dataChanged) {
+      const setTeamsDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.TEAMS, session.classId!);
+
+      // Fetch team data
+      const teamData = await prisma.team.findMany({
+        where: { classId: parseInt(session.classId!) }
+      });
+
+      try {
+        await updateCacheData(teamData, setTeamsDataCacheKey);
+        const io = socketIO.getIO();
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
+
+        // If teams were deleted, also update homework, events, and lessons caches
+        if (teamsDeleted) {
+          const setHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
+          const setEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
+          const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
+
+          const homeworkData = await prisma.homework.findMany({
+            where: { classId: parseInt(session.classId!) }
+          });
+          const eventData = await prisma.event.findMany({
+            where: { classId: parseInt(session.classId!) }
+          });
+          const lessonData = await prisma.lesson.findMany({
+            where: { classId: parseInt(session.classId!) }
+          });
+
+          await updateCacheData(homeworkData, setHomeworkDataCacheKey);
+          await updateCacheData(eventData, setEventDataCacheKey);
+          await updateCacheData(lessonData, setLessonDataCacheKey);
+
+          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
+          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+        }
       }
-    });
-
-    const setTeamsDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.TEAMS, session.classId!);
-
-    try {
-      await updateCacheData(data, setTeamsDataCacheKey);
-      const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
-    }
-    catch (err) {
-      logger.error("Error updating Redis cache:", err);
-      throw new Error();
+      catch (err) {
+        logger.error("Error updating Redis cache:", err);
+        throw new Error();
+      }
     }
   },
 
   async getJoinedTeamsData(session: Session & Partial<SessionData>) {
-
     const accountId = session.account!.accountId;
 
     const data = await prisma.joinedTeams.findMany({
       where: { accountId: accountId }
     });
-
+    
     const teams = [];
 
     for (const entry of data) {
@@ -198,20 +244,10 @@ const teamService = {
 
     return teams;
   },
-  
+
   async setJoinedTeamsData(reqData: setJoinedTeamsTypeBody, session: Session & Partial<SessionData>) {
     const { teams } = reqData;
     const accountId = session.account!.accountId;
-
-    if (!Array.isArray(teams)) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
-        expected: true
-      };
-      throw err;
-    }
 
     await prisma.$transaction(async tx => {
       await tx.joinedTeams.deleteMany({

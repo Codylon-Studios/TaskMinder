@@ -2023,7 +2023,7 @@ export async function init(): Promise<void> {
       $("#teams-cancel").hide();
       const newTeamsData: TeamsData = [];
       $(".team-name-input").each(function () {
-        if ($(this).parent().parent().find("~ .btn-success").length > 0) return;
+        if ($(this).closest(".card").find(".btn-success").length > 0) return;
         newTeamsData.push({
           teamId: $(this).data("id"),
           name: $(this).val()?.toString() ?? ""
