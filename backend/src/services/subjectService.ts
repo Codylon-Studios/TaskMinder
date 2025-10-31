@@ -64,10 +64,17 @@ const subjectService = {
       throw err;
     }
 
+    // variable to check if cache should be reloaded
+    let dataChanged = false;
+    // track if subjects were deleted (affects homework and lessons)
+    let subjectsDeleted = false;
+
     await prisma.$transaction(async tx => {
       await Promise.all(
         existingSubjects.map(async subject => {
           if (!subjects.some(s => s.subjectId === subject.subjectId)) {
+            dataChanged = true;
+            subjectsDeleted = true;
             // delete lessons which where linked to subject
             await tx.lesson.deleteMany({
               where: { subjectId: subject.subjectId }
@@ -100,10 +107,10 @@ const subjectService = {
           }
           isValidGender(subject.teacherGender);
         }
-
         check();
         try {
           if (subject.subjectId === "") {
+            dataChanged = true;
             await tx.subjects.create({
               data: {
                 classId: classId,
@@ -118,6 +125,7 @@ const subjectService = {
             });
           }
           else {
+            dataChanged = true;
             await tx.subjects.update({
               where: { subjectId: subject.subjectId },
               data: {
@@ -144,22 +152,43 @@ const subjectService = {
       }
     });
 
-    const data = await prisma.subjects.findMany({
-      where: {
-        classId: parseInt(session.classId!)
+    if (dataChanged) {
+      const data = await prisma.subjects.findMany({
+        where: {
+          classId: parseInt(session.classId!)
+        }
+      });
+
+      const setSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId!);
+
+      try {
+        await updateCacheData(data, setSubjectDataCacheKey);
+        const io = socketIO.getIO();
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.SUBJECTS);
+
+        // If subjects were deleted, also update lessons and homework caches
+        if (subjectsDeleted) {
+          const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
+          const setHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
+
+          const lessonData = await prisma.lesson.findMany({
+            where: { classId: parseInt(session.classId!) }
+          });
+          const homeworkData = await prisma.homework.findMany({
+            where: { classId: parseInt(session.classId!) }
+          });
+
+          await updateCacheData(lessonData, setLessonDataCacheKey);
+          await updateCacheData(homeworkData, setHomeworkDataCacheKey);
+
+          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+        }
       }
-    });
-
-    const setSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId!);
-
-    try {
-      await updateCacheData(data, setSubjectDataCacheKey);
-      const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.SUBJECTS);
-    }
-    catch (err) {
-      logger.error("Error updating Redis cache:", err);
-      throw new Error();
+      catch (err) {
+        logger.error("Error updating Redis cache:", err);
+        throw new Error();
+      }
     }
   }
 };

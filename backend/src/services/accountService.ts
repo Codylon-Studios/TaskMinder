@@ -216,14 +216,17 @@ export default {
         accountId: session.account!.accountId
       }
     });
-    if (joinedClassAccount!.permissionLevel === 3) {
-      const err: RequestError = {
-        name: "Conflict",
-        status: 409,
-        message: "The account is still an admin in a class, leave the class first",
-        expected: true
-      };
-      throw err;
+    // if user is in a class, evaluate if user is admin
+    if (joinedClassAccount) {
+      if (joinedClassAccount.permissionLevel === 3) {
+        const err: RequestError = {
+          name: "Conflict",
+          status: 409,
+          message: "The account is still an admin in a class, leave the class first",
+          expected: true
+        };
+        throw err;
+      }
     }
     const account = await prisma.account.findUnique({
       where: {

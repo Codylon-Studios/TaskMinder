@@ -17,16 +17,27 @@ const lessonService = {
       isValidweekDay(lesson.weekDay);
     }
 
-    const classId = parseInt(session.classId!);
-    if (isNaN(classId)) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid classId in session",
-        expected: true
-      };
-      throw err;
-    }
+    const classId = parseInt(session.classId!, 10);
+
+    // Check if data actually changed
+    const existingLessons = await prisma.lesson.findMany({
+      where: { classId: classId }
+    });
+
+    // Compare existing and new lessons
+    const dataChanged = existingLessons.length !== lessons.length ||
+      existingLessons.some(existing => {
+        const matching = lessons.find(l =>
+          l.lessonNumber === existing.lessonNumber &&
+          l.weekDay === existing.weekDay
+        );
+        return !matching ||
+          matching.teamId !== existing.teamId ||
+          matching.subjectId !== existing.subjectId ||
+          matching.room !== existing.room ||
+          matching.startTime !== Number(existing.startTime) ||
+          matching.endTime !== Number(existing.endTime);
+      });
 
     await prisma.$transaction(async tx => {
       await tx.lesson.deleteMany({
@@ -62,23 +73,24 @@ const lessonService = {
       }
     });
 
+    if (dataChanged) {
+      const lessonData = await prisma.lesson.findMany({
+        where: {
+          classId: parseInt(session.classId!)
+        }
+      });
 
-    const lessonData = await prisma.lesson.findMany({
-      where: {
-        classId: parseInt(session.classId!)
+      const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
+
+      try {
+        await updateCacheData(lessonData, setLessonDataCacheKey);
+        const io = socketIO.getIO();
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
       }
-    });
-
-    const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
-
-    try {
-      await updateCacheData(lessonData, setLessonDataCacheKey);
-      const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
-    }
-    catch (err) {
-      logger.error("Error updating Redis cache:", err);
-      throw new Error();
+      catch (err) {
+        logger.error("Error updating Redis cache:", err);
+        throw new Error();
+      }
     }
   },
   async getLessonData(session: Session & Partial<SessionData>) {
