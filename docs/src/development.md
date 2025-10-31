@@ -9,7 +9,7 @@ This guide outlines the steps necessary to set up your development environment f
     **Please make sure to review [our license](./license.md) before contributing to the project!**  
     In brief:
 
-    - Properly credit Codylon Studios
+    - Properly credit the Authors
     - Commercial use is prohibited
     - Your project must use the same license terms
 
@@ -88,11 +88,11 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.2.23 (last checked: September 29, 2025).
+You should see at least Bun 1.3.1 (last checked: October 31, 2025).
 
 [Bun Versions]: https://bun.sh/blog
 
-If not installed, retrieve the download instuctions from the [Bun Download Page]. For Github Codespaces, follow the `npm`instrcution under the Mac/Linux Tab.
+If not installed, retrieve the download instuctions from the [Bun Download Page]. For Github Codespaces, follow the `npm`instructions under the Mac/Linux Tab.
 
 [Bun Download Page]: https://bun.sh/docs/installation
 
@@ -204,7 +204,7 @@ _Notes_:
 
 - You can manually compile the code by running `bun run build`, or use `bun run build:fe` and `bun run build:be` to compile the frontend and backend separately. After building, start the server with `bun run dev`.
 
-- We recommend using linting/formatting tools to maintain code quality. To use ESLint and Prettier (frontend only) on this project, simply run: `bun run lint .`.
+- We use linting/formatting tools to maintain code quality. To use ESLint and Prettier (frontend only) on this project, simply run: `bun run lint`.
 
 - When updating the Prisma schema, remember to run `bunx prisma generate` to regenerate the client and TypeScript types in `node_modules/`.
   Before committing your changes, make sure to run `bunx prisma migrate dev` to create and apply the necessary migration files to your local database—skipping this step may result in broken or inconsistent code.
