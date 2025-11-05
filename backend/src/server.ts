@@ -12,12 +12,12 @@ import { sessionPool } from "./config/pg";
 import { httpRequestDurationMicroseconds, register } from "./config/promClient";
 import checkAccess from "./middleware/accessMiddleware";
 import { ErrorHandler } from "./middleware/errorMiddleware";
-import RequestLogger from "./middleware/loggerMiddleware";
+import { loggerMiddleware } from "./middleware/loggerMiddleware";
 import { CSPMiddleware } from "./middleware/CSPMiddleware";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
 import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses, cleanupStuckUploads } from "./utils/dbCleanup";
 import { initializeUploadWorkerServices, startUploadWorker } from "./utils/uploadProcessWorker";
-import logger from "./utils/logger";
+import logger from "./config/logger";
 import account from "./routes/accountRoute";
 import events from "./routes/eventRoute";
 import homework from "./routes/homeworkRoute";
@@ -121,7 +121,7 @@ app.get("/csrf-token", (req, res) => {
   res.json({ csrfToken: req.session.csrfToken });
 });
 app.use(csrfProtection);
-app.use(RequestLogger);
+app.use(loggerMiddleware);
 
 
 app.get("/metrics", async (req: Request, res: Response) => {
@@ -228,5 +228,5 @@ setInterval(() => {
 }, 10 * 60 * 1000); // 10 minutes
 
 server.listen(3000, () => {
-  logger.success("Server running at http://localhost:3000");
+  logger.info("Server running at http://localhost:3000");
 });

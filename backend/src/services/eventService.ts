@@ -1,4 +1,4 @@
-import logger from "../utils/logger";
+import logger from "../config/logger";
 import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import sass from "sass";

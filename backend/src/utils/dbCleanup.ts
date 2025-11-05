@@ -1,6 +1,6 @@
 import prisma from "../config/prisma";
 import { redisClient } from "../config/redis";
-import logger from "./logger";
+import logger from "../config/logger";
 import fs from "fs/promises";
 import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload";
@@ -10,8 +10,6 @@ import { FINAL_UPLOADS_DIR } from "../config/upload";
  */
 export async function cleanupTestClasses(): Promise<void> {
   try {
-    logger.setStandardPrefix("[CronJob Test Classes]");
-
     // Calculate the timestamp for 1 day ago (in milliseconds)
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
 
@@ -108,8 +106,6 @@ export async function cleanupTestClasses(): Promise<void> {
  */
 export async function cleanupDeletedAccounts(): Promise<void> {
   try {
-    logger.setStandardPrefix("[CronJob Deleted Accounts]");
-
     // Calculate the timestamp for 30 days ago (in milliseconds)
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
@@ -143,8 +139,6 @@ export async function cleanupDeletedAccounts(): Promise<void> {
  */
 export async function cleanupOldHomework(): Promise<void> {
   try {
-    logger.setStandardPrefix("[CronJob Old Homework]");
-
     // Calculate the timestamp for 60 days ago (in milliseconds)
     const sixtyDaysAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
 
@@ -179,8 +173,6 @@ export async function cleanupOldHomework(): Promise<void> {
  */
 export async function cleanupOldEvents(): Promise<void> {
   try {
-    logger.setStandardPrefix("[CronJob Old Events]");
-
     // Calculate the timestamp for 365 days ago (in milliseconds)
     const aYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
 
@@ -216,8 +208,6 @@ export async function cleanupOldEvents(): Promise<void> {
  */
 export async function cleanupStuckUploads(): Promise<void> {
   try {
-    logger.setStandardPrefix("[CronJob Stuck Uploads]");
-
     // 10 minutes ago
     const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
 

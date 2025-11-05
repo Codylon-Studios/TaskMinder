@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import logger from "../utils/logger";
+import logger from "../config/logger";
 
 export const CACHE_KEY_PREFIXES = {
   HOMEWORK: "homework_data",
@@ -42,7 +42,7 @@ export const connectRedis = async (): Promise<void> => {
   try {
     if (!redisClient.isOpen) {
       await redisClient.connect();
-      logger.success("Connected to Redis");
+      logger.info("Connected to Redis");
     }
   }
   catch (err: unknown) {
@@ -59,7 +59,7 @@ export const disconnectRedis = async (): Promise<void> => {
   try {
     if (redisClient.isOpen) {
       await redisClient.quit();
-      logger.success("Disconnected from Redis");
+      logger.info("Disconnected from Redis");
     }
   }
   catch (err: unknown) {

@@ -1,7 +1,7 @@
 import { RequestError } from "../@types/requestError";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
-import logger from "../utils/logger";
+import logger from "../config/logger";
 import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lessonSchema";

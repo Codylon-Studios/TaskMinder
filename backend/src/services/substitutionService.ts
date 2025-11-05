@@ -2,7 +2,7 @@ import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey, STA
 import axios from "axios";
 import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
-import logger from "../utils/logger";
+import logger from "../config/logger";
 import { Session, SessionData } from "express-session";
 import { default as prisma } from "../config/prisma";
 

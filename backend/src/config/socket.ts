@@ -1,7 +1,7 @@
 import * as http from "http";
 import * as socketIo from "socket.io";
 
-import logger from "../utils/logger";
+import logger from "../config/logger";
 import prisma from "./prisma";
 
 let io: socketIo.Server;
@@ -36,11 +36,7 @@ export const initialize = (server: http.Server, sessionMiddleware: any): socketI
   io.use(wrap(sessionMiddleware));
 
   io.on("connection", async socket => {
-    const d = new Date();
-    const dateStr =
-      `[${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")} ` +
-      `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}]`;
-    logger.write({ color: "cyan", text: "[TaskMinder]" }, { color: "gray", text: dateStr }, "User connected:   ", {bold: true, text: socket.id});
+    logger.info(`user connected: ${socket.id}`, { isSocket: true });
 
     // Access session and join class room if classId exists
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,14 +49,7 @@ export const initialize = (server: http.Server, sessionMiddleware: any): socketI
 
       if (classExists) {
         socket.join(`class:${session.classId}`);
-        logger.write(
-          { color: "cyan", text: "[TaskMinder]" },
-          "User joined class room:",
-          {
-            bold: true,
-            text: session.classId
-          }
-        );
+        logger.info(`user ${socket.id} joined class room: ${session.classId}`, { isSocket: true });
       } 
       else {
         delete session.classId;
@@ -69,14 +58,7 @@ export const initialize = (server: http.Server, sessionMiddleware: any): socketI
     }
 
     socket.on("disconnect", () => {
-      const d = new Date();
-      const dateStr =
-        `[${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")} ` +
-        `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}]`;
-      logger.write({ color: "cyan", text: "[TaskMinder]" }, { color: "gray", text: dateStr }, "User disconnected:", {
-        bold: true,
-        text: socket.id
-      });
+      logger.info(`user disconnected: ${socket.id}`, { isSocket: true });
     });
   });
 

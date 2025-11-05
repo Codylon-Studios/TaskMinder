@@ -4,7 +4,7 @@ import { default as prisma } from "../config/prisma";
 import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId } from "../utils/validateFunctions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
-import logger from "../utils/logger";
+import logger from "../config/logger";
 import { addHomeworkTypeBody, checkHomeworkTypeBody, deleteHomeworkTypeBody, editHomeworkTypeBody } from "../schemas/homeworkSchema";
 
 const homeworkService = {

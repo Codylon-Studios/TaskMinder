@@ -1,5 +1,5 @@
 import { RequestError } from "../@types/requestError";
-import logger from "../utils/logger";
+import logger from "../config/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
 import { isValidGender, updateCacheData } from "../utils/validateFunctions";

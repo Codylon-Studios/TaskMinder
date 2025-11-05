@@ -3,7 +3,7 @@ import { Session, SessionData } from "express-session";
 import { default as prisma } from "../config/prisma";
 import { BigIntreplacer } from "../utils/validateFunctions";
 import { sessionPool } from "../config/pg";
-import logger from "../utils/logger";
+import logger from "../config/logger";
 import { redisClient } from "../config/redis";
 import fs from "fs/promises";
 import path from "path";

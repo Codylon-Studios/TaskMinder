@@ -4,7 +4,7 @@ import { FINAL_UPLOADS_DIR } from "../config/upload";
 import fs from "fs/promises";
 import { ReadStream, createReadStream } from "fs";
 import prisma from "../config/prisma";
-import logger from "../utils/logger";
+import logger from "../config/logger";
 import { RequestError } from "../@types/requestError";
 import { deleteUploadTypeBody, getUploadFileType, renameUploadTypeBody, setUploadFileTypeBody } from "../schemas/uploadSchema";
 import { queueJob, QUEUE_KEYS } from "../config/redis";

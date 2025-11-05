@@ -1,7 +1,7 @@
 import { RequestError } from "../@types/requestError";
 import { cacheExpiration, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
-import logger from "./logger";
+import logger from "../config/logger";
 import { Session, SessionData } from "express-session";
 import { FileTypes } from "../config/upload";
 

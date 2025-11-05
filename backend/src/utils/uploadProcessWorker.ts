@@ -1,5 +1,5 @@
 import { dequeueJob, QUEUE_KEYS } from "../config/redis";
-import logger from "./logger";
+import logger from "../config/logger";
 import prisma from "../config/prisma";
 import fs from "fs/promises";
 import path from "path";
