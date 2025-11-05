@@ -23,8 +23,6 @@ import {
   UploadData
 } from "./types";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdfjs/pdf.worker.min.mjs";
-
 export const lastCommaRegex = /,(?!.*,)/;
 
 crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` => {

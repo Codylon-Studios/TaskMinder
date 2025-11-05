@@ -285,8 +285,6 @@ async function viewUpload(uploadId: number): Promise<void> {
   const mime = upload.files[0].mimeType
   $("#view-upload-object").attr("data", route).attr("type", mime).find("a").attr("href", route)
   $("#view-upload-modal").modal("show");
-
-  $('#pdf-viewer-frame').attr('src', `vendor/pdfjs/web/viewer.html?file=${encodeURIComponent(route)}`);
   $('#pdf-modal').modal('show');
 }
 
