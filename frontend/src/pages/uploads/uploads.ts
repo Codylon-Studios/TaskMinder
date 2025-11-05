@@ -2,9 +2,7 @@ import {
   dateToMs,
   eventData,
   eventTypeData,
-  isSameDay,
   joinedTeamsData,
-  msToDisplayDate,
   msToInputDate,
   teamsData,
   socket,
@@ -281,11 +279,21 @@ async function viewUpload(uploadId: number): Promise<void> {
   if (!upload) return;
 
   $("#view-upload-modal-label b").text(upload.uploadName);
-  const route = `/uploads/upload/${upload.files[0].fileMetaDataId}?action=preview`
-  const mime = upload.files[0].mimeType
-  $("#view-upload-object").attr("data", route).attr("type", mime).find("a").attr("href", route)
+  const route = `/uploads/upload/${upload.files[0].fileMetaDataId}?action=preview`;
+  console.log(route);
+  const mime = upload.files[0].mimeType;
+  
+  // Remove the existing object element and create a new one to force reload
+  const $object = $("#view-upload-object");
+  const $parent = $object.parent();
+  $object.remove();
+  
+  const $newObject = $('<object id="view-upload-object" class="w-100 h-100"><a>Download</a></object>');
+  $newObject.attr("data", route).attr("type", mime).find("a").attr("href", route);
+  $parent.append($newObject);
+  
   $("#view-upload-modal").modal("show");
-  $('#pdf-modal').modal('show');
+  $("#pdf-modal").modal("show");
 }
 
 async function shareEvent(eventId: number): Promise<void> {
@@ -637,7 +645,7 @@ export async function init(): Promise<void> {
         const type = $("#add-upload-type").val();
         const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
 
-        if (name == "" || type === null || files.length === 0) {
+        if (name === "" || type === null || files.length === 0) {
           $("#add-upload-button").prop("disabled", true);
         }
         else {

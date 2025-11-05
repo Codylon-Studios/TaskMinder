@@ -3,6 +3,7 @@ import { cacheExpiration, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
 import logger from "./logger";
 import { Session, SessionData } from "express-session";
+import { FileTypes } from "../config/upload";
 
 async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   try {
@@ -21,6 +22,18 @@ export function checkUsername(username: string): boolean {
 
 function BigIntreplacer(key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
+}
+
+async function isValidUploadInput(uploadName: string, uploadType: string): Promise<void> {
+  if (!(uploadName !== "" && Object.values(FileTypes).includes(uploadType as FileTypes))) {
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "Please provide a valid name, teamId (int) and valid file type (INFO_SHEET,LESSON_NOTE,WORKSHEET,IMAGE,FILE,TEXT)",
+      expected: true
+    };
+    throw err;
+  }
 }
 
 async function isValidTeamId(teamId: number, session: Session & Partial<SessionData>): Promise<void> {
@@ -126,6 +139,7 @@ function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | 
 }
 
 export {
+  isValidUploadInput,
   isValidColor,
   isValidSubjectId,
   isValidTeamId,

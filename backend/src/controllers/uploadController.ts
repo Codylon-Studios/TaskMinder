@@ -61,7 +61,7 @@ export const deleteUpload = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const setUploadFile = asyncHandler(async (req, res, next) => {
+export const queueFileUpload = asyncHandler(async (req, res, next) => {
   try {
     const files: Express.Multer.File[] = (res.locals.allFiles as Express.Multer.File[]);
     const reservedBytes = res.locals.reservedBytes as bigint;
@@ -85,5 +85,5 @@ export default {
   getUploadFile,
   renameUpload,
   deleteUpload,
-  setUploadFile
+  queueFileUpload
 };

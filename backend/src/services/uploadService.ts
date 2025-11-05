@@ -1,6 +1,6 @@
 import { Session, SessionData } from "express-session";
 import path from "path";
-import { FileTypes, FINAL_UPLOADS_DIR } from "../config/upload";
+import { FINAL_UPLOADS_DIR } from "../config/upload";
 import fs from "fs/promises";
 import { ReadStream, createReadStream } from "fs";
 import prisma from "../config/prisma";
@@ -8,7 +8,7 @@ import logger from "../utils/logger";
 import { RequestError } from "../@types/requestError";
 import { deleteUploadTypeBody, getUploadFileType, renameUploadTypeBody, setUploadFileTypeBody } from "../schemas/uploadSchema";
 import { queueJob, QUEUE_KEYS } from "../config/redis";
-import { BigIntreplacer } from "../utils/validateFunctions";
+import { BigIntreplacer, isValidTeamId, isValidUploadInput } from "../utils/validateFunctions";
 
 
 type GetUploadFileInput = {
@@ -26,6 +26,8 @@ type GetUploadFileResult = {
   };
 };
 
+
+
 const uploadService = {
   async queueFileUpload(
     files: Express.Multer.File[],
@@ -34,21 +36,14 @@ const uploadService = {
     reservedBytes: bigint
   ) {
     const { uploadName, uploadType, teamId: teamIdStr } = body;
-    const teamId = Number.parseInt(teamIdStr);
-    if (uploadName === "" || Number.isNaN(teamId) || !Object.values(FileTypes).includes(uploadType)) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Please give a valid name, a teamId (int) and a valid file type (INFO_SHEET,LESSON_NOTE,WORKSHEET,IMAGE,FILE,TEXT)",
-        expected: true
-      };
-      throw err;
-    }
+    const teamId = Number.parseInt(teamIdStr, 10);
+
+    await isValidTeamId(teamId, session);
+    await isValidUploadInput(uploadName, uploadType);
 
     const classIdNum = Number.parseInt(session.classId!, 10);
     const accountId = session.account?.accountId ?? null;
 
-    // Create Upload record with "queued" status and reserved bytes
     const upload = await prisma.upload.create({
       data: {
         uploadName,
@@ -62,7 +57,6 @@ const uploadService = {
       }
     });
 
-    // Prepare job data
     const jobData = {
       uploadId: upload.uploadId,
       classId: classIdNum,
@@ -74,7 +68,6 @@ const uploadService = {
       }))
     };
 
-    // Queue the job
     await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
 
     logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s)`);
@@ -89,7 +82,7 @@ const uploadService = {
     const classId = parseInt(session.classId!, 10);
 
     const totalUploads = await prisma.upload.count({
-      where: { 
+      where: {
         classId
       }
     });
@@ -116,7 +109,7 @@ const uploadService = {
         include,
         orderBy
       });
-    } 
+    }
     else {
       uploads = await prisma.upload.findMany({
         where: { classId },
@@ -145,7 +138,7 @@ const uploadService = {
 
     const hasMore = !isGetAllData && totalUploads > 100;
 
-    const res =  {
+    const res = {
       totalUploads,
       uploads: uploadList,
       hasMore
@@ -173,7 +166,10 @@ const uploadService = {
     }
 
     const disposition = action === "download" ? "attachment" : "inline";
-    const safeOriginalName = fileData.storedFileName.replace(/"/g, '\\"');
+    // Remove or escape problematic characters for Content-Disposition
+    const safeOriginalName = fileData.storedFileName
+      .replace(/[\r\n]/g, "") // Remove newlines that could enable header injection
+      .replace(/"/g, '\\"');  // Escape quotes
     const headers = {
       "Content-Type": fileData.mimeType,
       "Content-Disposition": `${disposition}; filename="${safeOriginalName}"`,
@@ -188,7 +184,7 @@ const uploadService = {
 
     try {
       await fs.access(finalFilePath, fs.constants.R_OK);
-    } 
+    }
     catch (e) {
       if ((e as NodeJS.ErrnoException).code === "ENOENT") {
         logger.error(`File not found on disk: ${finalFilePath}`);
@@ -244,7 +240,7 @@ const uploadService = {
     const classDir = path.join(FINAL_UPLOADS_DIR, classIdNum.toString());
     for (const file of uploadData.Files) {
       const filePath = path.join(classDir, file.storedFileName);
-      await fs.unlink(filePath).catch(() => {});
+      await fs.unlink(filePath).catch(() => { });
     }
 
     // Calculate actual size (for completed uploads) or reserved size (for failed/queued)

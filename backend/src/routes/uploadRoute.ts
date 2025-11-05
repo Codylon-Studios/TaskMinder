@@ -23,7 +23,7 @@ router.post(
   uploadMiddleware.preflightStorageQuotaCheck,
   uploadMiddleware.secureUpload.array("files", 20),
   uploadMiddleware.normalizeFiles,
-  uploadController.setUploadFile
+  uploadController.queueFileUpload
 );
 // get single file (preview or download)
 router.get("/upload/:fileId", checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
