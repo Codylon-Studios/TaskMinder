@@ -34,16 +34,16 @@ $custom-btn-variants: (semivisible, tertiary);
 $semivisible-normal-light: transparent;
 $semivisible-hover-light: rgba(black, 0.11);
 $semivisible-active-light: rgba(black, 0.16);
-$tertiary-normal-light: #eee; //#eee;//TODO
-$tertiary-hover-light: #d9d9d9; // #d9d9d9;//TODO
-$tertiary-active-light: #cccccc; // #cccccc;//TODO
+$tertiary-normal-light: #eee;
+$tertiary-hover-light: #d9d9d9;
+$tertiary-active-light: #cccccc;
 
 $semivisible-normal-dark: transparent;
 $semivisible-hover-dark: rgba(white, 0.1);
 $semivisible-active-dark: rgba(white, 0.15);
 $tertiary-normal-dark: #2b3035;
-$tertiary-hover-dark: #393d41; //TODO
-$tertiary-active-dark: #45484b; //TODO
+$tertiary-hover-dark: #393d41;
+$tertiary-active-dark: #45484b;
 
 html, body {
   overscroll-behavior-x: none;

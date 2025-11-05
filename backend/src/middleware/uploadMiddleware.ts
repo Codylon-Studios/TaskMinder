@@ -144,23 +144,35 @@ export const secureFileFilter = (
   // Check extension
   const ext = path.extname(file.originalname).toLowerCase();
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    const err = new Error(`File extension ${ext} not allowed`) as RequestError;
-    err.status = 400;
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "MIME-Type not supported",
+      expected: true
+    };
     return cb(err);
   }
 
   // Check client-provided MIME type
   if (!ALLOWED_MIMES.includes(file.mimetype)) {
-    const err = new Error(`MIME type ${file.mimetype} not allowed`) as RequestError;
-    err.status = 400;
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "MIME-Type not supported",
+      expected: true
+    };
     return cb(err);
   }
 
   // Check for obvious mismatches
   const expectedMime = mime.lookup(file.originalname);
   if (expectedMime && expectedMime !== file.mimetype) {
-    const err = new Error("MIME type does not match file extension") as RequestError;
-    err.status = 400;
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "MIME-Type not supported",
+      expected: true
+    };
     return cb(err);
   }
 

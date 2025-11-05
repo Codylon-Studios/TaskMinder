@@ -151,3 +151,25 @@ type TimetableData = LessonGroup & {
   startLessonNumber: number;
   endLessonNumber: number;
 };
+
+// Uploads
+type UploadData = {
+  totalUploads: number;
+  hasMore: boolean;
+  uploads: {
+    uploadId: number;
+    uploadName: string;
+    uploadType: string;
+    status: string;
+    errorReason: null;
+    accountName: string;
+    filesCount: number;
+    createdAt: string;
+    files: {
+      fileMetaDataId: 1;
+      mimeType: string;
+      size: number;
+      createdAt: string;
+    }[]
+  }[]
+}

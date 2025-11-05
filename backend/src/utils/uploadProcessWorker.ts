@@ -18,6 +18,8 @@ import sharp from "sharp";
 import mime from "mime-types";
 import { randomUUID } from "crypto";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
+import { RequestError } from "../@types/requestError";
+import { fileTypeFromFile } from "../../../node_modules/file-type/index";
 
 const execFileAsync = promisify(execFile);
 
@@ -33,12 +35,12 @@ const ensureDirExists = async (dirPath: string): Promise<void> => {
 
 let gsCommand: string | null = null;
 let clamavEnabled = false;
-let fileTypeModulePromise: Promise<typeof import("file-type")> | null = null;
+/*let fileTypeModulePromise: Promise<typeof import("file-type")> | null = null;
 
 async function getFileTypeModule(): Promise<typeof import("file-type")> {
   fileTypeModulePromise ||= import("file-type");
   return fileTypeModulePromise;
-}
+}*/
 
 type FileProcessingJob = {
   uploadId: number;
@@ -95,21 +97,38 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
       const quarantinePath = path.join(QUARANTINE_DIR, `${Date.now()}-${path.basename(originalName)}`);
       await fs.rename(filePath, quarantinePath).catch(() => { });
       logger.warn(`File quarantined: ${quarantinePath}`);
-      throw new Error("virus_detected");
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Cough cough there's a virus",
+        expected: true
+      };
+      throw err;
     }
     else {
       logger.error("ClamAV scan failed", scanError);
-      throw new Error("scan_failed");
+      const err: RequestError = {
+        name: "Internal Server Error",
+        status: 500,
+        message: "",
+        expected: true
+      };
+      throw err;
     }
   }
 };
 
 const verifyFileType = async (filePath: string, claimedMime: string): Promise<void> => {
-  const { fileTypeFromFile } = await getFileTypeModule();
   const detectedType = await fileTypeFromFile(filePath);
 
   if (!detectedType || detectedType.mime !== claimedMime) {
-    throw new Error("mime_mismatch");
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "MIME-Type is not supported",
+      expected: true
+    };
+    throw err;
   }
 };
 
@@ -134,7 +153,13 @@ const sanitizeImage = async (filePath: string, mimetype: string): Promise<number
   }
   catch {
     await fs.unlink(sanitizedPath).catch(() => { });
-    throw new Error("image_sanitization_failed");
+    const err: RequestError = {
+      name: "Internal Server Error",
+      status: 500,
+      message: "",
+      expected: true
+    };
+    throw err;
   }
 };
 
@@ -162,7 +187,13 @@ const sanitizePDF = async (filePath: string): Promise<number> => {
 
     const stats = await fs.stat(sanitizedPath);
     if (!stats || stats.size === 0) {
-      throw new Error("Ghostscript produced empty file");
+      const err: RequestError = {
+        name: "Internal Server Error",
+        status: 500,
+        message: "",
+        expected: true
+      };
+      throw err;
     }
 
     await fs.unlink(filePath);
@@ -172,7 +203,13 @@ const sanitizePDF = async (filePath: string): Promise<number> => {
   }
   catch {
     await fs.unlink(sanitizedPath).catch(() => { });
-    throw new Error("pdf_sanitization_failed");
+    const err: RequestError = {
+      name: "Internal Server Error",
+      status: 500,
+      message: "",
+      expected: true
+    };
+    throw err;
   }
 };
 
@@ -195,7 +232,13 @@ const processFile = async (file: FileProcessingJob["tempFiles"][0], classId: num
 
   const ext = mime.extension(file.mimetype);
   if (!ext) {
-    throw new Error("unsupported_mime_type");
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "MIME-Type is not supported",
+      expected: true
+    };
+    throw err;
   }
   const storedFileName = `${randomUUID()}.${ext}`;
   const finalPath = path.join(finalDirectory, storedFileName);
@@ -216,7 +259,13 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     });
 
     if (!upload) {
-      throw new Error("Upload record not found");
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "File already deleted or moved",
+        expected: true
+      };
+      throw err;
     }
 
     await prisma.upload.update({

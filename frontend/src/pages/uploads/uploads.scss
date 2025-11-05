@@ -1,0 +1,23 @@
+.upload-badge {
+  background-color: var(--btn-tertiary-normal);
+  color: var(--btn-color) !important;
+}
+
+.upload-icon-stack {
+  line-height: 1 !important;
+  height: 1em !important;
+
+  .fa-info, .fa-question {
+    font-size: 0.4em;
+    top: 1.15em;
+    -webkit-text-stroke: 0.05em;
+  }
+}
+
+#view-upload-object {
+  width: 100%;
+
+  &[type="application/pdf"] {
+    aspect-ratio: 0.9;
+  }
+}

@@ -174,7 +174,6 @@ model Team {
   name        String
 
   JoinedTeams JoinedTeams[]
-  Files       Upload[]
 
   Class       Class         @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
   @@unique([classId, name])
@@ -211,6 +210,5 @@ model Upload {
 
   Account   Account?   @relation(fields: [accountId], references: [accountId], onDelete: NoAction, onUpdate: NoAction)
   Class     Class      @relation(fields: [classId], references: [classId], onDelete: NoAction, onUpdate: NoAction)
-  Team      Team       @relation(fields: [teamId], references: [teamId], onDelete: NoAction, onUpdate: NoAction)
   @@map("upload")
 }

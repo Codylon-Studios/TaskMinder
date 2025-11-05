@@ -42,6 +42,7 @@ async function buildDirectory(src, dest) {
         <script src="/vendor/jquery/jquery.min.js" type="module" defer></script>
         <script src="/vendor/bootstrap/bootstrap.bundle.min.js" type="module" defer></script>
         <script src="/vendor/qrcode/qrcode.min.js" defer></script>
+        <script src="/vendor/pdfjs/pdf.min.mjs" type="module" defer></script>
         <script src="/global/global.js" type="module" defer></script>
         <link class="preload-style" rel="preload" href="/pages/${fileName}/${fileName}.css" as="style" data-site="${fileName}">
         <link class="preload-style" rel="preload" href="/global/global.css" as="style" />

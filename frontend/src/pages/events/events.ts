@@ -147,8 +147,8 @@ async function updateEventTypeList(): Promise<void> {
     const eventTypeName = eventType.name;
 
     filterData.type[eventTypeId] ??= true;
-    const checkedStatus: "checked" | "" = filterData.type[eventTypeId] ? "checked" : "";
-    if (checkedStatus !== "checked") $("#filter-changed").removeClass("d-none");
+    const checkedStatus = filterData.type[eventTypeId] ? "checked" : "";
+    if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by type
     const templateFilterType = `<div class="form-check">

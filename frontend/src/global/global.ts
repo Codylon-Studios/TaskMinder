@@ -19,8 +19,11 @@ import {
   TimetableData,
   SubjectData,
   SubstitutionsData,
-  TeamsData
+  TeamsData,
+  UploadData
 } from "./types";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdfjs/pdf.worker.min.mjs";
 
 export const lastCommaRegex = /,(?!.*,)/;
 
@@ -121,7 +124,7 @@ export function msToTime(ms: number | string): string {
     .padStart(2, "0")}:${((num / 1000 / 60) % 60).toString().padStart(2, "0")}`;
 }
 
-export function dateDaysDifference(date1: Date, date2: Date) {
+export function dateDaysDifference(date1: Date, date2: Date): number {
   const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
   const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
 
@@ -581,6 +584,7 @@ export const lessonData = createDataAccessor<LessonData>("lessonData", "/lessons
 export const subjectData = createDataAccessor<SubjectData>("subjectData", "/subjects/get_subject_data");
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", "/substitutions/get_substitutions_data");
 export const teamsData = createDataAccessor<TeamsData>("teamsData", "/teams/get_teams_data");
+export const uploadData = createDataAccessor<UploadData>("uploadData", "/uploads/upload/metadata");
 
 // CSRF token
 export const csrfToken = createDataAccessor<string>("csrfToken");

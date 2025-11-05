@@ -1,6 +1,6 @@
 import { Session, SessionData } from "express-session";
 import path from "path";
-import { FINAL_UPLOADS_DIR } from "../config/upload";
+import { FileTypes, FINAL_UPLOADS_DIR } from "../config/upload";
 import fs from "fs/promises";
 import { ReadStream, createReadStream } from "fs";
 import prisma from "../config/prisma";
@@ -8,6 +8,7 @@ import logger from "../utils/logger";
 import { RequestError } from "../@types/requestError";
 import { deleteUploadTypeBody, getUploadFileType, renameUploadTypeBody, setUploadFileTypeBody } from "../schemas/uploadSchema";
 import { queueJob, QUEUE_KEYS } from "../config/redis";
+import { BigIntreplacer } from "../utils/validateFunctions";
 
 
 type GetUploadFileInput = {
@@ -32,8 +33,19 @@ const uploadService = {
     body: setUploadFileTypeBody,
     reservedBytes: bigint
   ) {
-    const { uploadName, uploadType, teamId } = body;
-    const classIdNum = parseInt(session.classId!, 10);
+    const { uploadName, uploadType, teamId: teamIdStr } = body;
+    const teamId = Number.parseInt(teamIdStr);
+    if (uploadName === "" || Number.isNaN(teamId) || !Object.values(FileTypes).includes(uploadType)) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Please give a valid name, a teamId (int) and a valid file type (INFO_SHEET,LESSON_NOTE,WORKSHEET,IMAGE,FILE,TEXT)",
+        expected: true
+      };
+      throw err;
+    }
+
+    const classIdNum = Number.parseInt(session.classId!, 10);
     const accountId = session.account?.accountId ?? null;
 
     // Create Upload record with "queued" status and reserved bytes
@@ -92,8 +104,7 @@ const uploadService = {
 
     const include = {
       Account: { select: { username: true } },
-      Files: true,
-      Team: { select: { name: true } }
+      Files: true
     } as const;
 
     const orderBy = { createdAt: "desc" } as const;
@@ -122,7 +133,6 @@ const uploadService = {
       status: upload.status,
       errorReason: upload.errorReason,
       accountName: upload.Account?.username ?? null,
-      teamName: upload.Team.name,
       filesCount: upload.Files.length,
       createdAt: upload.createdAt,
       files: upload.Files.map(f => ({
@@ -135,11 +145,13 @@ const uploadService = {
 
     const hasMore = !isGetAllData && totalUploads > 100;
 
-    return {
+    const res =  {
       totalUploads,
       uploads: uploadList,
       hasMore
     };
+    const stringified = JSON.stringify(res, BigIntreplacer);
+    return JSON.parse(stringified);
   },
 
   async getUploadFile({ fileIdParam, action, classId }: GetUploadFileInput): Promise<GetUploadFileResult> {

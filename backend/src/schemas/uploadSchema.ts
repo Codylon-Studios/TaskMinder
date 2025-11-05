@@ -1,12 +1,11 @@
 import z, { strictObject } from "zod";
-import { FileTypes } from "../config/upload";
 
 export const getUploadMetadataSchema = z.object({
   params: z.object({}),
   query: z.object({
-    all: z.enum(["true", "false"]).optional().transform(val => val === "true")
+    all: z.enum(["true", "false"]).optional()
   }),
-  body: z.strictObject({})
+  body: z.any().optional()
 });
 
 export const getUploadFileSchema = z.object({
@@ -16,19 +15,13 @@ export const getUploadFileSchema = z.object({
   query: z.object({
     action: z.enum(["download", "preview"])
   }),
-  body: z.strictObject({})
+  body: z.any().optional()
 });
 
 export const uploadFileSchema = z.object({
   params: z.object({}),
   query: z.object({}),
-  body: z.strictObject({
-    uploadName: z.string(),
-    uploadType: z.enum(FileTypes),
-    teamId: z.coerce.number(),
-    // Files are handled by multer/form-data
-    files: z.any().optional()
-  })
+  body: z.any().optional()
 });
 
 export const renameUploadSchema = z.object({

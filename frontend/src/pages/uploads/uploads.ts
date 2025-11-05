@@ -10,13 +10,15 @@ import {
   socket,
   csrfToken,
   lessonData,
-  escapeHTML
+  escapeHTML,
+  dateDaysDifference,
+  uploadData
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-async function updateEventList(): Promise<void> {
+async function updateUploadList(): Promise<void> {
   async function getFilteredData(): Promise<EventData> {
     // Get the event data
     let data = await eventData();
@@ -40,89 +42,70 @@ async function updateEventList(): Promise<void> {
   }
 
   const newContent = $("<div></div>");
-  let showMoreButtonElements: JQuery<HTMLElement> = $();
 
   // Check if user is in edit mode
   const editEnabled = $("#edit-toggle").is(":checked");
 
-  const data = await getFilteredData();
+  const data = await uploadData(); // TODO @a26b25c24: await getFilteredData();
 
-  for (const event of data) {
-    const eventId = event.eventId;
-    const eventTypeId = event.eventTypeId;
-    const name = event.name;
-    const description = event.description;
-    const startDate = msToDisplayDate(event.startDate);
-    const lesson = event.lesson;
+  for (const upload of data.uploads) {
+    const uploadId = upload.uploadId;
+    const uploadType = upload.uploadType;
+    const name = upload.uploadName;
+    const author = upload.accountName;
+    const numberFiles = upload.filesCount;
+    const fileIcon = {
+      INFO_SHEET: `<span class="fa-stack fs-1 upload-icon-stack">
+        <i class="far fa-file fa-stack-1x"></i>
+        <i class="fas fa-info fa-stack-1x"></i>
+      </span>`,
+      LESSON_NOTE: "<i class=\"fs-1 far fa-note-sticky\"></i>",
+      WORKSHEET: `<span class="fa-stack fs-1 upload-icon-stack">
+        <i class="far fa-file fa-stack-1x"></i>
+        <i class="fas fa-question fa-stack-1x"></i>
+      </span>`,
+      IMAGE: "<i class=\"fs-1 far fa-image\"></i>",
+      FILE: "<i class=\"fs-1 far fa-file\"></i>",
+      TEXT: "<i class=\"fs-1 far fa-file-lines\"></i>"
+    }[uploadType] ?? "";
 
-    const timeSpan = $("<span></span>");
-    if (event.endDate !== null) {
-      const endDate = msToDisplayDate(event.endDate);
-      if (isSameDay(new Date(Number.parseInt(event.startDate)), new Date(Number.parseInt(event.endDate)))) {
-        timeSpan.append("<b>Ganztägig</b> ", startDate);
-      }
-      else {
-        timeSpan.append(startDate, " - ", endDate);
-      }
-    }
-    else if (lesson !== null) {
-      timeSpan.append(startDate, ` <b>(${escapeHTML(lesson)}. Stunde)</b>`);
-    }
     // The template for an event with edit options
     const template = $(`
-      <div class="col p-2">
-        <div class="card event-${eventTypeId} h-100">
-          <div class="card-body p-2">
-            <div class="d-flex justify-content-between">
-              <div style="min-width: 0;">
-                <span class="fw-bold event-${eventTypeId} event-title">${escapeHTML(name)}</span>
-                <br>
-                <span>${timeSpan.html()}</span>
-              </div>
-              <div>
-                <div class="d-flex flex-nowrap">
-                  <button class="edit-option btn btn-sm btn-semivisible event-edit"
-                    data-id="${eventId}" aria-label="Bearbeiten">
-                    <i class="fa-solid fa-edit event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-                  </button>
-                  <button class="edit-option btn btn-sm btn-semivisible event-delete"
-                    data-id="${eventId}" aria-label="Löschen">
-                    <i class="fa-solid fa-trash event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-                  </button>
-                </div>
-                <div class="d-flex flex-nowrap justify-content-end">
-                  <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
-                    <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="event-description"></div>
-          </div>
+      <div class="col p-2 text-center">
+        <div class="mb-2">
+          <button class="edit-option btn btn-sm btn-semivisible event-edit"
+            data-id="${uploadId}" aria-label="Bearbeiten">
+            <i class="fa-solid fa-edit opacity-75" aria-hidden="true"></i>
+          </button>
+          <button class="edit-option btn btn-sm btn-semivisible event-delete"
+            data-id="${uploadId}" aria-label="Löschen">
+            <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
+          </button>
         </div>
+        <button class="view-upload btn btn-semivisible text-center mw-100" data-id="${uploadId}">
+          ${fileIcon}
+          <br>
+          <span class="fw-bold word-wrap-break">${escapeHTML(name)}</span>
+          <br>
+          <span class="badge upload-badge rounded-pill"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
+          <span class="badge upload-badge rounded-pill"><i class="far fa-file me-1" aria-hidden="true"></i>${numberFiles}</span>
+          </div>
+        </button>
       </div>
       `);
     template.find(".edit-option").toggle(editEnabled);
 
     // Add this event to the list
     newContent.append(template);
-
-    richTextToHtml(description, template.find(".event-description"), {
-      showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
-      parseLinks: true,
-      merge: true
-    });
-    showMoreButtonElements = showMoreButtonElements.add(template.find(".event-description"));
   }
 
   // If no events match, add an explanation text
-  $("#edit-toggle, #edit-toggle-label").toggle($("#event-list").html() !== "" && (user.permissionLevel ?? 0) >= 1);
-  $("#filter-toggle, #filter-toggle ~ label").toggle((await eventData()).length > 0);
+  $("#edit-toggle, #edit-toggle-label").toggle($("#upload-list").html() !== "" && (user.permissionLevel ?? 0) >= 1);
+  $("#filter-toggle, #filter-toggle ~ label").toggle((await uploadData()).uploads.length > 0);
   if (newContent.html() === "") {
-    newContent.html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
+    newContent.html('<div class="text-secondary">Keine Dateien mit diesen Filtern.</div>');
   }
-  $("#event-list").empty().append(newContent.children());
-  showMoreButtonElements.trigger("addedToDom");
+  $("#upload-list").empty().append(newContent.children());
 };
 
 async function updateEventTypeList(): Promise<void> {
@@ -146,8 +129,8 @@ async function updateEventTypeList(): Promise<void> {
     const eventTypeName = eventType.name;
 
     filterData.type[eventTypeId] ??= true;
-    const checkedStatus: "checked" | "" = filterData.type[eventTypeId] ? "checked" : "";
-    if (checkedStatus !== "checked") $("#filter-changed").removeClass("d-none");
+    const checkedStatus = filterData.type[eventTypeId] ? "checked" : "";
+    if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by type
     const templateFilterType = `<div class="form-check">
@@ -166,7 +149,7 @@ async function updateEventTypeList(): Promise<void> {
 
   // If any type filter gets changed, update the shown events
   $(".filter-type-option").on("change", function () {
-    updateEventList();
+    updateUploadList();
     const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.type ??= {};
     filterData.type[$(this).data("id")] = $(this).prop("checked");
@@ -185,11 +168,11 @@ async function updateEventTypeList(): Promise<void> {
 
 async function updateTeamList(): Promise<void> {
   // Clear the select element in the add event modal
-  $("#add-event-team").empty();
-  $("#add-event-team").append('<option value="-1" selected>Alle</option>');
+  $("#add-upload-team").empty();
+  $("#add-upload-team").append('<option value="-1" selected>Alle</option>');
   // Clear the select element in the edit event modal
-  $("#edit-event-team").empty();
-  $("#edit-event-team").append('<option value="-1" selected>Alle</option>');
+  $("#edit-upload-team").empty();
+  $("#edit-upload-team").append('<option value="-1" selected>Alle</option>');
 
   for (const team of (await teamsData())) {
     // Get the team data
@@ -197,75 +180,75 @@ async function updateTeamList(): Promise<void> {
 
     // Add the template for the select elements
     const templateFormSelect = `<option value="${team.teamId}">${escapeHTML(teamName)}</option>`;
-    $("#add-event-team").append(templateFormSelect);
-    $("#edit-event-team").append(templateFormSelect);
+    $("#add-upload-team").append(templateFormSelect);
+    $("#edit-upload-team").append(templateFormSelect);
   }
 };
 
-function addEvent(): void {
+function addUpload(): void {
   //
-  // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS AN EVENT
+  // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS AN UPLOAD
   //
 
-  // Reset the data inputs in the add event modal
-  $("#add-event-type").val("");
-  $("#add-event-name").val("");
-  $("#add-event-description").val("");
-  $("#add-event-description").trigger("change");
-  $("#add-event-start-date").val("");
-  $("#add-event-lesson").val("");
-  $("#add-event-end-date").val("");
-  $("#add-event-team").val("-1");
+  // Reset the data inputs in the add upload modal
+  $("#add-upload-name").val("");
+  $("#add-upload-files").val("");
+  $("#add-upload-type").val("");
+  $("#add-upload-team").val("-1");
 
   // Disable the actual "add" button, because not all information is given
-  $("#add-event-button").prop("disabled", true);
+  $("#add-upload-button").prop("disabled", true);
 
-  // Show the add event modal
-  $("#add-event-modal").modal("show");
+  // Show the add upload modal
+  $("#add-upload-modal").modal("show");
 
   // Called when the user clicks the "add" button in the modal
-  // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#add-event-button")
+  // Note: .off("click") removes the existing click upload listener from a previous call of this function
+  $("#add-upload-button")
     .off("click")
     .on("click", async () => {
       // Save the given information in variables
-      const eventTypeId = $("#add-event-type").val();
-      const name = $("#add-event-name").val()?.toString().trim();
-      const description = $("#add-event-description").val()?.toString().trim();
-      const startDate = $("#add-event-start-date").val()?.toString() ?? "";
-      const lesson = $("#add-event-lesson").val()?.toString().trim();
-      const endDate = $("#add-event-end-date").val()?.toString() ?? "";
-      const team = $("#add-event-team").val();
+      const name = $("#add-upload-name").val()?.toString().trim() ?? "";
+      const type = $("#add-upload-type").val()?.toString() ?? "";
+      const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
+      const team = $("#add-upload-team").val()?.toString() ?? "-1";
 
       // Prepare the POST request
-      const data = {
-        eventTypeId: eventTypeId,
-        name: name,
-        description: description,
-        startDate: dateToMs(startDate),
-        lesson: lesson,
-        endDate: dateToMs(endDate) ?? null,
-        teamId: team
-      };
+      const data = new FormData();
+      data.append("uploadName", name);
+      data.append("uploadType", type);
+      data.append("teamId", team);
+      for (const f of files) {
+        data.append("files", f);
+      }
+
       // Save whether the server has responed
       let hasResponded = false;
 
       // Post the request
       $.ajax({
-        url: "/events/add_event",
+        url: "/uploads/upload",
         type: "POST",
         data: data,
+        processData: false,
+        contentType: false,
         headers: {
           "X-CSRF-Token": await csrfToken()
         },
         success: () => {
-          // Show a success notification and update the shown events
-          $("#add-event-success-toast").toast("show");
-          // Hide the add event modal
-          $("#add-event-modal").modal("hide");
+          // Show a success notification and update the shown uploads
+          $("#add-upload-success-toast").toast("show");
+          // Hide the add upload modal
+          $("#add-upload-modal").modal("hide");
         },
         error: xhr => {
-          if (xhr.status === 401) {
+          if (xhr.status === 400) {
+            console.log(xhr.responseText);
+            if (xhr.responseText === "MIME-Type not supported") {
+              $("#add-upload-unsupported-mime-type-toast").toast("show");
+            }
+          }
+          else if (xhr.status === 401) {
             // The user has to be logged in but isn't
             // Show an error notification
             $navbarToasts.notLoggedIn.toast("show");
@@ -291,6 +274,20 @@ function addEvent(): void {
         }
       }, 1000);
     });
+}
+
+async function viewUpload(uploadId: number): Promise<void> {
+  const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
+  if (!upload) return;
+
+  $("#view-upload-modal-label b").text(upload.uploadName);
+  const route = `/uploads/upload/${upload.files[0].fileMetaDataId}?action=preview`
+  const mime = upload.files[0].mimeType
+  $("#view-upload-object").attr("data", route).attr("type", mime).find("a").attr("href", route)
+  $("#view-upload-modal").modal("show");
+
+  $('#pdf-viewer-frame').attr('src', `vendor/pdfjs/web/viewer.html?file=${encodeURIComponent(route)}`);
+  $('#pdf-modal').modal('show');
 }
 
 async function shareEvent(eventId: number): Promise<void> {
@@ -580,29 +577,22 @@ function deleteEvent(eventId: number): void {
 }
 
 function updateFilters(ingoreEventTypes?: boolean): void {
-  $("#filter-changed").addClass("d-none");
+  $("#filter-changed").hide();
 
   const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
 
-  if (filterData.dateFrom === undefined) {
-    $("#filter-date-from").val(msToInputDate(Date.now()));
-  }
-  else {
-    $("#filter-date-from").val(filterData.dateFrom);
-    if (!isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none");
-  }
+  filterData.dateFromOffset ??= 0;
+  const dateFrom = new Date();
+  dateFrom.setDate(dateFrom.getDate() + filterData.dateFromOffset);
+  $("#filter-date-from").val(msToInputDate(dateFrom.getTime()));
+  if (filterData.dateFromOffset !== 0) $("#filter-changed").show();
 
-  if (filterData.dateUntil === undefined) {
-    const nextMonth = new Date(Date.now());
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
-  }
-  else {
-    $("#filter-date-until").val(filterData.dateUntil);
-    const nextMonth = new Date(Date.now());
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
-  }
+  filterData.dateUntilOffset ??= 0;
+  const dateUntil = new Date();
+  dateUntil.setMonth(dateUntil.getMonth() + 1);
+  dateUntil.setDate(dateUntil.getDate() + filterData.dateUntilOffset);
+  $("#filter-date-until").val(msToInputDate(dateUntil.getTime()));
+  if (filterData.dateUntilOffset !== 0) $("#filter-changed").show();
 
   if (! ingoreEventTypes) {
     updateEventTypeList();
@@ -640,27 +630,20 @@ export async function init(): Promise<void> {
       $("#filter-reset").on("click", () => {
         localStorage.setItem("eventFilter", "{}");
         updateFilters();
-        updateEventList();
+        updateUploadList();
       });
 
-      // On changing any information in the add event modal, disable the add button if any information is empty
-      $(".add-event-input").on("input", function () {
-        const type = $("#add-event-type").val();
-        const name = $("#add-event-name").val()?.toString().trim();
-        const startDate = $("#add-event-start-date").val();
+      // On changing any information in the add upload modal, disable the add button if any information is empty
+      $(".add-upload-input").on("input", function () {
+        const name = $("#add-upload-name").val()?.toString().trim();
+        const type = $("#add-upload-type").val();
+        const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
 
-        if ([name, startDate].includes("") || type === null) {
-          $("#add-event-button").prop("disabled", true);
+        if (name == "" || type === null || files.length === 0) {
+          $("#add-upload-button").prop("disabled", true);
         }
         else {
-          $("#add-event-button").prop("disabled", false);
-        }
-
-        if ($(this).is("#add-event-end-date")) {
-          $("#add-event-lesson").val("");
-        }
-        if ($(this).is("#add-event-lesson")) {
-          $("#add-event-end-date").val("");
+          $("#add-upload-button").prop("disabled", false);
         }
       });
 
@@ -692,6 +675,11 @@ export async function init(): Promise<void> {
         });
       });
 
+      // View the upload on clicking it
+      $(document).on("click", ".view-upload", function () {
+        viewUpload($(this).data("id"));
+      });
+
       // Share the event on clicking its share icon
       $(document).on("click", ".event-share", function () {
         shareEvent($(this).data("id"));
@@ -716,7 +704,7 @@ export async function init(): Promise<void> {
         });
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
         updateFilters();
-        updateEventList();
+        updateUploadList();
       });
 
       // On clicking the none types option, uncheck all and update the event list
@@ -729,36 +717,45 @@ export async function init(): Promise<void> {
         });
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
         updateFilters();
-        updateEventList();
+        updateUploadList();
       });
 
       // On changing any filter date option, update the event list
-      $("#filter-date-from").on("change", () => {
+      $("#filter-date-from").on("change", function () {
+        const selectedDate = new Date($(this).val()?.toString() ?? "");
+        const normalDate = new Date();
+        const diff = dateDaysDifference(selectedDate, normalDate);
+
         const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        filterData.dateFrom = $("#filter-date-from").val();
+        filterData.dateFromOffset = diff;
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
+
         updateFilters();
-        updateEventList();
+        updateUploadList();
       });
 
       // On changing any filter date option, update the event list
-      $("#filter-date-until").on("change", () => {
+      $("#filter-date-until").on("change", function () {
+        const selectedDate = new Date($(this).val()?.toString() ?? "");
+        const normalDate = new Date();
+        normalDate.setMonth(normalDate.getMonth() + 1);
+        const diff = dateDaysDifference(selectedDate, normalDate);
+
         const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        filterData.dateUntil = $("#filter-date-until").val();
+        filterData.dateUntilOffset = diff;
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
+        
         updateFilters();
-        updateEventList();
+        updateUploadList();
       });
 
-      $(document).on("click", "#show-add-event-button", () => {
-        addEvent();
-      });
+      $(document).on("click", "#show-add-upload-button", addUpload);
     });
 
     socket.on("updateEventData", () => {
       try {
         eventData.reload();
-        updateEventList();
+        updateUploadList();
       }
       catch (error) {
         console.error("Error handling updateEventData:", error);
@@ -775,8 +772,9 @@ export const reloadAllFn = async (): Promise<void> => {
   joinedTeamsData.reload();
   teamsData.reload();
   lessonData.reload();
+  uploadData.reload();
   await updateEventTypeList();
-  await updateEventList();
+  await updateUploadList();
   await updateTeamList();
 
   toggleShownButtons();
