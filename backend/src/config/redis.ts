@@ -9,7 +9,8 @@ export const CACHE_KEY_PREFIXES = {
   EVENTTYPE: "event_type_data",
   EVENTTYPESTYLE: "event_type_styles",
   SUBJECT: "subject_data",
-  TEAMS: "teams_data"
+  TEAMS: "teams_data",
+  UPLOADMETADATA: "upload_metadata"
 };
 
 export const QUEUE_KEYS = {

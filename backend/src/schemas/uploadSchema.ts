@@ -24,12 +24,14 @@ export const uploadFileSchema = z.object({
   body: z.any().optional()
 });
 
-export const renameUploadSchema = z.object({
+export const editUploadSchema = z.object({
   params: z.object({}),
   query: z.object({}),
   body: strictObject({
     uploadId: z.coerce.number(),
-    newUploadName: z.string().trim().min(1)
+    uploadName: z.string().trim().min(1),
+    uploadType: z.string().trim().min(1),
+    teamId: z.coerce.number()
   })
 });
 
@@ -42,9 +44,9 @@ export const deleteUploadSchema = z.object({
 });
 
 export type getUploadFileType = z.infer<typeof getUploadFileSchema>;
-export type renameUploadType = z.infer<typeof renameUploadSchema>;
+export type editUploadType = z.infer<typeof editUploadSchema>;
 export type deleteUploadType = z.infer<typeof deleteUploadSchema>;
 
-export type setUploadFileTypeBody = z.infer<typeof uploadFileSchema>["body"];
-export type renameUploadTypeBody = z.infer<typeof renameUploadSchema>["body"];
+export type uploadFileTypeBody = z.infer<typeof uploadFileSchema>["body"];
+export type editUploadTypeBody = z.infer<typeof editUploadSchema>["body"];
 export type deleteUploadTypeBody = z.infer<typeof deleteUploadSchema>["body"];

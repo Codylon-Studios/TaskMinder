@@ -1,4 +1,5 @@
 import { dequeueJob, QUEUE_KEYS } from "../config/redis";
+import { invalidateUploadCache } from "./validateFunctions";
 import logger from "../config/logger";
 import prisma from "../config/prisma";
 import fs from "fs/promises";
@@ -35,12 +36,6 @@ const ensureDirExists = async (dirPath: string): Promise<void> => {
 
 let gsCommand: string | null = null;
 let clamavEnabled = false;
-/*let fileTypeModulePromise: Promise<typeof import("file-type")> | null = null;
-
-async function getFileTypeModule(): Promise<typeof import("file-type")> {
-  fileTypeModulePromise ||= import("file-type");
-  return fileTypeModulePromise;
-}*/
 
 type FileProcessingJob = {
   uploadId: number;
@@ -100,7 +95,7 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
-        message: "Cough cough there's a virus",
+        message: "File upload rejected: A potential threat was detected in the uploaded file",
         expected: true
       };
       throw err;
@@ -110,7 +105,7 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
       const err: RequestError = {
         name: "Internal Server Error",
         status: 500,
-        message: "",
+        message: "An error occured while uploading the file",
         expected: true
       };
       throw err;
@@ -119,6 +114,26 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
 };
 
 const verifyFileType = async (filePath: string, claimedMime: string): Promise<void> => {
+  // Special case for text files - file-type cannot detect them
+  if (claimedMime === "text/plain") {
+    // Optionally verify it's actually text by reading a sample
+    try {
+      const buffer = await fs.readFile(filePath);
+      // Check if file is valid UTF-8 or ASCII
+      buffer.toString("utf-8");
+      return;
+    } 
+    catch {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Invalid text file encoding",
+        expected: true
+      };
+      throw err;
+    }
+  }
+
   const detectedType = await fileTypeFromFile(filePath);
 
   if (!detectedType || detectedType.mime !== claimedMime) {
@@ -156,7 +171,7 @@ const sanitizeImage = async (filePath: string, mimetype: string): Promise<number
     const err: RequestError = {
       name: "Internal Server Error",
       status: 500,
-      message: "",
+      message: "An error occured while uploading the file",
       expected: true
     };
     throw err;
@@ -190,7 +205,7 @@ const sanitizePDF = async (filePath: string): Promise<number> => {
       const err: RequestError = {
         name: "Internal Server Error",
         status: 500,
-        message: "",
+        message: "An error occured while uploading the file",
         expected: true
       };
       throw err;
@@ -206,7 +221,7 @@ const sanitizePDF = async (filePath: string): Promise<number> => {
     const err: RequestError = {
       name: "Internal Server Error",
       status: 500,
-      message: "",
+      message: "An error occured while uploading the file",
       expected: true
     };
     throw err;
@@ -273,6 +288,9 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
       data: { status: "processing" }
     });
 
+    // Invalidate cache when status changes to processing
+    await invalidateUploadCache(classId.toString());
+
     const processedFiles: Array<{ storedFileName: string; originalName: string; mimeType: string; size: number }> = [];
     let totalBytes = 0n;
 
@@ -325,6 +343,9 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
       });
     });
 
+    // Invalidate cache when status changes to completed
+    await invalidateUploadCache(classId.toString());
+
     const io = socketIO.getIO();
     io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
     
@@ -361,9 +382,13 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
           reservedBytes: 0n
         }
       });
-      const io = socketIO.getIO();
-      io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
     });
+
+    // Invalidate cache when status changes to failed
+    await invalidateUploadCache(classId.toString());
+
+    const io = socketIO.getIO();
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
   }
 };
 

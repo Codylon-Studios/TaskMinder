@@ -1,5 +1,5 @@
 import { RequestError } from "../@types/requestError";
-import { cacheExpiration, redisClient } from "../config/redis";
+import { CACHE_KEY_PREFIXES, cacheExpiration, generateCacheKey, redisClient } from "../config/redis";
 import prisma from "../config/prisma";
 import logger from "../config/logger";
 import { Session, SessionData } from "express-session";
@@ -15,6 +15,17 @@ async function updateCacheData<T>(data: T[], key: string): Promise<void> {
     logger.error("Error updating Redis" + key + "cache:", err);
   }
 }
+
+// Helper function to invalidate upload metadata cache
+export const invalidateUploadCache = async (classId: string): Promise<void> => {
+  const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId);
+  try {
+    await redisClient.del(cacheKey);
+  } 
+  catch (err) {
+    logger.error("Error invalidating upload metadata cache:", err);
+  }
+};
 
 export function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);

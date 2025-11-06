@@ -6,9 +6,10 @@ import { ReadStream, createReadStream } from "fs";
 import prisma from "../config/prisma";
 import logger from "../config/logger";
 import { RequestError } from "../@types/requestError";
-import { deleteUploadTypeBody, getUploadFileType, renameUploadTypeBody, setUploadFileTypeBody } from "../schemas/uploadSchema";
-import { queueJob, QUEUE_KEYS } from "../config/redis";
-import { BigIntreplacer, isValidTeamId, isValidUploadInput } from "../utils/validateFunctions";
+import { deleteUploadTypeBody, getUploadFileType, editUploadTypeBody, uploadFileTypeBody } from "../schemas/uploadSchema";
+import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
+import { invalidateUploadCache } from "../utils/validateFunctions";
+import { BigIntreplacer, isValidTeamId, isValidUploadInput, updateCacheData } from "../utils/validateFunctions";
 
 
 type GetUploadFileInput = {
@@ -26,13 +27,37 @@ type GetUploadFileResult = {
   };
 };
 
-
+// Helper function to map upload data
+const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany<{
+  include: {
+    Account: { select: { username: true } };
+    Files: true;
+  };
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+}>>>) => {
+  return uploads.map(upload => ({
+    uploadId: upload.uploadId,
+    uploadName: upload.uploadName,
+    uploadType: upload.uploadType,
+    status: upload.status,
+    errorReason: upload.errorReason,
+    accountName: upload.Account?.username ?? null,
+    filesCount: upload.Files.length,
+    createdAt: upload.createdAt,
+    files: upload.Files.map(f => ({
+      fileMetaDataId: f.fileMetaDataId,
+      mimeType: f.mimeType,
+      size: f.size,
+      createdAt: f.createdAt
+    }))
+  }));
+};
 
 const uploadService = {
   async queueFileUpload(
     files: Express.Multer.File[],
     session: Session & Partial<SessionData>,
-    body: setUploadFileTypeBody,
+    body: uploadFileTypeBody,
     reservedBytes: bigint
   ) {
     const { uploadName, uploadType, teamId: teamIdStr } = body;
@@ -70,12 +95,10 @@ const uploadService = {
 
     await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
 
-    logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s)`);
+    // Invalidate cache after queueing new upload
+    await invalidateUploadCache(session.classId!);
 
-    return {
-      uploadId: upload.uploadId,
-      filesCount: files.length
-    };
+    logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s)`);
   },
 
   async getUploadMetadata(isGetAllData: boolean, session: Session & Partial<SessionData>) {
@@ -102,41 +125,52 @@ const uploadService = {
 
     const orderBy = { createdAt: "desc" } as const;
 
-    let uploads;
+    let uploadList;
     if (isGetAllData) {
-      uploads = await prisma.upload.findMany({
+      const uploads = await prisma.upload.findMany({
         where: { classId },
         include,
         orderBy
       });
+
+      uploadList = mapUploadData(uploads);
     }
     else {
-      uploads = await prisma.upload.findMany({
-        where: { classId },
-        include,
-        orderBy,
-        take: 100
-      });
+      // get cache data only if < 50 metadata is asked, at getAll, always get from db
+      const getUploadMetadataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
+
+      const cachedUploadMetadataData = await redisClient.get(getUploadMetadataCacheKey);
+      if (cachedUploadMetadataData) {
+        try {
+          uploadList = JSON.parse(cachedUploadMetadataData);
+        }
+        catch (error) {
+          logger.error("Error parsing Redis data:", error);
+          // Fall through to fetch from database
+        }
+      }
+
+      // Only fetch from database if cache miss or parse error
+      if (!uploadList) {
+        const uploads = await prisma.upload.findMany({
+          where: { classId },
+          include,
+          orderBy,
+          take: 50
+        });
+        uploadList = mapUploadData(uploads);
+
+        try {
+          await updateCacheData(uploadList, getUploadMetadataCacheKey);
+        }
+        catch (err) {
+          logger.error("Error updating Redis cache:", err);
+          // Continue without caching
+        }
+      }
     }
 
-    const uploadList = uploads.map(upload => ({
-      uploadId: upload.uploadId,
-      uploadName: upload.uploadName,
-      uploadType: upload.uploadType,
-      status: upload.status,
-      errorReason: upload.errorReason,
-      accountName: upload.Account?.username ?? null,
-      filesCount: upload.Files.length,
-      createdAt: upload.createdAt,
-      files: upload.Files.map(f => ({
-        fileMetaDataId: f.fileMetaDataId,
-        mimeType: f.mimeType,
-        size: f.size,
-        createdAt: f.createdAt
-      }))
-    }));
-
-    const hasMore = !isGetAllData && totalUploads > 100;
+    const hasMore = !isGetAllData && totalUploads > 50;
 
     const res = {
       totalUploads,
@@ -151,7 +185,7 @@ const uploadService = {
     const fileData = await prisma.fileMetadata.findUnique({
       where: { fileMetaDataId: fileIdParam },
       include: {
-        Upload: true
+        Upload: { select: { classId: true } }
       }
     });
 
@@ -202,17 +236,23 @@ const uploadService = {
     const stream = createReadStream(finalFilePath);
     return { stream, headers };
   },
-  async renameUpload(
-    body: renameUploadTypeBody,
+  async editUpload(
+    body: editUploadTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { uploadId, newUploadName } = body;
+    const { uploadId, uploadName, uploadType, teamId } = body;
     const classIdNum = parseInt(session.classId!, 10);
+
+    await isValidTeamId(teamId, session);
+    await isValidUploadInput(uploadName, uploadType);
 
     await prisma.upload.update({
       where: { uploadId: uploadId, classId: classIdNum },
-      data: { uploadName: newUploadName }
+      data: { uploadName: uploadName, uploadType: uploadType, teamId: teamId }
     });
+
+    // Invalidate cache after edit
+    await invalidateUploadCache(session.classId!);
   },
   async deleteUpload(
     body: deleteUploadTypeBody,
@@ -267,6 +307,9 @@ const uploadService = {
         });
       }
     });
+
+    // Invalidate cache after delete
+    await invalidateUploadCache(session.classId!);
   }
 };
 

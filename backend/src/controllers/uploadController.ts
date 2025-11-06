@@ -41,9 +41,9 @@ export const getUploadFile = asyncHandler(async (req, res, next) => {
   }
 });
 
-export const renameUpload = asyncHandler(async (req, res, next) => {
+export const editUpload = asyncHandler(async (req, res, next) => {
   try {
-    await uploadService.renameUpload(req.body, req.session);
+    await uploadService.editUpload(req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -66,14 +66,9 @@ export const queueFileUpload = asyncHandler(async (req, res, next) => {
     const files: Express.Multer.File[] = (res.locals.allFiles as Express.Multer.File[]);
     const reservedBytes = res.locals.reservedBytes as bigint;
     
-    const result = await uploadService.queueFileUpload(files, req.session, req.body, reservedBytes);
+    await uploadService.queueFileUpload(files, req.session, req.body, reservedBytes);
     
-    res.status(200).json({
-      uploadId: result.uploadId,
-      status: "queued",
-      filesCount: files.length,
-      message: "Files uploaded successfully and queued for processing"
-    });
+    res.sendStatus(200);
   }
   catch (error) {
     next(error);
@@ -83,7 +78,7 @@ export const queueFileUpload = asyncHandler(async (req, res, next) => {
 export default {
   getUploadMetadata,
   getUploadFile,
-  renameUpload,
+  editUpload,
   deleteUpload,
   queueFileUpload
 };

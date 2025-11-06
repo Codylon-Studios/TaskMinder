@@ -7,7 +7,7 @@ import {
   deleteUploadSchema, 
   getUploadFileSchema, 
   getUploadMetadataSchema,
-  renameUploadSchema, 
+  editUploadSchema, 
   uploadFileSchema 
 } from "../schemas/uploadSchema";
 
@@ -27,7 +27,7 @@ router.post(
 );
 // get single file (preview or download)
 router.get("/upload/:fileId", checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
-router.post("/upload/rename", checkAccess(["CLASS", "EDITOR"]), validate(renameUploadSchema), uploadController.renameUpload);
+router.post("/upload/edit", checkAccess(["CLASS", "EDITOR"]), validate(editUploadSchema), uploadController.editUpload);
 router.post("/upload/delete", checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);
 
 export default router;
