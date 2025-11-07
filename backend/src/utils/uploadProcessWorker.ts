@@ -122,7 +122,7 @@ const verifyFileType = async (filePath: string, claimedMime: string): Promise<vo
       // Check if file is valid UTF-8 or ASCII
       buffer.toString("utf-8");
       return;
-    } 
+    }
     catch {
       const err: RequestError = {
         name: "Bad Request",
@@ -187,12 +187,21 @@ const sanitizePDF = async (filePath: string): Promise<number> => {
     const gsArgs = [
       "-dPDFA=1",
       "-dBATCH",
-      "-dPDFSETTINGS=/ebook",
       "-dNOPAUSE",
       "-dNOOUTERSAVE",
       "-dSAFER",
       "-sDEVICE=pdfwrite",
+      // Start with ebook baseline
+      "-dPDFSETTINGS=/ebook",
+      // Override with custom resolution
+      "-dColorImageResolution=200",
+      "-dGrayImageResolution=200",
+      "-dMonoImageResolution=600",
+      // Improve JPEG quality from ebook default
+      "-dJPEGQ=85",  // ebook uses ~75, printer uses ~90
       "-sColorConversionStrategy=UseDeviceIndependentColor",
+      "-dEmbedAllFonts=true",
+      "-dSubsetFonts=true",
       "-dPDFACompatibilityPolicy=1",
       `-sOutputFile=${sanitizedPath}`,
       filePath
@@ -348,7 +357,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
 
     const io = socketIO.getIO();
     io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
-    
+
     logger.info(`Successfully processed upload ${uploadId} with ${processedFiles.length} file(s)`);
   }
   catch (error) {
