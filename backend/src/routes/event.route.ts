@@ -1,8 +1,8 @@
 import express from "express";
-import eventController from "../controllers/eventController";
-import checkAccess from "../middleware/accessMiddleware";
-import { validate } from "../middleware/validationMiddleware";
-import { addEventSchema, deleteEventSchema, editEventSchema, setEventTypesSchema } from "../schemas/eventSchema";
+import eventController from "../controllers/event.controller";
+import checkAccess from "../middleware/access.middleware";
+import { validate } from "../middleware/validation.middleware";
+import { addEventSchema, deleteEventSchema, editEventSchema, setEventTypesSchema } from "../schemas/event.schema";
 
 const router = express.Router();
 

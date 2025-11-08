@@ -1,4 +1,4 @@
-import homeworkService from "../services/homeworkService";
+import homeworkService from "../services/homework.service";
 import asyncHandler from "express-async-handler";
 
 export const addHomework = asyncHandler(async (req, res, next) => {

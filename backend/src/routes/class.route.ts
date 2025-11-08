@@ -1,7 +1,7 @@
 import express from "express";
-import classController from "../controllers/classController";
-import checkAccess from "../middleware/accessMiddleware";
-import { validate } from "../middleware/validationMiddleware";
+import classController from "../controllers/class.controller";
+import checkAccess from "../middleware/access.middleware";
+import { validate } from "../middleware/validation.middleware";
 import { 
   changeClassNameSchema,
   changeDefaultPermissionSchema, 
@@ -9,7 +9,7 @@ import {
   joinClassSchema, 
   kickClassMembersSchema, 
   setClassMembersPermissionsSchema
-} from "../schemas/classSchema";
+} from "../schemas/class.schema";
 
 const router = express.Router();
 

@@ -1,4 +1,4 @@
-import lessonService from "../services/lessonService";
+import lessonService from "../services/lesson.service";
 import asyncHandler from "express-async-handler";
 
 export const getLessonData = asyncHandler(async (req, res, next) => {

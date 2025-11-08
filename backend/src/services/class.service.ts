@@ -1,7 +1,7 @@
 import { RequestError } from "../@types/requestError";
 import { Session, SessionData } from "express-session";
 import { default as prisma } from "../config/prisma";
-import { BigIntreplacer } from "../utils/validateFunctions";
+import { BigIntreplacer } from "../utils/validate.functions";
 import { sessionPool } from "../config/pg";
 import logger from "../config/logger";
 import { redisClient } from "../config/redis";
@@ -16,7 +16,7 @@ import {
   kickClassMembersTypeBody,
   setClassMembersPermissionsTypeBody,
   updateDSBMobileDataTypeBody
-} from "../schemas/classSchema";
+} from "../schemas/class.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 function generateRandomBase62String(length: number = 20): string {

@@ -1,4 +1,4 @@
-import subjectService from "../services/subjectService";
+import subjectService from "../services/subject.service";
 import asyncHandler from "express-async-handler";
 
 export const getSubjectData = asyncHandler(async (req, res, next) => {

@@ -1,8 +1,8 @@
 import express from "express";
-import teamsController from "../controllers/teamController";
-import checkAccess from "../middleware/accessMiddleware";
-import { setJoinedTeamsSchema, setTeamsSchema } from "../schemas/teamSchema";
-import { validate } from "../middleware/validationMiddleware";
+import teamsController from "../controllers/team.controller";
+import checkAccess from "../middleware/access.middleware";
+import { setJoinedTeamsSchema, setTeamsSchema } from "../schemas/team.schema";
+import { validate } from "../middleware/validation.middleware";
 
 const router = express.Router();
 

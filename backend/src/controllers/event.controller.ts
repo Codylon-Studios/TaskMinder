@@ -1,4 +1,4 @@
-import eventService from "../services/eventService";
+import eventService from "../services/event.service";
 import asyncHandler from "express-async-handler";
 
 export const getEventData = asyncHandler(async (req, res, next) => {

@@ -6,10 +6,10 @@ import { ReadStream, createReadStream } from "fs";
 import prisma from "../config/prisma";
 import logger from "../config/logger";
 import { RequestError } from "../@types/requestError";
-import { deleteUploadTypeBody, getUploadFileType, editUploadTypeBody, uploadFileTypeBody } from "../schemas/uploadSchema";
+import { deleteUploadTypeBody, getUploadFileType, editUploadTypeBody, uploadFileTypeBody } from "../schemas/upload.schema";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
-import { invalidateUploadCache } from "../utils/validateFunctions";
-import { BigIntreplacer, isValidTeamId, isValidUploadInput, updateCacheData } from "../utils/validateFunctions";
+import { invalidateUploadCache } from "../utils/validate.functions";
+import { BigIntreplacer, isValidTeamId, isValidUploadInput, updateCacheData } from "../utils/validate.functions";
 
 
 type GetUploadFileInput = {

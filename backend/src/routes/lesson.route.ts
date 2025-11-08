@@ -1,8 +1,8 @@
 import express from "express";
-import lessonController from "../controllers/lessonController";
-import checkAccess from "../middleware/accessMiddleware";
-import { validate } from "../middleware/validationMiddleware";
-import { setLessonDataSchema } from "../schemas/lessonSchema";
+import lessonController from "../controllers/lesson.controller";
+import checkAccess from "../middleware/access.middleware";
+import { validate } from "../middleware/validation.middleware";
+import { setLessonDataSchema } from "../schemas/lesson.schema";
 
 const router = express.Router();
 

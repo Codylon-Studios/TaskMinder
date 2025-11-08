@@ -10,10 +10,10 @@ import {
   lessonDateEventAtLeastOneNull,
   updateCacheData,
   BigIntreplacer
-} from "../utils/validateFunctions";
+} from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
-import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody } from "../schemas/eventSchema";
+import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody } from "../schemas/event.schema";
 
 export const eventService = {
   async getEventData(session: Session & Partial<SessionData>) {

@@ -1,5 +1,5 @@
 import z from "zod";
-import { checkUsername } from "../utils/validateFunctions";
+import { checkUsername } from "../utils/validate.functions";
 
 export const registerAccountSchema = z.object({
   params: z.object({}),

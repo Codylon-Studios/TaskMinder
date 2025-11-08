@@ -1,4 +1,4 @@
-import teamService from "../services/teamService";
+import teamService from "../services/team.service";
 import asyncHandler from "express-async-handler";
 
 export const getTeams = asyncHandler(async (req, res, next) => {

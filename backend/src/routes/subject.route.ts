@@ -1,8 +1,8 @@
 import express from "express";
-import subjectController from "../controllers/subjectController";
-import checkAccess from "../middleware/accessMiddleware";
-import { validate } from "../middleware/validationMiddleware";
-import { setSubjectsSchema } from "../schemas/subjectSchema";
+import subjectController from "../controllers/subject.controller";
+import checkAccess from "../middleware/access.middleware";
+import { validate } from "../middleware/validation.middleware";
+import { setSubjectsSchema } from "../schemas/subject.schema";
 
 const router = express.Router();
 

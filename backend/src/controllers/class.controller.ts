@@ -1,4 +1,4 @@
-import classService from "../services/classService";
+import classService from "../services/class.service";
 import asyncHandler from "express-async-handler";
 
 export const getClassInfo = asyncHandler(async (req, res, next) => {

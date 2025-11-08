@@ -1,5 +1,5 @@
 import { dequeueJob, QUEUE_KEYS } from "../config/redis";
-import { invalidateUploadCache } from "./validateFunctions";
+import { invalidateUploadCache } from "./validate.functions";
 import logger from "../config/logger";
 import prisma from "../config/prisma";
 import fs from "fs/promises";
@@ -20,7 +20,7 @@ import mime from "mime-types";
 import { randomUUID } from "crypto";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import { RequestError } from "../@types/requestError";
-import { fileTypeFromFile } from "../../../node_modules/file-type/index";
+import { fileTypeFromFile } from "../../../node_modules/file-type";
 
 const execFileAsync = promisify(execFile);
 

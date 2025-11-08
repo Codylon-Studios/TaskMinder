@@ -1,15 +1,15 @@
 import express from "express";
-import uploadController from "../controllers/uploadController";
-import checkAccess from "../middleware/accessMiddleware";
-import uploadMiddleware from "../middleware/uploadMiddleware";
-import { validate } from "../middleware/validationMiddleware";
+import uploadController from "../controllers/upload.controller";
+import checkAccess from "../middleware/access.middleware";
+import uploadMiddleware from "../middleware/upload.middleware";
+import { validate } from "../middleware/validation.middleware";
 import { 
   deleteUploadSchema, 
   getUploadFileSchema, 
   getUploadMetadataSchema,
   editUploadSchema, 
   uploadFileSchema 
-} from "../schemas/uploadSchema";
+} from "../schemas/upload.schema";
 
 const router = express.Router();
 

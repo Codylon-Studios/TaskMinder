@@ -2,9 +2,9 @@ import { RequestError } from "../@types/requestError";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
 import logger from "../config/logger";
-import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/validateFunctions";
+import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
-import { setLessonDataTypeBody } from "../schemas/lessonSchema";
+import { setLessonDataTypeBody } from "../schemas/lesson.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 const lessonService = {

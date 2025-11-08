@@ -1,8 +1,8 @@
 import express from "express";
-import homeworkController from "../controllers/homeworkController";
-import checkAccess from "../middleware/accessMiddleware";
-import { addHomeworkSchema, checkHomeworkSchema, deleteHomeworkSchema, editHomeworkSchema } from "../schemas/homeworkSchema";
-import { validate } from "../middleware/validationMiddleware";
+import homeworkController from "../controllers/homework.controller";
+import checkAccess from "../middleware/access.middleware";
+import { addHomeworkSchema, checkHomeworkSchema, deleteHomeworkSchema, editHomeworkSchema } from "../schemas/homework.schema";
+import { validate } from "../middleware/validation.middleware";
 
 const router = express.Router();
 

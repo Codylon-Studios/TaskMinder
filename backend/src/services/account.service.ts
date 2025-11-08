@@ -10,7 +10,7 @@ import {
   deleteAccountTypeBody,
   loginAccountTypeBody,
   registerAccountTypeBody
-} from "../schemas/accountSchema";
+} from "../schemas/account.schema";
 
 const SALTROUNDS = 10;
 

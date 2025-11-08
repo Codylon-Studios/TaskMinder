@@ -1,7 +1,7 @@
-import uploadService from "../services/uploadService";
+import uploadService from "../services/upload.service";
 import asyncHandler from "express-async-handler";
 import logger from "../config/logger";
-import { getUploadFileType } from "../schemas/uploadSchema";
+import { getUploadFileType } from "../schemas/upload.schema";
 
 export const getUploadMetadata = asyncHandler(async (req, res, next) => {
   try {

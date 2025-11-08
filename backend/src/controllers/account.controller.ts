@@ -1,4 +1,4 @@
-import accountService from "../services/accountService";
+import accountService from "../services/account.service";
 import asyncHandler from "express-async-handler";
 
 export const registerAccount = asyncHandler(async (req, res, next) => {

@@ -1,7 +1,7 @@
 import express from "express";
-import userController from "../controllers/accountController";
-import checkAccess from "../middleware/accessMiddleware";
-import { validate } from "../middleware/validationMiddleware";
+import userController from "../controllers/account.controller";
+import checkAccess from "../middleware/access.middleware";
+import { validate } from "../middleware/validation.middleware";
 import { 
   changePasswordSchema, 
   changeUsernameSchema, 
@@ -9,7 +9,7 @@ import {
   deleteAccountSchema, 
   loginAccountSchema, 
   registerAccountSchema 
-} from "../schemas/accountSchema";
+} from "../schemas/account.schema";
 
 const router = express.Router();
 

@@ -2,9 +2,9 @@ import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
-import { isValidGender, updateCacheData } from "../utils/validateFunctions";
+import { isValidGender, updateCacheData } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
-import { setSubjectsTypeBody } from "../schemas/subjectSchema";
+import { setSubjectsTypeBody } from "../schemas/subject.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 const subjectService = {

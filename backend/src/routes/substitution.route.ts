@@ -1,6 +1,6 @@
 import express from "express";
-import substitutionController from "../controllers/substitutionController";
-import checkAccess from "../middleware/accessMiddleware";
+import substitutionController from "../controllers/substitution.controller";
+import checkAccess from "../middleware/access.middleware";
 
 const router = express.Router();
 

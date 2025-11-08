@@ -1,4 +1,4 @@
-import substitutionService from "../services/substitutionService";
+import substitutionService from "../services/substitution.service";
 import asyncHandler from "express-async-handler";
 
 export const getSubstitutionData = asyncHandler(async (req, res, next) => {
