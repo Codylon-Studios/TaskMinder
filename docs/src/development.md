@@ -88,7 +88,7 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.3.1 (last checked: November 7th, 2025).
+You should see at least Bun 1.3.2 (last checked: November 8th, 2025).
 
 [Bun Versions]: https://bun.sh/blog
 
@@ -101,6 +101,60 @@ If not installed, retrieve the download instuctions from the [Bun Download Page]
 ### Installing ClamAV and Ghostscript - optional
 
 This step installs the tools that scan files uploaded to the server. This is optional for development environments, as you typically wouldn't enable scanning in that context. However, if you're developing or testing upload functionality, please install these tools to ensure your code changes work correctly with the scanning pipeline.
+
+=== "Linux (Ubuntu/Debian) and GitHub Codespaces"
+    **Install ClamAV via apt package manager**
+
+    ```bash
+    sudo apt install clamav clamav-daemon -y
+    ```
+
+    * `clamav`: the command-line scanner (`clamscan`)
+    * `clamav-daemon`: runs the `clamd` background service for faster scanning
+
+
+    **Stop the daemon before updating virus definitions**
+
+    ```bash
+    # Github Codespaces
+    sudo service clamav-freshclam stop
+    
+    # Ubuntu/Debian (Linux)
+    sudo systemctl stop clamav-freshclam
+    ```
+
+
+    **Update virus definitions**
+
+    ```bash
+    sudo freshclam
+    ```
+
+    *(This fetches the latest virus signatures from ClamAV’s servers.)*
+
+
+    **Start services**
+
+    ```bash
+    # Github Codespaces
+    sudo service clamav-freshclam start
+    sudo service clamav-daemon start
+
+    # Ubuntu/Debian (Linux)
+    sudo systemctl enable clamav-freshclam
+    sudo systemctl start clamav-freshclam
+    sudo systemctl enable clamav-daemon
+    sudo systemctl start clamav-daemon
+    ```
+
+    **Install Ghostscript via apt package manager**
+
+    ```bash
+    sudo apt install ghostscript -y
+    gs --version
+    ```
+
+    Ghostscript should at least return version 10.02.1 (last checked: November 7th, 2025).
 
 === "MacOS"
     **Install ClamAV via Homebrew**

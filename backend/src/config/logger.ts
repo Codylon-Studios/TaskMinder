@@ -84,6 +84,14 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
       customFormat
     )
   }));
+} 
+else {
+  logger.add(new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+      customFormat
+    )
+  }));
 }
 
 export default logger;
