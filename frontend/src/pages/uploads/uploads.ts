@@ -10,7 +10,8 @@ import {
   lessonData,
   escapeHTML,
   dateDaysDifference,
-  uploadData
+  uploadData,
+  createDataAccessor
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -46,6 +47,12 @@ async function updateUploadList(): Promise<void> {
 
   const data = await uploadData(); // TODO @a26b25c24: await getFilteredData();
 
+  const storageUsed = Math.round(Number.parseInt(data.usedStorage) / Number.parseInt(data.totalStorage) * 100);
+  $("#storage-bar").attr("aria-valuenow", storageUsed).find("div").css("width", storageUsed + "%").text(storageUsed + "%")
+    .toggleClass("text-bg-success", storageUsed < 75)
+    .toggleClass("text-bg-warning", storageUsed >= 75 && storageUsed < 90)
+    .toggleClass("text-bg-danger", storageUsed >= 90)
+
   for (const upload of data.uploads) {
     const uploadId = upload.uploadId;
     const uploadType = upload.uploadType;
@@ -53,45 +60,64 @@ async function updateUploadList(): Promise<void> {
     const author = upload.accountName;
     const numberFiles = upload.filesCount;
     const fileIcon = {
-      INFO_SHEET: `<span class="fa-stack fs-1 upload-icon-stack">
+      INFO_SHEET: `<span class="fa-stack fs-1 upload-icon-stack" aria-hidden="true">
         <i class="far fa-file fa-stack-1x"></i>
         <i class="fas fa-info fa-stack-1x"></i>
       </span>`,
-      LESSON_NOTE: "<i class=\"fs-1 far fa-note-sticky\"></i>",
-      WORKSHEET: `<span class="fa-stack fs-1 upload-icon-stack">
+      LESSON_NOTE: "<i class=\"fs-1 far fa-note-sticky\" aria-hidden='true'></i>",
+      WORKSHEET: `<span class="fa-stack fs-1 upload-icon-stack" aria-hidden="true">
         <i class="far fa-file fa-stack-1x"></i>
         <i class="fas fa-question fa-stack-1x"></i>
       </span>`,
-      IMAGE: "<i class=\"fs-1 far fa-image\"></i>",
-      FILE: "<i class=\"fs-1 far fa-file\"></i>",
-      TEXT: "<i class=\"fs-1 far fa-file-lines\"></i>"
+      IMAGE: "<i class=\"fs-1 far fa-image\" aria-hidden='true'></i>",
+      FILE: "<i class=\"fs-1 far fa-file\" aria-hidden='true'></i>",
+      TEXT: "<i class=\"fs-1 far fa-file-lines\" aria-hidden='true'></i>"
     }[uploadType] ?? "";
 
-    // The template for an event with edit options
     const template = $(`
       <div class="col p-2 text-center">
         <div class="mb-2">
-          <button class="edit-option btn btn-sm btn-semivisible event-edit"
+          <button class="edit-option btn btn-sm btn-semivisible upload-edit"
             data-id="${uploadId}" aria-label="Bearbeiten">
             <i class="fa-solid fa-edit opacity-75" aria-hidden="true"></i>
           </button>
-          <button class="edit-option btn btn-sm btn-semivisible event-delete"
+          <button class="edit-option btn btn-sm btn-semivisible upload-delete"
             data-id="${uploadId}" aria-label="Löschen">
             <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
           </button>
         </div>
+
+        <div class="upload-failed">
+          <span class="form-text text-danger">
+            <i class="fas fa-circle-xmark" aria-hidden="true"></i>
+            Hochladen fehlgeschlagen!
+          </span>
+          <br>
+          <button class="btn btn-sm btn-danger fw-bold mt-1 upload-failed-delete" data-id="${uploadId}">Löschen</button>
+        </div>
+
+        <div class="upload-processing">
+          <span class="form-text text-primary">
+            <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
+            Wird hochgeladen...
+          </span>
+        </div>
+
         <button class="view-upload btn btn-semivisible text-center mw-100" data-id="${uploadId}">
           ${fileIcon}
           <br>
           <span class="fw-bold word-wrap-break">${escapeHTML(name)}</span>
           <br>
-          <span class="badge upload-badge rounded-pill"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
-          <span class="badge upload-badge rounded-pill"><i class="far fa-file me-1" aria-hidden="true"></i>${numberFiles}</span>
+          <span class="badge badge-tertiary rounded-pill"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
+          <span class="badge badge-tertiary rounded-pill"><i class="far fa-file me-1" aria-hidden="true"></i>${numberFiles}</span>
           </div>
         </button>
       </div>
       `);
     template.find(".edit-option").toggle(editEnabled);
+    template.find(".upload-failed").toggle(upload.status === "failed");
+    template.find(".upload-processing").toggle(["processing", "queued"].includes(upload.status));
+    template.find(".view-upload").prop("disabled", upload.status !== "completed");
 
     // Add this event to the list
     newContent.append(template);
@@ -103,6 +129,7 @@ async function updateUploadList(): Promise<void> {
   if (newContent.html() === "") {
     newContent.html('<div class="text-secondary">Keine Dateien mit diesen Filtern.</div>');
   }
+  $("#upload-load-more").toggle((await uploadData()).hasMore)
   $("#upload-list").empty().append(newContent.children());
 };
 
@@ -275,25 +302,39 @@ function addUpload(): void {
 }
 
 async function viewUpload(uploadId: number): Promise<void> {
+  function showFile(fileId: number): void {
+    if (!upload) return;
+
+    const route = `/uploads/${upload.files[fileId].fileMetaDataId}`;
+    const mime = upload.files[fileId].mimeType;
+    $("#view-upload-first-page-note").toggle(mime == "application/pdf")
+    
+    const $object = $("#view-upload-object");
+    const $newObject = $(`<object id="view-upload-object" class="w-100 border border-secondary ${/iPhone/.test(navigator.userAgent) ? "ios" : ""}">
+      <a>Download</a>
+    </object>`);
+    $newObject.attr("data", route + "?action=preview").attr("type", mime).find("a").attr("href", route + "?action=preview");
+    $object.replaceWith($newObject);
+
+    $("#view-upload-nav-info").text(fileId + 1 + "/" + upload.filesCount)
+    $("#view-upload-nav-back").prop("disabled", fileId == 0)
+    $("#view-upload-nav-next").prop("disabled", upload.filesCount == fileId + 1)
+
+    $("#view-upload-download").attr("href", route + "?action=download")
+    $("#view-upload-open").attr("href", route + "?action=preview")
+  }
+
   const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
   if (!upload) return;
 
   $("#view-upload-modal-label b").text(upload.uploadName);
-  const route = `/uploads/upload/${upload.files[0].fileMetaDataId}?action=preview`;
-  console.log(route);
-  const mime = upload.files[0].mimeType;
-  
-  // Remove the existing object element and create a new one to force reload
-  const $object = $("#view-upload-object");
-  const $parent = $object.parent();
-  $object.remove();
-  
-  const $newObject = $('<object id="view-upload-object" class="w-100 h-100"><a>Download</a></object>');
-  $newObject.attr("data", route).attr("type", mime).find("a").attr("href", route);
-  $parent.append($newObject);
-  
   $("#view-upload-modal").modal("show");
-  $("#pdf-modal").modal("show");
+
+  let shownFileId = 0;
+  showFile(shownFileId);
+
+  $("#view-upload-nav-back").off("click").on("click", () => showFile(--shownFileId))
+  $("#view-upload-nav-next").off("click").on("click", () => showFile(++shownFileId))
 }
 
 async function shareEvent(eventId: number): Promise<void> {
@@ -424,53 +465,40 @@ async function shareEvent(eventId: number): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-async function editEvent(eventId: number): Promise<void> {
+async function editUpload(uploadId: number): Promise<void> {
   //
-  // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY EDITS AN EVENT
+  // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF AN UPLOAD, NOT WHEN USER ACTUALLY EDITS AN UPLOAD
   //
 
-  // Get the data of the event
-  const event = (await eventData()).find(e => e.eventId === eventId);
-  if (!event) return;
+  // Get the data of the upload
+  const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
+  if (!upload) return;
 
   // Set the inputs on the already saved information
-  $("#edit-event-type").val(event.eventTypeId);
-  $("#edit-event-name").val(event.name);
-  $("#edit-event-description").val(event.description ?? "");
-  $("#edit-event-description").trigger("change");
-  $("#edit-event-start-date").val(msToInputDate(event.startDate));
-  $("#edit-event-lesson").val(event.lesson ?? "");
-  $("#edit-event-end-date").val(msToInputDate(event.endDate ?? ""));
-  $("#edit-event-team").val(event.teamId);
+  $("#edit-upload-name").val(upload.uploadName);
+  $("#edit-upload-type").val(upload.uploadType);
+  $("#edit-upload-team").val(-1); // TODO: real teamid
 
   // Enable the actual "edit" button, because all information is given
-  $("#edit-event-button").prop("disabled", false);
+  $("#edit-upload-button").prop("disabled", false);
 
-  // Show the edit event modal
-  $("#edit-event-modal").modal("show");
+  // Show the edit upload modal
+  $("#edit-upload-modal").modal("show");
 
   // Called when the user clicks the "edit" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#edit-event-button")
+  $("#edit-upload-button")
     .off("click")
     .on("click", async () => {
       // Save the given information in variables
-      const eventTypeId = $("#edit-event-type").val();
-      const name = $("#edit-event-name").val();
-      const description = $("#edit-event-description").val();
-      const startDate = $("#edit-event-start-date").val()?.toString() ?? "";
-      const lesson = $("#edit-event-lesson").val()?.toString().trim() ?? null;
-      const endDate = $("#edit-event-end-date").val()?.toString() ?? "";
-      const team = $("#edit-event-team").val();
+      const name = $("#edit-upload-name").val();
+      const type = $("#edit-upload-type").val();
+      const team = $("#edit-upload-team").val();
 
       const data = {
-        eventId: eventId,
-        eventTypeId: eventTypeId,
-        name: name,
-        description: description,
-        startDate: dateToMs(startDate),
-        lesson: lesson,
-        endDate: dateToMs(endDate),
+        uploadId,
+        uploadName: name,
+        uploadType: type,
         teamId: team
       };
       // Save whether the server has responed
@@ -478,7 +506,7 @@ async function editEvent(eventId: number): Promise<void> {
 
       // Post the request
       $.ajax({
-        url: "/events/edit_event",
+        url: "/uploads/edit",
         type: "POST",
         contentType: "application/json",
         data: JSON.stringify(data),
@@ -486,9 +514,9 @@ async function editEvent(eventId: number): Promise<void> {
           "X-CSRF-Token": await csrfToken()
         },
         success: () => {
-          // Show a success notification and update the shown events
-          $("#edit-event-success-toast").toast("show");
-          $("#edit-event-modal").modal("hide");
+          // Show a success notification
+          $("#edit-upload-success-toast").toast("show");
+          $("#edit-upload-modal").modal("hide");
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -519,67 +547,72 @@ async function editEvent(eventId: number): Promise<void> {
     });
 }
 
-function deleteEvent(eventId: number): void {
-  //
-  // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY DELETES AN EVENT
-  //
+function deleteUpload(uploadId: number, force?: boolean): void {
+  async function deleteConfirmed() {
+    // Hide the confirmation toast
+    $("#delete-upload-confirm-toast").toast("hide");
 
-  // Show a confirmation notification
-  $("#delete-event-confirm-toast").toast("show");
+    const data = {
+      uploadId: uploadId
+    };
+    // Save whether the server has responed
+    let hasResponded = false;
 
-  // Called when the user clicks the "confirm" button in the notification
-  // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#delete-event-confirm-toast-button")
-    .off("click")
-    .on("click", async () => {
-      // Hide the confirmation toast
-      $("#delete-event-confirm-toast").toast("hide");
-
-      const data = {
-        eventId: eventId
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/events/delete_event",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification and update the shown events
-          $("#delete-event-success-toast").toast("show");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
+    // Post the request
+    $.ajax({
+      url: "/uploads/delete",
+      type: "POST",
+      data: data,
+      headers: {
+        "X-CSRF-Token": await csrfToken()
+      },
+      success: () => {
+        // Show a success notification
+        $("#delete-upload-success-toast").toast("show");
+      },
+      error: xhr => {
+        if (xhr.status === 401) {
+          // The user has to be logged in but isn't
+          // Show an error notification
+          $navbarToasts.notLoggedIn.toast("show");
         }
-      });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
+        else if (xhr.status === 500) {
+          // An internal server error occurred
           $navbarToasts.serverError.toast("show");
         }
-      }, 5000);
+        else {
+          $navbarToasts.unknownError.toast("show");
+        }
+      },
+      complete: () => {
+        // The server has responded
+        hasResponded = true;
+      }
     });
+    setTimeout(() => {
+      // Wait for 1s
+      if (!hasResponded) {
+        // If the server hasn't answered, show the internal server error notification
+        $navbarToasts.serverError.toast("show");
+      }
+    }, 5000);
+  }
+
+  //
+  // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF AN UPLOAD, NOT WHEN USER ACTUALLY DELETES AN UPLOAD
+  //
+
+  if (force) deleteConfirmed()
+  else {
+    // Show a confirmation notification
+    $("#delete-upload-confirm-toast").toast("show");
+
+    // Called when the user clicks the "confirm" button in the notification
+    // Note: .off("click") removes the existing click event listener from a previous call of this function
+    $("#delete-upload-confirm-toast-button")
+      .off("click")
+      .on("click", deleteConfirmed);
+  }
 }
 
 function updateFilters(ingoreEventTypes?: boolean): void {
@@ -617,6 +650,16 @@ function toggleShownButtons(): void {
 export async function init(): Promise<void> {
   return new Promise(res => {
     $(async function () {
+      if (!/iPhone/.test(navigator.userAgent)) {
+        $("#view-upload-first-page-note").remove()
+      }
+
+      $("#upload-load-more-btn").on("click", () => {
+        showAllUploads(true);
+        uploadData.reload();
+        updateUploadList();
+      })
+
       $("#edit-toggle").on("click", function () {
         $(".edit-option").toggle($("#edit-toggle").is(":checked"));
       });
@@ -691,14 +734,17 @@ export async function init(): Promise<void> {
         shareEvent($(this).data("id"));
       });
 
-      // Request deleting the event on clicking its delete icon
-      $(document).on("click", ".event-delete", function () {
-        deleteEvent($(this).data("id"));
+      // Request deleting the upload on clicking its delete icon
+      $(document).on("click", ".upload-delete", function () {
+        deleteUpload($(this).data("id"));
+      });
+      $(document).on("click", ".upload-failed-delete", function () {
+        deleteUpload($(this).data("id"), true);
       });
 
-      // Request editing the event on clicking its edit icon
-      $(document).on("click", ".event-edit", function () {
-        editEvent($(this).data("id"));
+      // Request editing the upload on clicking its edit icon
+      $(document).on("click", ".upload-edit", function () {
+        editUpload($(this).data("id"));
       });
 
       // On clicking the all types option, check all and update the event list
@@ -757,14 +803,15 @@ export async function init(): Promise<void> {
 
       $(document).on("click", "#show-add-upload-button", addUpload);
     });
-
-    socket.on("updateEventData", () => {
+    
+    socket.on("updateUploads", () => {
       try {
-        eventData.reload();
+        uploadData.reload();
+
         updateUploadList();
       }
       catch (error) {
-        console.error("Error handling updateEventData:", error);
+        console.error("Error handling updateUploads:", error);
       }
     });
 
@@ -785,3 +832,6 @@ export const reloadAllFn = async (): Promise<void> => {
 
   toggleShownButtons();
 };
+
+export const showAllUploads = createDataAccessor<boolean>("showAllUploads");
+showAllUploads(false)

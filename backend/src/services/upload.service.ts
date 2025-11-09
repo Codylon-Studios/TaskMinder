@@ -10,6 +10,7 @@ import { deleteUploadTypeBody, getUploadFileType, editUploadTypeBody, uploadFile
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
 import { invalidateUploadCache } from "../utils/validate.functions";
 import { BigIntreplacer, isValidTeamId, isValidUploadInput, updateCacheData } from "../utils/validate.functions";
+import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 
 type GetUploadFileInput = {
@@ -97,6 +98,9 @@ const uploadService = {
 
     // Invalidate cache after queueing new upload
     await invalidateUploadCache(session.classId!);
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
 
     logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s)`);
   },
@@ -267,6 +271,9 @@ const uploadService = {
 
     // Invalidate cache after edit
     await invalidateUploadCache(session.classId!);
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
   },
   async deleteUpload(
     body: deleteUploadTypeBody,
@@ -324,6 +331,9 @@ const uploadService = {
 
     // Invalidate cache after delete
     await invalidateUploadCache(session.classId!);
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
   }
 };
 

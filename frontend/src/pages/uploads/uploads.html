@@ -6,6 +6,13 @@
 
   <body>
     <div class="container" id="app">
+      <div class="d-flex gap-2 mb-3 align-items-center">
+        <div class="progress w-100" id="storage-bar" aria-label="Freier Speicher" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar text-bg-danger"></div>
+        </div>
+        <span class="text-secondary text-nowrap"><b></b> von <b></b> belegt</span>
+      </div>
+
       <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-primary" id="show-add-upload-button">
@@ -64,6 +71,9 @@
       <div class="container-fluid mt-3 row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-xl-6 mx-0" id="upload-list">
         <!--Gets filled-->
       </div>
+      <div class="container-fluid text-center" id="upload-load-more">
+        <button class="btn btn-primary fw-bold" id="upload-load-more-btn">Mehr laden</button>
+      </div>
 
       <div class="modal fade" id="add-upload-modal" aria-labelledby="add-upload-modal-label">
         <div class="modal-dialog">
@@ -113,6 +123,55 @@
         </div>
       </div>
 
+      <div class="modal fade" id="edit-upload-modal" aria-labelledby="edit-upload-modal-label">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="edit-upload-modal-label">Hochgeladene Dateien bearbeiten</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-warning p-2 d-flex align-items-center gap-2 mb-3">
+                <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
+                <span class="d-block">
+                  Du kannst nur Namen und ähnliches ändern. Wenn du die Dateien an sich anpassen willst,
+                  lösche bitte diesen Eintrag und mache einen neuen.
+                </span>
+              </div>
+
+              <div class="mb-3">
+                <label for="edit-upload-name" class="form-label">Bennene die Dateien</label>
+                <input type="text" class="form-control edit-upload-input" id="edit-upload-name" placeholder='zum Beispiel "Hefteintrag Mathe" ' />
+              </div>
+
+              <div class="mb-3">
+                <label for="add-upload-type" class="form-label">Wähle die Art der Datei aus</label>
+                <select class="form-select add-upload-input" id="edit-upload-type">
+                  <option value="" disabled selected>Art</option>
+                  <option value="LESSON_NOTE">Hefteintrag</option>
+                  <option value="WORKSHEET">Arbeitsblatt</option>
+                  <option value="INFO_SHEET">Infozettel</option>
+                  <option value="TEXT">Text</option>
+                  <option value="FILE">Andere Datei</option>
+                  <option value="IMAGE">Anderes Bild</option>
+                </select>
+                <div class="form-text">Das beeinflusst nur die Darstellung und Filter.</div>
+              </div>
+
+              <label for="edit-upload-team" class="form-label">Wähle ein Team für die Datei aus (optional)</label>
+              <select class="form-select edit-upload-input" id="edit-upload-team">
+                <option value="-1" selected>Alle</option>
+                <!-- Gets filled -->
+              </select>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+              <button class="btn btn-primary" id="edit-upload-button">Speichern</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="modal fade" id="view-upload-modal" aria-labelledby="view-upload-modal-label">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -127,73 +186,33 @@
               <object id="view-upload-object">
                 Vorschau nicht möglich. <a>Datei öffnen</a>.
               </object>
+              <div class="form-text" id="view-upload-first-page-note">
+                Eventuell wird nur die erste Seite des PDFs angezeigt.
+              </div>
+
+              <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                <button class="btn btn-tertiary rounded-pill position-relative p-3" id="view-upload-nav-back" aria-label="Vorherige Datei">
+                  <i class="fas fa-arrow-left position-absolute top-50 start-50 translate-middle" aria-hidden="true"></i>
+                </button>
+                <span class="badge badge-tertiary rounded-pill fs-6" id="view-upload-nav-info">1/3</span>
+                <button class="btn btn-tertiary rounded-pill position-relative p-3" id="view-upload-nav-next" aria-label="Nächste Datei">
+                  <i class="fas fa-arrow-right position-absolute top-50 start-50 translate-middle" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <div class="d-flex flex-column flex-md-row gap-2">
+                <a class="btn btn-primary fw-bold w-md-50" id="view-upload-download">
+                  <i class="fas fa-download" aria-hidden="true"></i>
+                  Herunterladen
+                </a>
+                <a class="btn btn-secondary fw-bold w-md-50" id="view-upload-open" target="_blank">
+                  <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true"></i>
+                  In neuem Tab öffnen
+                </a>
+              </div>
             </div>
             <div class="modal-footer">
               <button class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal fade" id="edit-event-modal" aria-labelledby="edit-event-modal-label">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="edit-event-modal-label">Ereignis bearbeiten</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label for="edit-event-type" class="form-label">Wähle die Art des Ereignisses aus</label>
-                <select class="form-select edit-event-input" id="edit-event-type">
-                  <option value="" disabled selected>Art</option>
-                  <!-- Gets filled -->
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label for="edit-event-name" class="form-label">Bennene das Ereignis</label>
-                <input type="text" class="form-control edit-event-input" id="edit-event-name" placeholder='zum Beispiel "Schulaufgabe Latein"' />
-              </div>
-
-              <div class="mb-3">
-                <label for="edit-event-description" class="form-label">Füge eine Beschreibung für das Ereignis hinzu (optional)</label>
-                <textarea
-                  type="text"
-                  class="rich-textarea edit-event-input"
-                  id="edit-event-description"
-                  placeholder="zum Beispiel abgefragter Stoff"
-                ></textarea>
-              </div>
-
-              <div class="mb-3">
-                <label for="edit-event-start-date" class="form-label">Gib ein, wann das Ereignis stattfindet</label>
-                <input type="date" class="form-control edit-event-input" id="edit-event-start-date" />
-              </div>
-
-              <div class="row mb-3">
-                <div class="col">
-                  <label for="edit-event-lesson" class="form-label">Gib eine Unterrichtsstunde an (optional)</label>
-                  <input type="text" class="form-control edit-event-input" id="edit-event-lesson" placeholder='zum Beispiel "2" oder "1-3"' />
-                  <div class="form-text">zum Beispiel für Schulaufgaben</div>
-                </div>
-
-                <div class="col">
-                  <label for="edit-event-end-date" class="form-label">Gib ein Enddatum an (optional)</label>
-                  <input type="date" class="form-control edit-event-input" id="edit-event-end-date" />
-                  <div class="form-text">zum Beispiel für Ferien</div>
-                </div>
-              </div>
-
-              <label for="edit-event-team" class="form-label">Wähle ein Team für das Ereignis aus (optional)</label>
-              <select class="form-select edit-event-input" id="edit-event-team">
-                <option value="-1" selected>Alle</option>
-                <!-- Gets filled -->
-              </select>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-              <button class="btn btn-primary" id="edit-event-button">Speichern</button>
             </div>
           </div>
         </div>
@@ -216,7 +235,7 @@
           </div>
           <div class="toast-body">Das Dateiformat ist nicht unterstützt. Kontaktiere uns, wenn dir eine Unterstützung wichtig ist.</div>
         </div>
-        <div id="edit-event-success-toast" class="toast">
+        <div id="edit-upload-success-toast" class="toast">
           <div class="toast-progress-bar bg-success"></div>
           <div class="toast-header bg-success text-body-bg">
             <b class="me-auto">Erfolgreich geändert</b>
@@ -224,28 +243,28 @@
           </div>
           <div class="toast-body">Das Ereignis wurde erfolgreich geändert.</div>
         </div>
-        <div id="delete-event-success-toast" class="toast">
+        <div id="delete-upload-success-toast" class="toast">
           <div class="toast-progress-bar bg-success"></div>
           <div class="toast-header bg-success text-body-bg">
             <b class="me-auto">Erfolgreich gelöscht</b>
             <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
           </div>
-          <div class="toast-body">Das Ereignis wurde erfolgreich gelöscht.</div>
+          <div class="toast-body">Die Datei wurde erfolgreich gelöscht.</div>
         </div>
-        <div id="delete-event-confirm-toast" class="toast" data-bs-autohide="false">
+        <div id="delete-upload-confirm-toast" class="toast" data-bs-autohide="false">
           <div class="toast-header bg-primary text-body-bg">
             <b class="me-auto">Bitte bestätigen</b>
             <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
           </div>
           <div class="toast-body">
-            Möchtest du das Ereignis wirklich löschen?
+            Möchtest du die Datei wirklich löschen?
             <div class="mt-2 pt-2 border-top">
               <div class="row g-2 justify-content-end">
                 <div class="col-auto">
                   <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
                 </div>
                 <div class="col-auto">
-                  <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" id="delete-event-confirm-toast-button">Löschen</button>
+                  <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" id="delete-upload-confirm-toast-button">Löschen</button>
                 </div>
               </div>
             </div>

@@ -195,7 +195,7 @@ export async function init(): Promise<void> {
   });
 
   $(() => {
-    if (isSite("main", "homework", "events")) {
+    if (isSite("main", "homework", "events", "uploads")) {
       $(".class-page-content").removeClass("d-none");
     }
     user.on("change", (function _() {

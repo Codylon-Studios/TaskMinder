@@ -22,6 +22,7 @@ import {
   TeamsData,
   UploadData
 } from "./types";
+import { showAllUploads } from "../pages/uploads/uploads.js";
 
 export const lastCommaRegex = /,(?!.*,)/;
 
@@ -431,6 +432,12 @@ async function loadHomeworkCheckedData(): Promise<void> {
   }
 }
 
+async function loadUploadData(): Promise<void> {
+  $.get("/uploads/metadata?all=" + await showAllUploads(), data => {
+    uploadData(data);
+  });
+}
+
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
 }
@@ -582,7 +589,7 @@ export const lessonData = createDataAccessor<LessonData>("lessonData", "/lessons
 export const subjectData = createDataAccessor<SubjectData>("subjectData", "/subjects/get_subject_data");
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", "/substitutions/get_substitutions_data");
 export const teamsData = createDataAccessor<TeamsData>("teamsData", "/teams/get_teams_data");
-export const uploadData = createDataAccessor<UploadData>("uploadData", "/uploads/upload/metadata");
+export const uploadData = createDataAccessor<UploadData>("uploadData", loadUploadData);
 
 // CSRF token
 export const csrfToken = createDataAccessor<string>("csrfToken");

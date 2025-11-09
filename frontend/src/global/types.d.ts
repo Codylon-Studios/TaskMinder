@@ -156,6 +156,8 @@ type TimetableData = LessonGroup & {
 type UploadData = {
   totalUploads: number;
   hasMore: boolean;
+  totalStorage: string;
+  usedStorage: string;
   uploads: {
     uploadId: number;
     uploadName: string;

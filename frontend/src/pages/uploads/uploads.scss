@@ -1,4 +1,4 @@
-.upload-badge {
+.badge-tertiary {
   background-color: var(--btn-tertiary-normal);
   color: var(--btn-color) !important;
 }
@@ -17,7 +17,11 @@
 #view-upload-object {
   width: 100%;
 
-  &[type="application/pdf"] {
-    aspect-ratio: 0.9;
+  &:not(.ios)[type="application/pdf"] {
+    min-height: calc(1.4 * (min(500px, 100vw - 1rem) - 7rem)) !important;
+  }
+
+  &[type="text/plain"] {
+    min-height: calc((min(500px, 100vw - 1rem) - 7rem)) !important;
   }
 }

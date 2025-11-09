@@ -294,6 +294,10 @@ body {
     &:focus-visible {
       background-color: var(--btn-#{$variant}-hover);
     }
+
+    &:disabled {
+      background-color: transparent;
+    }
   }
 }
 
