@@ -104,6 +104,16 @@ const uploadService = {
   async getUploadMetadata(isGetAllData: boolean, session: Session & Partial<SessionData>) {
     const classId = parseInt(session.classId!, 10);
 
+    const classInformation = await prisma.class.findUnique({
+      where: {
+        classId: classId
+      },
+      select: {
+        storageUsedBytes: true,
+        storageQuotaBytes: true
+      }
+    });
+
     const totalUploads = await prisma.upload.count({
       where: {
         classId
@@ -114,7 +124,9 @@ const uploadService = {
       return {
         totalUploads: 0,
         uploads: [],
-        hasMore: false
+        hasMore: false,
+        totalStorage: classInformation!.storageQuotaBytes,
+        usedStorage: classInformation!.storageUsedBytes
       };
     }
 
@@ -175,7 +187,9 @@ const uploadService = {
     const res = {
       totalUploads,
       uploads: uploadList,
-      hasMore
+      hasMore,
+      totalStorage: classInformation!.storageQuotaBytes,
+      usedStorage: classInformation!.storageUsedBytes
     };
     const stringified = JSON.stringify(res, BigIntreplacer);
     return JSON.parse(stringified);
