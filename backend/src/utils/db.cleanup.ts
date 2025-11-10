@@ -40,7 +40,7 @@ export async function cleanupTestClasses(): Promise<void> {
         logger.info(`Deleted class directory: ${classDir}`);
       } 
       catch (error) {
-        logger.error(`Error deleting class directory ${classDir}:`, error);
+        logger.error(`Error deleting class directory ${classDir}: ${error}`);
         // Continue with database cleanup even if file deletion fails
       }
     }
@@ -97,7 +97,7 @@ export async function cleanupTestClasses(): Promise<void> {
     );
   }
   catch (error) {
-    logger.error("Error during test class cleanup:", error);
+    logger.error(`Error during test class cleanup: ${error}`);
   }
 }
 
@@ -127,10 +127,10 @@ export async function cleanupDeletedAccounts(): Promise<void> {
       }
     });
 
-    logger.info("Deleted accounts cleanup completed:", deleted.count, "records deleted out of", count, "found");
+    logger.info(`Deleted accounts cleanup completed: ${deleted.count} records deleted out of ${count} found`);
   } 
   catch (error) {
-    logger.error("Error during deleted account cleanup:", error);
+    logger.error(`Error during deleted account cleanup: ${error}`);
   }
 }
 
@@ -160,10 +160,10 @@ export async function cleanupOldHomework(): Promise<void> {
       }
     });
 
-    logger.info("Homework cleanup completed:", deleted.count, "records deleted out of", count, "found");
+    logger.info(`Homework cleanup completed: ${deleted.count} records deleted out of ${count} found`);
   } 
   catch (error) {
-    logger.error("Error during homework cleanup:", error);
+    logger.error(`Error during homework cleanup: ${error}`);
   }
 }
 
@@ -194,10 +194,10 @@ export async function cleanupOldEvents(): Promise<void> {
       }
     });
 
-    logger.info("Event cleanup completed:", deleted.count, "records deleted out of", count, "found");
+    logger.info(`Event cleanup completed: ${deleted.count} records deleted out of ${count} found`);
   } 
   catch (error) {
-    logger.error("Error during event cleanup:", error);
+    logger.error(`Error during event cleanup: ${error}`);
   }
 }
 
@@ -254,6 +254,6 @@ export async function cleanupStuckUploads(): Promise<void> {
     logger.info(`Cleaned up ${stuckUploads.length} stuck uploads`);
   } 
   catch (error) {
-    logger.error("Error during stuck upload cleanup:", error);
+    logger.error(`Error during stuck upload cleanup: ${error}`);
   }
 }

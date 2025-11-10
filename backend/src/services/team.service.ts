@@ -20,7 +20,7 @@ const teamService = {
         return JSON.parse(cachedTeamsData);
       }
       catch (error) {
-        logger.error("Error parsing Redis data:", error);
+        logger.error(`Error parsing Redis data: ${error}`);
         throw new Error();
       }
     }
@@ -35,7 +35,7 @@ const teamService = {
       await updateCacheData(data, getTeamsDataCacheKey);
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis data: ${err}`);
       throw new Error();
     }
 
@@ -223,7 +223,7 @@ const teamService = {
         }
       }
       catch (err) {
-        logger.error("Error updating Redis cache:", err);
+        logger.error(`Error updating Redis data: ${err}`);
         throw new Error();
       }
     }

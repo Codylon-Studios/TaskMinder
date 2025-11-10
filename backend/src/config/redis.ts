@@ -36,7 +36,7 @@ export const redisClient = createClient({
   url: redisUrl
 });
 redisClient.on("error", (err: unknown) =>
-  err instanceof Error ? logger.error("Redis error:", err) : logger.error("Unknown Redis error!")
+  err instanceof Error ? logger.error(`Redis error: ${err}`) : logger.error("Unknown Redis error!")
 );
 
 export const connectRedis = async (): Promise<void> => {
@@ -48,7 +48,7 @@ export const connectRedis = async (): Promise<void> => {
   }
   catch (err: unknown) {
     if (err instanceof Error) {
-      logger.error("Error connecting to Redis:", err);
+      logger.error(`Error connecting to Redis: ${err}`);
       throw err;
     }
     logger.error("Unknown error connecting to Redis!");
@@ -65,7 +65,7 @@ export const disconnectRedis = async (): Promise<void> => {
   }
   catch (err: unknown) {
     if (err instanceof Error) {
-      logger.error("Error disconnecting from Redis:", err);
+      logger.error(`Error disconnecting from Redis: ${err}`);
       throw err;
     }
     logger.error("Unknown error disconnecting from Redis!");

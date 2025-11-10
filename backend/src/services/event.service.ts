@@ -27,7 +27,7 @@ export const eventService = {
         return JSON.parse(cachedEventData);
       }
       catch (error) {
-        logger.error("Error parsing Redis data:", error);
+        logger.error(`Error parsing Redis data: ${error}`);
         throw new Error();
       }
     }
@@ -45,7 +45,7 @@ export const eventService = {
       await updateCacheData(eventData, getEventDataCacheKey);
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
 
@@ -99,7 +99,7 @@ export const eventService = {
       io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
   },
@@ -153,7 +153,7 @@ export const eventService = {
       io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
   },
@@ -191,7 +191,7 @@ export const eventService = {
       io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
   },
@@ -205,7 +205,7 @@ export const eventService = {
         return JSON.parse(cachedEventTypeData);
       }
       catch (error) {
-        logger.error("Error parsing Redis data:", error);
+        logger.error(`Error parsing Redis data: ${error}`);
         throw new Error();
       }
     }
@@ -223,7 +223,7 @@ export const eventService = {
       await updateCacheData(eventTypeData, getEventTypeDataCacheKey);
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
 
@@ -303,7 +303,7 @@ export const eventService = {
       io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENT_TYPES);
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
     this.updateEventTypeStyles(session);
@@ -323,7 +323,7 @@ export const eventService = {
         return cachedEventTypeStyles;
       }
       catch (error) {
-        logger.error("Error parsing Redis data:", error);
+        logger.error(`Error parsing Redis data: ${error}`);
         throw new Error();
       }
     }
@@ -409,7 +409,7 @@ export const eventService = {
       await redisClient.set(updateEventTypeStylesCacheKey, css, { EX: cacheExpiration });
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
 

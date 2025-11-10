@@ -161,7 +161,7 @@ const uploadService = {
           uploadList = JSON.parse(cachedUploadMetadataData);
         }
         catch (error) {
-          logger.error("Error parsing Redis data:", error);
+          logger.error(`Error parsing Redis data: ${error}`);
           // Fall through to fetch from database
         }
       }
@@ -180,7 +180,7 @@ const uploadService = {
           await updateCacheData(uploadList, getUploadMetadataCacheKey);
         }
         catch (err) {
-          logger.error("Error updating Redis cache:", err);
+          logger.error(`Error updating Redis data: ${err}`);
           // Continue without caching
         }
       }
@@ -203,7 +203,16 @@ const uploadService = {
     const fileData = await prisma.fileMetadata.findUnique({
       where: { fileMetaDataId: fileIdParam },
       include: {
-        Upload: { select: { classId: true } }
+        Upload: { 
+          select: { 
+            classId: true, 
+            uploadName: true,
+            Files: {
+              select: { fileMetaDataId: true },
+              orderBy: { createdAt: "asc" }
+            }
+          } 
+        }
       }
     });
 
@@ -218,10 +227,26 @@ const uploadService = {
     }
 
     const disposition = action === "download" ? "attachment" : "inline";
-    // Remove or escape problematic characters for Content-Disposition
-    const safeOriginalName = fileData.storedFileName
+    
+    // Get file numbering information
+    const totalFiles = fileData.Upload.Files.length;
+    const fileIndex = fileData.Upload.Files.findIndex(f => f.fileMetaDataId === fileIdParam);
+    const fileNumber = fileIndex + 1;
+    
+    // Extract file extension from stored filename
+    const fileExtension = path.extname(fileData.storedFileName);
+    
+    // Build filename with numbering if multiple files
+    let filename = fileData.Upload.uploadName;
+    if (totalFiles > 1) {
+      filename += ` (${fileNumber} von ${totalFiles})`;
+    }
+    filename += fileExtension;
+    
+    const safeOriginalName = filename
       .replace(/[\r\n]/g, "") // Remove newlines that could enable header injection
       .replace(/"/g, '\\"');  // Escape quotes
+      
     const headers = {
       "Content-Type": fileData.mimeType,
       "Content-Disposition": `${disposition}; filename="${safeOriginalName}"`,

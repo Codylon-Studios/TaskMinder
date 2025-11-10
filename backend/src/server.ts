@@ -37,7 +37,7 @@ prisma
     logger.info("Connected to Database");
   })
   .catch(err => {
-    logger.error("DB connection failed:", err);
+    logger.error(`DB connection failed: ${err}`);
     process.exit(1);
   });
 
@@ -223,7 +223,7 @@ cron.schedule("0 0 * * *", () => {
 setInterval(() => {
   logger.info("Running stuck upload cleanup");
   cleanupStuckUploads().catch(err => {
-    logger.error("Stuck upload cleanup failed:", err);
+    logger.error(`Stuck upload cleanup failed: ${err}`);
   });
 }, 10 * 60 * 1000); // 10 minutes
 

@@ -10,7 +10,7 @@ export async function ErrorHandler(err: RequestError, req: Request, res: Respons
       await Promise.all(
         req.allFiles.map(file =>
           fs.unlink(file.path).catch(unlinkErr => {
-            logger.warn(`Failed to cleanup temp file ${file.path}:`, unlinkErr);
+            logger.warn(`Failed to cleanup temp file ${file.path}:, ${unlinkErr}`);
           })
         )
       );
