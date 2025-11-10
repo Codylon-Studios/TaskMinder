@@ -88,7 +88,7 @@ const lessonService = {
         io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
       }
       catch (err) {
-        logger.error("Error updating Redis cache:", err);
+        logger.error(`Error updating Redis cache: ${err}`);
         throw new Error();
       }
     }
@@ -102,7 +102,7 @@ const lessonService = {
         return JSON.parse(cachedLessonData);
       }
       catch (error) {
-        logger.error("Error parsing Redis data:", error);
+        logger.error(`Error parsing Redis cache: ${error}`);
         throw new Error();
       }
     }
@@ -121,7 +121,7 @@ const lessonService = {
       await updateCacheData(lessonData, getLessonDataCacheKey);
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
 

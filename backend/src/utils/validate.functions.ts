@@ -12,7 +12,7 @@ async function updateCacheData<T>(data: T[], key: string): Promise<void> {
     });
   }
   catch (err) {
-    logger.error("Error updating Redis" + key + "cache:", err);
+    logger.error(`Error updating Redis ${key} cache: ${err}`);
   }
 }
 
@@ -23,7 +23,7 @@ export const invalidateUploadCache = async (classId: string): Promise<void> => {
     await redisClient.del(cacheKey);
   } 
   catch (err) {
-    logger.error("Error invalidating upload metadata cache:", err);
+    logger.error(`Error invalidating upload metadata cache: ${err}`);
   }
 };
 

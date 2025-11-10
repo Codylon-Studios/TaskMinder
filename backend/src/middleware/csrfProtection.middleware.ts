@@ -77,7 +77,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     }
   }
   catch (e) {
-    logger.error("CSRF Check: Error during comparison:", e);
+    logger.error(`CSRF Check: Error during comparison: ${e}`);
     const err: RequestError = {
       name: "Unauthorized",
       status: 401,

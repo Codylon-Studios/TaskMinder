@@ -180,7 +180,7 @@ const homeworkService = {
         return JSON.parse(cachedHomeworkData);
       }
       catch (error) {
-        logger.error("Error parsing Redis data:", error);
+        logger.error(`Error parsing Redis data: ${error}`);
         throw new Error();
       }
     }

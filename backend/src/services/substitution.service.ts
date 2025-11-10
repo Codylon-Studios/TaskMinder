@@ -90,7 +90,7 @@ export async function loadSubstitutionData(
       await redisClient.set(cacheKey, JSON.stringify(errorPayload), { EX: 300 }); 
     } 
     catch (redisErr) {
-      logger.error("Fatal: Error updating Redis cache with error state:", redisErr);
+      logger.error(`Fatal: Error updating Redis cache with error state: ${redisErr}`);
     }
     return "No data";
   }
@@ -128,7 +128,7 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
   if (isStale) {
     loadSubstitutionData(dsbMobileUser, dsbMobilePassword, cacheKey)
       .catch(err => {
-        logger.error(`Background refresh failed for key ${cacheKey}:`, err);
+        logger.error(`Background refresh failed for key ${cacheKey}: ${err}`);
       });
   }
   const substitutionClassName = substitutionClass.dsbMobileClass;

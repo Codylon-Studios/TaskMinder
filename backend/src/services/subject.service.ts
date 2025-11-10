@@ -18,7 +18,7 @@ const subjectService = {
         return JSON.parse(cachedSubjectata);
       }
       catch (error) {
-        logger.error("Error parsing Redis data:", error);
+        logger.error(`Error parsing Redis cache: ${error}`);
         throw new Error();
       }
     }
@@ -36,7 +36,7 @@ const subjectService = {
       await updateCacheData(data, getSubjectDataCacheKey);
     }
     catch (err) {
-      logger.error("Error updating Redis cache:", err);
+      logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
 
@@ -186,7 +186,7 @@ const subjectService = {
         }
       }
       catch (err) {
-        logger.error("Error updating Redis cache:", err);
+        logger.error(`Error updating Redis cache: ${err}`);
         throw new Error();
       }
     }

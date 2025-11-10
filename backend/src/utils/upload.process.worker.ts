@@ -29,7 +29,7 @@ const ensureDirExists = async (dirPath: string): Promise<void> => {
     await fs.mkdir(dirPath, { recursive: true });
   }
   catch (error) {
-    logger.error(`Failed to create directory ${dirPath}`, error);
+    logger.error(`Failed to create directory ${dirPath}: ${error}`);
     throw error;
   }
 };
@@ -101,7 +101,7 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
       throw err;
     }
     else {
-      logger.error("ClamAV scan failed", scanError);
+      logger.error(`ClamAV scan failed: ${scanError}`);
       const err: RequestError = {
         name: "Internal Server Error",
         status: 500,
@@ -361,7 +361,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     logger.info(`Successfully processed upload ${uploadId} with ${processedFiles.length} file(s)`);
   }
   catch (error) {
-    logger.error(`Failed to process upload ${uploadId}:`, error);
+    logger.error(`Failed to process upload ${uploadId}: ${error}`);
 
     // Clean up all temp files
     await Promise.all(tempFiles.map(f => fs.unlink(f.path).catch(() => { })));
@@ -425,7 +425,7 @@ export const startUploadWorker = async (): Promise<void> => {
       }
     }
     catch (error) {
-      logger.error("Worker error:", error);
+      logger.error(`Worker error: ${error}`);
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }

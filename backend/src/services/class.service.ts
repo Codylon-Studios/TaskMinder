@@ -283,7 +283,7 @@ const classService = {
         logger.info(`Deleted class directory: ${classDir}`);
       }
       catch (error) {
-        logger.error(`Error deleting class directory ${classDir}:`, error);
+        logger.error(`Error deleting class directory ${classDir}: ${error}`);
         // Continue with database cleanup even if file deletion fails
       }
       // Delete file metadata records
