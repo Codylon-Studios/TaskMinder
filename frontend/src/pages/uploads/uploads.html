@@ -7,10 +7,11 @@
   <body>
     <div class="container" id="app">
       <div class="d-flex gap-2 mb-3 align-items-center">
-        <div class="progress w-100" id="storage-bar" aria-label="Freier Speicher" aria-valuemin="0" aria-valuemax="100">
-          <div class="progress-bar text-bg-danger"></div>
+        <div class="progress w-100 position-relative" id="storage-bar" aria-label="Freier Speicher" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar fw-bold"></div>
+          <span class="position-absolute top-50 start-50 translate-middle fw-bold text-secondary"></span>
         </div>
-        <span class="text-secondary text-nowrap"><b></b> von <b></b> belegt</span>
+        <span class="text-secondary text-nowrap" id="storage-description"><b></b> von <b></b> belegt</span>
       </div>
 
       <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">

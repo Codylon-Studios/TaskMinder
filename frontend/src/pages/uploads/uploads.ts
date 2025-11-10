@@ -11,7 +11,8 @@ import {
   escapeHTML,
   dateDaysDifference,
   uploadData,
-  createDataAccessor
+  createDataAccessor,
+  msToDisplayDate
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -47,11 +48,31 @@ async function updateUploadList(): Promise<void> {
 
   const data = await uploadData(); // TODO @a26b25c24: await getFilteredData();
 
-  const storageUsed = Math.round(Number.parseInt(data.usedStorage) / Number.parseInt(data.totalStorage) * 100);
-  $("#storage-bar").attr("aria-valuenow", storageUsed).find("div").css("width", storageUsed + "%").text(storageUsed + "%")
+  const usedStorage = Number.parseInt(data.usedStorage);
+  const totalStorage = Number.parseInt(data.totalStorage);
+  const storageUsed = Math.round(usedStorage / totalStorage * 100);
+  $("#storage-bar").attr("aria-valuenow", storageUsed).find("div").css("width", storageUsed + "%").text(storageUsed < 5 ? "" : storageUsed + "%")
     .toggleClass("text-bg-success", storageUsed < 75)
     .toggleClass("text-bg-warning", storageUsed >= 75 && storageUsed < 90)
     .toggleClass("text-bg-danger", storageUsed >= 90)
+    .end().find("span").text(storageUsed + "%").toggle(storageUsed < 5)
+  
+  const byteToText = (b: number): string => {
+    b /= 1024
+    if (b < 100) {
+      return Math.round(b * 10) / 10 + "KB"
+    }
+    else {
+    b /= 1024
+      if (b < 100) {
+        return Math.round(b * 10) / 10 + "MB"
+      }
+      else {
+        return Math.round(b / 1024 * 10) / 10 + "GB"
+      }
+    }
+  }
+  $("#storage-description b").eq(0).text(byteToText(usedStorage)).end().eq(1).text(byteToText(totalStorage))
 
   for (const upload of data.uploads) {
     const uploadId = upload.uploadId;
@@ -85,6 +106,9 @@ async function updateUploadList(): Promise<void> {
             data-id="${uploadId}" aria-label="Löschen">
             <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
           </button>
+          <button class="btn btn-sm btn-semivisible upload-copy-link" aria-label="Teilen" data-id="${uploadId}">
+            <i class="fa-solid fa-copy opacity-75" aria-hidden="true"></i>
+          </button>
         </div>
 
         <div class="upload-failed">
@@ -110,6 +134,9 @@ async function updateUploadList(): Promise<void> {
           <br>
           <span class="badge badge-tertiary rounded-pill"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
           <span class="badge badge-tertiary rounded-pill"><i class="far fa-file me-1" aria-hidden="true"></i>${numberFiles}</span>
+          <span class="badge badge-tertiary rounded-pill">
+            <i class="far fa-calendar me-1" aria-hidden="true"></i>${msToDisplayDate(upload.createdAt)}
+          </span>
           </div>
         </button>
       </div>
@@ -337,132 +364,20 @@ async function viewUpload(uploadId: number): Promise<void> {
   $("#view-upload-nav-next").off("click").on("click", () => showFile(++shownFileId))
 }
 
-async function shareEvent(eventId: number): Promise<void> {
-  async function parseLessonEvent(event: SingleEventData, lesson: string): Promise<void> {
-    async function findLessonWithLessonNumber(lessonNumber: number):
-      Promise< {
-        lessonId: number;
-        lessonNumber: number;
-        weekDay: 0 | 1 | 2 | 3 | 4;
-        teamId: number;
-        subjectId: number;
-        room: string;
-        startTime: string;
-        endTime: string;
-      } | undefined > {
-      return (await lessonData()).find(lesson =>
-        lesson.lessonNumber === lessonNumber
-        && (lesson.teamId === -1 || currentJoinedTeamsData.includes(lesson.teamId))
-        && lesson.weekDay === start.getDay() - 1
-      );
-    }
-    const start = new Date(Number.parseInt(event.startDate));
-    const end = new Date(Number.parseInt(event.startDate));
-    const currentJoinedTeamsData = (await joinedTeamsData());
-    
-    let startLesson, endLesson;
-    if (event.lesson?.includes("-")) {
-      event.lesson = event.lesson.replace(" ", "");
-      startLesson = await findLessonWithLessonNumber(Number.parseInt(event.lesson.split("-")[0]));
-      endLesson = await findLessonWithLessonNumber(Number.parseInt(event.lesson.split("-")[1]));
-    }
-    else {
-      startLesson = endLesson = await findLessonWithLessonNumber(Number.parseInt(lesson));
-    }
+async function copyLinkUpload(uploadId: number) : Promise<void> {
+  const $el = $(`.upload-copy-link[data-id=${uploadId}]`)
+  try {
+    await navigator.clipboard.writeText(location.host + `/uploads?view-upload=` + uploadId);
 
-    if (! (startLesson && endLesson)) {
-      throw new Error("startLesson or endLesson is undefined");
-    }
-    const lessonStart = Number.parseInt(startLesson.startTime) / 1000 / 60;
-    start.setHours(Math.trunc(lessonStart / 60), lessonStart % 60);
-    
-    const lessonEnd = Number.parseInt(endLesson.endTime) / 1000 / 60;
-    end.setHours(Math.trunc(lessonEnd / 60), lessonEnd % 60);
-    timeContent = `
-      DTSTART:${formatDateAndTime(start)}
-      DTEND:${formatDateAndTime(end)}
-    `;
+    $el.prop("disabled", true).html(`<i class="fas fa-check opacity-75" aria-hidden="true"></i>`);
+
+    setTimeout(() => {
+      $el.prop("disabled", false).html(`<i class="fas fa-copy opacity-75" aria-hidden="true"></i>`);
+    }, 2000);
   }
-  const event = (await eventData()).find(e => e.eventId === eventId);
-  if (!event) throw new Error("No event with this id found");
-
-  const name = event.name;
-  let description = "";
-  $(richTextToHtml(event.description ?? "")).each(function () {
-    if ($(this).is("br")) {
-      description += String.raw`\n`;
-    }
-    else {
-      description += $(this).html();
-    }
-  });
-
-  const format = (num: number): string => String(num).padStart(2, "0");
-
-  function formatDateAndTime (date: Date): string {
-    return date.getUTCFullYear().toString() +
-      format(date.getUTCMonth() + 1) +
-      format(date.getUTCDate()) + "T" +
-      format(date.getUTCHours()) +
-      format(date.getUTCMinutes()) +
-      format(date.getUTCSeconds()) + "Z";
-  };
-
-  function formatDate (date: Date): string {
-    return date.getUTCFullYear().toString() +
-      format(date.getUTCMonth() + 1) +
-      format(date.getUTCDate());
-  };
-
-  let timeContent = "";
-
-  if (event.lesson !== null && event.lesson !== "") {
-    try {
-      await parseLessonEvent(event, event.lesson);
-    }
-    catch {
-      $("#share-event-error-toast").toast("show");
-      return;
-    }
+  catch (err) {
+    console.error("Error copying upload link to clipboard:", err);
   }
-  else {
-    if (event.endDate === null || event.endDate === "") {
-      event.endDate = event.startDate;
-    }
-    const start = new Date(Number.parseInt(event.startDate));
-    const end = new Date(Number.parseInt(event.endDate) + 1000 * 60 * 60 * 24);
-    timeContent = `
-      DTSTART;VALUE=DATE:${formatDate(start)}
-      DTEND;VALUE=DATE:${formatDate(end)}
-    `;
-  }
-
-  const icsContent = `
-    BEGIN:VCALENDAR
-    VERSION:2.0
-    PRODID:-//https://taskminder.de
-    BEGIN:VEVENT
-    UID:event-${eventId}@taskminder.de
-    DTSTAMP:${formatDateAndTime(new Date())}
-    ${timeContent}
-    SUMMARY:${name}
-    DESCRIPTION:${description?.replaceAll("\n", String.raw`\n`)}
-    END:VEVENT
-    END:VCALENDAR
-  `.split("\n").map(l => l.trim()).join("\n");
-
-  const blob = new Blob([icsContent], { type: "text/calendar" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "event.ics";
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-
-  a.remove();
-  URL.revokeObjectURL(url);
 }
 
 async function editUpload(uploadId: number): Promise<void> {
@@ -650,6 +565,12 @@ function toggleShownButtons(): void {
 export async function init(): Promise<void> {
   return new Promise(res => {
     $(async function () {
+      const urlParams = new URLSearchParams(globalThis.location.search);
+
+      if (urlParams.get("view-upload")) {
+        viewUpload(Number.parseInt(urlParams.get("view-upload") ?? ""))
+      }
+
       if (!/iPhone/.test(navigator.userAgent)) {
         $("#view-upload-first-page-note").remove()
       }
@@ -729,9 +650,9 @@ export async function init(): Promise<void> {
         viewUpload($(this).data("id"));
       });
 
-      // Share the event on clicking its share icon
-      $(document).on("click", ".event-share", function () {
-        shareEvent($(this).data("id"));
+      // Copy the upload link on clicking its copy link icon
+      $(document).on("click", ".upload-copy-link", function () {
+        copyLinkUpload($(this).data("id"));
       });
 
       // Request deleting the upload on clicking its delete icon
