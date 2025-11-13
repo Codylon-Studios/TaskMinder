@@ -1,5 +1,4 @@
 import {
-  dateToMs,
   eventData,
   eventTypeData,
   joinedTeamsData,
@@ -14,9 +13,8 @@ import {
   createDataAccessor,
   msToDisplayDate
 } from "../../global/global.js";
-import { EventData, SingleEventData } from "../../global/types";
+import { EventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
-import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 async function updateUploadList(): Promise<void> {
   async function getFilteredData(): Promise<EventData> {
@@ -55,24 +53,24 @@ async function updateUploadList(): Promise<void> {
     .toggleClass("text-bg-success", storageUsed < 75)
     .toggleClass("text-bg-warning", storageUsed >= 75 && storageUsed < 90)
     .toggleClass("text-bg-danger", storageUsed >= 90)
-    .end().find("span").text(storageUsed + "%").toggle(storageUsed < 5)
+    .end().find("span").text(storageUsed + "%").toggle(storageUsed < 5);
   
   const byteToText = (b: number): string => {
-    b /= 1024
+    b /= 1024;
     if (b < 100) {
-      return Math.round(b * 10) / 10 + "KB"
+      return Math.round(b * 10) / 10 + "KB";
     }
     else {
-    b /= 1024
+      b /= 1024;
       if (b < 100) {
-        return Math.round(b * 10) / 10 + "MB"
+        return Math.round(b * 10) / 10 + "MB";
       }
       else {
-        return Math.round(b / 1024 * 10) / 10 + "GB"
+        return Math.round(b / 1024 * 10) / 10 + "GB";
       }
     }
-  }
-  $("#storage-description b").eq(0).text(byteToText(usedStorage)).end().eq(1).text(byteToText(totalStorage))
+  };
+  $("#storage-description b").eq(0).text(byteToText(usedStorage)).end().eq(1).text(byteToText(totalStorage));
 
   for (const upload of data.uploads) {
     const uploadId = upload.uploadId;
@@ -156,7 +154,7 @@ async function updateUploadList(): Promise<void> {
   if (newContent.html() === "") {
     newContent.html('<div class="text-secondary">Keine Dateien mit diesen Filtern.</div>');
   }
-  $("#upload-load-more").toggle((await uploadData()).hasMore)
+  $("#upload-load-more").toggle((await uploadData()).hasMore);
   $("#upload-list").empty().append(newContent.children());
 };
 
@@ -334,7 +332,7 @@ async function viewUpload(uploadId: number): Promise<void> {
 
     const route = `/uploads/${upload.files[fileId].fileMetaDataId}`;
     const mime = upload.files[fileId].mimeType;
-    $("#view-upload-first-page-note").toggle(mime == "application/pdf")
+    $("#view-upload-first-page-note").toggle(mime === "application/pdf");
     
     const $object = $("#view-upload-object");
     const $newObject = $(`<object id="view-upload-object" class="w-100 border border-secondary ${/iPhone/.test(navigator.userAgent) ? "ios" : ""}">
@@ -343,12 +341,12 @@ async function viewUpload(uploadId: number): Promise<void> {
     $newObject.attr("data", route + "?action=preview").attr("type", mime).find("a").attr("href", route + "?action=preview");
     $object.replaceWith($newObject);
 
-    $("#view-upload-nav-info").text(fileId + 1 + "/" + upload.filesCount)
-    $("#view-upload-nav-back").prop("disabled", fileId == 0)
-    $("#view-upload-nav-next").prop("disabled", upload.filesCount == fileId + 1)
+    $("#view-upload-nav-info").text(fileId + 1 + "/" + upload.filesCount);
+    $("#view-upload-nav-back").prop("disabled", fileId === 0);
+    $("#view-upload-nav-next").prop("disabled", upload.filesCount === fileId + 1);
 
-    $("#view-upload-download").attr("href", route + "?action=download")
-    $("#view-upload-open").attr("href", route + "?action=preview")
+    $("#view-upload-download").attr("href", route + "?action=download");
+    $("#view-upload-open").attr("href", route + "?action=preview");
   }
 
   const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
@@ -360,19 +358,19 @@ async function viewUpload(uploadId: number): Promise<void> {
   let shownFileId = 0;
   showFile(shownFileId);
 
-  $("#view-upload-nav-back").off("click").on("click", () => showFile(--shownFileId))
-  $("#view-upload-nav-next").off("click").on("click", () => showFile(++shownFileId))
+  $("#view-upload-nav-back").off("click").on("click", () => showFile(--shownFileId));
+  $("#view-upload-nav-next").off("click").on("click", () => showFile(++shownFileId));
 }
 
 async function copyLinkUpload(uploadId: number) : Promise<void> {
-  const $el = $(`.upload-copy-link[data-id=${uploadId}]`)
+  const $el = $(`.upload-copy-link[data-id=${uploadId}]`);
   try {
-    await navigator.clipboard.writeText(location.host + `/uploads?view-upload=` + uploadId);
+    await navigator.clipboard.writeText(location.host + "/uploads?view-upload=" + uploadId);
 
-    $el.prop("disabled", true).html(`<i class="fas fa-check opacity-75" aria-hidden="true"></i>`);
+    $el.prop("disabled", true).html("<i class=\"fas fa-check opacity-75\" aria-hidden=\"true\"></i>");
 
     setTimeout(() => {
-      $el.prop("disabled", false).html(`<i class="fas fa-copy opacity-75" aria-hidden="true"></i>`);
+      $el.prop("disabled", false).html("<i class=\"fas fa-copy opacity-75\" aria-hidden=\"true\"></i>");
     }, 2000);
   }
   catch (err) {
@@ -392,7 +390,7 @@ async function editUpload(uploadId: number): Promise<void> {
   // Set the inputs on the already saved information
   $("#edit-upload-name").val(upload.uploadName);
   $("#edit-upload-type").val(upload.uploadType);
-  $("#edit-upload-team").val(-1); // TODO: real teamid
+  $("#edit-upload-team").val(); // TODO: real teamid
 
   // Enable the actual "edit" button, because all information is given
   $("#edit-upload-button").prop("disabled", false);
@@ -463,7 +461,7 @@ async function editUpload(uploadId: number): Promise<void> {
 }
 
 function deleteUpload(uploadId: number, force?: boolean): void {
-  async function deleteConfirmed() {
+  async function deleteConfirmed(): Promise<void> {
     // Hide the confirmation toast
     $("#delete-upload-confirm-toast").toast("hide");
 
@@ -517,7 +515,7 @@ function deleteUpload(uploadId: number, force?: boolean): void {
   // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF AN UPLOAD, NOT WHEN USER ACTUALLY DELETES AN UPLOAD
   //
 
-  if (force) deleteConfirmed()
+  if (force) deleteConfirmed();
   else {
     // Show a confirmation notification
     $("#delete-upload-confirm-toast").toast("show");
@@ -568,18 +566,18 @@ export async function init(): Promise<void> {
       const urlParams = new URLSearchParams(globalThis.location.search);
 
       if (urlParams.get("view-upload")) {
-        viewUpload(Number.parseInt(urlParams.get("view-upload") ?? ""))
+        viewUpload(Number.parseInt(urlParams.get("view-upload") ?? ""));
       }
 
       if (!/iPhone/.test(navigator.userAgent)) {
-        $("#view-upload-first-page-note").remove()
+        $("#view-upload-first-page-note").remove();
       }
 
       $("#upload-load-more-btn").on("click", () => {
         showAllUploads(true);
         uploadData.reload();
         updateUploadList();
-      })
+      });
 
       $("#edit-toggle").on("click", function () {
         $(".edit-option").toggle($("#edit-toggle").is(":checked"));
@@ -755,4 +753,4 @@ export const reloadAllFn = async (): Promise<void> => {
 };
 
 export const showAllUploads = createDataAccessor<boolean>("showAllUploads");
-showAllUploads(false)
+showAllUploads(false);

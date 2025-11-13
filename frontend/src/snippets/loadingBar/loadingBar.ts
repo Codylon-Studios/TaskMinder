@@ -46,6 +46,7 @@ async function init(): Promise<void> {
   setTimeout(() => {
     const hash = globalThis.location.hash;
     if (hash) {
+      internalPopstateEvent = true;
       document.location.href = hash;
     }
   }, 250);
@@ -132,6 +133,7 @@ const htmlCache: Map<string, string> = new Map();
 const CACHE_SIZE = 5;
 
 let loadingBarProgress = 0;
+let internalPopstateEvent = false;
 
 init();
 $("body").prepend("<div id='app-prepend' class='d-none'>");
@@ -143,5 +145,8 @@ $(document).on("click", "a[data-pjax]", async function (e) {
 });
 
 globalThis.addEventListener("popstate", async () => {
-  replaceSitePJAX(location.href, false);
+  if (!internalPopstateEvent) {
+    replaceSitePJAX(location.href, false);
+  }
+  internalPopstateEvent = true;
 });

@@ -66,8 +66,11 @@ async function updateEventList(): Promise<void> {
         timeSpan.append(startDate, " - ", endDate);
       }
     }
-    else if (lesson !== null) {
+    else if (lesson !== null && lesson !== "") {
       timeSpan.append(startDate, ` <b>(${escapeHTML(lesson)}. Stunde)</b>`);
+    }
+    else {
+      timeSpan.append(startDate);
     }
     // The template for an event with edit options
     const template = $(`

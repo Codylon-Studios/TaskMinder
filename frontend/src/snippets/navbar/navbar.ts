@@ -194,6 +194,10 @@ export async function init(): Promise<void> {
     }, 1000);
   });
 
+  $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
+    $("#navbar-offcanvas").offcanvas("hide")
+  })
+
   $(() => {
     if (isSite("main", "homework", "events", "uploads")) {
       $(".class-page-content").removeClass("d-none");
