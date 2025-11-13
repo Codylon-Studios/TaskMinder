@@ -88,8 +88,8 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
 else {
   logger.add(new winston.transports.Console({
     format: winston.format.combine(
-      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-      customFormat
+      winston.format.timestamp(),
+      winston.format.json()
     )
   }));
 }

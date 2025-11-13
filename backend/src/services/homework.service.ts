@@ -57,26 +57,14 @@ const homeworkService = {
 
     await prisma.$transaction(async tx => {
       if (checkStatus === "true") {
-        await tx.homeworkCheck.upsert({
-          where: {
-            accountId_homeworkId: {
-              accountId,
-              homeworkId
-            }
-          },
-          update: {},
-          create: {
-            accountId,
-            homeworkId
-          }
+        await tx.homeworkCheck.createMany({
+          data: [{ accountId, homeworkId }],
+          skipDuplicates: true // prevents race condition P2002 errors
         });
       } 
       else {
         await tx.homeworkCheck.deleteMany({
-          where: {
-            accountId,
-            homeworkId
-          }
+          where: { accountId, homeworkId }
         });
       }
     });

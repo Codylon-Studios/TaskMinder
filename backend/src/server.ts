@@ -3,16 +3,16 @@ import path from "path";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
 import * as dotenv from "dotenv";
-import express, { Request, Response, NextFunction } from "express";
+import express, { Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
 import prisma from "./config/prisma";
 import socketIO from "./config/socket";
 import { sessionPool } from "./config/pg";
-import { httpRequestDurationMicroseconds, register } from "./config/prom.client";
 import checkAccess from "./middleware/access.middleware";
 import { ErrorHandler } from "./middleware/error.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
+import { metricsMiddleware } from "./middleware/metrics.middleware";
 import { CSPMiddleware } from "./middleware/CSP.middleware";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware";
 import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses, cleanupStuckUploads } from "./utils/db.cleanup";
@@ -28,6 +28,7 @@ import teams from "./routes/team.route";
 import classes from "./routes/class.route";
 import uploads from "./routes/upload.route";
 import { connectRedis } from "./config/redis";
+import { startMetricsServer } from "./utils/metrics.server";
 
 dotenv.config();
 
@@ -76,18 +77,6 @@ app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  if (req.path === "/metrics" || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)) {
-    return next();
-  }
-  const end = httpRequestDurationMicroseconds.startTimer();
-  res.on("finish", () => {
-    const route = req.route && req.route.path ? req.route.path : req.path;
-    end({ route, code: res.statusCode, method: req.method });
-  });
-  next();
-});
-
 const PgSession = connectPgSimple(session);
 
 const sessionMiddleware = session({
@@ -121,13 +110,8 @@ app.get("/csrf-token", (req, res) => {
   res.json({ csrfToken: req.session.csrfToken });
 });
 app.use(csrfProtection);
+app.use(metricsMiddleware);
 app.use(loggerMiddleware);
-
-
-app.get("/metrics", async (req: Request, res: Response) => {
-  res.set("Content-Type", register.contentType);
-  res.end(await register.metrics());
-});
 
 app.get("/", (req: Request, res: Response) => {
   if (req.session.account && req.session.classId) {
@@ -229,4 +213,5 @@ setInterval(() => {
 
 server.listen(3000, () => {
   logger.info("Server running at http://localhost:3000");
+  startMetricsServer();
 });

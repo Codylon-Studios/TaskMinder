@@ -18,7 +18,10 @@ async function fetchFromDSBMobileServer(authId: string): Promise<{
     plan2Url: string;
 }> {
   const timetablesUrl = `https://mobileapi.dsbcontrol.de/dsbtimetables?authid=${authId}`;
-  const timetablesRes = await axios.get<{ Childs: { Detail: string }[] }[]>(timetablesUrl);
+  const timetablesRes = await axios.get<{ Childs: { Detail: string }[] }[]>(
+    timetablesUrl,
+    { timeout: 8_000 }
+  );
   const plan1Url = timetablesRes.data[0]?.Childs[0]?.Detail;
   const plan2Url = timetablesRes.data[2]?.Childs[0]?.Detail;
 
@@ -36,7 +39,7 @@ export async function loadSubstitutionData(
   try {
     const generalReqData = "appversion=&bundleid=&osversion=&pushid=";
     const authUrl = `https://mobileapi.dsbcontrol.de/authid?user=${dsbMobileUser}&password=${dsbMobilePassword}&${generalReqData}`;
-    const authRes = await axios.get<string>(authUrl);
+    const authRes = await axios.get<string>(authUrl, { timeout: 10_000 });
     const authId = authRes.data;
     if (!authId) {
       throw new Error("The DSB credentials did not return a valid authId.");
@@ -72,6 +75,8 @@ export async function loadSubstitutionData(
       substitutionsResult.updated = $(".mon_head p").text().split("Stand: ")[1] || "";
     }
 
+    logger.info(`Substitution successfully fetched for class: ${dsbMobileUser}, cacheKey: ${cacheKey}`);
+
     const cachePayload = {
       data: substitutionsResult,
       timestamp: Date.now()
@@ -79,19 +84,25 @@ export async function loadSubstitutionData(
     await redisClient.set(cacheKey, JSON.stringify(cachePayload), { EX: cacheExpiration });
     
     return substitutionsResult;
-
   } 
-  catch {
-    const errorPayload = {
-      data: "No data",
-      timestamp: Date.now()
-    };
+  catch (error) {
+    logger.warn(`Error fetching substitution data: ${error}`);
+    
+    // Try to get existing cached data instead of overwriting with "No data"
     try {
-      await redisClient.set(cacheKey, JSON.stringify(errorPayload), { EX: 300 }); 
+      const existingCache = await redisClient.get(cacheKey);
+      if (existingCache) {
+        // timestamp is ignored but is needed for parsing from redis
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { data, timestamp } = JSON.parse(existingCache);
+        logger.info(`Serving stale data from cache due to fetch error for key ${cacheKey}`);
+        return data;
+      }
     } 
-    catch (redisErr) {
-      logger.error(`Fatal: Error updating Redis cache with error state: ${redisErr}`);
+    catch (cacheErr) {
+      logger.error(`Error reading from cache: ${cacheErr}`);
     }
+    // Only return "No data" if there's no cached data at all
     return "No data";
   }
 }

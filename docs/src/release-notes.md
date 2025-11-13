@@ -19,6 +19,7 @@ All changes are grouped by type and the latest version appears first.
 * Fix bug where an account could not be deleted due to too early checks in backend
 * Fix bug where teams could not be deleted due to wrong css selector in frontend
 * Fix big where cache could return invalid or outdated data
+* Fix bug where substitution cache would return No Data due to inconsistent thrid-party response
 
 ### Changed
 * Improved data loading to skip file calling when previously called (up to 2x less requests and data transferred)
@@ -27,6 +28,10 @@ All changes are grouped by type and the latest version appears first.
 * Improved caching for all relevant tables if one related thing is updated
 * Migrate from custom logger to winston
 * Require bun v1.3.2 (> v1.3) in development and production (no breaking changes)
+* Renaming files in backend for readability
+* Monitoring /metrics endpoint exposed to local network instead of public route
+* Bump loki, prometheus, grafana, promtail (no breaking changes)
+* Bump redis to v8 (no breaking changes)
 
 ### Security
 * Package bumping
