@@ -245,6 +245,7 @@ const uploadService = {
     
     const safeOriginalName = filename
       .replace(/[\r\n]/g, "") // Remove newlines that could enable header injection
+      .replace(/\\/g, "\\\\") // Escape backslashes
       .replace(/"/g, '\\"');  // Escape quotes
       
     const headers = {

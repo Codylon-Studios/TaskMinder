@@ -25,6 +25,7 @@ All changes are grouped by type and the latest version appears first.
 
 ### Changed
 * Different text styles for more or less important things
+* Marking of text now adapts to background of event, etc.
 * Improved data loading to skip file calling when previously called (up to 2x less requests and data transferred)
 * Use substitutionData when auto selecting date at addHomework, etc.
 * /main links smaller (arrows)

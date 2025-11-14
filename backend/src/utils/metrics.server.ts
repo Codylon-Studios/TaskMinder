@@ -11,7 +11,8 @@ metricsApp.get("/metrics", async (req, res) => {
     res.end(await register.metrics());
   } 
   catch (ex) {
-    res.status(500).end(ex);
+    logger.error("Error serving metrics", ex);
+    res.status(500).end("Internal Server Error");
   }
 });
 
