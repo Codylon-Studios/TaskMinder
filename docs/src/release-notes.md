@@ -7,10 +7,11 @@ All changes are grouped by type and the latest version appears first.
 ## \[v2.2.0] - 2025-11-16
 
 ### Added
-* Randomly select one homework (spin wheel)
 * Add feature to upload files
+* Timetable announcer, e.g. "Nächste Stunde Geographie in 48min in Raum 40983."
+* Randomly select one homework (spin wheel), exclude/include homework in selection (like vocab)
 * Add easter egg in devTools
-* Add "Angemeldet als..." in settings
+* Add "Angemeldet als..." in offcanvas
 * Socket events for many real-time changes
 * Add loading bar to simulate progress
 * Add frontend feedback for timetable changes
@@ -20,9 +21,12 @@ All changes are grouped by type and the latest version appears first.
 * Fix bug where teams could not be deleted due to wrong css selector in frontend
 * Fix big where cache could return invalid or outdated data
 * Fix bug where substitution cache would return No Data due to inconsistent thrid-party response
+* Fix bug where "Neuer Nutzername" at change name is type=password
 
 ### Changed
+* Different text styles for more or less important things
 * Improved data loading to skip file calling when previously called (up to 2x less requests and data transferred)
+* Use substitutionData when auto selecting date at addHomework, etc.
 * /main links smaller (arrows)
 * Improved out-of-bounds checks and additional barrier checks in the backend
 * Improved caching for all relevant tables if one related thing is updated
