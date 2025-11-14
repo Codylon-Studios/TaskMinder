@@ -32,6 +32,7 @@ ingester:
   chunk_target_size: 1048576      # target 1MB per chunk
 
 limits_config:
+  volume_enabled: true
   retention_period: 14d           # store logs for 14 days
   max_streams_per_user: 50000     # avoid stream explosion
   max_entries_limit_per_query: 10000

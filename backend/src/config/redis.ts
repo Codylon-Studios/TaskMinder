@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import logger from "../utils/logger";
+import logger from "../config/logger";
 
 export const CACHE_KEY_PREFIXES = {
   HOMEWORK: "homework_data",
@@ -9,7 +9,8 @@ export const CACHE_KEY_PREFIXES = {
   EVENTTYPE: "event_type_data",
   EVENTTYPESTYLE: "event_type_styles",
   SUBJECT: "subject_data",
-  TEAMS: "teams_data"
+  TEAMS: "teams_data",
+  UPLOADMETADATA: "upload_metadata"
 };
 
 export const QUEUE_KEYS = {
@@ -35,19 +36,19 @@ export const redisClient = createClient({
   url: redisUrl
 });
 redisClient.on("error", (err: unknown) =>
-  err instanceof Error ? logger.error("Redis error:", err) : logger.error("Unknown Redis error!")
+  err instanceof Error ? logger.error(`Redis error: ${err}`) : logger.error("Unknown Redis error!")
 );
 
 export const connectRedis = async (): Promise<void> => {
   try {
     if (!redisClient.isOpen) {
       await redisClient.connect();
-      logger.success("Connected to Redis");
+      logger.info("Connected to Redis");
     }
   }
   catch (err: unknown) {
     if (err instanceof Error) {
-      logger.error("Error connecting to Redis:", err);
+      logger.error(`Error connecting to Redis: ${err}`);
       throw err;
     }
     logger.error("Unknown error connecting to Redis!");
@@ -59,12 +60,12 @@ export const disconnectRedis = async (): Promise<void> => {
   try {
     if (redisClient.isOpen) {
       await redisClient.quit();
-      logger.success("Disconnected from Redis");
+      logger.info("Disconnected from Redis");
     }
   }
   catch (err: unknown) {
     if (err instanceof Error) {
-      logger.error("Error disconnecting from Redis:", err);
+      logger.error(`Error disconnecting from Redis: ${err}`);
       throw err;
     }
     logger.error("Unknown error disconnecting from Redis!");

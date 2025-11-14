@@ -66,8 +66,11 @@ async function updateEventList(): Promise<void> {
         timeSpan.append(startDate, " - ", endDate);
       }
     }
-    else if (lesson !== null) {
+    else if (lesson !== null && lesson !== "") {
       timeSpan.append(startDate, ` <b>(${escapeHTML(lesson)}. Stunde)</b>`);
+    }
+    else {
+      timeSpan.append(startDate);
     }
     // The template for an event with edit options
     const template = $(`
@@ -147,8 +150,8 @@ async function updateEventTypeList(): Promise<void> {
     const eventTypeName = eventType.name;
 
     filterData.type[eventTypeId] ??= true;
-    const checkedStatus: "checked" | "" = filterData.type[eventTypeId] ? "checked" : "";
-    if (checkedStatus !== "checked") $("#filter-changed").removeClass("d-none");
+    const checkedStatus = filterData.type[eventTypeId] ? "checked" : "";
+    if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by type
     const templateFilterType = `<div class="form-check">

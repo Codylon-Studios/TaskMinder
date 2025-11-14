@@ -13,7 +13,8 @@ import {
   csrfToken,
   lessonData,
   escapeHTML,
-  getCirclePath
+  getCirclePath,
+  dateDaysDifference
 } from "../../global/global.js";
 import { HomeworkData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -331,7 +332,7 @@ async function updateSubjectList(): Promise<void> {
 
     filterData.subject[subjectId] ??= true;
     const checkedStatus = filterData.subject[subjectId] ? "checked" : "";
-    if (checkedStatus !== "checked") $("#filter-changed").removeClass("d-none");
+    if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by subject
     const templateFilterSubject = `<div class="form-check">
@@ -740,41 +741,30 @@ async function checkHomework(homeworkId: number, checkStatus?: boolean): Promise
 }
 
 function updateFilters(ignoreSubjects?: boolean): void {
-  function updateDateFilters(): void {
-    if (filterData.dateFrom === undefined) {
-      $("#filter-date-from").val(msToInputDate(Date.now()));
-    }
-    else {
-      $("#filter-date-from").val(filterData.dateFrom);
-      if (!isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none");
-    }
-  
-    if (filterData.dateUntil === undefined) {
-      const nextMonth = new Date(Date.now());
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
-    }
-    else {
-      $("#filter-date-until").val(filterData.dateUntil);
-      const nextMonth = new Date(Date.now());
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
-    }
-  }
-
-  $("#filter-changed").addClass("d-none");
+  $("#filter-changed").hide();
 
   const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
 
   filterData.statusUnchecked ??= true;
   $("#filter-status-unchecked").prop("checked", filterData.statusUnchecked);
-  if (! filterData.statusUnchecked) $("#filter-changed").removeClass("d-none");
+  if (! filterData.statusUnchecked) $("#filter-changed").show();
 
   filterData.statusChecked ??= true;
   $("#filter-status-checked").prop("checked", filterData.statusChecked);
-  if (! filterData.statusChecked) $("#filter-changed").removeClass("d-none");
+  if (! filterData.statusChecked) $("#filter-changed").show();
 
-  updateDateFilters();
+  filterData.dateFromOffset ??= 0;
+  const dateFrom = new Date();
+  dateFrom.setDate(dateFrom.getDate() + filterData.dateFromOffset);
+  $("#filter-date-from").val(msToInputDate(dateFrom.getTime()));
+  if (filterData.dateFromOffset !== 0) $("#filter-changed").show();
+
+  filterData.dateUntilOffset ??= 0;
+  const dateUntil = new Date();
+  dateUntil.setMonth(dateUntil.getMonth() + 1);
+  dateUntil.setDate(dateUntil.getDate() + filterData.dateUntilOffset);
+  $("#filter-date-until").val(msToInputDate(dateUntil.getTime()));
+  if (filterData.dateUntilOffset !== 0) $("#filter-changed").show();
   
   if (! ignoreSubjects) {
     updateSubjectList();
@@ -970,19 +960,30 @@ export async function init(): Promise<void> {
       });
 
       // On changing any filter date option, update the homework list
-      $("#filter-date-from").on("change", () => {
+      $("#filter-date-from").on("change", function () {
+        const selectedDate = new Date($(this).val()?.toString() ?? "");
+        const normalDate = new Date();
+        const diff = dateDaysDifference(selectedDate, normalDate);
+
         const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
-        filterData.dateFrom = $("#filter-date-from").val();
+        filterData.dateFromOffset = diff;
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
+
         updateFilters();
         updateHomeworkList();
       });
 
       // On changing any filter date option, update the homework list
-      $("#filter-date-until").on("change", () => {
+      $("#filter-date-until").on("change", function () {
+        const selectedDate = new Date($(this).val()?.toString() ?? "");
+        const normalDate = new Date();
+        normalDate.setMonth(normalDate.getMonth() + 1);
+        const diff = dateDaysDifference(selectedDate, normalDate);
+
         const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
-        filterData.dateUntil = $("#filter-date-until").val();
+        filterData.dateUntilOffset = diff;
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
+        
         updateFilters();
         updateHomeworkList();
       });

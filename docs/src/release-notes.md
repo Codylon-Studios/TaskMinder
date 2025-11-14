@@ -4,6 +4,45 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.0] - 2025-11-16
+
+### Added
+* Randomly select one homework (spin wheel)
+* Add feature to upload files
+* Add easter egg in devTools
+* Add "Angemeldet als..." in settings
+* Socket events for many real-time changes
+* Add loading bar to simulate progress
+* Add frontend feedback for timetable changes
+
+### Fixed
+* Fix bug where an account could not be deleted due to too early checks in backend
+* Fix bug where teams could not be deleted due to wrong css selector in frontend
+* Fix big where cache could return invalid or outdated data
+* Fix bug where substitution cache would return No Data due to inconsistent thrid-party response
+
+### Changed
+* Improved data loading to skip file calling when previously called (up to 2x less requests and data transferred)
+* /main links smaller (arrows)
+* Improved out-of-bounds checks and additional barrier checks in the backend
+* Improved caching for all relevant tables if one related thing is updated
+* Migrate from custom logger to winston
+* Require bun v1.3.2 (> v1.3) in development and production (no breaking changes)
+* Renaming files in backend for readability
+* Monitoring /metrics endpoint exposed to local network instead of public route
+* Bump loki, prometheus, grafana, promtail (no breaking changes)
+* Bump redis to v8 (no breaking changes)
+
+### Security
+* Package bumping
+* Close security issue with validator.js (removed)
+
+### Removed
+* Remove unused packages
+* Remove unused domain names from nginx config
+
+---
+
 ## \[v2.1.0] - 2025-09-27
 
 ### Added

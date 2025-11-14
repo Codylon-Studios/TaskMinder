@@ -3,7 +3,7 @@
 !!! warning "Docs for develop branch"  
     This guide outlines the current development process and is intended for contributing to the develop branch. It may differ from the steps used in the latest stable release.
 
-This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing bun, python3, mkdocs-material, redis, and PostgreSQL.
+This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing bun, python3, mkdocs-material, redis, PostgreSQL with optional setup for ClamAV and Ghostscript.
 
 !!! warning "License Notice"
     **Please make sure to review [our license](./license.md) before contributing to the project!**  
@@ -88,13 +88,159 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.3.1 (last checked: October 31, 2025).
+You should see at least Bun 1.3.2 (last checked: November 8th, 2025).
 
 [Bun Versions]: https://bun.sh/blog
 
 If not installed, retrieve the download instuctions from the [Bun Download Page]. For Github Codespaces, follow the `npm`instructions under the Mac/Linux Tab.
 
 [Bun Download Page]: https://bun.sh/docs/installation
+
+---
+
+### Installing ClamAV and Ghostscript - optional
+
+This step installs the tools that scan files uploaded to the server. This is optional for development environments, as you typically wouldn't enable scanning in that context. However, if you're developing or testing upload functionality, please install these tools to ensure your code changes work correctly with the scanning pipeline.
+
+=== "Linux (Ubuntu/Debian) and GitHub Codespaces"
+    **Install ClamAV via apt package manager**
+
+    ```bash
+    sudo apt install clamav clamav-daemon -y
+    ```
+
+    * `clamav`: the command-line scanner (`clamscan`)
+    * `clamav-daemon`: runs the `clamd` background service for faster scanning
+
+
+    **Stop the daemon before updating virus definitions**
+
+    ```bash
+    # Github Codespaces
+    sudo service clamav-freshclam stop
+    
+    # Ubuntu/Debian (Linux)
+    sudo systemctl stop clamav-freshclam
+    ```
+
+
+    **Update virus definitions**
+
+    ```bash
+    sudo freshclam
+    ```
+
+    *(This fetches the latest virus signatures from ClamAV’s servers.)*
+
+
+    **Start services**
+
+    ```bash
+    # Github Codespaces
+    sudo service clamav-freshclam start
+    sudo service clamav-daemon start
+
+    # Ubuntu/Debian (Linux)
+    sudo systemctl enable clamav-freshclam
+    sudo systemctl start clamav-freshclam
+    sudo systemctl enable clamav-daemon
+    sudo systemctl start clamav-daemon
+    ```
+
+    **Install Ghostscript via apt package manager**
+
+    ```bash
+    sudo apt install ghostscript -y
+    gs --version
+    ```
+
+    Ghostscript should at least return version 10.02.1 (last checked: November 7th, 2025).
+
+=== "MacOS"
+    **Install ClamAV via Homebrew**
+    ```bash
+    brew install clamav
+    ```
+    
+    **Verify the installation**
+    ```bash
+    brew list clamav
+    clamscan --version
+    ```
+    You should see binaries like `clamd`, `clamdscan`, `clamscan`, and configuration files in `/opt/homebrew/etc/clamav/`. The version of ClamAV should at least be 1.5.1 (last checked: November 7th, 2025).
+    
+    **Copy sample configuration files**
+    
+    ClamAV ships with sample configuration files that you'll need to customize:
+    ```bash
+    cd /opt/homebrew/etc/clamav
+    cp clamd.conf.sample clamd.conf
+    cp freshclam.conf.sample freshclam.conf
+    ```
+    
+    **Configure clamd.conf**
+    ```bash
+    nano /opt/homebrew/etc/clamav/clamd.conf
+    ```
+    Edit or uncomment these lines:
+    ```ini
+    # Where the database files are stored
+    DatabaseDirectory /opt/homebrew/var/lib/clamav
+    
+    # Temporary directory
+    TemporaryDirectory /tmp
+    
+    # Log file location
+    LogFile /opt/homebrew/var/log/clamav/clamd.log
+    LogFileMaxSize 5M
+    
+    # Local socket (used by clamdscan)
+    LocalSocket /opt/homebrew/var/run/clamav/clamd.sock
+    FixStaleSocket yes
+    
+    # Run as daemon
+    Foreground no
+    ```
+    
+    **Configure freshclam.conf**
+    ```bash
+    nano /opt/homebrew/etc/clamav/freshclam.conf
+    ```
+    Edit these lines:
+    ```ini
+    DatabaseDirectory /opt/homebrew/var/lib/clamav
+    UpdateLogFile /opt/homebrew/var/log/clamav/freshclam.log
+    DatabaseOwner _clamav
+    Checks 12
+    ```
+    
+    **Create required directories**
+    ```bash
+    sudo mkdir -p /opt/homebrew/var/lib/clamav
+    sudo mkdir -p /opt/homebrew/var/log/clamav
+    sudo mkdir -p /opt/homebrew/var/run/clamav
+    sudo chown -R $(whoami) /opt/homebrew/var/{lib,log,run}/clamav
+    ```
+    
+    **Download virus definitions**
+    ```bash
+    freshclam
+    ```
+    This downloads the latest virus definitions to `/opt/homebrew/var/lib/clamav`.
+    
+    **Start the ClamAV daemon**
+    ```bash
+    brew services start clamav
+    ```
+    
+    **Note:** Homebrew services don't automatically update virus definitions. Remember to run `freshclam` regularly to keep your definitions current.
+
+    **Install Ghostscript via Homebrew**
+    ```bash
+    brew install ghostscript
+    gs --version
+    ```
+    Ghostscript should at least return version 10.06.0 (last checked: November 7th, 2025).
 
 ---
 
