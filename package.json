@@ -48,7 +48,7 @@
     "express-async-handler": "1.2.0",
     "express-rate-limit": "8.2.1",
     "express-session": "1.18.2",
-    "file-type": "21.0.0",
+    "file-type": "21.1.0",
     "fs-extra": "11.3.2",
     "helmet": "8.1.0",
     "iconv-lite": "0.7.0",
@@ -61,8 +61,8 @@
     "prisma": "6.19.0",
     "prom-client": "15.1.3",
     "redis": "5.9.0",
-    "sass": "1.93.3",
-    "sharp": "0.34.4",
+    "sass": "1.94.0",
+    "sharp": "0.34.5",
     "socket.io": "4.8.1",
     "winston": "^3.18.3",
     "zod": "4.1.12"
@@ -72,7 +72,7 @@
     "@prisma/client": "6.19.0",
     "@types/bcrypt": "6.0.0",
     "@types/bootstrap": "5.2.10",
-    "@types/bun": "1.3.1",
+    "@types/bun": "1.3.2",
     "@types/connect-pg-simple": "7.0.3",
     "@types/express": "5.0.5",
     "@types/express-session": "1.18.2",
@@ -85,7 +85,7 @@
     "@types/socket.io": "3.0.2",
     "eslint": "9.39.1",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.46.3"
+    "typescript-eslint": "8.46.4"
   },
   "private": true
 }
