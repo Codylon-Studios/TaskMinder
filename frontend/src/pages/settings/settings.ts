@@ -13,7 +13,8 @@ import {
   getTimeLeftString,
   escapeHTML,
   getInputValue,
-  socket
+  socket,
+  registerSocketListeners
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -107,7 +108,7 @@ async function updateClassMemberList(): Promise<void> {
 
   $("#class-members-list").html(newClassMembersContent);
 
-  $(document).off("change", ".class-member-role-input").on("change", ".class-member-role-input", async function () {
+  $("#app").off("change", ".class-member-role-input").on("change", ".class-member-role-input", async function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
     $("#class-members-cancel").show();
 
@@ -203,7 +204,7 @@ async function updateTeamLists(): Promise<void> {
   $("#team-selection-list").html(newTeamSelectionContent);
   $("#teams-list").html(newTeamsContent);
 
-  $(document).off("change", ".team-name-input").on("change", ".team-name-input", async function () {
+  $("#app").off("change", ".team-name-input").on("change", ".team-name-input", async function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
 
     if ($(this).val().trim() === "") {
@@ -229,7 +230,7 @@ async function updateTeamLists(): Promise<void> {
     }
   });
 
-  $(document).off("input", ".team-name-input").on("input", ".team-name-input", function () {
+  $("#app").off("input", ".team-name-input").on("input", ".team-name-input", function () {
     $("#teams-cancel").show();
     $(this).removeClass("is-invalid");
     if (!$(".team-name-input").hasClass("is-invalid")) {
@@ -315,7 +316,7 @@ async function updateEventTypeList(): Promise<void> {
   }
   $("#event-types-list").html(newEventTypesContent);
 
-  $(document).off("change", ".event-type-name-input").on("change", ".event-type-name-input", async function () {
+  $("#app").off("change", ".event-type-name-input").on("change", ".event-type-name-input", async function () {
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
 
     if ($(this).val().trim() === "") {
@@ -341,7 +342,7 @@ async function updateEventTypeList(): Promise<void> {
     }
   });
 
-  $(document).off("input", ".event-type-name-input").on("input", ".event-type-name-input", function () {
+  $("#app").off("input", ".event-type-name-input").on("input", ".event-type-name-input", function () {
     $("#event-types-cancel").show();
     $(this).removeClass("is-invalid");
     if (!$(".event-type-name-input").hasClass("is-invalid")) {
@@ -349,7 +350,7 @@ async function updateEventTypeList(): Promise<void> {
     }
   });
 
-  $(document).off("change", ".event-type-color-input").on("change", ".event-type-color-input", async function () {
+  $("#app").off("change", ".event-type-color-input").on("change", ".event-type-color-input", async function () {
     $("#event-types-cancel").show();
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
 
@@ -522,7 +523,7 @@ async function updateSubjectList(): Promise<void> {
   }
   $("#subjects-list").html(newSubjectsContent);
 
-  $(document).off("change", ".subject-name-long-input").on("change", ".subject-name-long-input", async function () {
+  $("#app").off("change", ".subject-name-long-input").on("change", ".subject-name-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
     if ($(this).val().trim() === "") {
@@ -547,7 +548,7 @@ async function updateSubjectList(): Promise<void> {
     }
   });
 
-  $(document).off("input", ".subject-name-long-input").on("input", ".subject-name-long-input", function () {
+  $("#app").off("input", ".subject-name-long-input").on("input", ".subject-name-long-input", function () {
     $("#subjects-cancel").show();
     $(this).removeClass("is-invalid");
     if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
@@ -555,7 +556,7 @@ async function updateSubjectList(): Promise<void> {
     }
   });
 
-  $(document).off("change", ".subject-name-short-input").on("change", ".subject-name-short-input", async function () {
+  $("#app").off("change", ".subject-name-short-input").on("change", ".subject-name-short-input", async function () {
     $("#subjects-cancel").show();
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
@@ -576,7 +577,7 @@ async function updateSubjectList(): Promise<void> {
     }
   });
 
-  $(document).off("change", ".subject-teacher-gender-input").on("change", ".subject-teacher-gender-input", async function () {
+  $("#app").off("change", ".subject-teacher-gender-input").on("change", ".subject-teacher-gender-input", async function () {
     $("#subjects-cancel").show();
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
@@ -600,7 +601,7 @@ async function updateSubjectList(): Promise<void> {
     }
   });
 
-  $(document).off("change", ".subject-teacher-long-input").on("change", ".subject-teacher-long-input", async function () {
+  $("#app").off("change", ".subject-teacher-long-input").on("change", ".subject-teacher-long-input", async function () {
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
     if ($(this).val().trim() === "") {
@@ -625,7 +626,7 @@ async function updateSubjectList(): Promise<void> {
     }
   });
 
-  $(document).off("input", ".subject-teacher-long-input").on("input", ".subject-teacher-long-input", function () {
+  $("#app").off("input", ".subject-teacher-long-input").on("input", ".subject-teacher-long-input", function () {
     $("#subjects-cancel").show();
     $(this).removeClass("is-invalid");
     if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
@@ -633,7 +634,7 @@ async function updateSubjectList(): Promise<void> {
     }
   });
 
-  $(document).off("change", ".subject-teacher-short-input").on("change", ".subject-teacher-short-input", async function () {
+  $("#app").off("change", ".subject-teacher-short-input").on("change", ".subject-teacher-short-input", async function () {
     $("#subjects-cancel").show();
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
@@ -655,7 +656,7 @@ async function updateSubjectList(): Promise<void> {
   });
 
   if (dsbActivated) {
-    $(document).off("change", ".subject-name-substitution-input").on("change", ".subject-name-substitution-input", async function () {
+    $("#app").off("change", ".subject-name-substitution-input").on("change", ".subject-name-substitution-input", async function () {
       $("#subjects-cancel").show();
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
   
@@ -681,7 +682,7 @@ async function updateSubjectList(): Promise<void> {
       }
     });
   
-    $(document).off("change", ".subject-teacher-substitution-input").on("change", ".subject-teacher-substitution-input", async function () {
+    $("#app").off("change", ".subject-teacher-substitution-input").on("change", ".subject-teacher-substitution-input", async function () {
       $("#subjects-cancel").show();
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
   
@@ -831,13 +832,13 @@ async function updateTimetable(): Promise<void> {
     newTimetableContent.find(".timetable-lesson-list").eq(lesson.weekDay).append(lessonTemplate);
   });
 
-  $(document)
+  $("#app")
     .off("input", ".timetable-lesson input, .timetable-lesson select")
     .on("input", ".timetable-lesson input, .timetable-lesson select", () => {
       $("#timetable-cancel").show();
     });
 
-  $(document).off("click", ".timetable-new-lesson").on("click", ".timetable-new-lesson", function () {
+  $("#app").off("click", ".timetable-new-lesson").on("click", ".timetable-new-lesson", function () {
     $("#timetable-cancel").show();
     const lessonTemplate = $(`
       <div class="timetable-lesson card p-2 mb-2">
@@ -911,10 +912,61 @@ async function updateTimetable(): Promise<void> {
 
   $("#timetable").html(newTimetableContent.html());
 
-  $(document).off("click", ".timetable-lesson-delete").on("click", ".timetable-lesson-delete", function () {
+  $("#app").off("click", ".timetable-lesson-delete").on("click", ".timetable-lesson-delete", function () {
     $("#timetable-cancel").show();
     $(this).parent().parent().remove();
   });
+}
+
+async function updateClassInfo(): Promise<void> {
+  let classCode = "";
+
+  $.get("/class/get_class_info")
+    .done(res => {
+      const resClassCode = res.classCode;
+      $("#class-code").val(resClassCode);
+      $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
+      classCode = resClassCode;
+
+      qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
+      $("#show-qrcode-modal-title b").text(res.className);
+      $("#class-settings-name").text(res.className);
+
+      isTestClass = res.isTestClass;
+      $("#test-class-alert").toggleClass("d-none", !isTestClass);
+      testClassTimeCreated = Number.parseInt(res.classCreated);
+      updateTestClassTimeLeft();
+    })
+    .fail(() => {
+      $("#class-code").val("Fehler beim Laden");
+      $("#invite-copy-link, #invite-qrcode").prop("disabled", true);
+    });
+
+  $("#invite-copy-link").on("click", async () => {
+    try {
+      await navigator.clipboard.writeText(location.host + `/join?class_code=${$("#class-code").val()}`);
+  
+      $("#invite-copy-link").prop("disabled", true).html("<i class=\"fa-solid fa-check-circle\" aria-hidden=\"true\"></i> Einladungslink kopiert");
+  
+      setTimeout(() => {
+        $("#invite-copy-link").prop("disabled", false).html("<i class=\"fa-solid fa-link\" aria-hidden=\"true\"></i> Einladungslink kopieren");
+      }, 2000);
+    }
+    catch (err) {
+      console.error("Error copying classcode to clipboard:", err);
+    }
+  });
+
+  let loggedOutUsersRole;
+  try {
+    loggedOutUsersRole = await $.get("/class/get_logged_out_users_role");
+  }
+  catch {
+    loggedOutUsersRole = 0;
+  }
+  finally {
+    $(`#set-logged-out-users-role-select option[value="${loggedOutUsersRole}"]`).attr("selected", "");
+  }
 }
 
 function updateTestClassTimeLeft(): void {
@@ -927,6 +979,7 @@ function updateTestClassTimeLeft(): void {
 async function updateOnUserChange(): Promise<void> {
   $(".not-logged-in-info").toggle(!user.loggedIn).toggleClass("d-flex", !user.loggedIn);
   $("#settings-account").toggle(user.loggedIn ?? false);
+  $("#settings-account-name").text(user.username ?? "");
 
   $("#change-username-button").show();
   $("#change-username").hide();
@@ -948,54 +1001,7 @@ async function updateOnUserChange(): Promise<void> {
     $("#kick-logged-out-users").hide();
     $("#set-logged-out-users-role").hide();
 
-    let classCode = "";
-
-    $.get("/class/get_class_info")
-      .done(res => {
-        const resClassCode = res.classCode;
-        $("#class-code").val(resClassCode);
-        $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
-        classCode = resClassCode;
-
-        qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
-        $("#show-qrcode-modal-title b").text(res.className);
-        $("#class-settings-name").text(res.className);
-
-        isTestClass = res.isTestClass;
-        $("#test-class-alert").toggleClass("d-none", !isTestClass);
-        testClassTimeCreated = Number.parseInt(res.classCreated);
-        updateTestClassTimeLeft();
-      })
-      .fail(() => {
-        $("#class-code").val("Fehler beim Laden");
-        $("#invite-copy-link, #invite-qrcode").prop("disabled", true);
-      });
-
-    $("#invite-copy-link").on("click", async () => {
-      try {
-        await navigator.clipboard.writeText(location.host + `/join?class_code=${$("#class-code").val()}`);
-    
-        $("#invite-copy-link").prop("disabled", true).html("<i class=\"fa-solid fa-check-circle\" aria-hidden=\"true\"></i> Einladungslink kopiert");
-    
-        setTimeout(() => {
-          $("#invite-copy-link").prop("disabled", false).html("<i class=\"fa-solid fa-link\" aria-hidden=\"true\"></i> Einladungslink kopieren");
-        }, 2000);
-      }
-      catch (err) {
-        console.error("Error copying classcode to clipboard:", err);
-      }
-    });
-
-    let loggedOutUsersRole;
-    try {
-      loggedOutUsersRole = await $.get("/class/get_logged_out_users_role");
-    }
-    catch {
-      loggedOutUsersRole = 0;
-    }
-    finally {
-      $(`#set-logged-out-users-role-select option[value="${loggedOutUsersRole}"]`).attr("selected", "");
-    }
+    updateClassInfo();
 
     const permissionLevel = user.permissionLevel ?? 0;
     if (permissionLevel < 2) {
@@ -2007,6 +2013,7 @@ export async function init(): Promise<void> {
       $(".new-team-delete").off("click").on("click", function () {
         $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
         $(this).parent().remove();
+        $(".team-name-input").first().trigger("input");
         if ($("#teams-list").children().length === 0) {
           $("#teams-list").append('<span class="text-secondary no-teams">Keine Teams vorhanden</span>');
         }
@@ -2157,6 +2164,7 @@ export async function init(): Promise<void> {
 
       $(".new-event-type-delete").off("click").on("click", function () {
         $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+        $(".event-type-name-input").first().trigger("input");
         $(this).parent().remove();
         if ($("#event-types-list").children().length === 0) {
           $("#event-types-list").append(
@@ -2344,6 +2352,7 @@ export async function init(): Promise<void> {
 
       $(".new-subject-delete").off("click").on("click", function () {
         $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+        $(".subject-name-long-input").first().trigger("input");
         $(this).parent().remove();
         if ($("#subjects-list").children().length === 0) {
           $("#subjects-list").append('<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>');
@@ -2549,6 +2558,37 @@ export async function init(): Promise<void> {
     res();
   });
 }
+
+registerSocketListeners({
+  updateClassCodes: updateClassInfo,
+  updateClassNames: updateClassInfo,
+  updateUpgradeTestClass: updateClassInfo,
+  updateDefaultPermission: updateClassInfo,
+  updateMembers: () => {
+    classMemberData.reload();
+    updateClassMemberList();
+  },
+  updateSubjects: () => {
+    subjectData.reload();
+    updateSubjectList();
+  },
+  updateTeams: () => {
+    teamsData.reload();
+    updateTeamLists();
+  },
+  updateJoinedTeams: () => {
+    eventTypeData.reload();
+    updateEventTypeList();
+  },
+  updateEventTypes: () => {
+    eventTypeData.reload();
+    updateEventTypeList();
+  },
+  updateTimetables: () => {
+    lessonData.reload();
+    updateTimetable();
+  }
+});
 
 export const reloadAllFn = async (): Promise<void> => {
   if (user.classJoined) {

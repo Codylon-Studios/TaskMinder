@@ -58,6 +58,17 @@ export function isValidSite(site: string): boolean {
   ].includes(site);
 }
 
+export function registerSocketListeners(listeners: Record<string, () => unknown>): void {
+  const site = getSite();
+  for (const listener of Object.keys(listeners)) {
+    socket.on(listener, () => {
+      if (isSite(site)) {
+        listeners[listener]();
+      }
+    });
+  }
+}
+
 export function msToDisplayDate(ms: number | string): string {
   const num = typeof ms === "string" ? Number.parseInt(ms) : ms;
   const date = new Date(num);
@@ -154,6 +165,12 @@ export function isSameDay(date1: Date, date2: Date): boolean {
     date1.getMonth() === date2.getMonth() &&
     date1.getDate() === date2.getDate()
   );
+}
+
+export function isSameDayMs(ms1: number | string, ms2: number | string): boolean {
+  ms1 = typeof ms1 === "string" ? Number.parseInt(ms1) : ms1;
+  ms2 = typeof ms2 === "string" ? Number.parseInt(ms2) : ms2;
+  return isSameDay(new Date(ms1), new Date(ms2));
 }
 
 export function deepCompare(a: unknown, b: unknown): boolean {

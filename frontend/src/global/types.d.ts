@@ -153,25 +153,28 @@ type TimetableData = LessonGroup & {
 };
 
 // Uploads
+type SingleUploadData = {
+  uploadId: number;
+  uploadName: string;
+  uploadType: string;
+  teamId: number;
+  status: string;
+  errorReason: null;
+  accountName: string | null;
+  filesCount: number;
+  createdAt: string;
+  files: {
+    fileMetaDataId: 1;
+    mimeType: string;
+    size: number;
+    createdAt: string;
+  }[]
+}
+
 type UploadData = {
   totalUploads: number;
   hasMore: boolean;
   totalStorage: string;
   usedStorage: string;
-  uploads: {
-    uploadId: number;
-    uploadName: string;
-    uploadType: string;
-    status: string;
-    errorReason: null;
-    accountName: string;
-    filesCount: number;
-    createdAt: string;
-    files: {
-      fileMetaDataId: 1;
-      mimeType: string;
-      size: number;
-      createdAt: string;
-    }[]
-  }[]
+  uploads: SingleUploadData[];
 }

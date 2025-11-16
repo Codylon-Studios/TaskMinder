@@ -40,6 +40,7 @@ const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany
     uploadId: upload.uploadId,
     uploadName: upload.uploadName,
     uploadType: upload.uploadType,
+    teamId: upload.teamId,
     status: upload.status,
     errorReason: upload.errorReason,
     accountName: upload.Account?.username ?? null,

@@ -18,7 +18,9 @@ import {
   escapeHTML,
   loadTimetableData,
   getTimeLeftString,
-  lastCommaRegex
+  lastCommaRegex,
+  teamsData,
+  registerSocketListeners
 } from "../../global/global.js";
 import { MonthDates, TimetableData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -1153,7 +1155,7 @@ export async function init(): Promise<void> {
       updateCalendarWeekContent("#calendar-week-old");
     });
 
-    $(document).on("click", ".days-overview-day", async function () {
+    $("#app").on("click", ".days-overview-day", async function () {
       selectedNewDay = true;
       const day = Number.parseInt($(this).data("day"));
       const newSelectedDate = (await monthDates())[Number.parseInt($(this).data("week"))][day === 0 ? 6 : day - 1];
@@ -1200,7 +1202,7 @@ export async function init(): Promise<void> {
     setInterval(updateTimetableFeedback,  30 * 1000); // Update every 30s
 
     // Request checking the homework on clicking its checkbox
-    $(document).on("click", ".homework-check", function () {
+    $("#app").on("click", ".homework-check", function () {
       const homeworkId = $(this).data("id");
       checkHomework(homeworkId);
     });
@@ -1235,36 +1237,58 @@ export async function init(): Promise<void> {
       $(this).prop("checked", false);
     });
 
-    $("#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")).prop("checked", true);
-
-    socket.on("updateHomeworkData", () => {
-      try {
-        homeworkData.reload();
-        homeworkCheckedData.reload();
-
-        updateHomeworkList();
-      }
-      catch (error) {
-        console.error("Error handling updateHomeworkData:", error);
-      }
-    });
-
-    socket.on("updateEventData", () => {
-      try {
-        eventData.reload();
-
-        updateEventList();
-        updateCalendarWeekContent("#calendar-week-old");
-        updateTimetable();
-      }
-      catch (error) {
-        console.error("Error handling updateEventData:", error);
-      }
+    $("#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")).prop("checked", true);    
+    socket.on("updateHomework", () => {
+      homeworkData.reload();
+      homeworkCheckedData.reload();
+      updateHomeworkList();
     });
     
     res();
   });
 }
+
+registerSocketListeners({
+  updateHomework: () => {
+    homeworkData.reload();
+    homeworkCheckedData.reload();
+    updateHomeworkList();
+  },
+  updateSubjects: () => {
+    subjectData.reload();
+    updateHomeworkList();
+  },
+  updateEvents: () => {
+    eventData.reload();
+
+    updateEventList();
+    updateCalendarWeekContent("#calendar-week-old");
+    updateTimetable();
+  },
+  updateTimetables: () => {
+    lessonData.reload();
+    updateTimetable();
+  },
+  updateTeams: () => {
+    teamsData.reload();
+    homeworkData.reload();
+    homeworkCheckedData.reload();
+    eventData.reload();
+
+    updateHomeworkList();
+    updateEventList();
+    updateCalendarWeekContent("#calendar-week-old");
+    updateTimetable();
+  },
+  updateJoinedTeams: () => {
+    joinedTeamsData.reload();
+
+    updateHomeworkList();
+    updateEventList();
+    updateCalendarWeekContent("#calendar-week-old");
+    updateTimetable();
+  }
+});
 
 export const reloadAllFn = async (): Promise<void> => {
   eventData.reload();

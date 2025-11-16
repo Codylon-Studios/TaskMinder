@@ -85,6 +85,12 @@
           </div>
 
           <div id="settings-account">
+            <h5>
+              Du bist angemeldet als
+              <b id="settings-account-name">a26b25c24</b>
+              .
+            </h5>
+
             <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
               <i class="fa-solid fa-circle-info mx-1" aria-hidden="true"></i>
               <div class="d-block">Diese Einstellungen betreffen deinen gesamten Account, auch geräteübergreifend.</div>
@@ -272,7 +278,7 @@
             <div class="fs-3 mb-2 d-flex align-items-center">
               Klasse
               <b id="class-settings-name" class="ms-1"></b>
-              <button class="btn btn-tertiary fw-semibold ms-2" id="change-class-name-button">
+              <button class="btn btn-tertiary fw-bold ms-2" id="change-class-name-button">
                 <i class="fa-solid fa-pencil" aria-hidden="true"></i>
                 Umbenennen
               </button>
@@ -300,17 +306,17 @@
               <div class="col-12 col-lg" id="class-code-container">
                 <div class="d-flex gap-2 flex-column flex-lg-row mb-2">
                   <input id="class-code" type="text" class="form-control user-select-all" value="" readonly />
-                  <button class="btn btn-primary w-100 fw-semibold" id="change-class-code">
+                  <button class="btn btn-primary w-100 fw-bold" id="change-class-code">
                     <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                     Neuen Klassencode anfordern
                   </button>
                 </div>
                 <div class="d-flex gap-2 flex-column flex-lg-row">
-                  <button class="btn btn-primary w-100 fw-semibold" id="invite-copy-link">
+                  <button class="btn btn-primary w-100 fw-bold" id="invite-copy-link">
                     <i class="fa-solid fa-link" aria-hidden="true"></i>
                     Einladungslink kopieren
                   </button>
-                  <button class="btn btn-primary w-100 fw-semibold" id="invite-qrcode" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
+                  <button class="btn btn-primary w-100 fw-bold" id="invite-qrcode" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
                     <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                     QR-Code anzeigen
                   </button>
@@ -356,7 +362,7 @@
 
             <div class="mb-4">
               <h5>
-                <button class="display-toggle btn btn-semivisible" id="class-members-toggle">
+                <button class="display-toggle btn btn-semivisible p-0" id="class-members-toggle">
                   <span class="fa fa-caret-right"></span>
                 </button>
                 Klassenmitglieder:innen
@@ -436,7 +442,7 @@
 
             <div class="mb-4">
               <h5>
-                <button class="display-toggle btn btn-semivisible" id="teams-toggle">
+                <button class="display-toggle btn btn-semivisible p-0" id="teams-toggle">
                   <span class="fa fa-caret-right"></span>
                 </button>
                 Teams
@@ -464,7 +470,7 @@
 
             <div class="mb-4">
               <h5>
-                <button class="display-toggle btn btn-semivisible" id="event-types-toggle">
+                <button class="display-toggle btn btn-semivisible p-0" id="event-types-toggle">
                   <span class="fa fa-caret-right"></span>
                 </button>
                 Ereignisarten
@@ -491,7 +497,7 @@
             </div>
             <div class="mb-4">
               <h5>
-                <button class="display-toggle btn btn-semivisible" id="subjects-toggle">
+                <button class="display-toggle btn btn-semivisible p-0" id="subjects-toggle">
                   <span class="fa fa-caret-right"></span>
                 </button>
                 Fächer
@@ -528,7 +534,7 @@
 
             <div class="mb-4">
               <h5>
-                <button class="display-toggle btn btn-semivisible" id="timetable-toggle">
+                <button class="display-toggle btn btn-semivisible p-0" id="timetable-toggle">
                   <span class="fa fa-caret-right"></span>
                 </button>
                 Stundenplan
