@@ -369,6 +369,7 @@ export const eventService = {
         $color-lighter: color.adjust($color, $lightness: 20%);
         $color-more-darker: color.adjust($color, $lightness: -60%);
         $color-more-lighter: color.adjust($color, $lightness: 40%);
+        $bg-select: color.change($color: $color, $alpha: 0.6);
 
         .card.event-#{"" + $name} {
           border-color: $color;
@@ -381,6 +382,12 @@ export const eventService = {
 
         span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
           color: $color-darker;
+        }
+
+        [data-high-contrast="false"] {
+          .event-#{"" + $name}::selection, .event-#{"" + $name} ::selection {
+            background-color: $bg-select;
+          }
         }
 
         [data-bs-theme="dark"] {

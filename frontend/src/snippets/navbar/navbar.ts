@@ -160,7 +160,7 @@ function checkSecurePassword(password: string): boolean {
 export async function init(): Promise<void> {
   $("#login-register-button").toggleClass("d-none", isSite("join"));
 
-  $("#nav-logout-button").on("click", async () => {
+  $("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
     let hasResponded = false;
 
     $.ajax({
@@ -195,8 +195,8 @@ export async function init(): Promise<void> {
   });
 
   $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
-    $("#navbar-offcanvas").offcanvas("hide")
-  })
+    $("#navbar-offcanvas").offcanvas("hide");
+  });
 
   $(() => {
     if (isSite("main", "homework", "events", "uploads")) {
@@ -209,6 +209,8 @@ export async function init(): Promise<void> {
         $("#login-register-button").toggle(!user.loggedIn);
       }
       $("#nav-logout-button").toggle(user.loggedIn ?? false);
+      $("#offcanvas-account").toggle(user.loggedIn ?? false);
+      $("#offcanvas-account-name").text(user.username ?? "");
       return _;
     })());
 

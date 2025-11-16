@@ -453,6 +453,6 @@ footer a {
 // Styles exclusively for iOS devices
 @supports (-webkit-touch-callout: none) {
   b, strong, .fw-semibold, .fw-bold, *[style*="font-weight: 700"] {
-    letter-spacing: calc(-1em / 16);
+    letter-spacing: calc(-0.5em / 16);
   }
 }

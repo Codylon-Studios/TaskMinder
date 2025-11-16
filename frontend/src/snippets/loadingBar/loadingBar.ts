@@ -107,6 +107,7 @@ export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promi
         }
       });
     }
+    $("#app").off();
     await init();
     $("#app").empty().append($("#app-prepend").children());
 

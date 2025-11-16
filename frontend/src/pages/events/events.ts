@@ -7,11 +7,12 @@ import {
   msToDisplayDate,
   msToInputDate,
   teamsData,
-  socket,
   csrfToken,
   lessonData,
   escapeHTML,
-  dateDaysDifference
+  dateDaysDifference,
+  registerSocketListeners,
+  isSameDayMs
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -24,12 +25,12 @@ async function updateEventList(): Promise<void> {
     // Filter by min. date
     const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMin)) {
-      data = data.filter(e => filterDateMin <= Number.parseInt(e.endDate ?? e.startDate));
+      data = data.filter(e => filterDateMin <= Number.parseInt(e.endDate ?? e.startDate) || isSameDayMs(filterDateMin, e.endDate ?? e.startDate));
     }
     // Filter by max. date
     const filterDateMax = Date.parse($("#filter-date-until").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMax)) {
-      data = data.filter(e => filterDateMax >= Number.parseInt(e.startDate));
+      data = data.filter(e => filterDateMax >= Number.parseInt(e.startDate) || isSameDayMs(filterDateMax, e.startDate));
     }
     // Filter by type
     data = data.filter(e => $(`#filter-type-${e.eventTypeId}`).prop("checked"));
@@ -690,17 +691,17 @@ export async function init(): Promise<void> {
       });
 
       // Share the event on clicking its share icon
-      $(document).on("click", ".event-share", function () {
+      $("#app").on("click", ".event-share", function () {
         shareEvent($(this).data("id"));
       });
 
       // Request deleting the event on clicking its delete icon
-      $(document).on("click", ".event-delete", function () {
+      $("#app").on("click", ".event-delete", function () {
         deleteEvent($(this).data("id"));
       });
 
       // Request editing the event on clicking its edit icon
-      $(document).on("click", ".event-edit", function () {
+      $("#app").on("click", ".event-edit", function () {
         editEvent($(this).data("id"));
       });
 
@@ -758,24 +759,34 @@ export async function init(): Promise<void> {
         updateEventList();
       });
 
-      $(document).on("click", "#show-add-event-button", () => {
+      $("#app").on("click", "#show-add-event-button", () => {
         addEvent();
       });
-    });
-
-    socket.on("updateEventData", () => {
-      try {
-        eventData.reload();
-        updateEventList();
-      }
-      catch (error) {
-        console.error("Error handling updateEventData:", error);
-      }
     });
 
     res();
   });
 }
+
+registerSocketListeners({
+  updateEvents: () => {
+    eventData.reload();
+    updateEventList(); 
+  },
+  updateEventTypes: () => {
+    eventTypeData.reload();
+    updateEventTypeList(); 
+  },
+  updateTeams: () => {
+    teamsData.reload();
+    updateTeamList();
+    updateEventList(); 
+  },
+  updateJoinedTeams: () => {
+    joinedTeamsData.reload();
+    updateEventList(); 
+  }
+});
 
 export const reloadAllFn = async (): Promise<void> => {
   eventData.reload();

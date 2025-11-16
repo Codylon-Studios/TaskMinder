@@ -18,12 +18,25 @@
   margin: -0.2rem;
 }
 
+.random-homework-deactivated {
+  text-decoration-line: line-through !important;
+  text-decoration-color: var(--bs-secondary) !important;
+  text-decoration-style: solid !important;
+  text-decoration-thickness: 0.125rem !important;
+}
+
 #random-homework-wheel-pointer {
   fill: var(--bs-primary);
   stroke: var(--bs-primary);
   stroke-linejoin: round;
   stroke-width: 10;
   top: -1rem
+}
+
+#random-homework-wheel {
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 #random-homework-wheel-rotate > div {

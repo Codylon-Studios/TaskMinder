@@ -48,10 +48,22 @@
 
 <div class="offcanvas offcanvas-start" tabindex="-1" id="navbar-offcanvas" aria-labelledby="navbar-offcanvas-label">
   <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="navbar-offcanvas-label">TaskMinder</h5>
+    <h3 class="offcanvas-title" id="navbar-offcanvas-label">TaskMinder</h3>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Schließen"></button>
   </div>
   <div class="offcanvas-body">
+    <div class="mb-3 text-center" id="offcanvas-account">
+      <h5>
+        Willkommen,
+        <b id="offcanvas-account-name">a26b25c24</b>
+        !
+      </h5>
+      <button class="btn btn-primary fw-bold" id="offcanvas-account-logout-button">
+        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+        Abmelden
+      </button>
+    </div>
+
     <i class="fas fa-info-circle fs-5 text-secondary" aria-hidden="true"></i>
     <a href="/about" data-pjax>Über TaskMinder</a>
     <div class="form-text mb-3">Rechtliche Hinweise & allgemeine Infos</div>
@@ -138,11 +150,11 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary d-none login-register-back-button">Zurück</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-        <button type="button" class="btn btn-primary login-register-next-button" id="navbar-login-register-next-button">Weiter</button>
-        <button type="button" class="btn btn-primary d-none login-element login-button">Anmelden</button>
-        <button type="button" class="btn btn-primary d-none register-element register-button">Registrieren</button>
+        <button type="button" class="btn btn-secondary d-none login-register-back-button fw-bold">Zurück</button>
+        <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
+        <button type="button" class="btn btn-primary login-register-next-button fw-bold" id="navbar-login-register-next-button">Weiter</button>
+        <button type="button" class="btn btn-primary d-none login-element login-button fw-bold">Anmelden</button>
+        <button type="button" class="btn btn-primary d-none register-element register-button fw-bold">Registrieren</button>
       </div>
     </div>
   </div>

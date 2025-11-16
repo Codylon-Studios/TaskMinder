@@ -21,18 +21,18 @@
 
       <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
         <div class="d-flex gap-2">
-          <button type="button" class="btn btn-primary" id="show-add-upload-button">
+          <button type="button" class="btn btn-primary fw-bold" id="show-add-upload-button">
             <i class="fa-solid fa-plus" aria-hidden="true"></i>
             Neu
           </button>
           <input type="checkbox" class="btn-check" id="edit-toggle" />
-          <label class="btn btn-outline-secondary" for="edit-toggle" id="edit-toggle-label">
+          <label class="btn btn-outline-secondary fw-bold" for="edit-toggle" id="edit-toggle-label">
             <i class="fa-solid fa-edit"></i>
             Bearbeiten
           </label>
 
           <input type="checkbox" class="btn-check" id="filter-toggle" />
-          <label class="btn btn-outline-secondary position-relative" for="filter-toggle">
+          <label class="btn btn-outline-secondary position-relative fw-bold" for="filter-toggle">
             <i class="fa-solid fa-filter"></i>
             Filtern
             <span class="filter-info-circle" id="filter-changed"></span>
@@ -40,7 +40,7 @@
         </div>
         <div id="filter-content" class="ds-flex align-items-center flex-row gap-2">
           <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Art</button>
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown">Art</button>
             <div class="dropdown-menu" id="filter-type-dropwdown">
               <div class="px-2 py-0">
                 <button class="btn btn-outline-secondary btn-sm" id="filter-type-all">Alle</button>
@@ -53,7 +53,7 @@
             </div>
           </div>
           <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Datum</button>
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown">Datum</button>
             <div class="dropdown-menu" id="filter-date-dropwdown">
               <div class="px-2 py-1">
                 <div class="d-flex align-items-center mb-3">
@@ -68,7 +68,7 @@
             </div>
           </div>
         </div>
-        <button class="btn btn-secondary" id="filter-reset">
+        <button class="btn btn-secondary fw-bold" id="filter-reset">
           <i class="fa-solid fa-trash" aria-hidden="true"></i>
           Zurücksetzen
         </button>
@@ -104,13 +104,7 @@
               <div class="mb-3">
                 <label for="add-upload-type" class="form-label">Wähle die Art der Datei aus</label>
                 <select class="form-select add-upload-input" id="add-upload-type">
-                  <option value="" disabled selected>Art</option>
-                  <option value="LESSON_NOTE">Hefteintrag</option>
-                  <option value="WORKSHEET">Arbeitsblatt</option>
-                  <option value="INFO_SHEET">Infozettel</option>
-                  <option value="TEXT">Text</option>
-                  <option value="FILE">Andere Datei</option>
-                  <option value="IMAGE">Anderes Bild</option>
+                  <!--Gets filled-->
                 </select>
                 <div class="form-text">Das beeinflusst nur die Darstellung und Filter.</div>
               </div>
@@ -122,8 +116,8 @@
               </select>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-              <button class="btn btn-primary" id="add-upload-button">Hochladen</button>
+              <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
+              <button class="btn btn-primary fw-bold" id="add-upload-button">Hochladen</button>
             </div>
           </div>
         </div>
@@ -153,13 +147,7 @@
               <div class="mb-3">
                 <label for="add-upload-type" class="form-label">Wähle die Art der Datei aus</label>
                 <select class="form-select add-upload-input" id="edit-upload-type">
-                  <option value="" disabled selected>Art</option>
-                  <option value="LESSON_NOTE">Hefteintrag</option>
-                  <option value="WORKSHEET">Arbeitsblatt</option>
-                  <option value="INFO_SHEET">Infozettel</option>
-                  <option value="TEXT">Text</option>
-                  <option value="FILE">Andere Datei</option>
-                  <option value="IMAGE">Anderes Bild</option>
+                  <!--Gets filled-->
                 </select>
                 <div class="form-text">Das beeinflusst nur die Darstellung und Filter.</div>
               </div>
@@ -171,8 +159,8 @@
               </select>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-              <button class="btn btn-primary" id="edit-upload-button">Speichern</button>
+              <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
+              <button class="btn btn-primary fw-bold" id="edit-upload-button">Speichern</button>
             </div>
           </div>
         </div>
@@ -218,7 +206,7 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
+              <button class="btn btn-primary w-100 fw-bold" data-bs-dismiss="modal">Fertig</button>
             </div>
           </div>
         </div>
@@ -267,24 +255,16 @@
             <div class="mt-2 pt-2 border-top">
               <div class="row g-2 justify-content-end">
                 <div class="col-auto">
-                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
+                  <button type="button" class="btn btn-secondary btn-sm fw-semibold" data-bs-dismiss="toast">Abbrechen</button>
                 </div>
                 <div class="col-auto">
-                  <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" id="delete-upload-confirm-toast-button">
+                  <button type="button" class="btn btn-primary btn-sm fw-semibold" data-bs-dismiss="toast" id="delete-upload-confirm-toast-button">
                     Löschen
                   </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <div id="share-event-error-toast" class="toast">
-          <div class="toast-progress-bar bg-danger"></div>
-          <div class="toast-header bg-danger text-body-bg">
-            <b class="me-auto">Fehler beim Teilen</b>
-            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-          </div>
-          <div class="toast-body">Das Ereignis konnte nicht geteilt werden. Vielleicht ist die Zeit der angegebenen Stunde nie definiert?</div>
         </div>
       </div>
     </div>
