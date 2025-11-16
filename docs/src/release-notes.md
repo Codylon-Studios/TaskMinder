@@ -4,6 +4,15 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.1] - 2025-11-16
+
+### Fixed
+* BigInts were not correctly serialized to JSON at /get_upload_metadata
+* ClamAV did not work in production as intended
+* Add object "self" to CSP headers to support upload viewing
+
+---
+
 ## \[v2.2.0] - 2025-11-16
 
 ### Added

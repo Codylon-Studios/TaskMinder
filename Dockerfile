@@ -16,10 +16,17 @@ FROM oven/bun:1.3-alpine AS production
 
 # Install only RUNTIME system dependencies
 RUN apk update && apk upgrade --no-cache && \
-	apk add --no-cache \
-	redis \
-	clamav \
+  apk add --no-cache \
+  clamav \
+  clamav-daemon \
+  clamav-libunrar \
+  redis \
   ghostscript
+
+# Create app & ClamAV directories with proper permissions
+RUN mkdir -p /var/lib/clamav /run/clamav && \
+  chown -R clamav:clamav /var/lib/clamav /run/clamav && \
+  chmod -R 755 /var/lib/clamav /run/clamav
 
 WORKDIR /usr/src/app
 
@@ -36,16 +43,8 @@ COPY --from=builder /usr/src/app/prisma.config.ts ./prisma.config.ts
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# ---- Ensure ClamAV directories have correct permissions ----
-RUN mkdir -p /var/lib/clamav && \
-    chown -R bun:bun /var/lib/clamav && \
-    chmod -R 755 /var/lib/clamav
-
 # Set ownership for the app user
 RUN chown -R bun:bun /usr/src/app
-
-# Switch to the non-root user
-USER bun
 
 EXPOSE 3000
 
