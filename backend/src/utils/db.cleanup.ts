@@ -8,6 +8,12 @@ import { FINAL_UPLOADS_DIR } from "../config/upload";
 /**
  * Deletes class records that are older than 1 day and are TEST CLASSES
  */
+// @codescene(disable:"Large Method")
+// This is supressed as this function is for deleting test classes.
+// As a lot of data is connected to a class, many prisma functions need to be called,
+// thus increasing lines of code, but code is still logical
+// This will not get better as code <-> cascade stuff will be introduced in the future
+// TODO@Mingqi: do not forget to add the maunal 
 export async function cleanupTestClasses(): Promise<void> {
   try {
     // Calculate the timestamp for 1 day ago (in milliseconds)

@@ -80,6 +80,10 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
   }
 };
 
+// @codescene(disable:"Complex Method")
+// This is disabled as the complexity is caused by the try catche and if blocks
+// This function just let clasmAV scan the requested file for malware
+// Another main ache point for code scene is the error extraction
 const scanFileClamAV = async (filePath: string, originalName: string): Promise<void> => {
   if (!clamavEnabled) return;
 
@@ -272,6 +276,10 @@ const processFile = async (file: FileProcessingJob["tempFiles"][0], classId: num
   return { storedFileName, finalSize };
 };
 
+// @codescene(disable:"Complex Method", disable: "Large Method")
+// This is disabled because this job updates the files of an upload and processes them
+// The code here is pretty straightforward and the complexity is caused by the for loop 
+// (because there are multiple files)
 const processJob = async (job: FileProcessingJob): Promise<void> => {
   const { uploadId, classId, tempFiles } = job;
 
