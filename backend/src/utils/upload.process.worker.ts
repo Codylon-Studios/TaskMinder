@@ -62,12 +62,12 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
   ]);
 
   try {
-    await execFileAsync("which", ["clamscan"]);
+    await execFileAsync("which", ["clamdscan"]);
     clamavEnabled = true;
-    logger.info("ClamAV enabled for worker");
+    logger.info("ClamAV (clamdscan) enabled for worker");
   }
   catch {
-    logger.warn("ClamAV not found in worker. Antivirus scanning is DISABLED. Server security degraded.");
+    logger.warn("ClamAV (clamdscan) not found in worker. Antivirus scanning is DISABLED. Server security degraded.");
   }
 
   try {
@@ -88,13 +88,13 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
   if (!clamavEnabled) return;
 
   try {
-    await execFileAsync("clamscan", ["--no-summary", filePath], { timeout: CLAMSCAN_TIMEOUT });
+    await execFileAsync("/usr/bin/clamdscan", ["--no-summary", "--fdpass", filePath], { timeout: CLAMSCAN_TIMEOUT });
   }
   catch (error) {
     const scanError = error as ExecException & { stdout?: string; stderr?: string };
     if (scanError.code === 1 && scanError.stdout?.includes("FOUND")) {
       const quarantinePath = path.join(QUARANTINE_DIR, `${Date.now()}-${path.basename(originalName)}`);
-      await fs.rename(filePath, quarantinePath).catch(() => { });
+      await fs.rename(filePath, quarantinePath).catch(() => {});
       logger.warn(`File quarantined: ${quarantinePath}`);
       const err: RequestError = {
         name: "Bad Request",
@@ -109,7 +109,7 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
       const err: RequestError = {
         name: "Internal Server Error",
         status: 500,
-        message: "An error occured while uploading the file",
+        message: "An error occurred while uploading the file",
         expected: true
       };
       throw err;

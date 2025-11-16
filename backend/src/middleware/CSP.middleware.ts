@@ -15,7 +15,7 @@ export const CSPMiddleware = (): RequestHandler => {
         "style-src": ["'self'", "'unsafe-inline'"],
         "font-src": ["'self'"],
         "img-src": ["'self'", "data:"],
-        "object-src": ["'none'"],
+        "object-src": ["'self'"],
         "frame-ancestors": ["'self'"]
       }
     },
