@@ -8,16 +8,25 @@ import { rateLimit } from "express-rate-limit";
 import session from "express-session";
 import prisma from "./config/prisma";
 import socketIO from "./config/socket";
+import logger from "./config/logger";
+import { connectRedis } from "./config/redis";
 import { sessionPool } from "./config/pg";
+import { startMetricsServer } from "./utils/metrics.server";
+import {
+  cleanupDeletedAccounts,
+  cleanupOldEvents,
+  cleanupOldHomework,
+  cleanupTestClasses,
+  cleanupStuckUploads,
+  migrateEventAndHomeworkDates 
+} from "./utils/db.cleanup";
+import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker";
 import checkAccess from "./middleware/access.middleware";
 import { ErrorHandler } from "./middleware/error.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
 import { metricsMiddleware } from "./middleware/metrics.middleware";
 import { CSPMiddleware } from "./middleware/CSP.middleware";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware";
-import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses, cleanupStuckUploads } from "./utils/db.cleanup";
-import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker";
-import logger from "./config/logger";
 import account from "./routes/account.route";
 import events from "./routes/event.route";
 import homework from "./routes/homework.route";
@@ -27,8 +36,6 @@ import subjects from "./routes/subject.route";
 import teams from "./routes/team.route";
 import classes from "./routes/class.route";
 import uploads from "./routes/upload.route";
-import { connectRedis } from "./config/redis";
-import { startMetricsServer } from "./utils/metrics.server";
 
 dotenv.config();
 
@@ -201,6 +208,12 @@ cron.schedule("0 0 * * *", () => {
   cleanupOldEvents();
   cleanupTestClasses();
   cleanupDeletedAccounts();
+});
+
+// Run demo class script every week (once) - only for demo class
+cron.schedule("0 0 * * 0", () => {
+  logger.info("Starting weekly demo class date migration");
+  migrateEventAndHomeworkDates();
 });
 
 // Run stuck upload cleanup every 10 minutes

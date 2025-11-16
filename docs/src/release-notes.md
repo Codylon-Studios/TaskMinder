@@ -15,6 +15,7 @@ All changes are grouped by type and the latest version appears first.
 * Socket events for many real-time changes
 * Add loading bar to simulate progress
 * Add frontend feedback for timetable changes
+* Move events and homework further along (1 week)
 
 ### Fixed
 * Fix bug where an account could not be deleted due to too early checks in backend
@@ -24,7 +25,7 @@ All changes are grouped by type and the latest version appears first.
 * Fix bug where "Neuer Nutzername" at change name is type=password
 
 ### Changed
-* Different text styles for more or less important things
+* Different text styles for more or less important things, misc. UI changes
 * Marking of text now adapts to background of event, etc.
 * Improved data loading to skip file calling when previously called (up to 2x less requests and data transferred)
 * Use substitutionData when auto selecting date at addHomework, etc.
@@ -37,6 +38,7 @@ All changes are grouped by type and the latest version appears first.
 * Monitoring /metrics endpoint exposed to local network instead of public route
 * Bump loki, prometheus, grafana, promtail (no breaking changes)
 * Bump redis to v8 (no breaking changes)
+* Increased deletion for homework from 60 to 90 days
 
 ### Security
 * Package bumping

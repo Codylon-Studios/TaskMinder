@@ -26,7 +26,7 @@ export const generateCacheKey = (baseKey: string, classId: string): string => {
 };
 
 export const cacheExpiration = 3600;
-export const STALE_THRESHOLD_MS = 10 * 60 * 1000;
+export const STALE_THRESHOLD_MS = 5 * 60 * 1000;
 
 const redisHost = process.env.NODE_ENV === "DEVELOPMENT" ? "localhost" : "redis";
 const redisPort = process.env.REDIS_PORT || "6379";

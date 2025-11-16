@@ -107,8 +107,8 @@ export async function loadSubstitutionData(
   }
 }
 
-// Use a longer cache TTL (e.g., 1 hour) and serve data from Redis immediately, even if it's stale. 
-// If the data is older than your freshness threshold (e.g., 10 minutes), trigger a background job to refresh it without delaying the user. 
+// Use of longer cache TTL (1 hour) and serve data from Redis immediately, even if it's stale. 
+// If data is older than freshness threshold (5 minutes), trigger a background job to refresh it without delaying the user. 
 // This approach improves performance while still keeping data reasonably fresh.
 export async function getSubstitutionData(session: Session & Partial<SessionData>): Promise<{
     data: SubstitutionData | "No data";

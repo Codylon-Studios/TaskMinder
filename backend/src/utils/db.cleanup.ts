@@ -38,14 +38,14 @@ export async function cleanupTestClasses(): Promise<void> {
       try {
         await fs.rm(classDir, { recursive: true, force: true });
         logger.info(`Deleted class directory: ${classDir}`);
-      } 
+      }
       catch (error) {
         logger.error(`Error deleting class directory ${classDir}: ${error}`);
         // Continue with database cleanup even if file deletion fails
       }
     }
 
-    const [deletedFileMetadata, deletedUploads, deletedJoins ] = await prisma.$transaction([
+    const [deletedFileMetadata, deletedUploads, deletedJoins] = await prisma.$transaction([
       // Delete all file metadata for uploads in these classes
       prisma.fileMetadata.deleteMany({
         where: {
@@ -93,7 +93,7 @@ export async function cleanupTestClasses(): Promise<void> {
       `Test Class cleanup completed: ${classesToDelete.length} classes deleted, ` +
       `${deletedFileMetadata.count} file metadata records removed, ` +
       `${deletedUploads.count} uploads removed, ` +
-      `${deletedJoins.count} join records removed.`
+      `${deletedJoins.count} join records removed. (1d)`
     );
   }
   catch (error) {
@@ -127,26 +127,26 @@ export async function cleanupDeletedAccounts(): Promise<void> {
       }
     });
 
-    logger.info(`Deleted accounts cleanup completed: ${deleted.count} records deleted out of ${count} found`);
-  } 
+    logger.info(`Deleted accounts cleanup completed: ${deleted.count} records deleted out of ${count} found (30d)`);
+  }
   catch (error) {
     logger.error(`Error during deleted account cleanup: ${error}`);
   }
 }
 
 /**
- * Deletes homework records that are older than 60 days based on submission date
+ * Deletes homework records that are older than 90 days based on submission date
  */
 export async function cleanupOldHomework(): Promise<void> {
   try {
-    // Calculate the timestamp for 60 days ago (in milliseconds)
-    const sixtyDaysAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
+    // Calculate the timestamp for 90 days ago (in milliseconds)
+    const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
 
     // Count records to be deleted
     const count = await prisma.homework.count({
       where: {
         submissionDate: {
-          lt: sixtyDaysAgo
+          lt: ninetyDaysAgo
         }
       }
     });
@@ -155,13 +155,13 @@ export async function cleanupOldHomework(): Promise<void> {
     const deleted = await prisma.homework.deleteMany({
       where: {
         submissionDate: {
-          lt: sixtyDaysAgo
+          lt: ninetyDaysAgo
         }
       }
     });
 
-    logger.info(`Homework cleanup completed: ${deleted.count} records deleted out of ${count} found`);
-  } 
+    logger.info(`Homework cleanup completed: ${deleted.count} records deleted out of ${count} found (90d)`);
+  }
   catch (error) {
     logger.error(`Error during homework cleanup: ${error}`);
   }
@@ -194,8 +194,8 @@ export async function cleanupOldEvents(): Promise<void> {
       }
     });
 
-    logger.info(`Event cleanup completed: ${deleted.count} records deleted out of ${count} found`);
-  } 
+    logger.info(`Event cleanup completed: ${deleted.count} records deleted out of ${count} found (365d)`);
+  }
   catch (error) {
     logger.error(`Error during event cleanup: ${error}`);
   }
@@ -226,7 +226,7 @@ export async function cleanupStuckUploads(): Promise<void> {
     });
 
     if (stuckUploads.length === 0) {
-      logger.info("No stuck uploads found");
+      logger.info("No stuck uploads found (10min)");
       return;
     }
 
@@ -251,9 +251,74 @@ export async function cleanupStuckUploads(): Promise<void> {
       });
     }
 
-    logger.info(`Cleaned up ${stuckUploads.length} stuck uploads`);
-  } 
+    logger.info(`Cleaned up ${stuckUploads.length} stuck uploads (10min)`);
+  }
   catch (error) {
     logger.error(`Error during stuck upload cleanup: ${error}`);
+  }
+}
+
+
+/*
+  * Moves events and homework 1 week further along for demo class
+*/
+export async function migrateEventAndHomeworkDates(): Promise<void> {
+  try {
+    const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
+
+    const demoClass = await prisma.class.findFirst({
+      where: {
+        className: "demo",
+        classCode: "demo"
+      }
+    });
+
+    if (!demoClass) {
+      logger.info("Demo class not found. Migration of dates for homework and events not needed.");
+      return;
+    }
+
+    const [, migratedEvents, migratedHomework] = await prisma.$transaction([
+      // Events:
+      // case 1: startDate given, endDate null -> this event is all day
+      // only move startDate one week along
+      // case 2: startDate and endDAte are given -> event spans across multiple days
+      // move startDate AND endDate along
+      prisma.$executeRaw`
+        UPDATE "event"
+        SET
+          "startDate" = "startDate" + ${oneWeekInMs},
+          "endDate" = CASE
+                        WHEN "endDate" IS NOT NULL THEN "endDate" + ${oneWeekInMs}
+                        ELSE NULL
+                      END
+        WHERE "classId" = ${demoClass.classId}
+      `,
+
+      prisma.event.findMany({
+        where: { classId: demoClass.classId }
+      }),
+
+      prisma.homework.updateMany({
+        where: {
+          classId: demoClass.classId
+        },
+        data: {
+          assignmentDate: {
+            increment: oneWeekInMs
+          },
+          submissionDate: {
+            increment: oneWeekInMs
+          }
+        }
+      })
+    ]);
+
+    logger.info(
+      `Migrated dates of ${migratedEvents.length} events and ${migratedHomework.count} homework entries for demo class. (1 week)`
+    );
+  }
+  catch (error) {
+    logger.error(`Error during event and homework migration: ${error}`);
   }
 }
