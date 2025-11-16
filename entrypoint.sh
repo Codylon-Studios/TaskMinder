@@ -49,7 +49,7 @@ bunx prisma migrate deploy
 
 # Update ClamAV virus database
 echo "Updating ClamAV virus database..."
-freshclam --foreground=true || echo "Warning: ClamAV database update failed."
+freshclam --foreground || echo "Warning: ClamAV database update failed."
 
 # ==============================================================================
 # ----- Start ClamAV daemon -----
@@ -65,8 +65,14 @@ for i in $(seq 1 20); do
         break
     fi
     echo "Waiting... $i"
-    sleep 1
+    sleep 1 
 done
+
+# Check if clamd is actually ready after waiting
+if ! clamdscan --version >/dev/null 2>&1; then
+    echo "Error: clamd failed to start within 20 seconds"
+    exit 1
+fi
 
 echo "Flushing Redis..."
 redis-cli -h redis FLUSHALL || echo "Redis flush failed"
@@ -76,4 +82,4 @@ echo "Initialization complete. Starting application as 'bun'..."
 # ==============================================================================
 # ----- Start the Main Application -----
 # ==============================================================================
-exec su -s /bin/sh bun -c "$*"
+exec su bun -c "cd /usr/src/app && exec $*"

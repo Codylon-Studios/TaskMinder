@@ -88,7 +88,7 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
   if (!clamavEnabled) return;
 
   try {
-    await execFileAsync("/usr/bin/clamdscan", ["--no-summary", "--fdpass", filePath], { timeout: CLAMSCAN_TIMEOUT });
+    await execFileAsync("clamdscan", ["--no-summary", "--fdpass", filePath], { timeout: CLAMSCAN_TIMEOUT });
   }
   catch (error) {
     const scanError = error as ExecException & { stdout?: string; stderr?: string };
