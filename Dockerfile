@@ -24,9 +24,9 @@ RUN apk update && apk upgrade --no-cache && \
   ghostscript
 
 # Create app & ClamAV directories with proper permissions
-RUN mkdir -p /var/lib/clamav /run/clamav && \
+RUN mkdir -p /var/lib/clamav /run/clamav /var/lib/clamav/tmp && \
   chown -R clamav:clamav /var/lib/clamav /run/clamav && \
-  chmod -R 755 /var/lib/clamav /run/clamav
+  chmod -R 775 /var/lib/clamav /run/clamav
 
 WORKDIR /usr/src/app
 
@@ -42,6 +42,12 @@ COPY --from=builder /usr/src/app/prisma.config.ts ./prisma.config.ts
 # ---- Add and configure the entrypoint script ----
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# ---- Create data directory mount point for uploads----
+RUN mkdir -p /usr/src/app/data/temp
+RUN mkdir -p /usr/src/app/data/uploads
+RUN mkdir -p /usr/src/app/data/quarantine
+RUN mkdir -p /usr/src/app/data/sanitized
 
 # Set ownership for the app user
 RUN chown -R bun:bun /usr/src/app
