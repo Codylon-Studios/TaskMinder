@@ -33,6 +33,8 @@ services:
     volumes:
       - ./db-backups:/backups
       - clamav-data:/var/lib/clamav
+      # Files folder
+      - ./data:/usr/src/app/data
 
   postgres:
     image: postgres:14

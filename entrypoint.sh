@@ -55,7 +55,7 @@ freshclam --foreground || echo "Warning: ClamAV database update failed."
 # ----- Start ClamAV daemon -----
 # ==============================================================================
 echo "Starting clamd..."
-clamd &
+clamd & CLAMD_PID=$!
 
 # Wait until clamd is ready
 echo "Waiting for clamd to become ready..."
@@ -65,7 +65,7 @@ for i in $(seq 1 20); do
         break
     fi
     echo "Waiting... $i"
-    sleep 1 
+    sleep 1
 done
 
 # Check if clamd is actually ready after waiting
