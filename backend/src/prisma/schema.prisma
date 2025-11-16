@@ -14,6 +14,7 @@ model Account {
   HomeworkCheck HomeworkCheck[]
   JoinedClass   JoinedClass?
   JoinedTeams   JoinedTeams[]
+  Files         Upload[]
 
   @@map("account")
 }
@@ -69,6 +70,9 @@ model Class {
   classCreated BigInt
   isTestClass Boolean
   defaultPermissionLevel Int
+  storageUsedBytes BigInt
+  // total storage quota for this class, specified in bytes
+  storageQuotaBytes BigInt
   dsbMobileActivated Boolean
   dsbMobileUser String?
   dsbMobilePassword String?
@@ -81,6 +85,7 @@ model Class {
   Lesson      Lesson[]
   Subjects    Subjects[]
   Team        Team[]
+  Files       Upload[]
 }
 
 model Homework {
@@ -167,9 +172,43 @@ model Team {
   teamId      Int           @id @default(autoincrement()) @map("teamId")
   classId     Int
   name        String
-  JoinedTeams JoinedTeams[]
-  Class       Class         @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
 
+  JoinedTeams JoinedTeams[]
+
+  Class       Class         @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
   @@unique([classId, name])
   @@map("team")
+}
+
+model FileMetadata {
+  fileMetaDataId   Int    @id @default(autoincrement())
+  uploadId         Int
+  storedFileName   String   // unique UUID name on disk
+  mimeType         String
+  size             Int
+  createdAt        BigInt
+
+  Upload Upload @relation(fields: [uploadId], references: [uploadId], onDelete: NoAction, onUpdate: NoAction)
+  @@map("fileMetadata")
+}
+
+// an upload can contain one or multiple files
+model Upload {
+  uploadId     Int    @id @default(autoincrement())
+  uploadName   String 
+  uploadType   String
+  status       String @default("queued") // "queued" | "processing" | "completed" | "failed"
+  errorReason  String?
+  reservedBytes BigInt @default(0) // Storage reserved during upload
+  createdAt    BigInt  // When the upload job was created
+
+  teamId       Int
+  accountId    Int?
+  classId      Int
+
+  Files FileMetadata[]
+
+  Account   Account?   @relation(fields: [accountId], references: [accountId], onDelete: NoAction, onUpdate: NoAction)
+  Class     Class      @relation(fields: [classId], references: [classId], onDelete: NoAction, onUpdate: NoAction)
+  @@map("upload")
 }

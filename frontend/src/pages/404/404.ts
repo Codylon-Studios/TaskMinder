@@ -1,10 +1,10 @@
-import { reloadAllFn } from "../../global/global.js";
+export async function init(): Promise<void> {
+  return new Promise(res => {
+    $("#back-link").on("click", ev => {
+      ev.preventDefault();
+      history.back();
+    });
 
-$("#back-link").on("click", () => {
-  history.back();
-});
-
-$(() => {
-  reloadAllFn.set(async () => {
+    res();
   });
-});
+}

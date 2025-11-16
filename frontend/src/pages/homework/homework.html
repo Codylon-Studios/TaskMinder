@@ -5,39 +5,36 @@
   </head>
 
   <body>
-    <div class="load-snippet" data-target="richTextarea"></div>
-    <div class="load-snippet" data-target="colorPicker"></div>
-
-    <div class="container">
+    <div class="container" id="app">
       <div class="d-flex align-items-center flex-column flex-lg-row gap-2 gap-lg-3 mb-2">
         <div class="d-flex gap-2">
-          <button type="button" class="btn btn-primary" id="show-add-homework-button">
+          <button type="button" class="btn btn-primary fw-bold" id="show-add-homework-button">
             <i class="fa-solid fa-plus" aria-hidden="true"></i>
             Neu
           </button>
           <input type="checkbox" class="btn-check" id="edit-toggle" />
-          <label class="btn btn-outline-secondary" for="edit-toggle" id="edit-toggle-label">
+          <label class="btn btn-outline-secondary fw-bold" for="edit-toggle" id="edit-toggle-label">
             <i class="fa-solid fa-edit" aria-hidden="true"></i>
             Bearbeiten
           </label>
 
           <input type="checkbox" class="btn-check" id="filter-toggle" />
-          <label class="btn btn-outline-secondary position-relative" for="filter-toggle">
+          <label class="btn btn-outline-secondary position-relative fw-bold" for="filter-toggle">
             <i class="fa-solid fa-filter" aria-hidden="true"></i>
             Filtern
-            <span class="d-none filter-info-circle" id="filter-changed"></span>
+            <span class="filter-info-circle" id="filter-changed"></span>
           </label>
         </div>
-        <div id="filter-content" class="d-flex align-items-center flex-row gap-2 d-contents d-none">
+        <div id="filter-content" class="ds-flex align-items-center flex-row gap-2">
           <div class="btn-group" id="filter-status">
             <input type="checkbox" class="btn-check" name="filter-status" id="filter-status-unchecked" checked />
-            <label class="btn btn-sm btn-outline-secondary" for="filter-status-unchecked">Unerledigt</label>
+            <label class="btn btn-sm btn-outline-secondary fw-semibold" for="filter-status-unchecked">Unerledigt</label>
 
             <input type="checkbox" class="btn-check" name="filter-status" id="filter-status-checked" checked />
-            <label class="btn btn-sm btn-outline-secondary" for="filter-status-checked">Erledigt</label>
+            <label class="btn btn-sm btn-outline-secondary fw-semibold" for="filter-status-checked">Erledigt</label>
           </div>
           <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Fach</button>
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown">Fach</button>
             <div class="dropdown-menu" id="filter-subject-dropwdown">
               <div class="px-2 py-0">
                 <button class="btn btn-outline-secondary btn-sm" id="filter-subject-all">Alle</button>
@@ -50,7 +47,7 @@
             </div>
           </div>
           <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Datum</button>
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown">Datum</button>
             <div class="dropdown-menu" id="filter-date-dropwdown">
               <div class="px-2 py-1">
                 <div class="d-flex align-items-center mb-3">
@@ -65,10 +62,18 @@
             </div>
           </div>
         </div>
-        <button class="btn btn-secondary d-none" id="filter-reset">
+        <button class="btn btn-secondary fw-bold" id="filter-reset">
           <i class="fa-solid fa-trash" aria-hidden="true"></i>
           Zurücksetzen
         </button>
+      </div>
+
+      <div class="container-fluid">
+        <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content" id="homework-feedback">
+          <i class="fas fa-circle-check mx-1 fs-5" aria-hidden="true" id="homework-feedback-done"></i>
+          <div id="homework-feedback-outer-circle"><div id="homework-feedback-inner-circle"></div></div>
+          <div class="d-flex align-items-center" id="homework-feedback-body"></div>
+        </div>
       </div>
 
       <div class="container-fluid mt-3" id="homework-list">
@@ -134,8 +139,8 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-              <button class="btn btn-primary" id="add-homework-button">Hinzufügen</button>
+              <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
+              <button class="btn btn-primary fw-bold" id="add-homework-button">Hinzufügen</button>
             </div>
           </div>
         </div>
@@ -184,15 +189,46 @@
               </select>
             </div>
             <div class="modal-footer">
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-              <button class="btn btn-primary" id="edit-homework-button">Speichern</button>
+              <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
+              <button class="btn btn-primary fw-bold" id="edit-homework-button">Speichern</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="toast-container position-fixed top-0 end-0 p-3">
+      <div class="modal" id="random-homework-modal" aria-labelledby="random-homework-modal-label">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="random-homework-modal-label">Zufällige Hausaufgabe auswählen</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+              <div class="form-text text-center mb-2" id="random-homework-list-explanation">
+                Du kannst Hausaufgaben anklicken, damit sie nicht ausgewählt werden. Wenn du fertig bist, klicke auf das Rad.
+              </div>
+              <div id="random-homework-list">
+                <!--Gets filled-->
+              </div>
+              <button class="ratio ratio-1x1 w-100 my-3" id="random-homework-wheel">
+                <div id="random-homework-wheel-rotate"></div>
+                <svg id="random-homework-wheel-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 466 466">
+                  <path d="M 203 5 h 60 L 233 30 z"></path>
+                </svg>
+              </button>
+              <div id="random-homework-result"></div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary flex-fill fw-bold" data-bs-dismiss="modal">Fertig</button>
+              <button class="btn btn-primary flex-fill fw-bold" id="random-homework-next">Erledigt und nächste wählen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast-container">
         <div id="add-homework-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
           <div class="toast-header bg-success text-body-bg">
             <b class="me-auto">Erfolgreich hinzugefügt</b>
             <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
@@ -200,6 +236,7 @@
           <div class="toast-body">Die Hausaufgabe wurde erfolgreich hinzugefügt.</div>
         </div>
         <div id="edit-homework-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
           <div class="toast-header bg-success text-body-bg">
             <b class="me-auto">Erfolgreich geändert</b>
             <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
@@ -207,6 +244,7 @@
           <div class="toast-body">Die Hausaufgabe wurde erfolgreich geändert.</div>
         </div>
         <div id="delete-homework-success-toast" class="toast">
+          <div class="toast-progress-bar bg-success"></div>
           <div class="toast-header bg-success text-body-bg">
             <b class="me-auto">Erfolgreich gelöscht</b>
             <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
@@ -223,10 +261,10 @@
             <div class="mt-2 pt-2 border-top">
               <div class="row g-2 justify-content-end">
                 <div class="col-auto">
-                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
+                  <button type="button" class="btn btn-secondary btn-sm fw-semibold" data-bs-dismiss="toast">Abbrechen</button>
                 </div>
                 <div class="col-auto">
-                  <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="toast" id="delete-homework-confirm-toast-button">
+                  <button type="button" class="btn btn-primary btn-sm fw-semibold" data-bs-dismiss="toast" id="delete-homework-confirm-toast-button">
                     Löschen
                   </button>
                 </div>

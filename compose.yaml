@@ -9,6 +9,8 @@ services:
     build: .
     container_name: taskminder-app
     restart: always
+    expose:
+      - "9100"
     ports:
       - "3000:3000"
     environment:
@@ -30,6 +32,7 @@ services:
         condition: service_healthy
     volumes:
       - ./db-backups:/backups
+      - clamav-data:/var/lib/clamav
 
   postgres:
     image: postgres:14
@@ -57,7 +60,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
   redis:
-    image: redis:6
+    image: redis:8
     container_name: taskminder-redis
     restart: always
     healthcheck:
@@ -69,7 +72,7 @@ services:
       - redis-data:/data
 
   prometheus:
-    image: prom/prometheus:v3.4.0
+    image: prom/prometheus:v3.7.3
     container_name: prometheus
     restart: always
     ports:
@@ -87,7 +90,7 @@ services:
       - app
 
   loki:
-    image: grafana/loki:3.5.1
+    image: grafana/loki:3.5.8
     container_name: loki
     restart: always
     ports:
@@ -98,7 +101,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
 
   promtail:
-    image: grafana/promtail:3.5.1
+    image: grafana/promtail:3.5.8
     container_name: promtail
     restart: always
     volumes:
@@ -110,7 +113,7 @@ services:
       - loki
 
   grafana:
-    image: grafana/grafana:12.0.1
+    image: grafana/grafana:12.2.1
     container_name: grafana
     restart: always
     ports:
@@ -153,3 +156,4 @@ volumes:
   loki-data:
   promtail-positions:
   grafana-data:
+  clamav-data:

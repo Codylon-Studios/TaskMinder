@@ -1,36 +1,44 @@
-<div class="bottombar bg-body-tertiary fixed-bottom row d-lg-none">
-  <div class="dropdown-center p-0" id="bottombar-more">
-    <a class="bottombar-link" data-bs-toggle="dropdown" href="#">
-      <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
-      <span>Mehr</span>
+<div class="bottombar bg-body-tertiary fixed-bottom d-lg-none">
+  <div class="bottombar-joined row">
+    <a class="bottombar-link" href="/uploads" data-pjax>
+      <i class="fa-solid fa-file" aria-hidden="true"></i>
+      <span>Dateien</span>
     </a>
-    <ul class="dropdown-menu m-1">
-      <li><a class="dropdown-item" href="/about">Über TaskMinder</a></li>
-    </ul>
+    <a class="bottombar-link" href="/homework" data-pjax>
+      <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+      <span>Hausaufgaben</span>
+    </a>
+    <a class="bottombar-link" href="/main" data-pjax>
+      <i class="fa-solid fa-house" aria-hidden="true"></i>
+      <span>Startseite</span>
+    </a>
+    <a class="bottombar-link" href="/events" data-pjax>
+      <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+      <span>Ereignisse</span>
+    </a>
+    <a class="bottombar-link" href="/settings" data-href="settings" data-pjax>
+      <i class="fa-solid fa-gear" aria-hidden="true"></i>
+      <span>Einstellungen</span>
+    </a>
   </div>
-  <a class="bottombar-link" data-href="/homework">
-    <i class="fa-solid fa-list-check" aria-hidden="true"></i>
-    <span>Hausaufgaben</span>
-  </a>
-  <a class="bottombar-link" href="/main">
-    <i class="fa-solid fa-house" aria-hidden="true"></i>
-    <span>Startseite</span>
-  </a>
-  <a class="bottombar-link" data-href="/events">
-    <i class="fa-solid fa-calendar" aria-hidden="true"></i>
-    <span>Ereignisse</span>
-  </a>
-  <a class="bottombar-link" href="/settings">
-    <i class="fa-solid fa-gear" aria-hidden="true"></i>
-    <span>Einstellungen</span>
-  </a>
+
+  <div class="bottombar-not-joined row">
+    <a class="bottombar-link" href="/about" data-pjax>
+      <i class="fa-solid fa-info-circle" aria-hidden="true"></i>
+      <span>Über TaskMinder</span>
+    </a>
+    <a class="bottombar-link" href="/join" data-pjax>
+      <i class="fa-solid fa-circle-play" aria-hidden="true"></i>
+      <span>Jetzt anfangen!</span>
+    </a>
+    <a class="bottombar-link" href="/settings" data-pjax>
+      <i class="fa-solid fa-gear" aria-hidden="true"></i>
+      <span>Einstellungen</span>
+    </a>
+  </div>
 </div>
+
 <div class="bottombar-overlay align-items-center justify-content-center flex-column gap-2 text-center">
   <i aria-hidden="true"></i>
   <span class="fs-1"></span>
-  <div>
-    <a href="/about">Über TaskMinder</a>
-    <br />
-    <a class="text-secondary" href="#" id="bottombar-more-cancel">Abbrechen</a>
-  </div>
 </div>

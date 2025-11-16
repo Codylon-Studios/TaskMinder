@@ -347,17 +347,25 @@ Your TaskMinder server should now be running at:
 
 ## 12. Subsequent Updates
 
-An additional script named deploy.sh is located in the project’s root folder. It automatically pulls the latest updates from GitHub and redeploys the server.
-Use this script only for non-major version updates (e.g., v1.1.2 → v1.2.3). For major upgrades, please follow the official migration guides on (docs.taskminder.de)[https://docs.taskminder.de].
-Before running the script, ensure that the configuration variables in the .sh file are set correctly.
+This guide covers minor version upgrades.
+For **major version upgrades**, please refer to the relevant migration guides to check for any breaking changes.
+Before upgrading, inform users about the upcoming server maintenance, as the server will be temporarily unavailable during the update (HTTP 503 status).
 
-run:
+1. Navigate to the root folder of the project and stop the Docker Compose process:
 
-```bash
-cd /opt/Taskminder
-./deploy.sh
-```
+   ```bash
+   docker compose down
+   ```
 
-to automatically pull the changes from the github repository, build and restart Docker containers.
+2. Pull the latest changes from the `main` branch on GitHub:
 
+   ```bash
+   git pull origin main
+   ```
+
+3. Rebuild and restart the Docker containers:
+
+   ```bash
+   docker compose up -d --build
+   ```
 ---

@@ -40,6 +40,10 @@ export DATABASE_URL
 echo "Running database migrations..."
 bunx prisma migrate deploy
 
+# Update ClamAV virus database
+echo "Updating ClamAV virus database..."
+freshclam || echo "Warning: ClamAV database update failed. Ensure internet access for freshclam."
+
 # ==============================================================================
 # ----- One time v2 migration cmds -----
 # ==============================================================================

@@ -3,7 +3,7 @@ function isIos(): boolean {
 }
 
 function isInStandaloneMode(): boolean {
-  return window.matchMedia("(display-mode: standalone)").matches;
+  return globalThis.matchMedia("(display-mode: standalone)").matches;
 }
 
 $(() => {

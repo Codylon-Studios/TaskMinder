@@ -1,0 +1,133 @@
+import { RequestError } from "../@types/requestError";
+import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
+import { default as prisma } from "../config/prisma";
+import logger from "../config/logger";
+import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/validate.functions";
+import { Session, SessionData } from "express-session";
+import { setLessonDataTypeBody } from "../schemas/lesson.schema";
+import socketIO, { SOCKET_EVENTS } from "../config/socket";
+
+const lessonService = {
+  async setLessonData(
+    reqData: setLessonDataTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const { lessons } = reqData;
+    for (const lesson of lessons) {
+      isValidweekDay(lesson.weekDay);
+    }
+
+    const classId = parseInt(session.classId!, 10);
+
+    // Check if data actually changed
+    const existingLessons = await prisma.lesson.findMany({
+      where: { classId: classId }
+    });
+
+    // Compare existing and new lessons
+    const dataChanged = existingLessons.length !== lessons.length ||
+      existingLessons.some(existing => {
+        const matching = lessons.find(l =>
+          l.lessonNumber === existing.lessonNumber &&
+          l.weekDay === existing.weekDay
+        );
+        return !matching ||
+          matching.teamId !== existing.teamId ||
+          matching.subjectId !== existing.subjectId ||
+          matching.room !== existing.room ||
+          matching.startTime !== Number(existing.startTime) ||
+          matching.endTime !== Number(existing.endTime);
+      });
+
+    await prisma.$transaction(async tx => {
+      await tx.lesson.deleteMany({
+        where: {
+          classId: classId
+        }
+      });
+
+      for (const lesson of lessons) {
+        try {
+          await tx.lesson.create({
+            data: {
+              classId: classId,
+              lessonNumber: lesson.lessonNumber,
+              weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
+              teamId: lesson.teamId,
+              subjectId: lesson.subjectId,
+              room: lesson.room,
+              startTime: lesson.startTime,
+              endTime: lesson.endTime
+            }
+          });
+        }
+        catch {
+          const err: RequestError = {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data format",
+            expected: true
+          };
+          throw err;
+        }
+      }
+    });
+
+    if (dataChanged) {
+      const lessonData = await prisma.lesson.findMany({
+        where: {
+          classId: parseInt(session.classId!)
+        }
+      });
+
+      const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
+
+      try {
+        await updateCacheData(lessonData, setLessonDataCacheKey);
+        const io = socketIO.getIO();
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+      }
+      catch (err) {
+        logger.error(`Error updating Redis cache: ${err}`);
+        throw new Error();
+      }
+    }
+  },
+  async getLessonData(session: Session & Partial<SessionData>) {
+    const getLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
+    const cachedLessonData = await redisClient.get(getLessonDataCacheKey);
+
+    if (cachedLessonData) {
+      try {
+        return JSON.parse(cachedLessonData);
+      }
+      catch (error) {
+        logger.error(`Error parsing Redis cache: ${error}`);
+        throw new Error();
+      }
+    }
+
+    const lessonData = await prisma.lesson.findMany({
+      where: {
+        classId: parseInt(session.classId!)
+      },
+      orderBy: {
+        lessonNumber: "asc"
+      }
+    });
+
+
+    try {
+      await updateCacheData(lessonData, getLessonDataCacheKey);
+    }
+    catch (err) {
+      logger.error(`Error updating Redis cache: ${err}`);
+      throw new Error();
+    }
+
+    const stringified = JSON.stringify(lessonData, BigIntreplacer);
+    return JSON.parse(stringified);
+  }
+};
+
+export default lessonService;

@@ -1,5 +1,3 @@
-import { reloadAllFn } from "../../global/global.js";
-
 class LicenseDisplay extends HTMLElement {
   constructor() {
     super();
@@ -19,8 +17,3 @@ ${newContent}</pre>
   }
 }
 customElements.define("license-display", LicenseDisplay);
-
-$(() => {
-  reloadAllFn.set(async () => {
-  });
-});

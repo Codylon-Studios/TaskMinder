@@ -1,0 +1,91 @@
+import z from "zod";
+
+export const createClassSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: z.strictObject({
+    classDisplayName: z.string().trim().min(1),
+    isTestClass: z.boolean()
+  })
+});
+
+
+export const joinClassSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: z.strictObject({
+    classCode: z.string()
+  })
+});
+
+export const changeDefaultPermissionSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: z.strictObject({
+    role: z.coerce.number().int().min(0).max(3)
+  })
+});
+
+
+export const setClassMembersPermissionsSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: z.strictObject({
+    classMembers: z.array(
+      z.object({
+        accountId: z.number(),
+        permissionLevel: z.coerce.number().int().min(0).max(3)
+      })
+    )
+  })
+});
+
+
+export const kickClassMembersSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: z.strictObject({
+    classMembers: z.array(
+      z.object({
+        accountId: z.coerce.number()
+      })
+    )
+  })
+});
+
+
+export const updateDSBMobileDataSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: z.strictObject({
+    dsbMobileActivated: z.boolean(),
+    dsbMobileUser: z.string().trim().min(1).nullable(),
+    dsbMobilePassword: z.string().trim().min(1).nullable(),
+    dsbMobileClass: z.string().trim().min(1).nullable()
+  })
+});
+
+
+export const changeClassNameSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: z.strictObject({
+    classDisplayName: z.string().trim().min(1)
+  })
+});
+
+export type createClassType = z.infer<typeof createClassSchema>;
+export type joinClassType = z.infer<typeof joinClassSchema>;
+export type changeDefaultPermissionType = z.infer<typeof changeDefaultPermissionSchema>;
+export type setClassMembersPermissionsType = z.infer<typeof setClassMembersPermissionsSchema>;
+export type kickClassMembersType = z.infer<typeof kickClassMembersSchema>;
+export type updateDSBMobileDataType = z.infer<typeof updateDSBMobileDataSchema>;
+export type changeClassNameType = z.infer<typeof changeClassNameSchema>;
+
+export type createClassTypeBody = z.infer<typeof createClassSchema>["body"];
+export type joinClassTypeBody = z.infer<typeof joinClassSchema>["body"];
+export type changeDefaultPermissionTypeBody = z.infer<typeof changeDefaultPermissionSchema>["body"];
+export type setClassMembersPermissionsTypeBody = z.infer<typeof setClassMembersPermissionsSchema>["body"];
+export type kickClassMembersTypeBody = z.infer<typeof kickClassMembersSchema>["body"];
+export type updateDSBMobileDataTypeBody = z.infer<typeof updateDSBMobileDataSchema>["body"];
+export type changeClassNameTypeBody = z.infer<typeof changeClassNameSchema>["body"];

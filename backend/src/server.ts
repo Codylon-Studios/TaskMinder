@@ -3,29 +3,39 @@ import path from "path";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
 import * as dotenv from "dotenv";
-import express, { Request, Response, NextFunction } from "express";
+import express, { Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
 import prisma from "./config/prisma";
 import socketIO from "./config/socket";
-import { sessionPool } from "./config/pg";
-import { httpRequestDurationMicroseconds, register } from "./config/promClient";
-import checkAccess from "./middleware/accessMiddleware";
-import { ErrorHandler } from "./middleware/errorMiddleware";
-import RequestLogger from "./middleware/loggerMiddleware";
-import { CSPMiddleware } from "./middleware/CSPMiddleware";
-import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtectionMiddleware";
-import { cleanupDeletedAccounts, cleanupOldEvents, cleanupOldHomework, cleanupTestClasses } from "./utils/dbCleanup";
-import logger from "./utils/logger";
-import account from "./routes/accountRoute";
-import events from "./routes/eventRoute";
-import homework from "./routes/homeworkRoute";
-import lessons from "./routes/lessonRoute";
-import substitutions from "./routes/substitutionRoute";
-import subjects from "./routes/subjectRoute";
-import teams from "./routes/teamRoute";
-import classes from "./routes/classRoute";
+import logger from "./config/logger";
 import { connectRedis } from "./config/redis";
+import { sessionPool } from "./config/pg";
+import { startMetricsServer } from "./utils/metrics.server";
+import {
+  cleanupDeletedAccounts,
+  cleanupOldEvents,
+  cleanupOldHomework,
+  cleanupTestClasses,
+  cleanupStuckUploads,
+  migrateEventAndHomeworkDates 
+} from "./utils/db.cleanup";
+import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker";
+import checkAccess from "./middleware/access.middleware";
+import { ErrorHandler } from "./middleware/error.middleware";
+import { loggerMiddleware } from "./middleware/logger.middleware";
+import { metricsMiddleware } from "./middleware/metrics.middleware";
+import { CSPMiddleware } from "./middleware/CSP.middleware";
+import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware";
+import account from "./routes/account.route";
+import events from "./routes/event.route";
+import homework from "./routes/homework.route";
+import lessons from "./routes/lesson.route";
+import substitutions from "./routes/substitution.route";
+import subjects from "./routes/subject.route";
+import teams from "./routes/team.route";
+import classes from "./routes/class.route";
+import uploads from "./routes/upload.route";
 
 dotenv.config();
 
@@ -35,11 +45,13 @@ prisma
     logger.info("Connected to Database");
   })
   .catch(err => {
-    logger.error("DB connection failed:", err);
+    logger.error(`DB connection failed: ${err}`);
     process.exit(1);
   });
 
 connectRedis();
+initializeUploadWorkerServices();
+startUploadWorker();
 
 const sessionSecret = process.env.SESSION_SECRET;
 
@@ -51,7 +63,6 @@ if (!sessionSecret) {
 const app = express();
 app.set("trust proxy", 1);
 const server = createServer(app);
-socketIO.initialize(server);
 
 const limiter = rateLimit({
   windowMs: 1000, // 1 second
@@ -72,18 +83,6 @@ else {
 app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-  if (req.path === "/metrics" || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)$/i)) {
-    return next();
-  }
-  const end = httpRequestDurationMicroseconds.startTimer();
-  res.on("finish", () => {
-    const route = req.route && req.route.path ? req.route.path : req.path;
-    end({ route, code: res.statusCode, method: req.method });
-  });
-  next();
-});
 
 const PgSession = connectPgSimple(session);
 
@@ -110,19 +109,16 @@ app.get("/health", (req, res) => {
   res.status(200).json({ message: "service operational" });
 });
 
+socketIO.initialize(server, sessionMiddleware);
+
 app.use(sessionMiddleware);
 app.use(csrfSessionInit);
 app.get("/csrf-token", (req, res) => {
   res.json({ csrfToken: req.session.csrfToken });
 });
 app.use(csrfProtection);
-app.use(RequestLogger);
-
-
-app.get("/metrics", async (req: Request, res: Response) => {
-  res.set("Content-Type", register.contentType);
-  res.end(await register.metrics());
-});
+app.use(metricsMiddleware);
+app.use(loggerMiddleware);
 
 app.get("/", (req: Request, res: Response) => {
   if (req.session.account && req.session.classId) {
@@ -164,6 +160,7 @@ app.use("/events", events);
 app.use("/subjects", subjects);
 app.use("/lessons", lessons);
 app.use("/class", classes);
+app.use("/uploads", uploads);
 
 //
 // Protected routes: Redirect to /join if not logged in
@@ -180,8 +177,24 @@ app.get("/events", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "events", "events.html"));
 });
 
+app.get("/uploads", checkAccess(["CLASS"]), (req, res) => {
+  res.sendFile(path.join(pagesPath, "uploads", "uploads.html"));
+});
+
 app.use((req, res) => {
-  res.status(404).sendFile(path.join(pagesPath, "404", "404.html"));
+  const ext = path.extname(req.path);
+
+  switch (ext) {
+  case ".css":
+    res.sendFile(path.join(pagesPath, "404", "404.css"));
+    break;
+  case ".js":
+    res.sendFile(path.join(pagesPath, "404", "404.js"));
+    break;
+  default:
+    res.sendFile(path.join(pagesPath, "404", "404.html"));
+    break;
+  }
 });
 
 // Error Handler Middleware (Must be the last app.use)
@@ -197,6 +210,21 @@ cron.schedule("0 0 * * *", () => {
   cleanupDeletedAccounts();
 });
 
+// Run demo class script every week (once) - only for demo class
+cron.schedule("0 0 * * 0", () => {
+  logger.info("Starting weekly demo class date migration");
+  migrateEventAndHomeworkDates();
+});
+
+// Run stuck upload cleanup every 10 minutes
+setInterval(() => {
+  logger.info("Running stuck upload cleanup");
+  cleanupStuckUploads().catch(err => {
+    logger.error(`Stuck upload cleanup failed: ${err}`);
+  });
+}, 10 * 60 * 1000); // 10 minutes
+
 server.listen(3000, () => {
-  logger.success("Server running at http://localhost:3000");
+  logger.info("Server running at http://localhost:3000");
+  startMetricsServer();
 });

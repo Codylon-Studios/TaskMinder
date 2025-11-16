@@ -7,14 +7,14 @@ import {
   msToDisplayDate,
   msToInputDate,
   teamsData,
-  socket,
   csrfToken,
-  reloadAllFn,
   lessonData,
-  SingleEventData,
-  EventData,
-  escapeHTML
+  escapeHTML,
+  dateDaysDifference,
+  registerSocketListeners,
+  isSameDayMs
 } from "../../global/global.js";
+import { EventData, SingleEventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
@@ -24,13 +24,13 @@ async function updateEventList(): Promise<void> {
     let data = await eventData();
     // Filter by min. date
     const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
-    if (!isNaN(filterDateMin)) {
-      data = data.filter(e => filterDateMin <= parseInt(e.endDate ?? e.startDate));
+    if (! Number.isNaN(filterDateMin)) {
+      data = data.filter(e => filterDateMin <= Number.parseInt(e.endDate ?? e.startDate) || isSameDayMs(filterDateMin, e.endDate ?? e.startDate));
     }
     // Filter by max. date
     const filterDateMax = Date.parse($("#filter-date-until").val()?.toString() ?? "");
-    if (!isNaN(filterDateMax)) {
-      data = data.filter(e => filterDateMax >= parseInt(e.startDate));
+    if (! Number.isNaN(filterDateMax)) {
+      data = data.filter(e => filterDateMax >= Number.parseInt(e.startDate) || isSameDayMs(filterDateMax, e.startDate));
     }
     // Filter by type
     data = data.filter(e => $(`#filter-type-${e.eventTypeId}`).prop("checked"));
@@ -57,19 +57,21 @@ async function updateEventList(): Promise<void> {
     const startDate = msToDisplayDate(event.startDate);
     const lesson = event.lesson;
 
-    const editOptionsDisplay = editEnabled ? "" : "d-none";
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
       const endDate = msToDisplayDate(event.endDate);
-      if (isSameDay(new Date(parseInt(event.startDate)), new Date(parseInt(event.endDate)))) {
+      if (isSameDay(new Date(Number.parseInt(event.startDate)), new Date(Number.parseInt(event.endDate)))) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
       else {
         timeSpan.append(startDate, " - ", endDate);
       }
     }
-    else if (lesson !== null) {
+    else if (lesson !== null && lesson !== "") {
       timeSpan.append(startDate, ` <b>(${escapeHTML(lesson)}. Stunde)</b>`);
+    }
+    else {
+      timeSpan.append(startDate);
     }
     // The template for an event with edit options
     const template = $(`
@@ -78,17 +80,17 @@ async function updateEventList(): Promise<void> {
           <div class="card-body p-2">
             <div class="d-flex justify-content-between">
               <div style="min-width: 0;">
-                <span class="fw-bold event-${eventTypeId} event-title" ${editEnabled ? "" : "style='margin-right: 0'"}>${escapeHTML(name)}</span>
+                <span class="fw-bold event-${eventTypeId} event-title">${escapeHTML(name)}</span>
                 <br>
                 <span>${timeSpan.html()}</span>
               </div>
               <div>
                 <div class="d-flex flex-nowrap">
-                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-edit"
+                  <button class="edit-option btn btn-sm btn-semivisible event-edit"
                     data-id="${eventId}" aria-label="Bearbeiten">
                     <i class="fa-solid fa-edit event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
-                  <button class="event-edit-option ${editOptionsDisplay} btn btn-sm btn-semivisible event-delete"
+                  <button class="edit-option btn btn-sm btn-semivisible event-delete"
                     data-id="${eventId}" aria-label="Löschen">
                     <i class="fa-solid fa-trash event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
@@ -105,6 +107,7 @@ async function updateEventList(): Promise<void> {
         </div>
       </div>
       `);
+    template.find(".edit-option").toggle(editEnabled);
 
     // Add this event to the list
     newContent.append(template);
@@ -142,14 +145,14 @@ async function updateEventTypeList(): Promise<void> {
   const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
   filterData.type ??= {};
 
-  currentEventTypeData.forEach(eventType => {
+  for (const eventType of currentEventTypeData) {
     // Get the event type data
     const eventTypeId = eventType.eventTypeId;
     const eventTypeName = eventType.name;
 
     filterData.type[eventTypeId] ??= true;
-    const checkedStatus: "checked" | "" = filterData.type[eventTypeId] ? "checked" : "";
-    if (checkedStatus !== "checked") $("#filter-changed").removeClass("d-none");
+    const checkedStatus = filterData.type[eventTypeId] ? "checked" : "";
+    if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by type
     const templateFilterType = `<div class="form-check">
@@ -164,7 +167,7 @@ async function updateEventTypeList(): Promise<void> {
     const templateFormSelect = `<option value="${eventTypeId}">${escapeHTML(eventTypeName)}</option>`;
     $("#add-event-type").append(templateFormSelect);
     $("#edit-event-type").append(templateFormSelect);
-  });
+  };
 
   // If any type filter gets changed, update the shown events
   $(".filter-type-option").on("change", function () {
@@ -193,7 +196,7 @@ async function updateTeamList(): Promise<void> {
   $("#edit-event-team").empty();
   $("#edit-event-team").append('<option value="-1" selected>Alle</option>');
 
-  (await teamsData()).forEach(team => {
+  for (const team of (await teamsData())) {
     // Get the team data
     const teamName = team.name;
 
@@ -201,7 +204,7 @@ async function updateTeamList(): Promise<void> {
     const templateFormSelect = `<option value="${team.teamId}">${escapeHTML(teamName)}</option>`;
     $("#add-event-team").append(templateFormSelect);
     $("#edit-event-team").append(templateFormSelect);
-  });
+  }
 };
 
 function addEvent(): void {
@@ -263,6 +266,8 @@ function addEvent(): void {
         success: () => {
           // Show a success notification and update the shown events
           $("#add-event-success-toast").toast("show");
+          // Hide the add event modal
+          $("#add-event-modal").modal("hide");
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -281,8 +286,6 @@ function addEvent(): void {
         complete: () => {
           // The server has responded
           hasResponded = true;
-          // Hide the add event modal
-          $("#add-event-modal").modal("hide");
         }
       });
       setTimeout(() => {
@@ -314,27 +317,27 @@ async function shareEvent(eventId: number): Promise<void> {
         && lesson.weekDay === start.getDay() - 1
       );
     }
-    const start = new Date(parseInt(event.startDate));
-    const end = new Date(parseInt(event.startDate));
+    const start = new Date(Number.parseInt(event.startDate));
+    const end = new Date(Number.parseInt(event.startDate));
     const currentJoinedTeamsData = (await joinedTeamsData());
     
     let startLesson, endLesson;
     if (event.lesson?.includes("-")) {
       event.lesson = event.lesson.replace(" ", "");
-      startLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[0]));
-      endLesson = await findLessonWithLessonNumber(parseInt(event.lesson.split("-")[1]));
+      startLesson = await findLessonWithLessonNumber(Number.parseInt(event.lesson.split("-")[0]));
+      endLesson = await findLessonWithLessonNumber(Number.parseInt(event.lesson.split("-")[1]));
     }
     else {
-      startLesson = endLesson = await findLessonWithLessonNumber(parseInt(lesson));
+      startLesson = endLesson = await findLessonWithLessonNumber(Number.parseInt(lesson));
     }
 
     if (! (startLesson && endLesson)) {
-      throw new Error();
+      throw new Error("startLesson or endLesson is undefined");
     }
-    const lessonStart = parseInt(startLesson.startTime) / 1000 / 60;
+    const lessonStart = Number.parseInt(startLesson.startTime) / 1000 / 60;
     start.setHours(Math.trunc(lessonStart / 60), lessonStart % 60);
     
-    const lessonEnd = parseInt(endLesson.endTime) / 1000 / 60;
+    const lessonEnd = Number.parseInt(endLesson.endTime) / 1000 / 60;
     end.setHours(Math.trunc(lessonEnd / 60), lessonEnd % 60);
     timeContent = `
       DTSTART:${formatDateAndTime(start)}
@@ -342,13 +345,13 @@ async function shareEvent(eventId: number): Promise<void> {
     `;
   }
   const event = (await eventData()).find(e => e.eventId === eventId);
-  if (!event) throw new Error();
+  if (!event) throw new Error("No event with this id found");
 
   const name = event.name;
   let description = "";
   $(richTextToHtml(event.description ?? "")).each(function () {
     if ($(this).is("br")) {
-      description += "\\n";
+      description += String.raw`\n`;
     }
     else {
       description += $(this).html();
@@ -387,8 +390,8 @@ async function shareEvent(eventId: number): Promise<void> {
     if (event.endDate === null || event.endDate === "") {
       event.endDate = event.startDate;
     }
-    const start = new Date(parseInt(event.startDate));
-    const end = new Date(parseInt(event.endDate) + 1000 * 60 * 60 * 24);
+    const start = new Date(Number.parseInt(event.startDate));
+    const end = new Date(Number.parseInt(event.endDate) + 1000 * 60 * 60 * 24);
     timeContent = `
       DTSTART;VALUE=DATE:${formatDate(start)}
       DTEND;VALUE=DATE:${formatDate(end)}
@@ -404,7 +407,7 @@ async function shareEvent(eventId: number): Promise<void> {
     DTSTAMP:${formatDateAndTime(new Date())}
     ${timeContent}
     SUMMARY:${name}
-    DESCRIPTION:${description?.replaceAll("\n", "\\n")}
+    DESCRIPTION:${description?.replaceAll("\n", String.raw`\n`)}
     END:VEVENT
     END:VCALENDAR
   `.split("\n").map(l => l.trim()).join("\n");
@@ -419,8 +422,7 @@ async function shareEvent(eventId: number): Promise<void> {
   document.body.appendChild(a);
   a.click();
 
-  // Aufräumen
-  document.body.removeChild(a);
+  a.remove();
   URL.revokeObjectURL(url);
 }
 
@@ -488,6 +490,7 @@ async function editEvent(eventId: number): Promise<void> {
         success: () => {
           // Show a success notification and update the shown events
           $("#edit-event-success-toast").toast("show");
+          $("#edit-event-modal").modal("hide");
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -506,7 +509,6 @@ async function editEvent(eventId: number): Promise<void> {
         complete: () => {
           // The server has responded
           hasResponded = true;
-          $("#edit-event-modal").modal("hide");
         }
       });
       setTimeout(() => {
@@ -583,219 +585,218 @@ function deleteEvent(eventId: number): void {
 }
 
 function updateFilters(ingoreEventTypes?: boolean): void {
-  $("#filter-changed").addClass("d-none");
+  $("#filter-changed").hide();
 
   const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
 
-  if (filterData.dateFrom === undefined) {
-    $("#filter-date-from").val(msToInputDate(Date.now()));
-  }
-  else {
-    $("#filter-date-from").val(filterData.dateFrom);
-    if (!isSameDay(new Date(filterData.dateFrom), new Date())) $("#filter-changed").removeClass("d-none");
-  }
+  filterData.dateFromOffset ??= 0;
+  const dateFrom = new Date();
+  dateFrom.setDate(dateFrom.getDate() + filterData.dateFromOffset);
+  $("#filter-date-from").val(msToInputDate(dateFrom.getTime()));
+  if (filterData.dateFromOffset !== 0) $("#filter-changed").show();
 
-  if (filterData.dateUntil === undefined) {
-    const nextMonth = new Date(Date.now());
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    $("#filter-date-until").val(msToInputDate(nextMonth.getTime()));
-  }
-  else {
-    $("#filter-date-until").val(filterData.dateUntil);
-    const nextMonth = new Date(Date.now());
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    if (!isSameDay(new Date(filterData.dateUntil), nextMonth)) $("#filter-changed").removeClass("d-none");
-  }
+  filterData.dateUntilOffset ??= 0;
+  const dateUntil = new Date();
+  dateUntil.setMonth(dateUntil.getMonth() + 1);
+  dateUntil.setDate(dateUntil.getDate() + filterData.dateUntilOffset);
+  $("#filter-date-until").val(msToInputDate(dateUntil.getTime()));
+  if (filterData.dateUntilOffset !== 0) $("#filter-changed").show();
 
   if (! ingoreEventTypes) {
     updateEventTypeList();
   }
 }
 
-$(function () {
-  reloadAllFn.set(async () => {
+function toggleShownButtons(): void {
+  const loggedIn = user.loggedIn;
+  $("#edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
+  $("#show-add-event-button").toggle((user.permissionLevel ?? 0) >= 1);
+  if (!loggedIn) {
+    $(".edit-option").addClass("d-none");
+  }
+}
+
+export async function init(): Promise<void> {
+  return new Promise(res => {
+    $(async function () {
+      $("#edit-toggle").on("click", function () {
+        $(".edit-option").toggle($("#edit-toggle").is(":checked"));
+      });
+      $("#edit-toggle").prop("checked", false);
+      $(".edit-option").hide();
+
+      $("#filter-toggle").on("click", function () {
+        $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
+      });
+      $("#filter-toggle").prop("checked", false);
+      $("#filter-content, #filter-reset").hide();
+
+      if (!localStorage.getItem("eventFilter")) {
+        localStorage.setItem("eventFilter", "{}");
+      }
+      updateFilters(true);
+      $("#filter-reset").on("click", () => {
+        localStorage.setItem("eventFilter", "{}");
+        updateFilters();
+        updateEventList();
+      });
+
+      // On changing any information in the add event modal, disable the add button if any information is empty
+      $(".add-event-input").on("input", function () {
+        const type = $("#add-event-type").val();
+        const name = $("#add-event-name").val()?.toString().trim();
+        const startDate = $("#add-event-start-date").val();
+
+        if ([name, startDate].includes("") || type === null) {
+          $("#add-event-button").prop("disabled", true);
+        }
+        else {
+          $("#add-event-button").prop("disabled", false);
+        }
+
+        if ($(this).is("#add-event-end-date")) {
+          $("#add-event-lesson").val("");
+        }
+        if ($(this).is("#add-event-lesson")) {
+          $("#add-event-end-date").val("");
+        }
+      });
+
+      // On changing any information in the edit event modal, disable the edit button if any information is empty
+      $(".edit-event-input").on("input", function () {
+        const type = $("#edit-event-type").val();
+        const name = $("#edit-event-name").val()?.toString().trim();
+        const startDate = $("#edit-event-start-date").val();
+
+        if ([name, startDate].includes("") || type === null) {
+          $("#edit-event-button").prop("disabled", true);
+        }
+        else {
+          $("#edit-event-button").prop("disabled", false);
+        }
+
+        if ($(this).is("#edit-event-end-date")) {
+          $("#edit-event-lesson").val("");
+        }
+        if ($(this).is("#edit-event-lesson")) {
+          $("#edit-event-end-date").val("");
+        }
+      });
+
+      // Don't close the dropdown when the user clicked inside of it
+      $(".dropdown-menu").each(function () {
+        $(this).on("click", ev => {
+          ev.stopPropagation();
+        });
+      });
+
+      // Share the event on clicking its share icon
+      $("#app").on("click", ".event-share", function () {
+        shareEvent($(this).data("id"));
+      });
+
+      // Request deleting the event on clicking its delete icon
+      $("#app").on("click", ".event-delete", function () {
+        deleteEvent($(this).data("id"));
+      });
+
+      // Request editing the event on clicking its edit icon
+      $("#app").on("click", ".event-edit", function () {
+        editEvent($(this).data("id"));
+      });
+
+      // On clicking the all types option, check all and update the event list
+      $("#filter-type-all").on("click", () => {
+        const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+        $(".filter-type-option").prop("checked", true);
+        $(".filter-type-option").each(function () {
+          filterData.type[$(this).data("id")] = true;
+        });
+        localStorage.setItem("eventFilter", JSON.stringify(filterData));
+        updateFilters();
+        updateEventList();
+      });
+
+      // On clicking the none types option, uncheck all and update the event list
+      $("#filter-type-none").on("click", () => {
+        const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+        filterData.type ??= {};
+        $(".filter-type-option").prop("checked", false);
+        $(".filter-type-option").each(function () {
+          filterData.type[$(this).data("id")] = false;
+        });
+        localStorage.setItem("eventFilter", JSON.stringify(filterData));
+        updateFilters();
+        updateEventList();
+      });
+
+      // On changing any filter date option, update the event list
+      $("#filter-date-from").on("change", function () {
+        const selectedDate = new Date($(this).val()?.toString() ?? "");
+        const normalDate = new Date();
+        const diff = dateDaysDifference(selectedDate, normalDate);
+
+        const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+        filterData.dateFromOffset = diff;
+        localStorage.setItem("eventFilter", JSON.stringify(filterData));
+
+        updateFilters();
+        updateEventList();
+      });
+
+      // On changing any filter date option, update the event list
+      $("#filter-date-until").on("change", function () {
+        const selectedDate = new Date($(this).val()?.toString() ?? "");
+        const normalDate = new Date();
+        normalDate.setMonth(normalDate.getMonth() + 1);
+        const diff = dateDaysDifference(selectedDate, normalDate);
+
+        const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+        filterData.dateUntilOffset = diff;
+        localStorage.setItem("eventFilter", JSON.stringify(filterData));
+        
+        updateFilters();
+        updateEventList();
+      });
+
+      $("#app").on("click", "#show-add-event-button", () => {
+        addEvent();
+      });
+    });
+
+    res();
+  });
+}
+
+registerSocketListeners({
+  updateEvents: () => {
     eventData.reload();
+    updateEventList(); 
+  },
+  updateEventTypes: () => {
     eventTypeData.reload();
-    joinedTeamsData.reload();
+    updateEventTypeList(); 
+  },
+  updateTeams: () => {
     teamsData.reload();
-    lessonData.reload();
-    await updateEventTypeList();
-    await updateEventList();
-    await updateTeamList();
-  });
-
-  // If user is logged in, show the edit toggle button
-  user.on("change", (function _() {
-    const loggedIn = user.loggedIn;
-    $("#edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
-    $("#show-add-event-button").toggle((user.permissionLevel ?? 0) >= 1);
-    if (!loggedIn) {
-      $(".event-edit-option").addClass("d-none");
-    }
-    return _;
-  })());
-
-  // Leave edit mode (if user entered it in a previous session)
-  $("#edit-toggle").prop("checked", false);
-
-  $("#edit-toggle").on("click", function () {
-    if ($("#edit-toggle").is(":checked")) {
-      // On checking the edit toggle, show the add button and edit options
-      $(".event-edit-option").removeClass("d-none");
-    }
-    else {
-      // On unchecking the edit toggle, hide the add button and edit options
-      $(".event-edit-option").addClass("d-none");
-    }
-  });
-
-  // Leave filter mode (if user entered it in a previous session)
-  $("#filter-toggle").prop("checked", false);
-
-  $("#filter-toggle").on("click", function () {
-    if ($("#filter-toggle").is(":checked")) {
-      // On checking the filter toggle, show the filter options
-      $("#filter-content").removeClass("d-none");
-      $("#filter-reset").removeClass("d-none");
-    }
-    else {
-      // On checking the filter toggle, hide the filter options
-      $("#filter-content").addClass("d-none");
-      $("#filter-reset").addClass("d-none");
-    }
-  });
-
-  if (!localStorage.getItem("eventFilter")) {
-    localStorage.setItem("eventFilter", "{}");
-  }
-  updateFilters(true);
-  $("#filter-reset").on("click", () => {
-    localStorage.setItem("eventFilter", "{}");
-    updateFilters();
-    updateEventList();
-  });
-
-  // On changing any information in the add event modal, disable the add button if any information is empty
-  $(".add-event-input").on("input", function () {
-    const type = $("#add-event-type").val();
-    const name = $("#add-event-name").val()?.toString().trim();
-    const startDate = $("#add-event-start-date").val();
-
-    if ([name, startDate].includes("") || type === null) {
-      $("#add-event-button").prop("disabled", true);
-    }
-    else {
-      $("#add-event-button").prop("disabled", false);
-    }
-
-    if ($(this).is("#add-event-end-date")) {
-      $("#add-event-lesson").val("");
-    }
-    if ($(this).is("#add-event-lesson")) {
-      $("#add-event-end-date").val("");
-    }
-  });
-
-  // On changing any information in the edit event modal, disable the edit button if any information is empty
-  $(".edit-event-input").on("input", function () {
-    const type = $("#edit-event-type").val();
-    const name = $("#edit-event-name").val()?.toString().trim();
-    const startDate = $("#edit-event-start-date").val();
-
-    if ([name, startDate].includes("") || type === null) {
-      $("#edit-event-button").prop("disabled", true);
-    }
-    else {
-      $("#edit-event-button").prop("disabled", false);
-    }
-
-    if ($(this).is("#edit-event-end-date")) {
-      $("#edit-event-lesson").val("");
-    }
-    if ($(this).is("#edit-event-lesson")) {
-      $("#edit-event-end-date").val("");
-    }
-  });
-
-  // Don't close the dropdown when the user clicked inside of it
-  $(".dropdown-menu").each(function () {
-    $(this).on("click", ev => {
-      ev.stopPropagation();
-    });
-  });
-
-  // Share the event on clicking its share icon
-  $(document).on("click", ".event-share", function () {
-    const eventId = $(this).data("id");
-    shareEvent(eventId);
-  });
-
-  // Request deleting the event on clicking its delete icon
-  $(document).on("click", ".event-delete", function () {
-    const eventId = $(this).data("id");
-    deleteEvent(eventId);
-  });
-
-  // Request editing the event on clicking its edit icon
-  $(document).on("click", ".event-edit", function () {
-    const eventId = $(this).data("id");
-    editEvent(eventId);
-  });
-
-  // On clicking the all types option, check all and update the event list
-  $("#filter-type-all").on("click", () => {
-    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-    $(".filter-type-option").prop("checked", true);
-    $(".filter-type-option").each(function () {
-      filterData.type[$(this).data("id")] = true;
-    });
-    localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    updateFilters();
-    updateEventList();
-  });
-
-  // On clicking the none types option, uncheck all and update the event list
-  $("#filter-type-none").on("click", () => {
-    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-    filterData.type ??= {};
-    $(".filter-type-option").prop("checked", false);
-    $(".filter-type-option").each(function () {
-      filterData.type[$(this).data("id")] = false;
-    });
-    localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    updateFilters();
-    updateEventList();
-  });
-
-  // On changing any filter date option, update the event list
-  $("#filter-date-from").on("change", () => {
-    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-    filterData.dateFrom = $("#filter-date-from").val();
-    localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    updateFilters();
-    updateEventList();
-  });
-
-  // On changing any filter date option, update the event list
-  $("#filter-date-until").on("change", () => {
-    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-    filterData.dateUntil = $("#filter-date-until").val();
-    localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    updateFilters();
-    updateEventList();
-  });
-
-  $(document).on("click", "#show-add-event-button", () => {
-    addEvent();
-  });
-});
-
-socket.on("updateEventData", () => {
-  try {
-    eventData.reload();
-    updateEventList();
-  }
-  catch (error) {
-    console.error("Error handling updateEventData:", error);
+    updateTeamList();
+    updateEventList(); 
+  },
+  updateJoinedTeams: () => {
+    joinedTeamsData.reload();
+    updateEventList(); 
   }
 });
+
+export const reloadAllFn = async (): Promise<void> => {
+  eventData.reload();
+  eventTypeData.reload();
+  joinedTeamsData.reload();
+  teamsData.reload();
+  lessonData.reload();
+  await updateEventTypeList();
+  await updateEventList();
+  await updateTeamList();
+
+  toggleShownButtons();
+};

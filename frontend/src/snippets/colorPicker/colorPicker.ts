@@ -1,16 +1,5 @@
 import { escapeHTML } from "../../global/global.js";
-
-type ColorRGB = {
-  red: number;
-  green: number;
-  blue: number;
-}
-
-type ColorHSV = {
-  hue: number;
-  saturation: number;
-  value: number;
-}
+import { ColorRGB, ColorHSV } from "./types";
 
 function hsvToRgb({ hue: h, saturation: s, value: v }: ColorHSV): ColorRGB {
   h /= 60;
@@ -27,7 +16,7 @@ function hsvToRgb({ hue: h, saturation: s, value: v }: ColorHSV): ColorRGB {
     return [c, 0, x];
   })();
 
-  [r, g, b] = [r, g, b].map(val => Math.round((val + m) * 255.0));
+  [r, g, b] = [r, g, b].map(val => Math.round((val + m) * 255));
 
   return { red: r, green: g, blue: b };
 }
@@ -65,9 +54,9 @@ function rgbToHsv({ red: r, green: g, blue: b }: ColorRGB): ColorHSV {
 }
 
 function hexToRgb(hexValue: string): ColorRGB {
-  const r = parseInt(hexValue.substring(1, 3), 16);
-  const g = parseInt(hexValue.substring(3, 5), 16);
-  const b = parseInt(hexValue.substring(5), 16);
+  const r = Number.parseInt(hexValue.substring(1, 3), 16);
+  const g = Number.parseInt(hexValue.substring(3, 5), 16);
+  const b = Number.parseInt(hexValue.substring(5), 16);
 
   return { red: r, green: g, blue: b };
 }
@@ -77,9 +66,9 @@ export function rgbToHex({ red: r, green: g, blue: b }: ColorRGB): string {
 }
 
 function hexToCSS(hexValue: string): string {
-  const r = parseInt(hexValue.substring(1, 3), 16);
-  const g = parseInt(hexValue.substring(3, 5), 16);
-  const b = parseInt(hexValue.substring(5), 16);
+  const r = Number.parseInt(hexValue.substring(1, 3), 16);
+  const g = Number.parseInt(hexValue.substring(3, 5), 16);
+  const b = Number.parseInt(hexValue.substring(5), 16);
 
   return [r, g, b].toString();
 }
@@ -113,7 +102,7 @@ function replaceColorPickers(): void {
       function getOptimalXPosition(): "left" | "right" {
         return (
           // Not enough space on the right
-          xRight + offset.left + (popup.outerWidth() ?? 0) > ($(window).width() ?? 0) &&
+          xRight + offset.left + (popup.outerWidth() ?? 0) > ($(globalThis).width() ?? 0) &&
           // Enough space on the left
           xLeft + offset.left > 0
         ) ? "left" : "right";
@@ -125,9 +114,9 @@ function replaceColorPickers(): void {
         }
         return (
           // Not enough space below
-          yBelow + offset.top + height(popup) - window.scrollY > window.innerHeight - height($(".bottombar")) &&
+          yBelow + offset.top + height(popup) - globalThis.scrollY > globalThis.innerHeight - height($(".bottombar")) &&
           // Enough space above
-          yAbove + offset.top - ($(window).scrollTop() ?? 0) >= 0
+          yAbove + offset.top - ($(globalThis).scrollTop() ?? 0) >= 0
         ) ? "above" : "below";
       }
       
@@ -187,10 +176,10 @@ function replaceColorPickers(): void {
       const containerWidth = saturationValueContainer.outerWidth() ?? 0;
       const containerHeight = saturationValueContainer.outerHeight() ?? 0;
 
-      let newX = x - (isAlreadyRelative ? 0: containerOffset.left);
+      let newX = x - (isAlreadyRelative ? 0 : containerOffset.left);
       newX = Math.max(0, Math.min(newX, containerWidth));
 
-      let newY = y - (isAlreadyRelative ? 0: containerOffset.top);
+      let newY = y - (isAlreadyRelative ? 0 : containerOffset.top);
       newY = Math.max(0, Math.min(newY, containerHeight));
 
       markerSaturationValue.css({ left: newX, top: newY });
@@ -247,8 +236,8 @@ function replaceColorPickers(): void {
       let step = 5;
       step = ev.shiftKey ? 20 : step;
       step = ev.altKey ? 1 : step;
-      let left = parseInt(markerSaturationValue.css("left"));
-      let top = parseInt(markerSaturationValue.css("top"));
+      let left = Number.parseInt(markerSaturationValue.css("left"));
+      let top = Number.parseInt(markerSaturationValue.css("top"));
       if (["w", "ArrowUp"].includes(ev.key)) {
         top -= step;
         ev.preventDefault();
@@ -337,7 +326,7 @@ function replaceColorPickers(): void {
       let step = 5;
       step = ev.shiftKey ? 20 : step;
       step = ev.altKey ? 1 : step;
-      let top = parseInt(markerHue.css("top"));
+      let top = Number.parseInt(markerHue.css("top"));
       if (["w", "ArrowUp"].includes(ev.key)) {
         top -= step;
         ev.preventDefault();
@@ -455,9 +444,9 @@ let savedColorsHtml = `
 
 $(() => {
   new MutationObserver(mutationsList => {
-    mutationsList.forEach(mutation => {
+    for (const mutation of mutationsList) {
       $(mutation.addedNodes).each(function () {
-        if ($(this).find(".color-picker")) {
+        if ($(this).find(".color-picker").length > 0) {
           replaceColorPickers();
           $(this).find(".color-picker").each(function () {
             $(this).next().prop("disabled", $(this).prop("disabled"));
@@ -467,7 +456,7 @@ $(() => {
       if (mutation.type === "attributes" && mutation.attributeName === "disabled" && $(mutation.target).is(".color-picker")) {
         $(mutation.target).next().prop("disabled", $(mutation.target).prop("disabled"));
       }
-    });
+    };
   }).observe(document.body, {
     childList: true,
     subtree: true,

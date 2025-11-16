@@ -11,16 +11,18 @@ import {
   classSubstitutionsData,
   dateToMs,
   lessonData,
-  SingleEventData,
   homeworkCheckedData,
   socket,
   msToTime,
   csrfToken,
-  reloadAllFn,
-  CoreSubstitutionsData,
-  getTimeLeftString as getTimeString,
-  escapeHTML
+  escapeHTML,
+  loadTimetableData,
+  getTimeLeftString,
+  lastCommaRegex,
+  teamsData,
+  registerSocketListeners
 } from "../../global/global.js";
+import { MonthDates, TimetableData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
@@ -29,15 +31,15 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
     for (const event of await eventData()) {
       function handleMultiDayEvent(endDate: string): void {
         if (!multiEventPositions.includes(event.eventId)) {
-          if (multiEventPositions.indexOf(null) === -1) {
-            multiEventPositions.push(event.eventId);
-          }
-          else {
+          if (multiEventPositions.includes(null)) {
             multiEventPositions.splice(multiEventPositions.indexOf(null), 1, event.eventId);
           }
+          else {
+            multiEventPositions.push(event.eventId);
+          }
         }
-        if (isSameDay(new Date(parseInt(event.startDate)), date)) {
-          if (isSameDay(new Date(parseInt(endDate)), date)) {
+        if (isSameDay(new Date(Number.parseInt(event.startDate)), date)) {
+          if (isSameDay(new Date(Number.parseInt(endDate)), date)) {
             multiDayEventsArr[multiEventPositions.indexOf(event.eventId)] =
               `<div class="event event-single event-${event.eventTypeId}"></div>`;
           }
@@ -46,11 +48,11 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
               `<div class="event event-start event-${event.eventTypeId}"></div>`;
           }
         }
-        else if (isSameDay(new Date(parseInt(endDate)), date)) {
+        else if (isSameDay(new Date(Number.parseInt(endDate)), date)) {
           multiDayEventsArr[multiEventPositions.indexOf(event.eventId)] =
             `<div class="event event-end event-${event.eventTypeId}"></div>`;
         }
-        else if (parseInt(event.startDate) < date.getTime() && parseInt(endDate) > date.getTime()) {
+        else if (Number.parseInt(event.startDate) < date.getTime() && Number.parseInt(endDate) > date.getTime()) {
           multiDayEventsArr[multiEventPositions.indexOf(event.eventId)] =
             `<div class="event event-middle event-${event.eventTypeId}"></div>`;
         }
@@ -66,7 +68,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
       }
   
       if (event.endDate === null) {
-        if (isSameDay(new Date(parseInt(event.startDate)), date)) {
+        if (isSameDay(new Date(Number.parseInt(event.startDate)), date)) {
           singleDayEvents += `<div class="col"><div class="event event-${event.eventTypeId}"></div></div>`;
         }
       }
@@ -77,11 +79,11 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
 
     // Multi day events
     for (const event of multiDayEventsArr) {
-      if (!event) {
-        multiDayEvents += '<div class="event"></div>';
+      if (event) {
+        multiDayEvents += event;
       }
       else {
-        multiDayEvents += event;
+        multiDayEvents += '<div class="event"></div>';
       }
     }
   }
@@ -162,7 +164,7 @@ async function getNewCalendarWeekContent(): Promise<string> {
       const weekDates = (await monthDates())[week];
       newCalendarWeekContent += '<div class="d-flex position-relative mb-4">';
       for (let i = 0; i < 7; i++) {
-        newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], parseInt(week), multiEventPositions);
+        newCalendarWeekContent += await getCalendarDayHtml(weekDates[i], Number.parseInt(week), multiEventPositions);
       }
       newCalendarWeekContent += "</div>";
     }
@@ -329,8 +331,8 @@ async function updateHomeworkList(): Promise<void> {
     // Get the information for the homework
     const subject = currentSubjectData.find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
-    const assignmentDate = new Date(parseInt(homework.assignmentDate));
-    const submissionDate = new Date(parseInt(homework.submissionDate));
+    const assignmentDate = new Date(Number.parseInt(homework.assignmentDate));
+    const submissionDate = new Date(Number.parseInt(homework.submissionDate));
     const checked = await getHomeworkCheckStatus(homeworkId);
 
     if (await filter()) continue;
@@ -418,8 +420,8 @@ async function updateEventList(): Promise<void> {
       return false;
     }
 
-    const msStartDate = parseInt(event.startDate);
-    const msEndDate = parseInt(event.endDate ?? event.startDate);
+    const msStartDate = Number.parseInt(event.startDate);
+    const msEndDate = Number.parseInt(event.endDate ?? event.startDate);
 
     if (await filter()) continue;
 
@@ -432,7 +434,7 @@ async function updateEventList(): Promise<void> {
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
       const endDate = msToDisplayDate(event.endDate);
-      if (isSameDay(new Date(parseInt(event.startDate)), new Date(parseInt(event.endDate)))) {
+      if (isSameDay(new Date(Number.parseInt(event.startDate)), new Date(Number.parseInt(event.endDate)))) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
       else {
@@ -444,7 +446,7 @@ async function updateEventList(): Promise<void> {
     }
 
     // The template for an event
-    const template = $(`<div class="col p-2">
+    const template = $(`<div class="col py-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2">
             <div class="d-flex flex-column">
@@ -495,14 +497,8 @@ async function updateSubstitutionList(): Promise<void> {
   }
   const substitutionsMode = localStorage.getItem("substitutionsMode") ?? "class";
 
-  let data: CoreSubstitutionsData;
+  const data = (await (substitutionsMode === "class" ?  classSubstitutionsData : substitutionsData)()).data;
 
-  if (substitutionsMode === "class") {
-    data = (await classSubstitutionsData()).data;
-  }
-  else {
-    data = (await substitutionsData()).data;
-  }
   if (data === "No data") {
     $("#substitutions-container").addClass("d-none");
     return;
@@ -582,86 +578,7 @@ function updateSubstitutionsMode(): void {
   updateSubstitutionList();
 }
 
-type ProcessedLesson = {
-  lessonNumber: number;
-  subjectNameLong: string;
-  subjectNameShort: string;
-  subjectNameSubstitution: string[] | null;
-  teacherName: string;
-  teacherNameSubstitution: string[] | null;
-  room: string;
-  startTime: number;
-  endTime: number;
-};
-type GroupedLessonData = {
-  lessonNumber: number;
-  startTime: number;
-  endTime: number;
-  lessons: ProcessedLesson[];
-}[];
-
-async function getGroupedLessonData(): Promise<GroupedLessonData> {
-  const currentJoinedTeamsData = await joinedTeamsData();
-  const currentSubjectData = await subjectData();
-  let currentLessonData = await lessonData();
-
-  currentLessonData = currentLessonData.filter(l => l.weekDay === selectedDate.getDay() - 1);
-
-  const processedLessonData: ProcessedLesson[] = [];
-  for (const lesson of currentLessonData) {
-    const subject = currentSubjectData.find(s => s.subjectId === lesson.subjectId);
-    if (!subject || !(currentJoinedTeamsData.includes(lesson.teamId) || lesson.teamId === -1)) continue;
-    processedLessonData.push({
-      lessonNumber: lesson.lessonNumber,
-      subjectNameLong: subject.subjectNameLong,
-      subjectNameShort: subject.subjectNameShort,
-      subjectNameSubstitution: subject.subjectNameSubstitution,
-      teacherName:
-        (subject.teacherGender === "w" ? "Frau " : "") +
-        (subject.teacherGender === "m" ? "Herr " : "") +
-        subject.teacherNameLong,
-      teacherNameSubstitution: subject.teacherNameSubstitution,
-      room: lesson.room,
-      startTime: parseInt(lesson.startTime),
-      endTime: parseInt(lesson.endTime)
-    });
-  }
-
-  let groupedLessonData: GroupedLessonData = [];
-  for (const lesson of processedLessonData) {
-    const group = groupedLessonData.find(l => l.lessonNumber === lesson.lessonNumber);
-    if (group) {
-      group.lessons.push(lesson);
-    }
-    else {
-      groupedLessonData.push({
-        lessonNumber: lesson.lessonNumber,
-        startTime: lesson.startTime,
-        endTime: lesson.endTime,
-        lessons: [lesson]
-      });
-    }
-  }
-  groupedLessonData = groupedLessonData.sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
-  return groupedLessonData;
-}
-
 async function updateTimetable(): Promise<void> {
-  function getSubstitutionPlanId(): 1 | 2 | null {
-    if (currentClassSubstitutionsData !== "No data") {
-      if (isSameDay(selectedDate, new Date(dateToMs(currentClassSubstitutionsData.plan1.date) ?? 0))) {
-        return 1;
-      }
-      else if (isSameDay(selectedDate, new Date(dateToMs(currentClassSubstitutionsData.plan2.date) ?? 0))) {
-        return 2;
-      }
-      else {
-        return null;
-      }
-    }
-    return null;
-  }
-
   $("#timetable-less").empty();
   $("#timetable-more").empty();
 
@@ -669,10 +586,6 @@ async function updateTimetable(): Promise<void> {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
     $("#timetable-mode-wrapper").addClass("d-none");
-    $("#timetable-feedback")
-      .find("i").hide().filter("#timetable-feedback-happy").show().end().end()
-      .find("span").text("Heute keine Schule!");
-    updateTimetableProgress();
     return;
   }
 
@@ -681,269 +594,186 @@ async function updateTimetable(): Promise<void> {
   $("#timetable-mode-wrapper").removeClass("d-none");
   updateShownTimetable();
 
-  const currentClassSubstitutionsData = (await classSubstitutionsData()).data;
+  const timetableData = await loadTimetableData(selectedDate);
 
-  const substitutionPlanId = getSubstitutionPlanId();
-
-  const groupedLessonData = await getGroupedLessonData();
-
-  for (const lessonGroup of groupedLessonData) {
-    async function showEvents(): Promise<void> {
-      for (const event of await eventData()) {
-        function matchesLessonId(event: SingleEventData, lessonId: number): boolean {
-          if (event.lesson === null) {
-            return true;
-          }
-          if (event.lesson.includes("-")) {
-            event.lesson = event.lesson.replace(" ", "");
-            const start = parseInt(event.lesson.split("-")[0]);
-            const end = parseInt(event.lesson.split("-")[1]);
-            if (start > lessonId || lessonId > end) {
-              return false;
-            }
-          }
-          else if (parseInt(event.lesson) !== lessonId) {
-            return false;
-          }
-          return true;
-        }
-
-        if (!(await joinedTeamsData()).includes(event.teamId) && event.teamId !== -1) {
-          continue;
-        }
-
-        if (event.lesson === "") {
-          continue;
-        }
-        if (!isSameDay(new Date(parseInt(event.startDate)), selectedDate)) {
-          continue;
-        }
-        if (!matchesLessonId(event, lessonGroup.lessonNumber)) {
-          continue;
-        }
-
-        const eventName = `<span class="event-${event.eventTypeId} text-center fw-bold mt-2 d-block">${escapeHTML(event.name)}</span>`;
-        thisLessLesson.find(".card-body").append(eventName);
-        thisMoreLesson.find(".card-body").append(eventName);
-
-        if (event.description !== "") {
-          const descriptionTemplate = $(`<span class="event-${event.eventTypeId} text-centered-block"></span>`);
-
-          thisMoreLesson.find(".card-body").append(descriptionTemplate);
-
-          richTextToHtml(event.description ?? "", descriptionTemplate, {
-            showMoreButton: $(`<a class="event-${event.eventTypeId}" href="#">Mehr anzeigen</a>`),
-            parseLinks: true,
-            merge: true
-          });
-          addedDescriptionTemplates = addedDescriptionTemplates.add(descriptionTemplate);
-        }
-      }
+  for (const multiLesson of timetableData) {
+    if (! multiLesson.lessons.some(l => l.subjectId !== -1 || l.substitution !== undefined || l.events !== undefined)) {
+      return;
     }
 
-    let addedDescriptionTemplates = $();
-
     const templateModeLess = `
-      <div class="card" data-lesson-number="${lessonGroup.lessonNumber}">
+      <div class="card" data-start-lesson-number="${multiLesson.startLessonNumber}" data-end-lesson-number="${multiLesson.endLessonNumber}">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
-          <span class="text-center timetable-less-subject">
-            ${lessonGroup.lessons
-    .map(l => {
-      return `<span class="original">${escapeHTML(l.subjectNameShort)}</span>`;
-    })
-    .join(" / ")}
-          </span>
+          <span>
+            ${/* eslint-disable indent */
+              multiLesson.lessons
+                .map(l => {
+                  let cssClass = "";
+                  let append = "";
+                  if (l.substitution !== undefined) {
+                    if (l.substitution.type === "Entfall") cssClass = "line-through-red";
+                    else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
+                    else {
+                      cssClass = "line-through-yellow";
+                      append = `<span class="text-yellow fw-bold">${escapeHTML(l.substitution.subject)}</span>`;
+                    }
+                  }
+                  return `<span class="${cssClass}">${escapeHTML(l.subjectNameShort)}</span> ${append}`;
+                })
+                .join(" / ")
+              /* eslint-enable indent */}</span>
+          ${/* eslint-disable indent */
+            multiLesson.lessons
+              .map(l => {
+                if (l.substitution !== undefined) {
+                  const color = (l.substitution.type === "Entfall") ? "red" : "yellow";
+                  return `<div class="text-${color} fw-bold mt-2">${escapeHTML(l.substitution.type)}</div>`;
+                }
+              }).join("")
+            /* eslint-enable indent */}
+          ${/* eslint-disable indent */
+            multiLesson.lessons
+              .map(l => {
+                if (l.events !== undefined) {
+                  return l.events.map(e => {
+                    return `<span class="event-${e.eventTypeId} fw-bold mt-2 d-block">${escapeHTML(e.name)}</span>`;
+                  }).join("");
+                }
+              }).join("")
+            /* eslint-enable indent */}
+
+
+          <div class="timetable-multi-lesson position-absolute end-0 bottom-0 m-2 rounded-circle bg-secondary-subtle
+            ${multiLesson.endLessonNumber > multiLesson.startLessonNumber ? "d-flex" : "d-none"} justify-content-center align-items-center">
+            ×${multiLesson.endLessonNumber - multiLesson.startLessonNumber + 1}
+          </div>
         </div>
       </div>`;
 
     const thisLessLesson = $(templateModeLess);
 
     const templateModeMore = `
-      <div class="card" data-lesson-number="${lessonGroup.lessonNumber}">
+      <div class="card" data-start-lesson-number="${multiLesson.startLessonNumber}" data-end-lesson-number="${multiLesson.endLessonNumber}">
         <div class="card-body pt-4 text-center">
-          <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start">
-            ${msToTime(lessonGroup.startTime)}
+          <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start
+              ${multiLesson.lessons.every(l =>l.substitution?.type === "Entfall") ? "line-through-red" : ""}
+            ">
+            ${msToTime(multiLesson.startTime)}
           </div>
-          <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end">
-            ${msToTime(lessonGroup.endTime)}
+          <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end
+              ${multiLesson.lessons.every(l => l.substitution?.type === "Entfall") ? "line-through-red" : ""}
+            ">
+            ${msToTime(multiLesson.endTime)}
           </div>
           <div class="d-flex align-items-center justify-content-center flex-column">
-            <span class="fw-semibold text-center timetable-more-subject">
-              ${lessonGroup.lessons
-    .map(lessonData => {
-      return `<span class="original">${escapeHTML(lessonData.subjectNameLong)}</span>`;
-    })
-    .join(" / ")}</span>
+            <span class="fw-semibold">
+              ${/* eslint-disable indent */
+                multiLesson.lessons
+                  .map(l => {
+                    let cssClass = "";
+                    let append = "";
+                    if (l.substitution !== undefined) {
+                      if (l.substitution.type === "Entfall") cssClass = "line-through-red";
+                      else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
+                      else {
+                        cssClass = "line-through-yellow";
+                        append = `<span class="text-yellow fw-bold">${escapeHTML(l.substitution.subject)}</span>`;
+                      }
+                    }
+                    return `<span class="${cssClass}">${escapeHTML(l.subjectNameLong)}</span> ${append}`;
+                  })
+                  .join(" / ")
+                /* eslint-enable indent */}</span>
 
             <span>
-              <span class="text-center timetable-more-room">
-              ${lessonGroup.lessons
-    .map(lessonData => {
-      return `<span class="original">${escapeHTML(lessonData.room)}</span>`;
-    })
-    .join(" / ")}</span>,
-
-              <span class="text-center timetable-more-teacher">
-              ${lessonGroup.lessons
-    .map(lessonData => {
-      return `<span class="original">${escapeHTML(lessonData.teacherName)}</span>`;
-    })
-    .join(" / ")}</span>
+              <span>
+                ${/* eslint-disable indent */
+                  multiLesson.lessons
+                    .map(l => {
+                      let cssClass = "";
+                      let append = "";
+                      if (l.substitution !== undefined) {
+                        if (l.substitution.type === "Entfall") cssClass = "line-through-red";
+                        else if (l.substitution.room !== l.room) {
+                          cssClass = "line-through-yellow";
+                          append = `<span class="text-yellow fw-bold">${l.substitution.room}</span>`;
+                        }
+                      }
+                      return `<span class="${cssClass}">${escapeHTML(l.room)}</span> ${append}`;
+                    })
+                    .join(" / ")
+                  /* eslint-enable indent */}</span>,
+              <span>
+                ${/* eslint-disable indent */
+                  multiLesson.lessons
+                    .map(l => {
+                      let cssClass = "";
+                      let append = "";
+                      if (l.substitution !== undefined) {
+                        if (l.substitution.type === "Entfall") cssClass = "line-through-red";
+                        else if (!(l.teacherNameSubstitution ?? []).includes(l.substitution.teacher)) {
+                          cssClass = "line-through-yellow";
+                          append = `<span class="text-yellow fw-bold">${l.substitution.teacher}</span>`;
+                        }
+                      }
+                      return `<span class="${cssClass}">${escapeHTML(l.teacherName)}</span> ${append}`;
+                    })
+                    .join(" / ")
+                  /* eslint-enable indent */}</span>
             </span>
+            ${/* eslint-disable indent */
+              multiLesson.lessons
+                .map(l => {
+                  if (l.substitution !== undefined) {
+                    const color = (l.substitution.type === "Entfall") ? "red" : "yellow";
+                    return `
+                      <div class="text-${color} fw-bold mt-2">${escapeHTML(l.substitution.type)}</div>
+                      <div class="text-${color}">${escapeHTML(["EVA", "-"].includes(l.substitution.text) ? "" : l.substitution.text)}</div>
+                    `;
+                  }
+                }).join("")
+              /* eslint-enable indent */}
+            ${/* eslint-disable indent */
+              multiLesson.lessons
+                .map(l => {
+                  if (l.events !== undefined) {
+                    return l.events.map(e => {
+                      return `
+                        <span class="event-${e.eventTypeId} fw-bold mt-2 d-block">${escapeHTML(e.name)}</span>
+                        <span class="event-${e.eventTypeId} text-centered-block rich-text" data-event-type-id="${e.eventTypeId}"
+                          >${escapeHTML(e.description ?? "")}</span>
+                      `;
+                    }).join("");
+                  }
+                }).join("")
+              /* eslint-enable indent */}
+          </div>
+
+          <div class="timetable-multi-lesson position-absolute end-0 bottom-0 m-2 rounded-circle bg-secondary-subtle
+            ${multiLesson.endLessonNumber > multiLesson.startLessonNumber ? "d-flex" : "d-none"} justify-content-center align-items-center">
+            ×${multiLesson.endLessonNumber - multiLesson.startLessonNumber + 1}
           </div>
         </div>
       </div>`;
 
     const thisMoreLesson = $(templateModeMore);
-
-    if (substitutionPlanId !== null) {
-      for (const [lessonId, lesson] of lessonGroup.lessons.entries()) {
-        function showSubstitutions(): void {
-          if (currentClassSubstitutionsData === "No data") return;
-          for (const substitution of currentClassSubstitutionsData[("plan" + substitutionPlanId) as "plan1" | "plan2"].substitutions) {
-            function updateHtml(): void {
-              // Subject
-              const lessSubjectElement = thisLessLesson.find(".timetable-less-subject .original").eq(lessonId);
-              const moreSubjectElement = thisMoreLesson.find(".timetable-more-subject .original").eq(lessonId);
-              if (!(lesson.subjectNameSubstitution ?? []).includes(substitution.subject)) {
-                moreSubjectElement.addClass("line-through-" + color);
-                lessSubjectElement.addClass("line-through-" + color);
-                if (substitution.subject !== "-") {
-                  moreSubjectElement.after(
-                    ` <span class="text-${color} fw-bold">${escapeHTML(substitution.subject)}</span>`
-                  );
-                  lessSubjectElement.after(
-                    ` <span class="text-${color} fw-bold">${escapeHTML(substitution.subject)}</span>`
-                  );
-                }
-              }
-              else {
-                lessSubjectElement.addClass("fst-italic fw-semibold");
-                moreSubjectElement.addClass("fst-italic fw-bold");
-              }
-  
-              // Room
-              const roomElement = thisMoreLesson.find(".timetable-more-room .original").eq(lessonId);
-              if (substitution.room !== lesson.room) {
-                roomElement.addClass("line-through-" + color);
-                if (substitution.room !== "-") {
-                  roomElement.after(` <span class="text-${color} fw-bold">${escapeHTML(substitution.room)}</span>`);
-                }
-              }
-  
-              // Teacher
-              const teacherElement = thisMoreLesson.find(".timetable-more-teacher .original").eq(lessonId);
-              if (!(lesson.subjectNameSubstitution ?? []).includes(substitution.teacher)) {
-                teacherElement.addClass("line-through-" + color);
-                if (substitution.teacher !== "-") {
-                  teacherElement.after(
-                    ` <span class="text-${color} fw-bold">${escapeHTML(substitution.teacher)}</span>`
-                  );
-                }
-              }
-            }
-            if (! (matchesLessonNumber(substitution, lessonGroup.lessonNumber) && matchesTeacher(substitution, lesson))) {
-              continue;
-            }
-
-            const color = substitution.type === "Entfall" ? "red" : "yellow";
-
-            const substitutionTypeText = `<div class="text-${color} text-center fw-bold mt-2">${escapeHTML(substitution.type)}</div>`;
-            thisLessLesson.find(".card-body").append(substitutionTypeText);
-            thisMoreLesson.find(".card-body").append(substitutionTypeText);
-
-            if (substitution.type === "Entfall" && substitution.text === "EVA") {
-              substitution.text = "-";
-            }
-            if (substitution.text !== "-") {
-              thisMoreLesson
-                .find(".card-body")
-                .append(`<div class="text-${color} text-center">${escapeHTML(substitution.text)}</div>`);
-            }
-
-            if (substitution.type === "Entfall") {
-              // Times
-              thisMoreLesson.find(".timetable-more-time").addClass("line-through-" + color);
-            }
-
-            updateHtml();
-          }
-        }
-        function matchesLessonNumber(substitution: Record<string, string>, lessonNumber: number): boolean {
-          if (substitution.lesson.includes("-")) {
-            substitution.lesson = substitution.lesson.replace(" ", "");
-            const start = parseInt(substitution.lesson.split("-")[0]);
-            const end = parseInt(substitution.lesson.split("-")[1]);
-            if (start > lessonNumber || lessonNumber > end) {
-              return false;
-            }
-          }
-          else if (parseInt(substitution.lesson) !== lessonNumber) {
-            return false;
-          }
-          return true;
-        }
-        function matchesTeacher(substitution: Record<string, string>, lesson: ProcessedLesson): boolean {
-          return (lesson.teacherNameSubstitution ?? []).includes(substitution.teacherOld);
-        }
-
-        showSubstitutions();
-      }
-    }
-
-    await showEvents();
-
-    const lastLessLesson = $("#timetable-less").find(".card").last();
-    if (lastLessLesson.length > 0) {
-      const lastLessonCopy = $(lastLessLesson[0].outerHTML);
-      lastLessonCopy.attr("data-lesson-number", "");
-      const lastLessonHtml = lastLessonCopy[0].outerHTML.replace(/\s+/g, "");
-
-      const thisLessonCopy = $(thisLessLesson[0].outerHTML);
-      thisLessonCopy.attr("data-lesson-number", "");
-      const thisLessonHtml = thisLessonCopy[0].outerHTML.replace(/\s+/g, "");
-
-      if (lastLessonHtml === thisLessonHtml) {
-        lastLessLesson.addClass("wide");
-      }
-      else {
-        $("#timetable-less").append(thisLessLesson);
-      }
-    }
-    else {
-      $("#timetable-less").append(thisLessLesson);
-    }
-
-    const lastMoreLesson = $("#timetable-more").find(".card:last()");
-    if (lastMoreLesson.length > 0) {
-      // Remove the lessonNumbers & times
-      const lastLessonCopy = $(lastMoreLesson[0].outerHTML);
-      lastLessonCopy.attr("data-lesson-number", "").find(".timetable-more-time").html("");
-      const lastLessonHtml = lastLessonCopy[0].outerHTML.replace(/\s+/g, "");
-
-      const thisLessonCopy = $(thisMoreLesson[0].outerHTML);
-      thisLessonCopy.attr("data-lesson-number", "").find(".timetable-more-time").html("");
-      const thisLessonHtml = thisLessonCopy[0].outerHTML.replace(/\s+/g, "");
-
-      if (lastLessonHtml === thisLessonHtml) {
-        lastMoreLesson.addClass("wide");
-        lastMoreLesson.find(".card-body div:nth-child(2)").text(msToTime(lessonGroup.endTime));
-      }
-      else {
-        $("#timetable-more").append(thisMoreLesson);
-      }
-    }
-    else {
-      $("#timetable-more").append(thisMoreLesson);
-    }
-    addedDescriptionTemplates.trigger("addedToDom");
-  }
+    $("#timetable-less").append(thisLessLesson);
+    $("#timetable-more").append(thisMoreLesson);
+    thisMoreLesson.find(".rich-text").each(function () {
+      richTextToHtml($(this).text(), $(this), {
+        showMoreButton: $(`<a class="event-${$(this).attr("data-event-type-id")}" href="#">Mehr anzeigen</a>`),
+        parseLinks: true,
+        merge: true
+      });
+      $(this).trigger("addedToDom");
+    });
+  };
 
   if ($("#timetable-less").html() === "") {
     $("#timetable-less, #timetable-more").html("<div class=\"text-secondary text-center\">Kein Stundenplan für diesen Tag.</div>");
   }
 
-  updateTimetableProgress();
+  updateTimetableFeedback();
 };
 
 function updateShownTimetable(): void {
@@ -968,147 +798,126 @@ function updateShownTimetable(): void {
   }
 }
 
-async function updateTimetableProgress(): Promise<void> {
-  function offsetTop($el: JQuery<HTMLElement>): number {
-    return $el.offset()?.top ?? 0;
+async function updateTimetableFeedback(): Promise<void> {
+  function getCurrentLessons(): void {
+    for (const l of timetableData) {
+      const isReal = l.lessons.some(l => (l.subjectId !== -1 || l.substitution) && l.substitution?.type !== "Entfall");
+      if (isReal) realLessonsLeft = true;
+      if (l.startTime < now && isReal) hasBegun = true;
+      
+      if (foundNextLesson) return;
+      if (l.endTime > now) {
+        if (l.startTime < now) {
+          currentLesson = l;
+          realLessonsLeft = false;
+          isCurrentLessonReal = isReal;
+        }
+        else {
+          nextLesson = l;
+          foundNextLesson = true;
+        }
+      }
+    };
   }
-  function height($el: JQuery<HTMLElement>): number {
-    return $el.outerHeight() ?? 0;
-  }
+  function lessonToText(l: TimetableData, showMoreInfo: boolean): string {
+    return (
+      (l.lessons[0].events
+        ? (l.lessons[0].events).map(e => `<span class="fw-bold event-${e.eventTypeId}">${e.name}</span>`)
+          .join(", ").replace(lastCommaRegex, " und") + " während "
+        : "")
 
+      + (showMoreInfo
+        ? (
+          diff => diff === 1 ? "" : `einer <b>${(diff === 2 ? "Doppelstunde" : diff + "-fach Stunde")}</b> `
+        )(l.endLessonNumber - l.startLessonNumber + 1)
+        : "")
+
+      + l.lessons.map(l => {
+        if (l.substitution) {
+          if (l.substitution.type === "Entfall") {
+            return `<b class="text-danger">Entfall</b> (Eigentlich ${l.subjectNameLong})`;
+          }
+          const sameSubject = l.subjectNameSubstitution.includes(l.substitution.subject);
+          const sameRoom = l.room === l.substitution.room;
+          return `
+              ${sameSubject ? l.subjectNameLong : `<b class="text-yellow">${l.substitution.subject}</b>`}
+              ${showMoreInfo ? "in " + (sameRoom ? l.room : `<b class="text-yellow">${l.substitution.room}</b>`) : ""}
+            ` + (sameSubject ? "" : `(Eigentlich ${l.subjectNameLong})`);
+        }
+        else {
+          return `<b>${l.subjectNameLong}</b>` + (showMoreInfo && l.subjectId !== -1 ? ` in <b>${l.room}</b>` : "");
+        }
+      }
+
+      ).join(" bzw. ")
+    );
+  }
   const nowD = new Date();
   const now = (nowD.getHours() * 60 * 60 + nowD.getMinutes() * 60 + nowD.getSeconds()) * 1000;
 
-  if (! isSameDay(selectedDate, new Date())) {
-    $("#timetable-less, #timetable-more").addClass("timetable-today");
+  if (!isSameDay(nowD, selectedDate)) {
     $("#timetable-feedback").addClass("d-none");
     return;
   }
-  $("#timetable-less, #timetable-more").removeClass("timetable-today");
-  $("#timetable-feedback").removeClass("d-none");
+  $("#timetable-feedback").removeClass("d-none").find("i").hide();
+  if ([0, 6].includes(selectedDate.getDay())) {
+    $("#timetable-feedback-happy").show();
+    $("#timetable-feedback span").text("Heute kein Unterricht!");
+    return;
+  }
 
-  const lessonNumbers = (await getGroupedLessonData());
-  const prevLessonNumbers = lessonNumbers.filter(l => {
-    return l.startTime <= now;
-  });
-  const nextLessonNumbers = lessonNumbers.filter(l => {
-    return now < l.endTime;
-  });
-  const currentLessonNumber = prevLessonNumbers.filter(obj => nextLessonNumbers.includes(obj));
+  const timetableData = await loadTimetableData(selectedDate);
+  let currentLesson = null as TimetableData | null;
+  let nextLesson = null as TimetableData | null;
+  let foundNextLesson = false;
+  let hasBegun = false;
+  let realLessonsLeft = false;
+  let isCurrentLessonReal = false;
 
-  if (currentLessonNumber.length === 1) {
-    $("#timetable-less, #timetable-more").removeClass("timetable-out-of-range");
-
-    // General
-    const start = currentLessonNumber[0].startTime;
-    const end = currentLessonNumber[0].endTime;
-    const percentage = (now - start) / (end - start);
-
-    // Timetable More
-    const $el = $(`#timetable-more [data-lesson-number="${currentLessonNumber[0].lessonNumber}"]`);
-    const barPos = offsetTop($el) - offsetTop($("#timetable-more")) + percentage * height($el);
-    $("#timetable-more").css("--bar-pos", barPos + "px");
-
-    if (window.innerWidth < 1200) {
-      // Timetable Less (Vertical)
-      const $el = $(`#timetable-less [data-lesson-number="${currentLessonNumber[0].lessonNumber}"]`);
-      const barPos = offsetTop($el) - offsetTop($("#timetable-less")) + percentage * height($el);
-      $("#timetable-less").css("--bar-pos", barPos + "px");
+  getCurrentLessons();
+  
+  if (!realLessonsLeft) {
+    if (isCurrentLessonReal) {
+      $("#timetable-feedback-info").show();
+      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(currentLesson!.endTime - now)}</b>
+        ${lessonToText(currentLesson!, false)}, danach ist der Unterricht für heute vorbei!`);
     }
     else {
-      const $prev = $(prevLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
-      const $next = $(nextLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
-      const $current = $(`#timetable-less [data-lesson-number="${currentLessonNumber[0].lessonNumber}"]`);
-      $prev.css("--bar-progress", "100%");
-      $next.css("--bar-progress", "0%");
-      $current.css("--bar-progress", percentage * 100 + "%");
+      $("#timetable-feedback-happy").show();
+      $("#timetable-feedback span").text("Der Unterricht ist für heute vorbei!");
+    }
+    return;
+  }
+
+  if (currentLesson === null) {
+    if (nextLesson === null) {
+      $("#timetable-feedback-happy").show();
+      $("#timetable-feedback span").text("Der Unterricht ist für heute vorbei!");
+    }
+    else if (hasBegun) {
+      $("#timetable-feedback-info").show();
+      $("#timetable-feedback span").html(`
+        Der Unterricht geht in <b>${getTimeLeftString(nextLesson.startTime - now)}</b> mit ${lessonToText(nextLesson, true)} weiter.
+      `);
+    }
+    else {
+      $("#timetable-feedback-info").show();
+      $("#timetable-feedback span").html(`
+        Der Unterricht beginnt in <b>${getTimeLeftString(nextLesson.startTime - now)}</b> mit ${lessonToText(nextLesson, true)}.
+      `);
     }
   }
-  else if (prevLessonNumbers.length === 0) {
-    $("#timetable-less, #timetable-more").addClass("timetable-out-of-range");
-
-    if (nextLessonNumbers.length > 0) {
-      const firstLessonGroup = nextLessonNumbers[0];
-      const timeLeft = getTimeString(firstLessonGroup.startTime - now);
-
-
-      function matchesLessonNumber(substitution: Record<string, string>, lessonNumber: number): boolean {
-        if (substitution.lesson.includes("-")) {
-          const [start, end] = substitution.lesson.replace(" ", "").split("-").map(Number);
-          if (start > lessonNumber || lessonNumber > end) {
-            return false;
-          }
-        }
-        else if (parseInt(substitution.lesson) !== lessonNumber) {
-          return false;
-        }
-        return true;
-      }
-
-      function matchesTeacher(substitution: Record<string, string>, lesson: ProcessedLesson): boolean {
-        return (lesson.teacherNameSubstitution ?? []).includes(substitution.teacherOld);
-      }
-
-      const currentClassSubstitutionsData = (await classSubstitutionsData()).data;
-      if (currentClassSubstitutionsData !== "No data") {
-        for (const substitution of currentClassSubstitutionsData.plan1.substitutions) {
-          if (matchesLessonNumber(substitution, firstLessonGroup.lessonNumber)) {
-            for (const lesson of firstLessonGroup.lessons) {
-              if (matchesTeacher(substitution, lesson)) {
-                lesson.subjectNameLong = substitution.subject;
-                lesson.room = substitution.room;
-              }
-            }
-          }
-        }
-      }
-
-      $("#timetable-feedback")
-        .find("i").hide().filter("#timetable-feedback-info").show().end().end()
-        .find("span").html(`
-          Der Unterricht beginnt in <b>${timeLeft}</b>
-          mit ${nextLessonNumbers[0].lessons.map(l => `<b>${escapeHTML(l.subjectNameLong)}</b>`).join(" / ")}
-          im Raum ${nextLessonNumbers[0].lessons.map(l => `<b>${escapeHTML(l.room)}</b>`).join(" / ")}
-        `);
-    }
-  }
-  else if (nextLessonNumbers.length === 0) {
-    $("#timetable-less, #timetable-more").addClass("timetable-out-of-range");
-
-    $("#timetable-feedback")
-      .find("i").hide().filter("#timetable-feedback-happy").show().end().end()
-      .find("span").text("Der Schultag ist zu Ende!");
+  else if (nextLesson === null) {
+    $("#timetable-feedback-info").show();
+    $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(currentLesson.endTime - now)}</b>
+      ${lessonToText(currentLesson, false)}, danach ist der Unterricht für heute vorbei!`);
   }
   else {
-    $("#timetable-less, #timetable-more").removeClass("timetable-out-of-range");
-
-    // Timetable More
-    const $prev = $(`#timetable-more [data-lesson-number="${prevLessonNumbers[prevLessonNumbers.length - 1].lessonNumber}"]`);
-    const $next = $(`#timetable-more [data-lesson-number="${nextLessonNumbers[0].lessonNumber}"]`);
-    const barPosPrev = offsetTop($prev) + height($prev);
-    const barPosNext = offsetTop($next);
-    const barPos = (barPosPrev + barPosNext) / 2 - offsetTop($("#timetable-more"));
-    $("#timetable-more").css("--bar-pos", barPos + "px");
-
-    if (window.innerWidth < 1200) {
-      // Timetable Less (Vertical)
-      const $prev = $(`#timetable-less [data-lesson-number="${prevLessonNumbers[prevLessonNumbers.length - 1].lessonNumber}"]`);
-      const $next = $(`#timetable-less [data-lesson-number="${nextLessonNumbers[0].lessonNumber}"]`);
-      const barPosPrev = offsetTop($prev) + height($prev);
-      const barPosNext = offsetTop($next);
-      const barPos = (barPosPrev + barPosNext) / 2 - offsetTop($("#timetable-less"));
-      $("#timetable-less").css("--bar-pos", barPos + "px");
-    }
-    else {
-      const $prev = $(prevLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
-      const $next = $(nextLessonNumbers.map(l => `#timetable-less [data-lesson-number="${l.lessonNumber}"]`).join(", "));
-      $prev.css("--bar-progress", "100%");
-      $next.css("--bar-progress", "0%");
-    }
+    $("#timetable-feedback-info").show();
+    $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(currentLesson.endTime - now)}</b>
+      ${lessonToText(currentLesson, false)}, dann weiter mit ${lessonToText(nextLesson, true)}.`);
   }
 }
-
-setInterval(updateTimetableProgress,  30 * 1000); // Update every 30s
 
 async function renameCalendarMonthYear(): Promise<void> {
   $("#calendar-month-year").text(`${monthNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`);
@@ -1161,313 +970,348 @@ function slideCalendar(direction: "l" | "r", transition: string, slideTime: numb
   });
 }
 
-$(() => {
-  reloadAllFn.set(async () => {
-    eventData.reload();
-    joinedTeamsData.reload();
-    homeworkData.reload();
-    subjectData.reload();
-    substitutionsData.reload();
-    classSubstitutionsData.reload();
-    lessonData.reload();
-    homeworkCheckedData.reload();
-    await updateHomeworkList();
-    await updateEventList();
-    await updateSubstitutionList();
-    await updateTimetable();
-  });
-});
+export async function init(): Promise<void> {
+  return new Promise(res => {
+    justCheckedHomeworkId = -1;
+    animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
 
-let justCheckedHomeworkId = -1;
-const animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
+    $(".calendar-week-move-button").on("click", function () {
+      // If the calendar is already moving, stop; else set it moving
+      if (calendarMoving) {
+        return;
+      }
+      calendarMoving = true;
 
-$(".calendar-week-move-button").on("click", function () {
-  // If the calendar is already moving, stop; else set it moving
-  if (calendarMoving) {
-    return;
-  }
-  calendarMoving = true;
-
-  // Save whether the user clicked left or right
-  let direction: "l" | "r";
-  if ($(this).attr("id") === "calendar-week-r-btn") {
-    direction = "r";
-  }
-  else {
-    direction = "l";
-  }
-
-  if (calendarMode === "week") {
-    if (direction === "r") selectedDate.setDate(selectedDate.getDate() + 7);
-    if (direction === "l") selectedDate.setDate(selectedDate.getDate() - 7);
-  }
-  else {
-    if (direction === "r") selectedDate.setMonth(selectedDate.getMonth() + 1);
-    if (direction === "l") selectedDate.setMonth(selectedDate.getMonth() - 1);
-  }
-
-  slideCalendar(direction, "transform 0.75s ease", 750);
-});
-
-$(".calendar-month-year-move-button").on("click", function () {
-  // If the calendar is already moving, stop; else set it moving
-  if (calendarMoving) {
-    return;
-  }
-  calendarMoving = true;
-
-  // Save whether the user clicked left or right
-  let direction;
-  if ($(this).attr("id") === "calendar-month-year-r-btn") {
-    direction = "r";
-  }
-  else {
-    direction = "l";
-  }
-
-  if (calendarMode === "week") {
-    if (direction === "r") selectedDate.setMonth(selectedDate.getMonth() + 1);
-    if (direction === "l") selectedDate.setMonth(selectedDate.getMonth() - 1);
-  }
-  else {
-    if (direction === "r") selectedDate.setFullYear(selectedDate.getFullYear() + 1);
-    if (direction === "l") selectedDate.setFullYear(selectedDate.getFullYear() - 1);
-  }
-  updateCalendarWeekContent("#calendar-week-old");
-  renameCalendarMonthYear();
-  calendarMoving = false;
-});
-
-function swipe(): void {
-  if (Math.abs(swipeXEnd - swipeXStart) > 50) {
-    // If the calendar is already moving, stop; else set it moving
-    if (calendarMoving) {
-      return;
-    }
-    calendarMoving = true;
-
-    // Save whether the user swiped left or right
-    let direction: "l" | "r";
-    if (calendarMode === "week") {
-      if (swipeXEnd - swipeXStart < 0) {
+      // Save whether the user clicked left or right
+      let direction: "l" | "r";
+      if ($(this).attr("id") === "calendar-week-r-btn") {
         direction = "r";
-        selectedDate.setDate(selectedDate.getDate() + 7);
       }
       else {
         direction = "l";
-        selectedDate.setDate(selectedDate.getDate() - 7);
+      }
+
+      if (calendarMode === "week") {
+        if (direction === "r") selectedDate.setDate(selectedDate.getDate() + 7);
+        if (direction === "l") selectedDate.setDate(selectedDate.getDate() - 7);
+      }
+      else {
+        if (direction === "r") selectedDate.setMonth(selectedDate.getMonth() + 1);
+        if (direction === "l") selectedDate.setMonth(selectedDate.getMonth() - 1);
+      }
+
+      slideCalendar(direction, "transform 0.75s ease", 750);
+    });
+
+    $(".calendar-month-year-move-button").on("click", function () {
+      // If the calendar is already moving, stop; else set it moving
+      if (calendarMoving) {
+        return;
+      }
+      calendarMoving = true;
+
+      // Save whether the user clicked left or right
+      let direction;
+      if ($(this).attr("id") === "calendar-month-year-r-btn") {
+        direction = "r";
+      }
+      else {
+        direction = "l";
+      }
+
+      if (calendarMode === "week") {
+        if (direction === "r") selectedDate.setMonth(selectedDate.getMonth() + 1);
+        if (direction === "l") selectedDate.setMonth(selectedDate.getMonth() - 1);
+      }
+      else {
+        if (direction === "r") selectedDate.setFullYear(selectedDate.getFullYear() + 1);
+        if (direction === "l") selectedDate.setFullYear(selectedDate.getFullYear() - 1);
+      }
+      updateCalendarWeekContent("#calendar-week-old");
+      renameCalendarMonthYear();
+      calendarMoving = false;
+    });
+
+    function swipe(): void {
+      if (Math.abs(swipeXEnd - swipeXStart) > 50) {
+        // If the calendar is already moving, stop; else set it moving
+        if (calendarMoving) {
+          return;
+        }
+        calendarMoving = true;
+
+        // Save whether the user swiped left or right
+        let direction: "l" | "r";
+        if (calendarMode === "week") {
+          if (swipeXEnd - swipeXStart < 0) {
+            direction = "r";
+            selectedDate.setDate(selectedDate.getDate() + 7);
+          }
+          else {
+            direction = "l";
+            selectedDate.setDate(selectedDate.getDate() - 7);
+          }
+        }
+        else if (swipeXEnd - swipeXStart < 0) {
+          direction = "r";
+          selectedDate.setMonth(selectedDate.getMonth() + 1);
+        }
+        else {
+          direction = "l";
+          selectedDate.setMonth(selectedDate.getMonth() - 1);
+        }
+
+        slideCalendar(direction, "transform 0.75s ease", 750);
       }
     }
-    else if (swipeXEnd - swipeXStart < 0) {
-      direction = "r";
-      selectedDate.setMonth(selectedDate.getMonth() + 1);
-    }
-    else {
-      direction = "l";
-      selectedDate.setMonth(selectedDate.getMonth() - 1);
+
+    let swipeXStart: number;
+    let swipeXEnd: number;
+    let swipeYStart: number;
+    let swipeYEnd: number;
+    $("#calendar-week-wrapper").on("touchstart", ev => {
+      swipeXStart = ev.originalEvent?.touches[0].clientX ?? 0;
+      swipeYStart = ev.originalEvent?.touches[0].clientY ?? 0;
+      swipeXEnd = swipeXStart;
+      swipeYEnd = swipeYStart;
+    });
+    $("#calendar-week-wrapper").on("touchmove", ev => {
+      swipeXEnd = ev.originalEvent?.touches[0].clientX ?? 0;
+      swipeYEnd = ev.originalEvent?.touches[0].clientY ?? 0;
+      if (Math.abs(swipeYEnd - swipeYStart) < Math.abs(swipeXEnd - swipeXStart)) {
+        ev.originalEvent?.preventDefault();
+      }
+    });
+    $("#calendar-week-wrapper").on("touchend", () => {
+      swipe();
+    });
+
+    $("#calendar-week-wrapper").on("mousedown", ev => {
+      swipeXStart = ev.originalEvent?.clientX ?? 0;
+      swipeXEnd = swipeXStart;
+    });
+    $("#calendar-week-wrapper").on("mousemove", ev => {
+      swipeXEnd = ev.originalEvent?.clientX ?? 0;
+    });
+    $("#calendar-week-wrapper").on("mouseup", () => {
+      swipe();
+    });
+
+    $("#calendar-today-btn").on("click", () => {
+      if (isSameDay(selectedDate, new Date())) {
+        return;
+      }
+      // If the calendar is already moving, stop; else set it moving
+      if (calendarMoving) {
+        return;
+      }
+
+      selectedDate = new Date();
+
+      updateCalendarWeekContent("#calendar-week-old");
+      renameCalendarMonthYear();
+      updateEventList();
+      updateHomeworkList();
+      updateSubstitutionList();
+      updateTimetable();
+    });
+
+    function updateCalenderMoveButtonAriaLabels(): void {
+      if (calendarMode === "week") {
+        $("#calendar-month-year-l-btn").attr("aria-label", "Vorheriger Monat");
+        $("#calendar-month-year-r-btn").attr("aria-label", "Nächster Monat");
+        $("#calendar-week-l-btn").attr("aria-label", "Vorherige Woche");
+        $("#calendar-week-r-btn").attr("aria-label", "Nächste Woche");
+      }
+      else {
+        $("#calendar-month-year-l-btn").attr("aria-label", "Vorheriges Jahr");
+        $("#calendar-month-year-r-btn").attr("aria-label", "Nächstes Jahr");
+        $("#calendar-week-l-btn").attr("aria-label", "Vorheriger Monat");
+        $("#calendar-week-r-btn").attr("aria-label", "Nächster Monat");
+      }
     }
 
-    slideCalendar(direction, "transform 0.75s ease", 750);
-  }
+    calendarMode = localStorage.getItem("calendarMode") ?? "week";
+    updateCalenderMoveButtonAriaLabels();
+    $(`#calendar-${calendarMode}-btn`).addClass("d-none");
+
+    $("#calendar-month-btn").on("click", () => {
+      selectedNewDay = false;
+      calendarMode = "month";
+      updateCalenderMoveButtonAriaLabels();
+      localStorage.setItem("calendarMode", calendarMode);
+      $("#calendar-week-btn").removeClass("d-none");
+      $("#calendar-month-btn").addClass("d-none");
+      updateCalendarWeekContent("#calendar-week-old");
+    });
+
+    $("#calendar-week-btn").on("click", () => {
+      selectedNewDay = false;
+      calendarMode = "week";
+      updateCalenderMoveButtonAriaLabels();
+      localStorage.setItem("calendarMode", calendarMode);
+      $("#calendar-month-btn").removeClass("d-none");
+      $("#calendar-week-btn").addClass("d-none");
+      updateCalendarWeekContent("#calendar-week-old");
+    });
+
+    $("#app").on("click", ".days-overview-day", async function () {
+      selectedNewDay = true;
+      const day = Number.parseInt($(this).data("day"));
+      const newSelectedDate = (await monthDates())[Number.parseInt($(this).data("week"))][day === 0 ? 6 : day - 1];
+      if (isSameDay(selectedDate, newSelectedDate)) {
+        return;
+      }
+      selectedDate = newSelectedDate;
+      $("#calendar-week-old").find(".days-overview-selected").removeClass("days-overview-selected");
+      $(this).addClass("days-overview-selected");
+      updateCalendarWeekContent("#calendar-week-old");
+      renameCalendarMonthYear();
+      updateEventList();
+      updateHomeworkList();
+      updateSubstitutionList();
+      updateTimetable();
+    });
+
+    selectedDate = new Date();
+    selectedNewDay = false;
+
+    // Save whether the calendar is currently moving (It shouldn't be moved then, as bugs could appear)
+    calendarMoving = false;
+
+    // Set the visible content of the calendar to today's week
+    updateCalendarWeekContent("#calendar-week-old");
+
+    monthNames = [
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember"
+    ];
+    renameCalendarMonthYear();
+
+    updateTimetableFeedback();
+    setInterval(updateTimetableFeedback,  30 * 1000); // Update every 30s
+
+    // Request checking the homework on clicking its checkbox
+    $("#app").on("click", ".homework-check", function () {
+      const homeworkId = $(this).data("id");
+      checkHomework(homeworkId);
+    });
+
+    // On changing the filter mode, update the homework list
+    $("#filter-homework-mode").on("input", () => {
+      updateHomeworkList();
+    });
+
+    $("#timetable-mode input").each(function () {
+      $(this).on("click", () => {
+        updateShownTimetable();
+      });
+      $(this).prop("checked", false);
+    });
+
+    $("#timetable-mode-" + (localStorage.getItem("timetableMode") ?? "less")).prop("checked", true);
+
+    $("#substitutions-mode input").each(function () {
+      $(this).on("click", () => {
+        updateSubstitutionsMode();
+      });
+      $(this).prop("checked", false);
+    });
+
+    $("#substitutions-mode-" + (localStorage.getItem("substitutionsMode") ?? "class")).prop("checked", true);
+
+    $("#homework-mode input").each(function () {
+      $(this).on("click", () => {
+        updateHomeworkMode();
+      });
+      $(this).prop("checked", false);
+    });
+
+    $("#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")).prop("checked", true);    
+    socket.on("updateHomework", () => {
+      homeworkData.reload();
+      homeworkCheckedData.reload();
+      updateHomeworkList();
+    });
+    
+    res();
+  });
 }
 
-let swipeXStart: number;
-let swipeXEnd: number;
-let swipeYStart: number;
-let swipeYEnd: number;
-$("#calendar-week-wrapper").on("touchstart", ev => {
-  swipeXStart = ev.originalEvent?.touches[0].clientX ?? 0;
-  swipeYStart = ev.originalEvent?.touches[0].clientY ?? 0;
-  swipeXEnd = swipeXStart;
-  swipeYEnd = swipeYStart;
-});
-$("#calendar-week-wrapper").on("touchmove", ev => {
-  swipeXEnd = ev.originalEvent?.touches[0].clientX ?? 0;
-  swipeYEnd = ev.originalEvent?.touches[0].clientY ?? 0;
-  if (Math.abs(swipeYEnd - swipeYStart) < Math.abs(swipeXEnd - swipeXStart)) {
-    ev.originalEvent?.preventDefault();
-  }
-});
-$("#calendar-week-wrapper").on("touchend", () => {
-  swipe();
-});
-
-$("#calendar-week-wrapper").on("mousedown", ev => {
-  swipeXStart = ev.originalEvent?.clientX ?? 0;
-  swipeXEnd = swipeXStart;
-});
-$("#calendar-week-wrapper").on("mousemove", ev => {
-  swipeXEnd = ev.originalEvent?.clientX ?? 0;
-});
-$("#calendar-week-wrapper").on("mouseup", () => {
-  swipe();
-});
-
-$("#calendar-today-btn").on("click", () => {
-  if (isSameDay(selectedDate, new Date())) {
-    return;
-  }
-  // If the calendar is already moving, stop; else set it moving
-  if (calendarMoving) {
-    return;
-  }
-
-  selectedDate = new Date();
-
-  updateCalendarWeekContent("#calendar-week-old");
-  renameCalendarMonthYear();
-  updateEventList();
-  updateHomeworkList();
-  updateSubstitutionList();
-  updateTimetable();
-});
-
-function updateCalenderMoveButtonAriaLabels(): void {
-  if (calendarMode === "week") {
-    $("#calendar-month-year-l-btn").attr("aria-label", "Vorheriger Monat");
-    $("#calendar-month-year-r-btn").attr("aria-label", "Nächster Monat");
-    $("#calendar-week-l-btn").attr("aria-label", "Vorherige Woche");
-    $("#calendar-week-r-btn").attr("aria-label", "Nächste Woche");
-  }
-  else {
-    $("#calendar-month-year-l-btn").attr("aria-label", "Vorheriges Jahr");
-    $("#calendar-month-year-r-btn").attr("aria-label", "Nächstes Jahr");
-    $("#calendar-week-l-btn").attr("aria-label", "Vorheriger Monat");
-    $("#calendar-week-r-btn").attr("aria-label", "Nächster Monat");
-  }
-}
-
-let calendarMode = localStorage.getItem("calendarMode") ?? "week";
-updateCalenderMoveButtonAriaLabels();
-$(`#calendar-${calendarMode}-btn`).addClass("d-none");
-
-$("#calendar-month-btn").on("click", () => {
-  selectedNewDay = false;
-  calendarMode = "month";
-  updateCalenderMoveButtonAriaLabels();
-  localStorage.setItem("calendarMode", calendarMode);
-  $("#calendar-week-btn").removeClass("d-none");
-  $("#calendar-month-btn").addClass("d-none");
-  updateCalendarWeekContent("#calendar-week-old");
-});
-
-$("#calendar-week-btn").on("click", () => {
-  selectedNewDay = false;
-  calendarMode = "week";
-  updateCalenderMoveButtonAriaLabels();
-  localStorage.setItem("calendarMode", calendarMode);
-  $("#calendar-month-btn").removeClass("d-none");
-  $("#calendar-week-btn").addClass("d-none");
-  updateCalendarWeekContent("#calendar-week-old");
-});
-
-$(document).on("click", ".days-overview-day", async function () {
-  selectedNewDay = true;
-  const day = parseInt($(this).data("day"));
-  const newSelectedDate = (await monthDates())[parseInt($(this).data("week"))][day === 0 ? 6 : day - 1];
-  if (isSameDay(selectedDate, newSelectedDate)) {
-    return;
-  }
-  selectedDate = newSelectedDate;
-  $("#calendar-week-old").find(".days-overview-selected").removeClass("days-overview-selected");
-  $(this).addClass("days-overview-selected");
-  updateCalendarWeekContent("#calendar-week-old");
-  renameCalendarMonthYear();
-  updateEventList();
-  updateHomeworkList();
-  updateSubstitutionList();
-  updateTimetable();
-});
-
-let selectedDate = new Date();
-let selectedNewDay = false;
-
-// Save whether the calendar is currently moving (It shouldn't be moved then, as bugs could appear)
-let calendarMoving = false;
-
-// Is a list of the dates (number of day in the month) of the week which is currently selected
-type MonthDates = Date[][];
-const monthDates = createDataAccessor<MonthDates>("monthDates");
-
-// Set the visible content of the calendar to today's week
-updateCalendarWeekContent("#calendar-week-old");
-
-const monthNames = [
-  "Januar",
-  "Februar",
-  "März",
-  "April",
-  "Mai",
-  "Juni",
-  "Juli",
-  "August",
-  "September",
-  "Oktober",
-  "November",
-  "Dezember"
-];
-renameCalendarMonthYear();
-
-// Request checking the homework on clicking its checkbox
-$(document).on("click", ".homework-check", function () {
-  const homeworkId = $(this).data("id");
-  checkHomework(homeworkId);
-});
-
-// On changing the filter mode, update the homework list
-$("#filter-homework-mode").on("input", () => {
-  updateHomeworkList();
-});
-
-$("#timetable-mode input").each(function () {
-  $(this).on("click", () => {
-    updateShownTimetable();
-    updateTimetableProgress();
-  });
-  $(this).prop("checked", false);
-});
-
-$("#timetable-mode-" + (localStorage.getItem("timetableMode") ?? "less")).prop("checked", true);
-
-$("#substitutions-mode input").each(function () {
-  $(this).on("click", () => {
-    updateSubstitutionsMode();
-  });
-  $(this).prop("checked", false);
-});
-
-$("#substitutions-mode-" + (localStorage.getItem("substitutionsMode") ?? "class")).prop("checked", true);
-
-$("#homework-mode input").each(function () {
-  $(this).on("click", () => {
-    updateHomeworkMode();
-  });
-  $(this).prop("checked", false);
-});
-
-$("#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")).prop("checked", true);
-
-socket.on("updateHomeworkData", () => {
-  try {
+registerSocketListeners({
+  updateHomework: () => {
     homeworkData.reload();
     homeworkCheckedData.reload();
-
     updateHomeworkList();
-  }
-  catch (error) {
-    console.error("Error handling updateHomeworkData:", error);
-  }
-});
-
-socket.on("updateEventData", () => {
-  try {
+  },
+  updateSubjects: () => {
+    subjectData.reload();
+    updateHomeworkList();
+  },
+  updateEvents: () => {
     eventData.reload();
 
     updateEventList();
     updateCalendarWeekContent("#calendar-week-old");
     updateTimetable();
-  }
-  catch (error) {
-    console.error("Error handling updateEventData:", error);
+  },
+  updateTimetables: () => {
+    lessonData.reload();
+    updateTimetable();
+  },
+  updateTeams: () => {
+    teamsData.reload();
+    homeworkData.reload();
+    homeworkCheckedData.reload();
+    eventData.reload();
+
+    updateHomeworkList();
+    updateEventList();
+    updateCalendarWeekContent("#calendar-week-old");
+    updateTimetable();
+  },
+  updateJoinedTeams: () => {
+    joinedTeamsData.reload();
+
+    updateHomeworkList();
+    updateEventList();
+    updateCalendarWeekContent("#calendar-week-old");
+    updateTimetable();
   }
 });
+
+export const reloadAllFn = async (): Promise<void> => {
+  eventData.reload();
+  joinedTeamsData.reload();
+  homeworkData.reload();
+  subjectData.reload();
+  substitutionsData.reload();
+  classSubstitutionsData.reload();
+  lessonData.reload();
+  homeworkCheckedData.reload();
+  await updateHomeworkList();
+  await updateEventList();
+  await updateSubstitutionList();
+  await updateTimetable();
+};
+
+let justCheckedHomeworkId: number;
+let animations: boolean;
+let selectedDate: Date;
+let selectedNewDay: boolean;
+// Save whether the calendar is currently moving (It shouldn't be moved then, as bugs could appear)
+let calendarMoving: boolean;
+let monthNames: string[];
+let calendarMode: string;
+// Is a list of the dates (number of day in the month) of the week which is currently selected
+const monthDates = createDataAccessor<MonthDates>("monthDates");

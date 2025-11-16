@@ -101,6 +101,7 @@
   <div class="rich-textarea-paste-area">This is for pasting content (Elements have to be in the real DOM to have correct display of styles)</div>
   <div class="toast-container">
     <div id="rich-textarea-unsupported-input-type" class="toast">
+      <div class="toast-progress-bar bg-warning"></div>
       <div class="toast-header bg-warning text-body-bg">
         <b class="me-auto">InputType nicht verfügbar</b>
         <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
@@ -118,13 +119,14 @@
       </div>
     </div>
     <div id="rich-textarea-pasting-error" class="toast">
+      <div class="toast-progress-bar bg-danger"></div>
       <div class="toast-header bg-danger text-body-bg">
         <b class="me-auto">Fehler beim Einfügen</b>
         <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
       </div>
       <div class="toast-body">Es gab einen Fehler beim Versuch, Text einzufügen. Vielleicht hast du der Website keine Berechtigung gegeben?</div>
     </div>
-    <div id="rich-textarea-unsafe-link" class="toast">
+    <div id="rich-textarea-unsafe-link" class="toast" data-bs-autohide="false">
       <div class="toast-header bg-warning text-body-bg">
         <span class="me-auto w-100 fw-bold">
           Fremder Link:
