@@ -130,8 +130,8 @@ const uploadService = {
         totalUploads: 0,
         uploads: [],
         hasMore: false,
-        totalStorage: classInformation!.storageQuotaBytes,
-        usedStorage: classInformation!.storageUsedBytes
+        totalStorage: classInformation!.storageQuotaBytes.toString(),
+        usedStorage: classInformation!.storageUsedBytes.toString()
       };
     }
 
