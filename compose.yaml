@@ -33,8 +33,7 @@ services:
     volumes:
       - ./db-backups:/backups
       - clamav-data:/var/lib/clamav
-      # Files folder
-      - ./data:/usr/src/app/data
+      - app-data:/usr/src/app/data
 
   postgres:
     image: postgres:14
@@ -125,7 +124,6 @@ services:
       - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/
       - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
     environment:
-      # This is the password and user at server startup, grafana will prompt to change this upon first login
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
@@ -158,4 +156,5 @@ volumes:
   loki-data:
   promtail-positions:
   grafana-data:
+  app-data:
   clamav-data:

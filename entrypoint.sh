@@ -29,38 +29,41 @@ DATABASE_URL="$(cat /run/secrets/database_url)"
 export DATABASE_URL
 
 # ==============================================================================
-# ----- One time v2 deployment cmds -----
+# Ensure permissions for data are returned to bun user
 # ==============================================================================
-# PGPASSWORD="$DB_PASSWORD" psql -X -U "$DB_USER" "$DB_NAME" < /usr/src/app/backend/src/prisma/seed.sql
-# bunx prisma migrate resolve --applied 0_init
+echo "Returning data directory permissions to bun..."
+chown -R bun:bun /usr/src/app/data
 
 # ==============================================================================
-# ----- Run Initialization Tasks -----
+# Run DB Migrations (as bun)
 # ==============================================================================
 echo "Running database migrations..."
-bunx prisma migrate deploy
+su-exec bun:bun bunx prisma migrate deploy
 
 # ==============================================================================
-# ----- One time v2 migration cmds -----
+# One time v2 migration cmds (as bun)
+# Do not uncomment if first time setting up the server, 
+# only when migrating from v1 to v2
 # ==============================================================================
+# su-exec bun:bun bunx prisma migrate resolve --applied 0_init
+# su-exec bun:bun bunx prisma migrate resolve --applied 20250804114621_migrate_to_multiple_classes
 
-# bunx prisma migrate resolve --applied 0_init
-# bunx prisma migrate resolve --applied 20250804114621_migrate_to_multiple_classes
-
-# Update ClamAV virus database
+# ======================================================================
+# Update ClamDB (as clamav)
+# ======================================================================
 echo "Updating ClamAV virus database..."
-freshclam --foreground || echo "Warning: ClamAV database update failed."
+su-exec clamav:clamav freshclam --foreground || echo "Warning: ClamAV database update failed."
 
-# ==============================================================================
-# ----- Start ClamAV daemon -----
-# ==============================================================================
+# ======================================================================
+# Start clamd (as clamav)
+# ======================================================================
 echo "Starting clamd..."
-clamd & CLAMD_PID=$!
+su-exec clamav:clamav clamd &
 
 # Wait until clamd is ready
 echo "Waiting for clamd to become ready..."
 for i in $(seq 1 20); do
-    if clamdscan --version >/dev/null 2>&1; then
+    if su-exec clamav:clamav clamdscan --version >/dev/null 2>&1; then
         echo "clamd is ready."
         break
     fi
@@ -69,17 +72,20 @@ for i in $(seq 1 20); do
 done
 
 # Check if clamd is actually ready after waiting
-if ! clamdscan --version >/dev/null 2>&1; then
+if ! su-exec clamav:clamav clamdscan --version >/dev/null 2>&1; then
     echo "Error: clamd failed to start within 20 seconds"
     exit 1
 fi
 
+# ======================================================================
+# Flush Redis (as bun)
+# ======================================================================
 echo "Flushing Redis..."
-redis-cli -h redis FLUSHALL || echo "Redis flush failed"
+su-exec bun:bun redis-cli -h redis FLUSHALL || echo "Redis flush failed"
 
 echo "Initialization complete. Starting application as 'bun'..."
 
 # ==============================================================================
 # ----- Start the Main Application -----
 # ==============================================================================
-exec su bun -c "cd /usr/src/app && exec $*"
+exec su-exec bun:bun "$@"

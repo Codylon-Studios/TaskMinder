@@ -294,16 +294,6 @@ Before starting the application, create the following **text files inside the `d
    ```bash
    sudo vi personalData.html
    ```
-
-4. **Edit entrypoint.sh:**
-
-   Uncomment the lines under `# ----- One time v2 deployment cmds -----:`
-
-   * `PGPASSWORD=your_password psql -X -U your_username DB_NAME < /usr/src/app/backend/src/prisma/seed.sql`
-   * `bunx prisma migrate resolve --applied 0_init`
-
-   Replace `your_password`, `your_username`, `DB_NAME` with your actual username, password and database name.
-
 ---
 
 ## 9. Run Docker Compose and reset git changes
