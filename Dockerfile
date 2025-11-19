@@ -49,7 +49,7 @@ RUN mkdir -p /usr/src/app/data/temp \
     /usr/src/app/data/uploads \
     /usr/src/app/data/quarantine \
     /usr/src/app/data/sanitized \
- && chown -R bun:bun /usr/src/app/data
+    && chown -R bun:bun /usr/src/app/data
 
 EXPOSE 3000
 
