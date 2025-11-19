@@ -275,7 +275,7 @@ Before starting the application, create the following **text files inside the `d
 
 ---
 
-## 8. Setup `personalData.html` and edit entrypoint.sh
+## 8. Setup `personalData.html`
 
 1. **Navigate to the directory** where the example file is located:
 

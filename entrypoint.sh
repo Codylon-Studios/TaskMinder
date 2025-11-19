@@ -42,7 +42,7 @@ su-exec bun:bun bunx prisma migrate deploy
 
 # ==============================================================================
 # One time v2 migration cmds (as bun)
-# Do not uncomment if first time setting up the server, 
+# Do not uncomment if this is the first time setting up the server,
 # only when migrating from v1 to v2
 # ==============================================================================
 # su-exec bun:bun bunx prisma migrate resolve --applied 0_init
