@@ -38,7 +38,7 @@ export default {
 
     if (session.account) {
       const accountInDb = await prisma.account.findUnique({
-        where: { accountId: session.account.accountId },
+        where: { accountId: session.account.accountId, deletedAt: null },
         select: { accountId: true, username: true }
       });
 
@@ -102,8 +102,8 @@ export default {
       throw err;
     }
 
-    const accountExists = await prisma.account.findUnique({
-      where: { username: username }
+    const accountExists = await prisma.account.findFirst({
+      where: { username: username, deletedAt: null }
     });
     if (accountExists) {
       const err: RequestError = {
@@ -160,9 +160,10 @@ export default {
       };
       throw err;
     }
-    const account = await prisma.account.findUnique({
+    const account = await prisma.account.findFirst({
       where: {
-        username: username
+        username: username,
+        deletedAt: null
       }
     });
     if (!account) {
@@ -230,7 +231,8 @@ export default {
     }
     const account = await prisma.account.findUnique({
       where: {
-        accountId: session.account!.accountId
+        accountId: session.account!.accountId,
+        deletedAt: null
       }
     });
     const isPasswordValid = await bcrypt.compare(password, account!.password);
@@ -244,25 +246,22 @@ export default {
       throw err;
     }
     await prisma.$transaction(async tx => {
-      await tx.deletedAccount.create({
+      // mark account as deleted
+      await tx.account.update({
+        where: {
+          accountId: account!.accountId
+        },
         data: {
-          deletedUsername: account!.username,
-          deletedPassword: account!.password,
-          deletedAccountId: account!.accountId,
-          deletedOn: Date.now()
+          deletedAt: Date.now()
         }
       });
+      // set relevant accountId in uploads to null
       await tx.upload.updateMany({
         where: {
           accountId: account!.accountId
         },
         data: {
           accountId: null
-        }
-      });
-      await tx.account.delete({
-        where: {
-          accountId: session.account!.accountId
         }
       });
     });
@@ -273,9 +272,10 @@ export default {
   async changeUsername(reqData: changeUsernameTypeBody, session: Session & Partial<SessionData>) {
     const { password, newUsername } = reqData;
 
-    const accountWithNewUsername = await prisma.account.findUnique({
+    const accountWithNewUsername = await prisma.account.findFirst({
       where: {
-        username: newUsername
+        username: newUsername,
+        deletedAt: null
       }
     });
 
@@ -291,7 +291,8 @@ export default {
 
     const account = await prisma.account.findUnique({
       where: {
-        accountId: session.account!.accountId
+        accountId: session.account!.accountId,
+        deletedAt: null
       }
     });
 
@@ -308,7 +309,8 @@ export default {
 
     await prisma.account.update({
       where: {
-        accountId: session.account!.accountId
+        accountId: session.account!.accountId,
+        deletedAt: null
       },
       data: {
         username: newUsername
@@ -325,7 +327,8 @@ export default {
     const { oldPassword, newPassword } = reqData;
     const changePasswordAccount = await prisma.account.findUnique({
       where: {
-        accountId: session.account!.accountId
+        accountId: session.account!.accountId,
+        deletedAt: null
       }
     });
 
@@ -342,7 +345,8 @@ export default {
     const hashedPassword = await bcrypt.hash(newPassword, SALTROUNDS);
     await prisma.account.update({
       where: {
-        accountId: session.account!.accountId
+        accountId: session.account!.accountId,
+        deletedAt: null
       },
       data: {
         password: hashedPassword
@@ -352,8 +356,8 @@ export default {
 
   async checkUsername(reqData: checkUsernameTypeBody) {
     const { username } = reqData;
-    const accountExists = await prisma.account.findUnique({
-      where: { username: username }
+    const accountExists = await prisma.account.findFirst({
+      where: { username: username, deletedAt: null }
     });
     return accountExists !== null;
   }

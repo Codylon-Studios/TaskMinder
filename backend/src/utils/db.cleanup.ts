@@ -13,7 +13,6 @@ import { FINAL_UPLOADS_DIR } from "../config/upload";
 // As a lot of data is connected to a class, many prisma functions need to be called,
 // thus increasing lines of code, but code is still logical
 // This will not get better as code <-> cascade stuff will be introduced in the future
-// TODO@Mingqi: do not forget to add the maunal 
 export async function cleanupTestClasses(): Promise<void> {
   try {
     // Calculate the timestamp for 1 day ago (in milliseconds)
@@ -108,7 +107,7 @@ export async function cleanupTestClasses(): Promise<void> {
 }
 
 /**
- * Deletes deleted accounts records that are older than 30 days based on deletedOn date
+ * Deletes deleted accounts records that are older than 30 days based on deletedAt date
  */
 export async function cleanupDeletedAccounts(): Promise<void> {
   try {
@@ -116,18 +115,18 @@ export async function cleanupDeletedAccounts(): Promise<void> {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
     // Count records to be deleted
-    const count = await prisma.deletedAccount.count({
+    const count = await prisma.account.count({
       where: {
-        deletedOn: {
+        deletedAt: {
           lt: thirtyDaysAgo
         }
       }
     });
 
     // Delete the records
-    const deleted = await prisma.deletedAccount.deleteMany({
+    const deleted = await prisma.account.deleteMany({
       where: {
-        deletedOn: {
+        deletedAt: {
           lt: thirtyDaysAgo
         }
       }
