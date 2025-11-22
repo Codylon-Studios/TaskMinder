@@ -51,7 +51,7 @@ async function checkAccountAccess(req: Request): Promise<void> {
 
   if (!authUserRedis) {
     const account = await prisma.account.findUnique({
-      where: { accountId: req.session.account.accountId }
+      where: { accountId: req.session.account.accountId, deletedAt: null }
     });
 
     if (!account) {

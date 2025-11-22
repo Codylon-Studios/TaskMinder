@@ -20,7 +20,8 @@ This documentation describes all database tables defined in the current Prisma s
 | :-------- | :-------- | :---------------------------------- | :--------------------------------------------------- |
 | accountId | Integer   | Unique user identifier              | Could enable cross-system tracking                   |
 | username  | String    | **Personal identifier** for login   | May reveal real names or personal info               |
-| password  | String    | Encrypted authentication credential | **High risk**: Hash algorithms may become vulnerable |
+| password  | String    | Encrypted authentication credential | **Risk**: Hash algorithms may become vulnerable |
+| deletedAt | BigInt    | Account deletion timestamp          | -                                                    |
 
 **Privacy Concerns**:
 
@@ -29,7 +30,9 @@ This documentation describes all database tables defined in the current Prisma s
 
 **Solutions**:
 
-- Hashing using bcrypt: bcrypt automatically generates a unique random salt per password, making rainbow table attacks ineffective. We use a sufficient number of salt rounds (e.g., `SALT_ROUNDS = 10`).
+- Personal data (`username`, `password`) is retained after the user has initiated deletion, creating a risk if the cleanup process fails.
+- Hashing using bcrypt: bcrypt automatically generates a unique random salt per password, making rainbow table attacks ineffective. We use a sufficient number of salt rounds ( `SALT_ROUNDS = 10`).
+- Implement a robust, automated cron job to ensure permanent deletion after the 30-day period.
 
 ---
 
@@ -53,27 +56,6 @@ This documentation describes all database tables defined in the current Prisma s
 
 - The `sess` JSON column intentionally stores: `accountId`, `username`, `classId` (if joined), and a `csrfToken`.
 - **Security**: The session secret is cryptographically secure. Cookies are set with `httpOnly: true` and `secure: true` (in production) to prevent client-side script access and ensure transmission only over HTTPS.
-
----
-
-### 3. deletedAccount Table
-
-**Purpose**: Temporarily holds soft-deleted accounts for a 30-day grace period before permanent deletion.
-
-| Field            | Data Type | Intentionally Stored                       | Potentially Unintentional                    |
-| :--------------- | :-------- | :----------------------------------------- | :------------------------------------------- |
-| deletedAccountId | Integer   | Identifier for the deleted account record  | -                                            |
-| deletedUsername  | String    | The username of the deleted account        | Retains a personal identifier post-deletion  |
-| deletedPassword  | String    | The hashed password of the deleted account | Retains a sensitive credential post-deletion |
-| deletedOn        | BigInt    | Timestamp for scheduled permanent deletion | -                                            |
-
-**Privacy Concerns**:
-
-- Personal data (`username`, `password`) is retained after the user has initiated deletion, creating a risk if the cleanup process fails.
-
-**Solutions**:
-
-- Implement a robust, automated cron job to ensure permanent deletion after the 30-day period.
 
 ---
 
@@ -302,7 +284,7 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 ---
 
 - **Document Version:** 2.1
-- **Stable Version Alignment:** v2.2.1
-- **Last Updated:** November 16th, 2025
+- **Stable Version Alignment:** v2.2.2
+- **Last Updated:** November 22th, 2025
 - **Next Scheduled Review:** Quarterly – December 10, 2025
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

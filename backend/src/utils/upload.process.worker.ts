@@ -268,6 +268,8 @@ const processFile = async (file: FileProcessingJob["tempFiles"][0], classId: num
     };
     throw err;
   }
+
+  // Use random UUID to store file
   const storedFileName = `${randomUUID()}.${ext}`;
   const finalPath = path.join(finalDirectory, storedFileName);
 
@@ -283,6 +285,9 @@ const processFile = async (file: FileProcessingJob["tempFiles"][0], classId: num
 const processJob = async (job: FileProcessingJob): Promise<void> => {
   const { uploadId, classId, tempFiles } = job;
 
+  // Declare processedFiles outside try block so it's accessible in catch
+  const processedFiles: Array<{ storedFileName: string; originalName: string; mimeType: string; size: number }> = [];
+
   try {
     // Update status to processing
     const upload = await prisma.upload.findUnique({
@@ -290,6 +295,8 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
       select: { reservedBytes: true }
     });
 
+    // If no upload is available, file was already moved or deleted 
+    // -> catch block, trying to delete metadata and real files
     if (!upload) {
       const err: RequestError = {
         name: "Bad Request",
@@ -308,7 +315,6 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     // Invalidate cache when status changes to processing
     await invalidateUploadCache(classId.toString());
 
-    const processedFiles: Array<{ storedFileName: string; originalName: string; mimeType: string; size: number }> = [];
     let totalBytes = 0n;
 
     // Process each file
@@ -363,6 +369,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     // Invalidate cache when status changes to completed
     await invalidateUploadCache(classId.toString());
 
+    // Call socker functions for real time
     const io = socketIO.getIO();
     io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
 
@@ -374,10 +381,22 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     // Clean up all temp files
     await Promise.all(tempFiles.map(f => fs.unlink(f.path).catch(() => { })));
 
+    // Clean up any files that were already processed
+    await Promise.all(
+      processedFiles.map(file => {
+        const filePath = path.join(FINAL_UPLOADS_DIR, classId.toString(), file.storedFileName);
+        return fs.unlink(filePath).catch(() => { });
+      })
+    );
+
     // Mark upload as failed and release reserved storage
     const errorReason = error instanceof Error ? error.message : "unknown_error";
 
     await prisma.$transaction(async tx => {
+      // Delete any file metadata that was created
+      await tx.fileMetadata.deleteMany({
+        where: { uploadId }
+      });
       const upload = await tx.upload.findUnique({
         where: { uploadId },
         select: { reservedBytes: true }
@@ -404,6 +423,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     // Invalidate cache when status changes to failed
     await invalidateUploadCache(classId.toString());
 
+    // Send socket events
     const io = socketIO.getIO();
     io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
   }
