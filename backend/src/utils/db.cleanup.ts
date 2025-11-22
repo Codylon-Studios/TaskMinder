@@ -50,19 +50,7 @@ export async function cleanupTestClasses(): Promise<void> {
       }
     }
 
-    const [deletedFileMetadata, deletedUploads, deletedJoins] = await prisma.$transaction([
-      // Delete all file metadata for uploads in these classes
-      prisma.fileMetadata.deleteMany({
-        where: {
-          Upload: {
-            classId: {
-              in: classIdsToDelete
-            }
-          }
-        }
-      }),
-
-      // Delete all uploads for these classes
+    const [deletedUploads, deletedJoins] = await prisma.$transaction([
       prisma.upload.deleteMany({
         where: {
           classId: {
@@ -96,7 +84,6 @@ export async function cleanupTestClasses(): Promise<void> {
 
     logger.info(
       `Test Class cleanup completed: ${classesToDelete.length} classes deleted, ` +
-      `${deletedFileMetadata.count} file metadata records removed, ` +
       `${deletedUploads.count} uploads removed, ` +
       `${deletedJoins.count} join records removed. (1d)`
     );

@@ -337,11 +337,6 @@ const uploadService = {
       : uploadData.reservedBytes;
 
     await prisma.$transaction(async tx => {
-      // Delete all file metadata records
-      await tx.fileMetadata.deleteMany({
-        where: { uploadId }
-      });
-
       // Delete the upload record
       await tx.upload.delete({
         where: { uploadId }

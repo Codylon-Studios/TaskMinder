@@ -4,16 +4,21 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.2] - 2025-11-23
+## \[v2.2.2] - 2025-11-30
+
+### Changed
+* Backend now sends regex at substitution data directly
+* Add 400 return codes if file is too large or too many files being uploaded
+* Explanation for test class is now wrapped in an info box
 
 ### Fixed
+* Migrate from promtail (deprecated) to alloy
 * Certain lessons were not displayed in timetable
 * "Heute kein Unterricht" (or the blue info box in general) did not always display immediately
 * Improve production deployment regarding permissions (least privilege)
 * Change host volume to named volume in docker compose to avoid permission errors
 * Correct docs at db migration
 * Adding/editing/checking homework will lead to displaying all homework (ignoring filters) of the last 90 days - fixed
-* Explanation for test class is now wrapped in an info box
 
 ---
 

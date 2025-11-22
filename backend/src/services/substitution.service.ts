@@ -112,25 +112,35 @@ export async function loadSubstitutionData(
 // This approach improves performance while still keeping data reasonably fresh.
 export async function getSubstitutionData(session: Session & Partial<SessionData>): Promise<{
     data: SubstitutionData | "No data";
-    substitutionClassName: string | null;
+    classFilterRegex: string | null;
 }> {
   const substitutionClass = await prisma.class.findUnique({
     where: { classId: parseInt(session.classId!) }
   });
 
   if (!substitutionClass || !substitutionClass.dsbMobileActivated || !substitutionClass.dsbMobileUser || !substitutionClass.dsbMobilePassword) {
-    return { data: "No data", substitutionClassName: null};
+    return { data: "No data", classFilterRegex: null};
   }
 
   const { dsbMobileUser, dsbMobilePassword, classId } = substitutionClass;
+
+  // Transform class name to regex if it follows the "NumberLetter" pattern (e.g., "10d")
+  let classFilterRegex = substitutionClass.dsbMobileClass;
+  if (classFilterRegex) {
+    const match = classFilterRegex.match(/^(\d+)([a-zA-Z]+)$/);
+    if (match) {
+      const [, classNumber, classLetter] = match;
+      classFilterRegex = `^${classNumber}[a-zA-Z]*${classLetter}[a-zA-Z]*`;
+    }
+  }
+
   const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBSTITUTIONS, classId.toString());
 
   const cachedEntry = await redisClient.get(cacheKey);
 
   if (!cachedEntry) {
     const data =  await loadSubstitutionData(dsbMobileUser, dsbMobilePassword, cacheKey);
-    const substitutionClassName = substitutionClass.dsbMobileClass;
-    return {data, substitutionClassName: substitutionClassName};
+    return {data, classFilterRegex: classFilterRegex};
   }
 
   const { data, timestamp } = JSON.parse(cachedEntry);
@@ -142,8 +152,7 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
         logger.error(`Background refresh failed for key ${cacheKey}: ${err}`);
       });
   }
-  const substitutionClassName = substitutionClass.dsbMobileClass;
 
-  return {data, substitutionClassName: substitutionClassName};
+  return {data, classFilterRegex: classFilterRegex};
 }
 export default { getSubstitutionData };

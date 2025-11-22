@@ -21,7 +21,7 @@ router.post(
   checkAccess(["CLASS", "EDITOR"]),
   validate(uploadFileSchema),
   uploadMiddleware.preflightStorageQuotaCheck,
-  uploadMiddleware.secureUpload.array("files", 20),
+  uploadMiddleware.handleFileUpload,
   uploadMiddleware.normalizeFiles,
   uploadController.queueFileUpload
 );

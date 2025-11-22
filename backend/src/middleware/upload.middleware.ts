@@ -1,7 +1,7 @@
 import multer, { FileFilterCallback } from "multer";
-import { 
-  ALLOWED_MIMES, 
-  ALLOWED_EXTENSIONS, 
+import {
+  ALLOWED_MIMES,
+  ALLOWED_EXTENSIONS,
   TEMP_DIR
 } from "../config/upload";
 import path from "path";
@@ -113,7 +113,7 @@ export const preflightStorageQuotaCheck = async (
     // Store reserved amount in res.locals for service layer
     res.locals.reservedBytes = totalUploadSize;
     next();
-  } 
+  }
   catch (error) {
     next(error);
   }
@@ -190,9 +190,50 @@ export const secureUpload = multer({
   }
 });
 
+// Wrapper to catch Multer errors (specifically file size limit)
+export const handleFileUpload = (req: Request, res: Response, next: NextFunction): void => {
+  const upload = secureUpload.array("files", 20);
+
+  upload(req, res, err => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        const error: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "File size limit exceeded (Max 15MB)",
+          expected: true
+        };
+        return next(error);
+      }
+      if (err.code === "LIMIT_UNEXPECTED_FILE") {
+        const error: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Too many files uploaded (Max 20 files)",
+          expected: true
+        };
+        return next(error);
+      }
+      const error: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: err.message,
+        expected: true
+      };
+      return next(error);
+    }
+    if (err) {
+      return next(err);
+    }
+
+    next();
+  });
+};
+
 
 export default {
   secureUpload,
+  handleFileUpload,
   preflightStorageQuotaCheck,
   normalizeFiles
 };

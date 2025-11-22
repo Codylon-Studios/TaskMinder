@@ -1,0 +1,86 @@
+// Docker service discovery
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Relabel Docker discovery targets
+loki.relabel "docker_relabel" {
+  forward_to = [loki.process.docker_filter.receiver]
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "logstream"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "job"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "instance"
+  }
+}
+
+// Collect Docker logs
+loki.source.docker "docker_logs" {
+  host = "unix:///var/run/docker.sock"
+  targets = discovery.docker.containers.targets
+  forward_to = [loki.relabel.docker_relabel.receiver]
+}
+
+// Process and filter Docker logs
+loki.process "docker_filter" {
+  forward_to = [loki.write.loki_push.receiver]
+  
+  // Drop metrics requests and static assets for app container
+  stage.match {
+    selector = `{job="app"}`
+    
+    stage.drop {
+      expression = "GET /metrics"
+    }
+    
+    stage.drop {
+      expression = "\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)"
+    }
+  }
+}
+
+// Write logs to Loki
+loki.write "loki_push" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// Scrape metrics from your app
+prometheus.scrape "taskminder_app" {
+  targets = [{
+    __address__ = "app:9100",
+  }]
+  forward_to = [prometheus.remote_write.prom_rw.receiver]
+}
+
+// Write metrics to Prometheus
+prometheus.remote_write "prom_rw" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+// Export Alloy's own metrics
+prometheus.exporter.self "alloy_internal" {}
+
+prometheus.scrape "alloy_metrics" {
+  targets = prometheus.exporter.self.alloy_internal.targets
+  forward_to = [prometheus.remote_write.prom_rw.receiver]
+}

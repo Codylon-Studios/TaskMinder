@@ -35,6 +35,12 @@ echo "Returning data directory permissions to bun..."
 chown -R bun:bun /usr/src/app/data
 
 # ==============================================================================
+# Ensure permissions for ClamAV directories
+# ==============================================================================
+echo "Returning ClamAV directory permissions to clamav..."
+chown -R clamav:clamav /var/lib/clamav /run/clamav
+
+# ==============================================================================
 # Run DB Migrations (as bun)
 # ==============================================================================
 echo "Running database migrations..."
