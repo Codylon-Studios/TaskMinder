@@ -29,7 +29,6 @@ CREATE INDEX IF NOT EXISTS "upload_classId_idx" ON "upload"("classId");
 -- Drop the constraint and index (because of deletedAt)
 ALTER TABLE "account" DROP CONSTRAINT IF EXISTS "account_username_key";
 ALTER TABLE "subjects" DROP CONSTRAINT IF EXISTS "subjects_classId_subjectNameLong_key";
-ALTER TABLE "subjects" DROP CONSTRAINT IF EXISTS "subjects_classId_subjectNameLong_key";
 ALTER TABLE "subjects" DROP CONSTRAINT IF EXISTS "subjects_classId_subjectNameShort_key";
 
 DROP INDEX IF EXISTS "subjects_classId_subjectNameLong_key";

@@ -369,7 +369,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     // Invalidate cache when status changes to completed
     await invalidateUploadCache(classId.toString());
 
-    // Call socker functions for real time
+    // Call socket functions for real time
     const io = socketIO.getIO();
     io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
 

@@ -51,10 +51,19 @@ async function checkAccountAccess(req: Request): Promise<void> {
 
   if (!authUserRedis) {
     const account = await prisma.account.findUnique({
-      where: { accountId: req.session.account.accountId, deletedAt: null }
+      where: { accountId: req.session.account.accountId }
     });
 
     if (!account) {
+      delete req.session.account;
+      throwError(
+        "Unauthorized",
+        401,
+        "Account not found. You have been logged out"
+      );
+    }
+    // account was deleted, invalid session
+    if (account.deletedAt !== null){
       delete req.session.account;
       throwError(
         "Unauthorized",
