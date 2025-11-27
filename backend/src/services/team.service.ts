@@ -153,7 +153,8 @@ const teamService = {
             await tx.team.create({
               data: {
                 classId: classId,
-                name: team.name
+                name: team.name,
+                createdAt: Date.now()
               }
             });
           }
@@ -259,7 +260,8 @@ const teamService = {
           await tx.joinedTeams.create({
             data: {
               teamId: teamId,
-              accountId: accountId
+              accountId: accountId,
+              createdAt: Date.now()
             }
           });
         }

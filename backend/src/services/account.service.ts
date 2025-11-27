@@ -121,7 +121,8 @@ export default {
       const newAccount = await tx.account.create({
         data: {
           username,
-          password: hashedPassword
+          password: hashedPassword,
+          createdAt: Date.now()
         }
       });
 
@@ -130,7 +131,8 @@ export default {
           data: {
             accountId: newAccount.accountId,
             classId: parseInt(session.classId),
-            permissionLevel: 0 // assume lowest role for class
+            permissionLevel: 0, // assume lowest role for class
+            createdAt: Date.now()
           }
         });
       }
@@ -199,7 +201,8 @@ export default {
         data: {
           accountId: accountId,
           classId: parseInt(session.classId),
-          permissionLevel: 0 // assume lowest level
+          permissionLevel: 0, // assume lowest level
+          createdAt: Date.now()
         }
       });
     }

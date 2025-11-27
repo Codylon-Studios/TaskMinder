@@ -111,7 +111,8 @@ const classService = {
           data: {
             accountId: session.account!.accountId,
             classId: createdClass.classId,
-            permissionLevel: 3 // class creator is admin
+            permissionLevel: 3, // class creator is admin
+            createdAt: Date.now()
           }
         });
         return createdClass.classCode;
@@ -119,9 +120,9 @@ const classService = {
     }
     catch {
       const err: RequestError = {
-        name: "Server Error",
+        name: "Internal Server Error",
         status: 500,
-        message: "Could not create class in database",
+        message: "Could not create class, please try again",
         expected: true
       };
       throw err;
@@ -187,7 +188,8 @@ const classService = {
             data: {
               accountId: accountId,
               classId: targetClass.classId,
-              permissionLevel: targetClass.defaultPermissionLevel
+              permissionLevel: targetClass.defaultPermissionLevel,
+              createdAt: Date.now()
             }
           });
         }
@@ -425,6 +427,14 @@ const classService = {
           await tx.homeworkCheck.deleteMany({
             where: {
               accountId: classMember.accountId
+            }
+          });
+          await tx.upload.updateMany({
+            where: {
+              accountId: classMember.accountId
+            },
+            data: {
+              accountId: null
             }
           });
         }

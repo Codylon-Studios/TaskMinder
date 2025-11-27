@@ -12,6 +12,7 @@ model Account {
   username      String
   password      String
   deletedAt     BigInt?
+  createdAt     BigInt?
 
   HomeworkCheck HomeworkCheck[]
   JoinedClass   JoinedClass?
@@ -44,6 +45,7 @@ model Event {
   endDate     BigInt?
   lesson      String?
   teamId      Int
+  createdAt   BigInt?    
 
   EventType   EventType @relation(fields: [eventTypeId], references: [eventTypeId], onDelete: Cascade, onUpdate: NoAction)
   Class       Class     @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
@@ -57,6 +59,7 @@ model EventType {
   classId     Int
   name        String
   color       String?
+  createdAt   BigInt?
 
   Event       Event[]
 
@@ -102,6 +105,7 @@ model Homework {
   assignmentDate BigInt
   submissionDate BigInt
   teamId         Int
+  createdAt      BigInt?
 
   HomeworkCheck  HomeworkCheck[]
 
@@ -115,6 +119,7 @@ model HomeworkCheck {
   checkId    Int      @id @default(autoincrement()) @map("checkId")
   accountId  Int
   homeworkId Int
+  createdAt  BigInt?
 
   Account    Account  @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
   Homework   Homework @relation(fields: [homeworkId], references: [homeworkId], onDelete: Cascade, onUpdate: NoAction)
@@ -129,6 +134,7 @@ model JoinedClass {
   classId         Int
   accountId       Int     @unique
   permissionLevel Int
+  createdAt       BigInt?
 
   Account         Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
   Class           Class   @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
@@ -141,6 +147,7 @@ model JoinedTeams {
   joinedTeamId Int     @id @default(autoincrement()) @map("joinedTeamId")
   teamId       Int
   accountId    Int
+  createdAt    BigInt?
 
   Account      Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
   Team         Team    @relation(fields: [teamId], references: [teamId], onDelete: Cascade, onUpdate: NoAction)
@@ -160,6 +167,7 @@ model Lesson {
   room         String
   startTime    BigInt
   endTime      BigInt
+  createdAt    BigInt?
 
   Class        Class  @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
 
@@ -178,6 +186,7 @@ model Subjects {
   teacherNameLong         String
   teacherNameShort        String
   teacherNameSubstitution String[]
+  createdAt               BigInt?
 
   Class                   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
 
@@ -188,6 +197,7 @@ model Team {
   teamId      Int           @id @default(autoincrement()) @map("teamId")
   classId     Int
   name        String
+  createdAt   BigInt?
 
   JoinedTeams JoinedTeams[]
 

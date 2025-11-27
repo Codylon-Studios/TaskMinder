@@ -120,7 +120,8 @@ const subjectService = {
                 teacherGender: subject.teacherGender,
                 teacherNameLong: subject.teacherNameLong,
                 teacherNameShort: subject.teacherNameShort,
-                teacherNameSubstitution: subject.teacherNameSubstitution ?? []
+                teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
+                createdAt: Date.now()
               }
             });
           }
