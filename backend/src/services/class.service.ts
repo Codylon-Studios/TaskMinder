@@ -312,7 +312,7 @@ const classService = {
           classId: classIdToDelete
         }
       });
-
+      // TODO: invalidate redis cache(s)
       await redisClient.del(`auth_class:${classIdToDelete}`);
       const room = `class:${session.classId}`;
       delete session.classId;

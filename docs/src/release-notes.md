@@ -7,9 +7,10 @@ All changes are grouped by type and the latest version appears first.
 ## \[v2.2.2] - 2025-11-30
 
 ### Changed
-* Backend now sends regex at substitution data directly
+* Backend now sends regex for substitution data directly
 * Add 400 return codes if file is too large or too many files being uploaded
 * Explanation for test class is now wrapped in an info box
+* Added createdAt field to multiple tables
 
 ### Fixed
 * Migrate from promtail (deprecated) to alloy
@@ -19,6 +20,9 @@ All changes are grouped by type and the latest version appears first.
 * Change host volume to named volume in docker compose to avoid permission errors
 * Correct docs at db migration
 * Adding/editing/checking homework will lead to displaying all homework (ignoring filters) of the last 90 days - fixed
+
+### Removed
+* Redis volume as not needed anymore (cache-only)
 
 ---
 

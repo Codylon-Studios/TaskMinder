@@ -63,7 +63,7 @@ async function checkAccountAccess(req: Request): Promise<void> {
       );
     }
     // account was deleted, invalid session
-    if (account.deletedAt !== null){
+    if (account.deletedAt !== null) {
       delete req.session.account;
       throwError(
         "Unauthorized",

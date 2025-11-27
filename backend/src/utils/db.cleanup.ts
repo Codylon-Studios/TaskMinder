@@ -50,31 +50,13 @@ export async function cleanupTestClasses(): Promise<void> {
       }
     }
 
-    const [deletedUploads, deletedJoins] = await prisma.$transaction([
-      prisma.upload.deleteMany({
-        where: {
-          classId: {
-            in: classIdsToDelete
-          }
+    prisma.class.deleteMany({
+      where: {
+        classId: {
+          in: classIdsToDelete
         }
-      }),
-
-      prisma.joinedClass.deleteMany({
-        where: {
-          classId: {
-            in: classIdsToDelete
-          }
-        }
-      }),
-
-      prisma.class.deleteMany({
-        where: {
-          classId: {
-            in: classIdsToDelete
-          }
-        }
-      })
-    ]);
+      }
+    });
 
     await Promise.all(
       classIdsToDelete.map(classId =>
@@ -82,11 +64,8 @@ export async function cleanupTestClasses(): Promise<void> {
       )
     );
 
-    logger.info(
-      `Test Class cleanup completed: ${classesToDelete.length} classes deleted, ` +
-      `${deletedUploads.count} uploads removed, ` +
-      `${deletedJoins.count} join records removed. (1d)`
-    );
+    // TODO: delete redis data of test class too (invalidate cache)
+    logger.info(`Test Class cleanup completed: ${classesToDelete.length} classes deleted (1d)`);
   }
   catch (error) {
     logger.error(`Error during test class cleanup: ${error}`);
@@ -151,7 +130,7 @@ export async function cleanupOldHomework(): Promise<void> {
         }
       }
     });
-
+    // TODO: invalidate cache
     logger.info(`Homework cleanup completed: ${deleted.count} records deleted out of ${count} found (90d)`);
   }
   catch (error) {
@@ -186,6 +165,7 @@ export async function cleanupOldEvents(): Promise<void> {
       }
     });
 
+    // TODO: cache invalidation
     logger.info(`Event cleanup completed: ${deleted.count} records deleted out of ${count} found (365d)`);
   }
   catch (error) {
@@ -305,7 +285,7 @@ export async function migrateEventAndHomeworkDates(): Promise<void> {
         }
       })
     ]);
-
+    // TODO: invalidate caches
     logger.info(
       `Migrated dates of ${migratedEvents.length} events and ${migratedHomework.count} homework entries for demo class. (1 week)`
     );
