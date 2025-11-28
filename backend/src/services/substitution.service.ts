@@ -153,6 +153,6 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
       });
   }
 
-  return {data, classFilterRegex: classFilterRegex};
+  return { data, classFilterRegex };
 }
 export default { getSubstitutionData };

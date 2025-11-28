@@ -25,6 +25,7 @@ RUN apk update && apk upgrade --no-cache && \
   su-exec
 
 # Create app & ClamAV directories with proper permissions
+# /var/lib/clamav/tmp is created for ClamAV to use as a temporary directory during scans or updates
 RUN mkdir -p /var/lib/clamav /run/clamav /var/lib/clamav/tmp && \
   chown -R clamav:clamav /var/lib/clamav /run/clamav && \
   chmod -R 775 /var/lib/clamav /run/clamav

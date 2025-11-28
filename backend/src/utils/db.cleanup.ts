@@ -50,7 +50,7 @@ export async function cleanupTestClasses(): Promise<void> {
       }
     }
 
-    prisma.class.deleteMany({
+    await prisma.class.deleteMany({
       where: {
         classId: {
           in: classIdsToDelete

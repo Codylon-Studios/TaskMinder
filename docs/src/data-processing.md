@@ -32,7 +32,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 **Solutions**:
 
-- Hashing using bcrypt: bcrypt automatically generates a unique random salt per password, making rainbow table attacks ineffective. We use a sufficient number of salt rounds ( `SALT_ROUNDS = 10`).
+- Hashing using bcrypt: bcrypt automatically generates a unique random salt per password, making rainbow table attacks ineffective. We use a sufficient number of salt rounds (`SALT_ROUNDS = 10`).
 - Implement a robust, automated cron job to ensure permanent deletion after the 30-day period.
 
 ---
