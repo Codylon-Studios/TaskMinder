@@ -24,6 +24,9 @@ All changes are grouped by type and the latest version appears first.
 ### Removed
 * Redis volume as not needed anymore (cache-only)
 
+### Security
+* Package bumping
+
 ---
 
 ## \[v2.2.1] - 2025-11-16

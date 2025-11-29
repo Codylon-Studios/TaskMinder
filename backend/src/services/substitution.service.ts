@@ -125,6 +125,8 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
   const { dsbMobileUser, dsbMobilePassword, classId } = substitutionClass;
 
   // Transform class name to regex if it follows the "NumberLetter" pattern (e.g., "10d")
+  // It generates a regex that matches the class number, any sequence of letters, the class letter,
+  // and any sequence of letters after that. This allows matching class names like "10d", "10bd", "10abcd", etc.
   let classFilterRegex = substitutionClass.dsbMobileClass;
   if (classFilterRegex) {
     const match = classFilterRegex.match(/^(\d+)([a-zA-Z]+)$/);

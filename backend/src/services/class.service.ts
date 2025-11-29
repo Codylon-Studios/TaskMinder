@@ -122,7 +122,7 @@ const classService = {
       const err: RequestError = {
         name: "Internal Server Error",
         status: 500,
-        message: "Could not create class, please try again",
+        message: "Could not create class in database, please try again",
         expected: true
       };
       throw err;
