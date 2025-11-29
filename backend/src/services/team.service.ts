@@ -3,7 +3,7 @@ import { RequestError } from "../@types/requestError";
 import { default as prisma } from "../config/prisma";
 import logger from "../config/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
-import { updateCacheData } from "../utils/validate.functions";
+import { invalidateCache, updateCacheData } from "../utils/validate.functions";
 import { setJoinedTeamsTypeBody, setTeamsTypeBody } from "../schemas/team.schema";
 import fs from "fs/promises";
 import path from "path";
@@ -44,7 +44,7 @@ const teamService = {
 
   async setTeamsData(reqData: setTeamsTypeBody, session: Session & Partial<SessionData>) {
     const { teams } = reqData;
-
+    // TODO: fix
     const classId = parseInt(session.classId!, 10);
     // variable to check if cache should be reloaded (e.g. on team deletion)
     let dataChanged = false;
@@ -200,23 +200,9 @@ const teamService = {
 
         // If teams were deleted, also update homework, events, and lessons caches
         if (teamsDeleted) {
-          const setHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
-          const setEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
-          const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
-
-          const homeworkData = await prisma.homework.findMany({
-            where: { classId: parseInt(session.classId!) }
-          });
-          const eventData = await prisma.event.findMany({
-            where: { classId: parseInt(session.classId!) }
-          });
-          const lessonData = await prisma.lesson.findMany({
-            where: { classId: parseInt(session.classId!) }
-          });
-
-          await updateCacheData(homeworkData, setHomeworkDataCacheKey);
-          await updateCacheData(eventData, setEventDataCacheKey);
-          await updateCacheData(lessonData, setLessonDataCacheKey);
+          await invalidateCache("HOMEWORK", session.classId!);
+          await invalidateCache("EVENT", session.classId!);
+          await invalidateCache("LESSON", session.classId!);
 
           io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
           io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);

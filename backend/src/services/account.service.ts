@@ -11,6 +11,7 @@ import {
   loginAccountTypeBody,
   registerAccountTypeBody
 } from "../schemas/account.schema";
+import { invalidateCache } from "../utils/validate.functions";
 
 const SALTROUNDS = 10;
 
@@ -285,6 +286,9 @@ export default {
         }
       });
     });
+    if (joinedClassAccount){
+      await invalidateCache("UPLOADMETADATA", joinedClassAccount.classId.toString());
+    }
     await redisClient.del(`auth_user:${account!.accountId}`);
     delete session.account;
   },
@@ -337,6 +341,16 @@ export default {
         username: newUsername
       }
     });
+
+    // update upload metadata cache too, as names have to be refetched if user in a class
+    const joinedClassAccount = await prisma.joinedClass.findUnique({
+      where: {
+        accountId: session.account!.accountId
+      }
+    });
+    if (joinedClassAccount){
+      await invalidateCache("UPLOADMETADATA", joinedClassAccount.classId.toString());
+    }
 
     session.account = { username: newUsername, accountId: session.account!.accountId };
   },

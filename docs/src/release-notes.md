@@ -11,6 +11,8 @@ All changes are grouped by type and the latest version appears first.
 * Add 400 return codes if file is too large or too many files being uploaded
 * Explanation for test class is now wrapped in an info box
 * Added createdAt field to multiple tables
+* Cache is now invalidated/refechted if corresponding data changes
+* Change cron job delete test class schedule to run every 15mins
 
 ### Fixed
 * Migrate from promtail (deprecated) to alloy
@@ -19,7 +21,7 @@ All changes are grouped by type and the latest version appears first.
 * Improve production deployment regarding permissions (least privilege)
 * Change host volume to named volume in docker compose to avoid permission errors
 * Correct docs at db migration
-* Adding/editing/checking homework will lead to displaying all homework (ignoring filters) of the last 90 days - fixed
+* Fixed Adding/editing/checking homework will lead to displaying all homework (ignoring filters) of the last 90 days
 
 ### Removed
 * Redis volume as not needed anymore (cache-only)

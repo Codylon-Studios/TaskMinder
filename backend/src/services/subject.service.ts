@@ -2,7 +2,7 @@ import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
-import { isValidGender, updateCacheData } from "../utils/validate.functions";
+import { invalidateCache, isValidGender, updateCacheData } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { setSubjectsTypeBody } from "../schemas/subject.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
@@ -54,15 +54,6 @@ const subjectService = {
     });
 
     const classId = parseInt(session.classId!);
-    if (isNaN(classId)) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid classId in session",
-        expected: true
-      };
-      throw err;
-    }
 
     // variable to check if cache should be reloaded
     let dataChanged = false;
@@ -167,20 +158,10 @@ const subjectService = {
         const io = socketIO.getIO();
         io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.SUBJECTS);
 
-        // If subjects were deleted, also update lessons and homework caches
+        // If subjects were deleted, also delete lessons and homework caches
         if (subjectsDeleted) {
-          const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
-          const setHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
-
-          const lessonData = await prisma.lesson.findMany({
-            where: { classId: parseInt(session.classId!) }
-          });
-          const homeworkData = await prisma.homework.findMany({
-            where: { classId: parseInt(session.classId!) }
-          });
-
-          await updateCacheData(lessonData, setLessonDataCacheKey);
-          await updateCacheData(homeworkData, setHomeworkDataCacheKey);
+          await invalidateCache("LESSON", session.classId!);
+          await invalidateCache("HOMEWORK", session.classId!);
 
           io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
           io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);

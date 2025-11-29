@@ -1,5 +1,5 @@
 import { dequeueJob, QUEUE_KEYS } from "../config/redis";
-import { invalidateUploadCache } from "./validate.functions";
+import { invalidateCache } from "./validate.functions";
 import logger from "../config/logger";
 import prisma from "../config/prisma";
 import fs from "fs/promises";
@@ -313,7 +313,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     });
 
     // Invalidate cache when status changes to processing
-    await invalidateUploadCache(classId.toString());
+    await invalidateCache("UPLOADMETADATA", classId.toString());
 
     let totalBytes = 0n;
 
@@ -367,7 +367,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     });
 
     // Invalidate cache when status changes to completed
-    await invalidateUploadCache(classId.toString());
+    await invalidateCache("UPLOADMETADATA", classId.toString());
 
     // Call socket functions for real time
     const io = socketIO.getIO();
@@ -420,8 +420,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
       });
     });
 
-    // Invalidate cache when status changes to failed
-    await invalidateUploadCache(classId.toString());
+    await invalidateCache("UPLOADMETADATA", classId.toString());
 
     // Send socket events
     const io = socketIO.getIO();
