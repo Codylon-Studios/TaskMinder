@@ -203,10 +203,8 @@ app.use(ErrorHandler);
 // Schedule the cron job to run at midnight (00:00) every day
 cron.schedule("0 0 * * *", () => {
   logger.info("Starting scheduled daily cleanup");
-
   cleanupOldHomework();
   cleanupOldEvents();
-  cleanupTestClasses();
   cleanupDeletedAccounts();
 });
 
@@ -214,6 +212,11 @@ cron.schedule("0 0 * * *", () => {
 cron.schedule("0 0 * * 0", () => {
   logger.info("Starting weekly demo class date migration");
   migrateEventAndHomeworkDates();
+});
+
+// Run test class deletion every 15mins
+cron.schedule("*/15 * * * *", () => {
+  cleanupTestClasses();
 });
 
 // Run stuck upload cleanup every 10 minutes

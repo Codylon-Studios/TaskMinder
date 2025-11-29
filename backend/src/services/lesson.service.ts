@@ -57,7 +57,8 @@ const lessonService = {
               subjectId: lesson.subjectId,
               room: lesson.room,
               startTime: lesson.startTime,
-              endTime: lesson.endTime
+              endTime: lesson.endTime,
+              createdAt: Date.now()
             }
           });
         }

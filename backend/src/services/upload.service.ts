@@ -8,7 +8,7 @@ import logger from "../config/logger";
 import { RequestError } from "../@types/requestError";
 import { deleteUploadTypeBody, getUploadFileType, editUploadTypeBody, uploadFileTypeBody } from "../schemas/upload.schema";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
-import { invalidateUploadCache } from "../utils/validate.functions";
+import { invalidateCache } from "../utils/validate.functions";
 import { BigIntreplacer, isValidTeamId, isValidUploadInput, updateCacheData } from "../utils/validate.functions";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
@@ -98,7 +98,7 @@ const uploadService = {
     await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
 
     // Invalidate cache after queueing new upload
-    await invalidateUploadCache(session.classId!);
+    await invalidateCache("UPLOADMETADATA", session.classId!);
 
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
@@ -297,7 +297,7 @@ const uploadService = {
     });
 
     // Invalidate cache after edit
-    await invalidateUploadCache(session.classId!);
+    await invalidateCache("UPLOADMETADATA", session.classId!);
 
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
@@ -337,11 +337,6 @@ const uploadService = {
       : uploadData.reservedBytes;
 
     await prisma.$transaction(async tx => {
-      // Delete all file metadata records
-      await tx.fileMetadata.deleteMany({
-        where: { uploadId }
-      });
-
       // Delete the upload record
       await tx.upload.delete({
         where: { uploadId }
@@ -357,7 +352,7 @@ const uploadService = {
     });
 
     // Invalidate cache after delete
-    await invalidateUploadCache(session.classId!);
+    await invalidateCache("UPLOADMETADATA", session.classId!);
 
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
