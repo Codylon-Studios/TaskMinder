@@ -5,7 +5,7 @@ import {
   homeworkData,
   isSameDay,
   joinedTeamsData,
-  msToDisplayDate,
+  getDisplayDate,
   msToInputDate,
   subjectData,
   teamsData,
@@ -101,8 +101,8 @@ async function updateHomeworkList(): Promise<void> {
     // Get the information for the homework
     const subject = (await subjectData()).find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
-    const assignmentDate = msToDisplayDate(homework.assignmentDate);
-    const submissionDate = msToDisplayDate(homework.submissionDate);
+    const assignmentDate = getDisplayDate(homework.assignmentDate);
+    const submissionDate = getDisplayDate(homework.submissionDate);
 
     // The template for a homework with checkbox and edit options
     const template = $(`
@@ -276,8 +276,8 @@ function chooseRandomHomework(todoHomework: HomeworkData): void {
     const h = todoHomework[full ? 0 : Math.floor((360 - rotation % 360) / 360 * todo)];
     const subject = (await subjectData()).find(s => s.subjectId === h.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = h.content;
-    const assignmentDate = msToDisplayDate(h.assignmentDate);
-    const submissionDate = msToDisplayDate(h.submissionDate);
+    const assignmentDate = getDisplayDate(h.assignmentDate);
+    const submissionDate = getDisplayDate(h.submissionDate);
     $("#random-homework-result").html(`
       <h5>Ausgewählte Hausaufgabe:</h5>
       <div>
@@ -333,8 +333,8 @@ async function prepareRandomHomework(): Promise<void> {
     // Get the information for the homework
     const subject = (await subjectData()).find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
-    const assignmentDate = msToDisplayDate(homework.assignmentDate);
-    const submissionDate = msToDisplayDate(homework.submissionDate);
+    const assignmentDate = getDisplayDate(homework.assignmentDate);
+    const submissionDate = getDisplayDate(homework.submissionDate);
 
     const deactivated = randomHomeworkDeactivated.includes(homeworkId) ? "random-homework-deactivated" : "";
 
@@ -1037,7 +1037,7 @@ export async function init(): Promise<void> {
         const diff = dateDaysDifference(selectedDate, normalDate);
 
         const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
-        filterData.dateFromOffset = diff;
+        filterData.dateFromOffset = Number.isNaN(diff) ? "NaN" : diff;
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
 
         updateFilters();
@@ -1052,7 +1052,7 @@ export async function init(): Promise<void> {
         const diff = dateDaysDifference(selectedDate, normalDate);
 
         const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
-        filterData.dateUntilOffset = diff;
+        filterData.dateUntilOffset = Number.isNaN(diff) ? "NaN" : diff;
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
         
         updateFilters();

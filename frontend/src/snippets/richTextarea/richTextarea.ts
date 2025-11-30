@@ -46,6 +46,13 @@ export function richTextToHtml(
           $(this)
             .css("cursor", "pointer")
             .on("click", () => {
+              try {
+                if ((new URL(url)).host == location.host) {
+                  globalThis.open(sanitizedUrl, "_blank", "noopener,noreferrer");
+                  return;
+                }
+              }
+              catch {}
               $("#rich-textarea-unsafe-link").toast("show").find("b").text(sanitizedUrl);
               $("#rich-textarea-unsafe-link-confirm")
                 .off("click")
@@ -345,6 +352,290 @@ function replaceRichTextareas(): void {
         globalThis.getSelection()?.addRange(range);
       }
     }
+    function copyStyles(node: JQuery<HTMLElement>): void {
+      for (const styleToggle of styleToggles) {
+        if (currentStyles[styleToggle.styleName]) {
+          node.css(styleToggle.cssPropName, styleToggle.cssPropNewVal);
+        }
+      }
+      if (currentStyles.fontSize.enabled) {
+        node.attr("data-font-size", currentStyles.fontSize.value);
+        node.css("font-size", currentStyles.fontSize.value);
+      }
+      if (currentStyles.sub) {
+        node.addClass("sub");
+        node.css("font-size", Number.parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
+      }
+      if (currentStyles.sup) {
+        node.addClass("sup");
+        node.css("font-size", Number.parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
+      }
+      if (currentStyles.color.enabled && currentStyles.color.value !== "auto") {
+        node.attr("data-color", currentStyles.color.value);
+        node.css("color", currentStyles.color.value);
+      }
+    }
+    function insertAtRange(insertion: string, ranges: Range[], options?: { copyStyles?: boolean; replace?: boolean }): void {
+      function checkReplace(): void {
+        if (options?.replace) {
+          let oldVal = newNode.text();
+          for (let length = 1; length <= maxReplacementLength; length++) {
+            const match = findReplacement("old", oldVal);
+            if (match) {
+              newNode
+                .prevAll()
+                .slice(0, length - 1)
+                .remove();
+              newNode.text(match.new);
+              break;
+            }
+            oldVal =
+              newNode
+                .prevAll()
+                .eq(length - 1)
+                .text() + oldVal;
+          }
+        }
+      }
+      deleteSelectedRanges(ranges);
+
+      const range = ranges[0];
+      if (!range) return;
+      const newNode = $(insertion);
+      if (options?.copyStyles) {
+        copyStyles(newNode);
+      }
+
+      if (textarea.find("span, br").length === 0) {
+        textarea.append(newNode);
+      }
+      else if (range.startOffset === 0) {
+        textarea.prepend(newNode);
+      }
+      else {
+        const previous = textarea.find("span, br").eq(range.startOffset - 1);
+        previous.after(newNode);
+
+        checkReplace();
+      }
+
+      range.setStartAfter(newNode.last()[0]);
+      range.setEndAfter(newNode.last()[0]);
+      globalThis.getSelection()?.removeAllRanges();
+      globalThis.getSelection()?.addRange(range);
+    }
+    function deleteSelectedRanges(ranges: Range[]): void {
+      for (const range of ranges) {
+        if (range.startOffset === range.endOffset) {
+          continue;
+        }
+        let toRemove = textarea.find("span, br").slice(range.startOffset, range.endOffset);
+        const additional = toRemove.filter("span.newline").prev();
+        toRemove = toRemove.add(additional);
+        toRemove.remove();
+
+        globalThis.getSelection()?.removeAllRanges();
+        globalThis.getSelection()?.addRange(range);
+      }
+    }
+    function deleteAtRange(ranges: Range[]): void {
+      const firstRange = ranges[0].cloneRange();
+      const firstRangeCollapsed = firstRange.collapsed;
+
+      deleteSelectedRanges(ranges);
+
+      if (firstRangeCollapsed && firstRange.startOffset !== 0) {
+        let target: JQuery<HTMLElement>;
+        target = textarea.find("span, br").eq(firstRange.startOffset - 1);
+        const match = findReplacement("new", target.text());
+        if (match) {
+          for (const char of match.old.split("")) {
+            insertAtRange(`<span>${char}</span>`, ranges, { copyStyles: true });
+          }
+          target.remove();
+        }
+        else {
+          const additional = target.filter("span.newline").prev();
+          target = target.add(additional);
+          target.remove();
+        }
+      }
+
+      globalThis.getSelection()?.removeAllRanges();
+      for (const range of ranges) {
+        globalThis.getSelection()?.addRange(range);
+      }
+    }
+    async function pasteAtRange(ranges: Range[]): Promise<void> {
+      try {
+        function getAllNodes(root: Node): Node[] {
+          const textNodes: Node[] = [];
+      
+          function recurse(node: Node): void {
+            if (
+              (node.nodeType === Node.TEXT_NODE && node.nodeValue !== "") ||
+              (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR")
+            ) {
+              textNodes.push(node);
+            }
+            else {
+              for (const cn of node.childNodes) recurse(cn);
+            }
+          }
+      
+          recurse(root);
+          return textNodes;
+        }
+        
+        async function extractStyledTextFromBlob(blob: Blob): Promise<string> {
+          function handleNode(node: Node): void {
+            function applyBr(node: Node): boolean {
+              if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR") {
+                result.append($("<br><span class=\"newline\">&#8203;</span>"));
+                return true;
+              }
+              return false;
+            }
+            function getRealUnderline(element: HTMLElement): boolean {
+              while (element.parentElement) {
+                if (getComputedStyle(element).textDecorationLine === "underline" || element.tagName === "U") {
+                  return true;
+                }
+                if (element.style.textDecorationLine === "none") {
+                  return false;
+                }
+                element = element.parentElement;
+              }
+              return false;
+            }
+            function isSub(element: HTMLElement): boolean {
+              while (element.parentElement) {
+                if (element.tagName === "SUB" || element.style.verticalAlign === "sub") {
+                  return true;
+                }
+                element = element.parentElement;
+              }
+              return false;
+            }
+            function isSup(element: HTMLElement): boolean {
+              while (element.parentElement) {
+                if (element.tagName === "SUP" || element.style.verticalAlign === "super") {
+                  return true;
+                }
+                element = element.parentElement;
+              }
+              return false;
+            }
+            function applySubAndSup(element: HTMLElement): void {
+              if (isSub(element)) {
+                fontSize /= 0.83;
+                fontSize = Math.round(fontSize);
+                spans.addClass("sub");
+                spans.css("font-size", fontSize * 0.83 + "px");
+              }
+              else if (isSup(element)) {
+                fontSize /= 0.83;
+                fontSize = Math.round(fontSize);
+                spans.addClass("sup");
+                spans.css("font-size", fontSize * 0.83 + "px");
+              }
+            }
+            function isLink(element: HTMLElement): false | string | null {
+              while (element.parentElement) {
+                if (element.tagName === "A" && element.getAttribute("href") !== null) {
+                  return element.getAttribute("href");
+                }
+                element = element.parentElement;
+              }
+              return false;
+            }
+
+            if (applyBr(node)) return;
+
+            const parentElement = node.parentElement;
+            if (! parentElement) return;
+
+            const computedStyle = getComputedStyle(parentElement);
+            const spans = $(node.textContent?.split("").map(c => c === "" ? "" : `<span>${c}</span>`).join("") ?? "");
+            if (Number.parseInt(computedStyle.fontWeight) > 500) {
+              spans.css("font-weight", "700");
+            }
+            // Get the underline style. As it isn't inherited normally, you need to iterate over the parents
+            if (getRealUnderline(parentElement)) {
+              spans.css("text-decoration", "underline");
+            }
+            if (computedStyle.fontStyle === "italic") {
+              spans.css("font-style", "italic");
+            }
+            let fontSize = Number.parseInt(computedStyle.fontSize);
+            spans.css("font-size", Math.round(fontSize) + "px");
+            applySubAndSup(parentElement);
+            spans.attr("data-font-size", fontSize);
+            let color = computedStyle.color;
+            if (! ["rgb(33, 37, 41)", "rgb(222, 226, 230)"].includes(color)) {
+              color = color.substring(4, color.length - 1);
+              const colors = color.split(", ").map(v => Number.parseInt(v));
+              const hex = rgbToHex({ red: colors[0], green: colors[1], blue: colors[2] });
+              spans.attr("data-color", hex);
+              spans.css("color", hex);
+            }
+            const link = isLink(parentElement);
+            if (link) {
+              spans.attr("data-link-url",
+                link.replaceAll("\\", "\\\\")
+                  .replaceAll(";", String.raw`\;`)
+                  .replaceAll("<", String.raw`\«`)
+                  .replaceAll(">", String.raw`\»`)
+              );
+            }
+            result.append(spans);
+          }
+          const result = $("<div></div>");
+          const htmlText = (await blob.text()).replaceAll("\n", "");
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlText, "text/html");
+          $(doc).find("p").each(function ()  {
+            if ($(this).next().length) {
+              $(this).after("<br>");
+            }
+          });
+        
+          // Get all text nodes and <br> tags
+          const nodes = getAllNodes(doc.body);
+          
+          pasteAreaShadowRoot.appendChild(doc.body);
+          for (const node of nodes) {
+            handleNode(node);
+          }
+          pasteAreaShadowRoot.innerHTML = "";
+          return result.html();
+        }
+      
+        const clipboardItems = await navigator.clipboard.read();
+        const blobs: { [key: string]: Blob } = {};
+
+        for (const clipboardItem of clipboardItems) {
+          for (const type of clipboardItem.types) {
+            blobs[type] = await clipboardItem.getType(type);
+          }
+        }
+        
+        const html = blobs["text/html"];
+        const plain = blobs["text/plain"];
+        if (html) {
+          insertAtRange(await extractStyledTextFromBlob(html), ranges);
+        }
+        else if (plain) {
+          insertAtRange((await plain.text()).split("").map(c => c === "" ? "" : `<span>${c}</span>`).join("") ?? "", ranges);
+        }
+        else {
+          $("#rich-textarea-pasting-error").toast("show");
+        }
+      }
+      catch {
+        $("#rich-textarea-pasting-error").toast("show");
+      }
+    }
 
     const input = $(this);
     let isExternalInputChangeEvent = true;
@@ -419,324 +710,93 @@ function replaceRichTextareas(): void {
     ];
 
     textarea.on("beforeinput", async e => {
-      function copyStyles(node: JQuery<HTMLElement>): void {
-        for (const styleToggle of styleToggles) {
-          if (currentStyles[styleToggle.styleName]) {
-            node.css(styleToggle.cssPropName, styleToggle.cssPropNewVal);
-          }
-        }
-        if (currentStyles.fontSize.enabled) {
-          node.attr("data-font-size", currentStyles.fontSize.value);
-          node.css("font-size", currentStyles.fontSize.value);
-        }
-        if (currentStyles.sub) {
-          node.addClass("sub");
-          node.css("font-size", Number.parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
-        }
-        if (currentStyles.sup) {
-          node.addClass("sup");
-          node.css("font-size", Number.parseInt(node.attr("data-font-size") ?? "16") * 0.83 + "px");
-        }
-        if (currentStyles.color.enabled && currentStyles.color.value !== "auto") {
-          node.attr("data-color", currentStyles.color.value);
-          node.css("color", currentStyles.color.value);
-        }
-      }
-      function insertAtRange(insertion: string, options?: { copyStyles?: boolean; replace?: boolean }): void {
-        function checkReplace(): void {
-          if (options?.replace) {
-            let oldVal = newNode.text();
-            for (let length = 1; length <= maxReplacementLength; length++) {
-              const match = findReplacement("old", oldVal);
-              if (match) {
-                newNode
-                  .prevAll()
-                  .slice(0, length - 1)
-                  .remove();
-                newNode.text(match.new);
-                break;
-              }
-              oldVal =
-                newNode
-                  .prevAll()
-                  .eq(length - 1)
-                  .text() + oldVal;
-            }
-          }
-        }
-        deleteSelectedRanges();
-
-        const range = ranges[0];
-        if (!range) return;
-        const newNode = $(insertion);
-        if (options?.copyStyles) {
-          copyStyles(newNode);
-        }
-
-        if (textarea.find("span, br").length === 0) {
-          textarea.append(newNode);
-        }
-        else if (range.startOffset === 0) {
-          textarea.prepend(newNode);
-        }
-        else {
-          const previous = textarea.find("span, br").eq(range.startOffset - 1);
-          previous.after(newNode);
-
-          checkReplace();
-        }
-
-        range.setStartAfter(newNode.last()[0]);
-        range.setEndAfter(newNode.last()[0]);
-        globalThis.getSelection()?.removeAllRanges();
-        globalThis.getSelection()?.addRange(range);
-      }
-      function deleteSelectedRanges(): void {
-        for (const range of ranges) {
-          let toRemove: JQuery<HTMLElement>;
-          if (range.startOffset === range.endOffset) {
-            continue;
-          }
-          else {
-            toRemove = textarea.find("span, br").slice(range.startOffset, range.endOffset);
-          }
-          const additional = toRemove.filter("span.newline").prev();
-          toRemove = toRemove.add(additional);
-          toRemove.remove();
-
-          globalThis.getSelection()?.removeAllRanges();
-          globalThis.getSelection()?.addRange(range);
-        }
-      }
-      function deleteAtRange(): void {
-        const firstRange = ranges[0].cloneRange();
-        const firstRangeCollapsed = firstRange.collapsed;
-
-        deleteSelectedRanges();
-
-        if (firstRangeCollapsed && firstRange.startOffset !== 0) {
-          let target: JQuery<HTMLElement>;
-          target = textarea.find("span, br").eq(firstRange.startOffset - 1);
-          const match = findReplacement("new", target.text());
-          if (match) {
-            for (const char of match.old.split("")) {
-              insertAtRange(`<span>${char}</span>`, { copyStyles: true });
-            }
-            target.remove();
-          }
-          else {
-            const additional = target.filter("span.newline").prev();
-            target = target.add(additional);
-            target.remove();
-          }
-        }
-
-        globalThis.getSelection()?.removeAllRanges();
-        for (const range of ranges) {
-          globalThis.getSelection()?.addRange(range);
-        }
-      }
-      async function pasteAtRange(): Promise<void> {
-        try {
-          function getAllNodes(root: Node): Node[] {
-            const textNodes: Node[] = [];
-        
-            function recurse(node: Node): void {
-              if (
-                (node.nodeType === Node.TEXT_NODE && node.nodeValue !== "") ||
-                (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR")
-              ) {
-                textNodes.push(node);
-              }
-              else {
-                for (const cn of node.childNodes) recurse(cn);
-              }
-            }
-        
-            recurse(root);
-            return textNodes;
-          }
-          
-          async function extractStyledTextFromBlob(blob: Blob): Promise<string> {
-            function handleNode(node: Node): void {
-              function applyBr(node: Node): boolean {
-                if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "BR") {
-                  result.append($("<br><span class=\"newline\">&#8203;</span>"));
-                  return true;
-                }
-                return false;
-              }
-              function getRealUnderline(element: HTMLElement): boolean {
-                while (element.parentElement) {
-                  if (getComputedStyle(element).textDecorationLine === "underline" || element.tagName === "U") {
-                    return true;
-                  }
-                  if (element.style.textDecorationLine === "none") {
-                    return false;
-                  }
-                  element = element.parentElement;
-                }
-                return false;
-              }
-              function isSub(element: HTMLElement): boolean {
-                while (element.parentElement) {
-                  if (element.tagName === "SUB" || element.style.verticalAlign === "sub") {
-                    return true;
-                  }
-                  element = element.parentElement;
-                }
-                return false;
-              }
-              function isSup(element: HTMLElement): boolean {
-                while (element.parentElement) {
-                  if (element.tagName === "SUP" || element.style.verticalAlign === "super") {
-                    return true;
-                  }
-                  element = element.parentElement;
-                }
-                return false;
-              }
-              function applySubAndSup(element: HTMLElement): void {
-                if (isSub(element)) {
-                  fontSize /= 0.83;
-                  fontSize = Math.round(fontSize);
-                  spans.addClass("sub");
-                  spans.css("font-size", fontSize * 0.83 + "px");
-                }
-                else if (isSup(element)) {
-                  fontSize /= 0.83;
-                  fontSize = Math.round(fontSize);
-                  spans.addClass("sup");
-                  spans.css("font-size", fontSize * 0.83 + "px");
-                }
-              }
-              function isLink(element: HTMLElement): false | string | null {
-                while (element.parentElement) {
-                  if (element.tagName === "A" && element.getAttribute("href") !== null) {
-                    return element.getAttribute("href");
-                  }
-                  element = element.parentElement;
-                }
-                return false;
-              }
-
-              if (applyBr(node)) return;
-
-              const parentElement = node.parentElement;
-              if (! parentElement) return;
-
-              const computedStyle = getComputedStyle(parentElement);
-              const spans = $(node.textContent?.split("").map(c => c === "" ? "" : `<span>${c}</span>`).join("") ?? "");
-              if (Number.parseInt(computedStyle.fontWeight) > 500) {
-                spans.css("font-weight", "700");
-              }
-              // Get the underline style. As it isn't inehrited normally, you need to iterate over the parents
-              if (getRealUnderline(parentElement)) {
-                spans.css("text-decoration", "underline");
-              }
-              if (computedStyle.fontStyle === "italic") {
-                spans.css("font-style", "italic");
-              }
-              let fontSize = Number.parseInt(computedStyle.fontSize);
-              spans.css("font-size", Math.round(fontSize) + "px");
-              applySubAndSup(parentElement);
-              spans.attr("data-font-size", fontSize);
-              let color = computedStyle.color;
-              if (! ["rgb(33, 37, 41)", "rgb(222, 226, 230)"].includes(color)) {
-                color = color.substring(4, color.length - 1);
-                const colors = color.split(", ").map(v => Number.parseInt(v));
-                const hex = rgbToHex({ red: colors[0], green: colors[1], blue: colors[2] });
-                spans.attr("data-color", hex);
-                spans.css("color", hex);
-              }
-              const link = isLink(parentElement);
-              if (link) {
-                spans.attr("data-link-url",
-                  link.replaceAll("\\", "\\\\")
-                    .replaceAll(";", String.raw`\;`)
-                    .replaceAll("<", String.raw`\«`)
-                    .replaceAll(">", String.raw`\»`)
-                );
-              }
-              result.append(spans);
-            }
-            const result = $("<div></div>");
-            const htmlText = (await blob.text()).replaceAll("\n", "");
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlText, "text/html");
-            $(doc).find("p").each(function ()  {
-              if ($(this).next().length) {
-                $(this).after("<br>");
-              }
-            });
-          
-            // Get all text nodes and <br> tags
-            const nodes = getAllNodes(doc.body);
-            
-            pasteAreaShadowRoot.appendChild(doc.body);
-            for (const node of nodes) {
-              handleNode(node);
-            }
-            pasteAreaShadowRoot.innerHTML = "";
-            return result.html();
-          }
-        
-          const clipboardItems = await navigator.clipboard.read();
-          const blobs: { [key: string]: Blob } = {};
-
-          for (const clipboardItem of clipboardItems) {
-            for (const type of clipboardItem.types) {
-              blobs[type] = await clipboardItem.getType(type);
-            }
-          }
-          
-          const html = blobs["text/html"];
-          const plain = blobs["text/plain"];
-          if (html) {
-            insertAtRange(await extractStyledTextFromBlob(html));
-          }
-          else if (plain) {
-            insertAtRange((await plain.text()).split("").map(c => c === "" ? "" : `<span>${c}</span>`).join("") ?? "");
-          }
-          else {
-            $("#rich-textarea-pasting-error").toast("show");
-          }
-        }
-        catch {
-          $("#rich-textarea-pasting-error").toast("show");
-        }
-      }
-
       const ev = e.originalEvent as InputEvent;
       if (!ev) return;
+      if (composing) return;
 
       const ranges = extractSelectedRanges();
 
+      ev.preventDefault();
       if (ev.inputType === "insertText" && ev.data) {
-        e.preventDefault();
-        insertAtRange(`<span>${ev.data}</span>`, {
+        insertAtRange(`<span>${ev.data}</span>`, ranges, {
           copyStyles: true,
           replace: true
         });
       }
       else if (["insertParagraph", "insertLineBreak"].includes(ev.inputType)) {
-        e.preventDefault();
-        insertAtRange("<br>");
+        insertAtRange("<br>", ranges);
         // You need this zero-width-character to select an empty line
-        insertAtRange('<span class="newline">&#8203;</span>');
+        insertAtRange('<span class="newline">&#8203;</span>', ranges);
       }
       else if (ev.inputType === "deleteContentBackward") {
-        e.preventDefault();
-        deleteAtRange();
+        deleteAtRange(ranges);
       }
       else if (ev.inputType === "insertFromPaste") {
-        e.preventDefault();
-        await pasteAtRange();
+        await pasteAtRange(ranges);
+      }
+      else if (ev.inputType === "insertCompositionText") {
       }
       else {
-        e.preventDefault();
         $("#rich-textarea-unsupported-input-type").toast("show").find("i").eq(1).text(ev.inputType);
       }
+
+      updateInput();
+
+      isExternalInputChangeEvent = false;
+      input.trigger("input");
+      textarea.toggleClass("rich-textarea-empty", textarea.html() === "");
+    });
+
+    let composing = false;
+
+    textarea.on("compositionstart", () => {
+      composing = true;
+      textarea.toggleClass("rich-textarea-empty", false);
+    });
+
+    textarea.on("compositionupdate", () => {
+      composing = true;
+    });
+
+    textarea.on("compositionend", e => {
+      composing = false;
+      textarea.find("br").each(function() {
+        if (! $(this).next().is("span.newline")) {
+          $(this).remove();
+        }
+      });
+
+      textarea.contents().filter(function() {
+        return this.nodeType === 3;
+      }).each(function() {
+        const text = this.nodeValue || "";
+        const spans = text.split("").map(char => $("<span>").text(char)[0]);
+        $(this).replaceWith(spans);
+
+        const sel = globalThis.getSelection();
+        if (!sel) return;
+        const range = document.createRange();
+        range.setStartAfter(spans.at(-1) as Node);
+
+        sel.removeAllRanges();
+        sel.addRange(range);
+      });
+
+      textarea.find("span").filter(function() {
+        return $(this).text().length > 1;
+      }).each(function() {
+        const text = $(this).text();
+        const spans = text.split("").map(char => $("<span>").text(char)[0]);
+        $(this).replaceWith(spans);
+        
+        const sel = globalThis.getSelection();
+        if (!sel) return;
+        const range = document.createRange();
+        range.setStartAfter(spans.at(-1) as Node);
+
+        sel.removeAllRanges();
+        sel.addRange(range);
+      });
 
       updateInput();
 
@@ -931,6 +991,8 @@ function replaceRichTextareas(): void {
     richTextarea.find(".rich-textarea-link-dropdown span").hide();
 
     $(document).on("selectionchange", () => {
+      if (composing) return;
+
       let selectedSpans: JQuery<HTMLElement> = $();
 
       const ranges = extractSelectedRanges();

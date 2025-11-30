@@ -11,6 +11,7 @@ import {
   loginAccountTypeBody,
   registerAccountTypeBody
 } from "../schemas/account.schema";
+import { invalidateCache } from "../utils/validate.functions";
 
 const SALTROUNDS = 10;
 
@@ -37,8 +38,8 @@ export default {
     let accountId: number | undefined;
 
     if (session.account) {
-      const accountInDb = await prisma.account.findUnique({
-        where: { accountId: session.account.accountId },
+      const accountInDb = await prisma.account.findFirst({
+        where: { accountId: session.account.accountId, deletedAt: null },
         select: { accountId: true, username: true }
       });
 
@@ -102,8 +103,8 @@ export default {
       throw err;
     }
 
-    const accountExists = await prisma.account.findUnique({
-      where: { username: username }
+    const accountExists = await prisma.account.findFirst({
+      where: { username: username, deletedAt: null }
     });
     if (accountExists) {
       const err: RequestError = {
@@ -121,7 +122,8 @@ export default {
       const newAccount = await tx.account.create({
         data: {
           username,
-          password: hashedPassword
+          password: hashedPassword,
+          createdAt: Date.now()
         }
       });
 
@@ -130,7 +132,8 @@ export default {
           data: {
             accountId: newAccount.accountId,
             classId: parseInt(session.classId),
-            permissionLevel: 0 // assume lowest role for class
+            permissionLevel: 0, // assume lowest role for class
+            createdAt: Date.now()
           }
         });
       }
@@ -160,9 +163,10 @@ export default {
       };
       throw err;
     }
-    const account = await prisma.account.findUnique({
+    const account = await prisma.account.findFirst({
       where: {
-        username: username
+        username: username,
+        deletedAt: null
       }
     });
     if (!account) {
@@ -198,7 +202,8 @@ export default {
         data: {
           accountId: accountId,
           classId: parseInt(session.classId),
-          permissionLevel: 0 // assume lowest level
+          permissionLevel: 0, // assume lowest level
+          createdAt: Date.now()
         }
       });
     }
@@ -228,6 +233,8 @@ export default {
         throw err;
       }
     }
+    // account is certainly not soft-deleted and if found (accessMiddleware)
+    // no deletedAt query needed
     const account = await prisma.account.findUnique({
       where: {
         accountId: session.account!.accountId
@@ -244,14 +251,32 @@ export default {
       throw err;
     }
     await prisma.$transaction(async tx => {
-      await tx.deletedAccount.create({
+      // mark account as deleted
+      await tx.account.update({
+        where: {
+          accountId: account!.accountId
+        },
         data: {
-          deletedUsername: account!.username,
-          deletedPassword: account!.password,
-          deletedAccountId: account!.accountId,
-          deletedOn: Date.now()
+          deletedAt: Date.now()
         }
       });
+      // delete related records in JoinedClass, JoinedTeams, and HomeworkCheck
+      await tx.joinedClass.deleteMany({
+        where: {
+          accountId: account!.accountId
+        }
+      });
+      await tx.joinedTeams.deleteMany({
+        where: {
+          accountId: account!.accountId
+        }
+      });
+      await tx.homeworkCheck.deleteMany({
+        where: {
+          accountId: account!.accountId
+        }
+      });
+      // set relevant accountId in uploads to null
       await tx.upload.updateMany({
         where: {
           accountId: account!.accountId
@@ -260,22 +285,22 @@ export default {
           accountId: null
         }
       });
-      await tx.account.delete({
-        where: {
-          accountId: session.account!.accountId
-        }
-      });
     });
+    if (joinedClassAccount){
+      await invalidateCache("UPLOADMETADATA", joinedClassAccount.classId.toString());
+    }
     await redisClient.del(`auth_user:${account!.accountId}`);
     delete session.account;
   },
 
   async changeUsername(reqData: changeUsernameTypeBody, session: Session & Partial<SessionData>) {
     const { password, newUsername } = reqData;
-
-    const accountWithNewUsername = await prisma.account.findUnique({
+    // soft delete needed, so prisma can find usernames which are not deleted
+    // deletedAt needed
+    const accountWithNewUsername = await prisma.account.findFirst({
       where: {
-        username: newUsername
+        username: newUsername,
+        deletedAt: null
       }
     });
 
@@ -288,7 +313,8 @@ export default {
       };
       throw err;
     }
-
+    // account is certainly not soft-deleted and if found (accessMiddleware)
+    // no deletedAt query needed
     const account = await prisma.account.findUnique({
       where: {
         accountId: session.account!.accountId
@@ -305,7 +331,8 @@ export default {
       };
       throw err;
     }
-
+    // account is certainly not soft-deleted and if found (accessMiddleware)
+    // no deletedAt query needed
     await prisma.account.update({
       where: {
         accountId: session.account!.accountId
@@ -315,6 +342,16 @@ export default {
       }
     });
 
+    // update upload metadata cache too, as names have to be refetched if user in a class
+    const joinedClassAccount = await prisma.joinedClass.findUnique({
+      where: {
+        accountId: session.account!.accountId
+      }
+    });
+    if (joinedClassAccount){
+      await invalidateCache("UPLOADMETADATA", joinedClassAccount.classId.toString());
+    }
+
     session.account = { username: newUsername, accountId: session.account!.accountId };
   },
 
@@ -323,6 +360,8 @@ export default {
     session: Session & Partial<SessionData>
   ) {
     const { oldPassword, newPassword } = reqData;
+    // account is certainly not soft-deleted and if found (accessMiddleware)
+    // no deletedAt query needed
     const changePasswordAccount = await prisma.account.findUnique({
       where: {
         accountId: session.account!.accountId
@@ -340,6 +379,8 @@ export default {
       throw err;
     }
     const hashedPassword = await bcrypt.hash(newPassword, SALTROUNDS);
+    // account is certainly not soft-deleted and if found (accessMiddleware)
+    // no deletedAt query needed
     await prisma.account.update({
       where: {
         accountId: session.account!.accountId
@@ -352,8 +393,8 @@ export default {
 
   async checkUsername(reqData: checkUsernameTypeBody) {
     const { username } = reqData;
-    const accountExists = await prisma.account.findUnique({
-      where: { username: username }
+    const accountExists = await prisma.account.findFirst({
+      where: { username: username, deletedAt: null }
     });
     return accountExists !== null;
   }

@@ -20,16 +20,20 @@ This documentation describes all database tables defined in the current Prisma s
 | :-------- | :-------- | :---------------------------------- | :--------------------------------------------------- |
 | accountId | Integer   | Unique user identifier              | Could enable cross-system tracking                   |
 | username  | String    | **Personal identifier** for login   | May reveal real names or personal info               |
-| password  | String    | Encrypted authentication credential | **High risk**: Hash algorithms may become vulnerable |
+| password  | String    | Encrypted authentication credential | **Risk**: Hash algorithms may become vulnerable |
+| createdAt | BigInt    | Account creation timestamp          | -                                                    |
+| deletedAt | BigInt    | Account deletion timestamp          | -                                                    |
 
 **Privacy Concerns**:
 
 - Usernames might contain real names or other identifying information.
 - Password security is critically dependent on the strength and implementation of the hashing algorithm.
+- Personal data (`username`, `password`) is retained after the user has initiated deletion, creating a risk if the cleanup process fails.
 
 **Solutions**:
 
-- Hashing using bcrypt: bcrypt automatically generates a unique random salt per password, making rainbow table attacks ineffective. We use a sufficient number of salt rounds (e.g., `SALT_ROUNDS = 10`).
+- Hashing using bcrypt: bcrypt automatically generates a unique random salt per password, making rainbow table attacks ineffective. We use a sufficient number of salt rounds (`SALT_ROUNDS = 10`).
+- Implement a robust, automated cron job to ensure permanent deletion after the 30-day period.
 
 ---
 
@@ -53,27 +57,6 @@ This documentation describes all database tables defined in the current Prisma s
 
 - The `sess` JSON column intentionally stores: `accountId`, `username`, `classId` (if joined), and a `csrfToken`.
 - **Security**: The session secret is cryptographically secure. Cookies are set with `httpOnly: true` and `secure: true` (in production) to prevent client-side script access and ensure transmission only over HTTPS.
-
----
-
-### 3. deletedAccount Table
-
-**Purpose**: Temporarily holds soft-deleted accounts for a 30-day grace period before permanent deletion.
-
-| Field            | Data Type | Intentionally Stored                       | Potentially Unintentional                    |
-| :--------------- | :-------- | :----------------------------------------- | :------------------------------------------- |
-| deletedAccountId | Integer   | Identifier for the deleted account record  | -                                            |
-| deletedUsername  | String    | The username of the deleted account        | Retains a personal identifier post-deletion  |
-| deletedPassword  | String    | The hashed password of the deleted account | Retains a sensitive credential post-deletion |
-| deletedOn        | BigInt    | Timestamp for scheduled permanent deletion | -                                            |
-
-**Privacy Concerns**:
-
-- Personal data (`username`, `password`) is retained after the user has initiated deletion, creating a risk if the cleanup process fails.
-
-**Solutions**:
-
-- Implement a robust, automated cron job to ensure permanent deletion after the 30-day period.
 
 ---
 
@@ -113,7 +96,9 @@ This documentation describes all database tables defined in the current Prisma s
 | Event.eventId           | Integer   | Unique event identifier                    | -                                                                          |
 | Event.name / desc.      | String    | Event title and details                    | **High risk**: May contain personal info (student names, sensitive topics) |
 | Event.startDate/endDate | BigInt    | Event scheduling                           | Reveals attendance/activity patterns                                       |
+| Event.createdAt         | BigInt    | Record creation timestamp                  | -                                                                          |
 | EventType.name          | String    | Category name (e.g., "Exam", "Field Trip") | Adds context that could have privacy implications (e.g., "Detention")      |
+| EventType.createdAt     | BigInt    | Record creation timestamp                  | -                                                                          |
 | Event.classId           | Integer   | Links event to a specific class            | -                                                                          |
 
 **Privacy Concerns**:
@@ -137,8 +122,10 @@ This documentation describes all database tables defined in the current Prisma s
 | Homework.homeworkId      | Integer   | Assignment identifier  | -                                                                    |
 | Homework.content         | String    | Assignment details     | May contain student-specific instructions or references              |
 | Homework.submissionDate  | BigInt    | Deadline management    | Reveals individual work patterns                                     |
+| Homework.createdAt       | BigInt    | Record creation timestamp | -                                                                 |
 | HomeworkCheck.accountId  | Integer   | Student identifier     | Direct link to student performance                                   |
 | HomeworkCheck.homeworkId | Integer   | Assignment reference   | Creates detailed academic profile when combined with `accountId`     |
+| HomeworkCheck.createdAt  | BigInt    | Record creation timestamp | -                                                                 |
 
 **Privacy Concerns**:
 
@@ -156,8 +143,10 @@ This documentation describes all database tables defined in the current Prisma s
 | JoinedClass.accountId       | Integer   | Student/user identifier              | Links a specific user to a class                       |
 | JoinedClass.classId         | Integer   | Class identifier                     | -                                                      |
 | JoinedClass.permissionLevel | Integer   | User's role/permissions in the class | -                                                      |
+| JoinedClass.createdAt       | BigInt    | Record creation timestamp            | -                                                      |
 | JoinedTeams.accountId       | Integer   | Student/user identifier              | Creates social network mapping within a class          |
 | JoinedTeams.teamId          | Integer   | Group association                    | Could reveal social connections and group dynamics     |
+| JoinedTeams.createdAt       | BigInt    | Record creation timestamp            | -                                                      |
 
 **Privacy Concerns**:
 
@@ -176,6 +165,7 @@ This documentation describes all database tables defined in the current Prisma s
 | classId/teamId       | Integer   | Class/group assignment | Links schedule to specific groups            |
 | room                 | String    | Location management    | **May reveal physical presence patterns**    |
 | startTime/endTime    | BigInt    | Time management        | **Enables detailed daily schedule tracking** |
+| createdAt            | BigInt    | Record creation timestamp | -                                         |
 
 **Privacy Concerns**:
 
@@ -194,6 +184,7 @@ This documentation describes all database tables defined in the current Prisma s
 | teacherGender  | String            | Teacher gender for display/admin  | **Privacy concern**: May enable discrimination or profiling |
 | teacherName... | String / String[] | **Full and short teacher name**   | **Direct personal identifiers** of staff                    |
 | classId        | Integer           | Links subject to a specific class | -                                                           |
+| createdAt      | BigInt            | Record creation timestamp         | -                                                           |
 
 **Privacy Concerns**:
 
@@ -211,6 +202,7 @@ This documentation describes all database tables defined in the current Prisma s
 | teamId  | Integer   | Unique team identifier         | -                                                             |
 | name    | String    | Name of the team               | May be revealing (e.g., "Advanced Group", "Remedial Reading") |
 | classId | Integer   | Links team to a specific class | -                                                             |
+| createdAt | BigInt  | Record creation timestamp      | -                                                             |
 
 **Privacy Concerns**:
 
@@ -302,7 +294,7 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 ---
 
 - **Document Version:** 2.1
-- **Stable Version Alignment:** v2.2.1
-- **Last Updated:** November 16th, 2025
+- **Stable Version Alignment:** v2.2.2
+- **Last Updated:** November 25th, 2025
 - **Next Scheduled Review:** Quarterly – December 10, 2025
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

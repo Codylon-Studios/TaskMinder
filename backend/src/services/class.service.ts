@@ -1,7 +1,7 @@
 import { RequestError } from "../@types/requestError";
 import { Session, SessionData } from "express-session";
 import { default as prisma } from "../config/prisma";
-import { BigIntreplacer } from "../utils/validate.functions";
+import { BigIntreplacer, invalidateCache } from "../utils/validate.functions";
 import { sessionPool } from "../config/pg";
 import logger from "../config/logger";
 import { redisClient } from "../config/redis";
@@ -111,7 +111,8 @@ const classService = {
           data: {
             accountId: session.account!.accountId,
             classId: createdClass.classId,
-            permissionLevel: 3 // class creator is admin
+            permissionLevel: 3, // class creator is admin
+            createdAt: Date.now()
           }
         });
         return createdClass.classCode;
@@ -119,9 +120,9 @@ const classService = {
     }
     catch {
       const err: RequestError = {
-        name: "Server Error",
+        name: "Internal Server Error",
         status: 500,
-        message: "Could not create class in database",
+        message: "Could not create class in database, please try again",
         expected: true
       };
       throw err;
@@ -187,7 +188,8 @@ const classService = {
             data: {
               accountId: accountId,
               classId: targetClass.classId,
-              permissionLevel: targetClass.defaultPermissionLevel
+              permissionLevel: targetClass.defaultPermissionLevel,
+              createdAt: Date.now()
             }
           });
         }
@@ -255,11 +257,13 @@ const classService = {
           }
         }
 
-        await tx.joinedClass.delete({
+        const classUserEntry = await tx.joinedClass.delete({
           where: {
             accountId: session.account!.accountId
           }
         });
+        // delete cache of upload metadata
+        await invalidateCache("UPLOADMETADATA", classUserEntry.classId.toString());
       });
     }
 
@@ -298,21 +302,30 @@ const classService = {
       await tx.upload.deleteMany({
         where: { classId: classIdToDelete }
       });
-
+      // Delete all joinedClass records
       await tx.joinedClass.deleteMany({
         where: {
           classId: classIdToDelete
         }
       });
-
+      // Delete class, rest is deleted with CASCADE in database
       await tx.class.delete({
         where: {
           classId: classIdToDelete
         }
       });
-
+      // invalidate redis caches
+      await invalidateCache("UPLOADMETADATA", classIdToDelete.toString());
+      await invalidateCache("HOMEWORK", classIdToDelete.toString());
+      await invalidateCache("EVENT", classIdToDelete.toString());
+      await invalidateCache("LESSON", classIdToDelete.toString());
+      await invalidateCache("EVENTTYPESTYLE", classIdToDelete.toString());
+      await invalidateCache("SUBJECT", classIdToDelete.toString());
+      await invalidateCache("EVENTTYPE", classIdToDelete.toString());
+      await invalidateCache("TEAMS", classIdToDelete.toString());
       await redisClient.del(`auth_class:${classIdToDelete}`);
       const room = `class:${session.classId}`;
+      // delete session classId
       delete session.classId;
       // Make all sockets in the room leave it
       const io = socketIO.getIO();
@@ -411,12 +424,13 @@ const classService = {
     await prisma.$transaction(async tx => {
       for (const classMember of classMembers) {
         try {
-          await tx.joinedClass.deleteMany({
+          const classUserEntry = await tx.joinedClass.delete({
             where: {
-              accountId: classMember.accountId,
-              classId: parseInt(session.classId!, 10)
+              accountId: classMember.accountId
             }
           });
+          // delete cache of upload metadata
+          await invalidateCache("UPLOADMETADATA", classUserEntry.classId.toString());
           await tx.joinedTeams.deleteMany({
             where: {
               accountId: classMember.accountId
@@ -425,6 +439,14 @@ const classService = {
           await tx.homeworkCheck.deleteMany({
             where: {
               accountId: classMember.accountId
+            }
+          });
+          await tx.upload.updateMany({
+            where: {
+              accountId: classMember.accountId
+            },
+            data: {
+              accountId: null
             }
           });
         }

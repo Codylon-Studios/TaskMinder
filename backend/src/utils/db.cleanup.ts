@@ -4,6 +4,8 @@ import logger from "../config/logger";
 import fs from "fs/promises";
 import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload";
+import { invalidateCache } from "./validate.functions";
+import socketIO from "../config/socket";
 
 /**
  * Deletes class records that are older than 1 day and are TEST CLASSES
@@ -12,8 +14,6 @@ import { FINAL_UPLOADS_DIR } from "../config/upload";
 // This is supressed as this function is for deleting test classes.
 // As a lot of data is connected to a class, many prisma functions need to be called,
 // thus increasing lines of code, but code is still logical
-// This will not get better as code <-> cascade stuff will be introduced in the future
-// TODO@Mingqi: do not forget to add the maunal 
 export async function cleanupTestClasses(): Promise<void> {
   try {
     // Calculate the timestamp for 1 day ago (in milliseconds)
@@ -50,57 +50,40 @@ export async function cleanupTestClasses(): Promise<void> {
         // Continue with database cleanup even if file deletion fails
       }
     }
-
-    const [deletedFileMetadata, deletedUploads, deletedJoins] = await prisma.$transaction([
-      // Delete all file metadata for uploads in these classes
-      prisma.fileMetadata.deleteMany({
-        where: {
-          Upload: {
-            classId: {
-              in: classIdsToDelete
-            }
-          }
+    // delete classes, rest is deleted through CASCADE
+    await prisma.class.deleteMany({
+      where: {
+        classId: {
+          in: classIdsToDelete
         }
-      }),
-
-      // Delete all uploads for these classes
-      prisma.upload.deleteMany({
-        where: {
-          classId: {
-            in: classIdsToDelete
-          }
-        }
-      }),
-
-      prisma.joinedClass.deleteMany({
-        where: {
-          classId: {
-            in: classIdsToDelete
-          }
-        }
-      }),
-
-      prisma.class.deleteMany({
-        where: {
-          classId: {
-            in: classIdsToDelete
-          }
-        }
-      })
-    ]);
-
+      }
+    });
+    // delete auth key for test classes
     await Promise.all(
       classIdsToDelete.map(classId =>
         redisClient.del(`auth_class:${classId}`)
       )
     );
-
-    logger.info(
-      `Test Class cleanup completed: ${classesToDelete.length} classes deleted, ` +
-      `${deletedFileMetadata.count} file metadata records removed, ` +
-      `${deletedUploads.count} uploads removed, ` +
-      `${deletedJoins.count} join records removed. (1d)`
+    // delete redis data of test classes and sockets (invalidate cache)
+    await Promise.all(
+      classIdsToDelete.map(async classId => {
+        await invalidateCache("UPLOADMETADATA", classId.toString());
+        await invalidateCache("HOMEWORK", classId.toString());
+        await invalidateCache("EVENT", classId.toString());
+        await invalidateCache("LESSON", classId.toString());
+        await invalidateCache("EVENTTYPESTYLE", classId.toString());
+        await invalidateCache("SUBJECT", classId.toString());
+        await invalidateCache("EVENTTYPE", classId.toString());
+        await invalidateCache("TEAMS", classId.toString());
+        // Make all sockets in the room leave it
+        const room = `class:${classId}`;
+        const io = socketIO.getIO();
+        const sockets = await io.in(room).fetchSockets();
+        sockets.forEach(socket => socket.leave(room));
+      })
     );
+
+    logger.info(`Test Class cleanup completed: ${classesToDelete.length} classes deleted (1d)`);
   }
   catch (error) {
     logger.error(`Error during test class cleanup: ${error}`);
@@ -108,7 +91,7 @@ export async function cleanupTestClasses(): Promise<void> {
 }
 
 /**
- * Deletes deleted accounts records that are older than 30 days based on deletedOn date
+ * Deletes deleted accounts records that are older than 30 days based on deletedAt date
  */
 export async function cleanupDeletedAccounts(): Promise<void> {
   try {
@@ -116,18 +99,18 @@ export async function cleanupDeletedAccounts(): Promise<void> {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
     // Count records to be deleted
-    const count = await prisma.deletedAccount.count({
+    const count = await prisma.account.count({
       where: {
-        deletedOn: {
+        deletedAt: {
           lt: thirtyDaysAgo
         }
       }
     });
 
     // Delete the records
-    const deleted = await prisma.deletedAccount.deleteMany({
+    const deleted = await prisma.account.deleteMany({
       where: {
-        deletedOn: {
+        deletedAt: {
           lt: thirtyDaysAgo
         }
       }
@@ -148,6 +131,19 @@ export async function cleanupOldHomework(): Promise<void> {
     // Calculate the timestamp for 90 days ago (in milliseconds)
     const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
 
+    // Find classes that will be affected to invalidate their cache later
+    const affectedClasses = await prisma.homework.findMany({
+      where: {
+        submissionDate: {
+          lt: ninetyDaysAgo
+        }
+      },
+      select: {
+        classId: true
+      },
+      distinct: ["classId"]
+    });
+
     // Count records to be deleted
     const count = await prisma.homework.count({
       where: {
@@ -165,7 +161,8 @@ export async function cleanupOldHomework(): Promise<void> {
         }
       }
     });
-
+    // invalidate homework cache of classes
+    await Promise.all(affectedClasses.map(c => invalidateCache("HOMEWORK", c.classId.toString())));
     logger.info(`Homework cleanup completed: ${deleted.count} records deleted out of ${count} found (90d)`);
   }
   catch (error) {
@@ -181,6 +178,20 @@ export async function cleanupOldEvents(): Promise<void> {
   try {
     // Calculate the timestamp for 365 days ago (in milliseconds)
     const aYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
+
+    // Find classes that will be affected to invalidate their cache later
+    const affectedClasses = await prisma.event.findMany({
+      where: {
+        startDate: {
+          lt: aYearAgo
+        }
+      },
+      select: {
+        classId: true
+      },
+      distinct: ["classId"]
+    });
+
 
     // Count records to be deleted
     const count = await prisma.event.count({
@@ -199,7 +210,8 @@ export async function cleanupOldEvents(): Promise<void> {
         }
       }
     });
-
+    // invalidate event cache of classes
+    await Promise.all(affectedClasses.map(c => invalidateCache("EVENT", c.classId.toString())));
     logger.info(`Event cleanup completed: ${deleted.count} records deleted out of ${count} found (365d)`);
   }
   catch (error) {
@@ -319,7 +331,9 @@ export async function migrateEventAndHomeworkDates(): Promise<void> {
         }
       })
     ]);
-
+    // invalidate homework and event cache of demo class
+    await invalidateCache("EVENT", demoClass.classId.toString());
+    await invalidateCache("HOMEWORK", demoClass.classId.toString());
     logger.info(
       `Migrated dates of ${migratedEvents.length} events and ${migratedHomework.count} homework entries for demo class. (1 week)`
     );

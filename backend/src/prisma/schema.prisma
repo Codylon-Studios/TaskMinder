@@ -9,21 +9,21 @@ datasource db {
 
 model Account {
   accountId     Int             @id @unique(map: "account_account_id") @default(autoincrement()) @map("accountId")
-  username      String          @unique
+  username      String
   password      String
+  deletedAt     BigInt?
+  createdAt     BigInt?
+
   HomeworkCheck HomeworkCheck[]
   JoinedClass   JoinedClass?
   JoinedTeams   JoinedTeams[]
   Files         Upload[]
 
+  // FIXME: account_username_unique_active_key partial index for
+  // deletedAt and username; manual migration in: improve_schema 20251121
+  // prisma does not have this natively implemented yet (11/22/2025)
+  @@index([deletedAt])
   @@map("account")
-}
-
-model deletedAccount {
-  deletedAccountId Int @id @default(autoincrement()) @map("deletedAccountId")
-  deletedUsername      String
-  deletedPassword      String
-  deletedOn BigInt
 }
 
 model AccountSessions {
@@ -45,9 +45,12 @@ model Event {
   endDate     BigInt?
   lesson      String?
   teamId      Int
-  EventType   EventType @relation(fields: [eventTypeId], references: [eventTypeId], onDelete: Cascade, onUpdate: NoAction)
-  Class       Class     @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
+  createdAt   BigInt?    
 
+  EventType   EventType @relation(fields: [eventTypeId], references: [eventTypeId], onDelete: Cascade, onUpdate: NoAction)
+  Class       Class     @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([classId])
   @@map("event")
 }
 
@@ -56,36 +59,42 @@ model EventType {
   classId     Int
   name        String
   color       String?
+  createdAt   BigInt?
+
   Event       Event[]
-  Class       Class   @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
+
+  Class       Class   @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([classId, name])
   @@map("eventType")
 }
 
 model Class {
-  classId     Int           @id @default(autoincrement()) @map("classId")
-  className   String
-  classCode   String        @unique
-  classCreated BigInt
-  isTestClass Boolean
-  defaultPermissionLevel Int
-  storageUsedBytes BigInt
-  // total storage quota for this class, specified in bytes
-  storageQuotaBytes BigInt
-  dsbMobileActivated Boolean
-  dsbMobileUser String?
-  dsbMobilePassword String?
-  // The real name of the class to filter in the substitutions data
-  dsbMobileClass String?
-  Event       Event[]
-  EventType   EventType[]
-  Homework    Homework[]
-  JoinedClass JoinedClass[]
-  Lesson      Lesson[]
-  Subjects    Subjects[]
-  Team        Team[]
-  Files       Upload[]
+  classId                 Int           @id @default(autoincrement()) @map("classId")
+  className               String
+  classCode               String        @unique
+  classCreated            BigInt
+  isTestClass             Boolean
+  defaultPermissionLevel  Int
+  storageUsedBytes        BigInt
+  // total storage quota (bytes)
+  storageQuotaBytes       BigInt
+  dsbMobileActivated      Boolean
+  dsbMobileUser           String?
+  dsbMobilePassword       String?
+  // real name of class to filter in substitution data
+  dsbMobileClass          String?
+
+  Event                   Event[]
+  EventType               EventType[]
+  Homework                Homework[]
+  JoinedClass             JoinedClass[]
+  Lesson                  Lesson[]
+  Subjects                Subjects[]
+  Team                    Team[]
+  Files                   Upload[]
+
+  @@map("class")
 }
 
 model Homework {
@@ -96,9 +105,13 @@ model Homework {
   assignmentDate BigInt
   submissionDate BigInt
   teamId         Int
-  HomeworkCheck  HomeworkCheck[]
-  Class          Class           @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
+  createdAt      BigInt?
 
+  HomeworkCheck  HomeworkCheck[]
+
+  Class          Class           @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([classId])
   @@map("homework")
 }
 
@@ -106,21 +119,27 @@ model HomeworkCheck {
   checkId    Int      @id @default(autoincrement()) @map("checkId")
   accountId  Int
   homeworkId Int
+  createdAt  BigInt?
+
   Account    Account  @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
   Homework   Homework @relation(fields: [homeworkId], references: [homeworkId], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([accountId])
   @@unique([accountId, homeworkId], map: "homework_check_account_id_homework_id")
   @@map("homeworkCheck")
 }
 
 model JoinedClass {
-  joinedClassId Int     @id @default(autoincrement()) @map("joinedClassId")
-  classId       Int
-  accountId     Int     @unique
+  joinedClassId   Int     @id @default(autoincrement()) @map("joinedClassId")
+  classId         Int
+  accountId       Int     @unique
   permissionLevel Int
-  Account       Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
-  Class         Class   @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
+  createdAt       BigInt?
 
+  Account         Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
+  Class           Class   @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([classId])
   @@map("joinedClass")
 }
 
@@ -128,9 +147,12 @@ model JoinedTeams {
   joinedTeamId Int     @id @default(autoincrement()) @map("joinedTeamId")
   teamId       Int
   accountId    Int
+  createdAt    BigInt?
+
   Account      Account @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
   Team         Team    @relation(fields: [teamId], references: [teamId], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([accountId])
   @@unique([teamId, accountId], map: "joined_teams_team_id_account_id")
   @@map("joinedTeams")
 }
@@ -145,8 +167,11 @@ model Lesson {
   room         String
   startTime    BigInt
   endTime      BigInt
-  Class        Class  @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
+  createdAt    BigInt?
 
+  Class        Class  @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([classId])
   @@unique([classId, teamId, weekDay, lessonNumber, subjectId])
   @@map("lesson")
 }
@@ -161,10 +186,10 @@ model Subjects {
   teacherNameLong         String
   teacherNameShort        String
   teacherNameSubstitution String[]
-  Class                   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
+  createdAt               BigInt?
 
-  @@unique([classId, subjectNameLong])
-  @@unique([classId, subjectNameShort])
+  Class                   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+
   @@map("subjects")
 }
 
@@ -172,10 +197,13 @@ model Team {
   teamId      Int           @id @default(autoincrement()) @map("teamId")
   classId     Int
   name        String
+  createdAt   BigInt?
 
   JoinedTeams JoinedTeams[]
 
-  Class       Class         @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: Cascade)
+  Class       Class         @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([classId])
   @@unique([classId, name])
   @@map("team")
 }
@@ -183,32 +211,34 @@ model Team {
 model FileMetadata {
   fileMetaDataId   Int    @id @default(autoincrement())
   uploadId         Int
-  storedFileName   String   // unique UUID name on disk
+  storedFileName   String   @unique // unique UUID name on disk
   mimeType         String
   size             Int
   createdAt        BigInt
 
-  Upload Upload @relation(fields: [uploadId], references: [uploadId], onDelete: NoAction, onUpdate: NoAction)
+  Upload Upload @relation(fields: [uploadId], references: [uploadId], onDelete: Cascade, onUpdate: NoAction)
   @@map("fileMetadata")
 }
 
 // an upload can contain one or multiple files
 model Upload {
-  uploadId     Int    @id @default(autoincrement())
-  uploadName   String 
-  uploadType   String
-  status       String @default("queued") // "queued" | "processing" | "completed" | "failed"
-  errorReason  String?
+  uploadId      Int    @id @default(autoincrement())
+  uploadName    String 
+  uploadType    String
+  status        String @default("queued") // "queued" | "processing" | "completed" | "failed"
+  errorReason   String?
   reservedBytes BigInt @default(0) // Storage reserved during upload
-  createdAt    BigInt  // When the upload job was created
+  createdAt     BigInt  // When the upload job was created
 
-  teamId       Int
-  accountId    Int?
-  classId      Int
+  teamId        Int
+  accountId     Int?
+  classId       Int
 
-  Files FileMetadata[]
+  Files         FileMetadata[]
 
-  Account   Account?   @relation(fields: [accountId], references: [accountId], onDelete: NoAction, onUpdate: NoAction)
-  Class     Class      @relation(fields: [classId], references: [classId], onDelete: NoAction, onUpdate: NoAction)
+  Account       Account?   @relation(fields: [accountId], references: [accountId], onDelete: SetNull, onUpdate: NoAction)
+  Class         Class      @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([classId])
   @@map("upload")
 }

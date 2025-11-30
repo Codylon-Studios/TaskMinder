@@ -16,14 +16,16 @@ async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   }
 }
 
-// Helper function to invalidate upload metadata cache
-export const invalidateUploadCache = async (classId: string): Promise<void> => {
-  const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId);
+async function invalidateCache(
+  key: keyof typeof CACHE_KEY_PREFIXES,
+  classId: string
+): Promise<void> {
+  const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES[key], classId);
   try {
     await redisClient.del(cacheKey);
   } 
   catch (err) {
-    logger.error(`Error invalidating upload metadata cache: ${err}`);
+    logger.error(`Error invalidating cache for ${CACHE_KEY_PREFIXES[key]}: ${err}`);
   }
 };
 
@@ -158,5 +160,6 @@ export {
   lessonDateEventAtLeastOneNull,
   isValidGender,
   BigIntreplacer,
-  updateCacheData
+  updateCacheData,
+  invalidateCache
 };

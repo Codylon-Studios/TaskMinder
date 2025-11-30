@@ -23,7 +23,8 @@ const homeworkService = {
           subjectId: subjectId,
           assignmentDate: assignmentDate,
           submissionDate: submissionDate,
-          teamId: teamId
+          teamId: teamId,
+          createdAt: Date.now()
         }
       });
     }
@@ -58,7 +59,7 @@ const homeworkService = {
     await prisma.$transaction(async tx => {
       if (checkStatus === "true") {
         await tx.homeworkCheck.createMany({
-          data: [{ accountId, homeworkId }],
+          data: [{ accountId, homeworkId, createdAt: Date.now() }],
           skipDuplicates: true // prevents race condition P2002 errors
         });
       } 

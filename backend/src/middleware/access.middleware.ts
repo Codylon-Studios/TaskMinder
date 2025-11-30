@@ -62,6 +62,15 @@ async function checkAccountAccess(req: Request): Promise<void> {
         "Account not found. You have been logged out"
       );
     }
+    // account was deleted, invalid session
+    if (account.deletedAt !== null) {
+      delete req.session.account;
+      throwError(
+        "Unauthorized",
+        401,
+        "Account not found. You have been logged out"
+      );
+    }
     await redisClient.set(`auth_user:${req.session.account.accountId}`, "true");
   }
 }

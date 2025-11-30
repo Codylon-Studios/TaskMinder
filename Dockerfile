@@ -21,12 +21,14 @@ RUN apk update && apk upgrade --no-cache && \
   clamav-daemon \
   clamav-libunrar \
   redis \
-  ghostscript
+  ghostscript \
+  su-exec
 
 # Create app & ClamAV directories with proper permissions
-RUN mkdir -p /var/lib/clamav /run/clamav && \
+# /var/lib/clamav/tmp is created for ClamAV to use as a temporary directory during scans or updates
+RUN mkdir -p /var/lib/clamav /run/clamav /var/lib/clamav/tmp && \
   chown -R clamav:clamav /var/lib/clamav /run/clamav && \
-  chmod -R 755 /var/lib/clamav /run/clamav
+  chmod -R 775 /var/lib/clamav /run/clamav
 
 WORKDIR /usr/src/app
 
@@ -43,8 +45,12 @@ COPY --from=builder /usr/src/app/prisma.config.ts ./prisma.config.ts
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Set ownership for the app user
-RUN chown -R bun:bun /usr/src/app
+# Set ownership for the app user and create directories for uploads
+RUN mkdir -p /usr/src/app/data/temp \
+    /usr/src/app/data/uploads \
+    /usr/src/app/data/quarantine \
+    /usr/src/app/data/sanitized \
+    && chown -R bun:bun /usr/src/app/data
 
 EXPOSE 3000
 

@@ -33,8 +33,7 @@ services:
     volumes:
       - ./db-backups:/backups
       - clamav-data:/var/lib/clamav
-      # Files folder
-      - ./data:/usr/src/app/data
+      - app-data:/usr/src/app/data
 
   postgres:
     image: postgres:14
@@ -70,8 +69,6 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
-    volumes:
-      - redis-data:/data
 
   prometheus:
     image: prom/prometheus:v3.7.3
@@ -88,11 +85,12 @@ services:
       - "--web.console.libraries=/usr/share/prometheus/console_libraries"
       - "--web.console.templates=/usr/share/prometheus/consoles"
       - "--web.enable-lifecycle"
+      - "--web.enable-remote-write-receiver"
     depends_on:
       - app
 
   loki:
-    image: grafana/loki:3.5.8
+    image: grafana/loki:3.6.2
     container_name: loki
     restart: always
     ports:
@@ -101,21 +99,27 @@ services:
       - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml
       - loki-data:/loki
     command: -config.file=/etc/loki/local-config.yaml
-
-  promtail:
-    image: grafana/promtail:3.5.8
-    container_name: promtail
+  
+  alloy:
+    image: grafana/alloy:v1.11.3
+    container_name: alloy
     restart: always
     volumes:
-      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml
+      - ./monitoring/alloy-config.alloy:/etc/alloy/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - promtail-positions:/tmp
-    command: -config.file=/etc/promtail/config.yml
+      - alloy-data:/var/lib/alloy
+    command:
+      - "run"
+      - "--storage.path=/var/lib/alloy"
+      - "--server.http.listen-addr=0.0.0.0:12345"
+      - "/etc/alloy/config.alloy"
     depends_on:
       - loki
+      - prometheus
+      - app
 
   grafana:
-    image: grafana/grafana:12.2.1
+    image: grafana/grafana:12.3.0
     container_name: grafana
     restart: always
     ports:
@@ -125,7 +129,6 @@ services:
       - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/
       - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
     environment:
-      # This is the password and user at server startup, grafana will prompt to change this upon first login
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
@@ -153,9 +156,9 @@ secrets:
 
 volumes:
   postgres-data:
-  redis-data:
   prometheus-data:
   loki-data:
-  promtail-positions:
+  alloy-data:
   grafana-data:
+  app-data:
   clamav-data:

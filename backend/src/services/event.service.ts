@@ -70,7 +70,8 @@ export const eventService = {
           startDate: startDate,
           lesson: lesson,
           endDate: endDate,
-          teamId: teamId
+          teamId: teamId,
+          createdAt: Date.now()
         }
       });
     }
@@ -271,7 +272,8 @@ export const eventService = {
             data: {
               classId,
               name: eventType.name,
-              color: eventType.color
+              color: eventType.color,
+              createdAt: Date.now()
             }
           });
         }
@@ -384,7 +386,7 @@ export const eventService = {
           color: $color-darker;
         }
 
-        [data-high-contrast="false"] {
+        :not([data-high-contrast="true"]) {
           .event-#{"" + $name}::selection, .event-#{"" + $name} ::selection {
             background-color: $bg-select;
           }

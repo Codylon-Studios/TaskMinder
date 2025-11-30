@@ -4,6 +4,35 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.2] - 2025-11-30
+
+### Changed
+* Backend now sends regex for substitution data directly
+* Add 400 return codes if file is too large or too many files being uploaded
+* Explanation for test class is now wrapped in an info box
+* Added createdAt field to multiple tables
+* Cache is now invalidated/refechted if corresponding data changes
+* Change cron job delete test class schedule to run every 15mins
+* Uploads now support autocomplete for lessons and date (at title)
+
+### Fixed
+* Migrate from promtail (deprecated) to alloy
+* (. Stunde) bug still existed in /main
+* Certain lessons were not displayed in timetable
+* "Heute kein Unterricht" (or the blue info box in general) did not always display immediately
+* Improve production deployment regarding permissions (least privilege)
+* Change host volume to named volume in docker compose to avoid permission errors
+* Correct docs at db migration
+* Fixed Adding/editing/checking homework will lead to displaying all homework (ignoring filters) of the last 90 days
+
+### Removed
+* Redis volume as not needed anymore (cache-only)
+
+### Security
+* Package bumping
+
+---
+
 ## \[v2.2.1] - 2025-11-16
 
 ### Fixed
