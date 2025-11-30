@@ -386,7 +386,7 @@ export const eventService = {
           color: $color-darker;
         }
 
-        [data-high-contrast="false"] {
+        :not([data-high-contrast="true"]) {
           .event-#{"" + $name}::selection, .event-#{"" + $name} ::selection {
             background-color: $bg-select;
           }

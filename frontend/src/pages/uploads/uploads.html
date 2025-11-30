@@ -91,7 +91,15 @@
             <div class="modal-body">
               <div class="mb-3">
                 <label for="add-upload-name" class="form-label">Bennene die Dateien</label>
-                <input type="text" class="form-control add-upload-input" id="add-upload-name" placeholder='zum Beispiel "Hefteintrag Mathe" ' />
+                <input type="text" class="form-control add-upload-input" id="add-upload-name" placeholder='zum Beispiel "Mathe vom 30.11" ' />
+                <div class="autocomplete-feedback">Automatisch: Das aktuelle Fach & Datum</div>
+              </div>
+
+              <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 mb-3" id="add-upload-max-files" style="display: none;">
+                <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+                <span class="d-block">
+                  Es können höchstens 20 Dateien gleichzeitig hochgeladen werden!
+                </span>
               </div>
 
               <div class="mb-3">
@@ -141,7 +149,7 @@
 
               <div class="mb-3">
                 <label for="edit-upload-name" class="form-label">Bennene die Dateien</label>
-                <input type="text" class="form-control edit-upload-input" id="edit-upload-name" placeholder='zum Beispiel "Hefteintrag Mathe" ' />
+                <input type="text" class="form-control edit-upload-input" id="edit-upload-name" placeholder='zum Beispiel "Mathe vom 30.11" ' />
               </div>
 
               <div class="mb-3">
@@ -177,11 +185,7 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
             </div>
             <div class="modal-body">
-              <object id="view-upload-object">
-                Vorschau nicht möglich.
-                <a>Datei öffnen</a>
-                .
-              </object>
+              <object id="view-upload-object">Placeholder</object>
               <div class="form-text" id="view-upload-first-page-note">Eventuell wird nur die erste Seite des PDFs angezeigt.</div>
 
               <div class="d-flex align-items-center justify-content-center gap-2 mb-2">

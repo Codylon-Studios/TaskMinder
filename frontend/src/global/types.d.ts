@@ -113,7 +113,7 @@ type SubstitutionsData = {
     plan2: SubstitutionPlan;
     updated: string;
   };
-  substitutionClassName: string | null;
+  classFilterRegex: string | null;
 };
 
 // Teams

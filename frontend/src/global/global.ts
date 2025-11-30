@@ -59,23 +59,44 @@ export function isValidSite(site: string): boolean {
 }
 
 export function registerSocketListeners(listeners: Record<string, () => unknown>): void {
-  const site = getSite();
-  for (const listener of Object.keys(listeners)) {
-    socket.on(listener, () => {
-      if (isSite(site)) {
-        listeners[listener]();
-      }
-    });
-  }
+  setTimeout(() => { // Somehow necessary as otherwise socket isn't declared (only in uploads somehow)
+    const site = getSite();
+    for (const listener of Object.keys(listeners)) {
+      socket.on(listener, () => {
+        if (isSite(site)) {
+          listeners[listener]();
+        }
+      });
+    }
+  }, 0)
 }
 
-export function msToDisplayDate(ms: number | string): string {
-  const num = typeof ms === "string" ? Number.parseInt(ms) : ms;
-  const date = new Date(num);
+export function getSimpleDisplayDate(raw: number | string | Date): string {
+  let date;
+  if (raw instanceof Date) date = raw
+  else {
+    let num;
+    if (typeof raw === "string") num = Number.parseInt(raw)
+    else num = raw;
+    date = new Date(num)
+  }
 
   const day = String(date.getDate());
   const month = String(date.getMonth() + 1);
-  const dateStr = `${day}.${month}`;
+  return `${day}.${month}`;
+}
+
+export function getDisplayDate(raw: number | string | Date): string {
+  let date;
+  if (raw instanceof Date) date = raw
+  else {
+    let num;
+    if (typeof raw === "string") num = Number.parseInt(raw)
+    else num = raw;
+    date = new Date(num)
+  }
+
+  const dateStr = getSimpleDisplayDate(raw);
 
   const msDate = date.setHours(0, 0, 0, 0);
   const msToday = new Date().setHours(0, 0, 0, 0);
@@ -144,12 +165,12 @@ export function dateDaysDifference(date1: Date, date2: Date): number {
 
 export function getTimeLeftString(timeLeft: number): string {
   if (timeLeft < 60 * 60 * 1000) {
-    const mins = Math.floor(timeLeft / 60 / 1000);
+    const mins = Math.ceil(timeLeft / 60 / 1000);
     return mins + " Minute" + (mins > 1 ? "n" : "");
   }
   else {
     const hours = Math.floor(timeLeft / 60 / 60 / 1000);
-    const mins = Math.floor((timeLeft % (60 * 60 * 1000)) / 60 / 1000);
+    const mins = Math.ceil((timeLeft % (60 * 60 * 1000)) / 60 / 1000);
     if (mins === 0) {
       return hours + " Stunde" + (hours > 1 ? "n" : "");
     }
@@ -220,7 +241,6 @@ export function escapeHTML(str: string): string {
     }
   });
 }
-
 
 export function getInputValue(element: JQuery<HTMLElement>, fallback?: string): string {
   return element.val()?.toString() ?? (fallback ?? "");
@@ -415,20 +435,18 @@ async function loadJoinedTeamsData(): Promise<void> {
 async function loadClassSubstitutionsData(): Promise<void> {
   const currentSubstitutionsData = await substitutionsData();
   if (currentSubstitutionsData.data === "No data") {
-    classSubstitutionsData({data: "No data", substitutionClassName: currentSubstitutionsData.substitutionClassName});
+    classSubstitutionsData({data: "No data", classFilterRegex: currentSubstitutionsData.classFilterRegex});
     return;
   }
 
   const data = structuredClone(currentSubstitutionsData.data);
-  const className = currentSubstitutionsData.substitutionClassName ?? "";
-  const [, classNumber, classLetter] = /^(\d*)([a-zA-Z]*)$/.exec(className) ?? [];
   for (let planId = 1 as 1 | 2; planId <= 2; planId++) {
     const key = ("plan" + planId) as "plan1" | "plan2";
     data[key].substitutions = data[key].substitutions.filter((entry: Record<string, string>) =>
-      (new RegExp(`^${classNumber}[a-zA-Z]*${classLetter}[a-zA-Z]*`)).test(entry.class)
+      new RegExp(currentSubstitutionsData.classFilterRegex ?? "").test(entry.class)
     );
   }
-  classSubstitutionsData({data: data, substitutionClassName: currentSubstitutionsData.substitutionClassName});
+  classSubstitutionsData({data: data, classFilterRegex: currentSubstitutionsData.classFilterRegex});
 }
 
 async function loadHomeworkCheckedData(): Promise<void> {
@@ -488,6 +506,9 @@ export async function reloadAll(): Promise<void> {
   $("body").css({ display: "flex" });
 }
 
+// Global socket variable that can be accessed from any script
+export const socket = io();
+
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
 
 const themeColor = document.createElement("meta");
@@ -512,9 +533,6 @@ else {
   themeColor.content = "#2b3035";
 }
 
-// Global socket variable that can be accessed from any script
-export const socket: Socket = io();
-
 document.head.appendChild(themeColor);
 
 // Data accessors
@@ -522,6 +540,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
   const eventName = `dataLoaded:${name}`;
   let data: DataType | null = null;
   const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
+  let initialized = false;
   
   const reloadFunction = typeof reload === "string" ? () => {
     $.get(reload, data => {
@@ -546,6 +565,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
       }
       return data;
     }
+    if (!initialized) accessor.reload()
     return getNotNullValue();
   };
 
@@ -559,6 +579,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
       $(globalThis).trigger(eventName);
     }
     accessor.trigger("update");
+    initialized = true;
     return accessor;
   };
 
@@ -580,6 +601,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
     if (typeof reloadFunction === "function") {
       accessor.set(null);
       reloadFunction();
+      initialized = true;
     }
     else (() => {
       console.warn(
