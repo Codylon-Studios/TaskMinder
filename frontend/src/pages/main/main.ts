@@ -6,13 +6,12 @@ import {
   homeworkData,
   subjectData,
   getHomeworkCheckStatus,
-  msToDisplayDate,
+  getDisplayDate,
   substitutionsData,
   classSubstitutionsData,
   dateToMs,
   lessonData,
   homeworkCheckedData,
-  socket,
   msToTime,
   csrfToken,
   escapeHTML,
@@ -429,11 +428,11 @@ async function updateEventList(): Promise<void> {
     const eventTypeId = event.eventTypeId;
     const name = event.name;
     const description = event.description;
-    const startDate = msToDisplayDate(event.startDate);
+    const startDate = getDisplayDate(event.startDate);
     const lesson = event.lesson;
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
-      const endDate = msToDisplayDate(event.endDate);
+      const endDate = getDisplayDate(event.endDate);
       if (isSameDay(new Date(Number.parseInt(event.startDate)), new Date(Number.parseInt(event.endDate)))) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
@@ -441,10 +440,13 @@ async function updateEventList(): Promise<void> {
         timeSpan.append(startDate, " - ", endDate);
       }
     }
-    else if (lesson !== null) {
+    else if (lesson !== null && lesson !== "") {
       timeSpan.append(startDate, ` <b>(${escapeHTML(lesson)}. Stunde)</b>`);
     }
-
+    else {
+      timeSpan.append(startDate);
+    }
+    
     // The template for an event
     const template = $(`<div class="col py-2">
         <div class="card event-${eventTypeId} h-100">
@@ -598,7 +600,7 @@ async function updateTimetable(): Promise<void> {
 
   for (const multiLesson of timetableData) {
     if (! multiLesson.lessons.some(l => l.subjectId !== -1 || l.substitution !== undefined || l.events !== undefined)) {
-      return;
+      continue;
     }
 
     const templateModeLess = `
@@ -1237,12 +1239,7 @@ export async function init(): Promise<void> {
       $(this).prop("checked", false);
     });
 
-    $("#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")).prop("checked", true);    
-    socket.on("updateHomework", () => {
-      homeworkData.reload();
-      homeworkCheckedData.reload();
-      updateHomeworkList();
-    });
+    $("#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")).prop("checked", true);
     
     res();
   });

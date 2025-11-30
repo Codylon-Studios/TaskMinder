@@ -4,7 +4,7 @@ import {
   eventTypeData,
   isSameDay,
   joinedTeamsData,
-  msToDisplayDate,
+  getDisplayDate,
   msToInputDate,
   teamsData,
   csrfToken,
@@ -54,12 +54,12 @@ async function updateEventList(): Promise<void> {
     const eventTypeId = event.eventTypeId;
     const name = event.name;
     const description = event.description;
-    const startDate = msToDisplayDate(event.startDate);
+    const startDate = getDisplayDate(event.startDate);
     const lesson = event.lesson;
 
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
-      const endDate = msToDisplayDate(event.endDate);
+      const endDate = getDisplayDate(event.endDate);
       if (isSameDay(new Date(Number.parseInt(event.startDate)), new Date(Number.parseInt(event.endDate)))) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
@@ -737,7 +737,7 @@ export async function init(): Promise<void> {
         const diff = dateDaysDifference(selectedDate, normalDate);
 
         const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        filterData.dateFromOffset = diff;
+        filterData.dateFromOffset = Number.isNaN(diff) ? "NaN" : diff;
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
 
         updateFilters();
@@ -752,7 +752,7 @@ export async function init(): Promise<void> {
         const diff = dateDaysDifference(selectedDate, normalDate);
 
         const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        filterData.dateUntilOffset = diff;
+        filterData.dateUntilOffset = Number.isNaN(diff) ? "NaN" : diff;
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
         
         updateFilters();

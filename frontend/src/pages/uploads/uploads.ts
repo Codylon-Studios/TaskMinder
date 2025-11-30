@@ -2,15 +2,17 @@ import {
   joinedTeamsData,
   msToInputDate,
   teamsData,
-  socket,
   csrfToken,
   lessonData,
   escapeHTML,
   dateDaysDifference,
   uploadData,
   createDataAccessor,
-  msToDisplayDate,
-  isSameDayMs
+  getDisplayDate,
+  isSameDayMs,
+  registerSocketListeners,
+  loadTimetableData,
+  getSimpleDisplayDate
 } from "../../global/global.js";
 import { SingleUploadData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -132,7 +134,7 @@ async function updateUploadList(): Promise<void> {
           <span class="badge badge-tertiary rounded-pill"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
           <span class="badge badge-tertiary rounded-pill"><i class="far fa-file me-1" aria-hidden="true"></i>${numberFiles}</span>
           <span class="badge badge-tertiary rounded-pill">
-            <i class="far fa-calendar me-1" aria-hidden="true"></i>${msToDisplayDate(upload.createdAt)}
+            <i class="far fa-calendar me-1" aria-hidden="true"></i>${getDisplayDate(upload.createdAt)}
           </span>
           </div>
         </button>
@@ -236,13 +238,28 @@ async function updateTeamList(): Promise<void> {
   }
 };
 
-function addUpload(): void {
+async function addUpload(): Promise<void> {
   //
   // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS AN UPLOAD
   //
 
   // Reset the data inputs in the add upload modal
-  $("#add-upload-name").val("");
+  const now = new Date();
+  const timeNow = (now.getHours() * 60 + now.getMinutes() - 5) * 60 * 1000; // Pretend it's 5min earlier, in case the lesson was just over
+  const currentTimetableData = await loadTimetableData(new Date());
+  const currentLesson = currentTimetableData.find(l => l.startTime < timeNow && l.endTime > timeNow);
+  
+  if (currentLesson == undefined) {
+    $("#add-upload-name").val("").removeClass("autocomplete");
+  }
+  else {
+    $("#add-upload-name")
+      .val(currentLesson?.lessons[0].subjectNameLong + " vom " + getSimpleDisplayDate(now))
+      .addClass("autocomplete")
+      .off("focus").on("focus", function () {
+        $(this).val("").removeClass("autocomplete")
+      });
+  }
   $("#add-upload-files").val("");
   $("#add-upload-type").val("");
   $("#add-upload-team").val("-1");
@@ -336,9 +353,23 @@ async function viewUpload(uploadId: number): Promise<void> {
     $("#view-upload-first-page-note").toggle(mime === "application/pdf");
     
     const $object = $("#view-upload-object");
-    const $newObject = $(`<object id="view-upload-object" class="w-100 border border-secondary ${/iPhone/.test(navigator.userAgent) ? "ios" : ""}">
-      <a>Download</a>
-    </object>`);
+    const $newObject = $(`
+      <object id="view-upload-object" class="d-block mb-2 w-100 border border-secondary
+        ${/iPhone/.test(navigator.userAgent) ? "ios" : ""}">
+        <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 m-2">
+          <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+          <span class="d-block">
+            Die Datei kann nicht angezeigt werden. Entweder
+            <ul>
+              <li>Die Datei lädt noch oder</li>
+              <li>Die Datei ist nicht mehr verfügbar oder</li>
+              <li>Wir haben einen Fehler gemacht - Kontaktiere uns, wenn du den Rest ausschließen kannst.</li>
+            </ul>
+            Vielleicht kannst du die Datei unten herunterladen oder in einem neuem Tab öffen.
+          </span>
+        </div>
+      </object>
+    `);
     $newObject.attr("data", route + "?action=preview").attr("type", mime).find("a").attr("href", route + "?action=preview");
     $object.replaceWith($newObject);
 
@@ -366,7 +397,7 @@ async function viewUpload(uploadId: number): Promise<void> {
 async function copyLinkUpload(uploadId: number) : Promise<void> {
   const $el = $(`.upload-copy-link[data-id=${uploadId}]`);
   try {
-    await navigator.clipboard.writeText(location.host + "/uploads?view-upload=" + uploadId);
+    await navigator.clipboard.writeText(`${location.protocol}//${location.host}/uploads?view-upload=${uploadId}`);
 
     $el.prop("disabled", true).html("<i class=\"fas fa-check opacity-75\" aria-hidden=\"true\"></i>");
 
@@ -608,25 +639,12 @@ export async function init(): Promise<void> {
         const type = $("#add-upload-type").val();
         const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
 
-        if (name === "" || type === null || files.length === 0) {
+        $("#add-upload-max-files").toggle(files.length > 20);
+        if (name === "" || type === null || files.length === 0 || files.length > 20) {
           $("#add-upload-button").prop("disabled", true);
         }
         else {
           $("#add-upload-button").prop("disabled", false);
-        }
-      });
-
-      // On changing any information in the edit uploadFilter modal, disable the edit button if any information is empty
-      $(".edit-uploadFilter-input").on("input", function () {
-        const name = $("#edit-upload-name").val()?.toString().trim();
-        const type = $("#edit-upload-type").val();
-        const files = ($("#edit-upload-files")[0] as HTMLInputElement).files ?? [];
-
-        if (name === "" || type === null || files.length === 0) {
-          $("#edit-upload-button").prop("disabled", true);
-        }
-        else {
-          $("#edit-upload-button").prop("disabled", false);
         }
       });
 
@@ -693,7 +711,7 @@ export async function init(): Promise<void> {
         const diff = dateDaysDifference(selectedDate, normalDate);
 
         const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
-        filterData.dateFromOffset = diff;
+        filterData.dateFromOffset = Number.isNaN(diff) ? "NaN" : diff;
         localStorage.setItem("uploadFilter", JSON.stringify(filterData));
 
         updateFilters();
@@ -707,7 +725,7 @@ export async function init(): Promise<void> {
         const diff = dateDaysDifference(selectedDate, normalDate);
 
         const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
-        filterData.dateUntilOffset = diff;
+        filterData.dateUntilOffset = Number.isNaN(diff) ? "NaN" : diff;
         localStorage.setItem("uploadFilter", JSON.stringify(filterData));
         
         updateFilters();
@@ -716,15 +734,26 @@ export async function init(): Promise<void> {
 
       $("#app").on("click", "#show-add-upload-button", addUpload);
     });
-    
-    socket.on("updateUploads", () => {
-      uploadData.reload();
-      updateUploadList();
-    });
 
     res();
   });
 }
+
+registerSocketListeners({
+  updateUploads: () => {
+    uploadData.reload();
+    updateUploadList();
+  },
+  updateTeams: () => {
+    teamsData.reload();
+    updateTeamList(); 
+    updateUploadList(); 
+  },
+  updateJoinedTeams: () => {
+    joinedTeamsData.reload();
+    updateUploadList(); 
+  }
+});
 
 export const reloadAllFn = async (): Promise<void> => {
   joinedTeamsData.reload();
