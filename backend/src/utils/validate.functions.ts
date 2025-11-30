@@ -25,7 +25,7 @@ async function invalidateCache(
     await redisClient.del(cacheKey);
   } 
   catch (err) {
-    logger.error(`Error invalidating cache for ${key}: ${err}`);
+    logger.error(`Error invalidating cache for ${CACHE_KEY_PREFIXES[key]}: ${err}`);
   }
 };
 

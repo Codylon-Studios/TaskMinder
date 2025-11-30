@@ -331,7 +331,7 @@ export async function migrateEventAndHomeworkDates(): Promise<void> {
         }
       })
     ]);
-    // invalidate hoemwork and event cache of demo class
+    // invalidate homework and event cache of demo class
     await invalidateCache("EVENT", demoClass.classId.toString());
     await invalidateCache("HOMEWORK", demoClass.classId.toString());
     logger.info(

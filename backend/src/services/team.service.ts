@@ -44,7 +44,6 @@ const teamService = {
 
   async setTeamsData(reqData: setTeamsTypeBody, session: Session & Partial<SessionData>) {
     const { teams } = reqData;
-    // TODO: fix
     const classId = parseInt(session.classId!, 10);
     // variable to check if cache should be reloaded (e.g. on team deletion)
     let dataChanged = false;

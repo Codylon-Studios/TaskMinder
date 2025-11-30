@@ -426,8 +426,7 @@ const classService = {
         try {
           const classUserEntry = await tx.joinedClass.delete({
             where: {
-              accountId: classMember.accountId,
-              classId: parseInt(session.classId!, 10)
+              accountId: classMember.accountId
             }
           });
           // delete cache of upload metadata

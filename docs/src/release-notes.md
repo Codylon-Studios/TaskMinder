@@ -13,9 +13,11 @@ All changes are grouped by type and the latest version appears first.
 * Added createdAt field to multiple tables
 * Cache is now invalidated/refechted if corresponding data changes
 * Change cron job delete test class schedule to run every 15mins
+* Uploads now support autocomplete for lessons and date (at title)
 
 ### Fixed
 * Migrate from promtail (deprecated) to alloy
+* (. Stunde) bug still existed in /main
 * Certain lessons were not displayed in timetable
 * "Heute kein Unterricht" (or the blue info box in general) did not always display immediately
 * Improve production deployment regarding permissions (least privilege)
