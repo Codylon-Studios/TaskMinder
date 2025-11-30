@@ -49,7 +49,7 @@ export function richTextToHtml(
               try {
                 if ((new URL(url)).host == location.host) {
                   globalThis.open(sanitizedUrl, "_blank", "noopener,noreferrer");
-                  return
+                  return;
                 }
               }
               catch {}
@@ -560,7 +560,7 @@ function replaceRichTextareas(): void {
             if (Number.parseInt(computedStyle.fontWeight) > 500) {
               spans.css("font-weight", "700");
             }
-            // Get the underline style. As it isn't inehrited normally, you need to iterate over the parents
+            // Get the underline style. As it isn't inherited normally, you need to iterate over the parents
             if (getRealUnderline(parentElement)) {
               spans.css("text-decoration", "underline");
             }
@@ -735,7 +735,6 @@ function replaceRichTextareas(): void {
         await pasteAtRange(ranges);
       }
       else if (ev.inputType === "insertCompositionText") {
-        console.log(ev)
       }
       else {
         $("#rich-textarea-unsupported-input-type").toast("show").find("i").eq(1).text(ev.inputType);
@@ -765,13 +764,13 @@ function replaceRichTextareas(): void {
         if (! $(this).next().is("span.newline")) {
           $(this).remove();
         }
-      })
+      });
 
       textarea.contents().filter(function() {
         return this.nodeType === 3;
       }).each(function() {
-        const text = this.nodeValue || '';
-        const spans = text.split('').map(char => $('<span>').text(char)[0]);
+        const text = this.nodeValue || "";
+        const spans = text.split("").map(char => $("<span>").text(char)[0]);
         $(this).replaceWith(spans);
 
         const sel = globalThis.getSelection();
@@ -787,7 +786,7 @@ function replaceRichTextareas(): void {
         return $(this).text().length > 1;
       }).each(function() {
         const text = $(this).text();
-        const spans = text.split('').map(char => $('<span>').text(char)[0]);
+        const spans = text.split("").map(char => $("<span>").text(char)[0]);
         $(this).replaceWith(spans);
         
         const sel = globalThis.getSelection();

@@ -68,17 +68,17 @@ export function registerSocketListeners(listeners: Record<string, () => unknown>
         }
       });
     }
-  }, 0)
+  }, 0);
 }
 
 export function getSimpleDisplayDate(raw: number | string | Date): string {
   let date;
-  if (raw instanceof Date) date = raw
+  if (raw instanceof Date) date = raw;
   else {
     let num;
-    if (typeof raw === "string") num = Number.parseInt(raw)
+    if (typeof raw === "string") num = Number.parseInt(raw);
     else num = raw;
-    date = new Date(num)
+    date = new Date(num);
   }
 
   const day = String(date.getDate());
@@ -88,12 +88,12 @@ export function getSimpleDisplayDate(raw: number | string | Date): string {
 
 export function getDisplayDate(raw: number | string | Date): string {
   let date;
-  if (raw instanceof Date) date = raw
+  if (raw instanceof Date) date = raw;
   else {
     let num;
-    if (typeof raw === "string") num = Number.parseInt(raw)
+    if (typeof raw === "string") num = Number.parseInt(raw);
     else num = raw;
-    date = new Date(num)
+    date = new Date(num);
   }
 
   const dateStr = getSimpleDisplayDate(raw);
@@ -565,7 +565,7 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
       }
       return data;
     }
-    if (!initialized) accessor.reload()
+    if (!initialized) accessor.reload();
     return getNotNullValue();
   };
 

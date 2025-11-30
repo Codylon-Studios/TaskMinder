@@ -257,7 +257,7 @@ async function addUpload(): Promise<void> {
       .val(currentLesson?.lessons[0].subjectNameLong + " vom " + getSimpleDisplayDate(now))
       .addClass("autocomplete")
       .off("focus").on("focus", function () {
-        $(this).val("").removeClass("autocomplete")
+        $(this).val("").removeClass("autocomplete");
       });
   }
   $("#add-upload-files").val("");
@@ -365,7 +365,7 @@ async function viewUpload(uploadId: number): Promise<void> {
               <li>Die Datei ist nicht mehr verfügbar oder</li>
               <li>Wir haben einen Fehler gemacht - Kontaktiere uns, wenn du den Rest ausschließen kannst.</li>
             </ul>
-            Vielleicht kannst du die Datei unten herunterladen oder in einem neuem Tab öffen.
+            Vielleicht kannst du die Datei unten herunterladen oder in einem neuem Tab öffnen.
           </span>
         </div>
       </object>
