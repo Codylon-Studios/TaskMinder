@@ -145,31 +145,18 @@ const subjectService = {
     });
 
     if (dataChanged) {
-      const data = await prisma.subjects.findMany({
-        where: {
-          classId: parseInt(session.classId!)
-        }
-      });
+      // invalidate subject cache
+      await invalidateCache("SUBJECT", session.classId!);
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.SUBJECTS);
 
-      const setSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId!);
+      // If subjects were deleted, also delete lessons and homework caches
+      if (subjectsDeleted) {
+        await invalidateCache("LESSON", session.classId!);
+        await invalidateCache("HOMEWORK", session.classId!);
 
-      try {
-        await updateCacheData(data, setSubjectDataCacheKey);
-        const io = socketIO.getIO();
-        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.SUBJECTS);
-
-        // If subjects were deleted, also delete lessons and homework caches
-        if (subjectsDeleted) {
-          await invalidateCache("LESSON", session.classId!);
-          await invalidateCache("HOMEWORK", session.classId!);
-
-          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
-          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
-        }
-      }
-      catch (err) {
-        logger.error(`Error updating Redis cache: ${err}`);
-        throw new Error();
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
       }
     }
   }

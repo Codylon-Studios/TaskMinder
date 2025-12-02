@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import uploadController from "../controllers/upload.controller";
 import checkAccess from "../middleware/access.middleware";
 import uploadMiddleware from "../middleware/upload.middleware";
@@ -11,13 +12,23 @@ import {
   uploadFileSchema 
 } from "../schemas/upload.schema";
 
+// rate limiter
+const uploadLimiter = rateLimit({
+  windowMs: 1000, // 1 second
+  limit: 15, // Max 15 requests per IP per second
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { status: 429, message: "Too many requests, please slow down." }
+});
+
 const router = express.Router();
 
 // get metadata of all files
-router.get("/metadata", checkAccess(["CLASS", "MEMBER"]), validate(getUploadMetadataSchema), uploadController.getUploadMetadata);
+router.get("/metadata", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadMetadataSchema), uploadController.getUploadMetadata);
 // upload file route - only temp storage and queuing
 router.post(
   "/upload", 
+  uploadLimiter, 
   checkAccess(["CLASS", "EDITOR"]),
   validate(uploadFileSchema),
   uploadMiddleware.preflightStorageQuotaCheck,
@@ -26,8 +37,8 @@ router.post(
   uploadController.queueFileUpload
 );
 // get single file (preview or download)
-router.get("/:fileId", checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
-router.post("/edit", checkAccess(["CLASS", "EDITOR"]), validate(editUploadSchema), uploadController.editUpload);
-router.post("/delete", checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);
+router.get("/:fileId", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
+router.post("/edit", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editUploadSchema), uploadController.editUpload);
+router.post("/delete", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);
 
 export default router;

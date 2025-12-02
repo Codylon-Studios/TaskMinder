@@ -1,7 +1,7 @@
 import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import { default as prisma } from "../config/prisma";
-import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId } from "../utils/validate.functions";
+import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
@@ -37,16 +37,10 @@ const homeworkService = {
       };
       throw err;
     }
-    const data = await prisma.homework.findMany({
-      where: {
-        classId: parseInt(session.classId!)
-      },
-      orderBy: {
-        submissionDate: "asc"
-      }
-    });
-    const addHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
-    await updateCacheData(data, addHomeworkDataCacheKey);
+
+    // invalidate cache
+    await invalidateCache("HOMEWORK", session.classId!);
+    // send socket update
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
@@ -102,16 +96,9 @@ const homeworkService = {
       };
       throw err;
     }
-    const data = await prisma.homework.findMany({
-      where: {
-        classId: parseInt(session.classId!)
-      },
-      orderBy: {
-        submissionDate: "asc"
-      }
-    });
-    const deleteHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
-    await updateCacheData(data, deleteHomeworkDataCacheKey);
+    // invalidate cache
+    await invalidateCache("HOMEWORK", session.classId!);
+    // send socket update
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
@@ -146,16 +133,9 @@ const homeworkService = {
       throw err;
     }
 
-    const data = await prisma.homework.findMany({
-      where: {
-        classId: parseInt(session.classId!)
-      },
-      orderBy: {
-        submissionDate: "asc"
-      }
-    });
-    const editHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
-    await updateCacheData(data, editHomeworkDataCacheKey);
+    // invalidate cache
+    await invalidateCache("HOMEWORK", session.classId!);
+    // send socket update
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
