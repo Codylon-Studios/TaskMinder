@@ -398,16 +398,17 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
     const last = acc.at(-1);
 
     if (!last) {
-      acc.push({ startLessonNumber: curr.lessonNumber, endLessonNumber: curr.lessonNumber, ...curr });
+      acc.push({ startLessonNumber: curr.lessonNumber, endLessonNumber: curr.lessonNumber, lessonTimes: [{startTime: curr.startTime, endTime: curr.endTime}], ...curr });
       return acc;
     }
 
     if (isDoubleLesson(curr, last)) {
       last.endLessonNumber = curr.lessonNumber;
       last.endTime = curr.endTime;
+      last.lessonTimes.push({startTime: curr.startTime, endTime: curr.endTime})
     }
     else {
-      acc.push({ startLessonNumber: curr.lessonNumber, endLessonNumber: curr.lessonNumber, ...curr });
+      acc.push({ startLessonNumber: curr.lessonNumber, endLessonNumber: curr.lessonNumber, lessonTimes: [{startTime: curr.startTime, endTime: curr.endTime}], ...curr });
     }
 
     return acc;
@@ -536,12 +537,15 @@ else {
 document.head.appendChild(themeColor);
 
 // Data accessors
-export function createDataAccessor<DataType>(name: string, reload?: string | (() => void)): DataAccessor<DataType> {
+const socketDataAccessors: DataAccessor<unknown>[] = []
+export function createDataAccessor<DataType>(name: string, config?: {reload?: string | (() => void), socket?: string}): DataAccessor<DataType> {
   const eventName = `dataLoaded:${name}`;
   let data: DataType | null = null;
   const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
   let initialized = false;
   
+  const reload = config?.reload;
+
   const reloadFunction = typeof reload === "string" ? () => {
     $.get(reload, data => {
       accessor.set(data);
@@ -554,6 +558,13 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
     }
     return accessor.get();
   };
+
+  if (config?.socket) {
+    socketDataAccessors.push(accessor as DataAccessor<unknown>)
+    socket.on(config.socket, () => {
+      accessor.reload();
+    });
+  }
 
   accessor.get = () => {
     async function getNotNullValue(): Promise<DataType> {
@@ -617,18 +628,50 @@ export function createDataAccessor<DataType>(name: string, reload?: string | (()
 }
 
 // Resources
-export const classMemberData = createDataAccessor<ClassMemberData>("classMemberData", "/class/get_class_members");
-export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", loadClassSubstitutionsData);
-export const eventData = createDataAccessor<EventData>("eventData", "/events/get_event_data");
-export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData", "/events/get_event_type_data");
-export const homeworkData = createDataAccessor<HomeworkData>("homeworkData", "/homework/get_homework_data");
-export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>("homeworkCheckedData", loadHomeworkCheckedData);
-export const joinedTeamsData = createDataAccessor<JoinedTeamsData>("joinedTeamsData", loadJoinedTeamsData);
-export const lessonData = createDataAccessor<LessonData>("lessonData", "/lessons/get_lesson_data");
-export const subjectData = createDataAccessor<SubjectData>("subjectData", "/subjects/get_subject_data");
-export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", "/substitutions/get_substitutions_data");
-export const teamsData = createDataAccessor<TeamsData>("teamsData", "/teams/get_teams_data");
-export const uploadData = createDataAccessor<UploadData>("uploadData", loadUploadData);
+export const classMemberData = createDataAccessor<ClassMemberData>("classMemberData", {
+  reload: "/class/get_class_members", socket: "updateMembers"
+});
+export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", {
+  reload: loadClassSubstitutionsData
+});
+export const eventData = createDataAccessor<EventData>("eventData", {
+  reload: "/events/get_event_data", socket: "updateEvents"
+});
+export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData", {
+  reload: "/events/get_event_type_data", socket: "updateEventTypes"
+});
+export const homeworkData = createDataAccessor<HomeworkData>("homeworkData", {
+  reload: "/homework/get_homework_data", socket: "updateHomework"
+});
+export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>("homeworkCheckedData", {
+  reload: loadHomeworkCheckedData, socket: "updateHomework"
+});
+export const joinedTeamsData = createDataAccessor<JoinedTeamsData>("joinedTeamsData", {
+  reload: loadJoinedTeamsData, socket: "updateJoinedTeams"
+});
+export const lessonData = createDataAccessor<LessonData>("lessonData", {
+  reload: "/lessons/get_lesson_data", socket: "updateTimetables"
+});
+export const subjectData = createDataAccessor<SubjectData>("subjectData", {
+  reload: "/subjects/get_subject_data", socket: "updateSubjects"
+});
+export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", {
+  reload: "/substitutions/get_substitutions_data"
+});
+export const teamsData = createDataAccessor<TeamsData>("teamsData", {
+  reload: "/teams/get_teams_data", socket: "updateTeams"
+});
+export const uploadData = createDataAccessor<UploadData>("uploadData", {
+  reload: loadUploadData, socket: "updateUploads"
+});
+
+
+$(document).on("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    socketDataAccessors.forEach(d => d.reload())
+    reloadAll()
+  }
+})
 
 // CSRF token
 export const csrfToken = createDataAccessor<string>("csrfToken");
@@ -723,6 +766,7 @@ setTimeout(() => {
 
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", () => {
+  socketDataAccessors.forEach(d => d.reload())
   reloadAll();
 });
 
@@ -739,6 +783,7 @@ function handleSmallScreenQueryChange(): void {
 }
 
 smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
+globalThis.addEventListener("popstate", handleSmallScreenQueryChange);
 
 handleSmallScreenQueryChange();
 

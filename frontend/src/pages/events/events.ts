@@ -617,7 +617,9 @@ function toggleShownButtons(): void {
 }
 
 export async function init(): Promise<void> {
-  return new Promise(res => {
+  return new Promise(async res => {
+    await new Promise(res => {$(res)});
+
     $(async function () {
       $("#edit-toggle").on("click", function () {
         $(".edit-option").toggle($("#edit-toggle").is(":checked"));
@@ -770,30 +772,21 @@ export async function init(): Promise<void> {
 
 registerSocketListeners({
   updateEvents: () => {
-    eventData.reload();
     updateEventList(); 
   },
   updateEventTypes: () => {
-    eventTypeData.reload();
-    updateEventTypeList(); 
+    updateEventTypeList();
   },
   updateTeams: () => {
-    teamsData.reload();
     updateTeamList();
     updateEventList(); 
   },
   updateJoinedTeams: () => {
-    joinedTeamsData.reload();
     updateEventList(); 
   }
 });
 
 export const reloadAllFn = async (): Promise<void> => {
-  eventData.reload();
-  eventTypeData.reload();
-  joinedTeamsData.reload();
-  teamsData.reload();
-  lessonData.reload();
   await updateEventTypeList();
   await updateEventList();
   await updateTeamList();

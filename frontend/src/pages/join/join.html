@@ -39,6 +39,17 @@
               <input type="text" class="form-control" id="join-class-class-code" />
               <div class="form-text">Frag den Ersteller eurer Klasse, wenn du ihn vergessen hast</div>
             </div>
+            <div class="alert alert-warning p-2 d-flex align-items-center gap-2 mb-3">
+              <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
+              <span class="d-block">
+                <ul class="mb-0 small">
+                  <li>Auf TaskMinder können du und deine Mitschüler:innen Hausaufgaben oder ähnliches eintragen.</li>
+                  <li>Deswegen können die Informationen dort auch falsch sein.</li>
+                  <li>TaskMinder ist nichts offizielles irgendeiner Schule.</li>
+                  <li>Wir übernehmen keine Verantwortung, falls wir Fehler gemacht haben sollten.</li>
+                </ul>
+              </span>
+            </div>
             <div class="form-check mb-3">
               <input class="form-check-input mt-2" type="checkbox" id="join-class-checkbox" />
               <label class="form-check-label" for="join-class-checkbox">
@@ -177,7 +188,27 @@
               <input type="checkbox" class="form-check-input me-2" id="create-class-is-test" checked />
               Als Testklasse erstellen
             </label>
-            <button class="btn btn-primary w-100 fw-bold" id="create-class-continue-btn">Weiter</button>
+            <button class="btn btn-primary w-100 fw-bold" id="create-class-to-warning-btn">Weiter</button>
+          </div>
+
+          <div id="create-class-warning-panel" class="d-none">
+            <div class="d-flex align-items-center mb-4">
+              <button class="btn-back" id="create-class-warning-back-btn"></button>
+              <h2 class="text-center mb-0 flex-grow-1">Achtung</h2>
+            </div>
+            <div class="alert alert-warning p-2 d-flex align-items-center gap-2 mb-3">
+              <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
+              <span class="d-block">
+                <ul class="mb-0 small">
+                  <li>Auf TaskMinder können du und deine Mitschüler:innen Hausaufgaben oder ähnliches eintragen.</li>
+                  <li>Deswegen können die Informationen dort auch falsch sein.</li>
+                  <li>TaskMinder ist nichts offizielles irgendeiner Schule.</li>
+                  <li>Wir übernehmen keine Verantwortung, falls wir Fehler gemacht haben sollten.</li>
+                  <li>Besprecht am besten mit der Klasse und Klassenleitung den richtigen Umgang und klärt Fragen.</li>
+                </ul>
+              </span>
+            </div>
+            <button class="btn btn-primary w-100 fw-bold" id="create-class-to-credentials-btn">Weiter</button>
           </div>
 
           <div id="create-class-credentials-panel" class="d-none">

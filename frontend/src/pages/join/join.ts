@@ -69,15 +69,25 @@ export async function init(): Promise<void> {
       $("#create-class-is-test-panel").addClass("d-none");
     });
 
-    $("#create-class-continue-btn").on("click", () => {
+    $("#create-class-to-warning-btn").on("click", () => {
       $("#create-class-is-test-panel").addClass("d-none");
+      $("#create-class-warning-panel").removeClass("d-none");
+    });
+
+    $("#create-class-warning-back-btn").on("click", () => {
+      $("#create-class-is-test-panel").removeClass("d-none");
+      $("#create-class-warning-panel").addClass("d-none");
+    });
+
+    $("#create-class-to-credentials-btn").on("click", () => {
+      $("#create-class-warning-panel").addClass("d-none");
       $("#create-class-credentials-panel").removeClass("d-none");
       $("#create-class-name").removeClass("is-invalid").val("");
       $("#create-class-btn").prop("disabled", true);
     });
 
     $("#create-class-credentials-back-btn").on("click", () => {
-      $("#create-class-is-test-panel").removeClass("d-none");
+      $("#create-class-warning-panel").removeClass("d-none");
       $("#create-class-credentials-panel").addClass("d-none");
     });
 

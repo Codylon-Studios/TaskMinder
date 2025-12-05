@@ -340,7 +340,7 @@ async function addUpload(): Promise<void> {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
@@ -593,7 +593,9 @@ function toggleShownButtons(): void {
 }
 
 export async function init(): Promise<void> {
-  return new Promise(res => {
+  return new Promise(async res => {
+    await new Promise(res => {$(res)});
+    
     $(async function () {
       const urlParams = new URLSearchParams(globalThis.location.search);
 
@@ -741,25 +743,18 @@ export async function init(): Promise<void> {
 
 registerSocketListeners({
   updateUploads: () => {
-    uploadData.reload();
     updateUploadList();
   },
   updateTeams: () => {
-    teamsData.reload();
     updateTeamList(); 
     updateUploadList(); 
   },
   updateJoinedTeams: () => {
-    joinedTeamsData.reload();
     updateUploadList(); 
   }
 });
 
 export const reloadAllFn = async (): Promise<void> => {
-  joinedTeamsData.reload();
-  teamsData.reload();
-  lessonData.reload();
-  uploadData.reload();
   await updateUploadTypeList();
   await updateUploadList();
   await updateTeamList();

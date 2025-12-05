@@ -1039,7 +1039,9 @@ async function updateOnUserChange(): Promise<void> {
 }
 
 export async function init(): Promise<void> {
-  return new Promise(res => {
+  return new Promise(async res => {
+    await new Promise(res => {$(res)});
+    
     setInterval(updateTestClassTimeLeft, 1000);
 
     dsbActivated = false;
@@ -2565,40 +2567,27 @@ registerSocketListeners({
   updateUpgradeTestClass: updateClassInfo,
   updateDefaultPermission: updateClassInfo,
   updateMembers: () => {
-    classMemberData.reload();
     updateClassMemberList();
   },
   updateSubjects: () => {
-    subjectData.reload();
     updateSubjectList();
   },
   updateTeams: () => {
-    teamsData.reload();
     updateTeamLists();
   },
   updateJoinedTeams: () => {
-    eventTypeData.reload();
     updateEventTypeList();
   },
   updateEventTypes: () => {
-    eventTypeData.reload();
     updateEventTypeList();
   },
   updateTimetables: () => {
-    lessonData.reload();
     updateTimetable();
   }
 });
 
 export const reloadAllFn = async (): Promise<void> => {
   if (user.classJoined) {
-    classMemberData.reload();
-    teamsData.reload();
-    joinedTeamsData.reload();
-    eventTypeData.reload();
-    subjectData.reload();
-    substitutionsData.reload();
-    lessonData.reload();
     await updateClassMemberList();
     await updateTeamLists();
     await updateEventTypeList();

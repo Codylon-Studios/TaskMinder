@@ -150,6 +150,10 @@ type LessonGroup = {
 type TimetableData = LessonGroup & {
   startLessonNumber: number;
   endLessonNumber: number;
+  lessonTimes: {
+    startTime: number;
+    endTime: number;
+  }[]
 };
 
 // Uploads

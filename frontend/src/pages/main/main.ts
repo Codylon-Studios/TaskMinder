@@ -617,10 +617,10 @@ async function updateTimetable(): Promise<void> {
                     else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
                     else {
                       cssClass = "line-through-yellow";
-                      append = `<span class="text-yellow fw-bold">${escapeHTML(l.substitution.subject)}</span>`;
+                      append = ` <span class="text-yellow fw-bold">${escapeHTML(l.substitution.subject)}</span>`;
                     }
                   }
-                  return `<span class="${cssClass}">${escapeHTML(l.subjectNameShort)}</span> ${append}`;
+                  return `<span class="${cssClass}">${escapeHTML(l.subjectNameShort)}</span>${append}`;
                 })
                 .join(" / ")
               /* eslint-enable indent */}</span>
@@ -698,10 +698,10 @@ async function updateTimetable(): Promise<void> {
                         if (l.substitution.type === "Entfall") cssClass = "line-through-red";
                         else if (l.substitution.room !== l.room) {
                           cssClass = "line-through-yellow";
-                          append = `<span class="text-yellow fw-bold">${l.substitution.room}</span>`;
+                          append = ` <span class="text-yellow fw-bold">${l.substitution.room}</span>`;
                         }
                       }
-                      return `<span class="${cssClass}">${escapeHTML(l.room)}</span> ${append}`;
+                      return `<span class="${cssClass}">${escapeHTML(l.room)}</span>${append}`;
                     })
                     .join(" / ")
                   /* eslint-enable indent */}</span>,
@@ -715,10 +715,10 @@ async function updateTimetable(): Promise<void> {
                         if (l.substitution.type === "Entfall") cssClass = "line-through-red";
                         else if (!(l.teacherNameSubstitution ?? []).includes(l.substitution.teacher)) {
                           cssClass = "line-through-yellow";
-                          append = `<span class="text-yellow fw-bold">${l.substitution.teacher}</span>`;
+                          append = ` <span class="text-yellow fw-bold">${l.substitution.teacher}</span>`;
                         }
                       }
-                      return `<span class="${cssClass}">${escapeHTML(l.teacherName)}</span> ${append}`;
+                      return `<span class="${cssClass}">${escapeHTML(l.teacherName)}</span>${append}`;
                     })
                     .join(" / ")
                   /* eslint-enable indent */}</span>
@@ -880,8 +880,12 @@ async function updateTimetableFeedback(): Promise<void> {
   
   if (!realLessonsLeft) {
     if (isCurrentLessonReal) {
+      const timeLeft = currentLesson!.lessonTimes.reduce((acc, curr) => {
+        if (curr.endTime < now) return acc
+        else return acc + curr.endTime - Math.max(curr.startTime, now)
+      }, 0)
       $("#timetable-feedback-info").show();
-      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(currentLesson!.endTime - now)}</b>
+      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(timeLeft)}</b>
         ${lessonToText(currentLesson!, false)}, danach ist der Unterricht für heute vorbei!`);
     }
     else {
@@ -909,15 +913,20 @@ async function updateTimetableFeedback(): Promise<void> {
       `);
     }
   }
-  else if (nextLesson === null) {
-    $("#timetable-feedback-info").show();
-    $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(currentLesson.endTime - now)}</b>
-      ${lessonToText(currentLesson, false)}, danach ist der Unterricht für heute vorbei!`);
-  }
   else {
+    const timeLeft = currentLesson.lessonTimes.reduce((acc, curr) => {
+      if (curr.endTime < now) return acc
+      else return acc + curr.endTime - Math.max(curr.startTime, now)
+    }, 0)
     $("#timetable-feedback-info").show();
-    $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(currentLesson.endTime - now)}</b>
-      ${lessonToText(currentLesson, false)}, dann weiter mit ${lessonToText(nextLesson, true)}.`);
+    if (nextLesson === null) {
+      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(timeLeft)}</b>
+        ${lessonToText(currentLesson, false)}, danach ist der Unterricht für heute vorbei!`);
+    }
+    else {
+      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(timeLeft)}</b>
+        ${lessonToText(currentLesson, false)}, dann weiter mit ${lessonToText(nextLesson, true)}.`);
+    }
   }
 }
 
@@ -973,9 +982,11 @@ function slideCalendar(direction: "l" | "r", transition: string, slideTime: numb
 }
 
 export async function init(): Promise<void> {
-  return new Promise(res => {
+  return new Promise(async res => {
     justCheckedHomeworkId = -1;
     animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
+
+    await new Promise(res => {$(res)});
 
     $(".calendar-week-move-button").on("click", function () {
       // If the calendar is already moving, stop; else set it moving
@@ -1200,7 +1211,6 @@ export async function init(): Promise<void> {
     ];
     renameCalendarMonthYear();
 
-    updateTimetableFeedback();
     setInterval(updateTimetableFeedback,  30 * 1000); // Update every 30s
 
     // Request checking the homework on clicking its checkbox
@@ -1247,39 +1257,26 @@ export async function init(): Promise<void> {
 
 registerSocketListeners({
   updateHomework: () => {
-    homeworkData.reload();
-    homeworkCheckedData.reload();
     updateHomeworkList();
   },
   updateSubjects: () => {
-    subjectData.reload();
     updateHomeworkList();
   },
   updateEvents: () => {
-    eventData.reload();
-
     updateEventList();
     updateCalendarWeekContent("#calendar-week-old");
     updateTimetable();
   },
   updateTimetables: () => {
-    lessonData.reload();
     updateTimetable();
   },
   updateTeams: () => {
-    teamsData.reload();
-    homeworkData.reload();
-    homeworkCheckedData.reload();
-    eventData.reload();
-
     updateHomeworkList();
     updateEventList();
     updateCalendarWeekContent("#calendar-week-old");
     updateTimetable();
   },
   updateJoinedTeams: () => {
-    joinedTeamsData.reload();
-
     updateHomeworkList();
     updateEventList();
     updateCalendarWeekContent("#calendar-week-old");
@@ -1288,14 +1285,6 @@ registerSocketListeners({
 });
 
 export const reloadAllFn = async (): Promise<void> => {
-  eventData.reload();
-  joinedTeamsData.reload();
-  homeworkData.reload();
-  subjectData.reload();
-  substitutionsData.reload();
-  classSubstitutionsData.reload();
-  lessonData.reload();
-  homeworkCheckedData.reload();
   await updateHomeworkList();
   await updateEventList();
   await updateSubstitutionList();

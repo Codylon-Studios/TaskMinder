@@ -852,11 +852,13 @@ function toggleShownButtons(): void {
 }
 
 export async function init(): Promise<void> {
-  return new Promise(res => {
+  return new Promise(async res => {
     justCheckedHomeworkId = -1;
     animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
     homeworkFeedbackLastPercentage = null as null | number;
 
+    await new Promise(res => {$(res)});
+    
     $(function () {
       $("#edit-toggle").on("click", function () {
         $(".edit-option").toggle($("#edit-toggle").is(":checked"));
@@ -1070,32 +1072,21 @@ export async function init(): Promise<void> {
 
 registerSocketListeners({
   updateHomework: () => {
-    homeworkData.reload();
-    homeworkCheckedData.reload();
     updateHomeworkList(); 
   },
   updateSubjects: () => {
-    subjectData.reload(); 
     updateSubjectList(); 
   },
   updateTeams: () => {
-    teamsData.reload();
     updateTeamList(); 
     updateHomeworkList(); 
   },
   updateJoinedTeams: () => {
-    joinedTeamsData.reload();
     updateHomeworkList(); 
   }
 });
 
 export const reloadAllFn = async (): Promise<void> => {
-  homeworkCheckedData.reload();
-  homeworkData.reload();
-  joinedTeamsData.reload();
-  subjectData.reload();
-  teamsData.reload();
-  lessonData.reload();
   await updateSubjectList();
   await updateHomeworkList();
   await updateHomeworkFeedback();
