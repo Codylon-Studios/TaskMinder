@@ -46,19 +46,22 @@ export function richTextToHtml(
           $(this)
             .css("cursor", "pointer")
             .on("click", () => {
+              const absUrl = (/^[a-z]+:\/\//i.test(url) ? "" : "https://") + url;
               try {
-                if ((new URL(url)).host == location.host) {
-                  globalThis.open(sanitizedUrl, "_blank", "noopener,noreferrer");
+                if ((new URL(absUrl)).host === location.host) {
+                  globalThis.open(absUrl, "_blank", "noopener,noreferrer");
                   return;
                 }
+                else throw new Error("External");
               }
-              catch {}
-              $("#rich-textarea-unsafe-link").toast("show").find("b").text(sanitizedUrl);
-              $("#rich-textarea-unsafe-link-confirm")
-                .off("click")
-                .on("click", () => {
-                  globalThis.open(sanitizedUrl, "_blank", "noopener,noreferrer");
-                });
+              catch {
+                $("#rich-textarea-unsafe-link").toast("show").find("b").text(sanitizedUrl);
+                $("#rich-textarea-unsafe-link-confirm")
+                  .off("click")
+                  .on("click", () => {
+                    globalThis.open(absUrl, "_blank", "noopener,noreferrer");
+                  });
+              }
             })
             .on("mouseenter", function () {
               neighbourLinkElements.addClass("rich-textarea-link-enabled");
@@ -734,9 +737,7 @@ function replaceRichTextareas(): void {
       else if (ev.inputType === "insertFromPaste") {
         await pasteAtRange(ranges);
       }
-      else if (ev.inputType === "insertCompositionText") {
-      }
-      else {
+      else if (ev.inputType !== "insertCompositionText") {
         $("#rich-textarea-unsupported-input-type").toast("show").find("i").eq(1).text(ev.inputType);
       }
 
@@ -758,7 +759,7 @@ function replaceRichTextareas(): void {
       composing = true;
     });
 
-    textarea.on("compositionend", e => {
+    textarea.on("compositionend", () => {
       composing = false;
       textarea.find("br").each(function() {
         if (! $(this).next().is("span.newline")) {

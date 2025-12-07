@@ -312,7 +312,10 @@ async function updateEventTypeList(): Promise<void> {
   }
 
   if ((await eventTypeData()).length === 0) {
-    newEventTypesContent += '<span class="text-secondary no-event-types">Keine Ereignisarten vorhanden</span>';
+    newEventTypesContent = `<span class="text-secondary no-event-types">
+      Keine Ereignisarten vorhanden
+      <button class="btn btn-primary btn-sm fw-semibold" id="event-types-example">Beispiele erstellen</button>
+    </span>`;
   }
   $("#event-types-list").html(newEventTypesContent);
 
@@ -1039,9 +1042,7 @@ async function updateOnUserChange(): Promise<void> {
 }
 
 export async function init(): Promise<void> {
-  return new Promise(async res => {
-    await new Promise(res => {$(res)});
-    
+  return new Promise(res => {
     setInterval(updateTestClassTimeLeft, 1000);
 
     dsbActivated = false;
@@ -1452,9 +1453,6 @@ export async function init(): Promise<void> {
             "X-CSRF-Token": await csrfToken()
           },
           success: () => {
-            teamsData.reload();
-            joinedTeamsData.reload();
-            updateTeamLists();
             $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
             setTimeout(() => {
               $("#team-selection-save").text("Speichern").prop("disabled", false);
@@ -1484,9 +1482,6 @@ export async function init(): Promise<void> {
       }
       else {
         localStorage.setItem("joinedTeamsData", JSON.stringify(newJoinedTeamsData));
-        teamsData.reload();
-        joinedTeamsData.reload();
-        updateTeamLists();
         $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
         setTimeout(() => {
           $("#team-selection-save").text("Speichern").prop("disabled", false);
@@ -1898,8 +1893,6 @@ export async function init(): Promise<void> {
               "X-CSRF-Token": csrf
             },
             success: () => {
-              classMemberData.reload();
-              updateClassMemberList();
               $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
               $("#class-members-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
               setTimeout(() => {
@@ -2053,9 +2046,6 @@ export async function init(): Promise<void> {
           "X-CSRF-Token": await csrfToken()
         },
         success: () => {
-          teamsData.reload();
-          joinedTeamsData.reload();
-          updateTeamLists();
           $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
           $("#teams-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
           setTimeout(() => {
@@ -2170,7 +2160,10 @@ export async function init(): Promise<void> {
         $(this).parent().remove();
         if ($("#event-types-list").children().length === 0) {
           $("#event-types-list").append(
-            '<span class="text-secondary no-event-types">Keine Ereignisarten vorhanden</span>'
+            `<span class="text-secondary no-event-types">
+              Keine Ereignisarten vorhanden
+              <button class="btn btn-primary btn-sm fw-semibold" id="event-types-example">Beispiele erstellen</button>
+            </span>`
           );
         }
       });
@@ -2208,8 +2201,6 @@ export async function init(): Promise<void> {
           "X-CSRF-Token": await csrfToken()
         },
         success: () => {
-          eventTypeData.reload();
-          updateEventTypeList();
           $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
           $("#event-types-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
           setTimeout(() => {
@@ -2238,6 +2229,38 @@ export async function init(): Promise<void> {
         }
       }, 5000);
     }
+
+    $("#app").on("click", "#event-types-example", async () => {
+      $.ajax({
+        url: "/events/set_event_type_data",
+        type: "POST",
+        data: JSON.stringify({
+          eventTypes: [
+            { name: "Ausflug", color: "#ff9955" },
+            { name: "Geburtstag", color: "#ff55aa" },
+            { name: "Prüfung", color: "#5599ff" },
+            { name: "Schulfrei", color: "#44dd33" },
+            { name: "Sonstiges", color: "#9955ff" }
+          ].map(e => ({ eventTypeId: "", ...e }))
+        }),
+        contentType: "application/json",
+        headers: {
+          "X-CSRF-Token": await csrfToken()
+        },
+        success: () => {
+          updateEventTypeList();
+          $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+        },
+        error: xhr => {
+          if (xhr.status === 500) {
+            $navbarToasts.serverError.toast("show");
+          }
+          else {
+            $navbarToasts.unknownError.toast("show");
+          }
+        }
+      });
+    });
 
     $("#event-types-save").on("click", () => {
       const deleted: string[] = [];
@@ -2420,8 +2443,6 @@ export async function init(): Promise<void> {
           "X-CSRF-Token": await csrfToken()
         },
         success: () => {
-          subjectData.reload();
-          updateSubjectList();
           $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
           $("#subjects-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
           setTimeout(() => {
@@ -2526,8 +2547,6 @@ export async function init(): Promise<void> {
           "X-CSRF-Token": await csrfToken()
         },
         success: () => {
-          lessonData.reload();
-          updateTimetable();
           $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none");
           $("#timetable-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
           setTimeout(() => {
@@ -2561,30 +2580,36 @@ export async function init(): Promise<void> {
   });
 }
 
+let dsbActivated: boolean;
+let canEditClassSettings: boolean;
+let canEditMemberSettings: boolean;
+let isTestClass: boolean;
+let testClassTimeCreated: number;
+let qrCode: QRCode;
+
 registerSocketListeners({
   updateClassCodes: updateClassInfo,
   updateClassNames: updateClassInfo,
   updateUpgradeTestClass: updateClassInfo,
   updateDefaultPermission: updateClassInfo,
-  updateMembers: () => {
-    updateClassMemberList();
-  },
-  updateSubjects: () => {
-    updateSubjectList();
-  },
-  updateTeams: () => {
-    updateTeamLists();
-  },
-  updateJoinedTeams: () => {
-    updateEventTypeList();
-  },
-  updateEventTypes: () => {
-    updateEventTypeList();
-  },
-  updateTimetables: () => {
-    updateTimetable();
-  }
 });
+
+(await classMemberData.init()).on("update", updateClassMemberList);
+(await subjectData.init()).on("update", updateSubjectList);
+(await teamsData.init()).on("update", updateTeamLists);
+(await joinedTeamsData.init()).on("update", updateTeamLists);
+(await eventTypeData.init()).on("update", updateEventTypeList);
+(await lessonData.init()).on("update", updateTimetable);
+(await substitutionsData.init()).on("update", updateSubjectList);
+
+user.on("change", args => {
+  let silent = false;
+  if (typeof args === "object" && args !== null && "silent" in args && args.silent === true) {
+    silent = true;
+  }
+
+  joinedTeamsData.reload({ silent });
+})
 
 export const reloadAllFn = async (): Promise<void> => {
   if (user.classJoined) {
@@ -2597,10 +2622,3 @@ export const reloadAllFn = async (): Promise<void> => {
 
   await updateOnUserChange();
 };
-
-let dsbActivated: boolean;
-let canEditClassSettings: boolean;
-let canEditMemberSettings: boolean;
-let isTestClass: boolean;
-let testClassTimeCreated: number;
-let qrCode: QRCode;

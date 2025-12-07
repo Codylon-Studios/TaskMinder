@@ -3,7 +3,6 @@ import {
   msToInputDate,
   teamsData,
   csrfToken,
-  lessonData,
   escapeHTML,
   dateDaysDifference,
   uploadData,
@@ -12,7 +11,8 @@ import {
   isSameDayMs,
   registerSocketListeners,
   loadTimetableData,
-  getSimpleDisplayDate
+  getSimpleDisplayDate,
+  showAllUploads
 } from "../../global/global.js";
 import { SingleUploadData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -249,7 +249,7 @@ async function addUpload(): Promise<void> {
   const currentTimetableData = await loadTimetableData(new Date());
   const currentLesson = currentTimetableData.find(l => l.startTime < timeNow && l.endTime > timeNow);
   
-  if (currentLesson == undefined) {
+  if (currentLesson === undefined) {
     $("#add-upload-name").val("").removeClass("autocomplete");
   }
   else {
@@ -593,9 +593,7 @@ function toggleShownButtons(): void {
 }
 
 export async function init(): Promise<void> {
-  return new Promise(async res => {
-    await new Promise(res => {$(res)});
-    
+  return new Promise(res => {
     $(async function () {
       const urlParams = new URLSearchParams(globalThis.location.search);
 
@@ -741,18 +739,21 @@ export async function init(): Promise<void> {
   });
 }
 
-registerSocketListeners({
-  updateUploads: () => {
-    updateUploadList();
-  },
-  updateTeams: () => {
-    updateTeamList(); 
-    updateUploadList(); 
-  },
-  updateJoinedTeams: () => {
-    updateUploadList(); 
-  }
+(await uploadData.init()).on("update", updateUploadList);
+(await teamsData.init()).on("update", () => {
+  updateTeamList(); 
+  updateUploadList(); 
 });
+(await joinedTeamsData.init()).on("update", updateUploadList);
+
+user.on("change", args => {
+  let silent = false;
+  if (typeof args === "object" && args !== null && "silent" in args && args.silent === true) {
+    silent = true;
+  }
+
+  joinedTeamsData.reload({ silent });
+})
 
 export const reloadAllFn = async (): Promise<void> => {
   await updateUploadTypeList();
@@ -761,6 +762,3 @@ export const reloadAllFn = async (): Promise<void> => {
 
   toggleShownButtons();
 };
-
-export const showAllUploads = createDataAccessor<boolean>("showAllUploads");
-showAllUploads(false);

@@ -11,7 +11,6 @@ import {
   lessonData,
   escapeHTML,
   dateDaysDifference,
-  registerSocketListeners,
   isSameDayMs
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
@@ -19,6 +18,7 @@ import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 async function updateEventList(): Promise<void> {
+  console.error("shn")
   async function getFilteredData(): Promise<EventData> {
     // Get the event data
     let data = await eventData();
@@ -617,9 +617,7 @@ function toggleShownButtons(): void {
 }
 
 export async function init(): Promise<void> {
-  return new Promise(async res => {
-    await new Promise(res => {$(res)});
-
+  return new Promise(res => {
     $(async function () {
       $("#edit-toggle").on("click", function () {
         $(".edit-option").toggle($("#edit-toggle").is(":checked"));
@@ -770,21 +768,22 @@ export async function init(): Promise<void> {
   });
 }
 
-registerSocketListeners({
-  updateEvents: () => {
-    updateEventList(); 
-  },
-  updateEventTypes: () => {
-    updateEventTypeList();
-  },
-  updateTeams: () => {
-    updateTeamList();
-    updateEventList(); 
-  },
-  updateJoinedTeams: () => {
-    updateEventList(); 
-  }
+(await eventData.init()).on("update", updateEventList);
+(await eventTypeData.init()).on("update", updateEventTypeList);
+(await teamsData.init()).on("update", () => {
+  updateTeamList();
+  updateEventList(); 
 });
+(await joinedTeamsData.init()).on("update", updateEventList);
+
+user.on("change", args => {
+  let silent = false;
+  if (typeof args === "object" && args !== null && "silent" in args && args.silent === true) {
+    silent = true;
+  }
+
+  joinedTeamsData.reload({ silent });
+})
 
 export const reloadAllFn = async (): Promise<void> => {
   await updateEventTypeList();

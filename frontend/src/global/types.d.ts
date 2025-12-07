@@ -13,10 +13,11 @@ type DataAccessor<DataType> = {
   (value?: DataType | null): Promise<DataType>;
   get(): Promise<DataType>;
   getCurrent(): DataType | null;
-  set(value: DataType | null): DataAccessor<DataType>;
+  set(value: DataType | null, settings?: {silent?: boolean}): DataAccessor<DataType>;
   on(event: DataAccessorEventName, callback: DataAccessorEventCallback): DataAccessor<DataType>;
   trigger(event: DataAccessorEventName, ...args: unknown[]): DataAccessor<DataType>;
-  reload(): DataAccessor<DataType>;
+  reload(settings?: {silent?: boolean}): DataAccessor<DataType>;
+  init(): Promise<DataAccessor<DataType>>;
 }
 
 //  ╭───────────╮

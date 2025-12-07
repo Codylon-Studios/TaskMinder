@@ -157,7 +157,6 @@ function checkSecurePassword(password: string): boolean {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
-export async function init(): Promise<void> {
   $("#login-register-button").toggleClass("d-none", isSite("join"));
 
   $("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
@@ -340,7 +339,6 @@ export async function init(): Promise<void> {
 
     $(".login-register-back-button").on("click", resetLoginRegister);
   });
-}
 
 export const $navbarToasts = {
   serverError: $("#error-server-toast"),
@@ -358,7 +356,7 @@ export const user = {
 
   _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
 
-  async auth() {
+  async auth(settings?: {silent?: boolean}) {
     await $.get("/account/auth", response => {
       user.isAuthed = true;
 
@@ -383,7 +381,7 @@ export const user = {
       }
 
       user.changeEvents++;
-      user.trigger("change");
+      user.trigger("change", settings);
     });
   },
 

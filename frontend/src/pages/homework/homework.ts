@@ -14,7 +14,6 @@ import {
   escapeHTML,
   getCirclePath,
   dateDaysDifference,
-  registerSocketListeners,
   isSameDayMs
 } from "../../global/global.js";
 import { HomeworkData } from "../../global/types";
@@ -57,7 +56,6 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
 }
 
 async function updateHomeworkList(): Promise<void> {
-
   const newContent = $("<div></div>");
   let showMoreButtonElements: JQuery<HTMLElement> = $();
 
@@ -852,13 +850,11 @@ function toggleShownButtons(): void {
 }
 
 export async function init(): Promise<void> {
-  return new Promise(async res => {
+  return new Promise(res => {
     justCheckedHomeworkId = -1;
     animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
     homeworkFeedbackLastPercentage = null as null | number;
 
-    await new Promise(res => {$(res)});
-    
     $(function () {
       $("#edit-toggle").on("click", function () {
         $(".edit-option").toggle($("#edit-toggle").is(":checked"));
@@ -902,12 +898,18 @@ export async function init(): Promise<void> {
         const now = new Date();
 
         const selectedSubjectId = $(this).val()?.toString();
-        if (["-1", undefined].includes(selectedSubjectId)) {
+        if (selectedSubjectId === undefined) {
           return;
         }
+        if (selectedSubjectId === "-1") {
+          $("#add-homework-date-submission").val(msToInputDate(now.setDate(now.getDate() + 7))).addClass("autocomplete")
+            .find("~ .autocomplete-feedback").html("Automatisch: Eine Woche");
+          return;
+        }
+        $("#add-homework-date-submission").find("~ .autocomplete-feedback").html("Automatisch: Die nächste Stunde in <b></b>");
 
         // The next lessons of the new selected subject
-        const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === Number.parseInt(selectedSubjectId!));
+        const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === Number.parseInt(selectedSubjectId));
 
         const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
         const minDiff = nextLessonsWeekdays.reduce((previous, current) => {
@@ -1070,21 +1072,30 @@ export async function init(): Promise<void> {
   });
 }
 
-registerSocketListeners({
-  updateHomework: () => {
-    updateHomeworkList(); 
-  },
-  updateSubjects: () => {
-    updateSubjectList(); 
-  },
-  updateTeams: () => {
-    updateTeamList(); 
-    updateHomeworkList(); 
-  },
-  updateJoinedTeams: () => {
-    updateHomeworkList(); 
-  }
+let justCheckedHomeworkId: number;
+let animations: boolean;
+let homeworkFeedbackLastPercentage: null | number;
+let randomHomeworkDeactivated: number[] = [];
+
+await lessonData.init();
+(await homeworkData.init()).on("update", updateHomeworkList);
+(await homeworkCheckedData.init()).on("update", updateHomeworkList);
+(await subjectData.init()).on("update", updateSubjectList);
+(await teamsData.init()).on("update", () => {
+  updateTeamList(); 
+  updateHomeworkList(); 
 });
+(await joinedTeamsData.init()).on("update", updateHomeworkList);
+
+user.on("change", args => {
+  let silent = false;
+  if (typeof args === "object" && args !== null && "silent" in args && args.silent === true) {
+    silent = true;
+  }
+
+  joinedTeamsData.reload({ silent });
+  homeworkCheckedData.reload({ silent });
+})
 
 export const reloadAllFn = async (): Promise<void> => {
   await updateSubjectList();
@@ -1094,8 +1105,3 @@ export const reloadAllFn = async (): Promise<void> => {
 
   toggleShownButtons();
 };
-
-let justCheckedHomeworkId: number;
-let animations: boolean;
-let homeworkFeedbackLastPercentage: null | number;
-let randomHomeworkDeactivated: number[] = [];
