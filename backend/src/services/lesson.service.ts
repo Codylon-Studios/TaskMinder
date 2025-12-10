@@ -14,7 +14,7 @@ const lessonService = {
   ) {
     const { lessons } = reqData;
     for (const lesson of lessons) {
-      isValidweekDay(lesson.weekDay);
+      await isValidweekDay(lesson.weekDay);
     }
 
     const classId = parseInt(session.classId!, 10);
