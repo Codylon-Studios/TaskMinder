@@ -5,7 +5,13 @@ import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, inval
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
-import { addHomeworkTypeBody, checkHomeworkTypeBody, deleteHomeworkTypeBody, editHomeworkTypeBody } from "../schemas/homework.schema";
+import { 
+  addHomeworkTypeBody, 
+  checkHomeworkTypeBody, 
+  deleteHomeworkTypeBody, 
+  editHomeworkTypeBody, 
+  pinHomeworkTypeBody 
+} from "../schemas/homework.schema";
 
 const homeworkService = {
   async addHomework(
@@ -19,6 +25,7 @@ const homeworkService = {
       await prisma.homework.create({
         data: {
           classId: parseInt(session.classId!),
+          isPinned: false,
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
@@ -181,15 +188,47 @@ const homeworkService = {
       where: {
         classId: parseInt(session.classId!)
       },
-      orderBy: {
-        submissionDate: "asc"
-      }
+      orderBy: [
+        { isPinned: "desc" }, 
+        { submissionDate: "asc" },
+        { assignmentDate: "asc" },
+        { subjectId: "asc" },
+        { content: "asc" }
+      ]
     });
 
     await updateCacheData(data, getHomeworkDataCacheKey);
 
     const stringified = JSON.stringify(data, BigIntreplacer);
     return JSON.parse(stringified);
+  },
+
+  async pinHomework(reqData: pinHomeworkTypeBody, session: Session & Partial<SessionData>) {
+    const { homeworkId, pinStatus } = reqData;
+
+    const updated = await prisma.homework.updateMany({
+      where: {
+        homeworkId: homeworkId,
+        classId: parseInt(session.classId!, 10)
+      },
+      data: {
+        isPinned: pinStatus
+      }
+    });
+
+    if (updated.count === 0) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Homework not found",
+        expected: true
+      };
+      throw err;
+    }
+
+    await invalidateCache("HOMEWORK", session.classId!);
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {

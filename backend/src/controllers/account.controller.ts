@@ -4,7 +4,7 @@ import accountService from "../services/account.service";
 export const registerAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await accountService.registerAccount(req.body, req.session);
-    res.sendStatus(200);
+    res.sendStatus(201);
   }
   catch (error) {
     next(error);

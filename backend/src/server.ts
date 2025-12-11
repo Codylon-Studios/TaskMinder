@@ -1,8 +1,9 @@
+import * as dotenv from "dotenv";
+dotenv.config();
 import { createServer } from "http";
 import path from "path";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
-import * as dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
@@ -18,9 +19,11 @@ import {
   cleanupOldHomework,
   cleanupTestClasses,
   cleanupStuckUploads,
-  migrateEventAndHomeworkDates 
+  migrateEventAndHomeworkDates, 
+  migrateUploadMetadataDates
 } from "./utils/db.cleanup";
 import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker";
+import { cleanupStaleUploadFiles } from "./utils/upload.cleanup";
 import checkAccess from "./middleware/access.middleware";
 import { ErrorHandler } from "./middleware/error.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
@@ -36,8 +39,6 @@ import subjects from "./routes/subject.route";
 import teams from "./routes/team.route";
 import classes from "./routes/class.route";
 import uploads from "./routes/upload.route";
-
-dotenv.config();
 
 prisma
   .$connect()
@@ -61,7 +62,7 @@ if (!sessionSecret) {
 }
 
 const app = express();
-app.set("trust proxy", 1);
+app.set("trust proxy", 2);
 const server = createServer(app);
 
 const globalLimiter = rateLimit({
@@ -206,12 +207,15 @@ cron.schedule("0 0 * * *", () => {
   cleanupOldHomework();
   cleanupOldEvents();
   cleanupDeletedAccounts();
+  cleanupStaleUploadFiles();
 });
 
 // Run demo class script every week (once) - only for demo class
+// This is not relevant if you do not have a demo class set up
 cron.schedule("0 0 * * 0", () => {
   logger.info("Starting weekly demo class date migration");
   migrateEventAndHomeworkDates();
+  migrateUploadMetadataDates();
 });
 
 // Run test class deletion every 15mins

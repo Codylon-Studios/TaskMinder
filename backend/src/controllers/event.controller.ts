@@ -72,6 +72,16 @@ export const getEventTypeStyles = async (req: Request, res: Response, next: Next
   }
 };
 
+export const pinEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await eventService.pinEvent(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getEventData,
   addEvent,
@@ -79,5 +89,6 @@ export default {
   deleteEvent,
   getEventTypeData,
   setEventTypeData,
-  getEventTypeStyles
+  getEventTypeStyles,
+  pinEvent
 };

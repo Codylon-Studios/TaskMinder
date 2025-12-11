@@ -9,7 +9,9 @@ import {
   getUploadFileSchema, 
   getUploadMetadataSchema,
   editUploadSchema, 
-  uploadFileSchema 
+  uploadFileSchema,
+  addUploadRequestSchema,
+  deleteUploadRequestSchema
 } from "../schemas/upload.schema";
 
 // rate limiter
@@ -30,15 +32,37 @@ router.post(
   "/upload", 
   uploadLimiter, 
   checkAccess(["CLASS", "EDITOR"]),
-  validate(uploadFileSchema),
-  uploadMiddleware.preflightStorageQuotaCheck,
+  // installs listeners for errors and fails
+  uploadMiddleware.attachUploadCleanupOnFail,
+  // check for multer limits
   uploadMiddleware.handleFileUpload,
   uploadMiddleware.normalizeFiles,
+  uploadMiddleware.preflightStorageQuotaCheck,
+  validate(uploadFileSchema),
   uploadController.queueFileUpload
 );
 // get single file (preview or download)
 router.get("/:fileId", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
-router.post("/edit", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editUploadSchema), uploadController.editUpload);
+router.post(
+  "/edit",
+  uploadLimiter,
+  checkAccess(["CLASS", "EDITOR"]),
+  uploadMiddleware.attachUploadCleanupOnFail,
+  uploadMiddleware.handleFileUpload,
+  validate(editUploadSchema),
+  uploadMiddleware.normalizeFilesOptional,
+  uploadMiddleware.preflightEditStorageQuotaCheck,
+  uploadController.editUpload
+);
 router.post("/delete", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);
+router.post("/add_request", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(addUploadRequestSchema), uploadController.createUploadRequest);
+router.get("/get_request_data", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), uploadController.getUploadRequests);
+router.post(
+  "/delete_request", 
+  uploadLimiter, 
+  checkAccess(["CLASS", "EDITOR"]), 
+  validate(deleteUploadRequestSchema), 
+  uploadController.deleteUploadRequest
+);
 
 export default router;

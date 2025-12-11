@@ -18,7 +18,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 
 You must give appropriate credit to the Licensors, including a link to the original source, and indicate if changes were made. Appropriate credit includes, but is not limited to, displaying the following information:
 
-> "Original source code from TaskMinder by Mingqi Li and Fabian Leonardi, available at [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)"
+> "Original source code from TaskMinder by Mingqi Li and Fabian Leonardi, available at [https://github.com/TaskMinder/TaskMinder](https://github.com/TaskMinder/TaskMinder)"
 
 You may provide this credit in any reasonable manner, but not in any way that suggests endorsement by the Licensors. The attribution requirement applies to all forms of distribution, including but not limited to, source code, binaries, documentation, and any other materials that include or are derived from the Software.
 

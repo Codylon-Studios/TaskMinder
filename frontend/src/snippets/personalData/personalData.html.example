@@ -2,7 +2,7 @@
   <div class="mb-1">
     <i class="fas fa-balance-scale me-1" aria-hidden="true"></i>
     This project is licensed under
-    <a href="https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE" target="_blank" class="text-primary">this license</a>.
+    <a href="https://github.com/TaskMinder/TaskMinder/blob/main/LICENSE" target="_blank" class="text-primary">this license</a>.
   </div>
   <div class="mb-1">
     <i class="far fa-copyright me-2" aria-hidden="true"></i>
@@ -11,7 +11,7 @@
   <div class="mb-1">
     <i class="fa-brands fa-github me-2" aria-hidden="true"></i>
     GitHub: 
-    <a href="https://github.com/Codylon-Studios/TaskMinder" target="_blank" class="text-primary">Codylon-Studios/TaskMinder</a>
+    <a href="https://github.com/TaskMinder/TaskMinder" target="_blank" class="text-primary">TaskMinder/TaskMinder</a>
   </div>
   <div>
     <i class="fa-regular fa-envelope me-2" aria-hidden="true"></i>
@@ -45,7 +45,7 @@
 </div>
 
 <div id="sourcecode-links">
-  <a href="https://github.com/Codylon-Studios/TaskMinder" target="_blank">Github Repository</a>
+  <a href="https://github.com/TaskMinder/TaskMinder" target="_blank">Github Repository</a>
   <br>
-  <a href="https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE" target="_blank">Lizenz</a>
+  <a href="https://github.com/TaskMinder/TaskMinder/blob/main/LICENSE" target="_blank">Lizenz</a>
 </div>

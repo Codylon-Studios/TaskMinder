@@ -34,6 +34,11 @@ export const getUploadFile = async (req: Request, res: Response, next: NextFunct
       }
       next(err);
     });
+    res.on("close", () => {
+      if (!res.writableEnded) {
+        stream.destroy();
+      }
+    });
     stream.pipe(res);
   }
   catch (error) {
@@ -43,10 +48,19 @@ export const getUploadFile = async (req: Request, res: Response, next: NextFunct
 
 export const editUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await uploadService.editUpload(req.body, req.session);
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    const reservedBytes = res.locals.reservedBytes as bigint;
+    await uploadService.editUpload(req.body, req.session, files, reservedBytes);
     res.sendStatus(200);
   }
   catch (error) {
+    if (error && typeof error === "object" && (error as Record<string, unknown>).reservationRolledBack) {
+      res.locals.reservedBytes = 0n;
+      res.locals.reservationReleased = true;
+      if (res.locals.uploadCleanupState) {
+        res.locals.uploadCleanupState.reservationReleased = true;
+      }
+    }
     next(error);
   }
 };
@@ -71,6 +85,43 @@ export const queueFileUpload = async (req: Request, res: Response, next: NextFun
     res.sendStatus(200);
   }
   catch (error) {
+    if (error && typeof error === "object" && (error as Record<string, unknown>).reservationRolledBack) {
+      res.locals.reservedBytes = 0n;
+      res.locals.reservationReleased = true;
+      if (res.locals.uploadCleanupState) {
+        res.locals.uploadCleanupState.reservationReleased = true;
+      }
+    }
+    next(error);
+  }
+};
+
+export const createUploadRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await uploadService.addUploadRequest(req.body, req.session);
+    res.sendStatus(201);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const getUploadRequests = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const uploadRequests = await uploadService.getUploadRequests(req.session);
+    res.status(200).json(uploadRequests);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUploadRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await uploadService.deleteUploadRequest(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
     next(error);
   }
 };
@@ -80,5 +131,8 @@ export default {
   getUploadFile,
   editUpload,
   deleteUpload,
-  queueFileUpload
+  queueFileUpload,
+  createUploadRequest,
+  getUploadRequests,
+  deleteUploadRequest
 };

@@ -10,6 +10,7 @@ export const SOCKET_EVENTS = {
   EVENTS: "updateEvents",
   HOMEWORK: "updateHomework",
   UPLOADS: "updateUploads",
+  UPLOAD_REQUESTS: "updateUploadRequests",
   MEMBERS: "updateMembers",
   SUBJECTS: "updateSubjects",
   TEAMS: "updateTeams",

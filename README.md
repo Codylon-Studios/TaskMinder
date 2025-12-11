@@ -49,7 +49,7 @@ You're all set - **Have fun!**
 ## Source-Available
 TaskMinder is **source-available** for transparency and learning purposes. You can view, modify, and use the code for **non-commercial purposes only** (personal, educational, or research use). **Commercial use requires permission.** This includes selling the software, running ads, offering paid services, or deploying it in enterprise environments.<br>
 For commercial licensing inquiries: [info@taskminder.de](mailto:info@taskminder.de) <br>
-This project is licensed under the [TaskMinder License](https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE).
+This project is licensed under the [TaskMinder License](https://github.com/TaskMinder/TaskMinder/blob/main/LICENSE).
 
 ## Links
 - Contact us! [info@taskminder.de](mailto:info@taskminder.de)
