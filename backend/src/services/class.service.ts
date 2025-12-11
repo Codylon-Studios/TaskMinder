@@ -70,7 +70,7 @@ const classService = {
     const baseData = {
       className: classDisplayName,
       classCode: classCode,
-      classCreated: Date.now(),
+      createdAt: Date.now(),
       isTestClass: isTestClass,
       dsbMobileActivated: false,
       storageQuotaBytes: isTestClass ? 20 * 1024 * 1024 : 1 * 1024 * 1024 * 1024, // 20MB (test class) or 1 GB (normal class)

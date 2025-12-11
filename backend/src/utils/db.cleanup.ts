@@ -10,10 +10,6 @@ import socketIO from "../config/socket";
 /**
  * Deletes class records that are older than 1 day and are TEST CLASSES
  */
-// @codescene(disable:"Large Method")
-// This is supressed as this function is for deleting test classes.
-// As a lot of data is connected to a class, many prisma functions need to be called,
-// thus increasing lines of code, but code is still logical
 export async function cleanupTestClasses(): Promise<void> {
   try {
     // Calculate the timestamp for 1 day ago (in milliseconds)
@@ -21,7 +17,7 @@ export async function cleanupTestClasses(): Promise<void> {
 
     const classesToDelete = await prisma.class.findMany({
       where: {
-        classCreated: {
+        createdAt: {
           lt: oneDayAgo
         },
         isTestClass: true

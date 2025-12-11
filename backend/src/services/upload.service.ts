@@ -39,6 +39,7 @@ const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany
   return uploads.map(upload => ({
     uploadId: upload.uploadId,
     uploadName: upload.uploadName,
+    uploadDescription: upload.uploadDescription,
     uploadType: upload.uploadType,
     teamId: upload.teamId,
     status: upload.status,
@@ -62,11 +63,11 @@ const uploadService = {
     body: uploadFileTypeBody,
     reservedBytes: bigint
   ) {
-    const { uploadName, uploadType, teamId: teamIdStr } = body;
+    const { uploadName, uploadDescription, uploadType, teamId: teamIdStr } = body;
     const teamId = Number.parseInt(teamIdStr, 10);
 
     await isValidTeamId(teamId, session);
-    await isValidUploadInput(uploadName, uploadType);
+    await isValidUploadInput(uploadName, uploadDescription, uploadType);
 
     const classIdNum = Number.parseInt(session.classId!, 10);
     const accountId = session.account?.accountId ?? null;
@@ -74,6 +75,7 @@ const uploadService = {
     const upload = await prisma.upload.create({
       data: {
         uploadName,
+        uploadDescription,
         uploadType,
         status: "queued",
         teamId,
@@ -285,15 +287,15 @@ const uploadService = {
     body: editUploadTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { uploadId, uploadName, uploadType, teamId } = body;
+    const { uploadId, uploadName, uploadDescription, uploadType, teamId } = body;
     const classIdNum = parseInt(session.classId!, 10);
 
     await isValidTeamId(teamId, session);
-    await isValidUploadInput(uploadName, uploadType);
+    await isValidUploadInput(uploadName, uploadDescription, uploadType);
 
     await prisma.upload.update({
       where: { uploadId: uploadId, classId: classIdNum },
-      data: { uploadName: uploadName, uploadType: uploadType, teamId: teamId }
+      data: { uploadName: uploadName, uploadDescription: uploadDescription, uploadType: uploadType, teamId: teamId }
     });
 
     // Invalidate cache after edit

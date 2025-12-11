@@ -30,6 +30,7 @@ export const editUploadSchema = z.object({
   body: strictObject({
     uploadId: z.coerce.number(),
     uploadName: z.string().trim().min(1),
+    uploadDescription: z.string().trim().min(1).nullable(),
     uploadType: z.string().trim().min(1),
     teamId: z.coerce.number()
   })

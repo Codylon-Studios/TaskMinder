@@ -73,7 +73,7 @@ model Class {
   classId                 Int           @id @default(autoincrement()) @map("classId")
   className               String
   classCode               String        @unique
-  classCreated            BigInt
+  createdAt               BigInt
   isTestClass             Boolean
   defaultPermissionLevel  Int
   storageUsedBytes        BigInt
@@ -222,22 +222,24 @@ model FileMetadata {
 
 // an upload can contain one or multiple files
 model Upload {
-  uploadId      Int    @id @default(autoincrement())
-  uploadName    String 
-  uploadType    String
-  status        String @default("queued") // "queued" | "processing" | "completed" | "failed"
-  errorReason   String?
-  reservedBytes BigInt @default(0) // Storage reserved during upload
-  createdAt     BigInt  // When the upload job was created
+  uploadId            Int    @id @default(autoincrement())
+  uploadName          String 
+  uploadDescription   String?
+  uploadType          String
+  status              String @default("queued") // "queued" | "processing" | "completed" | "failed" | "pending"
+  errorReason         String?
+  // isRequested         Boolean? // null (not requested) | true | false
+  reservedBytes       BigInt @default(0) // Storage reserved during upload
+  createdAt           BigInt  // When the upload job was created
 
-  teamId        Int
-  accountId     Int?
-  classId       Int
+  teamId              Int
+  accountId           Int?
+  classId             Int
 
-  Files         FileMetadata[]
+  Files               FileMetadata[]
 
-  Account       Account?   @relation(fields: [accountId], references: [accountId], onDelete: SetNull, onUpdate: NoAction)
-  Class         Class      @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+  Account             Account?   @relation(fields: [accountId], references: [accountId], onDelete: SetNull, onUpdate: NoAction)
+  Class               Class      @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([classId])
   @@map("upload")
