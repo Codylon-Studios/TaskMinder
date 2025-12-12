@@ -14,7 +14,8 @@ import {
   escapeHTML,
   getCirclePath,
   dateDaysDifference,
-  isSameDayMs
+  isSameDayMs,
+  getSite
 } from "../../global/global.js";
 import { HomeworkData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -55,7 +56,7 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
   return data;
 }
 
-async function updateHomeworkList(): Promise<void> {
+async function renderHomeworkList(): Promise<void> {
   const newContent = $("<div></div>");
   let showMoreButtonElements: JQuery<HTMLElement> = $();
 
@@ -152,10 +153,10 @@ async function updateHomeworkList(): Promise<void> {
   $("#homework-list").empty().append(newContent.children());
   showMoreButtonElements.trigger("addedToDom");
 
-  updateHomeworkFeedback();
+  renderHomeworkFeedback();
 };
 
-async function updateHomeworkFeedback(): Promise<void> {
+async function renderHomeworkFeedback(): Promise<void> {
   const currentJoinedTeamsData = await joinedTeamsData();
 
   const todoHomeworkData = (await homeworkData()).filter(h =>
@@ -381,7 +382,7 @@ async function prepareRandomHomework(): Promise<void> {
   });
 }
 
-async function updateSubjectList(): Promise<void> {
+async function renderSubjectList(): Promise<void> {
   // Clear the select element in the add homework modal
   $("#add-homework-subject").empty();
   $("#add-homework-subject").append('<option value="" disabled selected>Fach</option>');
@@ -424,7 +425,7 @@ async function updateSubjectList(): Promise<void> {
 
   // If any subject filter gets changed, update the shown homework
   $(".filter-subject-option").on("change", function () {
-    updateHomeworkList();
+    renderHomeworkList();
     const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
     filterData.subject ??= {};
     filterData.subject[$(this).data("id")] = $(this).prop("checked");
@@ -441,7 +442,7 @@ async function updateSubjectList(): Promise<void> {
   );
 };
 
-async function updateTeamList(): Promise<void> {
+async function renderTeamList(): Promise<void> {
   // Clear the select element in the add homework modal
   $("#add-homework-team").empty();
   $("#add-homework-team").append('<option value="-1" selected>Alle</option>');
@@ -701,7 +702,7 @@ function deleteHomework(homeworkId: number): void {
           // Show a success notification and update the shown homework
           $("#delete-homework-success-toast").toast("show");
           homeworkData.reload();
-          updateHomeworkList();
+          renderHomeworkList();
         },
         error: xhr => {
           if (xhr.status === 401) {
@@ -805,7 +806,7 @@ async function checkHomework(homeworkId: number, checkStatus?: boolean): Promise
     localStorage.setItem("homeworkCheckedData", dataString);
     
     homeworkCheckedData.reload();
-    updateHomeworkList();
+    renderHomeworkList();
   }
 }
 
@@ -836,7 +837,7 @@ function updateFilters(ignoreSubjects?: boolean): void {
   if (filterData.dateUntilOffset !== 0) $("#filter-changed").show();
   
   if (! ignoreSubjects) {
-    updateSubjectList();
+    renderSubjectList();
   }
 }
 
@@ -875,7 +876,7 @@ export async function init(): Promise<void> {
       $("#filter-reset").on("click", () => {
         localStorage.setItem("homeworkFilter", "{}");
         updateFilters();
-        updateHomeworkList();
+        renderHomeworkList();
       });
 
       // On changing any information in the add homework modal, disable the add button if any information is empty
@@ -996,7 +997,7 @@ export async function init(): Promise<void> {
         filterData.statusUnchecked = $("#filter-status-unchecked").prop("checked");
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
         updateFilters();
-        updateHomeworkList();
+        renderHomeworkList();
       });
 
       // On changing the filter checked option, update the homework list & saved filters
@@ -1005,7 +1006,7 @@ export async function init(): Promise<void> {
         filterData.statusChecked = $("#filter-status-checked").prop("checked");
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
         updateFilters();
-        updateHomeworkList();
+        renderHomeworkList();
       });
 
       // On clicking the all subjects option, check all and update the homework list
@@ -1018,7 +1019,7 @@ export async function init(): Promise<void> {
         });
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
         updateFilters();
-        updateHomeworkList();
+        renderHomeworkList();
       });
 
       // On clicking the none subjects option, uncheck all and update the homework list
@@ -1031,7 +1032,7 @@ export async function init(): Promise<void> {
         });
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
         updateFilters();
-        updateHomeworkList();
+        renderHomeworkList();
       });
 
       // On changing any filter date option, update the homework list
@@ -1045,7 +1046,7 @@ export async function init(): Promise<void> {
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
 
         updateFilters();
-        updateHomeworkList();
+        renderHomeworkList();
       });
 
       // On changing any filter date option, update the homework list
@@ -1060,7 +1061,7 @@ export async function init(): Promise<void> {
         localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
         
         updateFilters();
-        updateHomeworkList();
+        renderHomeworkList();
       });
 
       $("#app").on("click", "#show-add-homework-button", () => {
@@ -1078,30 +1079,27 @@ let homeworkFeedbackLastPercentage: null | number;
 let randomHomeworkDeactivated: number[] = [];
 
 await lessonData.init();
-(await homeworkData.init()).on("update", updateHomeworkList);
-(await homeworkCheckedData.init()).on("update", updateHomeworkList);
-(await subjectData.init()).on("update", updateSubjectList);
+(await homeworkData.init()).on("update", renderHomeworkList);
+(await homeworkCheckedData.init()).on("update", renderHomeworkList);
+(await subjectData.init()).on("update", renderSubjectList);
 (await teamsData.init()).on("update", () => {
-  updateTeamList(); 
-  updateHomeworkList(); 
+  renderTeamList(); 
+  renderHomeworkList(); 
 });
-(await joinedTeamsData.init()).on("update", updateHomeworkList);
+(await joinedTeamsData.init()).on("update", renderHomeworkList);
 
-user.on("change", args => {
-  let silent = false;
-  if (typeof args === "object" && args !== null && "silent" in args && args.silent === true) {
-    silent = true;
+user.on("change", () => {
+  if (getSite() === "homework") {
+    joinedTeamsData.reload({ silent: true });
+    homeworkCheckedData.reload({ silent: true });
   }
-
-  joinedTeamsData.reload({ silent });
-  homeworkCheckedData.reload({ silent });
 })
 
-export const reloadAllFn = async (): Promise<void> => {
-  await updateSubjectList();
-  await updateHomeworkList();
-  await updateHomeworkFeedback();
-  await updateTeamList();
+export const renderAllFn = async (): Promise<void> => {
+  await renderSubjectList();
+  await renderHomeworkList();
+  await renderHomeworkFeedback();
+  await renderTeamList();
 
   toggleShownButtons();
 };

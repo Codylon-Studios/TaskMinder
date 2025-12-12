@@ -272,7 +272,7 @@ export async function init(): Promise<void> {
   });
 }
 
-export const reloadAllFn = changeContentOnLogin;
+export const renderAllFn = changeContentOnLogin;
 
 let justCreatedClass: boolean;
 let urlParams: URLSearchParams;

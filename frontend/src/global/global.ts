@@ -491,22 +491,21 @@ export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: 
   return true;
 }
 
-export async function reloadAll(): Promise<void> {
-  if (!user.isAuthed) {
+export async function renderAll(): Promise<void> {
+  if (!setRenderOnUserChangeListener) {
     user.on("change", async () => {
-      reloadAll();
+      renderAll();
     });
-    await user.auth({ silent: true });
-    reloadAll();
-    return;
+    setRenderOnUserChangeListener = true;
   }
   const s = getSite();
   const mod = await import(`../../pages/${s}/${s}.js`);
-  if (mod.reloadAllFn) {
-    await mod.reloadAllFn();
+  if (mod.renderAllFn) {
+    await mod.renderAllFn();
   }
   $("body").css({ display: "flex" });
 }
+let setRenderOnUserChangeListener = false;
 
 // Global socket variable that can be accessed from any script
 export const socket = io();
@@ -691,7 +690,7 @@ export const uploadData = createDataAccessor<UploadData>("uploadData", {
 $(document).on("visibilitychange", () => {
   if (document.visibilityState === "visible") {
     for (const d of socketDataAccessors) d.reload({ silent: true })
-    reloadAll();
+    renderAll();
   }
 });
 
@@ -793,7 +792,7 @@ setTimeout(() => {
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", () => {
   for (const d of socketDataAccessors) d.reload({ silent: true })
-  reloadAll();
+  renderAll();
 });
 
 // Change btn group selections to vertical / horizontal

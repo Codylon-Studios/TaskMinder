@@ -20,7 +20,8 @@ import {
   registerSocketListeners,
   lessonData,
   teamsData,
-  eventTypeData
+  eventTypeData,
+  getSite
 } from "../../global/global.js";
 import { MonthDates, TimetableData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -273,11 +274,11 @@ async function checkHomework(homeworkId: number): Promise<void> {
     localStorage.setItem("homeworkCheckedData", dataString);
     
     homeworkCheckedData.reload();
-    updateHomeworkList();
+    renderHomeworkList();
   }
 }
 
-async function updateHomeworkList(): Promise<void> {
+async function renderHomeworkList(): Promise<void> {
   const currentSubjectData = await subjectData();
   const currentJoinedTeams = await joinedTeamsData();
 
@@ -394,10 +395,10 @@ function updateHomeworkMode(): void {
     localStorage.setItem("homeworkMode", "submission");
   }
 
-  updateHomeworkList();
+  renderHomeworkList();
 }
 
-async function updateEventList(): Promise<void> {
+async function renderEventList(): Promise<void> {
   // Clear the list
   $("#event-list").empty();
 
@@ -478,7 +479,7 @@ async function updateEventList(): Promise<void> {
   }
 };
 
-async function updateSubstitutionList(): Promise<void> {
+async function renderSubstitutionList(): Promise<void> {
   function getPlanId(): 1 | 2 | null {
     if (data === "No data") {
       return null;
@@ -578,10 +579,10 @@ function updateSubstitutionsMode(): void {
     localStorage.setItem("substitutionsMode", "none");
   }
 
-  updateSubstitutionList();
+  renderSubstitutionList();
 }
 
-async function updateTimetable(): Promise<void> {
+async function renderTimetable(): Promise<void> {
   $("#timetable-less").empty();
   $("#timetable-more").empty();
 
@@ -976,10 +977,10 @@ function slideCalendar(direction: "l" | "r", transition: string, slideTime: numb
         resolve();
       }, slideTime);
     }, 20);
-    updateEventList();
-    updateHomeworkList();
-    updateSubstitutionList();
-    updateTimetable();
+    renderEventList();
+    renderHomeworkList();
+    renderSubstitutionList();
+    renderTimetable();
   });
 }
 
@@ -1123,10 +1124,10 @@ export async function init(): Promise<void> {
 
       updateCalendarWeekContent("#calendar-week-old");
       renameCalendarMonthYear();
-      updateEventList();
-      updateHomeworkList();
-      updateSubstitutionList();
-      updateTimetable();
+      renderEventList();
+      renderHomeworkList();
+      renderSubstitutionList();
+      renderTimetable();
     });
 
     function updateCalenderMoveButtonAriaLabels(): void {
@@ -1180,10 +1181,10 @@ export async function init(): Promise<void> {
       $(this).addClass("days-overview-selected");
       updateCalendarWeekContent("#calendar-week-old");
       renameCalendarMonthYear();
-      updateEventList();
-      updateHomeworkList();
-      updateSubstitutionList();
-      updateTimetable();
+      renderEventList();
+      renderHomeworkList();
+      renderSubstitutionList();
+      renderTimetable();
     });
 
     selectedDate = new Date();
@@ -1221,7 +1222,7 @@ export async function init(): Promise<void> {
 
     // On changing the filter mode, update the homework list
     $("#filter-homework-mode").on("input", () => {
-      updateHomeworkList();
+      renderHomeworkList();
     });
 
     $("#timetable-mode input").each(function () {
@@ -1266,46 +1267,43 @@ let calendarMode: string;
 // Is a list of the dates (number of day in the month) of the week which is currently selected
 const monthDates = createDataAccessor<MonthDates>("monthDates");
 
-(await homeworkData.init()).on("update", updateHomeworkList);
-(await homeworkCheckedData.init()).on("update", updateHomeworkList);
-(await subjectData.init()).on("update", updateHomeworkList);
+(await homeworkData.init()).on("update", renderHomeworkList);
+(await homeworkCheckedData.init()).on("update", renderHomeworkList);
+(await subjectData.init()).on("update", renderHomeworkList);
 (await eventData.init()).on("update", () => {
-  updateEventList();
+  renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
-  updateTimetable();
+  renderTimetable();
 });
-(await lessonData.init()).on("update", updateTimetable);
+(await lessonData.init()).on("update", renderTimetable);
 (await teamsData.init()).on("update", () => {
-  updateHomeworkList();
-  updateEventList();
+  renderHomeworkList();
+  renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
-  updateTimetable();
+  renderTimetable();
 });
 (await joinedTeamsData.init()).on("update", () => {
-  updateHomeworkList();
-  updateEventList();
+  renderHomeworkList();
+  renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
-  updateTimetable();
+  renderTimetable();
 });
-(await substitutionsData.init()).on("update", updateSubstitutionList);
+(await substitutionsData.init()).on("update", renderSubstitutionList);
 (await classSubstitutionsData.init()).on("update", () => {
-  updateSubstitutionList();
-  updateTimetable();
+  renderSubstitutionList();
+  renderTimetable();
 });
 
-user.on("change", args => {
-  let silent = false;
-  if (typeof args === "object" && args !== null && "silent" in args && args.silent === true) {
-    silent = true;
+user.on("change", () => {
+  if (getSite() === "main") {
+    joinedTeamsData.reload({ silent: true });
+    homeworkCheckedData.reload({ silent: true });
   }
-
-  joinedTeamsData.reload({ silent });
-  homeworkCheckedData.reload({ silent });
 })
 
-export const reloadAllFn = async (): Promise<void> => {
-  await updateHomeworkList();
-  await updateEventList();
-  await updateSubstitutionList();
-  await updateTimetable();
+export const renderAllFn = async (): Promise<void> => {
+  await renderHomeworkList();
+  await renderEventList();
+  await renderSubstitutionList();
+  await renderTimetable();
 };

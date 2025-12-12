@@ -14,7 +14,8 @@ import {
   escapeHTML,
   getInputValue,
   socket,
-  registerSocketListeners
+  registerSocketListeners,
+  getSite
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -58,7 +59,7 @@ async function updateColorTheme(): Promise<void> {
   }
 }
 
-async function updateClassMemberList(): Promise<void> {
+async function renderClassMemberList(): Promise<void> {
   const roles = ["Mitglied", "Bearbeiter:in", "Manager:in", "Admin"];
   let newClassMembersContent = "";
 
@@ -151,7 +152,7 @@ async function updateClassMemberList(): Promise<void> {
   });
 }
 
-async function updateTeamLists(): Promise<void> {
+async function renderTeamLists(): Promise<void> {
   let newTeamSelectionContent = "";
   let newTeamsContent = "";
 
@@ -260,7 +261,7 @@ async function updateTeamLists(): Promise<void> {
   });
 }
 
-async function updateEventTypeList(): Promise<void> {
+async function renderEventTypeList(): Promise<void> {
   let newEventTypesContent = "";
 
   for (const eventType of await eventTypeData()) {
@@ -397,7 +398,7 @@ async function updateEventTypeList(): Promise<void> {
   });
 }
 
-async function updateSubjectList(): Promise<void> {
+async function renderSubjectList(): Promise<void> {
   if ((await substitutionsData()).data !== "No data") {
     dsbActivated = true;
   }
@@ -740,7 +741,7 @@ async function updateSubjectList(): Promise<void> {
   });
 }
 
-async function updateTimetable(): Promise<void> {
+async function renderTimetable(): Promise<void> {
   const newTimetableContent = $("<div></div>");
 
   let subjectOptions = "";
@@ -1841,7 +1842,7 @@ export async function init(): Promise<void> {
 
     $("#class-members-cancel").on("click", () => {
       $("#class-members-cancel").hide();
-      updateClassMemberList();
+      renderClassMemberList();
       $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
     });
 
@@ -2017,7 +2018,7 @@ export async function init(): Promise<void> {
 
     $("#teams-cancel").on("click", () => {
       $("#teams-cancel").hide();
-      updateTeamLists();
+      renderTeamLists();
       $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
     });
 
@@ -2171,7 +2172,7 @@ export async function init(): Promise<void> {
 
     $("#event-types-cancel").on("click", () => {
       $("#event-types-cancel").hide();
-      updateEventTypeList();
+      renderEventTypeList();
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
     });
 
@@ -2248,7 +2249,7 @@ export async function init(): Promise<void> {
           "X-CSRF-Token": await csrfToken()
         },
         success: () => {
-          updateEventTypeList();
+          renderEventTypeList();
           $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
         },
         error: xhr => {
@@ -2387,7 +2388,7 @@ export async function init(): Promise<void> {
 
     $("#subjects-cancel").on("click", () => {
       $("#subjects-cancel").hide();
-      updateSubjectList();
+      renderSubjectList();
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
     });
 
@@ -2510,7 +2511,7 @@ export async function init(): Promise<void> {
 
     $("#timetable-cancel").on("click", () => {
       $("#timetable-cancel").hide();
-      updateTimetable();
+      renderTimetable();
     });
 
     $("#timetable-save").on("click", async () => {
@@ -2594,30 +2595,27 @@ registerSocketListeners({
   updateDefaultPermission: updateClassInfo,
 });
 
-(await classMemberData.init()).on("update", updateClassMemberList);
-(await subjectData.init()).on("update", updateSubjectList);
-(await teamsData.init()).on("update", updateTeamLists);
-(await joinedTeamsData.init()).on("update", updateTeamLists);
-(await eventTypeData.init()).on("update", updateEventTypeList);
-(await lessonData.init()).on("update", updateTimetable);
-(await substitutionsData.init()).on("update", updateSubjectList);
+(await classMemberData.init()).on("update", renderClassMemberList);
+(await subjectData.init()).on("update", renderSubjectList);
+(await teamsData.init()).on("update", renderTeamLists);
+(await joinedTeamsData.init()).on("update", renderTeamLists);
+(await eventTypeData.init()).on("update", renderEventTypeList);
+(await lessonData.init()).on("update", renderTimetable);
+(await substitutionsData.init()).on("update", renderSubjectList);
 
-user.on("change", args => {
-  let silent = false;
-  if (typeof args === "object" && args !== null && "silent" in args && args.silent === true) {
-    silent = true;
+user.on("change", () => {
+  if (getSite() === "settings") {
+    joinedTeamsData.reload({ silent: true });
   }
-
-  joinedTeamsData.reload({ silent });
 })
 
-export const reloadAllFn = async (): Promise<void> => {
+export const renderAllFn = async (): Promise<void> => {
   if (user.classJoined) {
-    await updateClassMemberList();
-    await updateTeamLists();
-    await updateEventTypeList();
-    await updateSubjectList();
-    await updateTimetable();
+    await renderClassMemberList();
+    await renderTeamLists();
+    await renderEventTypeList();
+    await renderSubjectList();
+    await renderTimetable();
   }
 
   await updateOnUserChange();

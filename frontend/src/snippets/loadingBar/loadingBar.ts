@@ -1,5 +1,6 @@
-import { getSite, isValidSite, reloadAll } from "../../global/global.js";
+import { getSite, isValidSite, renderAll } from "../../global/global.js";
 import { init as initBottombar } from "../bottombar/bottombar.js";
+import { user } from "../navbar/navbar.js";
 //import { init as initNavbar } from "../navbar/navbar.js";
 
 function cacheHtml(url: string, html: string): void {
@@ -39,12 +40,15 @@ async function init(): Promise<void> {
   await new Promise(res => {
     $(res);
   });
+  if (! user.isAuthed) {
+    await user.auth({ silent: true });
+  }
   if (mod.init) {
     await mod.init();
   }
   await initBottombar();
   //await initNavbar();
-  await reloadAll();
+  await renderAll();
 
   setTimeout(() => {
     const hash = globalThis.location.hash;
