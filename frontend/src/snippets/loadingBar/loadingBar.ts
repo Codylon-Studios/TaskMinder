@@ -1,6 +1,7 @@
-import { getSite, isValidSite, reloadAll } from "../../global/global.js";
+import { getSite, isValidSite, renderAll } from "../../global/global.js";
 import { init as initBottombar } from "../bottombar/bottombar.js";
-import { init as initNavbar } from "../navbar/navbar.js";
+import { user } from "../navbar/navbar.js";
+//import { init as initNavbar } from "../navbar/navbar.js";
 
 function cacheHtml(url: string, html: string): void {
   if (htmlCache.has(url)) {
@@ -36,12 +37,18 @@ async function init(): Promise<void> {
   }
   
   const mod = await import(`../../pages/${s}/${s}.js`);
+  await new Promise(res => {
+    $(res);
+  });
+  if (! user.isAuthed) {
+    await user.auth({ silent: true });
+  }
   if (mod.init) {
     await mod.init();
   }
   await initBottombar();
-  await initNavbar();
-  await reloadAll();
+  //await initNavbar();
+  await renderAll();
 
   setTimeout(() => {
     const hash = globalThis.location.hash;
@@ -97,6 +104,7 @@ export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promi
 
     if (pushHistory ?? true) {
       globalThis.history.pushState({}, "", resUrl + hash);
+      $(globalThis).trigger("pushstate");
     }
 
     $("#app-prepend").empty().append(app);
