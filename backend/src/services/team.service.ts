@@ -185,32 +185,20 @@ const teamService = {
     });
 
     if (dataChanged) {
-      const setTeamsDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.TEAMS, session.classId!);
+      // invalidate team cache
+      await invalidateCache("TEAMS", session.classId!);
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
 
-      // Fetch team data
-      const teamData = await prisma.team.findMany({
-        where: { classId: parseInt(session.classId!) }
-      });
+      // If teams were deleted, also update homework, events, and lessons caches
+      if (teamsDeleted) {
+        await invalidateCache("HOMEWORK", session.classId!);
+        await invalidateCache("EVENT", session.classId!);
+        await invalidateCache("LESSON", session.classId!);
 
-      try {
-        await updateCacheData(teamData, setTeamsDataCacheKey);
-        const io = socketIO.getIO();
-        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
-
-        // If teams were deleted, also update homework, events, and lessons caches
-        if (teamsDeleted) {
-          await invalidateCache("HOMEWORK", session.classId!);
-          await invalidateCache("EVENT", session.classId!);
-          await invalidateCache("LESSON", session.classId!);
-
-          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
-          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
-          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
-        }
-      }
-      catch (err) {
-        logger.error(`Error updating Redis data: ${err}`);
-        throw new Error();
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
       }
     }
   },
@@ -221,7 +209,7 @@ const teamService = {
     const data = await prisma.joinedTeams.findMany({
       where: { accountId: accountId }
     });
-    
+
     const teams = [];
 
     for (const entry of data) {

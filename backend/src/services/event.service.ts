@@ -9,7 +9,8 @@ import {
   isValidTeamId,
   lessonDateEventAtLeastOneNull,
   updateCacheData,
-  BigIntreplacer
+  BigIntreplacer,
+  invalidateCache
 } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
@@ -33,7 +34,7 @@ export const eventService = {
     }
 
     const eventData = await prisma.event.findMany({
-      where: { 
+      where: {
         classId: parseInt(session.classId!)
       },
       orderBy: {
@@ -84,25 +85,12 @@ export const eventService = {
       };
       throw err;
     }
-    const eventData = await prisma.event.findMany({
-      where : {
-        classId: parseInt(session.classId!)
-      },
-      orderBy: {
-        startDate: "asc"
-      }
-    });
-    const addEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
 
-    try {
-      await updateCacheData(eventData, addEventDataCacheKey);
-      const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
-    }
-    catch (err) {
-      logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
-    }
+    // invalidate cache
+    await invalidateCache("EVENT", session.classId!);
+    // send socket event
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
   },
 
   async editEvent(
@@ -114,8 +102,8 @@ export const eventService = {
     isValidTeamId(teamId, session);
     try {
       await prisma.event.update({
-        where: { 
-          eventId: eventId, 
+        where: {
+          eventId: eventId,
           classId: parseInt(session.classId!)
         },
         data: {
@@ -139,24 +127,11 @@ export const eventService = {
       throw err;
     }
 
-    const eventData = await prisma.event.findMany({
-      where: {
-        classId: parseInt(session.classId!)
-      },
-      orderBy: {
-        startDate: "asc"
-      }
-    });
-    const editEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
-    try {
-      await updateCacheData(eventData, editEventDataCacheKey);
-      const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
-    }
-    catch (err) {
-      logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
-    }
+    // invalidate cache
+    await invalidateCache("EVENT", session.classId!);
+    // send socket event
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
   },
 
   async deleteEvent(reqData: deleteEventTypeBody, session: Session & Partial<SessionData>) {
@@ -177,24 +152,11 @@ export const eventService = {
       }
     });
 
-    const eventData = await prisma.event.findMany({
-      where: {
-        classId: parseInt(session.classId!)
-      },
-      orderBy: {
-        startDate: "asc"
-      }
-    });
-    const deleteEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
-    try {
-      await updateCacheData(eventData, deleteEventDataCacheKey);
-      const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
-    }
-    catch (err) {
-      logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
-    }
+    // invalidate cache
+    await invalidateCache("EVENT", session.classId!);
+    // send socket event
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
   },
 
   async getEventTypeData(session: Session & Partial<SessionData>) {
@@ -258,7 +220,7 @@ export const eventService = {
       for (const eventType of eventTypes) {
         isValidColor(eventType.color);
         if (eventType.name.trim() === "") {
-          const err: RequestError =  {
+          const err: RequestError = {
             name: "Bad Request",
             status: 400,
             message: "Invalid data format",

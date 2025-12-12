@@ -60,7 +60,10 @@ const subjectService = {
     // track if subjects were deleted (affects homework and lessons)
     let subjectsDeleted = false;
 
+    // disable complexity because process pretty straightforward
+    // eslint-disable-next-line complexity
     await prisma.$transaction(async tx => {
+      // delete subjects that are no present in new request
       await Promise.all(
         existingSubjects.map(async subject => {
           if (!subjects.some(s => s.subjectId === subject.subjectId)) {
@@ -70,9 +73,11 @@ const subjectService = {
             await tx.lesson.deleteMany({
               where: { subjectId: subject.subjectId }
             });
+            // delete homework which where linked to subject
             await tx.homework.deleteMany({
               where: { subjectId: subject.subjectId }
             });
+            // delete subjects themselves
             await tx.subjects.delete({
               where: { subjectId: subject.subjectId }
             });
@@ -81,25 +86,22 @@ const subjectService = {
       );
 
       for (const subject of subjects) {
-        function check(): void {
-          if (
-            subject.subjectNameLong.trim() === "" ||
-            subject.subjectNameShort.trim() === "" ||
-            subject.teacherNameLong.trim() === "" ||
-            subject.teacherNameShort.trim() === ""
-          ) {
-            const err: RequestError = {
-              name: "Bad Request",
-              status: 400,
-              message: "Invalid data format",
-              expected: true
-            };
-            throw err;
-          }
-          isValidGender(subject.teacherGender);
+        // check if subjectNames or/and teacherNames are empty
+        const subjectNameInvalid = subject.subjectNameLong.trim() === "" || subject.subjectNameShort.trim() === "";
+        const teacherNameInvalid = subject.teacherNameLong.trim() === "" || subject.teacherNameShort.trim() === "";
+        if (subjectNameInvalid || teacherNameInvalid) {
+          const err: RequestError = {
+            name: "Bad Request",
+            status: 400,
+            message: "Invalid data format",
+            expected: true
+          };
+          throw err;
         }
-        check();
+        // check if valid gender was given
+        await isValidGender(subject.teacherGender);
         try {
+          // if subject has no Id yet -> new subject
           if (subject.subjectId === "") {
             dataChanged = true;
             await tx.subjects.create({
@@ -145,31 +147,18 @@ const subjectService = {
     });
 
     if (dataChanged) {
-      const data = await prisma.subjects.findMany({
-        where: {
-          classId: parseInt(session.classId!)
-        }
-      });
+      // invalidate subject cache
+      await invalidateCache("SUBJECT", session.classId!);
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.SUBJECTS);
 
-      const setSubjectDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBJECT, session.classId!);
+      // If subjects were deleted, also delete lessons and homework caches
+      if (subjectsDeleted) {
+        await invalidateCache("LESSON", session.classId!);
+        await invalidateCache("HOMEWORK", session.classId!);
 
-      try {
-        await updateCacheData(data, setSubjectDataCacheKey);
-        const io = socketIO.getIO();
-        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.SUBJECTS);
-
-        // If subjects were deleted, also delete lessons and homework caches
-        if (subjectsDeleted) {
-          await invalidateCache("LESSON", session.classId!);
-          await invalidateCache("HOMEWORK", session.classId!);
-
-          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
-          io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
-        }
-      }
-      catch (err) {
-        logger.error(`Error updating Redis cache: ${err}`);
-        throw new Error();
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
       }
     }
   }

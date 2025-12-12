@@ -3,7 +3,6 @@ import {
   msToInputDate,
   teamsData,
   csrfToken,
-  lessonData,
   escapeHTML,
   dateDaysDifference,
   uploadData,
@@ -12,12 +11,14 @@ import {
   isSameDayMs,
   registerSocketListeners,
   loadTimetableData,
-  getSimpleDisplayDate
+  getSimpleDisplayDate,
+  showAllUploads,
+  getSite
 } from "../../global/global.js";
 import { SingleUploadData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 
-async function updateUploadList(): Promise<void> {
+async function renderUploadList(): Promise<void> {
   async function getFilteredData(): Promise<SingleUploadData[]> {
     // Get the upload data
     let data = (await uploadData()).uploads;
@@ -159,7 +160,7 @@ async function updateUploadList(): Promise<void> {
   $("#upload-list").empty().append(newContent.children());
 };
 
-async function updateUploadTypeList(): Promise<void> {
+async function renderUploadTypeList(): Promise<void> {
   const uploadTypes = [
     {uploadTypeId: "LESSON_NOTE", name: "Hefteintrag"},
     {uploadTypeId: "WORKSHEET", name: "Arbeitsblatt"},
@@ -208,7 +209,7 @@ async function updateUploadTypeList(): Promise<void> {
 
   // If any type filter gets changed, update the shown uploads
   $(".filter-type-option").on("change", function () {
-    updateUploadList();
+    renderUploadList();
     const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
     filterData.type ??= {};
     filterData.type[$(this).data("id")] = $(this).prop("checked");
@@ -219,7 +220,7 @@ async function updateUploadTypeList(): Promise<void> {
   localStorage.setItem("uploadFilter", JSON.stringify(filterData));
 };
 
-async function updateTeamList(): Promise<void> {
+async function renderTeamList(): Promise<void> {
   // Clear the select element in the add upload modal
   $("#add-upload-team").empty();
   $("#add-upload-team").append('<option value="-1" selected>Alle</option>');
@@ -249,7 +250,7 @@ async function addUpload(): Promise<void> {
   const currentTimetableData = await loadTimetableData(new Date());
   const currentLesson = currentTimetableData.find(l => l.startTime < timeNow && l.endTime > timeNow);
   
-  if (currentLesson == undefined) {
+  if (currentLesson === undefined) {
     $("#add-upload-name").val("").removeClass("autocomplete");
   }
   else {
@@ -340,7 +341,7 @@ async function addUpload(): Promise<void> {
           // If the server hasn't answered, show the internal server error notification
           $navbarToasts.serverError.toast("show");
         }
-      }, 1000);
+      }, 5000);
     });
 }
 
@@ -579,7 +580,7 @@ function updateFilters(ingoreUploadTypes?: boolean): void {
   if (filterData.dateUntilOffset !== 0) $("#filter-changed").show();
 
   if (! ingoreUploadTypes) {
-    updateUploadTypeList();
+    renderUploadTypeList();
   }
 }
 
@@ -608,7 +609,7 @@ export async function init(): Promise<void> {
       $("#upload-load-more-btn").on("click", () => {
         showAllUploads(true);
         uploadData.reload();
-        updateUploadList();
+        renderUploadList();
       });
 
       $("#edit-toggle").on("click", function () {
@@ -630,7 +631,7 @@ export async function init(): Promise<void> {
       $("#filter-reset").on("click", () => {
         localStorage.setItem("uploadFilter", "{}");
         updateFilters();
-        updateUploadList();
+        renderUploadList();
       });
 
       // On changing any information in the add upload modal, disable the add button if any information is empty
@@ -687,7 +688,7 @@ export async function init(): Promise<void> {
         });
         localStorage.setItem("uploadFilter", JSON.stringify(filterData));
         updateFilters();
-        updateUploadList();
+        renderUploadList();
       });
 
       // On clicking the none types option, uncheck all and update the upload list
@@ -700,7 +701,7 @@ export async function init(): Promise<void> {
         });
         localStorage.setItem("uploadFilter", JSON.stringify(filterData));
         updateFilters();
-        updateUploadList();
+        renderUploadList();
       });
 
       // On changing any filter date option, update the upload list
@@ -715,7 +716,7 @@ export async function init(): Promise<void> {
         localStorage.setItem("uploadFilter", JSON.stringify(filterData));
 
         updateFilters();
-        updateUploadList();
+        renderUploadList();
       });
 
       // On changing any filter date option, update the upload list
@@ -729,7 +730,7 @@ export async function init(): Promise<void> {
         localStorage.setItem("uploadFilter", JSON.stringify(filterData));
         
         updateFilters();
-        updateUploadList();
+        renderUploadList();
       });
 
       $("#app").on("click", "#show-add-upload-button", addUpload);
@@ -739,33 +740,23 @@ export async function init(): Promise<void> {
   });
 }
 
-registerSocketListeners({
-  updateUploads: () => {
-    uploadData.reload();
-    updateUploadList();
-  },
-  updateTeams: () => {
-    teamsData.reload();
-    updateTeamList(); 
-    updateUploadList(); 
-  },
-  updateJoinedTeams: () => {
-    joinedTeamsData.reload();
-    updateUploadList(); 
-  }
+(await uploadData.init()).on("update", renderUploadList);
+(await teamsData.init()).on("update", () => {
+  renderTeamList(); 
+  renderUploadList(); 
 });
+(await joinedTeamsData.init()).on("update", renderUploadList);
 
-export const reloadAllFn = async (): Promise<void> => {
-  joinedTeamsData.reload();
-  teamsData.reload();
-  lessonData.reload();
-  uploadData.reload();
-  await updateUploadTypeList();
-  await updateUploadList();
-  await updateTeamList();
+user.on("change", () => {
+  if (getSite() === "uploads") {
+    joinedTeamsData.reload({ silent: true });
+  }
+})
+
+export const renderAllFn = async (): Promise<void> => {
+  await renderUploadTypeList();
+  await renderUploadList();
+  await renderTeamList();
 
   toggleShownButtons();
 };
-
-export const showAllUploads = createDataAccessor<boolean>("showAllUploads");
-showAllUploads(false);

@@ -10,7 +10,6 @@ import {
   substitutionsData,
   classSubstitutionsData,
   dateToMs,
-  lessonData,
   homeworkCheckedData,
   msToTime,
   csrfToken,
@@ -18,8 +17,11 @@ import {
   loadTimetableData,
   getTimeLeftString,
   lastCommaRegex,
+  registerSocketListeners,
+  lessonData,
   teamsData,
-  registerSocketListeners
+  eventTypeData,
+  getSite
 } from "../../global/global.js";
 import { MonthDates, TimetableData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -272,11 +274,11 @@ async function checkHomework(homeworkId: number): Promise<void> {
     localStorage.setItem("homeworkCheckedData", dataString);
     
     homeworkCheckedData.reload();
-    updateHomeworkList();
+    renderHomeworkList();
   }
 }
 
-async function updateHomeworkList(): Promise<void> {
+async function renderHomeworkList(): Promise<void> {
   const currentSubjectData = await subjectData();
   const currentJoinedTeams = await joinedTeamsData();
 
@@ -393,10 +395,10 @@ function updateHomeworkMode(): void {
     localStorage.setItem("homeworkMode", "submission");
   }
 
-  updateHomeworkList();
+  renderHomeworkList();
 }
 
-async function updateEventList(): Promise<void> {
+async function renderEventList(): Promise<void> {
   // Clear the list
   $("#event-list").empty();
 
@@ -477,7 +479,7 @@ async function updateEventList(): Promise<void> {
   }
 };
 
-async function updateSubstitutionList(): Promise<void> {
+async function renderSubstitutionList(): Promise<void> {
   function getPlanId(): 1 | 2 | null {
     if (data === "No data") {
       return null;
@@ -577,10 +579,10 @@ function updateSubstitutionsMode(): void {
     localStorage.setItem("substitutionsMode", "none");
   }
 
-  updateSubstitutionList();
+  renderSubstitutionList();
 }
 
-async function updateTimetable(): Promise<void> {
+async function renderTimetable(): Promise<void> {
   $("#timetable-less").empty();
   $("#timetable-more").empty();
 
@@ -588,6 +590,7 @@ async function updateTimetable(): Promise<void> {
     $("#timetable-less").addClass("d-none");
     $("#timetable-more").addClass("d-none");
     $("#timetable-mode-wrapper").addClass("d-none");
+    updateTimetableFeedback();
     return;
   }
 
@@ -617,10 +620,10 @@ async function updateTimetable(): Promise<void> {
                     else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
                     else {
                       cssClass = "line-through-yellow";
-                      append = `<span class="text-yellow fw-bold">${escapeHTML(l.substitution.subject)}</span>`;
+                      append = ` <span class="text-yellow fw-bold">${escapeHTML(l.substitution.subject)}</span>`;
                     }
                   }
-                  return `<span class="${cssClass}">${escapeHTML(l.subjectNameShort)}</span> ${append}`;
+                  return `<span class="${cssClass}">${escapeHTML(l.subjectNameShort)}</span>${append}`;
                 })
                 .join(" / ")
               /* eslint-enable indent */}</span>
@@ -698,10 +701,10 @@ async function updateTimetable(): Promise<void> {
                         if (l.substitution.type === "Entfall") cssClass = "line-through-red";
                         else if (l.substitution.room !== l.room) {
                           cssClass = "line-through-yellow";
-                          append = `<span class="text-yellow fw-bold">${l.substitution.room}</span>`;
+                          append = ` <span class="text-yellow fw-bold">${l.substitution.room}</span>`;
                         }
                       }
-                      return `<span class="${cssClass}">${escapeHTML(l.room)}</span> ${append}`;
+                      return `<span class="${cssClass}">${escapeHTML(l.room)}</span>${append}`;
                     })
                     .join(" / ")
                   /* eslint-enable indent */}</span>,
@@ -715,10 +718,10 @@ async function updateTimetable(): Promise<void> {
                         if (l.substitution.type === "Entfall") cssClass = "line-through-red";
                         else if (!(l.teacherNameSubstitution ?? []).includes(l.substitution.teacher)) {
                           cssClass = "line-through-yellow";
-                          append = `<span class="text-yellow fw-bold">${l.substitution.teacher}</span>`;
+                          append = ` <span class="text-yellow fw-bold">${l.substitution.teacher}</span>`;
                         }
                       }
-                      return `<span class="${cssClass}">${escapeHTML(l.teacherName)}</span> ${append}`;
+                      return `<span class="${cssClass}">${escapeHTML(l.teacherName)}</span>${append}`;
                     })
                     .join(" / ")
                   /* eslint-enable indent */}</span>
@@ -880,8 +883,12 @@ async function updateTimetableFeedback(): Promise<void> {
   
   if (!realLessonsLeft) {
     if (isCurrentLessonReal) {
+      const timeLeft = currentLesson!.lessonTimes.reduce((acc, curr) => {
+        if (curr.endTime < now) return acc;
+        else return acc + curr.endTime - Math.max(curr.startTime, now);
+      }, 0);
       $("#timetable-feedback-info").show();
-      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(currentLesson!.endTime - now)}</b>
+      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(timeLeft)}</b>
         ${lessonToText(currentLesson!, false)}, danach ist der Unterricht für heute vorbei!`);
     }
     else {
@@ -909,15 +916,20 @@ async function updateTimetableFeedback(): Promise<void> {
       `);
     }
   }
-  else if (nextLesson === null) {
-    $("#timetable-feedback-info").show();
-    $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(currentLesson.endTime - now)}</b>
-      ${lessonToText(currentLesson, false)}, danach ist der Unterricht für heute vorbei!`);
-  }
   else {
+    const timeLeft = currentLesson.lessonTimes.reduce((acc, curr) => {
+      if (curr.endTime < now) return acc;
+      else return acc + curr.endTime - Math.max(curr.startTime, now);
+    }, 0);
     $("#timetable-feedback-info").show();
-    $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(currentLesson.endTime - now)}</b>
-      ${lessonToText(currentLesson, false)}, dann weiter mit ${lessonToText(nextLesson, true)}.`);
+    if (nextLesson === null) {
+      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(timeLeft)}</b>
+        ${lessonToText(currentLesson, false)}, danach ist der Unterricht für heute vorbei!`);
+    }
+    else {
+      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(timeLeft)}</b>
+        ${lessonToText(currentLesson, false)}, dann weiter mit ${lessonToText(nextLesson, true)}.`);
+    }
   }
 }
 
@@ -965,10 +977,10 @@ function slideCalendar(direction: "l" | "r", transition: string, slideTime: numb
         resolve();
       }, slideTime);
     }, 20);
-    updateEventList();
-    updateHomeworkList();
-    updateSubstitutionList();
-    updateTimetable();
+    renderEventList();
+    renderHomeworkList();
+    renderSubstitutionList();
+    renderTimetable();
   });
 }
 
@@ -1112,10 +1124,10 @@ export async function init(): Promise<void> {
 
       updateCalendarWeekContent("#calendar-week-old");
       renameCalendarMonthYear();
-      updateEventList();
-      updateHomeworkList();
-      updateSubstitutionList();
-      updateTimetable();
+      renderEventList();
+      renderHomeworkList();
+      renderSubstitutionList();
+      renderTimetable();
     });
 
     function updateCalenderMoveButtonAriaLabels(): void {
@@ -1169,10 +1181,10 @@ export async function init(): Promise<void> {
       $(this).addClass("days-overview-selected");
       updateCalendarWeekContent("#calendar-week-old");
       renameCalendarMonthYear();
-      updateEventList();
-      updateHomeworkList();
-      updateSubstitutionList();
-      updateTimetable();
+      renderEventList();
+      renderHomeworkList();
+      renderSubstitutionList();
+      renderTimetable();
     });
 
     selectedDate = new Date();
@@ -1200,7 +1212,6 @@ export async function init(): Promise<void> {
     ];
     renameCalendarMonthYear();
 
-    updateTimetableFeedback();
     setInterval(updateTimetableFeedback,  30 * 1000); // Update every 30s
 
     // Request checking the homework on clicking its checkbox
@@ -1211,7 +1222,7 @@ export async function init(): Promise<void> {
 
     // On changing the filter mode, update the homework list
     $("#filter-homework-mode").on("input", () => {
-      updateHomeworkList();
+      renderHomeworkList();
     });
 
     $("#timetable-mode input").each(function () {
@@ -1245,63 +1256,6 @@ export async function init(): Promise<void> {
   });
 }
 
-registerSocketListeners({
-  updateHomework: () => {
-    homeworkData.reload();
-    homeworkCheckedData.reload();
-    updateHomeworkList();
-  },
-  updateSubjects: () => {
-    subjectData.reload();
-    updateHomeworkList();
-  },
-  updateEvents: () => {
-    eventData.reload();
-
-    updateEventList();
-    updateCalendarWeekContent("#calendar-week-old");
-    updateTimetable();
-  },
-  updateTimetables: () => {
-    lessonData.reload();
-    updateTimetable();
-  },
-  updateTeams: () => {
-    teamsData.reload();
-    homeworkData.reload();
-    homeworkCheckedData.reload();
-    eventData.reload();
-
-    updateHomeworkList();
-    updateEventList();
-    updateCalendarWeekContent("#calendar-week-old");
-    updateTimetable();
-  },
-  updateJoinedTeams: () => {
-    joinedTeamsData.reload();
-
-    updateHomeworkList();
-    updateEventList();
-    updateCalendarWeekContent("#calendar-week-old");
-    updateTimetable();
-  }
-});
-
-export const reloadAllFn = async (): Promise<void> => {
-  eventData.reload();
-  joinedTeamsData.reload();
-  homeworkData.reload();
-  subjectData.reload();
-  substitutionsData.reload();
-  classSubstitutionsData.reload();
-  lessonData.reload();
-  homeworkCheckedData.reload();
-  await updateHomeworkList();
-  await updateEventList();
-  await updateSubstitutionList();
-  await updateTimetable();
-};
-
 let justCheckedHomeworkId: number;
 let animations: boolean;
 let selectedDate: Date;
@@ -1312,3 +1266,44 @@ let monthNames: string[];
 let calendarMode: string;
 // Is a list of the dates (number of day in the month) of the week which is currently selected
 const monthDates = createDataAccessor<MonthDates>("monthDates");
+
+(await homeworkData.init()).on("update", renderHomeworkList);
+(await homeworkCheckedData.init()).on("update", renderHomeworkList);
+(await subjectData.init()).on("update", renderHomeworkList);
+(await eventData.init()).on("update", () => {
+  renderEventList();
+  updateCalendarWeekContent("#calendar-week-old");
+  renderTimetable();
+});
+(await lessonData.init()).on("update", renderTimetable);
+(await teamsData.init()).on("update", () => {
+  renderHomeworkList();
+  renderEventList();
+  updateCalendarWeekContent("#calendar-week-old");
+  renderTimetable();
+});
+(await joinedTeamsData.init()).on("update", () => {
+  renderHomeworkList();
+  renderEventList();
+  updateCalendarWeekContent("#calendar-week-old");
+  renderTimetable();
+});
+(await substitutionsData.init()).on("update", renderSubstitutionList);
+(await classSubstitutionsData.init()).on("update", () => {
+  renderSubstitutionList();
+  renderTimetable();
+});
+
+user.on("change", () => {
+  if (getSite() === "main") {
+    joinedTeamsData.reload({ silent: true });
+    homeworkCheckedData.reload({ silent: true });
+  }
+})
+
+export const renderAllFn = async (): Promise<void> => {
+  await renderHomeworkList();
+  await renderEventList();
+  await renderSubstitutionList();
+  await renderTimetable();
+};

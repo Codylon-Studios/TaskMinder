@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document provides a comprehensive overview of data processing practices for our educational management system database. As part of our commitment to data protection and privacy compliance (GDPR/DSGVO), we document what personal and operational data is intentionally collected, stored, and processed, as well as identify potential unintentional data capture points across all system tables.
+This document provides a comprehensive overview of data processing practices for our educational management system. As part of our commitment to data protection and privacy compliance (GDPR/DSGVO), we document what personal and operational data is intentionally collected, stored, and processed, as well as identify potential unintentional data capture points across all system tables.
 
 ### Scope
 
@@ -20,7 +20,7 @@ This documentation describes all database tables defined in the current Prisma s
 | :-------- | :-------- | :---------------------------------- | :--------------------------------------------------- |
 | accountId | Integer   | Unique user identifier              | Could enable cross-system tracking                   |
 | username  | String    | **Personal identifier** for login   | May reveal real names or personal info               |
-| password  | String    | Encrypted authentication credential | **Risk**: Hash algorithms may become vulnerable |
+| password  | String    | Encrypted authentication credential | Hash algorithms may become vulnerable                |
 | createdAt | BigInt    | Account creation timestamp          | -                                                    |
 | deletedAt | BigInt    | Account deletion timestamp          | -                                                    |
 
@@ -33,7 +33,7 @@ This documentation describes all database tables defined in the current Prisma s
 **Solutions**:
 
 - Hashing using bcrypt: bcrypt automatically generates a unique random salt per password, making rainbow table attacks ineffective. We use a sufficient number of salt rounds (`SALT_ROUNDS = 10`).
-- Implement a robust, automated cron job to ensure permanent deletion after the 30-day period.
+- Implemented a robust, automated cron job to ensure permanent deletion after the 30-day period.
 
 ---
 
@@ -53,10 +53,10 @@ This documentation describes all database tables defined in the current Prisma s
 - Long session retention periods could enable user behavior analysis.
 - Session hijacking risks if cookies are not properly secured.
 
-**Addressing Concerns**:
+**Solutions**:
 
 - The `sess` JSON column intentionally stores: `accountId`, `username`, `classId` (if joined), and a `csrfToken`.
-- **Security**: The session secret is cryptographically secure. Cookies are set with `httpOnly: true` and `secure: true` (in production) to prevent client-side script access and ensure transmission only over HTTPS.
+- The session secret is cryptographically secure. Cookies are set with `httpOnly: true` and `secure: true` (in production) to prevent client-side script access and ensure transmission only over HTTPS.
 
 ---
 
@@ -74,16 +74,19 @@ This documentation describes all database tables defined in the current Prisma s
 | defaultPermissionLevel | Integer   | Default user permission level for new members  | -                                                            |
 | storageUsedBytes       | BigInt    | Current storage usage by the class             | May reveal class activity level and content volume           |
 | storageQuotaBytes      | BigInt    | Storage limit allocated to the class           | -                                                            |
-| dsbMobileUser          | String    | **Third-party service username (DSB Mobile)**  | **Critical risk**: Credentials for external system           |
-| dsbMobilePassword      | String    | **Third-party service password (DSB Mobile)**  | **Critical risk**: Enables account compromise                |
-| dsbMobileSchoolNumber  | String    | School identifier for DSB Mobile service       | May identify the specific school/institution                 |
+| dsbMobileActivated     | Boolean   | Flag if DSBMobile is active                    | -                                                            |
+| dsbMobileUser          | String    | **Third-party service username (DSB Mobile)**  | **Risk**: Credentials for external system                    |
+| dsbMobilePassword      | String    | **Third-party service password (DSB Mobile)**  | **Risk**: Enables account compromise                         |
+| dsbMobileClass         | String    | Class Name to filter in substitution data      | May identify the specific class                              |
+
 
 **Privacy Concerns**:
-- The existence of a `Class` centralizes all student data, making profile-building easier.
+- `Class` centralizes all student data, making profile-building easier.
 
 **Solutions**:
-- Implement change class code function/button for class members.
-- Implement strict access controls for rows containing third-party credentials.
+- Implemented change class code function/button for class members.
+- Implemented strict access controls for rows containing third-party credentials.
+- Move to only store server-encrypted authId, no user or password
 
 ---
 
@@ -108,7 +111,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 **Solutions**:
 
-- Provide clear guidance or input masks to discourage users from entering personal data in event names and descriptions.
+- Provided clear guidance or input masks to discourage users from entering personal data in event names and descriptions.
 - Regularly audit event data for inappropriate content.
 
 ---
@@ -188,7 +191,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 **Privacy Concerns**:
 
-- **Teacher's Personal Data**: This table directly stores identifiable personal data about teachers (`teacherNameLong`, `teacherNameShort`, `teacherGender`). The necessity of storing gender and name variations should be reviewed.
+- **Teacher's Personal Data**: This table directly stores identifiable personal data about teachers (`teacherNameLong`, `teacherNameShort`, `teacherGender`).
 - **Consent**: Ensure teacher consent is obtained for storing and displaying this information.
 
 ---
@@ -224,7 +227,7 @@ This documentation describes all database tables defined in the current Prisma s
 | Upload.reservedBytes    | BigInt    | Storage space reserved for upload            | Indicates size/scope of content being shared                        |
 | Upload.createdAt        | BigInt    | Upload timestamp                             | **Reveals user activity patterns and collaboration timing**         |
 | Upload.teamId           | Integer   | Links upload to a specific team              | **Creates connection between users and shared content**             |
-| Upload.accountId        | Integer   | **Identifier of user who uploaded**          | **Direct link to user and their shared content**                    |
+| Upload.accountId        | Integer   | Identifier of user who uploaded              | **Direct link to user and their shared content**                    |
 | Upload.classId          | Integer   | Links upload to a specific class             | -                                                                   |
 | FileMetadata.fileMetaDataId | Integer | Unique file metadata identifier          | -                                                                   |
 | FileMetadata.uploadId   | Integer   | Links file to its upload job                 | -                                                                   |
@@ -258,7 +261,7 @@ The `Class` schema as a central entity increases cross-table risks.
 
 Combining data across tables enables the creation of highly detailed user profiles:
 
-- Student Profile: Academic performance (`HomeworkCheck`) + social connections (`JoinedTeams`) + daily schedule and location (`Lesson`) + specific activities (`Event`). All data is now correlated through `classId`.
+- Student Profile: Academic performance (`HomeworkCheck`) + social connections (`JoinedTeams`) + daily schedule and location (`Lesson`) + specific activities (`Event`). All data is correlated through `classId`.
 
 ### 2. Behavioral and Social Analytics
 
@@ -294,7 +297,7 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 ---
 
 - **Document Version:** 2.1
-- **Stable Version Alignment:** v2.2.2
-- **Last Updated:** November 25th, 2025
-- **Next Scheduled Review:** Quarterly – December 10, 2025
+- **Stable Version Alignment:** v2.2.3
+- **Last Updated:** December 5th, 2025
+- **Next Scheduled Review:** Quarterly – March 10th, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

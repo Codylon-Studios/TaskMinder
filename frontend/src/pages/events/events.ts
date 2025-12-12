@@ -11,14 +11,14 @@ import {
   lessonData,
   escapeHTML,
   dateDaysDifference,
-  registerSocketListeners,
-  isSameDayMs
+  isSameDayMs,
+  getSite
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
-async function updateEventList(): Promise<void> {
+async function renderEventList(): Promise<void> {
   async function getFilteredData(): Promise<EventData> {
     // Get the event data
     let data = await eventData();
@@ -130,7 +130,7 @@ async function updateEventList(): Promise<void> {
   showMoreButtonElements.trigger("addedToDom");
 };
 
-async function updateEventTypeList(): Promise<void> {
+async function renderEventTypeList(): Promise<void> {
   const currentEventTypeData = await eventTypeData();
 
   // Clear the select element in the add event modal
@@ -171,7 +171,7 @@ async function updateEventTypeList(): Promise<void> {
 
   // If any type filter gets changed, update the shown events
   $(".filter-type-option").on("change", function () {
-    updateEventList();
+    renderEventList();
     const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
     filterData.type ??= {};
     filterData.type[$(this).data("id")] = $(this).prop("checked");
@@ -188,7 +188,7 @@ async function updateEventTypeList(): Promise<void> {
   );
 };
 
-async function updateTeamList(): Promise<void> {
+async function renderTeamList(): Promise<void> {
   // Clear the select element in the add event modal
   $("#add-event-team").empty();
   $("#add-event-team").append('<option value="-1" selected>Alle</option>');
@@ -603,7 +603,7 @@ function updateFilters(ingoreEventTypes?: boolean): void {
   if (filterData.dateUntilOffset !== 0) $("#filter-changed").show();
 
   if (! ingoreEventTypes) {
-    updateEventTypeList();
+    renderEventTypeList();
   }
 }
 
@@ -638,7 +638,7 @@ export async function init(): Promise<void> {
       $("#filter-reset").on("click", () => {
         localStorage.setItem("eventFilter", "{}");
         updateFilters();
-        updateEventList();
+        renderEventList();
       });
 
       // On changing any information in the add event modal, disable the add button if any information is empty
@@ -714,7 +714,7 @@ export async function init(): Promise<void> {
         });
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
         updateFilters();
-        updateEventList();
+        renderEventList();
       });
 
       // On clicking the none types option, uncheck all and update the event list
@@ -727,7 +727,7 @@ export async function init(): Promise<void> {
         });
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
         updateFilters();
-        updateEventList();
+        renderEventList();
       });
 
       // On changing any filter date option, update the event list
@@ -741,7 +741,7 @@ export async function init(): Promise<void> {
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
 
         updateFilters();
-        updateEventList();
+        renderEventList();
       });
 
       // On changing any filter date option, update the event list
@@ -756,7 +756,7 @@ export async function init(): Promise<void> {
         localStorage.setItem("eventFilter", JSON.stringify(filterData));
         
         updateFilters();
-        updateEventList();
+        renderEventList();
       });
 
       $("#app").on("click", "#show-add-event-button", () => {
@@ -768,35 +768,24 @@ export async function init(): Promise<void> {
   });
 }
 
-registerSocketListeners({
-  updateEvents: () => {
-    eventData.reload();
-    updateEventList(); 
-  },
-  updateEventTypes: () => {
-    eventTypeData.reload();
-    updateEventTypeList(); 
-  },
-  updateTeams: () => {
-    teamsData.reload();
-    updateTeamList();
-    updateEventList(); 
-  },
-  updateJoinedTeams: () => {
-    joinedTeamsData.reload();
-    updateEventList(); 
-  }
+(await eventData.init()).on("update", renderEventList);
+(await eventTypeData.init()).on("update", renderEventTypeList);
+(await teamsData.init()).on("update", () => {
+  renderTeamList();
+  renderEventList(); 
 });
+(await joinedTeamsData.init()).on("update", renderEventList);
 
-export const reloadAllFn = async (): Promise<void> => {
-  eventData.reload();
-  eventTypeData.reload();
-  joinedTeamsData.reload();
-  teamsData.reload();
-  lessonData.reload();
-  await updateEventTypeList();
-  await updateEventList();
-  await updateTeamList();
+user.on("change", () => {
+  if (getSite() === "events") {
+    joinedTeamsData.reload({ silent: true });
+  }
+})
+
+export const renderAllFn = async (): Promise<void> => {
+  await renderEventTypeList();
+  await renderEventList();
+  await renderTeamList();
 
   toggleShownButtons();
 };

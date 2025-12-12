@@ -2,7 +2,7 @@ import { RequestError } from "../@types/requestError";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
 import logger from "../config/logger";
-import { isValidweekDay, BigIntreplacer, updateCacheData } from "../utils/validate.functions";
+import { isValidweekDay, BigIntreplacer, updateCacheData, invalidateCache } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lesson.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
@@ -14,7 +14,7 @@ const lessonService = {
   ) {
     const { lessons } = reqData;
     for (const lesson of lessons) {
-      isValidweekDay(lesson.weekDay);
+      await isValidweekDay(lesson.weekDay);
     }
 
     const classId = parseInt(session.classId!, 10);
@@ -75,23 +75,10 @@ const lessonService = {
     });
 
     if (dataChanged) {
-      const lessonData = await prisma.lesson.findMany({
-        where: {
-          classId: parseInt(session.classId!)
-        }
-      });
+      await invalidateCache("LESSON", session.classId!);
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
 
-      const setLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
-
-      try {
-        await updateCacheData(lessonData, setLessonDataCacheKey);
-        const io = socketIO.getIO();
-        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
-      }
-      catch (err) {
-        logger.error(`Error updating Redis cache: ${err}`);
-        throw new Error();
-      }
     }
   },
   async getLessonData(session: Session & Partial<SessionData>) {

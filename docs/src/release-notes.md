@@ -4,6 +4,23 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.3] - 2025-12-12
+
+### Changed
+* Backend: Invalidate cache at all update actions (edit, delete, set, etc.), only refetch if getting (GET) data
+* Backend: Implement individual route rate-limiters
+* Sys: Lock in bun on v1.3.3 (v1.3.4 has package installment issues) in production
+* Frontend: Improve performance by listening directly on changed data instead of socket to update
+* Frontend: Add explicit info box for data responsibility
+
+### Fixed
+* Backend: Fix awaiting some async functions in backend
+
+### Security
+* Package bumping
+
+---
+
 ## \[v2.2.2] - 2025-11-30
 
 ### Changed
