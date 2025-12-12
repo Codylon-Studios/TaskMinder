@@ -740,12 +740,12 @@ export async function init(): Promise<void> {
   });
 }
 
-(await uploadData.init()).on("update", renderUploadList);
+(await uploadData.init()).on("update", renderUploadList, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderTeamList(); 
   renderUploadList(); 
-});
-(await joinedTeamsData.init()).on("update", renderUploadList);
+}, {onlyThisSite: true});
+(await joinedTeamsData.init()).on("update", renderUploadList, {onlyThisSite: true});
 
 user.on("change", () => {
   if (getSite() === "uploads") {

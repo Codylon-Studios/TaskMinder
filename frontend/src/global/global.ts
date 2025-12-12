@@ -598,9 +598,17 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
     return accessor;
   };
 
-  accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback) => {
+  accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback, settings?: {onlyThisSite?: boolean}) => {
     _eventListeners[event] ??= [];
-    _eventListeners[event].push(callback);
+    if (settings?.onlyThisSite) {
+      const site = getSite();
+      _eventListeners[event].push(() => {
+        if (getSite() == site) callback()
+      });
+    }
+    else {
+      _eventListeners[event].push(callback);
+    }
     return accessor;
   };
 

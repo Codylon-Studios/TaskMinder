@@ -768,13 +768,13 @@ export async function init(): Promise<void> {
   });
 }
 
-(await eventData.init()).on("update", renderEventList);
-(await eventTypeData.init()).on("update", renderEventTypeList);
+(await eventData.init()).on("update", renderEventList, {onlyThisSite: true});
+(await eventTypeData.init()).on("update", renderEventTypeList, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderTeamList();
   renderEventList(); 
-});
-(await joinedTeamsData.init()).on("update", renderEventList);
+}, {onlyThisSite: true});
+(await joinedTeamsData.init()).on("update", renderEventList, {onlyThisSite: true});
 
 user.on("change", () => {
   if (getSite() === "events") {

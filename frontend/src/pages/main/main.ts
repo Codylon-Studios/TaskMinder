@@ -1267,32 +1267,32 @@ let calendarMode: string;
 // Is a list of the dates (number of day in the month) of the week which is currently selected
 const monthDates = createDataAccessor<MonthDates>("monthDates");
 
-(await homeworkData.init()).on("update", renderHomeworkList);
-(await homeworkCheckedData.init()).on("update", renderHomeworkList);
-(await subjectData.init()).on("update", renderHomeworkList);
+(await homeworkData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
+(await homeworkCheckedData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
+(await subjectData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 (await eventData.init()).on("update", () => {
   renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
   renderTimetable();
-});
-(await lessonData.init()).on("update", renderTimetable);
+}, {onlyThisSite: true});
+(await lessonData.init()).on("update", renderTimetable, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderHomeworkList();
   renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
   renderTimetable();
-});
+}, {onlyThisSite: true});
 (await joinedTeamsData.init()).on("update", () => {
   renderHomeworkList();
   renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
   renderTimetable();
-});
-(await substitutionsData.init()).on("update", renderSubstitutionList);
+}, {onlyThisSite: true});
+(await substitutionsData.init()).on("update", renderSubstitutionList, {onlyThisSite: true});
 (await classSubstitutionsData.init()).on("update", () => {
   renderSubstitutionList();
   renderTimetable();
-});
+}, {onlyThisSite: true});
 
 user.on("change", () => {
   if (getSite() === "main") {
