@@ -14,7 +14,7 @@ type DataAccessor<DataType> = {
   get(): Promise<DataType>;
   getCurrent(): DataType | null;
   set(value: DataType | null, settings?: {silent?: boolean}): DataAccessor<DataType>;
-  on(event: DataAccessorEventName, callback: DataAccessorEventCallback): DataAccessor<DataType>;
+  on(event: DataAccessorEventName, callback: DataAccessorEventCallback, settings?: {onlyThisSite?: boolean}): DataAccessor<DataType>;
   trigger(event: DataAccessorEventName, ...args: unknown[]): DataAccessor<DataType>;
   reload(settings?: {silent?: boolean}): DataAccessor<DataType>;
   init(): Promise<DataAccessor<DataType>>;

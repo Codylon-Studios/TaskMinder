@@ -2592,24 +2592,24 @@ registerSocketListeners({
   updateClassCodes: updateClassInfo,
   updateClassNames: updateClassInfo,
   updateUpgradeTestClass: updateClassInfo,
-  updateDefaultPermission: updateClassInfo,
+  updateDefaultPermission: updateClassInfo
 });
 
-(await classMemberData.init()).on("update", renderClassMemberList);
-(await subjectData.init()).on("update", renderSubjectList);
-(await teamsData.init()).on("update", renderTeamLists);
-(await joinedTeamsData.init()).on("update", renderTeamLists);
-(await eventTypeData.init()).on("update", renderEventTypeList);
-(await lessonData.init()).on("update", renderTimetable);
-(await substitutionsData.init()).on("update", renderSubjectList);
+(await classMemberData.init()).on("update", renderClassMemberList, {onlyThisSite: true});
+(await subjectData.init()).on("update", renderSubjectList, {onlyThisSite: true});
+(await teamsData.init()).on("update", renderTeamLists, {onlyThisSite: true});
+(await joinedTeamsData.init()).on("update", renderTeamLists, {onlyThisSite: true});
+(await eventTypeData.init()).on("update", renderEventTypeList, {onlyThisSite: true});
+(await lessonData.init()).on("update", renderTimetable, {onlyThisSite: true});
+(await substitutionsData.init()).on("update", renderSubjectList, {onlyThisSite: true});
 
 user.on("change", () => {
   if (getSite() === "settings") {
     joinedTeamsData.reload({ silent: true });
   }
-})
+});
 
-export const renderAllFn = async (): Promise<void> => {
+export async function renderAllFn(): Promise<void> {
   if (user.classJoined) {
     await renderClassMemberList();
     await renderTeamLists();

@@ -584,27 +584,30 @@ function deleteEvent(eventId: number): void {
     });
 }
 
-function updateFilters(ingoreEventTypes?: boolean): void {
-  $("#filter-changed").hide();
+async function updateFilters(ingoreEventTypes?: boolean): Promise<void> {
+  return new Promise(res => {
+    $("#filter-changed").hide();
 
-  const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
 
-  filterData.dateFromOffset ??= 0;
-  const dateFrom = new Date();
-  dateFrom.setDate(dateFrom.getDate() + filterData.dateFromOffset);
-  $("#filter-date-from").val(msToInputDate(dateFrom.getTime()));
-  if (filterData.dateFromOffset !== 0) $("#filter-changed").show();
+    filterData.dateFromOffset ??= 0;
+    const dateFrom = new Date();
+    dateFrom.setDate(dateFrom.getDate() + filterData.dateFromOffset);
+    $("#filter-date-from").val(msToInputDate(dateFrom.getTime()));
+    if (filterData.dateFromOffset !== 0) $("#filter-changed").show();
 
-  filterData.dateUntilOffset ??= 0;
-  const dateUntil = new Date();
-  dateUntil.setMonth(dateUntil.getMonth() + 1);
-  dateUntil.setDate(dateUntil.getDate() + filterData.dateUntilOffset);
-  $("#filter-date-until").val(msToInputDate(dateUntil.getTime()));
-  if (filterData.dateUntilOffset !== 0) $("#filter-changed").show();
+    filterData.dateUntilOffset ??= 0;
+    const dateUntil = new Date();
+    dateUntil.setMonth(dateUntil.getMonth() + 1);
+    dateUntil.setDate(dateUntil.getDate() + filterData.dateUntilOffset);
+    $("#filter-date-until").val(msToInputDate(dateUntil.getTime()));
+    if (filterData.dateUntilOffset !== 0) $("#filter-changed").show();
 
-  if (! ingoreEventTypes) {
-    renderEventTypeList();
-  }
+    if (! ingoreEventTypes) {
+      renderEventTypeList();
+    }
+    res();
+  })
 }
 
 function toggleShownButtons(): void {
@@ -618,171 +621,169 @@ function toggleShownButtons(): void {
 
 export async function init(): Promise<void> {
   return new Promise(res => {
-    $(async function () {
-      $("#edit-toggle").on("click", function () {
-        $(".edit-option").toggle($("#edit-toggle").is(":checked"));
-      });
-      $("#edit-toggle").prop("checked", false);
-      $(".edit-option").hide();
+    $("#edit-toggle").on("click", function () {
+      $(".edit-option").toggle($("#edit-toggle").is(":checked"));
+    });
+    $("#edit-toggle").prop("checked", false);
+    $(".edit-option").hide();
 
-      $("#filter-toggle").on("click", function () {
-        $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
-      });
-      $("#filter-toggle").prop("checked", false);
-      $("#filter-content, #filter-reset").hide();
+    $("#filter-toggle").on("click", function () {
+      $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
+    });
+    $("#filter-toggle").prop("checked", false);
+    $("#filter-content, #filter-reset").hide();
 
-      if (!localStorage.getItem("eventFilter")) {
-        localStorage.setItem("eventFilter", "{}");
+    if (!localStorage.getItem("eventFilter")) {
+      localStorage.setItem("eventFilter", "{}");
+    }
+    updateFilters(true);
+    $("#filter-reset").on("click", () => {
+      localStorage.setItem("eventFilter", "{}");
+      updateFilters();
+      renderEventList();
+    });
+
+    // On changing any information in the add event modal, disable the add button if any information is empty
+    $(".add-event-input").on("input", function () {
+      const type = $("#add-event-type").val();
+      const name = $("#add-event-name").val()?.toString().trim();
+      const startDate = $("#add-event-start-date").val();
+
+      if ([name, startDate].includes("") || type === null) {
+        $("#add-event-button").prop("disabled", true);
       }
-      updateFilters(true);
-      $("#filter-reset").on("click", () => {
-        localStorage.setItem("eventFilter", "{}");
-        updateFilters();
-        renderEventList();
-      });
+      else {
+        $("#add-event-button").prop("disabled", false);
+      }
 
-      // On changing any information in the add event modal, disable the add button if any information is empty
-      $(".add-event-input").on("input", function () {
-        const type = $("#add-event-type").val();
-        const name = $("#add-event-name").val()?.toString().trim();
-        const startDate = $("#add-event-start-date").val();
+      if ($(this).is("#add-event-end-date")) {
+        $("#add-event-lesson").val("");
+      }
+      if ($(this).is("#add-event-lesson")) {
+        $("#add-event-end-date").val("");
+      }
+    });
 
-        if ([name, startDate].includes("") || type === null) {
-          $("#add-event-button").prop("disabled", true);
-        }
-        else {
-          $("#add-event-button").prop("disabled", false);
-        }
+    // On changing any information in the edit event modal, disable the edit button if any information is empty
+    $(".edit-event-input").on("input", function () {
+      const type = $("#edit-event-type").val();
+      const name = $("#edit-event-name").val()?.toString().trim();
+      const startDate = $("#edit-event-start-date").val();
 
-        if ($(this).is("#add-event-end-date")) {
-          $("#add-event-lesson").val("");
-        }
-        if ($(this).is("#add-event-lesson")) {
-          $("#add-event-end-date").val("");
-        }
-      });
+      if ([name, startDate].includes("") || type === null) {
+        $("#edit-event-button").prop("disabled", true);
+      }
+      else {
+        $("#edit-event-button").prop("disabled", false);
+      }
 
-      // On changing any information in the edit event modal, disable the edit button if any information is empty
-      $(".edit-event-input").on("input", function () {
-        const type = $("#edit-event-type").val();
-        const name = $("#edit-event-name").val()?.toString().trim();
-        const startDate = $("#edit-event-start-date").val();
+      if ($(this).is("#edit-event-end-date")) {
+        $("#edit-event-lesson").val("");
+      }
+      if ($(this).is("#edit-event-lesson")) {
+        $("#edit-event-end-date").val("");
+      }
+    });
 
-        if ([name, startDate].includes("") || type === null) {
-          $("#edit-event-button").prop("disabled", true);
-        }
-        else {
-          $("#edit-event-button").prop("disabled", false);
-        }
-
-        if ($(this).is("#edit-event-end-date")) {
-          $("#edit-event-lesson").val("");
-        }
-        if ($(this).is("#edit-event-lesson")) {
-          $("#edit-event-end-date").val("");
-        }
-      });
-
-      // Don't close the dropdown when the user clicked inside of it
-      $(".dropdown-menu").each(function () {
-        $(this).on("click", ev => {
-          ev.stopPropagation();
-        });
-      });
-
-      // Share the event on clicking its share icon
-      $("#app").on("click", ".event-share", function () {
-        shareEvent($(this).data("id"));
-      });
-
-      // Request deleting the event on clicking its delete icon
-      $("#app").on("click", ".event-delete", function () {
-        deleteEvent($(this).data("id"));
-      });
-
-      // Request editing the event on clicking its edit icon
-      $("#app").on("click", ".event-edit", function () {
-        editEvent($(this).data("id"));
-      });
-
-      // On clicking the all types option, check all and update the event list
-      $("#filter-type-all").on("click", () => {
-        const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        $(".filter-type-option").prop("checked", true);
-        $(".filter-type-option").each(function () {
-          filterData.type[$(this).data("id")] = true;
-        });
-        localStorage.setItem("eventFilter", JSON.stringify(filterData));
-        updateFilters();
-        renderEventList();
-      });
-
-      // On clicking the none types option, uncheck all and update the event list
-      $("#filter-type-none").on("click", () => {
-        const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        filterData.type ??= {};
-        $(".filter-type-option").prop("checked", false);
-        $(".filter-type-option").each(function () {
-          filterData.type[$(this).data("id")] = false;
-        });
-        localStorage.setItem("eventFilter", JSON.stringify(filterData));
-        updateFilters();
-        renderEventList();
-      });
-
-      // On changing any filter date option, update the event list
-      $("#filter-date-from").on("change", function () {
-        const selectedDate = new Date($(this).val()?.toString() ?? "");
-        const normalDate = new Date();
-        const diff = dateDaysDifference(selectedDate, normalDate);
-
-        const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        filterData.dateFromOffset = Number.isNaN(diff) ? "NaN" : diff;
-        localStorage.setItem("eventFilter", JSON.stringify(filterData));
-
-        updateFilters();
-        renderEventList();
-      });
-
-      // On changing any filter date option, update the event list
-      $("#filter-date-until").on("change", function () {
-        const selectedDate = new Date($(this).val()?.toString() ?? "");
-        const normalDate = new Date();
-        normalDate.setMonth(normalDate.getMonth() + 1);
-        const diff = dateDaysDifference(selectedDate, normalDate);
-
-        const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-        filterData.dateUntilOffset = Number.isNaN(diff) ? "NaN" : diff;
-        localStorage.setItem("eventFilter", JSON.stringify(filterData));
-        
-        updateFilters();
-        renderEventList();
-      });
-
-      $("#app").on("click", "#show-add-event-button", () => {
-        addEvent();
+    // Don't close the dropdown when the user clicked inside of it
+    $(".dropdown-menu").each(function () {
+      $(this).on("click", ev => {
+        ev.stopPropagation();
       });
     });
 
+    // Share the event on clicking its share icon
+    $("#app").on("click", ".event-share", function () {
+      shareEvent($(this).data("id"));
+    });
+
+    // Request deleting the event on clicking its delete icon
+    $("#app").on("click", ".event-delete", function () {
+      deleteEvent($(this).data("id"));
+    });
+
+    // Request editing the event on clicking its edit icon
+    $("#app").on("click", ".event-edit", function () {
+      editEvent($(this).data("id"));
+    });
+
+    // On clicking the all types option, check all and update the event list
+    $("#filter-type-all").on("click", () => {
+      const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+      $(".filter-type-option").prop("checked", true);
+      $(".filter-type-option").each(function () {
+        filterData.type[$(this).data("id")] = true;
+      });
+      localStorage.setItem("eventFilter", JSON.stringify(filterData));
+      updateFilters();
+      renderEventList();
+    });
+
+    // On clicking the none types option, uncheck all and update the event list
+    $("#filter-type-none").on("click", () => {
+      const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+      filterData.type ??= {};
+      $(".filter-type-option").prop("checked", false);
+      $(".filter-type-option").each(function () {
+        filterData.type[$(this).data("id")] = false;
+      });
+      localStorage.setItem("eventFilter", JSON.stringify(filterData));
+      updateFilters();
+      renderEventList();
+    });
+
+    // On changing any filter date option, update the event list
+    $("#filter-date-from").on("change", function () {
+      const selectedDate = new Date($(this).val()?.toString() ?? "");
+      const normalDate = new Date();
+      const diff = dateDaysDifference(selectedDate, normalDate);
+
+      const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+      filterData.dateFromOffset = Number.isNaN(diff) ? "NaN" : diff;
+      localStorage.setItem("eventFilter", JSON.stringify(filterData));
+
+      updateFilters();
+      renderEventList();
+    });
+
+    // On changing any filter date option, update the event list
+    $("#filter-date-until").on("change", function () {
+      const selectedDate = new Date($(this).val()?.toString() ?? "");
+      const normalDate = new Date();
+      normalDate.setMonth(normalDate.getMonth() + 1);
+      const diff = dateDaysDifference(selectedDate, normalDate);
+
+      const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+      filterData.dateUntilOffset = Number.isNaN(diff) ? "NaN" : diff;
+      localStorage.setItem("eventFilter", JSON.stringify(filterData));
+      
+      updateFilters();
+      renderEventList();
+    });
+
+    $("#app").on("click", "#show-add-event-button", () => {
+      addEvent();
+    });
     res();
   });
 }
 
-(await eventData.init()).on("update", renderEventList);
-(await eventTypeData.init()).on("update", renderEventTypeList);
+(await eventData.init()).on("update", renderEventList, {onlyThisSite: true});
+(await eventTypeData.init()).on("update", renderEventTypeList, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderTeamList();
   renderEventList(); 
-});
-(await joinedTeamsData.init()).on("update", renderEventList);
+}, {onlyThisSite: true});
+(await joinedTeamsData.init()).on("update", renderEventList, {onlyThisSite: true});
 
 user.on("change", () => {
   if (getSite() === "events") {
+    renderEventList(); 
     joinedTeamsData.reload({ silent: true });
   }
 })
 
-export const renderAllFn = async (): Promise<void> => {
+export async function renderAllFn(): Promise<void> {
   await renderEventTypeList();
   await renderEventList();
   await renderTeamList();

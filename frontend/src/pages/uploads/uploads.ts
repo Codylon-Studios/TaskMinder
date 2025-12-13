@@ -13,7 +13,8 @@ import {
   loadTimetableData,
   getSimpleDisplayDate,
   showAllUploads,
-  getSite
+  getSite,
+  lessonData
 } from "../../global/global.js";
 import { SingleUploadData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -595,157 +596,155 @@ function toggleShownButtons(): void {
 
 export async function init(): Promise<void> {
   return new Promise(res => {
-    $(async function () {
-      const urlParams = new URLSearchParams(globalThis.location.search);
+    const urlParams = new URLSearchParams(globalThis.location.search);
 
-      if (urlParams.get("view-upload")) {
-        viewUpload(Number.parseInt(urlParams.get("view-upload") ?? ""));
-      }
+    if (urlParams.get("view-upload")) {
+      viewUpload(Number.parseInt(urlParams.get("view-upload") ?? ""));
+    }
 
-      if (!/iPhone/.test(navigator.userAgent)) {
-        $("#view-upload-first-page-note").remove();
-      }
+    if (!/iPhone/.test(navigator.userAgent)) {
+      $("#view-upload-first-page-note").remove();
+    }
 
-      $("#upload-load-more-btn").on("click", () => {
-        showAllUploads(true);
-        uploadData.reload();
-        renderUploadList();
-      });
-
-      $("#edit-toggle").on("click", function () {
-        $(".edit-option").toggle($("#edit-toggle").is(":checked"));
-      });
-      $("#edit-toggle").prop("checked", false);
-      $(".edit-option").hide();
-
-      $("#filter-toggle").on("click", function () {
-        $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
-      });
-      $("#filter-toggle").prop("checked", false);
-      $("#filter-content, #filter-reset").hide();
-
-      if (!localStorage.getItem("uploadFilter")) {
-        localStorage.setItem("uploadFilter", "{}");
-      }
-      updateFilters(true);
-      $("#filter-reset").on("click", () => {
-        localStorage.setItem("uploadFilter", "{}");
-        updateFilters();
-        renderUploadList();
-      });
-
-      // On changing any information in the add upload modal, disable the add button if any information is empty
-      $(".add-upload-input").on("input", function () {
-        const name = $("#add-upload-name").val()?.toString().trim();
-        const type = $("#add-upload-type").val();
-        const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
-
-        $("#add-upload-max-files").toggle(files.length > 20);
-        if (name === "" || type === null || files.length === 0 || files.length > 20) {
-          $("#add-upload-button").prop("disabled", true);
-        }
-        else {
-          $("#add-upload-button").prop("disabled", false);
-        }
-      });
-
-      // Don't close the dropdown when the user clicked inside of it
-      $(".dropdown-menu").each(function () {
-        $(this).on("click", ev => {
-          ev.stopPropagation();
-        });
-      });
-
-      // View the upload on clicking it
-      $("#app").on("click", ".view-upload", function () {
-        viewUpload($(this).data("id"));
-      });
-
-      // Copy the upload link on clicking its copy link icon
-      $("#app").on("click", ".upload-copy-link", function () {
-        copyLinkUpload($(this).data("id"));
-      });
-
-      // Request deleting the upload on clicking its delete icon
-      $("#app").on("click", ".upload-delete", function () {
-        deleteUpload($(this).data("id"));
-      });
-      $("#app").on("click", ".upload-failed-delete", function () {
-        deleteUpload($(this).data("id"), true);
-      });
-
-      // Request editing the upload on clicking its edit icon
-      $("#app").on("click", ".upload-edit", function () {
-        editUpload($(this).data("id"));
-      });
-
-      // On clicking the all types option, check all and update the upload list
-      $("#filter-type-all").on("click", () => {
-        const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
-        $(".filter-type-option").prop("checked", true);
-        $(".filter-type-option").each(function () {
-          filterData.type[$(this).data("id")] = true;
-        });
-        localStorage.setItem("uploadFilter", JSON.stringify(filterData));
-        updateFilters();
-        renderUploadList();
-      });
-
-      // On clicking the none types option, uncheck all and update the upload list
-      $("#filter-type-none").on("click", () => {
-        const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
-        filterData.type ??= {};
-        $(".filter-type-option").prop("checked", false);
-        $(".filter-type-option").each(function () {
-          filterData.type[$(this).data("id")] = false;
-        });
-        localStorage.setItem("uploadFilter", JSON.stringify(filterData));
-        updateFilters();
-        renderUploadList();
-      });
-
-      // On changing any filter date option, update the upload list
-      $("#filter-date-from").on("change", function () {
-        const selectedDate = new Date($(this).val()?.toString() ?? "");
-        const normalDate = new Date();
-        normalDate.setMonth(normalDate.getMonth() - 1);
-        const diff = dateDaysDifference(selectedDate, normalDate);
-
-        const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
-        filterData.dateFromOffset = Number.isNaN(diff) ? "NaN" : diff;
-        localStorage.setItem("uploadFilter", JSON.stringify(filterData));
-
-        updateFilters();
-        renderUploadList();
-      });
-
-      // On changing any filter date option, update the upload list
-      $("#filter-date-until").on("change", function () {
-        const selectedDate = new Date($(this).val()?.toString() ?? "");
-        const normalDate = new Date();
-        const diff = dateDaysDifference(selectedDate, normalDate);
-
-        const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
-        filterData.dateUntilOffset = Number.isNaN(diff) ? "NaN" : diff;
-        localStorage.setItem("uploadFilter", JSON.stringify(filterData));
-        
-        updateFilters();
-        renderUploadList();
-      });
-
-      $("#app").on("click", "#show-add-upload-button", addUpload);
+    $("#upload-load-more-btn").on("click", () => {
+      showAllUploads(true);
+      uploadData.reload();
+      renderUploadList();
     });
+
+    $("#edit-toggle").on("click", function () {
+      $(".edit-option").toggle($("#edit-toggle").is(":checked"));
+    });
+    $("#edit-toggle").prop("checked", false);
+    $(".edit-option").hide();
+
+    $("#filter-toggle").on("click", function () {
+      $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
+    });
+    $("#filter-toggle").prop("checked", false);
+    $("#filter-content, #filter-reset").hide();
+
+    if (!localStorage.getItem("uploadFilter")) {
+      localStorage.setItem("uploadFilter", "{}");
+    }
+    updateFilters(true);
+    $("#filter-reset").on("click", () => {
+      localStorage.setItem("uploadFilter", "{}");
+      updateFilters();
+      renderUploadList();
+    });
+
+    // On changing any information in the add upload modal, disable the add button if any information is empty
+    $(".add-upload-input").on("input", function () {
+      const name = $("#add-upload-name").val()?.toString().trim();
+      const type = $("#add-upload-type").val();
+      const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
+
+      $("#add-upload-max-files").toggle(files.length > 20);
+      if (name === "" || type === null || files.length === 0 || files.length > 20) {
+        $("#add-upload-button").prop("disabled", true);
+      }
+      else {
+        $("#add-upload-button").prop("disabled", false);
+      }
+    });
+
+    // Don't close the dropdown when the user clicked inside of it
+    $(".dropdown-menu").each(function () {
+      $(this).on("click", ev => {
+        ev.stopPropagation();
+      });
+    });
+
+    // View the upload on clicking it
+    $("#app").on("click", ".view-upload", function () {
+      viewUpload($(this).data("id"));
+    });
+
+    // Copy the upload link on clicking its copy link icon
+    $("#app").on("click", ".upload-copy-link", function () {
+      copyLinkUpload($(this).data("id"));
+    });
+
+    // Request deleting the upload on clicking its delete icon
+    $("#app").on("click", ".upload-delete", function () {
+      deleteUpload($(this).data("id"));
+    });
+    $("#app").on("click", ".upload-failed-delete", function () {
+      deleteUpload($(this).data("id"), true);
+    });
+
+    // Request editing the upload on clicking its edit icon
+    $("#app").on("click", ".upload-edit", function () {
+      editUpload($(this).data("id"));
+    });
+
+    // On clicking the all types option, check all and update the upload list
+    $("#filter-type-all").on("click", () => {
+      const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
+      $(".filter-type-option").prop("checked", true);
+      $(".filter-type-option").each(function () {
+        filterData.type[$(this).data("id")] = true;
+      });
+      localStorage.setItem("uploadFilter", JSON.stringify(filterData));
+      updateFilters();
+      renderUploadList();
+    });
+
+    // On clicking the none types option, uncheck all and update the upload list
+    $("#filter-type-none").on("click", () => {
+      const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
+      filterData.type ??= {};
+      $(".filter-type-option").prop("checked", false);
+      $(".filter-type-option").each(function () {
+        filterData.type[$(this).data("id")] = false;
+      });
+      localStorage.setItem("uploadFilter", JSON.stringify(filterData));
+      updateFilters();
+      renderUploadList();
+    });
+
+    // On changing any filter date option, update the upload list
+    $("#filter-date-from").on("change", function () {
+      const selectedDate = new Date($(this).val()?.toString() ?? "");
+      const normalDate = new Date();
+      normalDate.setMonth(normalDate.getMonth() - 1);
+      const diff = dateDaysDifference(selectedDate, normalDate);
+
+      const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
+      filterData.dateFromOffset = Number.isNaN(diff) ? "NaN" : diff;
+      localStorage.setItem("uploadFilter", JSON.stringify(filterData));
+
+      updateFilters();
+      renderUploadList();
+    });
+
+    // On changing any filter date option, update the upload list
+    $("#filter-date-until").on("change", function () {
+      const selectedDate = new Date($(this).val()?.toString() ?? "");
+      const normalDate = new Date();
+      const diff = dateDaysDifference(selectedDate, normalDate);
+
+      const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
+      filterData.dateUntilOffset = Number.isNaN(diff) ? "NaN" : diff;
+      localStorage.setItem("uploadFilter", JSON.stringify(filterData));
+      
+      updateFilters();
+      renderUploadList();
+    });
+
+    $("#app").on("click", "#show-add-upload-button", addUpload);
 
     res();
   });
 }
 
-(await uploadData.init()).on("update", renderUploadList);
+(await uploadData.init()).on("update", renderUploadList, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderTeamList(); 
   renderUploadList(); 
-});
-(await joinedTeamsData.init()).on("update", renderUploadList);
+}, {onlyThisSite: true});
+(await joinedTeamsData.init()).on("update", renderUploadList, {onlyThisSite: true});
 
 user.on("change", () => {
   if (getSite() === "uploads") {
@@ -753,7 +752,7 @@ user.on("change", () => {
   }
 })
 
-export const renderAllFn = async (): Promise<void> => {
+export async function renderAllFn(): Promise<void> {
   await renderUploadTypeList();
   await renderUploadList();
   await renderTeamList();

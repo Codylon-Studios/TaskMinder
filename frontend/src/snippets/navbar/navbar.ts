@@ -157,188 +157,188 @@ function checkSecurePassword(password: string): boolean {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
-  $("#login-register-button").toggleClass("d-none", isSite("join"));
+$("#login-register-button").toggleClass("d-none", isSite("join"));
 
-  $("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
-    let hasResponded = false;
+$("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
+  let hasResponded = false;
 
-    $.ajax({
-      url: "/account/logout",
-      type: "POST",
-      headers: {
-        "X-CSRF-Token": await csrfToken()
-      },
-      success: () => {
-        $("#logout-success-toast").toast("show");
+  $.ajax({
+    url: "/account/logout",
+    type: "POST",
+    headers: {
+      "X-CSRF-Token": await csrfToken()
+    },
+    success: () => {
+      $("#logout-success-toast").toast("show");
         
-        user.auth();
-      },
-      error: xhr => {
-        if (xhr.status === 500) {
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        hasResponded = true;
-      }
-    });
-
-    setTimeout(() => {
-      if (!hasResponded) {
+      user.auth();
+    },
+    error: xhr => {
+      if (xhr.status === 500) {
         $navbarToasts.serverError.toast("show");
       }
-    }, 1000);
-  });
-
-  $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
-    $("#navbar-offcanvas").offcanvas("hide");
-  });
-
-  $(() => {
-    if (isSite("main", "homework", "events", "uploads")) {
-      $(".class-page-content").removeClass("d-none");
+      else {
+        $navbarToasts.unknownError.toast("show");
+      }
+    },
+    complete: () => {
+      hasResponded = true;
     }
-    user.on("change", (function _() {
-      $(".class-joined-content").toggle(user.classJoined ?? false);
-      $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
-      if (!isSite("join")) {
-        $("#login-register-button").toggle(!user.loggedIn);
-      }
-      $("#nav-logout-button").toggle(user.loggedIn ?? false);
-      $("#offcanvas-account").toggle(user.loggedIn ?? false);
-      $("#offcanvas-account-name").text(user.username ?? "");
-      return _;
-    })());
-
-    //
-    //LOGIN -- REGISTER
-    //
-    $(".login-button").on("click", () => {
-      const username = $(".login-register-username").val()?.toString() ?? "";
-      const password = $(".login-password").val()?.toString() ?? "";
-      loginAccount(username, password);
-    });
-
-    $(".register-button").on("click", () => {
-      const username = $(".login-register-username").val()?.toString() ?? "";
-      const password = $(".register-password").val()?.toString() ?? "";
-      registerAccount(username, password);
-    });
-
-    $("#login-register-modal").on("show.bs.modal", () => {
-      $(".login-register-username").val("");
-      $(".login-register-next-button").prop("disabled", true);
-      resetLoginRegister();
-    });
-
-    // Check username
-    $(".login-register-username").on("input", function () {
-      // Sync multiple instances of login possibilites
-      $(".login-register-username").val($(this).val() ?? "");
-
-      if (checkUsername($(".login-register-username").val()?.toString() ?? "")) {
-        $(".login-register-next-button").prop("disabled", false);
-        $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
-      }
-    });
-
-    $(".login-register-username").on("change", function () {
-      if (!checkUsername($(".login-register-username").val()?.toString() ?? "")) {
-        $(".login-register-next-button").prop("disabled", true);
-        $(".login-register-error-invalid-username").removeClass("d-none").addClass("d-flex");
-      }
-    });
-
-    // Check login password
-    $(".login-password").on("input", function () {
-      // Sync multiple instances of login possibilites
-      $(".login-password").val($(this).val() ?? "");
-
-      $(".login-error-invalid-password").addClass("d-none").removeClass("d-flex");
-      $(".login-button").prop("disabled", false);
-    });
-
-    $(".login-password").on("change", function () {
-      $(".login-button").prop("disabled", $(this).val() === "");
-    });
-
-    // Check register password
-
-    $(".register-password").on("input", function () {
-      // Sync multiple instances of login possibilites
-      $(".register-password").val($(this).val() ?? "");
-
-      if (checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
-        $(".register-error-insecure-password").addClass("d-none");
-        $(".register-error-insecure-password").removeClass("d-flex");
-      }
-
-      if ($(".register-password").val() === $(".register-password-repeat").val()) {
-        $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
-        $(".register-button").prop("disabled", ! ($(".register-checkbox").prop("checked") && $(".register-password").val() !== ""));
-      }
-    });
-
-    $(".register-password").on("change", () => {
-      if (!checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
-        $(".register-error-insecure-password").removeClass("d-none");
-        $(".register-error-insecure-password").addClass("d-flex");
-      }
-
-      if ($(".register-password").val() !== $(".register-password-repeat").val() && $(".register-password-repeat").val() !== "") {
-        $(".register-error-no-matching-passwords").removeClass("d-none").addClass("d-flex");
-      }
-    });
-
-    // Check repeated password
-    $(".register-password-repeat").on("input", function () {
-      // Sync multiple instances of login possibilites
-      $(".register-password-repeat").val($(this).val() ?? "");
-
-      if ($(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== "") {
-        $(".register-button").prop("disabled", ! $(".register-checkbox").prop("checked"));
-        $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
-      }
-    });
-
-    $(".register-password-repeat").on("change", () => {
-      if ($(".register-password").val() !== $(".register-password-repeat").val()) {
-        $(".register-button").prop("disabled", true);
-        $(".register-error-no-matching-passwords").removeClass("d-none").addClass("d-flex");
-      }
-      if ($(".register-password").val() === "") {
-        $(".register-button").prop("disabled", true);
-      }
-    });
-
-    $(".register-checkbox").on("change", function () {
-      $(".register-checkbox").prop("checked", $(this).prop("checked"));
-      $(".register-button").prop("disabled", !(
-        $(this).prop("checked") && $(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== ""
-      ));
-    });
-
-    $(".login-register-next-button").on("click", async () => {
-      $(".login-register-back-button").removeClass("d-none");
-
-      $(".login-register-element, .login-register-next-button").addClass("d-none");
-
-      checkExistingUsername($(".login-register-username").val()?.toString() ?? "").then(response => {
-        const isTaken = response;
-        if (isTaken) {
-          $(".login-element").removeClass("d-none");
-        }
-        else {
-          $(".register-element").removeClass("d-none");
-        }
-      });
-    });
-
-    $(".login-register-back-button").on("click", resetLoginRegister);
   });
+
+  setTimeout(() => {
+    if (!hasResponded) {
+      $navbarToasts.serverError.toast("show");
+    }
+  }, 1000);
+});
+
+$(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
+  $("#navbar-offcanvas").offcanvas("hide");
+});
+
+$(() => {
+  if (isSite("main", "homework", "events", "uploads")) {
+    $(".class-page-content").removeClass("d-none");
+  }
+  user.on("change", (function _() {
+    $(".class-joined-content").toggle(user.classJoined ?? false);
+    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
+    if (!isSite("join")) {
+      $("#login-register-button").toggle(!user.loggedIn);
+    }
+    $("#nav-logout-button").toggle(user.loggedIn ?? false);
+    $("#offcanvas-account").toggle(user.loggedIn ?? false);
+    $("#offcanvas-account-name").text(user.username ?? "");
+    return _;
+  })());
+
+  //
+  //LOGIN -- REGISTER
+  //
+  $(".login-button").on("click", () => {
+    const username = $(".login-register-username").val()?.toString() ?? "";
+    const password = $(".login-password").val()?.toString() ?? "";
+    loginAccount(username, password);
+  });
+
+  $(".register-button").on("click", () => {
+    const username = $(".login-register-username").val()?.toString() ?? "";
+    const password = $(".register-password").val()?.toString() ?? "";
+    registerAccount(username, password);
+  });
+
+  $("#login-register-modal").on("show.bs.modal", () => {
+    $(".login-register-username").val("");
+    $(".login-register-next-button").prop("disabled", true);
+    resetLoginRegister();
+  });
+
+  // Check username
+  $(".login-register-username").on("input", function () {
+    // Sync multiple instances of login possibilites
+    $(".login-register-username").val($(this).val() ?? "");
+
+    if (checkUsername($(".login-register-username").val()?.toString() ?? "")) {
+      $(".login-register-next-button").prop("disabled", false);
+      $(".login-register-error-invalid-username").addClass("d-none").removeClass("d-flex");
+    }
+  });
+
+  $(".login-register-username").on("change", function () {
+    if (!checkUsername($(".login-register-username").val()?.toString() ?? "")) {
+      $(".login-register-next-button").prop("disabled", true);
+      $(".login-register-error-invalid-username").removeClass("d-none").addClass("d-flex");
+    }
+  });
+
+  // Check login password
+  $(".login-password").on("input", function () {
+    // Sync multiple instances of login possibilites
+    $(".login-password").val($(this).val() ?? "");
+
+    $(".login-error-invalid-password").addClass("d-none").removeClass("d-flex");
+    $(".login-button").prop("disabled", false);
+  });
+
+  $(".login-password").on("change", function () {
+    $(".login-button").prop("disabled", $(this).val() === "");
+  });
+
+  // Check register password
+
+  $(".register-password").on("input", function () {
+    // Sync multiple instances of login possibilites
+    $(".register-password").val($(this).val() ?? "");
+
+    if (checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
+      $(".register-error-insecure-password").addClass("d-none");
+      $(".register-error-insecure-password").removeClass("d-flex");
+    }
+
+    if ($(".register-password").val() === $(".register-password-repeat").val()) {
+      $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
+      $(".register-button").prop("disabled", ! ($(".register-checkbox").prop("checked") && $(".register-password").val() !== ""));
+    }
+  });
+
+  $(".register-password").on("change", () => {
+    if (!checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
+      $(".register-error-insecure-password").removeClass("d-none");
+      $(".register-error-insecure-password").addClass("d-flex");
+    }
+
+    if ($(".register-password").val() !== $(".register-password-repeat").val() && $(".register-password-repeat").val() !== "") {
+      $(".register-error-no-matching-passwords").removeClass("d-none").addClass("d-flex");
+    }
+  });
+
+  // Check repeated password
+  $(".register-password-repeat").on("input", function () {
+    // Sync multiple instances of login possibilites
+    $(".register-password-repeat").val($(this).val() ?? "");
+
+    if ($(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== "") {
+      $(".register-button").prop("disabled", ! $(".register-checkbox").prop("checked"));
+      $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
+    }
+  });
+
+  $(".register-password-repeat").on("change", () => {
+    if ($(".register-password").val() !== $(".register-password-repeat").val()) {
+      $(".register-button").prop("disabled", true);
+      $(".register-error-no-matching-passwords").removeClass("d-none").addClass("d-flex");
+    }
+    if ($(".register-password").val() === "") {
+      $(".register-button").prop("disabled", true);
+    }
+  });
+
+  $(".register-checkbox").on("change", function () {
+    $(".register-checkbox").prop("checked", $(this).prop("checked"));
+    $(".register-button").prop("disabled", !(
+      $(this).prop("checked") && $(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== ""
+    ));
+  });
+
+  $(".login-register-next-button").on("click", async () => {
+    $(".login-register-back-button").removeClass("d-none");
+
+    $(".login-register-element, .login-register-next-button").addClass("d-none");
+
+    checkExistingUsername($(".login-register-username").val()?.toString() ?? "").then(response => {
+      const isTaken = response;
+      if (isTaken) {
+        $(".login-element").removeClass("d-none");
+      }
+      else {
+        $(".register-element").removeClass("d-none");
+      }
+    });
+  });
+
+  $(".login-register-back-button").on("click", resetLoginRegister);
+});
 
 export const $navbarToasts = {
   serverError: $("#error-server-toast"),
