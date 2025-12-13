@@ -2609,7 +2609,7 @@ user.on("change", () => {
   }
 })
 
-export const renderAllFn = async (): Promise<void> => {
+export async function renderAllFn(): Promise<void> {
   if (user.classJoined) {
     await renderClassMemberList();
     await renderTeamLists();

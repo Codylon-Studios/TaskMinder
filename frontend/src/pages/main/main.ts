@@ -1301,7 +1301,7 @@ user.on("change", () => {
   }
 })
 
-export const renderAllFn = async (): Promise<void> => {
+export async function renderAllFn(): Promise<void> {
   await renderHomeworkList();
   await renderEventList();
   await renderSubstitutionList();

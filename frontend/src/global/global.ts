@@ -418,6 +418,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 }
 
 async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void> {
+  alert("LJTD");
   if (user.loggedIn) {
     $.get("/teams/get_joined_teams_data", data => {
       joinedTeamsData.set(data, settings);
