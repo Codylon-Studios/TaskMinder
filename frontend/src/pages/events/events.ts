@@ -27,7 +27,6 @@ async function renderEventList(): Promise<void> {
     if (! Number.isNaN(filterDateMin)) {
       data = data.filter(e => filterDateMin <= Number.parseInt(e.endDate ?? e.startDate) || isSameDayMs(filterDateMin, e.endDate ?? e.startDate));
     }
-    alert("REL")
     // Filter by max. date
     const filterDateMax = Date.parse($("#filter-date-until").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMax)) {
@@ -769,13 +768,13 @@ export async function init(): Promise<void> {
   });
 }
 
-(await eventData.init()).on("update", () => renderEventList, {onlyThisSite: true});
+(await eventData.init()).on("update", renderEventList, {onlyThisSite: true});
 (await eventTypeData.init()).on("update", renderEventTypeList, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderTeamList();
   renderEventList(); 
 }, {onlyThisSite: true});
-(await joinedTeamsData.init()).on("update", () => {alert("UPDT joinedTeamsData > REL"); renderEventList()}, {onlyThisSite: true});
+(await joinedTeamsData.init()).on("update", renderEventList, {onlyThisSite: true});
 
 user.on("change", () => {
   if (getSite() === "events") {
@@ -786,7 +785,6 @@ user.on("change", () => {
 
 export async function renderAllFn(): Promise<void> {
   await renderEventTypeList();
-  alert("RA > REL")
   await renderEventList();
   await renderTeamList();
 

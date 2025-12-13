@@ -255,6 +255,8 @@ export function getCirclePath(cx: number, cy: number, r: number, a: number, full
 }
 
 export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
+  await joinedTeamsData.init(); await subjectData.init(); await lessonData.init(); await classSubstitutionsData.init(); await eventData.init();
+
   const currentJoinedTeamsData = await joinedTeamsData();
   const currentSubjectData = await subjectData();
   const currentLessonData = await lessonData();
@@ -418,7 +420,6 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 }
 
 async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void> {
-  alert("LJTD");
   if (user.loggedIn) {
     $.get("/teams/get_joined_teams_data", data => {
       joinedTeamsData.set(data, settings);
@@ -435,6 +436,8 @@ async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void>
 }
 
 async function loadClassSubstitutionsData(): Promise<void> {
+  await substitutionsData.init();
+
   const currentSubstitutionsData = await substitutionsData();
   if (currentSubstitutionsData.data === "No data") {
     classSubstitutionsData({data: "No data", classFilterRegex: currentSubstitutionsData.classFilterRegex});

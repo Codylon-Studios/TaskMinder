@@ -13,7 +13,8 @@ import {
   loadTimetableData,
   getSimpleDisplayDate,
   showAllUploads,
-  getSite
+  getSite,
+  lessonData
 } from "../../global/global.js";
 import { SingleUploadData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
