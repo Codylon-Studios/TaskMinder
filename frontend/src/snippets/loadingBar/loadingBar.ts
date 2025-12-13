@@ -35,13 +35,13 @@ async function init(): Promise<void> {
     $("head").append(`<link rel="stylesheet" href="/pages/${s}/${s}.css" data-site="${s}">`);
   }
   
+  if (! user.isAuthed) {
+    await user.auth({ silent: true });
+  }
   const mod = await import(`../../pages/${s}/${s}.js`);
   await new Promise(res => {
     $(res);
   });
-  if (! user.isAuthed) {
-    await user.auth({ silent: true });
-  }
   if (mod.init) {
     await mod.init();
   }

@@ -744,6 +744,9 @@ export async function init(): Promise<void> {
   renderTeamList(); 
   renderUploadList(); 
 }, {onlyThisSite: true});
+
+await user.awaitAuthed();
+
 (await joinedTeamsData.init()).on("update", renderUploadList, {onlyThisSite: true});
 
 user.on("change", () => {

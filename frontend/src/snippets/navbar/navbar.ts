@@ -385,6 +385,15 @@ export const user = {
     });
   },
 
+  async awaitAuthed() {
+    if (this.isAuthed) return;
+    return new Promise<void>(res => {
+      this.on("change", () => {
+        if (this.isAuthed) res();
+      })
+    })
+  },
+
   on(event: UserEventName, callback: UserEventCallback) {
     if (!this._eventListeners[event]) {
       this._eventListeners[event] = [];
