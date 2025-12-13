@@ -2592,7 +2592,7 @@ registerSocketListeners({
   updateClassCodes: updateClassInfo,
   updateClassNames: updateClassInfo,
   updateUpgradeTestClass: updateClassInfo,
-  updateDefaultPermission: updateClassInfo,
+  updateDefaultPermission: updateClassInfo
 });
 
 (await classMemberData.init()).on("update", renderClassMemberList, {onlyThisSite: true});
@@ -2607,7 +2607,7 @@ user.on("change", () => {
   if (getSite() === "settings") {
     joinedTeamsData.reload({ silent: true });
   }
-})
+});
 
 export async function renderAllFn(): Promise<void> {
   if (user.classJoined) {

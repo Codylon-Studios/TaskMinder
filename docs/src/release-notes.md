@@ -4,6 +4,15 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.3a] - 2025-12-13
+
+### Fixed
+* fix(regression): checking homework would display all homework of the last 60 days
+* fix(regression): page did not load properly with content (grey screen)
+* fix(linting): run linting in frontend folder
+
+---
+
 ## \[v2.2.3] - 2025-12-12
 
 ### Changed

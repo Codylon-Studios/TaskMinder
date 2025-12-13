@@ -1091,7 +1091,7 @@ user.on("change", () => {
     joinedTeamsData.reload({ silent: true });
     homeworkCheckedData.reload({ silent: true });
   }
-})
+});
 
 export async function renderAllFn(): Promise<void> {
   await renderSubjectList();
