@@ -1078,12 +1078,15 @@ let randomHomeworkDeactivated: number[] = [];
 
 await lessonData.init();
 (await homeworkData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
-(await homeworkCheckedData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 (await subjectData.init()).on("update", renderSubjectList, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderTeamList(); 
   renderHomeworkList(); 
 }, {onlyThisSite: true});
+
+await user.awaitAuthed();
+
+(await homeworkCheckedData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 (await joinedTeamsData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 
 user.on("change", () => {

@@ -4,6 +4,15 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.3b] - 2025-12-14
+
+### Fixed
+* fix(regression): homework checking is not consistent across page reloads on webkit clients (Safari)
+* fix(regression): improved alloy config and better labelling
+* chore(docker): bump monitoring stack packages
+
+---
+
 ## \[v2.2.3a] - 2025-12-13
 
 ### Fixed

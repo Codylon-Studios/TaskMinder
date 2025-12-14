@@ -2598,10 +2598,13 @@ registerSocketListeners({
 (await classMemberData.init()).on("update", renderClassMemberList, {onlyThisSite: true});
 (await subjectData.init()).on("update", renderSubjectList, {onlyThisSite: true});
 (await teamsData.init()).on("update", renderTeamLists, {onlyThisSite: true});
-(await joinedTeamsData.init()).on("update", renderTeamLists, {onlyThisSite: true});
 (await eventTypeData.init()).on("update", renderEventTypeList, {onlyThisSite: true});
 (await lessonData.init()).on("update", renderTimetable, {onlyThisSite: true});
 (await substitutionsData.init()).on("update", renderSubjectList, {onlyThisSite: true});
+
+await user.awaitAuthed();
+
+(await joinedTeamsData.init()).on("update", renderTeamLists, {onlyThisSite: true});
 
 user.on("change", () => {
   if (getSite() === "settings") {

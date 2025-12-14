@@ -1268,7 +1268,6 @@ let calendarMode: string;
 const monthDates = createDataAccessor<MonthDates>("monthDates");
 
 (await homeworkData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
-(await homeworkCheckedData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 (await subjectData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 (await eventData.init()).on("update", () => {
   renderEventList();
@@ -1282,15 +1281,19 @@ const monthDates = createDataAccessor<MonthDates>("monthDates");
   updateCalendarWeekContent("#calendar-week-old");
   renderTimetable();
 }, {onlyThisSite: true});
+(await substitutionsData.init()).on("update", renderSubstitutionList, {onlyThisSite: true});
+(await classSubstitutionsData.init()).on("update", () => {
+  renderSubstitutionList();
+  renderTimetable();
+}, {onlyThisSite: true});
+
+await user.awaitAuthed();
+
+(await homeworkCheckedData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 (await joinedTeamsData.init()).on("update", () => {
   renderHomeworkList();
   renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
-  renderTimetable();
-}, {onlyThisSite: true});
-(await substitutionsData.init()).on("update", renderSubstitutionList, {onlyThisSite: true});
-(await classSubstitutionsData.init()).on("update", () => {
-  renderSubstitutionList();
   renderTimetable();
 }, {onlyThisSite: true});
 
