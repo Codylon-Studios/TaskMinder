@@ -3,6 +3,13 @@ discovery.docker "containers" {
   host = "unix:///var/run/docker.sock"
 }
 
+// Collect Docker logs
+loki.source.docker "docker_logs" {
+  host = "unix:///var/run/docker.sock"
+  targets = discovery.docker.containers.targets
+  forward_to = [loki.relabel.docker_relabel.receiver]
+}
+
 // Relabel Docker discovery targets
 loki.relabel "docker_relabel" {
   forward_to = [loki.process.docker_filter.receiver]
@@ -20,6 +27,11 @@ loki.relabel "docker_relabel" {
 
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service_name"  // Changed from "job" to "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "job"
   }
 
@@ -30,27 +42,22 @@ loki.relabel "docker_relabel" {
   }
 }
 
-// Collect Docker logs
-loki.source.docker "docker_logs" {
-  host = "unix:///var/run/docker.sock"
-  targets = discovery.docker.containers.targets
-  forward_to = [loki.relabel.docker_relabel.receiver]
-}
-
 // Process and filter Docker logs
 loki.process "docker_filter" {
   forward_to = [loki.write.loki_push.receiver]
   
   // Drop metrics requests and static assets for app container
   stage.match {
-    selector = `{job="app"}`
+    selector = `{service_name="app"}`  // Changed from job to service_name
     
     stage.drop {
-      expression = "GET /metrics"
+      expression = ".*GET /metrics.*"  // Fixed regex
+      drop_counter_reason = "metrics_endpoint"
     }
     
     stage.drop {
-      expression = "\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map)"
+      expression = ".*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|map).*"  // Fixed regex
+      drop_counter_reason = "static_assets"
     }
   }
 }
