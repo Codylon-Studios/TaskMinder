@@ -8,6 +8,8 @@ All changes are grouped by type and the latest version appears first.
 
 ### Fixed
 * fix(regression): homework checking is not consistent across page reloads on webkit clients (Safari)
+* fix(regression): improved alloy config and better labelling
+* chore(docker): bump monitoring stack packages
 
 ---
 
