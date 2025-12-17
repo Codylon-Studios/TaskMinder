@@ -4,6 +4,13 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.4] - 2025-12-??
+
+### Fixed
+* fix(getTeamsData): Data was not stringified with BigIntreplacer, leading to fetch errors
+
+---
+
 ## \[v2.2.3b] - 2025-12-14
 
 ### Fixed

@@ -3,7 +3,7 @@ import { RequestError } from "../@types/requestError";
 import { default as prisma } from "../config/prisma";
 import logger from "../config/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
-import { invalidateCache, updateCacheData } from "../utils/validate.functions";
+import { BigIntreplacer, invalidateCache, updateCacheData } from "../utils/validate.functions";
 import { setJoinedTeamsTypeBody, setTeamsTypeBody } from "../schemas/team.schema";
 import fs from "fs/promises";
 import path from "path";
@@ -39,7 +39,8 @@ const teamService = {
       throw new Error();
     }
 
-    return data;
+    const stringified = JSON.stringify(data, BigIntreplacer);
+    return JSON.parse(stringified);
   },
 
   async setTeamsData(reqData: setTeamsTypeBody, session: Session & Partial<SessionData>) {
