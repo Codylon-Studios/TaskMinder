@@ -1,7 +1,7 @@
+import { Request, Response, NextFunction } from "express";
 import accountService from "../services/account.service";
-import asyncHandler from "express-async-handler";
 
-export const registerAccount = asyncHandler(async (req, res, next) => {
+export const registerAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await accountService.registerAccount(req.body, req.session);
     res.sendStatus(200);
@@ -9,9 +9,9 @@ export const registerAccount = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const loginAccount = asyncHandler(async (req, res, next) => {
+export const loginAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await accountService.loginAccount(req.body, req.session);
     res.sendStatus(200);
@@ -19,9 +19,9 @@ export const loginAccount = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const logoutAccount = asyncHandler(async (req, res, next) => {
+export const logoutAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await accountService.logoutAccount(req.session);
     res.clearCookie("UserLogin");
@@ -30,9 +30,9 @@ export const logoutAccount = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const deleteAccount = asyncHandler(async (req, res, next) => {
+export const deleteAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await accountService.deleteAccount(req.body, req.session);
     res.clearCookie("UserLogin");
@@ -41,9 +41,9 @@ export const deleteAccount = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const getAuth = asyncHandler(async (req, res, next) => {
+export const getAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const response = await accountService.getAuth(req.session);
     res.status(200).json(response);
@@ -51,9 +51,9 @@ export const getAuth = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const changeUsername = asyncHandler(async (req, res, next) => {
+export const changeUsername = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await accountService.changeUsername(req.body, req.session);
     res.sendStatus(200);
@@ -61,9 +61,9 @@ export const changeUsername = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const changePassword = asyncHandler(async (req, res, next) => {
+export const changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await accountService.changePassword(req.body, req.session);
     res.sendStatus(200);
@@ -71,9 +71,9 @@ export const changePassword = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const checkUsername = asyncHandler(async (req, res, next) => {
+export const checkUsername = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const response = await accountService.checkUsername(req.body);
     res.status(200).json(response);
@@ -81,7 +81,7 @@ export const checkUsername = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
 export default {
   registerAccount,

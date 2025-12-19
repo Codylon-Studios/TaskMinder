@@ -1,9 +1,9 @@
-import uploadService from "../services/upload.service";
-import asyncHandler from "express-async-handler";
+import { Request, Response, NextFunction } from "express";
 import logger from "../config/logger";
 import { getUploadFileType } from "../schemas/upload.schema";
+import uploadService from "../services/upload.service";
 
-export const getUploadMetadata = asyncHandler(async (req, res, next) => {
+export const getUploadMetadata = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const isGetAllData = req.query.all === "true";
     const uploadData = await uploadService.getUploadMetadata(isGetAllData, req.session);
@@ -12,9 +12,9 @@ export const getUploadMetadata = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const getUploadFile = asyncHandler(async (req, res, next) => {
+export const getUploadFile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { stream, headers } = await uploadService.getUploadFile({
       fileIdParam: parseInt(req.params.fileId, 10),
@@ -39,9 +39,9 @@ export const getUploadFile = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const editUpload = asyncHandler(async (req, res, next) => {
+export const editUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await uploadService.editUpload(req.body, req.session);
     res.sendStatus(200);
@@ -49,9 +49,9 @@ export const editUpload = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const deleteUpload = asyncHandler(async (req, res, next) => {
+export const deleteUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await uploadService.deleteUpload(req.body, req.session);
     res.sendStatus(200);
@@ -59,9 +59,9 @@ export const deleteUpload = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const queueFileUpload = asyncHandler(async (req, res, next) => {
+export const queueFileUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const files: Express.Multer.File[] = (res.locals.allFiles as Express.Multer.File[]);
     const reservedBytes = res.locals.reservedBytes as bigint;
@@ -73,7 +73,7 @@ export const queueFileUpload = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
 export default {
   getUploadMetadata,

@@ -1,7 +1,7 @@
+import { Request, Response, NextFunction } from "express";
 import homeworkService from "../services/homework.service";
-import asyncHandler from "express-async-handler";
 
-export const addHomework = asyncHandler(async (req, res, next) => {
+export const addHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await homeworkService.addHomework(req.body, req.session);
     res.sendStatus(200);
@@ -9,9 +9,9 @@ export const addHomework = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const checkHomework = asyncHandler(async (req, res, next) => {
+export const checkHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await homeworkService.checkHomework(req.body, req.session);
     res.sendStatus(200);
@@ -19,9 +19,9 @@ export const checkHomework = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const deleteHomework = asyncHandler(async (req, res, next) => {
+export const deleteHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await homeworkService.deleteHomework(req.body, req.session);
     res.sendStatus(200);
@@ -29,9 +29,9 @@ export const deleteHomework = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const editHomework = asyncHandler(async (req, res, next) => {
+export const editHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await homeworkService.editHomework(req.body, req.session);
     res.sendStatus(200);
@@ -39,9 +39,9 @@ export const editHomework = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const getHomeworkData = asyncHandler(async (req, res, next) => {
+export const getHomeworkData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const homeworkData = await homeworkService.getHomeworkData(req.session);
     res.status(200).json(homeworkData);
@@ -49,9 +49,9 @@ export const getHomeworkData = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const getHomeworkCheckedData = asyncHandler(async (req, res, next) => {
+export const getHomeworkCheckedData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const homeworkCheckedData = await homeworkService.getHomeworkCheckedData(req.session);
     res.status(200).json(homeworkCheckedData);
@@ -59,7 +59,7 @@ export const getHomeworkCheckedData = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
 export default {
   addHomework,
