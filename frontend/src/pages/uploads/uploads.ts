@@ -6,15 +6,12 @@ import {
   escapeHTML,
   dateDaysDifference,
   uploadData,
-  createDataAccessor,
   getDisplayDate,
   isSameDayMs,
-  registerSocketListeners,
   loadTimetableData,
   getSimpleDisplayDate,
   showAllUploads,
-  getSite,
-  lessonData
+  getSite
 } from "../../global/global.js";
 import { SingleUploadData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -381,6 +378,8 @@ async function viewUpload(uploadId: number): Promise<void> {
 
     $("#view-upload-download").attr("href", route + "?action=download");
     $("#view-upload-open").attr("href", route + "?action=preview");
+
+    $("#view-upload-download-impossible").toggle(isIOS && isStandalone && (mime === "application/pdf"));
   }
 
   const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
@@ -739,6 +738,9 @@ export async function init(): Promise<void> {
   });
 }
 
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+const isStandalone = ("standalone" in navigator && navigator.standalone) as boolean;
+
 (await uploadData.init()).on("update", renderUploadList, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderTeamList(); 
@@ -753,7 +755,7 @@ user.on("change", () => {
   if (getSite() === "uploads") {
     joinedTeamsData.reload({ silent: true });
   }
-})
+});
 
 export async function renderAllFn(): Promise<void> {
   await renderUploadTypeList();

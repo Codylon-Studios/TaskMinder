@@ -7,7 +7,7 @@ type ColorTheme = "dark" | "light";
 type MonthDates = Date[][];
 
 // Data Accessors
-type DataAccessorEventName = "update";
+type DataAccessorEventName = "update" | "silentUpdate";
 type DataAccessorEventCallback = (...args: unknown[]) => void;
 type DataAccessor<DataType> = {
   (value?: DataType | null): Promise<DataType>;
@@ -18,6 +18,7 @@ type DataAccessor<DataType> = {
   trigger(event: DataAccessorEventName, ...args: unknown[]): DataAccessor<DataType>;
   reload(settings?: {silent?: boolean}): DataAccessor<DataType>;
   init(): Promise<DataAccessor<DataType>>;
+  isInitialized(): boolean;
 }
 
 //  ╭───────────╮

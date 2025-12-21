@@ -1,6 +1,6 @@
 import { getSite, isValidSite, renderAll } from "../../global/global.js";
 import { init as initBottombar } from "../bottombar/bottombar.js";
-import { user } from "../navbar/navbar.js";
+import { init as initNavbar, user } from "../navbar/navbar.js";
 
 function cacheHtml(url: string, html: string): void {
   if (htmlCache.has(url)) {
@@ -46,6 +46,7 @@ async function init(): Promise<void> {
     await mod.init();
   }
   await initBottombar();
+  await initNavbar();
   await renderAll();
 
   setTimeout(() => {

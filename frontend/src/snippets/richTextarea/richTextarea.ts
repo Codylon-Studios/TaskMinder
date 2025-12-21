@@ -6,6 +6,7 @@ export function richTextToHtml(
   targetElement?: JQuery<HTMLElement>,
   options?: {
     showMoreButton?: boolean | JQuery<HTMLElement>;
+    showMoreButtonChange?: ((btn: JQuery<HTMLElement>) => void);
     parseLinks?: boolean;
     displayBlockIfNewline?: boolean;
     merge?: boolean;
@@ -22,7 +23,7 @@ export function richTextToHtml(
     if (targetElement) {
       if (options?.showMoreButton) insertShowMoreButton(targetElement);
       if (options?.displayBlockIfNewline && parsedText.html().includes("<br>")) {
-        targetElement.css({ display: "block" });
+        targetElement.addClass("d-block");
       }
     }
     if (options?.parseLinks) {
@@ -75,27 +76,41 @@ export function richTextToHtml(
     targetElement?.empty().append(parsedText.children());
   }
   function insertShowMoreButton(targetElement: JQuery<HTMLElement>): void {
-    let showMoreButton = $('<a href="#">Mehr anzeigen</a>');
-    if (options?.showMoreButton && typeof options?.showMoreButton !== "boolean")
-      showMoreButton = options?.showMoreButton;
-    
+    const showMoreButton = $(`
+      <a href="#"><i class="far fa-square-plus" aria-hidden="true"></i>Mehr anzeigen</a>
+    `);
+    if (options?.showMoreButtonChange) {
+      options.showMoreButtonChange(showMoreButton);
+    }
+    showMoreButton.on("click", function (ev) {
+      ev.preventDefault();
+      if ($(this).text() === "Mehr anzeigen") {
+        $(this).html("<i class=\"far fa-square-minus\" aria-hidden=\"true\"></i>Weniger anzeigen");
+        targetElement.css({ maxHeight: "none" });
+      }
+      else {
+        $(this).html("<i class=\"far fa-square-plus\" aria-hidden=\"true\"></i>Mehr anzeigen");
+        targetElement.css({ maxHeight: "96px" });
+      }
+    });
+    targetElement.after(showMoreButton);
+
+    requestAnimationFrame(() => {
+      if ((targetElement[0].getBoundingClientRect().height ?? 0) > 120) {
+        targetElement.css({ maxHeight: "96px", overflow: "hidden", display: "block" });
+        showMoreButton.show();
+      }
+    });
+
     const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
-        if ((entry.contentRect.height ?? 0) >= 120) {
-          targetElement.css({ maxHeight: "96px", overflow: "hidden", display: "block" }).after(
-            showMoreButton.on("click", function (ev) {
-              ev.preventDefault();
-              if ($(this).text() === "Mehr anzeigen") {
-                $(this).text("Weniger anzeigen");
-                targetElement.css({ maxHeight: "none" });
-              }
-              else {
-                $(this).text("Mehr anzeigen");
-                targetElement.css({ maxHeight: "96px" });
-              }
-            })
-          );
-          resizeObserver.disconnect();
+        if ((entry.contentRect.height ?? 0) > 120 && showMoreButton.is(":not(:visible)")) {
+          targetElement.css({ maxHeight: "96px", overflow: "hidden", display: "block" });
+          showMoreButton.show();
+        }
+        else if (targetElement[0].scrollHeight <= 120) {
+          targetElement.css({ maxHeight: "none", overflow: "visible", display: "initial" });
+          showMoreButton.hide();
         }
       }
     });
@@ -418,9 +433,9 @@ function replaceRichTextareas(): void {
       else {
         const previous = textarea.find("span, br").eq(range.startOffset - 1);
         previous.after(newNode);
-
-        checkReplace();
       }
+
+      checkReplace();
 
       range.setStartAfter(newNode.last()[0]);
       range.setEndAfter(newNode.last()[0]);

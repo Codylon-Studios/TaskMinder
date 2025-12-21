@@ -197,21 +197,8 @@ $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
   $("#navbar-offcanvas").offcanvas("hide");
 });
 
-$(() => {
-  if (isSite("main", "homework", "events", "uploads")) {
-    $(".class-page-content").removeClass("d-none");
-  }
-  user.on("change", (function _() {
-    $(".class-joined-content").toggle(user.classJoined ?? false);
-    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
-    if (!isSite("join")) {
-      $("#login-register-button").toggle(!user.loggedIn);
-    }
-    $("#nav-logout-button").toggle(user.loggedIn ?? false);
-    $("#offcanvas-account").toggle(user.loggedIn ?? false);
-    $("#offcanvas-account-name").text(user.username ?? "");
-    return _;
-  })());
+export async function init(): Promise<void> {
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings"));
 
   //
   //LOGIN -- REGISTER
@@ -338,6 +325,20 @@ $(() => {
   });
 
   $(".login-register-back-button").on("click", resetLoginRegister);
+}
+
+$(() => {
+  user.on("change", (function _() {
+    $(".class-joined-content").toggle(user.classJoined ?? false);
+    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
+    if (!isSite("join")) {
+      $("#login-register-button").toggle(!user.loggedIn);
+    }
+    $("#nav-logout-button").toggle(user.loggedIn ?? false);
+    $("#offcanvas-account").toggle(user.loggedIn ?? false);
+    $("#offcanvas-account-name").text(user.username ?? "");
+    return _;
+  })());
 });
 
 export const $navbarToasts = {
@@ -390,8 +391,8 @@ export const user = {
     return new Promise<void>(res => {
       this.on("change", () => {
         if (this.isAuthed) res();
-      })
-    })
+      });
+    });
   },
 
   on(event: UserEventName, callback: UserEventCallback) {

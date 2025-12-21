@@ -880,17 +880,20 @@ export async function init(): Promise<void> {
 
     // On changing any information in the add homework modal, disable the add button if any information is empty
     $(".add-homework-input").on("input", () => {
-      const subject = $("#add-homework-subject").val();
-      const content = $("#add-homework-content").val()?.toString().trim();
-      const assignmentDate = $("#add-homework-date-assignment").val();
-      const submissionDate = $("#add-homework-date-submission").val();
+      // Required so the autocompleted submission date gets updated first if the subject is changed
+      requestAnimationFrame(() => {
+        const subject = $("#add-homework-subject").val();
+        const content = $("#add-homework-content").val()?.toString().trim();
+        const assignmentDate = $("#add-homework-date-assignment").val();
+        const submissionDate = $("#add-homework-date-submission").val();
 
-      if ([content, assignmentDate, submissionDate].includes("") || subject === null) {
-        $("#add-homework-button").prop("disabled", true);
-      }
-      else {
-        $("#add-homework-button").prop("disabled", false);
-      }
+        if ([content, assignmentDate, submissionDate].includes("") || subject === null) {
+          $("#add-homework-button").prop("disabled", true);
+        }
+        else {
+          $("#add-homework-button").prop("disabled", false);
+        }
+      });
     });
 
     $("#add-homework-subject").on("input", async function () {
@@ -1078,6 +1081,7 @@ let randomHomeworkDeactivated: number[] = [];
 
 await lessonData.init();
 (await homeworkData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
+(await homeworkCheckedData.init());
 (await subjectData.init()).on("update", renderSubjectList, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderTeamList(); 
@@ -1086,7 +1090,6 @@ await lessonData.init();
 
 await user.awaitAuthed();
 
-(await homeworkCheckedData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 (await joinedTeamsData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 
 user.on("change", () => {

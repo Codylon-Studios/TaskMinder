@@ -420,19 +420,23 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 }
 
 async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void> {
-  if (user.loggedIn) {
-    $.get("/teams/get_joined_teams_data", data => {
-      joinedTeamsData.set(data, settings);
-    });
-  }
-  else {
-    try {
-      joinedTeamsData.set(JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]"), settings);
+  return new Promise<void>(res => {
+    if (user.loggedIn) {
+      $.get("/teams/get_joined_teams_data", data => {
+        joinedTeamsData.set(data, settings);
+        res();
+      });
     }
-    catch {
-      joinedTeamsData.set([], settings);
+    else {
+      try {
+        joinedTeamsData.set(JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]"), settings);
+      }
+      catch {
+        joinedTeamsData.set([], settings);
+      }
+      res();
     }
-  }
+  }); 
 }
 
 async function loadClassSubstitutionsData(): Promise<void> {
@@ -455,21 +459,25 @@ async function loadClassSubstitutionsData(): Promise<void> {
 }
 
 async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<void> {
-  if (user.loggedIn) {
-    // If the user is logged in, get the data from the server
-    $.get("/homework/get_homework_checked_data", data => {
-      homeworkCheckedData.set(data, settings);
-    });
-  }
-  else {
-    try {
-      // If the user is not logged in, get the data from the local storage
-      homeworkCheckedData.set(JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]"), settings);
+  return new Promise<void>(res => {
+    if (user.loggedIn) {
+      // If the user is logged in, get the data from the server
+      $.get("/homework/get_homework_checked_data", data => {
+        homeworkCheckedData.set(data, settings);
+        res();
+      });
     }
-    catch {
-      homeworkCheckedData.set([], settings);
+    else {
+      try {
+        // If the user is not logged in, get the data from the local storage
+        homeworkCheckedData.set(JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]"), settings);
+      }
+      catch {
+        homeworkCheckedData.set([], settings);
+      }
+      res();
     }
-  }
+  });
 }
 
 async function loadUploadData(): Promise<void> {
@@ -480,6 +488,19 @@ async function loadUploadData(): Promise<void> {
 
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
+}
+
+export async function tryForceReloadEventTypeStyles(): Promise<void> {
+  const currentEventTypeData = (await eventTypeData());
+  currentEventTypeData.sort((a, b) => a.eventTypeId - b.eventTypeId);
+  const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? "{}");
+  const eventTypeString = JSON.stringify(Object.fromEntries(currentEventTypeData.map(e => [e.eventTypeId, e.color])));
+  if (eventTypeString !== cache.data) {
+    cache.data = eventTypeString;
+    cache.date = Date.now();
+  }
+  $("#event-type-styles").attr("href", "/events/event_type_styles?v=" + cache.date);
+  localStorage.setItem("eventTypeDataCache", JSON.stringify(cache));
 }
 
 export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: string): boolean {
@@ -542,7 +563,9 @@ document.head.appendChild(themeColor);
 
 // Data accessors
 const socketDataAccessors: DataAccessor<unknown>[] = [];
-export function createDataAccessor<DataType>(name: string, config?: {reload?: string | (() => Promise<void>), socket?: string}): DataAccessor<DataType> {
+export function createDataAccessor<DataType>(name: string, config?: {
+  reload?: string | (() => Promise<void>), socket?: string
+}): DataAccessor<DataType> {
   const eventName = `dataLoaded:${name}`;
   let data: DataType | null = null;
   const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
@@ -556,7 +579,7 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
         accessor.set(data, settings);
         res();
       });
-    })
+    });
   } : reload ?? null;
 
   const accessor = async (value?: DataType | null): Promise<DataType> => {
@@ -598,6 +621,7 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
     if (!settings?.silent) {
       accessor.trigger("update");
     }
+    accessor.trigger("silentUpdate");
     _initialized = true;
     return accessor;
   };
@@ -607,7 +631,7 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
     if (settings?.onlyThisSite) {
       const site = getSite();
       _eventListeners[event].push(() => {
-        if (getSite() == site) callback()
+        if (getSite() === site) callback();
       });
     }
     else {
@@ -656,7 +680,11 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
       };
     }
     return accessor;
-  }
+  };
+
+  accessor.isInitialized = () => {
+    return _initialized;
+  };
 
   return accessor;
 }
@@ -699,9 +727,11 @@ export const uploadData = createDataAccessor<UploadData>("uploadData", {
   reload: loadUploadData, socket: "updateUploads"
 });
 
+eventTypeData.on("silentUpdate", tryForceReloadEventTypeStyles);
+
 $(document).on("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    for (const d of socketDataAccessors) d.reload({ silent: true })
+    for (const d of socketDataAccessors) d.reload({ silent: true });
     renderAll();
   }
 });
@@ -803,7 +833,7 @@ setTimeout(() => {
 
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", () => {
-  for (const d of socketDataAccessors) d.reload({ silent: true })
+  for (const d of socketDataAccessors) d.reload({ silent: true });
   renderAll();
 });
 

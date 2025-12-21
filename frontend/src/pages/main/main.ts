@@ -17,13 +17,12 @@ import {
   loadTimetableData,
   getTimeLeftString,
   lastCommaRegex,
-  registerSocketListeners,
   lessonData,
   teamsData,
-  eventTypeData,
-  getSite
+  getSite,
+  eventTypeData
 } from "../../global/global.js";
-import { MonthDates, TimetableData } from "../../global/types";
+import { HomeworkData, MonthDates, TimetableData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
@@ -279,40 +278,7 @@ async function checkHomework(homeworkId: number): Promise<void> {
 }
 
 async function renderHomeworkList(): Promise<void> {
-  const currentSubjectData = await subjectData();
-  const currentJoinedTeams = await joinedTeamsData();
-
-  const newContent = $("<div></div>");
-  let addedElements: JQuery<HTMLElement> = $();
-
-  for (const homework of await homeworkData()) {
-    async function filter(): Promise<boolean> {
-      if ($("#homework-mode-tomorrow").prop("checked")) {
-        const tomorrow = new Date(selectedDate);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        if (!isSameDay(tomorrow, submissionDate)) {
-          return true;
-        }
-      }
-  
-      if ($("#homework-mode-assignment").prop("checked")) {
-        if (!isSameDay(selectedDate, assignmentDate)) {
-          return true;
-        }
-      }
-  
-      if ($("#homework-mode-submission").prop("checked")) {
-        if (!isSameDay(selectedDate, submissionDate)) {
-          return true;
-        }
-      }
-  
-      // Filter by team
-      if (!currentJoinedTeams.includes(homework.teamId) && homework.teamId !== -1) {
-        return true;
-      }
-      return false;
-    }
+  async function insertHomework(homework: HomeworkData[number]): Promise<void> {
     function showCheckAnimation(): void {
       if (checked && justCheckedHomeworkId === homeworkId && animations) {
         justCheckedHomeworkId = -1;
@@ -332,11 +298,7 @@ async function renderHomeworkList(): Promise<void> {
     // Get the information for the homework
     const subject = currentSubjectData.find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
-    const assignmentDate = new Date(Number.parseInt(homework.assignmentDate));
-    const submissionDate = new Date(Number.parseInt(homework.submissionDate));
     const checked = await getHomeworkCheckStatus(homeworkId);
-
-    if (await filter()) continue;
 
     // The template for a homework with checkbox and edit options
     const template = $(`
@@ -366,37 +328,35 @@ async function renderHomeworkList(): Promise<void> {
     addedElements = addedElements.add(template.find(".homework-content"));
   }
 
-  // If no homeworks match, add an explanation text
-  if (newContent.html() === "") {
-    let text;
-    if ($("#homework-mode-tomorrow").prop("checked")) {
-      text = "auf den nächsten";
-    }
-    else if ($("#homework-mode-submission").prop("checked")) {
-      text = "auf diesen";
-    }
-    else if ($("#homework-mode-assignment").prop("checked")) {
-      text = "von diesem";
-    }
-    newContent.html(`<div class="text-secondary">Keine Hausaufgaben ${text} Tag.</div>`);
+  const currentSubjectData = await subjectData();
+  const currentJoinedTeams = await joinedTeamsData();
+
+  const newContent = $("<div></div>");
+  let addedElements: JQuery<HTMLElement> = $();
+
+  const tomorrow = new Date(selectedDate);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const currentHomeworkData = (await homeworkData()).filter(h => currentJoinedTeams.includes(h.teamId) || h.teamId === -1);
+
+  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-50 mt-0\">Auf diesen Tag</div>");
+  let foundToday = false;
+  for (const homework of currentHomeworkData.filter(h => isSameDay(selectedDate, new Date(Number.parseInt((h.submissionDate)))))) {
+    await insertHomework(homework);
+    foundToday = true;
   }
+  if (!foundToday) newContent.append("<div class=\"text-secondary\">Keine Hausaufgaben auf diesen Tag!</div>");
+
+  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-50 mt-0\">Auf den nächsten Tag</div>");
+  let foundTomorrow = false;
+  for (const homework of currentHomeworkData.filter(h => isSameDay(tomorrow, new Date(Number.parseInt((h.submissionDate)))))) {
+    await insertHomework(homework);
+    foundTomorrow = true;
+  }
+  if (!foundTomorrow) newContent.append("<div class=\"text-secondary\">Keine Hausaufgaben auf den nächsten Tag!</div>");
+
   $("#homework-list").empty().append(newContent.children());
   addedElements.trigger("addedToDom");
 };
-
-function updateHomeworkMode(): void {
-  if ($("#homework-mode-tomorrow").prop("checked")) {
-    localStorage.setItem("homeworkMode", "tomorrow");
-  }
-  else if ($("#homework-mode-assignment").prop("checked")) {
-    localStorage.setItem("homeworkMode", "assignment");
-  }
-  else {
-    localStorage.setItem("homeworkMode", "submission");
-  }
-
-  renderHomeworkList();
-}
 
 async function renderEventList(): Promise<void> {
   // Clear the list
@@ -466,7 +426,8 @@ async function renderEventList(): Promise<void> {
     $("#event-list").append(template);
 
     richTextToHtml(description ?? "", template.find(".event-description"), {
-      showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
+      showMoreButton: true,
+      showMoreButtonChange: b => b.addClass("event-" + eventTypeId),
       parseLinks: true,
       merge: true
     });
@@ -609,44 +570,45 @@ async function renderTimetable(): Promise<void> {
     const templateModeLess = `
       <div class="card" data-start-lesson-number="${multiLesson.startLessonNumber}" data-end-lesson-number="${multiLesson.endLessonNumber}">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
-          <span>
+          <div class="d-flex align-items-center flex-column mx-4">
+            <span>
+              ${/* eslint-disable indent */
+                multiLesson.lessons
+                  .map(l => {
+                    let cssClass = "";
+                    let append = "";
+                    if (l.substitution !== undefined) {
+                      if (l.substitution.type === "Entfall") cssClass = "line-through-red";
+                      else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
+                      else {
+                        cssClass = "line-through-yellow";
+                        append = ` <span class="text-yellow fw-bold">${escapeHTML(l.substitution.subject)}</span>`;
+                      }
+                    }
+                    return `<span class="${cssClass}">${escapeHTML(l.subjectNameShort)}</span>${append}`;
+                  })
+                  .join(" / ")
+                /* eslint-enable indent */}</span>
             ${/* eslint-disable indent */
               multiLesson.lessons
                 .map(l => {
-                  let cssClass = "";
-                  let append = "";
                   if (l.substitution !== undefined) {
-                    if (l.substitution.type === "Entfall") cssClass = "line-through-red";
-                    else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
-                    else {
-                      cssClass = "line-through-yellow";
-                      append = ` <span class="text-yellow fw-bold">${escapeHTML(l.substitution.subject)}</span>`;
-                    }
+                    const color = (l.substitution.type === "Entfall") ? "red" : "yellow";
+                    return `<div class="text-${color} fw-bold mt-2">${escapeHTML(l.substitution.type)}</div>`;
                   }
-                  return `<span class="${cssClass}">${escapeHTML(l.subjectNameShort)}</span>${append}`;
-                })
-                .join(" / ")
-              /* eslint-enable indent */}</span>
-          ${/* eslint-disable indent */
-            multiLesson.lessons
-              .map(l => {
-                if (l.substitution !== undefined) {
-                  const color = (l.substitution.type === "Entfall") ? "red" : "yellow";
-                  return `<div class="text-${color} fw-bold mt-2">${escapeHTML(l.substitution.type)}</div>`;
-                }
-              }).join("")
-            /* eslint-enable indent */}
-          ${/* eslint-disable indent */
-            multiLesson.lessons
-              .map(l => {
-                if (l.events !== undefined) {
-                  return l.events.map(e => {
-                    return `<span class="event-${e.eventTypeId} fw-bold mt-2 d-block">${escapeHTML(e.name)}</span>`;
-                  }).join("");
-                }
-              }).join("")
-            /* eslint-enable indent */}
-
+                }).join("")
+              /* eslint-enable indent */}
+            ${/* eslint-disable indent */
+              multiLesson.lessons
+                .map(l => {
+                  if (l.events !== undefined) {
+                    return l.events.map(e => {
+                      return `<span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>`;
+                    }).join("");
+                  }
+                }).join("")
+              /* eslint-enable indent */}
+          </div>
 
           <div class="timetable-multi-lesson position-absolute end-0 bottom-0 m-2 rounded-circle bg-secondary-subtle
             ${multiLesson.endLessonNumber > multiLesson.startLessonNumber ? "d-flex" : "d-none"} justify-content-center align-items-center">
@@ -670,7 +632,7 @@ async function renderTimetable(): Promise<void> {
             ">
             ${msToTime(multiLesson.endTime)}
           </div>
-          <div class="d-flex align-items-center justify-content-center flex-column">
+          <div class="d-flex align-items-center flex-column mx-4">
             <span class="fw-semibold">
               ${/* eslint-disable indent */
                 multiLesson.lessons
@@ -744,7 +706,7 @@ async function renderTimetable(): Promise<void> {
                   if (l.events !== undefined) {
                     return l.events.map(e => {
                       return `
-                        <span class="event-${e.eventTypeId} fw-bold mt-2 d-block">${escapeHTML(e.name)}</span>
+                        <span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>
                         <span class="event-${e.eventTypeId} text-centered-block rich-text" data-event-type-id="${e.eventTypeId}"
                           >${escapeHTML(e.description ?? "")}</span>
                       `;
@@ -766,7 +728,8 @@ async function renderTimetable(): Promise<void> {
     $("#timetable-more").append(thisMoreLesson);
     thisMoreLesson.find(".rich-text").each(function () {
       richTextToHtml($(this).text(), $(this), {
-        showMoreButton: $(`<a class="event-${$(this).attr("data-event-type-id")}" href="#">Mehr anzeigen</a>`),
+        showMoreButton: true,
+        showMoreButtonChange: b => b.addClass("event-" + $(this).attr("data-event-type-id")),
         parseLinks: true,
         merge: true
       });
@@ -1220,11 +1183,6 @@ export async function init(): Promise<void> {
       checkHomework(homeworkId);
     });
 
-    // On changing the filter mode, update the homework list
-    $("#filter-homework-mode").on("input", () => {
-      renderHomeworkList();
-    });
-
     $("#timetable-mode input").each(function () {
       $(this).on("click", () => {
         updateShownTimetable();
@@ -1242,15 +1200,6 @@ export async function init(): Promise<void> {
     });
 
     $("#substitutions-mode-" + (localStorage.getItem("substitutionsMode") ?? "class")).prop("checked", true);
-
-    $("#homework-mode input").each(function () {
-      $(this).on("click", () => {
-        updateHomeworkMode();
-      });
-      $(this).prop("checked", false);
-    });
-
-    $("#homework-mode-" + (localStorage.getItem("homeworkMode") ?? "tomorrow")).prop("checked", true);
     
     res();
   });
@@ -1268,12 +1217,14 @@ let calendarMode: string;
 const monthDates = createDataAccessor<MonthDates>("monthDates");
 
 (await homeworkData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
+(await homeworkCheckedData.init());
 (await subjectData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 (await eventData.init()).on("update", () => {
   renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
   renderTimetable();
 }, {onlyThisSite: true});
+(await eventTypeData.init());
 (await lessonData.init()).on("update", renderTimetable, {onlyThisSite: true});
 (await teamsData.init()).on("update", () => {
   renderHomeworkList();
@@ -1289,7 +1240,6 @@ const monthDates = createDataAccessor<MonthDates>("monthDates");
 
 await user.awaitAuthed();
 
-(await homeworkCheckedData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
 (await joinedTeamsData.init()).on("update", () => {
   renderHomeworkList();
   renderEventList();

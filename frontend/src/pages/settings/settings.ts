@@ -892,11 +892,17 @@ async function renderTimetable(): Promise<void> {
         </div>
       </div>
     `);
-    function updateTimeInputs(newBtn: JQuery<HTMLElement>): void {
-      newBtn.parent().parent().parent().find(".timetable-lesson").each(function () {
+    function updateTimeInputs(forceSet?: boolean): void {
+      $("#timetable").find(".timetable-lesson").each(function () {
         if ($(this).find(".timetable-lesson-number").val() === lessonNumber.toString()) {
-          lessonTemplate.find(".timetable-start-time").val($(this).find(".timetable-start-time").val() ?? "--:--");
-          lessonTemplate.find(".timetable-end-time").val($(this).find(".timetable-end-time").val() ?? "--:--");
+          const start = lessonTemplate.find(".timetable-start-time");
+          if (start.hasClass("autocomplete") || start.val() === "" || forceSet) {
+            start.val($(this).find(".timetable-start-time").val() ?? "--:--").addClass("autocomplete");
+          }
+          const end = lessonTemplate.find(".timetable-end-time");
+          if (end.hasClass("autocomplete") || end.val() === "" || forceSet) {
+            end.val($(this).find(".timetable-end-time").val() ?? "--:--").addClass("autocomplete");
+          }
         }
       });
     }
@@ -904,13 +910,25 @@ async function renderTimetable(): Promise<void> {
     const lessonList = $(this).parent().find(".timetable-lesson-list");
     const previousLesson = lessonList.find(".timetable-lesson").last();
     let lessonNumber = Number.parseInt(previousLesson.find(".timetable-lesson-number").val()?.toString() ?? "0") + 1;
-    lessonTemplate.find(".timetable-lesson-number").val(lessonNumber);
+    lessonTemplate.find(".timetable-lesson-number").val(lessonNumber).addClass("autocomplete");
     lessonTemplate.find(".timetable-lesson-number").on("change", () => {
       lessonNumber = Number.parseInt(lessonTemplate.find(".timetable-lesson-number").val()?.toString() ?? "1");
-      updateTimeInputs($(this));
+      updateTimeInputs();
     });
     lessonTemplate.find(".timetable-start-time").val(previousLesson.find(".timetable-end-time").val() ?? "--:--");
-    updateTimeInputs($(this));
+    updateTimeInputs(true);
+
+    const rooms = Array.from($("#timetable").find(".timetable-room"), r => $(r).val()?.toString() ?? "");
+    const roomOccurences = rooms.reduce((acc, room) => {
+      acc[room] ??= 0;
+      acc[room]++;
+      return acc;
+    }, {} as Record<string, number>);
+    const mostFrequentRoom = Object.entries(roomOccurences).reduce((a, b) => b[1] > a[1] ? b : a, ["", 0])[0];
+    lessonTemplate.find(".timetable-room").val(mostFrequentRoom).addClass("autocomplete").on("focus", function () {
+      $(this).val("").removeClass("autocomplete");
+    });;
+
     lessonList.append(lessonTemplate);
   });
 

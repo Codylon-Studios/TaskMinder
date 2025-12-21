@@ -45,7 +45,7 @@ async function buildDirectory(src, dest) {
         <script src="/global/global.js" type="module" defer></script>
         <link class="preload-style" rel="preload" href="/pages/${fileName}/${fileName}.css" as="style" data-site="${fileName}">
         <link class="preload-style" rel="preload" href="/global/global.css" as="style" />
-        <link class="preload-style" rel="preload" href="/events/event_type_styles" as="style" />
+        <link class="preload-style" rel="preload" as="style" id="event-type-styles" />
         <script src="/pages/${fileName}/${fileName}.js" type="module" defer></script>
         <title>${titleMap[fileName]} · TaskMinder</title>
         <meta charset="utf-8">

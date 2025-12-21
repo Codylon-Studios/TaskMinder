@@ -113,7 +113,8 @@ async function renderEventList(): Promise<void> {
     newContent.append(template);
 
     richTextToHtml(description, template.find(".event-description"), {
-      showMoreButton: $(`<a class="event-${eventTypeId}" href="#">Mehr anzeigen</a>`),
+      showMoreButton: true,
+      showMoreButtonChange: b => b.addClass("event-" + eventTypeId),
       parseLinks: true,
       merge: true
     });
@@ -607,7 +608,7 @@ async function updateFilters(ingoreEventTypes?: boolean): Promise<void> {
       renderEventTypeList();
     }
     res();
-  })
+  });
 }
 
 function toggleShownButtons(): void {
@@ -784,7 +785,7 @@ user.on("change", () => {
     renderEventList(); 
     joinedTeamsData.reload({ silent: true });
   }
-})
+});
 
 export async function renderAllFn(): Promise<void> {
   await renderEventTypeList();
