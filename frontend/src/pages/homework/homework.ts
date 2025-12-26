@@ -15,7 +15,8 @@ import {
   getCirclePath,
   dateDaysDifference,
   isSameDayMs,
-  getSite
+  getSite,
+  onlyThisSite
 } from "../../global/global.js";
 import { HomeworkData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -39,6 +40,9 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
   if (! Number.isNaN(filterDateMax)) {
     data = data.filter(h => filterDateMax >= Number.parseInt(h.assignmentDate) || isSameDayMs(filterDateMax, h.assignmentDate));
   }
+  // Filter by search
+  const sb = ($("#search-homework")[0] as SearchBox);
+  data = data.filter(h => sb.searchMatches(h.content))
   // Filter by checked status
   if (! $("#filter-status-checked").prop("checked")) {
     data = data.filter(h => !h.checked);
@@ -145,12 +149,9 @@ async function renderHomeworkList(): Promise<void> {
   }
 
   // If no homeworks match, add an explanation text
-  $("#edit-toggle, #edit-toggle-label").toggle(newContent.html() !== "" && (user.permissionLevel ?? 0) >= 1);
-  $("#filter-toggle, #filter-toggle ~ label").toggle((await homeworkData()).length > 0);
-  if (newContent.html() === "") {
-    newContent.html('<div class="text-secondary">Keine Hausaufgaben mit diesen Filtern.</div>');
-  }
-  $("#homework-list").empty().append(newContent.children());
+  $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || (user.permissionLevel ?? 0) === 0);
+  $("#no-homework-found").toggle(data.length === 0)
+  $("#homework-list").empty().append(newContent.children()).toggleClass("d-none", data.length === 0);
   showMoreButtonElements.trigger("addedToDom");
 
   renderHomeworkFeedback();
@@ -1080,24 +1081,17 @@ let homeworkFeedbackLastPercentage: null | number;
 let randomHomeworkDeactivated: number[] = [];
 
 await lessonData.init();
-(await homeworkData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
+(await homeworkData.init()).on("update", onlyThisSite(renderHomeworkList));
 (await homeworkCheckedData.init());
-(await subjectData.init()).on("update", renderSubjectList, {onlyThisSite: true});
-(await teamsData.init()).on("update", () => {
+(await subjectData.init()).on("update", onlyThisSite(renderSubjectList));
+(await teamsData.init()).on("update", onlyThisSite(() => {
   renderTeamList(); 
   renderHomeworkList(); 
-}, {onlyThisSite: true});
+}));
 
 await user.awaitAuthed();
 
-(await joinedTeamsData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
-
-user.on("change", () => {
-  if (getSite() === "homework") {
-    joinedTeamsData.reload({ silent: true });
-    homeworkCheckedData.reload({ silent: true });
-  }
-});
+(await joinedTeamsData.init()).on("update", onlyThisSite(renderHomeworkList));
 
 export async function renderAllFn(): Promise<void> {
   await renderSubjectList();

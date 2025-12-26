@@ -11,7 +11,9 @@ import {
   loadTimetableData,
   getSimpleDisplayDate,
   showAllUploads,
-  getSite
+  getSite,
+  eventData,
+  onlyThisSite
 } from "../../global/global.js";
 import { SingleUploadData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -30,6 +32,9 @@ async function renderUploadList(): Promise<void> {
     if (! Number.isNaN(filterDateMax)) {
       data = data.filter(u => filterDateMax >= Number.parseInt(u.createdAt) || isSameDayMs(filterDateMax, u.createdAt));
     }
+    // Filter by search
+    const sb = ($("#search-uploads")[0] as SearchBox);
+    data = data.filter(u => sb.searchMatches(u.accountName ?? "", u.uploadName))
     // Filter by type
     data = data.filter(u => $(`#filter-type-${u.uploadType}`).prop("checked"));
     // Filter by team
@@ -38,10 +43,12 @@ async function renderUploadList(): Promise<void> {
     return data;
   }
 
-  const newContent = $("<div></div>");
+  const newGalleryContent = $("<div></div>");
+  const newTableContent = $("<div></div>");
 
   // Check if user is in edit mode
   const editEnabled = $("#edit-toggle").is(":checked");
+  const editAllowed = (user.permissionLevel ?? 0) >= 1;
 
   const currentUploadData = await uploadData();
   const data = await getFilteredData();
@@ -78,7 +85,7 @@ async function renderUploadList(): Promise<void> {
     const name = upload.uploadName;
     const author = upload.accountName ? escapeHTML(upload.accountName) : "<i>Unbekannt</i>";
     const numberFiles = upload.filesCount;
-    const fileIcon = {
+    const fileIconLarge = {
       INFO_SHEET: `<span class="fa-stack fs-1 upload-icon-stack" aria-hidden="true">
         <i class="far fa-file fa-stack-1x"></i>
         <i class="fas fa-info fa-stack-1x"></i>
@@ -93,7 +100,22 @@ async function renderUploadList(): Promise<void> {
       TEXT: "<i class=\"fs-1 far fa-file-lines\" aria-hidden='true'></i>"
     }[uploadType] ?? "";
 
-    const template = $(`
+    const fileIconSmall = {
+      INFO_SHEET: `<span class="fa-stack fs-3 w-75 upload-icon-stack" aria-hidden="true">
+        <i class="far fa-file fa-stack-1x"></i>
+        <i class="fas fa-info fa-stack-1x"></i>
+      </span>`,
+      LESSON_NOTE: "<i class=\"fs-3 far fa-note-sticky\" aria-hidden='true'></i>",
+      WORKSHEET: `<span class="fa-stack fs-3 w-75 upload-icon-stack" aria-hidden="true">
+        <i class="far fa-file fa-stack-1x"></i>
+        <i class="fas fa-question fa-stack-1x"></i>
+      </span>`,
+      IMAGE: "<i class=\"fs-3 far fa-image\" aria-hidden='true'></i>",
+      FILE: "<i class=\"fs-3 far fa-file\" aria-hidden='true'></i>",
+      TEXT: "<i class=\"fs-3 far fa-file-lines\" aria-hidden='true'></i>"
+    }[uploadType] ?? "";
+
+    const galleryTemplate = $(`
       <div class="col p-2 text-center">
         <div class="mb-2">
           <button class="edit-option btn btn-sm btn-semivisible upload-edit"
@@ -104,7 +126,7 @@ async function renderUploadList(): Promise<void> {
             data-id="${uploadId}" aria-label="Löschen">
             <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
           </button>
-          <button class="btn btn-sm btn-semivisible upload-copy-link" aria-label="Teilen" data-id="${uploadId}">
+          <button class="btn btn-sm btn-semivisible upload-copy-link" aria-label="Link kopieren" data-id="${uploadId}">
             <i class="fa-solid fa-copy opacity-75" aria-hidden="true"></i>
           </button>
         </div>
@@ -126,7 +148,7 @@ async function renderUploadList(): Promise<void> {
         </div>
 
         <button class="view-upload btn btn-semivisible text-center mw-100" data-id="${uploadId}">
-          ${fileIcon}
+          ${fileIconLarge}
           <br>
           <span class="fw-bold word-wrap-break">${escapeHTML(name)}</span>
           <br>
@@ -139,23 +161,74 @@ async function renderUploadList(): Promise<void> {
         </button>
       </div>
       `);
-    template.find(".edit-option").toggle(editEnabled);
-    template.find(".upload-failed").toggle(upload.status === "failed");
-    template.find(".upload-processing").toggle(["processing", "queued"].includes(upload.status));
-    template.find(".view-upload").prop("disabled", upload.status !== "completed");
+    galleryTemplate.find(".edit-option").toggle(editEnabled);
+    galleryTemplate.find(".upload-failed").toggle(upload.status === "failed");
+    galleryTemplate.find(".upload-processing").toggle(["processing", "queued"].includes(upload.status));
+    galleryTemplate.find(".view-upload").prop("disabled", upload.status !== "completed");
 
-    // Add this event to the list
-    newContent.append(template);
+    const tableTemplate = $(`
+      <tr>
+        <td class="text-nowrap text-center">${fileIconSmall}</td>
+        <td class="text-break">
+          <span class="fw-bold">${escapeHTML(name)}</span><br>@${author}
+          <div class="upload-failed">
+            <span class="form-text text-danger">
+              <i class="fas fa-circle-xmark" aria-hidden="true"></i>
+              Hochladen fehlgeschlagen!
+            </span>
+            <br>
+            <button class="btn btn-sm btn-danger fw-bold mt-1 upload-failed-delete" data-id="${uploadId}">Löschen</button>
+          </div>
+
+          <div class="upload-processing">
+            <span class="form-text text-primary">
+              <div class="spinner-border spinner-border-sm" aria-hidden="true"></div>
+              Wird hochgeladen...
+            </span>
+          </div>
+        </td>
+        <td class="text-nowrap">${getDisplayDate(upload.createdAt)}</td>
+        <td>
+          <div class="d-flex flex-column flex-sm-row">
+            <div class="d-flex flex-nowrap">
+              <button class="edit-option btn btn-sm btn-semivisible upload-edit" data-id="${uploadId}" aria-label="Bearbeiten">
+                <i class="fa-solid fa-edit opacity-75" aria-hidden="true"></i>
+              </button>
+              <button class="edit-option btn btn-sm btn-semivisible upload-delete" data-id="${uploadId}" aria-label="Löschen">
+                <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="d-flex flex-nowrap">
+              <button class="btn btn-sm btn-semivisible upload-copy-link" aria-label="Link kopieren" data-id="${uploadId}">
+                <i class="fa-solid fa-copy opacity-75" aria-hidden="true"></i>
+              </button>
+              <button class="btn btn-sm btn-semivisible view-upload" aria-label="Ansehen" data-id="${uploadId}">
+                <i class="fa-solid fa-eye opacity-75" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `);
+    tableTemplate.find(".edit-option").toggle(editAllowed)
+    tableTemplate.find(".upload-failed").toggle(upload.status === "failed");
+    tableTemplate.find(".upload-processing").toggle(["processing", "queued"].includes(upload.status));
+    tableTemplate.find(".view-upload").prop("disabled", upload.status !== "completed");
+
+    // Add this upload to the list
+    newGalleryContent.append(galleryTemplate);
+    newTableContent.append(tableTemplate);
   }
 
-  // If no events match, add an explanation text
-  $("#edit-toggle, #edit-toggle-label").toggle($("#upload-list").html() !== "" && (user.permissionLevel ?? 0) >= 1);
-  $("#filter-toggle, #filter-toggle ~ label").toggle((await uploadData()).uploads.length > 0);
-  if (newContent.html() === "") {
-    newContent.html('<div class="text-secondary">Keine Dateien mit diesen Filtern.</div>');
-  }
+  newTableContent.children().last().find("td").addClass("border-bottom-0");
+
+  // If no uploads match, add an explanation text
+  $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || (user.permissionLevel ?? 0) === 0);
+  $("#no-uploads-found").toggle(data.length === 0)
+  $("#upload-gallery").empty().append(newGalleryContent.children()).toggleClass("d-none", data.length === 0);
+  $("#upload-table-body").empty().append(newTableContent.children())
+  $("#upload-table").toggleClass("d-none", data.length === 0);
   $("#upload-load-more").toggle((await uploadData()).hasMore);
-  $("#upload-list").empty().append(newContent.children());
 };
 
 async function renderUploadTypeList(): Promise<void> {
@@ -310,9 +383,14 @@ async function addUpload(): Promise<void> {
         },
         error: xhr => {
           if (xhr.status === 400) {
-            console.log(xhr.responseText);
             if (xhr.responseText === "MIME-Type not supported") {
               $("#add-upload-unsupported-mime-type-toast").toast("show");
+            }
+            else if (xhr.responseText === "File size limit exceeded (Max 15MB)") {
+              $("#add-upload-size-limit-exceeded-toast").toast("show");
+            }
+            else {
+              console.log(xhr.responseText);
             }
           }
           else if (xhr.status === 401) {
@@ -593,6 +671,20 @@ function toggleShownButtons(): void {
   }
 }
 
+function toggleView() {
+  if (view == View.Gallery) {
+    $("#view-toggle").html(`<i class="fa-solid fa-table-list" aria-hidden="true"></i> Tabelle`)
+    $("#upload-gallery").show();
+    $("#upload-table").hide();
+  }
+  else {
+    $("#view-toggle").html(`<i class="fa-solid fa-grip" aria-hidden="true"></i> Galerie`)
+    $("#upload-gallery").hide();
+    $("#upload-table").show();
+  }
+  localStorage.setItem("uploads/view", view)
+}
+
 export async function init(): Promise<void> {
   return new Promise(res => {
     const urlParams = new URLSearchParams(globalThis.location.search);
@@ -623,6 +715,13 @@ export async function init(): Promise<void> {
     $("#filter-toggle").prop("checked", false);
     $("#filter-content, #filter-reset").hide();
 
+    view = localStorage.getItem("uploads/view") as View ?? View.Gallery;
+    toggleView()
+    $("#view-toggle").on("click", () => {
+      view = view == View.Gallery ? View.Table : View.Gallery;
+      toggleView()
+    });
+
     if (!localStorage.getItem("uploadFilter")) {
       localStorage.setItem("uploadFilter", "{}");
     }
@@ -632,6 +731,10 @@ export async function init(): Promise<void> {
       updateFilters();
       renderUploadList();
     });
+
+    $("#search-uploads").on("input", () => {
+      renderUploadList()
+    })
 
     // On changing any information in the add upload modal, disable the add button if any information is empty
     $(".add-upload-input").on("input", function () {
@@ -738,24 +841,26 @@ export async function init(): Promise<void> {
   });
 }
 
+enum View {
+  Gallery = "gallery",
+  Table = "table"
+}
+let view: View;
+
+$(globalThis).on("resize", toggleView);
+
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const isStandalone = ("standalone" in navigator && navigator.standalone) as boolean;
 
-(await uploadData.init()).on("update", renderUploadList, {onlyThisSite: true});
-(await teamsData.init()).on("update", () => {
+(await uploadData.init()).on("update", onlyThisSite(renderUploadList));
+(await teamsData.init()).on("update", onlyThisSite(() => {
   renderTeamList(); 
   renderUploadList(); 
-}, {onlyThisSite: true});
+}));
 
 await user.awaitAuthed();
 
-(await joinedTeamsData.init()).on("update", renderUploadList, {onlyThisSite: true});
-
-user.on("change", () => {
-  if (getSite() === "uploads") {
-    joinedTeamsData.reload({ silent: true });
-  }
-});
+(await joinedTeamsData.init()).on("update", onlyThisSite(renderUploadList));
 
 export async function renderAllFn(): Promise<void> {
   await renderUploadTypeList();

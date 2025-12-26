@@ -76,45 +76,52 @@ export function richTextToHtml(
     targetElement?.empty().append(parsedText.children());
   }
   function insertShowMoreButton(targetElement: JQuery<HTMLElement>): void {
-    const showMoreButton = $(`
-      <a href="#"><i class="far fa-square-plus" aria-hidden="true"></i>Mehr anzeigen</a>
-    `);
+    const more = "<i class=\"far fa-square-plus\" aria-hidden=\"true\"></i>Mehr anzeigen";
+    const less = "<i class=\"far fa-square-minus\" aria-hidden=\"true\"></i>Weniger anzeigen";
+    let expanded = false;
+
+    const showMoreButton = $("<a href=\"#\">" + more + "</a>");
     if (options?.showMoreButtonChange) {
       options.showMoreButtonChange(showMoreButton);
     }
     showMoreButton.on("click", function (ev) {
       ev.preventDefault();
-      if ($(this).text() === "Mehr anzeigen") {
-        $(this).html("<i class=\"far fa-square-minus\" aria-hidden=\"true\"></i>Weniger anzeigen");
-        targetElement.css({ maxHeight: "none" });
+      if (expanded) {
+        $(this).html(more);
+        targetElement.css({ maxHeight: "96px" });
+        expanded = false;
       }
       else {
-        $(this).html("<i class=\"far fa-square-plus\" aria-hidden=\"true\"></i>Mehr anzeigen");
-        targetElement.css({ maxHeight: "96px" });
+        $(this).html(less);
+        targetElement.css({ maxHeight: "none" });
+        expanded = true;
       }
     });
     targetElement.after(showMoreButton);
 
-    requestAnimationFrame(() => {
-      if ((targetElement[0].getBoundingClientRect().height ?? 0) > 120) {
-        targetElement.css({ maxHeight: "96px", overflow: "hidden", display: "block" });
-        showMoreButton.show();
-      }
-    });
+    targetElement.css({ maxHeight: "96px", overflow: "hidden" });
 
-    const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        if ((entry.contentRect.height ?? 0) > 120 && showMoreButton.is(":not(:visible)")) {
-          targetElement.css({ maxHeight: "96px", overflow: "hidden", display: "block" });
-          showMoreButton.show();
-        }
-        else if (targetElement[0].scrollHeight <= 120) {
-          targetElement.css({ maxHeight: "none", overflow: "visible", display: "initial" });
-          showMoreButton.hide();
-        }
+    function updateButton(): void {
+      targetElement.css({ maxHeight: "none" });
+      const naturalHeight = targetElement[0].getBoundingClientRect().height;
+
+      if (naturalHeight > 96) {
+        targetElement.css({ maxHeight: expanded ? "none" : "96px" });
+        showMoreButton.show().html(expanded ? less : more);
       }
-    });
-    resizeObserver.observe(targetElement[0]);
+      else if (naturalHeight == 0) {
+        targetElement.css({ maxHeight: "96px" });
+      }
+      else {
+        targetElement.css({ maxHeight: "none" });
+        showMoreButton.hide();
+        expanded = false;
+      }
+    }
+    
+    requestAnimationFrame(updateButton);
+    $(globalThis).on("resize", updateButton);
+    (new IntersectionObserver(updateButton)).observe(targetElement[0]);
   }
   function parseNormalChar(char: string): void {
     function handleStyleToggles(): void {

@@ -177,15 +177,6 @@
   font-size: 0.75rem;
 }
 
-.card {
-  flex-grow: 1;
-  flex-basis: 0;
-
-  &.wide {
-    flex-grow: 2;
-  }
-}
-
 #calendar-week-wrapper {
   overflow: hidden;
   display: grid;

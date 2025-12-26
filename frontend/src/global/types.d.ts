@@ -7,16 +7,16 @@ type ColorTheme = "dark" | "light";
 type MonthDates = Date[][];
 
 // Data Accessors
-type DataAccessorEventName = "update" | "silentUpdate";
+type DataAccessorEventName = "update" | "change";
 type DataAccessorEventCallback = (...args: unknown[]) => void;
 type DataAccessor<DataType> = {
   (value?: DataType | null): Promise<DataType>;
   get(): Promise<DataType>;
   getCurrent(): DataType | null;
   set(value: DataType | null, settings?: {silent?: boolean}): DataAccessor<DataType>;
-  on(event: DataAccessorEventName, callback: DataAccessorEventCallback, settings?: {onlyThisSite?: boolean}): DataAccessor<DataType>;
+  on(event: DataAccessorEventName, callback: DataAccessorEventCallback): DataAccessor<DataType>;
   trigger(event: DataAccessorEventName, ...args: unknown[]): DataAccessor<DataType>;
-  reload(settings?: {silent?: boolean}): DataAccessor<DataType>;
+  reload(settings?: {silent?: boolean}): Promise<DataAccessor<DataType>>;
   init(): Promise<DataAccessor<DataType>>;
   isInitialized(): boolean;
 }

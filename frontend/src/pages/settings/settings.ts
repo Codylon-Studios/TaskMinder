@@ -15,7 +15,8 @@ import {
   getInputValue,
   socket,
   registerSocketListeners,
-  getSite
+  getSite,
+  onlyThisSite
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -2613,22 +2614,16 @@ registerSocketListeners({
   updateDefaultPermission: updateClassInfo
 });
 
-(await classMemberData.init()).on("update", renderClassMemberList, {onlyThisSite: true});
-(await subjectData.init()).on("update", renderSubjectList, {onlyThisSite: true});
-(await teamsData.init()).on("update", renderTeamLists, {onlyThisSite: true});
-(await eventTypeData.init()).on("update", renderEventTypeList, {onlyThisSite: true});
-(await lessonData.init()).on("update", renderTimetable, {onlyThisSite: true});
-(await substitutionsData.init()).on("update", renderSubjectList, {onlyThisSite: true});
+(await classMemberData.init()).on("update", onlyThisSite(renderClassMemberList));
+(await subjectData.init()).on("update", onlyThisSite(renderSubjectList));
+(await teamsData.init()).on("update", onlyThisSite(renderTeamLists));
+(await eventTypeData.init()).on("update", onlyThisSite(renderEventTypeList));
+(await lessonData.init()).on("update", onlyThisSite(renderTimetable));
+(await substitutionsData.init()).on("update", onlyThisSite(renderSubjectList));
 
 await user.awaitAuthed();
 
-(await joinedTeamsData.init()).on("update", renderTeamLists, {onlyThisSite: true});
-
-user.on("change", () => {
-  if (getSite() === "settings") {
-    joinedTeamsData.reload({ silent: true });
-  }
-});
+(await joinedTeamsData.init()).on("update", onlyThisSite(renderTeamLists));
 
 export async function renderAllFn(): Promise<void> {
   if (user.classJoined) {

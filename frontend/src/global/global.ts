@@ -44,6 +44,14 @@ export function isSite(...sites: (string | RegExp)[]): boolean {
   });
 }
 
+export function onlyThisSite<T>(fn: (...args: unknown[]) => T): (...args: unknown[]) => T | null {
+  const site = getSite();
+  return function onlyThisSiteWrapper(...args: unknown[]) {
+    if (isSite(site)) return fn(...args)
+    return null;
+  }
+}
+
 export function isValidSite(site: string): boolean {
   return [
     "404",
@@ -481,9 +489,13 @@ async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<v
 }
 
 async function loadUploadData(): Promise<void> {
-  $.get("/uploads/metadata?all=" + await showAllUploads(), data => {
-    uploadData(data);
-  });
+  const _showAllUploads = await showAllUploads();
+  return new Promise<void>(res => {
+    $.get("/uploads/metadata?all=" + _showAllUploads, data => {
+      uploadData(data);
+      res()
+    });
+  })
 }
 
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
@@ -519,6 +531,7 @@ export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: 
 export async function renderAll(): Promise<void> {
   if (!setRenderOnUserChangeListener) {
     user.on("change", async () => {
+      for (const d of socketDataAccessors) d.reload({ silent: true });
       renderAll();
     });
     setRenderOnUserChangeListener = true;
@@ -562,11 +575,9 @@ else {
 document.head.appendChild(themeColor);
 
 // Data accessors
-const socketDataAccessors: DataAccessor<unknown>[] = [];
 export function createDataAccessor<DataType>(name: string, config?: {
-  reload?: string | (() => Promise<void>), socket?: string
+  reload?: string | ((settings?: {silent?: boolean}) => Promise<void>), socket?: string
 }): DataAccessor<DataType> {
-  const eventName = `dataLoaded:${name}`;
   let data: DataType | null = null;
   const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
   let _initialized = false;
@@ -597,16 +608,20 @@ export function createDataAccessor<DataType>(name: string, config?: {
   }
 
   accessor.get = () => {
-    async function getNotNullValue(): Promise<DataType> {
-      if (data === null) {
-        await new Promise(resolve => {
-          $(globalThis).on(eventName, resolve);
-        });
-        return await getNotNullValue();
-      }
-      return data;
+    if (data !== null) {
+      return Promise.resolve(data);
     }
-    return getNotNullValue();
+
+    return new Promise<DataType>(resolve => {
+      const handler = () => {
+        if (data !== null) {
+          accessor.off("change", handler);
+          resolve(data);
+        }
+      };
+
+      accessor.on("change", handler);
+    });
   };
 
   accessor.getCurrent = () => {
@@ -615,28 +630,25 @@ export function createDataAccessor<DataType>(name: string, config?: {
 
   accessor.set = (value: DataType | null, settings?: {silent?: boolean}) => {
     data = value;
-    if (value !== null) {
-      $(globalThis).trigger(eventName);
-    }
     if (!settings?.silent) {
       accessor.trigger("update");
     }
-    accessor.trigger("silentUpdate");
+    accessor.trigger("change");
     _initialized = true;
     return accessor;
   };
 
-  accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback, settings?: {onlyThisSite?: boolean}) => {
+  accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback) => {
     _eventListeners[event] ??= [];
-    if (settings?.onlyThisSite) {
-      const site = getSite();
-      _eventListeners[event].push(() => {
-        if (getSite() === site) callback();
-      });
-    }
-    else {
-      _eventListeners[event].push(callback);
-    }
+    _eventListeners[event].push(callback);
+    return accessor;
+  };
+
+  accessor.off = (event: DataAccessorEventName, callback?: DataAccessorEventCallback) => {
+    if (!_eventListeners[event]) return accessor;
+
+    _eventListeners[event] = callback ? _eventListeners[event].filter(cb => cb !== callback) : []
+
     return accessor;
   };
 
@@ -648,10 +660,10 @@ export function createDataAccessor<DataType>(name: string, config?: {
     return accessor;
   };
 
-  accessor.reload = (settings?: {silent?: boolean}) => {
+  accessor.reload = async (settings?: {silent?: boolean}) => {
     if (typeof reloadFunction === "function") {
       data = null;
-      reloadFunction(settings);
+      await reloadFunction(settings);
       _initialized = true;
     }
     else {
@@ -688,6 +700,8 @@ export function createDataAccessor<DataType>(name: string, config?: {
 
   return accessor;
 }
+
+const socketDataAccessors: DataAccessor<unknown>[] = [];
 
 // Resources
 export const classMemberData = createDataAccessor<ClassMemberData>("classMemberData", {
@@ -727,7 +741,7 @@ export const uploadData = createDataAccessor<UploadData>("uploadData", {
   reload: loadUploadData, socket: "updateUploads"
 });
 
-eventTypeData.on("silentUpdate", tryForceReloadEventTypeStyles);
+eventTypeData.on("change", tryForceReloadEventTypeStyles);
 
 $(document).on("visibilitychange", () => {
   if (document.visibilityState === "visible") {

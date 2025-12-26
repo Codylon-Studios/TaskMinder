@@ -1,0 +1,34 @@
+@use "../../../../node_modules/bootstrap/scss/bootstrap" as bs;
+
+search-box {
+  position: relative;
+  width: 7rem;
+  transition: flex-grow 0.3s ease, width 0.3s ease;
+
+  .search-input {
+    padding-left: 2rem;
+  }
+
+  .search-clear {
+    display: none;
+  }
+
+  &.search-box-not-empty {
+    .search-input {
+      padding-right: 2rem;
+    }
+    .search-clear {
+      display: block;
+    }
+  }
+
+  &:focus-within, &.search-box-not-empty {
+    flex-grow: 1;
+  }
+
+  @include bs.media-breakpoint-down(md) {
+    &:focus-within, &.search-box-not-empty {
+      width: 100%;
+    }
+  }
+}

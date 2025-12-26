@@ -12,7 +12,8 @@ import {
   escapeHTML,
   dateDaysDifference,
   isSameDayMs,
-  getSite
+  getSite,
+  onlyThisSite
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -32,6 +33,9 @@ async function renderEventList(): Promise<void> {
     if (! Number.isNaN(filterDateMax)) {
       data = data.filter(e => filterDateMax >= Number.parseInt(e.startDate) || isSameDayMs(filterDateMax, e.startDate));
     }
+    // Filter by search
+    const sb = ($("#search-events")[0] as SearchBox);
+    data = data.filter(e => sb.searchMatches(e.name, e.description ?? ""))
     // Filter by type
     data = data.filter(e => $(`#filter-type-${e.eventTypeId}`).prop("checked"));
     // Filter by team
@@ -41,11 +45,13 @@ async function renderEventList(): Promise<void> {
     return data;
   }
 
-  const newContent = $("<div></div>");
+  const newGalleryContent = $("<div></div>");
+  const newTableContent = $("<div></div>");
   let showMoreButtonElements: JQuery<HTMLElement> = $();
 
   // Check if user is in edit mode
   const editEnabled = $("#edit-toggle").is(":checked");
+  const editAllowed = (user.permissionLevel ?? 0) >= 1;
 
   const data = await getFilteredData();
 
@@ -74,8 +80,8 @@ async function renderEventList(): Promise<void> {
       timeSpan.append(startDate);
     }
     // The template for an event with edit options
-    const template = $(`
-      <div class="col p-2">
+    const galleryTemplate = $(`
+      <div class="col pb-3 px-2">
         <div class="card event-${eventTypeId} h-100">
           <div class="card-body p-2">
             <div class="d-flex justify-content-between">
@@ -107,27 +113,62 @@ async function renderEventList(): Promise<void> {
         </div>
       </div>
       `);
-    template.find(".edit-option").toggle(editEnabled);
+    galleryTemplate.find(".edit-option").toggle(editEnabled);
+
+    const tableTemplate = $(`
+      <tr>
+        <td class="text-nowrap"><div class="color-display event-${eventTypeId}"></div></td>
+        <td class="text-break"><span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span></td>
+        <td class="text-nowrap">${timeSpan.html()}</td>
+        <td class="text-break"><div class="event-description"></div></td>
+        <td class="text-nowrap">
+          <div class="d-flex flex-nowrap">
+            <button class="edit-option btn btn-sm btn-semivisible event-edit" data-id="${eventId}" aria-label="Bearbeiten">
+              <i class="fa-solid fa-edit event-${eventTypeId} opacity-75" aria-hidden="true"></i>
+            </button>
+            <button class="edit-option btn btn-sm btn-semivisible event-delete" data-id="${eventId}" aria-label="Löschen">
+              <i class="fa-solid fa-trash event-${eventTypeId} opacity-75" aria-hidden="true"></i>
+            </button>
+            <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
+              <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `);
+    tableTemplate.find(".edit-option").toggle(editAllowed)
+
+    const templates = galleryTemplate.add(tableTemplate);
 
     // Add this event to the list
-    newContent.append(template);
+    newGalleryContent.append(galleryTemplate);
+    newTableContent.append(tableTemplate);
 
-    richTextToHtml(description, template.find(".event-description"), {
+    richTextToHtml(description, galleryTemplate.find(".event-description"), {
       showMoreButton: true,
       showMoreButtonChange: b => b.addClass("event-" + eventTypeId),
       parseLinks: true,
       merge: true
     });
-    showMoreButtonElements = showMoreButtonElements.add(template.find(".event-description"));
+
+    richTextToHtml(description, tableTemplate.find(".event-description"), {
+      showMoreButton: true,
+      showMoreButtonChange: b => b.addClass("event-" + eventTypeId),
+      parseLinks: true,
+      merge: true
+    });
+
+    showMoreButtonElements = showMoreButtonElements.add(templates.find(".event-description"));
   }
 
+  newTableContent.children().last().find("td").addClass("border-bottom-0");
+
   // If no events match, add an explanation text
-  $("#edit-toggle, #edit-toggle-label").toggle($("#event-list").html() !== "" && (user.permissionLevel ?? 0) >= 1);
-  $("#filter-toggle, #filter-toggle ~ label").toggle((await eventData()).length > 0);
-  if (newContent.html() === "") {
-    newContent.html('<div class="text-secondary">Keine Ereignisse mit diesen Filtern.</div>');
-  }
-  $("#event-list").empty().append(newContent.children());
+  $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || (user.permissionLevel ?? 0) === 0);
+  $("#no-events-found").toggle(data.length === 0)
+  $("#event-gallery").empty().append(newGalleryContent.children()).toggleClass("d-none", data.length === 0);
+  $("#event-table-body").empty().append(newTableContent.children())
+  $("#event-table").toggleClass("d-none", data.length === 0);
   showMoreButtonElements.trigger("addedToDom");
 };
 
@@ -613,26 +654,48 @@ async function updateFilters(ingoreEventTypes?: boolean): Promise<void> {
 
 function toggleShownButtons(): void {
   const loggedIn = user.loggedIn;
-  $("#edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
-  $("#show-add-event-button").toggle((user.permissionLevel ?? 0) >= 1);
+  const permissionLevel = (user.permissionLevel ?? 0)
+  $("#edit-toggle-label").toggle(permissionLevel >= 1);
+  $("#show-add-event-button").toggle(permissionLevel >= 1);
   if (!loggedIn) {
     $(".edit-option").addClass("d-none");
   }
 }
 
+function toggleView() {
+  if (view == View.Gallery || globalThis.innerWidth < 768) {
+    $("#view-toggle").html(`<i class="fa-solid fa-table-list" aria-hidden="true"></i> Tabelle`)
+    $("#event-gallery").show();
+    $("#event-table").hide();
+  }
+  else {
+    $("#view-toggle").html(`<i class="fa-solid fa-grip" aria-hidden="true"></i> Galerie`)
+    $("#event-gallery").hide();
+    $("#event-table").show();
+  }
+  localStorage.setItem("events/view", view)
+}
+
 export async function init(): Promise<void> {
   return new Promise(res => {
     $("#edit-toggle").on("click", function () {
-      $(".edit-option").toggle($("#edit-toggle").is(":checked"));
+      $("#event-gallery .edit-option").toggle($("#edit-toggle").is(":checked"));
     });
     $("#edit-toggle").prop("checked", false);
-    $(".edit-option").hide();
+    $("#event-gallery .edit-option").hide();
 
     $("#filter-toggle").on("click", function () {
       $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
     });
     $("#filter-toggle").prop("checked", false);
     $("#filter-content, #filter-reset").hide();
+
+    view = localStorage.getItem("events/view") as View ?? View.Gallery;
+    toggleView()
+    $("#view-toggle").on("click", () => {
+      view = view == View.Gallery ? View.Table : View.Gallery;
+      toggleView()
+    });
 
     if (!localStorage.getItem("eventFilter")) {
       localStorage.setItem("eventFilter", "{}");
@@ -643,6 +706,10 @@ export async function init(): Promise<void> {
       updateFilters();
       renderEventList();
     });
+
+    $("#search-events").on("input", () => {
+      renderEventList()
+    })
 
     // On changing any information in the add event modal, disable the add button if any information is empty
     $(".add-event-input").on("input", function () {
@@ -769,23 +836,24 @@ export async function init(): Promise<void> {
   });
 }
 
-(await eventData.init()).on("update", renderEventList, {onlyThisSite: true});
-(await eventTypeData.init()).on("update", renderEventTypeList, {onlyThisSite: true});
-(await teamsData.init()).on("update", () => {
+enum View {
+  Gallery = "gallery",
+  Table = "table"
+}
+let view: View;
+
+$(globalThis).on("resize", toggleView);
+
+(await eventData.init()).on("update", onlyThisSite(renderEventList));
+(await eventTypeData.init()).on("update", onlyThisSite(renderEventTypeList));
+(await teamsData.init()).on("update", onlyThisSite(() => {
   renderTeamList();
   renderEventList(); 
-}, {onlyThisSite: true});
+}));
 
 await user.awaitAuthed();
 
-(await joinedTeamsData.init()).on("update", renderEventList, {onlyThisSite: true});
-
-user.on("change", () => {
-  if (getSite() === "events") {
-    renderEventList(); 
-    joinedTeamsData.reload({ silent: true });
-  }
-});
+(await joinedTeamsData.init()).on("update", onlyThisSite(renderEventList));
 
 export async function renderAllFn(): Promise<void> {
   await renderEventTypeList();

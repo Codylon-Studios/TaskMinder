@@ -25,3 +25,9 @@
     min-height: calc((min(500px, 100vw - 1rem) - 7rem)) !important;
   }
 }
+
+#search-uploads {
+  &:focus-within, &.search-box-not-empty {
+    width: 0 !important;
+  }
+}

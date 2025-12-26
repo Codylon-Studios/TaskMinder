@@ -157,8 +157,6 @@ function checkSecurePassword(password: string): boolean {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
-$("#login-register-button").toggleClass("d-none", isSite("join"));
-
 $("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
   let hasResponded = false;
 
@@ -199,6 +197,7 @@ $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
 
 export async function init(): Promise<void> {
   $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings"));
+  $("#login-register-button").toggleClass("d-none", isSite("join"));
 
   //
   //LOGIN -- REGISTER

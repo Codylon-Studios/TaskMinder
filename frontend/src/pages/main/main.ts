@@ -20,7 +20,8 @@ import {
   lessonData,
   teamsData,
   getSite,
-  eventTypeData
+  eventTypeData,
+  onlyThisSite
 } from "../../global/global.js";
 import { HomeworkData, MonthDates, TimetableData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -568,7 +569,7 @@ async function renderTimetable(): Promise<void> {
     }
 
     const templateModeLess = `
-      <div class="card" data-start-lesson-number="${multiLesson.startLessonNumber}" data-end-lesson-number="${multiLesson.endLessonNumber}">
+      <div class="card flex-grow-1" data-start-lesson-number="${multiLesson.startLessonNumber}" data-end-lesson-number="${multiLesson.endLessonNumber}">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
           <div class="d-flex align-items-center flex-column mx-4">
             <span>
@@ -1216,43 +1217,36 @@ let calendarMode: string;
 // Is a list of the dates (number of day in the month) of the week which is currently selected
 const monthDates = createDataAccessor<MonthDates>("monthDates");
 
-(await homeworkData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
+(await homeworkData.init()).on("update", onlyThisSite(renderHomeworkList));
 (await homeworkCheckedData.init());
-(await subjectData.init()).on("update", renderHomeworkList, {onlyThisSite: true});
-(await eventData.init()).on("update", () => {
+(await subjectData.init()).on("update", onlyThisSite(renderHomeworkList));
+(await eventData.init()).on("update", onlyThisSite(() => {
   renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
   renderTimetable();
-}, {onlyThisSite: true});
+}));
 (await eventTypeData.init());
-(await lessonData.init()).on("update", renderTimetable, {onlyThisSite: true});
-(await teamsData.init()).on("update", () => {
+(await lessonData.init()).on("update", onlyThisSite(renderTimetable));
+(await teamsData.init()).on("update", onlyThisSite(() => {
   renderHomeworkList();
   renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
   renderTimetable();
-}, {onlyThisSite: true});
-(await substitutionsData.init()).on("update", renderSubstitutionList, {onlyThisSite: true});
-(await classSubstitutionsData.init()).on("update", () => {
+}));
+(await substitutionsData.init()).on("update", onlyThisSite(renderSubstitutionList));
+(await classSubstitutionsData.init()).on("update", onlyThisSite(() => {
   renderSubstitutionList();
   renderTimetable();
-}, {onlyThisSite: true});
+}));
 
 await user.awaitAuthed();
 
-(await joinedTeamsData.init()).on("update", () => {
+(await joinedTeamsData.init()).on("update", onlyThisSite(() => {
   renderHomeworkList();
   renderEventList();
   updateCalendarWeekContent("#calendar-week-old");
   renderTimetable();
-}, {onlyThisSite: true});
-
-user.on("change", () => {
-  if (getSite() === "main") {
-    joinedTeamsData.reload({ silent: true });
-    homeworkCheckedData.reload({ silent: true });
-  }
-});
+}));
 
 export async function renderAllFn(): Promise<void> {
   await renderHomeworkList();

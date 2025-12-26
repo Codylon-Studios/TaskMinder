@@ -96,10 +96,11 @@ async function buildDirectory(src, dest) {
       $("body").append(`
         <div class="load-snippet" data-target="footer"></div>
         <div class="load-snippet" data-target="bottombar"></div>
-
-        <div class="load-snippet" data-target="richTextarea"></div>
-        <div class="load-snippet" data-target="colorPicker"></div>
         <div class="load-snippet" data-target="loadingBar"></div>
+
+        <div class="load-snippet" data-target="colorPicker"></div>
+        <div class="load-snippet" data-target="richTextarea"></div>
+        <div class="load-snippet" data-target="searchBox"></div>
       `);
 
       $("body").css({ display: "none" });
