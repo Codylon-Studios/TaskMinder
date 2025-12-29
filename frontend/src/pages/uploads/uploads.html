@@ -41,7 +41,9 @@
           </div>
           <div id="filter-content" class="ds-flex align-items-center flex-row gap-2">
             <div class="dropdown">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown">Art</button>
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                Art
+              </button>
               <div class="dropdown-menu" id="filter-type-dropwdown">
                 <div class="px-2 py-0">
                   <button class="btn btn-outline-secondary btn-sm" id="filter-type-all">Alle</button>
@@ -54,7 +56,9 @@
               </div>
             </div>
             <div class="dropdown">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown">Datum</button>
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                Datum
+              </button>
               <div class="dropdown-menu" id="filter-date-dropwdown">
                 <div class="px-2 py-1">
                   <div class="d-flex align-items-center mb-3">
@@ -74,7 +78,7 @@
             Zurücksetzen
           </button>
         </div>
-        
+
         <div class="d-flex justify-content-center justify-content-lg-start gap-3 flex-grow-1 w-100 w-lg-fit-content">
           <button class="btn btn-outline-secondary fw-bold" id="view-toggle"></button>
           <search-box id="search-uploads"></search-box>

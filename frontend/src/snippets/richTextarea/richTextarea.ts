@@ -109,7 +109,7 @@ export function richTextToHtml(
         targetElement.css({ maxHeight: expanded ? "none" : "96px" });
         showMoreButton.show().html(expanded ? less : more);
       }
-      else if (naturalHeight == 0) {
+      else if (naturalHeight === 0) {
         targetElement.css({ maxHeight: "96px" });
       }
       else {

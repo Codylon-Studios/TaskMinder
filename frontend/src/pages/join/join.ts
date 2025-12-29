@@ -9,7 +9,7 @@ function changeContentOnLogin(): void {
       openSitePJAX("/main");
     }
     else if (urlParams.get("action") !== "join") {
-      $("#decide-action-panel").removeClass("d-none");
+      $("#decide-action-panel").show();
     }
     $(".login-register-element, .login-element, .register-element").addClass("d-none");
     $("#show-create-class-btn").prop("disabled", false).find("~ .form-text").hide();
@@ -27,68 +27,29 @@ export async function init(): Promise<void> {
     });
     $("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten");
 
-    $("#show-join-class-btn").on("click", () => {
-      $("#decide-action-panel").addClass("d-none");
-      $("#join-class-panel").removeClass("d-none");
+    $(".panel-wrapper").children().hide().filter("#decide-action-panel").show();
+
+    $("[data-next-panel]").on("click", function () {
+      $(".panel-wrapper").children().hide().filter($(this).attr("data-next-panel") ?? "").show().trigger("show");
+    });
+
+    $("#join-class-panel").on("show", () => {
       $("#join-class-class-code").val("");
       $("#join-class-checkbox").prop("checked", false);
       $("#join-class-btn").prop("disabled", true);
+      $("#error-invalid-class-code").hide();
     });
 
-    $("#show-login-register-btn").on("click", () => {
-      $("#decide-action-panel").addClass("d-none");
-      $("#login-register-panel").removeClass("d-none");
+    $("#login-register-panel").on("show", () => {
       $(".login-register-username").val("");
       $(".login-register-next-button").prop("disabled", true);
       resetLoginRegister();
       $(".login-register-element").removeClass("d-none");
     });
 
-    $("#show-joined-login-register-btn").on("click", () => {
-      $("#decide-account-panel").addClass("d-none");
-      $("#login-register-panel").removeClass("d-none");
-      $(".login-register-username").val("");
-      $(".login-register-next-button").prop("disabled", true);
-      resetLoginRegister();
-      $(".login-register-element").removeClass("d-none");
-    });
-
-    $("#join-class-back-btn").on("click", () => {
-      $("#decide-action-panel").removeClass("d-none");
-      $("#join-class-panel").addClass("d-none");
-      $("#error-invalid-class-code").addClass("d-none");
-    });
-
-    $("#show-create-class-btn").on("click", () => {
-      $("#decide-action-panel").addClass("d-none");
-      $("#create-class-is-test-panel").removeClass("d-none");
-    });
-
-    $("#create-class-is-test-back-btn").on("click", () => {
-      $("#decide-action-panel").removeClass("d-none");
-      $("#create-class-is-test-panel").addClass("d-none");
-    });
-
-    $("#create-class-to-warning-btn").on("click", () => {
-      $("#create-class-is-test-panel").addClass("d-none");
-      $("#create-class-warning-panel").removeClass("d-none");
-    });
-
-    $("#create-class-warning-back-btn").on("click", () => {
-      $("#create-class-is-test-panel").removeClass("d-none");
-      $("#create-class-warning-panel").addClass("d-none");
-    });
-
-    $("#create-class-to-credentials-btn").on("click", () => {
-      $("#create-class-warning-panel").addClass("d-none");
-      $("#create-class-credentials-panel").removeClass("d-none");
+    $("#create-class-credentials-panel").on("show", () => {
       $("#create-class-name").removeClass("is-invalid").val("");
       $("#create-class-btn").prop("disabled", true);
-    });
-
-    $("#create-class-credentials-back-btn").on("click", () => {
-      $("#create-class-warning-panel").removeClass("d-none");
-      $("#create-class-credentials-panel").addClass("d-none");
     });
 
     $(() => {
@@ -102,10 +63,10 @@ export async function init(): Promise<void> {
     $("#login-register-back-btn").on("click", () => {
       $(".login-register-element, .login-element, .register-element").addClass("d-none");
       if (user.classJoined) {
-        $("#decide-account-panel").removeClass("d-none");
+        $("#decide-account-panel").show();
       }
       else {
-        $("#decide-action-panel").removeClass("d-none");
+        $("#decide-action-panel").show();
       }
     });
 
@@ -127,8 +88,8 @@ export async function init(): Promise<void> {
           if (user.loggedIn) {
             openSitePJAX("/main");
           }
-          $("#join-class-panel").addClass("d-none");
-          $("#decide-account-panel").removeClass("d-none");
+          $("#join-class-panel").hide();
+          $("#decide-account-panel").show();
           user.auth();
           $(".class-joined-content").removeClass("d-none");
           $(".navbar-home-link").attr("href", "/main");
@@ -140,7 +101,7 @@ export async function init(): Promise<void> {
         },
         error: xhr => {
           if (xhr.status === 404) {
-            $("#error-invalid-class-code").removeClass("d-none");
+            $("#error-invalid-class-code").show();
             $("#join-class-btn").prop("disabled", true);
           }
           else if (xhr.status === 500) {
@@ -150,24 +111,14 @@ export async function init(): Promise<void> {
       });
     });
 
-    $("#join-class-class-code").on("input", function () {
-      $("#error-invalid-class-code").addClass("d-none");
-      if ($(this).val() !== "" && $("#join-class-checkbox").prop("checked")) {
-        $("#join-class-btn").prop("disabled", false);
-      }
+    $("#join-class-class-code").on("input", () => {
+      $("#error-invalid-class-code").hide();
     });
 
-    $("#join-class-class-code").on("change", function () {
-      $("#join-class-btn").prop("disabled");
-      if (!($(this).val() !== "" && $("#join-class-checkbox").prop("checked") && !$("#error-invalid-class-code").is(":visible"))) {
-        $("#join-class-btn").prop("disabled", true);
-      }
-    });
-
-    $("#join-class-checkbox").on("input", function () {
-      $("#join-class-btn").prop("disabled", !(
-        $("#join-class-class-code").val() !== "" && $(this).prop("checked") && !$("#error-invalid-class-code").is(":visible")
-      ));
+    $("#join-class-checkbox, #join-class-class-code").on("input", () => {
+      $("#join-class-btn").prop("disabled", 
+        $("#join-class-class-code").val() === "" || ! $("#join-class-checkbox").prop("checked") || $("#error-invalid-class-code").is(":visible")
+      );
     });
 
     $("#create-class-name").on("input", function () {
@@ -197,11 +148,11 @@ export async function init(): Promise<void> {
           user.auth();
           const classCode = res;
           qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
-          $("#create-class-credentials-panel").addClass("d-none");
+          $("#create-class-credentials-panel").hide();
           // Force socket to reconnect so it picks up the new session.classId
           socket.disconnect();
           socket.connect();
-          $("#invite-panel").removeClass("d-none");
+          $("#invite-panel").show();
           $("#invite-copy-link").on("click", async () => {
             try {
               await navigator.clipboard.writeText(location.host + `/join?class_code=${classCode}`);
@@ -250,22 +201,16 @@ export async function init(): Promise<void> {
     urlParams = new URLSearchParams(globalThis.location.search);
 
     if (urlParams.get("action") === "join" || urlParams.has("class_code")) {
-      $("#decide-action-panel").addClass("d-none");
-      $("#join-class-panel").removeClass("d-none");
-      $("#join-class-class-code").val("");
-      $("#join-class-checkbox").prop("checked", false);
-      $("#join-class-btn").prop("disabled", true);
+      $("#decide-action-panel").hide();
+      $("#join-class-panel").show().trigger("shiw");
     }
     else if (urlParams.get("action") === "account") {
-      $("#decide-action-panel").addClass("d-none");
-      $("#decide-account-panel").removeClass("d-none");
+      $("#decide-action-panel").hide();
+      $("#decide-account-panel").show();
     }
 
     if (urlParams.has("class_code")) {
       $("#join-class-class-code").val(urlParams.get("class_code") ?? "");
-    }
-    else {
-      $("#join-class-class-code").val("");
     }
 
     res();

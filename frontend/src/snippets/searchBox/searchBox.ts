@@ -18,12 +18,12 @@ class SearchBox extends HTMLElement {
 
     $input.on("input", () => {
       $wrapper.toggleClass("search-box-not-empty", $input.val() !== "");
-    })
+    });
 
     $clear.on("mousedown", ev => {
-      ev.preventDefault()
-      $input.val("").trigger("input")
-    })
+      ev.preventDefault();
+      $input.val("").trigger("input");
+    });
   }
   
   get value(): string {

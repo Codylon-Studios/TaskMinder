@@ -38,6 +38,8 @@ let startY = 0;
 let overlayShowsMore = false;
 
 $(document).on("touchstart", ev => {
+  if ($(".modal").is(":visible")) return;
+
   if (overlayShowsMore) {
     overlayShowsMore = false;
     return;
@@ -60,6 +62,8 @@ $(document).on("touchstart", ev => {
 });
 
 $(document).on("touchmove", ev => {
+  if ($(".modal").is(":visible")) return;
+
   if (ev.changedTouches.length !== 1 && ev.touches.length !== 0) {
     return;
   }
@@ -82,6 +86,8 @@ $(document).on("touchmove", ev => {
 });
 
 $(document).on("touchend", ev => {
+  if ($(".modal").is(":visible")) return;
+  
   function hideOverlay(endP: number, complete?: () => unknown): void {
     const startP = Number.parseFloat($(".bottombar-overlay").css("--progress"));
     $({ p: startP }).animate(

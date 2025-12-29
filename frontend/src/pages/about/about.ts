@@ -1,6 +1,10 @@
 class LicenseDisplay extends HTMLElement {
-  constructor() {
-    super();
+  private initialized = false;
+
+  connectedCallback(): void {
+    if (this.initialized) return;
+    this.initialized = true;
+    
     const content = this.innerHTML;
     const newContent = content.split("\n").map(l => l.trimStart()).join("\n");
     this.innerHTML = `
@@ -10,7 +14,7 @@ class LicenseDisplay extends HTMLElement {
 ${newContent}</pre>
         </div>
         <button class="license-toggle fa-solid btn btn-sm btn-semivisible position-absolute top-0
-          end-0 m-3 d-flex align-items-center justify-content-center" data-bs-toggle="button">
+          end-0 m-3 d-flex align-items-center justify-content-center" data-bs-toggle="button" aria-label="Anzeigen / Verstecken">
         </button>
       </div>
     `;

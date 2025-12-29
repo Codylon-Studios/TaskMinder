@@ -11,8 +11,6 @@ import {
   lessonData,
   escapeHTML,
   dateDaysDifference,
-  isSameDayMs,
-  getSite,
   onlyThisSite
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
@@ -26,16 +24,16 @@ async function renderEventList(): Promise<void> {
     // Filter by min. date
     const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMin)) {
-      data = data.filter(e => filterDateMin <= Number.parseInt(e.endDate ?? e.startDate) || isSameDayMs(filterDateMin, e.endDate ?? e.startDate));
+      data = data.filter(e => filterDateMin <= Number.parseInt(e.endDate ?? e.startDate) || isSameDay(filterDateMin, e.endDate ?? e.startDate));
     }
     // Filter by max. date
     const filterDateMax = Date.parse($("#filter-date-until").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMax)) {
-      data = data.filter(e => filterDateMax >= Number.parseInt(e.startDate) || isSameDayMs(filterDateMax, e.startDate));
+      data = data.filter(e => filterDateMax >= Number.parseInt(e.startDate) || isSameDay(filterDateMax, e.startDate));
     }
     // Filter by search
     const sb = ($("#search-events")[0] as SearchBox);
-    data = data.filter(e => sb.searchMatches(e.name, e.description ?? ""))
+    data = data.filter(e => sb.searchMatches(e.name, e.description ?? ""));
     // Filter by type
     data = data.filter(e => $(`#filter-type-${e.eventTypeId}`).prop("checked"));
     // Filter by team
@@ -51,7 +49,7 @@ async function renderEventList(): Promise<void> {
 
   // Check if user is in edit mode
   const editEnabled = $("#edit-toggle").is(":checked");
-  const editAllowed = (user.permissionLevel ?? 0) >= 1;
+  const editAllowed = user.permissionLevel >= 1;
 
   const data = await getFilteredData();
 
@@ -66,7 +64,7 @@ async function renderEventList(): Promise<void> {
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
       const endDate = getDisplayDate(event.endDate);
-      if (isSameDay(new Date(Number.parseInt(event.startDate)), new Date(Number.parseInt(event.endDate)))) {
+      if (isSameDay(event.startDate, event.endDate)) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
       else {
@@ -136,7 +134,7 @@ async function renderEventList(): Promise<void> {
         </td>
       </tr>
     `);
-    tableTemplate.find(".edit-option").toggle(editAllowed)
+    tableTemplate.find(".edit-option").toggle(editAllowed);
 
     const templates = galleryTemplate.add(tableTemplate);
 
@@ -164,10 +162,10 @@ async function renderEventList(): Promise<void> {
   newTableContent.children().last().find("td").addClass("border-bottom-0");
 
   // If no events match, add an explanation text
-  $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || (user.permissionLevel ?? 0) === 0);
-  $("#no-events-found").toggle(data.length === 0)
+  $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || user.permissionLevel === 0);
+  $("#no-events-found").toggle(data.length === 0);
   $("#event-gallery").empty().append(newGalleryContent.children()).toggleClass("d-none", data.length === 0);
-  $("#event-table-body").empty().append(newTableContent.children())
+  $("#event-table-body").empty().append(newTableContent.children());
   $("#event-table").toggleClass("d-none", data.length === 0);
   showMoreButtonElements.trigger("addedToDom");
 };
@@ -175,12 +173,8 @@ async function renderEventList(): Promise<void> {
 async function renderEventTypeList(): Promise<void> {
   const currentEventTypeData = await eventTypeData();
 
-  // Clear the select element in the add event modal
-  $("#add-event-type").empty();
-  $("#add-event-type").append('<option value="" disabled selected>Art</option>');
-  // Clear the select element in the edit event modal
-  $("#edit-event-type").empty();
-  $("#edit-event-type").append('<option value="" disabled selected>Art</option>');
+  // Clear the select element in the add & edit event modal
+  $("#add-event-type, #edit-event-type").html('<option value="" disabled selected>Art</option>');
   // Clear the list for filtering by type
   $("#filter-type-list").empty();
 
@@ -190,7 +184,7 @@ async function renderEventTypeList(): Promise<void> {
   for (const eventType of currentEventTypeData) {
     // Get the event type data
     const eventTypeId = eventType.eventTypeId;
-    const eventTypeName = eventType.name;
+    const eventTypeName = escapeHTML(eventType.name);
 
     filterData.type[eventTypeId] ??= true;
     const checkedStatus = filterData.type[eventTypeId] ? "checked" : "";
@@ -200,52 +194,31 @@ async function renderEventTypeList(): Promise<void> {
     const templateFilterType = `<div class="form-check">
         <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
         <label class="form-check-label" for="filter-type-${eventTypeId}">
-          ${escapeHTML(eventTypeName)}
+          ${eventTypeName}
         </label>
       </div>`;
     $("#filter-type-list").append(templateFilterType);
 
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${eventTypeId}">${escapeHTML(eventTypeName)}</option>`;
-    $("#add-event-type").append(templateFormSelect);
-    $("#edit-event-type").append(templateFormSelect);
+    $("#add-event-type, #edit-event-type").append(`<option value="${eventTypeId}">${eventTypeName}</option>`);
   };
-
-  // If any type filter gets changed, update the shown events
-  $(".filter-type-option").on("change", function () {
-    renderEventList();
-    const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-    filterData.type ??= {};
-    filterData.type[$(this).data("id")] = $(this).prop("checked");
-    localStorage.setItem("eventFilter", JSON.stringify(filterData));
-    updateFilters();
-  });
 
   localStorage.setItem("eventFilter", JSON.stringify(filterData));
 
   $("#add-event-no-types").toggleClass("d-none", currentEventTypeData.length !== 0).find("b").text(
-    (user.permissionLevel ?? 0) < 3 ?
+    user.permissionLevel < 3 ?
       "Bitte einen Admin / ein:e Manager:in, welche hinzuzufügen!" :
       "Füge in den Einstellungen unter \"Klasse\" > \"Ereignisarten\" welche hinzu!"
   );
 };
 
 async function renderTeamList(): Promise<void> {
-  // Clear the select element in the add event modal
-  $("#add-event-team").empty();
-  $("#add-event-team").append('<option value="-1" selected>Alle</option>');
-  // Clear the select element in the edit event modal
-  $("#edit-event-team").empty();
-  $("#edit-event-team").append('<option value="-1" selected>Alle</option>');
+  // Clear the select element in the add & edit event modal
+  $("#add-event-team, #edit-event-team").html('<option value="-1" selected>Alle</option>');
 
   for (const team of (await teamsData())) {
-    // Get the team data
-    const teamName = team.name;
-
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${team.teamId}">${escapeHTML(teamName)}</option>`;
-    $("#add-event-team").append(templateFormSelect);
-    $("#edit-event-team").append(templateFormSelect);
+    $("#add-event-team, #edit-event-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   }
 };
 
@@ -654,52 +627,45 @@ async function updateFilters(ingoreEventTypes?: boolean): Promise<void> {
 
 function toggleShownButtons(): void {
   const loggedIn = user.loggedIn;
-  const permissionLevel = (user.permissionLevel ?? 0)
-  $("#edit-toggle-label").toggle(permissionLevel >= 1);
-  $("#show-add-event-button").toggle(permissionLevel >= 1);
+  $("#edit-toggle-label").toggle(user.permissionLevel >= 1);
+  $("#show-add-event-button").toggle(user.permissionLevel >= 1);
   if (!loggedIn) {
     $(".edit-option").addClass("d-none");
   }
 }
 
-function toggleView() {
-  if (view == View.Gallery || globalThis.innerWidth < 768) {
-    $("#view-toggle").html(`<i class="fa-solid fa-table-list" aria-hidden="true"></i> Tabelle`)
+function toggleView(): void {
+  if (view === View.Gallery || globalThis.innerWidth < 768) {
+    $("#view-toggle").html("<i class=\"fa-solid fa-table-list\" aria-hidden=\"true\"></i> Tabelle");
     $("#event-gallery").show();
     $("#event-table").hide();
   }
   else {
-    $("#view-toggle").html(`<i class="fa-solid fa-grip" aria-hidden="true"></i> Galerie`)
+    $("#view-toggle").html("<i class=\"fa-solid fa-grip\" aria-hidden=\"true\"></i> Galerie");
     $("#event-gallery").hide();
     $("#event-table").show();
   }
-  localStorage.setItem("events/view", view)
+  localStorage.setItem("events/view", view);
 }
 
 export async function init(): Promise<void> {
   return new Promise(res => {
     $("#edit-toggle").on("click", function () {
-      $("#event-gallery .edit-option").toggle($("#edit-toggle").is(":checked"));
-    });
-    $("#edit-toggle").prop("checked", false);
+      $("#event-gallery .edit-option").toggle($(this).is(":checked"));
+    }).prop("checked", false);
     $("#event-gallery .edit-option").hide();
 
     $("#filter-toggle").on("click", function () {
-      $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
-    });
-    $("#filter-toggle").prop("checked", false);
-    $("#filter-content, #filter-reset").hide();
+      $("#filter-content, #filter-reset").toggle($(this).is(":checked"));
+    }).prop("checked", true).trigger("click");
 
     view = localStorage.getItem("events/view") as View ?? View.Gallery;
-    toggleView()
+    toggleView();
     $("#view-toggle").on("click", () => {
-      view = view == View.Gallery ? View.Table : View.Gallery;
-      toggleView()
+      view = view === View.Gallery ? View.Table : View.Gallery;
+      toggleView();
     });
 
-    if (!localStorage.getItem("eventFilter")) {
-      localStorage.setItem("eventFilter", "{}");
-    }
     updateFilters(true);
     $("#filter-reset").on("click", () => {
       localStorage.setItem("eventFilter", "{}");
@@ -708,8 +674,8 @@ export async function init(): Promise<void> {
     });
 
     $("#search-events").on("input", () => {
-      renderEventList()
-    })
+      renderEventList();
+    });
 
     // On changing any information in the add event modal, disable the add button if any information is empty
     $(".add-event-input").on("input", function () {
@@ -717,12 +683,7 @@ export async function init(): Promise<void> {
       const name = $("#add-event-name").val()?.toString().trim();
       const startDate = $("#add-event-start-date").val();
 
-      if ([name, startDate].includes("") || type === null) {
-        $("#add-event-button").prop("disabled", true);
-      }
-      else {
-        $("#add-event-button").prop("disabled", false);
-      }
+      $("#add-event-button").prop("disabled", [name, startDate].includes("") || type === null);
 
       if ($(this).is("#add-event-end-date")) {
         $("#add-event-lesson").val("");
@@ -738,12 +699,7 @@ export async function init(): Promise<void> {
       const name = $("#edit-event-name").val()?.toString().trim();
       const startDate = $("#edit-event-start-date").val();
 
-      if ([name, startDate].includes("") || type === null) {
-        $("#edit-event-button").prop("disabled", true);
-      }
-      else {
-        $("#edit-event-button").prop("disabled", false);
-      }
+      $("#edit-event-button").prop("disabled", [name, startDate].includes("") || type === null);
 
       if ($(this).is("#edit-event-end-date")) {
         $("#edit-event-lesson").val("");
@@ -751,13 +707,6 @@ export async function init(): Promise<void> {
       if ($(this).is("#edit-event-lesson")) {
         $("#edit-event-end-date").val("");
       }
-    });
-
-    // Don't close the dropdown when the user clicked inside of it
-    $(".dropdown-menu").each(function () {
-      $(this).on("click", ev => {
-        ev.stopPropagation();
-      });
     });
 
     // Share the event on clicking its share icon
@@ -798,6 +747,16 @@ export async function init(): Promise<void> {
       localStorage.setItem("eventFilter", JSON.stringify(filterData));
       updateFilters();
       renderEventList();
+    });
+
+    // If any type filter gets changed, update the shown events
+    $(".filter-type-option").on("change", function () {
+      renderEventList();
+      const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
+      filterData.type ??= {};
+      filterData.type[$(this).data("id")] = $(this).prop("checked");
+      localStorage.setItem("eventFilter", JSON.stringify(filterData));
+      updateFilters();
     });
 
     // On changing any filter date option, update the event list

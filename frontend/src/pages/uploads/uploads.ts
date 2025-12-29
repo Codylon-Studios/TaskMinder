@@ -7,13 +7,11 @@ import {
   dateDaysDifference,
   uploadData,
   getDisplayDate,
-  isSameDayMs,
   loadTimetableData,
   getSimpleDisplayDate,
   showAllUploads,
-  getSite,
-  eventData,
-  onlyThisSite
+  onlyThisSite,
+  isSameDay
 } from "../../global/global.js";
 import { SingleUploadData } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -25,16 +23,16 @@ async function renderUploadList(): Promise<void> {
     // Filter by min. date
     const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMin)) {
-      data = data.filter(u => filterDateMin <= Number.parseInt(u.createdAt) || isSameDayMs(filterDateMin, u.createdAt));
+      data = data.filter(u => filterDateMin <= Number.parseInt(u.createdAt) || isSameDay(filterDateMin, u.createdAt));
     }
     // Filter by max. date
     const filterDateMax = Date.parse($("#filter-date-until").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMax)) {
-      data = data.filter(u => filterDateMax >= Number.parseInt(u.createdAt) || isSameDayMs(filterDateMax, u.createdAt));
+      data = data.filter(u => filterDateMax >= Number.parseInt(u.createdAt) || isSameDay(filterDateMax, u.createdAt));
     }
     // Filter by search
     const sb = ($("#search-uploads")[0] as SearchBox);
-    data = data.filter(u => sb.searchMatches(u.accountName ?? "", u.uploadName))
+    data = data.filter(u => sb.searchMatches(u.accountName ?? "", u.uploadName));
     // Filter by type
     data = data.filter(u => $(`#filter-type-${u.uploadType}`).prop("checked"));
     // Filter by team
@@ -48,7 +46,7 @@ async function renderUploadList(): Promise<void> {
 
   // Check if user is in edit mode
   const editEnabled = $("#edit-toggle").is(":checked");
-  const editAllowed = (user.permissionLevel ?? 0) >= 1;
+  const editAllowed = user.permissionLevel >= 1;
 
   const currentUploadData = await uploadData();
   const data = await getFilteredData();
@@ -210,7 +208,7 @@ async function renderUploadList(): Promise<void> {
         </td>
       </tr>
     `);
-    tableTemplate.find(".edit-option").toggle(editAllowed)
+    tableTemplate.find(".edit-option").toggle(editAllowed);
     tableTemplate.find(".upload-failed").toggle(upload.status === "failed");
     tableTemplate.find(".upload-processing").toggle(["processing", "queued"].includes(upload.status));
     tableTemplate.find(".view-upload").prop("disabled", upload.status !== "completed");
@@ -223,10 +221,10 @@ async function renderUploadList(): Promise<void> {
   newTableContent.children().last().find("td").addClass("border-bottom-0");
 
   // If no uploads match, add an explanation text
-  $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || (user.permissionLevel ?? 0) === 0);
-  $("#no-uploads-found").toggle(data.length === 0)
+  $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || user.permissionLevel === 0);
+  $("#no-uploads-found").toggle(data.length === 0);
   $("#upload-gallery").empty().append(newGalleryContent.children()).toggleClass("d-none", data.length === 0);
-  $("#upload-table-body").empty().append(newTableContent.children())
+  $("#upload-table-body").empty().append(newTableContent.children());
   $("#upload-table").toggleClass("d-none", data.length === 0);
   $("#upload-load-more").toggle((await uploadData()).hasMore);
 };
@@ -664,25 +662,25 @@ function updateFilters(ingoreUploadTypes?: boolean): void {
 
 function toggleShownButtons(): void {
   const loggedIn = user.loggedIn;
-  $("#edit-toggle-label").toggle((user.permissionLevel ?? 0) >= 1);
-  $("#show-add-upload-button").toggle((user.permissionLevel ?? 0) >= 1);
+  $("#edit-toggle-label").toggle(user.permissionLevel >= 1);
+  $("#show-add-upload-button").toggle(user.permissionLevel >= 1);
   if (!loggedIn) {
     $(".edit-option").addClass("d-none");
   }
 }
 
-function toggleView() {
-  if (view == View.Gallery) {
-    $("#view-toggle").html(`<i class="fa-solid fa-table-list" aria-hidden="true"></i> Tabelle`)
+function toggleView(): void {
+  if (view === View.Gallery) {
+    $("#view-toggle").html("<i class=\"fa-solid fa-table-list\" aria-hidden=\"true\"></i> Tabelle");
     $("#upload-gallery").show();
     $("#upload-table").hide();
   }
   else {
-    $("#view-toggle").html(`<i class="fa-solid fa-grip" aria-hidden="true"></i> Galerie`)
+    $("#view-toggle").html("<i class=\"fa-solid fa-grip\" aria-hidden=\"true\"></i> Galerie");
     $("#upload-gallery").hide();
     $("#upload-table").show();
   }
-  localStorage.setItem("uploads/view", view)
+  localStorage.setItem("uploads/view", view);
 }
 
 export async function init(): Promise<void> {
@@ -716,10 +714,10 @@ export async function init(): Promise<void> {
     $("#filter-content, #filter-reset").hide();
 
     view = localStorage.getItem("uploads/view") as View ?? View.Gallery;
-    toggleView()
+    toggleView();
     $("#view-toggle").on("click", () => {
-      view = view == View.Gallery ? View.Table : View.Gallery;
-      toggleView()
+      view = view === View.Gallery ? View.Table : View.Gallery;
+      toggleView();
     });
 
     if (!localStorage.getItem("uploadFilter")) {
@@ -733,8 +731,8 @@ export async function init(): Promise<void> {
     });
 
     $("#search-uploads").on("input", () => {
-      renderUploadList()
-    })
+      renderUploadList();
+    });
 
     // On changing any information in the add upload modal, disable the add button if any information is empty
     $(".add-upload-input").on("input", function () {

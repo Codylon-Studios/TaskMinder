@@ -306,7 +306,7 @@
               <div class="col-12 col-lg" id="class-code-container">
                 <div class="d-flex gap-2 flex-column flex-lg-row mb-2">
                   <input id="class-code" type="text" class="form-control user-select-all" value="" readonly />
-                  <button class="btn btn-primary w-100 fw-bold" id="change-class-code">
+                  <button class="btn btn-primary w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#change-classcode-confirm-modal">
                     <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                     Neuen Klassencode anfordern
                   </button>
@@ -557,6 +557,25 @@
         </div>
       </div>
 
+      <div class="modal fade" id="change-classcode-confirm-modal" tabindex="-1" aria-labelledby="change-classcode-confirm-modal-title">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h1 class="modal-title fs-5" id="change-classcode-confirm-modal-title">Bitte bestätigen</h1>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+              Bist du dir sicher, dass du den Klassencode ändern lassen willst? Er wird einen zufälligen Wert erhalten. Jeder, der dann der Klasse
+              beitreten will, muss diesen neuen Code kennen, der Alte wird ungültig.
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary fw-bold flex-fill" data-bs-dismiss="modal">Abbrechen</button>
+              <button type="button" class="btn btn-primary fw-bold flex-fill" data-bs-dismiss="modal" id="change-class-code">Neu anfordern</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="modal fade" id="show-qrcode-modal" tabindex="-1" aria-labelledby="show-qrcode-modal-title">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -570,7 +589,7 @@
             </div>
             <div class="modal-body d-flex justify-content-center p-4" id="show-qrcode-modal-qrcode"></div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal">Fertig</button>
+              <button type="button" class="btn btn-primary w-100 fw-bold" data-bs-dismiss="modal">Fertig</button>
             </div>
           </div>
         </div>

@@ -177,17 +177,17 @@
   font-size: 0.75rem;
 }
 
-#calendar-week-wrapper {
+#calendar-wrapper {
   overflow: hidden;
   display: grid;
   padding: 0.25rem 0.125rem 2rem 0.125rem;
 }
 
-.calendar-week {
+.calendar {
   grid-area: 1 / 1 / 1 / 1;
 }
 
-.calendar-week-move-button {
+.calendar-move-button {
   transform: translateY(-1rem);
 }
 

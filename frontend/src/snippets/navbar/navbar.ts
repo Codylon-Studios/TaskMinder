@@ -202,26 +202,26 @@ export async function init(): Promise<void> {
   //
   //LOGIN -- REGISTER
   //
-  $(".login-button").on("click", () => {
+  $(".login-button").off("click").on("click", () => {
     const username = $(".login-register-username").val()?.toString() ?? "";
     const password = $(".login-password").val()?.toString() ?? "";
     loginAccount(username, password);
   });
 
-  $(".register-button").on("click", () => {
+  $(".register-button").off("click").on("click", () => {
     const username = $(".login-register-username").val()?.toString() ?? "";
     const password = $(".register-password").val()?.toString() ?? "";
     registerAccount(username, password);
   });
 
-  $("#login-register-modal").on("show.bs.modal", () => {
+  $("#login-register-modal").off("show.bs.modal").on("show.bs.modal", () => {
     $(".login-register-username").val("");
     $(".login-register-next-button").prop("disabled", true);
     resetLoginRegister();
   });
 
   // Check username
-  $(".login-register-username").on("input", function () {
+  $(".login-register-username").off("input").on("input", function () {
     // Sync multiple instances of login possibilites
     $(".login-register-username").val($(this).val() ?? "");
 
@@ -231,7 +231,7 @@ export async function init(): Promise<void> {
     }
   });
 
-  $(".login-register-username").on("change", function () {
+  $(".login-register-username").off("change").on("change", function () {
     if (!checkUsername($(".login-register-username").val()?.toString() ?? "")) {
       $(".login-register-next-button").prop("disabled", true);
       $(".login-register-error-invalid-username").removeClass("d-none").addClass("d-flex");
@@ -239,7 +239,7 @@ export async function init(): Promise<void> {
   });
 
   // Check login password
-  $(".login-password").on("input", function () {
+  $(".login-password").off("input").on("input", function () {
     // Sync multiple instances of login possibilites
     $(".login-password").val($(this).val() ?? "");
 
@@ -247,13 +247,13 @@ export async function init(): Promise<void> {
     $(".login-button").prop("disabled", false);
   });
 
-  $(".login-password").on("change", function () {
+  $(".login-password").off("change").on("change", function () {
     $(".login-button").prop("disabled", $(this).val() === "");
   });
 
   // Check register password
 
-  $(".register-password").on("input", function () {
+  $(".register-password").off("input").on("input", function () {
     // Sync multiple instances of login possibilites
     $(".register-password").val($(this).val() ?? "");
 
@@ -268,7 +268,7 @@ export async function init(): Promise<void> {
     }
   });
 
-  $(".register-password").on("change", () => {
+  $(".register-password").off("change").on("change", () => {
     if (!checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
       $(".register-error-insecure-password").removeClass("d-none");
       $(".register-error-insecure-password").addClass("d-flex");
@@ -280,7 +280,7 @@ export async function init(): Promise<void> {
   });
 
   // Check repeated password
-  $(".register-password-repeat").on("input", function () {
+  $(".register-password-repeat").off("input").on("input", function () {
     // Sync multiple instances of login possibilites
     $(".register-password-repeat").val($(this).val() ?? "");
 
@@ -290,7 +290,7 @@ export async function init(): Promise<void> {
     }
   });
 
-  $(".register-password-repeat").on("change", () => {
+  $(".register-password-repeat").off("change").on("change", () => {
     if ($(".register-password").val() !== $(".register-password-repeat").val()) {
       $(".register-button").prop("disabled", true);
       $(".register-error-no-matching-passwords").removeClass("d-none").addClass("d-flex");
@@ -300,14 +300,14 @@ export async function init(): Promise<void> {
     }
   });
 
-  $(".register-checkbox").on("change", function () {
+  $(".register-checkbox").off("change").on("change", function () {
     $(".register-checkbox").prop("checked", $(this).prop("checked"));
     $(".register-button").prop("disabled", !(
       $(this).prop("checked") && $(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== ""
     ));
   });
 
-  $(".login-register-next-button").on("click", async () => {
+  $(".login-register-next-button").off("click").on("click", async () => {
     $(".login-register-back-button").removeClass("d-none");
 
     $(".login-register-element, .login-register-next-button").addClass("d-none");
@@ -323,7 +323,7 @@ export async function init(): Promise<void> {
     });
   });
 
-  $(".login-register-back-button").on("click", resetLoginRegister);
+  $(".login-register-back-button").off("click").on("click", resetLoginRegister);
 }
 
 $(() => {
@@ -351,7 +351,7 @@ export const user = {
   loggedIn: null as boolean | null,
   username: null as string | null,
   classJoined: null as boolean | null,
-  permissionLevel: null as number | null,
+  permissionLevel: 0 as number,
   changeEvents: 0,
 
   _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
@@ -370,7 +370,7 @@ export const user = {
       }
     
       user.classJoined = response.classJoined;
-      user.permissionLevel = response.permissionLevel;
+      user.permissionLevel = response.permissionLevel ?? 0;
     
       if (response.loggedIn) {
         user.loggedIn = true;

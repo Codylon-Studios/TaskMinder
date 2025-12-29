@@ -1,1 +1,24 @@
 <div id="loading-bar" class="position-fixed top-0 start-0 bg-primary pt-1"></div>
+
+<div class="modal fade" id="unsaved-changes-modal" tabindex="-1" aria-labelledby="unsaved-changes-modal-title">
+<div class="modal-dialog">
+  <div class="modal-content">
+  <div class="modal-header">
+    <h1 class="modal-title fs-5 text-center" id="unsaved-changes-modal-title">
+      Ungespeicherte Änderungen
+    </h1>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+  </div>
+  <div class="modal-body">
+    <div class="alert alert-warning p-2 d-flex align-items-center gap-2 w-fit-content mb-0">
+      <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
+      <span class="d-block me-1">Du hast ungespeicherte Änderungen. Wenn du gehst, werden diese zurückgesetzt!</span>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary fw-bold flex-fill" data-bs-dismiss="modal" id="unsaved-changes-leave">Trotzdem gehen</button>
+    <button type="button" class="btn btn-primary fw-bold flex-fill" data-bs-dismiss="modal" id="unsaved-changes-stay">Bleiben</button>
+  </div>
+  </div>
+</div>
+</div>

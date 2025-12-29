@@ -1,7 +1,6 @@
 export const __placeholder;
 
-// Color Theme
-type ColorTheme = "dark" | "light";
+type RawDate = number | string | Date
 
 // Month Dates
 type MonthDates = Date[][];
@@ -20,6 +19,7 @@ type DataAccessor<DataType> = {
   init(): Promise<DataAccessor<DataType>>;
   isInitialized(): boolean;
 }
+type SocketDataAccessor<DataType> = DataAccessor<DataType>;
 
 //  ╭───────────╮
 //  │ RESOURCES │

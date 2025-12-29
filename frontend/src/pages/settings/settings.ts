@@ -1,5 +1,6 @@
 import {
   colorTheme,
+  ColorTheme,
   eventTypeData,
   joinedTeamsData,
   msToTime,
@@ -15,8 +16,8 @@ import {
   getInputValue,
   socket,
   registerSocketListeners,
-  getSite,
-  onlyThisSite
+  onlyThisSite,
+  unsavedChanges
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel } from "../../global/types";
 import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
@@ -31,31 +32,31 @@ function checkSecurePassword(password: string): boolean {
 
 async function updateColorTheme(): Promise<void> {
   if ($("#color-theme-dark").prop("checked")) {
-    colorTheme("dark");
-    localStorage.setItem("colorTheme", "dark");
+    colorTheme(ColorTheme.DARK);
+    localStorage.setItem("colorTheme", ColorTheme.DARK);
   }
   else if ($("#color-theme-light").prop("checked")) {
-    colorTheme("light");
-    localStorage.setItem("colorTheme", "light");
+    colorTheme(ColorTheme.LIGHT);
+    localStorage.setItem("colorTheme", ColorTheme.LIGHT);
   }
   else {
     if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
-      colorTheme("dark");
+      colorTheme(ColorTheme.DARK);
     }
     else {
-      colorTheme("light");
+      colorTheme(ColorTheme.LIGHT);
     }
     localStorage.setItem("colorTheme", "auto");
   }
 
-  if ((await colorTheme()) === "light") {
+  if ((await colorTheme()) === ColorTheme.LIGHT) {
     $("html").css({ background: "#ffffff" });
-    document.body.dataset.bsTheme = "light";
+    document.body.dataset.bsTheme = ColorTheme.LIGHT;
     $('meta[name="theme-color"]').attr("content", "#f8f9fa");
   }
   else {
     $("html").css({ background: "#212529" });
-    document.body.dataset.bsTheme = "dark";
+    document.body.dataset.bsTheme = ColorTheme.DARK;
     $('meta[name="theme-color"]').attr("content", "#2b3035");
   }
 }
@@ -113,6 +114,8 @@ async function renderClassMemberList(): Promise<void> {
   $("#app").off("change", ".class-member-role-input").on("change", ".class-member-role-input", async function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
     $("#class-members-cancel").show();
+    unsavedChanges(true);
+    unsavedChanges(true);
 
     const classMemberId = $(this).data("id");
     const newRole = Number.parseInt($(this).val()) as ClassMemberPermissionLevel;
@@ -134,6 +137,8 @@ async function renderClassMemberList(): Promise<void> {
   $(".class-member-kick").on("click", function () {
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
     $("#class-members-cancel").show();
+    unsavedChanges(true);
+    unsavedChanges(true);
 
     const classMemberId = $(this).data("id");
     if ($(this).hasClass("btn-danger")) {
@@ -234,6 +239,8 @@ async function renderTeamLists(): Promise<void> {
 
   $("#app").off("input", ".team-name-input").on("input", ".team-name-input", function () {
     $("#teams-cancel").show();
+    unsavedChanges(true);
+    unsavedChanges(true);
     $(this).removeClass("is-invalid");
     if (!$(".team-name-input").hasClass("is-invalid")) {
       $("#teams-save").prop("disabled", false);
@@ -242,6 +249,8 @@ async function renderTeamLists(): Promise<void> {
 
   $(".team-delete").on("click", function () {
     $("#teams-cancel").show();
+    unsavedChanges(true);
+    unsavedChanges(true);
     $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
 
     const teamId = $(this).data("id");
@@ -349,6 +358,8 @@ async function renderEventTypeList(): Promise<void> {
 
   $("#app").off("input", ".event-type-name-input").on("input", ".event-type-name-input", function () {
     $("#event-types-cancel").show();
+    unsavedChanges(true);
+    unsavedChanges(true);
     $(this).removeClass("is-invalid");
     if (!$(".event-type-name-input").hasClass("is-invalid")) {
       $("#event-types-save").prop("disabled", false);
@@ -357,6 +368,8 @@ async function renderEventTypeList(): Promise<void> {
 
   $("#app").off("change", ".event-type-color-input").on("change", ".event-type-color-input", async function () {
     $("#event-types-cancel").show();
+    unsavedChanges(true);
+    unsavedChanges(true);
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
 
     const eventTypeId = $(this).data("id");
@@ -377,6 +390,8 @@ async function renderEventTypeList(): Promise<void> {
 
   $(".event-type-delete").on("click", function () {
     $("#event-types-cancel").show();
+    unsavedChanges(true);
+    unsavedChanges(true);
     $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
 
     const eventTypeId = $(this).data("id");
@@ -555,6 +570,7 @@ async function renderSubjectList(): Promise<void> {
 
   $("#app").off("input", ".subject-name-long-input").on("input", ".subject-name-long-input", function () {
     $("#subjects-cancel").show();
+    unsavedChanges(true);
     $(this).removeClass("is-invalid");
     if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
       $("#subjects-save").prop("disabled", false);
@@ -563,6 +579,7 @@ async function renderSubjectList(): Promise<void> {
 
   $("#app").off("change", ".subject-name-short-input").on("change", ".subject-name-short-input", async function () {
     $("#subjects-cancel").show();
+    unsavedChanges(true);
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
     const subjectId = $(this).data("id");
@@ -584,6 +601,7 @@ async function renderSubjectList(): Promise<void> {
 
   $("#app").off("change", ".subject-teacher-gender-input").on("change", ".subject-teacher-gender-input", async function () {
     $("#subjects-cancel").show();
+    unsavedChanges(true);
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
     const subjectId = $(this).data("id");
@@ -633,6 +651,7 @@ async function renderSubjectList(): Promise<void> {
 
   $("#app").off("input", ".subject-teacher-long-input").on("input", ".subject-teacher-long-input", function () {
     $("#subjects-cancel").show();
+    unsavedChanges(true);
     $(this).removeClass("is-invalid");
     if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
       $("#subjects-save").prop("disabled", false);
@@ -641,6 +660,7 @@ async function renderSubjectList(): Promise<void> {
 
   $("#app").off("change", ".subject-teacher-short-input").on("change", ".subject-teacher-short-input", async function () {
     $("#subjects-cancel").show();
+    unsavedChanges(true);
     $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
     const subjectId = $(this).data("id");
@@ -663,6 +683,7 @@ async function renderSubjectList(): Promise<void> {
   if (dsbActivated) {
     $("#app").off("change", ".subject-name-substitution-input").on("change", ".subject-name-substitution-input", async function () {
       $("#subjects-cancel").show();
+      unsavedChanges(true);
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
   
       const subjectId = $(this).data("id");
@@ -689,6 +710,7 @@ async function renderSubjectList(): Promise<void> {
   
     $("#app").off("change", ".subject-teacher-substitution-input").on("change", ".subject-teacher-substitution-input", async function () {
       $("#subjects-cancel").show();
+      unsavedChanges(true);
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
   
       const subjectId = $(this).data("id");
@@ -716,6 +738,7 @@ async function renderSubjectList(): Promise<void> {
 
   $(".subject-delete").on("click", function () {
     $("#subjects-cancel").show();
+    unsavedChanges(true);
     $("#subjects-save-confirm-container, #subjectss-save-confirm").addClass("d-none");
 
     const subjectId = $(this).data("id");
@@ -841,10 +864,12 @@ async function renderTimetable(): Promise<void> {
     .off("input", ".timetable-lesson input, .timetable-lesson select")
     .on("input", ".timetable-lesson input, .timetable-lesson select", () => {
       $("#timetable-cancel").show();
+      unsavedChanges(true);
     });
 
   $("#app").off("click", ".timetable-new-lesson").on("click", ".timetable-new-lesson", function () {
     $("#timetable-cancel").show();
+    unsavedChanges(true);
     const lessonTemplate = $(`
       <div class="timetable-lesson card p-2 mb-2">
         <div class="d-flex mb-2 align-items-center">
@@ -928,7 +953,7 @@ async function renderTimetable(): Promise<void> {
     const mostFrequentRoom = Object.entries(roomOccurences).reduce((a, b) => b[1] > a[1] ? b : a, ["", 0])[0];
     lessonTemplate.find(".timetable-room").val(mostFrequentRoom).addClass("autocomplete").on("focus", function () {
       $(this).val("").removeClass("autocomplete");
-    });;
+    });
 
     lessonList.append(lessonTemplate);
   });
@@ -937,6 +962,7 @@ async function renderTimetable(): Promise<void> {
 
   $("#app").off("click", ".timetable-lesson-delete").on("click", ".timetable-lesson-delete", function () {
     $("#timetable-cancel").show();
+    unsavedChanges(true);
     $(this).parent().parent().remove();
   });
 }
@@ -1128,8 +1154,8 @@ export async function init(): Promise<void> {
     (async () => $("body").attr("data-bs-theme", await colorTheme()))();
     
     $("#color-theme-auto").prop("checked", colorThemeSetting === "auto");
-    $("#color-theme-dark").prop("checked", colorThemeSetting === "dark");
-    $("#color-theme-light").prop("checked", colorThemeSetting === "light");
+    $("#color-theme-dark").prop("checked", colorThemeSetting === ColorTheme.DARK);
+    $("#color-theme-light").prop("checked", colorThemeSetting === ColorTheme.LIGHT);
 
     $("#color-theme input").each(function () {
       $(this).on("click", () => {
@@ -1861,12 +1887,14 @@ export async function init(): Promise<void> {
 
     $("#class-members-cancel").on("click", () => {
       $("#class-members-cancel").hide();
+      unsavedChanges(false);
       renderClassMemberList();
       $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
     });
 
     async function saveClassMembers(): Promise<void> {
       $("#class-members-cancel").hide();
+      unsavedChanges(false);
 
       const classMembersKickData: { accountId: number }[] = [];
       const classMembersPermissionsData: {accountId: number, permissionLevel: ClassMemberPermissionLevel }[] = [];
@@ -1990,6 +2018,7 @@ export async function init(): Promise<void> {
 
     $("#new-team").on("click", () => {
       $("#teams-cancel").show();
+      unsavedChanges(true);
       $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
 
       $("#teams-list .no-teams").remove();
@@ -2037,12 +2066,14 @@ export async function init(): Promise<void> {
 
     $("#teams-cancel").on("click", () => {
       $("#teams-cancel").hide();
+      unsavedChanges(false);
       renderTeamLists();
       $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
     });
 
     async function saveTeams(): Promise<void> {
       $("#teams-cancel").hide();
+      unsavedChanges(false);
       const newTeamsData: TeamsData = [];
       $(".team-name-input").each(function () {
         if ($(this).closest(".card").find(".btn-success").length > 0) return;
@@ -2133,6 +2164,7 @@ export async function init(): Promise<void> {
 
     $("#new-event-type").on("click", () => {
       $("#event-types-cancel").show();
+      unsavedChanges(true);
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
 
       $("#event-types-list .no-event-types").remove();
@@ -2191,12 +2223,14 @@ export async function init(): Promise<void> {
 
     $("#event-types-cancel").on("click", () => {
       $("#event-types-cancel").hide();
+      unsavedChanges(false);
       renderEventTypeList();
       $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
     });
 
     async function saveEventTypes(): Promise<void> {
       $("#event-types-cancel").hide();
+      unsavedChanges(false);
       const newEventTypesData: EventTypeData = [];
       $("#event-types-list > div").each(function () {
         if ($(this).find(".btn-success").length > 0) return;
@@ -2320,6 +2354,7 @@ export async function init(): Promise<void> {
 
     $("#new-subject").on("click", () => {
       $("#subjects-cancel").show();
+      unsavedChanges(true);
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
 
       $("#subjects-list .no-subjects").remove();
@@ -2407,12 +2442,14 @@ export async function init(): Promise<void> {
 
     $("#subjects-cancel").on("click", () => {
       $("#subjects-cancel").hide();
+      unsavedChanges(false);
       renderSubjectList();
       $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
     });
 
     async function saveSubjects(): Promise<void> {
       $("#subjects-cancel").hide();
+      unsavedChanges(false);
       const newSubjectData: SubjectData = [];
       $("#subjects-list > div").each(function () {
         function getInputValueSelectorFallback(element: HTMLElement, selector: string, fallbackSelector: string): string {
@@ -2530,11 +2567,13 @@ export async function init(): Promise<void> {
 
     $("#timetable-cancel").on("click", () => {
       $("#timetable-cancel").hide();
+      unsavedChanges(false);
       renderTimetable();
     });
 
     $("#timetable-save").on("click", async () => {
       $("#timetable-cancel").hide();
+      unsavedChanges(false);
       const newTimetableData: LessonData = [];
       $("#timetable > div").each(function (weekDay) {
         $(this)

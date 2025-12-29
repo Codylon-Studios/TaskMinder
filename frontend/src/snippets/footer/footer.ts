@@ -1,4 +1,4 @@
-import { colorTheme, isSite } from "../../global/global.js";
+import { ColorTheme, colorTheme, isSite } from "../../global/global.js";
 
 const bottombarShown = globalThis.innerWidth < 992 && $(".bottombar").length > 0;
 let bottombarHeight = 38 + Math.max(8, globalThis.innerWidth / 100 * 1.5) * 1.5;
@@ -33,12 +33,12 @@ $("#footer-close").on("click", () => {
 
 $("body").addClass("flex-column min-vh-100");
 
-if ((await colorTheme()) === "dark") {
+if ((await colorTheme()) === ColorTheme.DARK) {
   $("footer").removeClass("bg-dark").addClass("bg-dark-subtle");
 }
 
 colorTheme.on("update", async () => {
-  if ((await colorTheme()) === "dark") {
+  if ((await colorTheme()) === ColorTheme.DARK) {
     $("footer").removeClass("bg-dark").addClass("bg-dark-subtle");
   }
   else {
