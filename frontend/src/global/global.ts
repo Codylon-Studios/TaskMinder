@@ -1,5 +1,5 @@
 import { io } from "../vendor/socket/socket.io.esm.min.js";
-import { user } from "../snippets/navbar/navbar.js";
+import { clearedRequestQueue, highlightOffline, updateRequestQueue, user } from "../snippets/navbar/navbar.js";
 import {
   ClassMemberData,
   DataAccessor,
@@ -21,8 +21,14 @@ import {
   TeamsData,
   UploadData,
   SocketDataAccessor,
-  RawDate
+  RawDate,
+  AjaxOptions,
+  AjaxError,
+  SerializedRequest
 } from "./types";
+
+export const VERSION = "v1";
+const REQUEST_QUEUE = "request-queue-" + VERSION;
 
 export const lastCommaRegex = /,(?!.*,)/;
 
@@ -235,6 +241,11 @@ export function escapeHTML(str: string): string {
     default: return char;
     }
   });
+}
+
+export function cutString(str: string, maxLength: number): string {
+  if (str.length < maxLength) return str;
+  return str.substring(0, maxLength - 1) + "…";
 }
 
 export function getInputValue(element: JQuery<HTMLElement>, fallback?: string): string {
@@ -517,12 +528,177 @@ export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: 
   return true;
 }
 
+export function handleStatusCodes(xhr: JQueryXHR, actions?: Record<number, () => unknown>): void {
+  if (xhr.status === 500) {
+    $("#error-server-toast").toast("show");
+  }
+  else if (xhr.status === 503) {
+    highlightOffline();
+  }
+  else if (actions?.[xhr.status] === undefined) {
+    $("#unknown-error-toast").toast("show");
+  }
+
+  const fn = actions?.[xhr.status];
+  if (fn !== undefined) fn();
+}
+
+export function handleBasicStatusCodes(xhr: JQueryXHR): void {
+  handleStatusCodes(xhr);
+}
+
+export function openRequestQueueDB(): Promise<IDBDatabase> {
+  return new Promise(res => {
+    const db = indexedDB.open(REQUEST_QUEUE, 1);
+
+    db.addEventListener("upgradeneeded", () => {
+      db.result.createObjectStore("queue", {
+        keyPath: "id",
+        autoIncrement: true
+      });
+    });
+
+    db.addEventListener("success", () => {
+      res(db.result);
+    });
+  });
+}
+
+async function queueRequest(request: Request): Promise<void> {
+  const headers: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+
+  const serializedReq = {
+    url: request.url,
+    method: request.method,
+    headers,
+    body: await request.clone().arrayBuffer()
+  };
+
+  const db = await openRequestQueueDB();
+  const tx = db.transaction("queue", "readwrite");
+  const store = tx.objectStore("queue");
+  store.add(serializedReq);
+  
+  updateRequestQueue();
+}
+
+async function clearRequestQueue(): Promise<void> {
+  const db = await openRequestQueueDB();
+  const tx = db.transaction("queue", "readwrite");
+  const store = tx.objectStore("queue");
+
+  const allRequest = store.getAll();
+  const all = await new Promise<({id: number} & SerializedRequest)[]>(res => {
+    allRequest.addEventListener("success", () => {
+      res(allRequest.result);
+    });
+  });
+
+  const reqAndRes: {request: SerializedRequest, response: Response}[] = [];
+
+  for (const item of all) {
+    const res = await fetch(item.url, { method: item.method, headers: item.headers, body: new Uint8Array(item.body) });
+    reqAndRes.push({
+      request: item,
+      response: res
+    });
+    await new Promise<void>(res => setTimeout(res, 40));
+  }
+
+  const clearDb = await openRequestQueueDB();
+  clearDb.transaction("queue", "readwrite").objectStore("queue").clear();
+
+  clearedRequestQueue(reqAndRes);
+
+  if (user.classJoined) {
+    await reloadAll();
+    socket.connect();
+  }
+}
+
+export async function ajax(method: string, url: string, options?: AjaxOptions): Promise<Response> {
+  const {
+    body,
+    headers = {},
+    queueable = false,
+    expectedErrors = []
+  } = options ?? {};
+
+  const fetchOptions: RequestInit = {
+    method,
+    headers: {
+      "Accept": "application/json",
+      "X-CSRF-Token": await csrfToken(),
+      ...headers
+    }
+  };
+
+  if (body) {
+    if (body instanceof FormData) {
+      fetchOptions.body = body;
+    }
+    else {
+      fetchOptions.headers = {
+        ...fetchOptions.headers,
+        "Content-Type": "application/json"
+      };
+      fetchOptions.body = JSON.stringify(body);
+    }
+  }
+
+  const req = new Request(url, fetchOptions);
+
+  if (navigator.onLine) {
+    const timeout = setTimeout(() => {
+      $("#error-server-toast").toast("show");
+    }, 5000);
+
+    const res = await fetch(req);
+    
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const text = await res.text();
+
+      const error: AjaxError = {
+        status: res.status,
+        responseText: text
+      };
+
+      if (res.status === 500) {
+        $("#error-server-toast").toast("show");
+        throw error;
+      }
+      else if (res.status === 503) {
+        highlightOffline();
+      }
+      else if (expectedErrors.includes(res.status)) {
+        throw error;
+      }
+      else {
+        $("#unknown-error-toast").toast("show");
+        throw error;
+      }
+    }
+
+    return res;
+  }
+  else if (queueable === true) {
+    await queueRequest(req);
+    return new Response("Request queued, waiting for the network to become available", { status: 202 });
+  }
+  else {
+    highlightOffline();
+    return new Response("Request cannot be queued and no network available", { status: 503 });
+  }
+}
+
 export async function renderAll(): Promise<void> {
   if (!setRenderOnUserChangeListener) {
-    user.on("change", async () => {
-      for (const d of socketDataAccessors) d.reload({ silent: true });
-      renderAll();
-    });
+    user.on("change", reloadAll);
     setRenderOnUserChangeListener = true;
   }
   const s = getSite();
@@ -534,8 +710,15 @@ export async function renderAll(): Promise<void> {
 }
 let setRenderOnUserChangeListener = false;
 
+export async function reloadAll(): Promise<void> {
+  for (const d of socketDataAccessors) await d.reload({ silent: true });
+  await renderAll();
+}
+
 // Global socket variable that can be accessed from any script
-export const socket = io();
+export const socket = io({
+  autoConnect: false
+});
 
 export enum ColorTheme {
   DARK = "dark",
@@ -578,12 +761,22 @@ export function createDataAccessor<DataType>(name: string, config?: {
   const reload = config?.reload;
 
   const reloadFunction = typeof reload === "string" ? async (settings?: {silent?: boolean}) => {
-    return new Promise<void>(res => {
-      $.get(reload, data => {
-        accessor.set(data, settings);
-        res();
-      });
-    });
+    const res = await fetch(reload);
+    if (res.redirected) {
+      accessor.set(null, settings);
+      return;
+    }
+    try {
+      accessor.set(await res.clone().json(), settings); 
+    }
+    catch {
+      console.warn(
+        `Getting the value for the data accessor %c${name}%c produced invalid JSON: `,
+        "font-weight: bold",
+        "font-weight: normal",
+        res.clone()
+      );
+    }
   } : reload ?? null;
 
   const accessor = async (value?: DataType | null): Promise<DataType> => {
@@ -666,8 +859,8 @@ export function createDataAccessor<DataType>(name: string, config?: {
     if (!_initialized) {
       if (typeof reloadFunction === "function") {
         data = null;
-        await reloadFunction();
         _initialized = true;
+        await reloadFunction();
       }
       else {
         console.warn(
@@ -744,10 +937,38 @@ eventTypeData.on("change", tryForceReloadEventTypeStyles);
 
 $(document).on("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    for (const d of socketDataAccessors) d.reload({ silent: true });
-    renderAll();
+    if (navigator.onLine) reloadAll();
   }
 });
+
+
+function onOffline(): void {
+  $("#offline-hint").show();
+  $("#offline-popup").show();
+  $("#navbar-reload-button").hide();
+  socket.disconnect();
+}
+
+async function onOnline(): Promise<void> {
+  $("#offline-hint").hide();
+  $("#offline-popup").hide();
+  $("#navbar-reload-button").show();
+  await user.auth();
+  if (! user.classJoined && isSite("main", "events", "homework", "uploads")) {
+    document.location.href = document.location.origin + "/join";
+  }
+  clearRequestQueue();
+}
+
+$(globalThis).on("offline", onOffline);
+$(globalThis).on("online", onOnline);
+if (navigator.onLine) {
+  onOnline();
+}
+else {
+  onOffline();
+  updateRequestQueue();
+}
 
 // CSRF token
 export const csrfToken = createDataAccessor<string>("csrfToken");
@@ -759,6 +980,15 @@ showAllUploads(false);
 // Show all uploads
 export const unsavedChanges = createDataAccessor<boolean>("unsavedChanges");
 unsavedChanges(false);
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    navigator.serviceWorker.register("/sw.js");
+  });
+  navigator.serviceWorker.addEventListener("message", ev => {
+    console.log("Received msg", ev.data);
+  });
+}
 
 $('[data-bs-toggle="tooltip"]').tooltip();
 new MutationObserver(mutationsList => {
@@ -849,9 +1079,15 @@ setTimeout(() => {
 }, 1);
 
 // Update everything on clicking the reload button
-$(document).on("click", "#navbar-reload-button", () => {
-  for (const d of socketDataAccessors) d.reload({ silent: true });
-  renderAll();
+$(document).on("click", "#navbar-reload-button", async function () {
+  $(this).find("i").addClass("fa-spin");
+  await reloadAll();
+  $(this).find("i").removeClass("fa-spin fa-rotate").addClass("fa-check text-success");
+  $(this).prop("disabled", true);
+  setTimeout(() => {
+    $(this).find("i").addClass("fa-rotate").removeClass("fa-check text-success");
+    $(this).prop("disabled", false);
+  }, 1000);
 });
 
 // Change btn group selections to vertical / horizontal

@@ -10,6 +10,6 @@
   ],
   "name": "TaskMinder",
   "orientation": "any",
-  "start_url": "/",
+  "start_url": "/main",
   "theme-color": "#3bb9ca"
 }

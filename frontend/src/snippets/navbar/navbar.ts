@@ -1,129 +1,56 @@
-import { csrfToken, isSite } from "../../global/global.js";
+import {
+  ajax,
+  cutString,
+  escapeHTML,
+  eventData,
+  homeworkData,
+  isSite,
+  openRequestQueueDB,
+  uploadData
+} from "../../global/global.js";
+import { AjaxError, SerializedRequest } from "../../global/types.js";
 import { UserEventCallback, UserEventName } from "./types.js";
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 async function registerAccount(username: string, password: string): Promise<void> {
-  const data = {
-    username: username,
-    password: password
-  };
-  let hasResponded = false;
-
-  $.ajax({
-    url: "/account/register",
-    type: "POST",
-    data: data,
-    headers: {
-      "X-CSRF-Token": await csrfToken()
-    },
-    success: () => {
-      $("#register-success-toast .username").text(username);
-      $("#register-success-toast").toast("show");
-      $("#login-register-modal").modal("hide");
-      
-      user.auth();
-    },
-    error: xhr => {
-      if (xhr.status === 500) {
-        $navbarToasts.serverError.toast("show");
-      }
-      else {
-        $navbarToasts.unknownError.toast("show");
-      }
-    },
-    complete: () => {
-      hasResponded = true;
+  await ajax("POST", "/account/register", {
+    body: {
+      username: username,
+      password: password
     }
   });
 
-  setTimeout(() => {
-    if (!hasResponded) {
-      $navbarToasts.serverError.toast("show");
-    }
-  }, 5000);
+  $("#register-success-toast .username").text(username);
+  $("#register-success-toast").toast("show");
+  $("#login-register-modal").modal("hide");
+  
+  user.auth();
 }
 
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
 async function loginAccount(username: string, password: string): Promise<void> {
-  const data = {
-    username: username,
-    password: password
-  };
-  let hasResponded = false;
-
-  $.ajax({
-    url: "/account/login",
-    type: "POST",
-    data: data,
-    headers: {
-      "X-CSRF-Token": await csrfToken()
-    },
-    success: () => {
-      $("#login-success-toast .username").text(username);
-      $("#login-success-toast").toast("show");
-      $("#login-register-modal").modal("hide");
-
-      user.auth();
-    },
-    error: xhr => {
-      if (xhr.status === 401) {
-        $(".login-error-invalid-password").removeClass("d-none").addClass("d-flex");
-        $(".login-button").prop("disabled", true);
-      }
-      else if (xhr.status === 500) {
-        $navbarToasts.serverError.toast("show");
-      }
-      else {
-        $navbarToasts.unknownError.toast("show");
-      }
-    },
-    complete: () => {
-      hasResponded = true;
-    }
-  });
-
-  setTimeout(() => {
-    if (!hasResponded) {
-      $navbarToasts.serverError.toast("show");
-    }
-  }, 5000);
-}
-
-async function checkExistingUsername(username: string): Promise<boolean> {
-  const data = { username: username };
-  const token = await csrfToken();
-  let hasResponded = false;
-
-  return new Promise(resolve => {
-    $.ajax({
-      url: "/account/checkusername",
-      type: "POST",
-      data: data,
-      headers: {
-        "X-CSRF-Token": token
+  try {
+    await ajax("POST", "/account/login", {
+      body: {
+        username,
+        password
       },
-      success: res => {
-        resolve(res);
-      },
-      error: xhr => {
-        if (xhr.status === 500) {
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        hasResponded = true;
-      }
+      expectedErrors: [401]
     });
+    
+    $("#login-success-toast .username").text(username);
+    $("#login-success-toast").toast("show");
+    $("#login-register-modal").modal("hide");
 
-    setTimeout(() => {
-      if (!hasResponded) {
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 5000);
-  });
+    user.auth();
+  }
+  catch (e) {
+    const err = e as AjaxError;
+    if (err.status === 401) {
+      $(".login-error-invalid-password").removeClass("d-none").addClass("d-flex");
+      $(".login-button").prop("disabled", true);
+    }
+  }
 }
 
 export function resetLoginRegister(): void {
@@ -157,38 +84,182 @@ function checkSecurePassword(password: string): boolean {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
-$("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
-  let hasResponded = false;
+async function getRequestDescription(req: SerializedRequest): Promise<string> {
+  const rawBody = req.body;
+  const textBody = rawBody instanceof ArrayBuffer ? new TextDecoder().decode(rawBody) : rawBody;
+  let jsonBody;
+  try {
+    jsonBody = JSON.parse(textBody);
+  }
+  catch {
+    jsonBody = null;
+  }
+  switch ((new URL(req.url, globalThis.location.origin)).pathname) {
+  case "/events/add_event": {
+    return `Ereignis "${cutString(escapeHTML(jsonBody.name), 40)}" hinzufügen`;
+  }
+  case "/events/edit_event": {
+    return `Ereignis "${cutString(escapeHTML(jsonBody.name), 40)}" bearbeiten`;
+  }
+  case "/events/delete_event": {
+    const name = (await eventData()).find(e => e.eventId === jsonBody.eventId)?.name ?? "?";
+    return `Ereignis "${cutString(escapeHTML(name), 40)}" löschen`;
+  }
+  case "/homework/add_homework": {
+    return `Hausaufgabe "${cutString(escapeHTML(jsonBody.content), 40)}" hinzufügen`;
+  }
+  case "/homework/edit_homework": {
+    return `Hausaufgabe "${cutString(escapeHTML(jsonBody.content), 40)}" bearbeiten`;
+  }
+  case "/homework/delete_homework": {
+    const content = (await homeworkData()).find(h => h.homeworkId === jsonBody.homeworkId)?.content ?? "?";
+    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" löschen`;
+  }
+  case "/homework/check_homework": {
+    const content = (await homeworkData()).find(h => h.homeworkId === jsonBody.homeworkId)?.content ?? "?";
+    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.checkStatus === "true" ? "erledigt" : "nicht erledigt"}`;
+  }
+  case "/uploads/upload": {
+    const match = textBody.match(/name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/);
+    const uploadName = match ? match[1].trim() : "?";
+    return `Datei "${cutString(escapeHTML(uploadName), 40)}" hochladen`;
+  }
+  case "/uploads/edit": {
+    return `Datei "${cutString(escapeHTML(jsonBody.uploadName), 40)}" bearbeiten`;
+  }
+  case "/uploads/delete": {
+    const uploadName = (await uploadData()).uploads.find(u => u.uploadId === jsonBody.uploadId)?.uploadName ?? "?";
+    return `Datei "${cutString(escapeHTML(uploadName), 40)}" löschen`;
+  }
 
-  $.ajax({
-    url: "/account/logout",
-    type: "POST",
-    headers: {
-      "X-CSRF-Token": await csrfToken()
-    },
-    success: () => {
-      $("#logout-success-toast").toast("show");
-        
-      user.auth();
-    },
-    error: xhr => {
-      if (xhr.status === 500) {
-        $navbarToasts.serverError.toast("show");
-      }
-      else {
-        $navbarToasts.unknownError.toast("show");
-      }
-    },
-    complete: () => {
-      hasResponded = true;
+  case "/teams/set_joined_teams_data": {
+    return "Beigetretene Teams auswählen";
+  }
+  case "/class/change_class_name": {
+    return `Klassennamen zu ${escapeHTML(jsonBody.classDisplayName)} ändern`;
+  }
+  case "/class/change_class_code": {
+    return "Neuen Klassencode anfordern";
+  }
+  case "/class/upgrade_test_class": {
+    return "Testklasse zu normaler Klasse machen";
+  }
+  case "/class/change_default_permission": {
+    return "Standardrolle der Klasse ändern";
+  }
+  case "/class/kick_class_members": {
+    return "Einige Klassenmitglieder entfernen";
+  }
+  case "/class/set_class_members_permission": {
+    return "Berechtigungen einiger Klassenmitglieder ändern";
+  }
+  case "/teams/set_teams_data": {
+    return "Verfügbare Teams bearbeiten";
+  }
+  case "/events/set_event_type_data": {
+    return "Verfügbare Ereignisarten bearbeiten";
+  }
+  case "/subjects/set_subject_data": {
+    return "Verfügbare Fächer bearbeiten";
+  }
+  case "/lessons/set_lesson_data": {
+    return "Stundenplan bearbeiten";
+  }
+
+  default:
+    return "?";
+  }
+}
+
+function getResponseFailReason(req: SerializedRequest, res: Response): string {
+  const rawResBody = res.body;
+  const textResBody = rawResBody instanceof ArrayBuffer ? new TextDecoder().decode(rawResBody) : rawResBody;
+  const path = (new URL(req.url, globalThis.location.origin)).pathname;
+  if (res.ok) return "";
+  if (res.status === 401)
+    return "Du hast nicht mehr die Berechtigung, diese Änderung auszuführen. "
+      + "Entweder deine Rolle wurde aktualisiert oder du musst dich erneut anmelden";
+  if (res.status === 500) return "Auf unserem Server ist ein Problem aufgetreten.";
+  if (res.status === 404) {
+    const type = "";
+    if (path.startsWith("/homework")) return "Die Hausaufgabe";
+    if (path.startsWith("/events")) return "Das Ereignis";
+    if (path.startsWith("/uploads")) return "Die Datei";
+    return type + " wurde in der Zwischenzeit gelöscht.";
+  }
+  if (res.status === 413) {
+    if (path === "/uploads/upload") {
+      return "Die Datei ist zu groß (maximal 15MB erlaubt).";
     }
+  }
+  if (res.status === 400) {
+    if (path === "/uploads/upload") {
+      if (textResBody === "MIME-Type not supported") return "Das Dateiformat ist nicht unterstützt.";
+    }
+  }
+  return "Ein unbekannter Fehler ist aufgetreten.";
+}
+
+export async function updateRequestQueue(): Promise<void> {
+  await eventData.init();
+  await homeworkData.init();
+  
+  const db = await openRequestQueueDB();
+  const tx = db.transaction("queue", "readwrite");
+  const store = tx.objectStore("queue");
+  
+  const allRequest = store.getAll();
+  const requests = await new Promise<({id: number} & SerializedRequest)[]>(res => {
+    allRequest.addEventListener("success", () => {
+      res(allRequest.result);
+    });
   });
+  if ($("#offline-queue-circle").text() === "0" && requests.length > 0) highlightOffline();
+  $("#offline-queue-title, #offline-queue-description, #offline-queue-circle").toggle(requests.length > 0);
+  $(".offline-queue-length").text(requests.length);
 
-  setTimeout(() => {
-    if (!hasResponded) {
-      $navbarToasts.serverError.toast("show");
-    }
-  }, 1000);
+  const newList = $("<div></div>");
+  
+  for (const req of requests) {
+    newList.append(`
+      <li>${await getRequestDescription(req)}</li>
+    `);
+  }
+
+  $("#offline-queue-list").empty().append(newList.children());
+}
+
+export async function clearedRequestQueue(requestsAndResponses: {request: SerializedRequest, response: Response}[]): Promise<void> {
+  updateRequestQueue();
+
+  const newList = $("<div></div>");
+  
+  for (const reqAndRes of requestsAndResponses) {
+    const req = reqAndRes.request;
+    const res = reqAndRes.response;
+    newList.append(`
+      <li class="list-group-item d-flex align-items-center gap-2">
+        <i class="fas ${res.ok ? "fa-circle-check text-success" : "fa-circle-xmark text-danger"} ms-n1"
+          role="img" aria-label="${res.ok ? "Erfolgreich" : "Fehler"}"></i>
+        <div>
+          ${await getRequestDescription(req)}
+          <div class="form-text text-danger mt-0">${getResponseFailReason(req, res)}</div>
+        </div>
+      </li>
+    `);
+  }
+
+  $("#request-queue-cleared-modal-list").empty().append(newList.children());
+
+  if (requestsAndResponses.length > 0) $("#request-queue-cleared-modal").modal("show");
+}
+
+$("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
+  await ajax("POST", "/account/logout");
+
+  $("#logout-success-toast").toast("show");
+    
+  user.auth();
 });
 
 $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
@@ -196,7 +267,7 @@ $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
 });
 
 export async function init(): Promise<void> {
-  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings"));
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && navigator.onLine);
   $("#login-register-button").toggleClass("d-none", isSite("join"));
 
   //
@@ -312,15 +383,17 @@ export async function init(): Promise<void> {
 
     $(".login-register-element, .login-register-next-button").addClass("d-none");
 
-    checkExistingUsername($(".login-register-username").val()?.toString() ?? "").then(response => {
-      const isTaken = response;
-      if (isTaken) {
-        $(".login-element").removeClass("d-none");
-      }
-      else {
-        $(".register-element").removeClass("d-none");
-      }
+    const res = await ajax("POST", "/account/checkusername", {
+      body: { username: $(".login-register-username").val()?.toString() ?? "" }
     });
+
+    const isTaken = await res.json();
+    if (isTaken) {
+      $(".login-element").removeClass("d-none");
+    }
+    else {
+      $(".register-element").removeClass("d-none");
+    }
   });
 
   $(".login-register-back-button").off("click").on("click", resetLoginRegister);
@@ -338,6 +411,17 @@ $(() => {
     $("#offcanvas-account-name").text(user.username ?? "");
     return _;
   })());
+});
+
+export function highlightOffline(): void {
+  $("#offline-hint").addClass("fa-beat");
+  setTimeout(() => $("#offline-hint").removeClass("fa-beat"), 1500);
+  $("#offline-popup").show();
+}
+
+$("#offline-hint").on("click", () => $("#offline-popup").toggle());
+$(document).on("click", ev => {
+  if ($(ev.target).closest("#offline-wrapper").length === 0) $("#offline-popup").hide();
 });
 
 export const $navbarToasts = {

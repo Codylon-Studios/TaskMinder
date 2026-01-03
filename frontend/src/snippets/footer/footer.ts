@@ -1,30 +1,11 @@
 import { ColorTheme, colorTheme, isSite } from "../../global/global.js";
 
-const bottombarShown = globalThis.innerWidth < 992 && $(".bottombar").length > 0;
-let bottombarHeight = 38 + Math.max(8, globalThis.innerWidth / 100 * 1.5) * 1.5;
-if (/OS (18|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
-  bottombarHeight += 16;
-}
-
-const fontSize = JSON.parse(localStorage.getItem("fontSize") ?? "0") ?? 0;
-if (fontSize === 1) bottombarHeight *= 19 / 16;
-else if (fontSize === 2) bottombarHeight *= 11 / 8;
-
 if (localStorage.getItem("displayFooter") === "false") {
   $("footer").hide();
-  $("body").css({
-    paddingBottom: (bottombarShown ? bottombarHeight : 0) + 70 + "px"
-  });
-}
-else {
-  $("body").css({ paddingBottom: (bottombarShown ? bottombarHeight : 0) + "px" });
 }
 
 $("#footer-close").on("click", () => {
   localStorage.setItem("displayFooter", "false");
-  $("body").css({
-    paddingBottom: (bottombarShown ? bottombarHeight : 0) + 70 + "px"
-  });
   $("footer").hide();
   if (isSite("settings")) {
     $("#display-footer input").prop("checked", false);

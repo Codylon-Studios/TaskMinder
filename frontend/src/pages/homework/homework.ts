@@ -9,15 +9,15 @@ import {
   msToInputDate,
   subjectData,
   teamsData,
-  csrfToken,
   lessonData,
   escapeHTML,
   getCirclePath,
   dateDaysDifference,
-  onlyThisSite
+  onlyThisSite,
+  ajax
 } from "../../global/global.js";
 import { HomeworkData } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { checked: boolean })[]> {
@@ -496,63 +496,25 @@ async function addHomework(): Promise<void> {
     .off("click")
     .on("click", async () => {
       // Save the given information in variables
-      const subject = $("#add-homework-subject").val();
+      const subjectId = $("#add-homework-subject").val();
       const content = $("#add-homework-content").val()?.toString().trim();
       const assignmentDate = $("#add-homework-date-assignment").val()?.toString() ?? "";
       const submissionDate = $("#add-homework-date-submission").val()?.toString() ?? "";
-      const team = $("#add-homework-team").val();
+      const teamId = $("#add-homework-team").val();
 
-      // Prepare the POST request
-      const data = {
-        subjectId: subject,
-        content: content,
-        assignmentDate: dateToMs(assignmentDate),
-        submissionDate: dateToMs(submissionDate),
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/homework/add_homework",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
+      await ajax("POST", "/homework/add_homework", {
+        body: {
+          subjectId,
+          content,
+          assignmentDate: dateToMs(assignmentDate),
+          submissionDate: dateToMs(submissionDate),
+          teamId
         },
-        success: () => {
-          // Show a success notification and update the shown homework
-          $("#add-homework-success-toast").toast("show");
-          // Hide the add homework modal
-          $("#add-homework-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+
+      $("#add-homework-success-toast").toast("show");
+      $("#add-homework-modal").modal("hide");
     });
 }
 
@@ -583,62 +545,26 @@ async function editHomework(homeworkId: number): Promise<void> {
     .off("click")
     .on("click", async () => {
       // Save the given information in variables
-      const subject = $("#edit-homework-subject").val();
+      const subjectId = $("#edit-homework-subject").val();
       const content = $("#edit-homework-content").val()?.toString().trim();
       const assignmentDate = $("#edit-homework-date-assignment").val()?.toString() ?? "";
       const submissionDate = $("#edit-homework-date-submission").val()?.toString() ?? "";
-      const team = $("#edit-homework-team").val();
+      const teamId = $("#edit-homework-team").val();
 
-      const data = {
-        homeworkId: homeworkId,
-        subjectId: subject,
-        content: content,
-        assignmentDate: dateToMs(assignmentDate),
-        submissionDate: dateToMs(submissionDate),
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/homework/edit_homework",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
+      await ajax("POST", "/homework/edit_homework", {
+        body: {
+          homeworkId,
+          subjectId,
+          content,
+          assignmentDate: dateToMs(assignmentDate),
+          submissionDate: dateToMs(submissionDate),
+          teamId
         },
-        success: () => {
-          // Show a success notification and update the shown homework
-          $("#edit-homework-success-toast").toast("show");
-          $("#edit-homework-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+
+      $("#edit-homework-success-toast").toast("show");
+      $("#edit-homework-modal").modal("hide");
     });
 }
 
@@ -658,52 +584,12 @@ function deleteHomework(homeworkId: number): void {
       // Hide the confirmation toast
       $("#delete-homework-confirm-toast").toast("hide");
 
-      const data = {
-        homeworkId: homeworkId
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/homework/delete_homework",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification and update the shown homework
-          $("#delete-homework-success-toast").toast("show");
-          homeworkData.reload();
-          renderHomeworkList();
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+      await ajax("POST", "/homework/delete_homework", {
+        body: { homeworkId },
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+
+      $("#delete-homework-success-toast").toast("show");
     });
 }
 
@@ -714,48 +600,10 @@ async function checkHomework(homeworkId: number, checkStatus?: boolean): Promise
 
   // Check whether the user is logged in
   if (user.loggedIn) {
-    // The user is logged in
-    const data = {
-      homeworkId: homeworkId,
-      checkStatus: checkStatus
-    };
-    // Save whether the server has responed
-    let hasResponded = false;
-
-    // Post the request
-    $.ajax({
-      url: "/homework/check_homework",
-      type: "POST",
-      data: data,
-      headers: {
-        "X-CSRF-Token": await csrfToken()
-      },
-      error: xhr => {
-        if (xhr.status === 401) {
-          // The user has to be logged in but isn't
-          // Show an error notification
-          $navbarToasts.notLoggedIn.toast("show");
-        }
-        else if (xhr.status === 500) {
-          // An internal server error occurred
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        // The server has responded
-        hasResponded = true;
-      }
+    await ajax("POST", "/homework/check_homework", {
+      body: { homeworkId, checkStatus: "" + checkStatus },
+      queueable: true
     });
-    setTimeout(() => {
-      // Wait for 1s
-      if (!hasResponded) {
-        // If the server hasn't answered, show the internal server error notification
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 1000);
   }
   else {
     // The user is not logged in

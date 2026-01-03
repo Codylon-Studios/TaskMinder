@@ -4,134 +4,136 @@
     <meta name="robots" content="noindex, follow" />
   </head>
   <body>
-    <div class="container" id="app">
-      <div class="container-fluid d-flex justify-content-center align-items-center mb-2">
-        <button class="btn btn-sm fw-semibold btn-primary me-2 calendar-special-button" id="calendar-today-btn">Heute</button>
-        <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-l-btn">
-          <i class="fa-solid fa-chevron-left fa-width-auto" aria-hidden="true"></i>
-        </button>
-        <div class="mx-2 text-center" id="calendar-month-year">Dezember 2024</div>
-        <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-r-btn">
-          <i class="fa-solid fa-chevron-right fa-width-auto" aria-hidden="true"></i>
-        </button>
-        <button class="btn btn-sm fw-semibold btn-primary ms-2 calendar-special-button" id="calendar-month-btn">Monat</button>
-        <button class="btn btn-sm fw-semibold btn-primary ms-2 calendar-special-button" id="calendar-week-btn">Woche</button>
-      </div>
-
-      <div class="container-fluid d-flex justify-content-center align-items-center">
-        <button class="btn btn-semivisible calendar-move-button" id="calendar-l-btn">
-          <i class="fa-solid fa-chevron-left fa-width-auto" aria-hidden="true"></i>
-        </button>
-        <div class="mx-1 user-select-none" id="calendar-wrapper">
-          <div class="calendar calendar-old" id="calendar-old"></div>
-          <div class="d-none calendar calendar-new" id="calendar-new"></div>
+    <div id="app-scroll">
+      <div class="container" id="app">
+        <div class="container-fluid d-flex justify-content-center align-items-center mb-2">
+          <button class="btn btn-sm fw-semibold btn-primary me-2 calendar-special-button" id="calendar-today-btn">Heute</button>
+          <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-l-btn">
+            <i class="fa-solid fa-chevron-left fa-width-auto" aria-hidden="true"></i>
+          </button>
+          <div class="mx-2 text-center" id="calendar-month-year">Dezember 2024</div>
+          <button class="btn btn-semivisible calendar-month-year-move-button" id="calendar-month-year-r-btn">
+            <i class="fa-solid fa-chevron-right fa-width-auto" aria-hidden="true"></i>
+          </button>
+          <button class="btn btn-sm fw-semibold btn-primary ms-2 calendar-special-button" id="calendar-month-btn">Monat</button>
+          <button class="btn btn-sm fw-semibold btn-primary ms-2 calendar-special-button" id="calendar-week-btn">Woche</button>
         </div>
-        <button class="btn btn-semivisible calendar-move-button" id="calendar-r-btn">
-          <i class="fa-solid fa-chevron-right fa-width-auto" aria-hidden="true"></i>
-        </button>
-      </div>
 
-      <div
-        class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row"
-        id="timetable-mode-wrapper"
-      >
-        <label class="text-nowrap" for="timetable-mode">Stundenplanart</label>
-        <div class="btn-group" id="timetable-mode">
-          <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-none" />
-          <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-none">Nicht</label>
-
-          <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-less" />
-          <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-less">Weniger</label>
-
-          <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-more" />
-          <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-more">Mehr</label>
-        </div>
-      </div>
-
-      <div class="container-fluid">
-        <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content" id="timetable-feedback">
-          <i class="fas fa-circle-info mx-1 fs-5" aria-hidden="true" id="timetable-feedback-info"></i>
-          <i class="far fa-face-smile-beam mx-1 fs-5" aria-hidden="true" id="timetable-feedback-happy"></i>
-          <span class="d-block"></span>
-        </div>
-      </div>
-
-      <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xl-row gap-2" id="timetable-less"></div>
-      <div class="container-fluid mb-3 d-flex flex-wrap flex-column gap-3 d-none" id="timetable-more"></div>
-
-      <div class="container-fluid mb-3">
-        <div class="mb-2 d-flex align-items-center">
-          <h5>
-            Ereignisse
-            <a href="/events" aria-label="Seite für Ereignisse öffnen">
-              <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true" data-pjax></i>
-            </a>
-          </h5>
-        </div>
-        <div class="ms-3" id="event-list">
-          <!--Gets filled-->
-        </div>
-      </div>
-
-      <div class="container-fluid mb-3">
-        <div class="mb-2 d-flex align-items-center">
-          <h5>
-            Hausaufgaben
-            <a href="/homework" aria-label="Seite für Hausaufgaben öffnen">
-              <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true" data-pjax></i>
-            </a>
-          </h5>
-        </div>
-        <div class="ms-3" id="homework-list">
-          <!--Gets filled-->
-        </div>
-      </div>
-      <div class="container-fluid mb-3" id="substitutions-container">
-        <div class="mb-2 d-flex align-items-center">
-          <h5 class="mb-1">Vertretungen</h5>
-          <div class="ms-2 text-secondary">
-            <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-            <span class="visually-hidden">Zuletzt aktualisiert:</span>
-            <span id="substitutions-updated">Keine Daten empfangen</span>
+        <div class="container-fluid d-flex justify-content-center align-items-center">
+          <button class="btn btn-semivisible calendar-move-button" id="calendar-l-btn">
+            <i class="fa-solid fa-chevron-left fa-width-auto" aria-hidden="true"></i>
+          </button>
+          <div class="mx-1 user-select-none" id="calendar-wrapper">
+            <div class="calendar calendar-old" id="calendar-old"></div>
+            <div class="d-none calendar calendar-new" id="calendar-new"></div>
           </div>
+          <button class="btn btn-semivisible calendar-move-button" id="calendar-r-btn">
+            <i class="fa-solid fa-chevron-right fa-width-auto" aria-hidden="true"></i>
+          </button>
         </div>
+
         <div
           class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row"
-          id="substitutions-mode-wrapper"
+          id="timetable-mode-wrapper"
         >
-          <label class="text-nowrap" for="substitutions-mode">Vertretungsplanart</label>
-          <div class="btn-group" id="substitutions-mode">
-            <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-none" />
-            <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-none">Nicht</label>
+          <label class="text-nowrap" for="timetable-mode">Stundenplanart</label>
+          <div class="btn-group" id="timetable-mode">
+            <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-none" />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-none">Nicht</label>
 
-            <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-class" />
-            <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-class">Nur von der Klasse</label>
+            <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-less" />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-less">Weniger</label>
 
-            <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-all" />
-            <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-all">Alle</label>
+            <input type="radio" class="btn-check" name="timetable-mode" id="timetable-mode-more" />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="timetable-mode-more">Mehr</label>
           </div>
         </div>
-        <div class="ms-3">
-          <div class="rounded-3 overflow-hidden border d-none" id="substitutions-table">
-            <div class="table-responsive">
-              <table class="table table-striped mb-0">
-                <thead>
-                  <tr>
-                    <th>Klasse</th>
-                    <th>Art</th>
-                    <th>Stunde</th>
-                    <th>Fach</th>
-                    <th>Text</th>
-                    <th>Lehrer:in</th>
-                    <th>Raum</th>
-                  </tr>
-                </thead>
-                <tbody class="table-group-divider" id="substitutions-list"></tbody>
-              </table>
+
+        <div class="container-fluid">
+          <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content" id="timetable-feedback">
+            <i class="fas fa-circle-info mx-1 fs-5" aria-hidden="true" id="timetable-feedback-info"></i>
+            <i class="far fa-face-smile-beam mx-1 fs-5" aria-hidden="true" id="timetable-feedback-happy"></i>
+            <span class="d-block"></span>
+          </div>
+        </div>
+
+        <div class="container-fluid mb-3 d-flex flex-wrap flex-column flex-xl-row gap-2" id="timetable-less"></div>
+        <div class="container-fluid mb-3 d-flex flex-wrap flex-column gap-3 d-none" id="timetable-more"></div>
+
+        <div class="container-fluid mb-3">
+          <div class="mb-2 d-flex align-items-center">
+            <h5>
+              Ereignisse
+              <a href="/events" aria-label="Seite für Ereignisse öffnen">
+                <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true" data-pjax></i>
+              </a>
+            </h5>
+          </div>
+          <div class="ms-3" id="event-list">
+            <!--Gets filled-->
+          </div>
+        </div>
+
+        <div class="container-fluid mb-3">
+          <div class="mb-2 d-flex align-items-center">
+            <h5>
+              Hausaufgaben
+              <a href="/homework" aria-label="Seite für Hausaufgaben öffnen">
+                <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true" data-pjax></i>
+              </a>
+            </h5>
+          </div>
+          <div class="ms-3" id="homework-list">
+            <!--Gets filled-->
+          </div>
+        </div>
+        <div class="container-fluid mb-3" id="substitutions-container">
+          <div class="mb-2 d-flex align-items-center">
+            <h5 class="mb-1">Vertretungen</h5>
+            <div class="ms-2 text-secondary">
+              <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+              <span class="visually-hidden">Zuletzt aktualisiert:</span>
+              <span id="substitutions-updated">Keine Daten empfangen</span>
             </div>
           </div>
-          <div class="text-secondary d-none" id="substitutions-no-entry">Keine Vertretungen an diesem Tag.</div>
-          <div class="text-secondary d-none" id="substitutions-no-data">Keine Vertretungsdaten für diesen Tag verfügbar.</div>
+          <div
+            class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row"
+            id="substitutions-mode-wrapper"
+          >
+            <label class="text-nowrap" for="substitutions-mode">Vertretungsplanart</label>
+            <div class="btn-group" id="substitutions-mode">
+              <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-none" />
+              <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-none">Nicht</label>
+
+              <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-class" />
+              <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-class">Nur von der Klasse</label>
+
+              <input type="radio" class="btn-check" name="substitutions-mode" id="substitutions-mode-all" />
+              <label class="btn btn-sm btn-outline-primary fw-semibold" for="substitutions-mode-all">Alle</label>
+            </div>
+          </div>
+          <div class="ms-3">
+            <div class="rounded-3 overflow-hidden border d-none" id="substitutions-table">
+              <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                  <thead>
+                    <tr>
+                      <th>Klasse</th>
+                      <th>Art</th>
+                      <th>Stunde</th>
+                      <th>Fach</th>
+                      <th>Text</th>
+                      <th>Lehrer:in</th>
+                      <th>Raum</th>
+                    </tr>
+                  </thead>
+                  <tbody class="table-group-divider" id="substitutions-list"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="text-secondary d-none" id="substitutions-no-entry">Keine Vertretungen an diesem Tag.</div>
+            <div class="text-secondary d-none" id="substitutions-no-data">Keine Vertretungsdaten für diesen Tag verfügbar.</div>
+          </div>
         </div>
       </div>
     </div>

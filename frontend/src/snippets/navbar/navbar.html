@@ -1,6 +1,6 @@
 <nav class="navbar bg-body-tertiary fixed-top">
   <div class="container-fluid position-relative">
-    <button class="btn btn-semivisible me-2" data-bs-toggle="offcanvas" data-bs-target="#navbar-offcanvas" aria-label="Mehr Links anzeigen">
+    <button class="btn btn-semivisible" data-bs-toggle="offcanvas" data-bs-target="#navbar-offcanvas" aria-label="Mehr Links anzeigen">
       <i class="fas fa-bars" aria-hidden="true"></i>
     </button>
 
@@ -10,7 +10,7 @@
           TaskMinder
         </a>
       </div>
-      <a class="d-none d-lg-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link" href="/" data-pjax>TaskMinder</a>
+      <a class="d-none d-lg-block navbar-text fs-5 text-decoration-none ms-2 me-4 navbar-home-link" href="/" data-pjax>TaskMinder</a>
       <ul class="navbar-nav d-none d-lg-flex flex-row me-auto">
         <li class="nav-item me-3 class-joined-content">
           <a class="nav-link" href="/homework" data-pjax>Hausaufgaben</a>
@@ -40,6 +40,31 @@
     <button class="btn btn-semivisible" id="nav-logout-button" aria-label="Abmelden">
       <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
     </button>
+
+    <div class="position-relative" id="offline-wrapper">
+      <button class="btn btn-semivisible" aria-label="Offline" id="offline-hint">
+        <span class="fa-stack fa-stack-normal">
+          <i class="fas fa-wifi text-danger fa-stack-1x" aria-hidden="true"></i>
+          <i class="fas fa-slash text-danger fa-stack-1x" aria-hidden="true"></i>
+        </span>
+        <span class="offline-queue-length" id="offline-queue-circle">3</span>
+      </button>
+      <div id="offline-popup">
+        <div class="text-center text-danger fw-bold text-nowrap">Du bist offline</div>
+        <div class="form-text">
+          Wir können dir nur einige Seiten anzeigen, die Daten können veraltet sein und du kannst nur manche Informationen ändern.
+        </div>
+        <div class="text-center text-danger fw-bold text-nowrap" id="offline-queue-title">
+          Warteschlange (
+          <span class="offline-queue-length">0</span>
+          )
+        </div>
+        <div class="form-text" id="offline-queue-description">
+          Diese Änderungen werden durchgeführt, wenn du wieder online bist:
+          <ul class="mb-0 ps-3" id="offline-queue-list"></ul>
+        </div>
+      </div>
+    </div>
     <button class="btn btn-semivisible" id="navbar-reload-button" aria-label="Daten neu laden">
       <i class="fas fa-rotate" aria-hidden="true"></i>
     </button>
@@ -79,6 +104,24 @@
     <i class="fas fa-mug-hot fs-5 text-secondary" aria-hidden="true"></i>
     <a href="https://ko-fi.com/taskminder" target="_blank">Ko-Fi</a>
     <div class="form-text">Unterstütze TaskMinder finanziell!</div>
+  </div>
+</div>
+
+<div class="modal fade" id="request-queue-cleared-modal" tabindex="-1" aria-labelledby="request-queue-cleared-modal-title">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="request-queue-cleared-modal-title">Änderungen, während du offline warst</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">Du hast diese Änderungen gemacht, während du offline warst. Hier siehst du, ob sie erfolgreich waren.</div>
+        <ul class="list-group" id="request-queue-cleared-modal-list"></ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary fw-bold flex-fill" data-bs-dismiss="modal">Fertig</button>
+      </div>
+    </div>
   </div>
 </div>
 

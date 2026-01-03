@@ -60,9 +60,13 @@ html, body {
 }
 
 body {
+  --navbar-height: 3.875rem;
+
   font-family: "Quicksand", Arial, Helvetica, sans-serif;
-  padding: $navbar-top-offset 0 $navbar-top-offset 0;
+  overflow: hidden;
+  padding-top: var(--navbar-height);  
   font-weight: 500;
+  margin-top: var(--pwa-banner-height);
 
   &[data-bs-theme="light"] {
     --btn-semivisible-normal: #{$semivisible-normal-light};
@@ -88,6 +92,26 @@ body {
     & .btn-close-invert {
       filter: invert(0);
     }
+  }
+}
+
+.navbar {
+  margin-top: var(--pwa-banner-height)
+}
+
+#app-scroll {
+  overflow-y: auto;
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: calc(100vh - var(--pwa-banner-height) - var(--navbar-height) - var(--bottombar-height));
+  height: calc(100dvh - var(--pwa-banner-height) - var(--navbar-height) - var(--bottombar-height));
+}
+
+@include media-breakpoint-down(lg) {
+  body {
+    --navbar-height: 3.25rem
   }
 }
 
@@ -356,6 +380,36 @@ $unimportant-display-values: (
   }
 }
 
+#offline-hint {
+  --fa-animation-duration: 0.5s;
+}
+
+#offline-popup {
+  position: absolute;
+  padding: 0.5rem;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-danger);
+  border-radius: var(--bs-border-radius);
+  box-shadow: var(--bs-box-shadow);
+  top: 100%;
+  right: 0.75rem;
+  width: 13rem;
+}
+
+#offline-queue-circle {
+  transform: translate(0, 0);
+  background-color: var(--bs-danger);
+  border-radius: 50%;
+  width: 1rem;
+  height: 1rem;
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: white;
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
 .btn-primary {
   color: var(--bs-body-bg) !important;
 }
@@ -389,6 +443,12 @@ $unimportant-display-values: (
 
 .nav-tabs .nav-link {
   color: var(--bsnav-link-color);
+}
+
+.fa-stack-normal {
+  height: 1em;
+  width: 1.25em;
+  line-height: 1em;
 }
 
 .link-subtle {

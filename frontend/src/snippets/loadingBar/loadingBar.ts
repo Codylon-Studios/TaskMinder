@@ -1,26 +1,6 @@
 import { getSite, isValidSite, renderAll, unsavedChanges } from "../../global/global.js";
 import { init as initBottombar } from "../bottombar/bottombar.js";
-import { init as initNavbar, user } from "../navbar/navbar.js";
-
-function cacheHtml(url: string, html: string): void {
-  if (htmlCache.has(url)) {
-    htmlCache.delete(url);
-  }
-  else if (htmlCache.size >= CACHE_SIZE) {
-    const firstKey = htmlCache.keys().next().value as string;
-    htmlCache.delete(firstKey);
-  }
-  htmlCache.set(url, html);
-}
-
-function getCachedHtml(url: string): string | undefined {
-  const html = htmlCache.get(url);
-  if (html) {
-    htmlCache.delete(url);
-    htmlCache.set(url, html);
-  }
-  return html;
-}
+import { highlightOffline, init as initNavbar, user } from "../navbar/navbar.js";
 
 async function init(): Promise<void> {
   let s = getSite();
@@ -79,12 +59,12 @@ function finishLoadingBar(interval: NodeJS.Timeout): void {
 async function confirmUnsavedChanges(): Promise<boolean> {
   return new Promise(res => {
     $("#unsaved-changes-leave").off("click").on("click", () => {
-        res(true);
-      });
+      res(true);
+    });
 
     $("#unsaved-changes-stay").off("click").on("click", () => {
-        res(false);
-      });
+      res(false);
+    });
 
     $("#unsaved-changes-modal").modal("show");
   });
@@ -92,34 +72,36 @@ async function confirmUnsavedChanges(): Promise<boolean> {
 
 export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promise<void> {
   if (await unsavedChanges()) {
-    const leave = await confirmUnsavedChanges()
+    const leave = await confirmUnsavedChanges();
     unsavedChanges(false);
     if (! leave) return;
   }
 
   const interval = startLoadingBar();
-  const urlPathname = (new URL(url, globalThis.location.origin)).pathname;
   const hash = (new URL(url, globalThis.location.origin)).hash;
 
   try {
-    const cachedHtml = getCachedHtml(urlPathname);
     let app;
     let resUrl;
     let toasts;
 
-    if (cachedHtml) {
-      app =  cachedHtml;
-      resUrl = (new URL(url, globalThis.location.origin)).pathname;
-    }
-    else {
+    try {
       const res = await fetch(url);
+
+      if (res.status === 503) {
+        throw new Error("Offline");
+      }
+
       const doc = await res.text();
-      app = $(doc).filter("#app").html();
+      app = $(doc).find("#app").html();
       toasts = $(doc).filter(".toast-container").children();
       resUrl = res.url;
     }
-    
-    cacheHtml((new URL(resUrl, globalThis.location.origin)).pathname, app);
+    catch {
+      clearInterval(interval);
+      highlightOffline();
+      return;
+    }
 
     if (pushHistory ?? true) {
       globalThis.history.pushState({}, "", resUrl + hash);
@@ -157,15 +139,11 @@ const titleMap = {
   uploads: "Dateien"
 };
 
-const htmlCache: Map<string, string> = new Map();
-const CACHE_SIZE = 5;
-
 let loadingBarProgress = 0;
 let internalPopstateEvent = false;
 
 init();
 $("body").prepend("<div id='app-prepend' class='d-none'>");
-cacheHtml(location.pathname, $("#app").html());
 
 $(document).on("click", "a[data-pjax]", async function (e) {
   e.preventDefault();
