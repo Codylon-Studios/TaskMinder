@@ -66,7 +66,7 @@ const server = createServer(app);
 
 const globalLimiter = rateLimit({
   windowMs: 1000, // 1 second
-  limit: 70, // Max 70 requests per IP per second
+  limit: 125, // Max 125 requests per IP per second
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { status: 429, message: "Too many requests, please slow down." }

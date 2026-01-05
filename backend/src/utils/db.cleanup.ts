@@ -286,7 +286,7 @@ export async function migrateEventAndHomeworkDates(): Promise<void> {
 
     const demoClass = await prisma.class.findFirst({
       where: {
-        className: "demo",
+        className: "Demo",
         classCode: "demo"
       }
     });

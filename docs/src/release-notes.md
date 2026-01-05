@@ -4,10 +4,30 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.4] - 2025-12-??
+## \[v2.2.4] - 2026-01-??
+
+### Added
+* feat(main): New homework view on /main
+* feat(upload): Add descriptions to uploads
+* feat(upload): Add table/gallery view
+* feat(frontend): Add search box
+* feat(timetable): Suggest most used room for subject, add autocomplete markings
+* chore(upload): add not supported note for download for webkit-standalone users
 
 ### Fixed
+* fix(homework): check animation did not show
+* fix(homework): homework list rendered twice
+* fix(homework): homework button stayed disabled
+* fix(navbar): reload button doesn't properly show / hide
 * fix(getTeamsData): Data was not stringified with BigIntreplacer, leading to fetch errors
+* fix(migration): Fix demo class homework/event movement does not work
+
+### Changed
+* chore(deps): update packages, allow bun v1.3.5 again
+* fix(rate-limit): increase global threshold to 125req/s
+
+### Removed
+* chore(deps): removed express-async-handler in favor of native ts implemetation
 
 ---
 
