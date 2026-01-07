@@ -1,6 +1,6 @@
 <h1 align="center">TaskMinder</h1>
 <p align="center">
-  &copy; 2025 Codylon Studios
+  &copy; 2025-2026 Codylon Studios
 </p>
 
 ## About TaskMinder

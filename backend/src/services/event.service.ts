@@ -10,7 +10,8 @@ import {
   lessonDateEventAtLeastOneNull,
   updateCacheData,
   BigIntreplacer,
-  invalidateCache
+  invalidateCache,
+  isValidEventTypeId
 } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
@@ -18,7 +19,7 @@ import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypes
 
 export const eventService = {
   async getEventData(session: Session & Partial<SessionData>) {
-
+    // get cache key from class to fetch from cache
     const getEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
 
     const cachedEventData = await redisClient.get(getEventDataCacheKey);
@@ -32,7 +33,7 @@ export const eventService = {
         throw new Error();
       }
     }
-
+    // no cache data available, fetch from database and update cache
     const eventData = await prisma.event.findMany({
       where: {
         classId: parseInt(session.classId!)
@@ -60,12 +61,13 @@ export const eventService = {
   ) {
     const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    isValidTeamId(teamId, session);
+    await isValidTeamId(teamId, session);
+    await isValidEventTypeId(eventTypeId, session);
     try {
       await prisma.event.create({
         data: {
           eventTypeId: eventTypeId,
-          classId: parseInt(session.classId!),
+          classId: parseInt(session.classId!, 10),
           name: name,
           description: description,
           startDate: startDate,
@@ -99,12 +101,13 @@ export const eventService = {
   ) {
     const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    isValidTeamId(teamId, session);
+    await isValidTeamId(teamId, session);
+    await isValidEventTypeId(eventTypeId, session);
     try {
-      await prisma.event.update({
+      const updated = await prisma.event.updateMany({
         where: {
           eventId: eventId,
-          classId: parseInt(session.classId!)
+          classId: parseInt(session.classId!, 10)
         },
         data: {
           eventTypeId: eventTypeId,
@@ -116,8 +119,20 @@ export const eventService = {
           teamId: teamId
         }
       });
+      // if affected rows is 0 -> throw error
+      if (updated.count === 0) {
+        const err: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Event not found for update",
+          expected: true
+        };
+        throw err;
+      }
     }
-    catch {
+    catch (e) {
+      if ((e as RequestError)?.expected) throw e;
+
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
@@ -136,21 +151,23 @@ export const eventService = {
 
   async deleteEvent(reqData: deleteEventTypeBody, session: Session & Partial<SessionData>) {
     const { eventId } = reqData;
-    if (!eventId) {
+
+    const deleted = await prisma.event.deleteMany({
+      where: {
+        eventId: eventId,
+        classId: parseInt(session.classId!, 10)
+      }
+    });
+
+    if (deleted.count === 0) {
       const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
+        name: "Not Found",
+        status: 404,
+        message: "Event not found",
         expected: true
       };
       throw err;
     }
-    await prisma.event.delete({
-      where: {
-        eventId: eventId,
-        classId: parseInt(session.classId!)
-      }
-    });
 
     // invalidate cache
     await invalidateCache("EVENT", session.classId!);
@@ -175,7 +192,7 @@ export const eventService = {
 
     const eventTypeData = await prisma.eventType.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!, 10)
       },
       orderBy: {
         name: "asc"
@@ -197,21 +214,21 @@ export const eventService = {
     reqData: setEventTypesTypeBody,
     session: Session & Partial<SessionData>) {
     const { eventTypes } = reqData;
-    const classId = parseInt(session.classId!);
+    const classId = parseInt(session.classId!, 10);
 
     await prisma.$transaction(async tx => {
       const existingEventTypes = await tx.eventType.findMany({
         where: { classId }
       });
 
-      // Delete removed event types
+      // Delete removed event types (scoped)
       for (const existing of existingEventTypes) {
         if (!eventTypes.some(e => e.eventTypeId === existing.eventTypeId)) {
-          await tx.eventType.delete({
-            where: { eventTypeId: existing.eventTypeId }
+          await tx.eventType.deleteMany({
+            where: { eventTypeId: existing.eventTypeId, classId }
           });
           await tx.event.deleteMany({
-            where: { eventTypeId: existing.eventTypeId }
+            where: { eventTypeId: existing.eventTypeId, classId }
           });
         }
       }
@@ -240,14 +257,23 @@ export const eventService = {
           });
         }
         else {
-          await tx.eventType.update({
-            where: { eventTypeId: eventType.eventTypeId },
+          const updated = await tx.eventType.updateMany({
+            where: { eventTypeId: eventType.eventTypeId, classId },
             data: {
-              classId,
               name: eventType.name,
               color: eventType.color
             }
           });
+
+          if (updated.count === 0) {
+            const err: RequestError = {
+              name: "Not Found",
+              status: 404,
+              message: "Event type not found for update",
+              expected: true
+            };
+            throw err;
+          }
         }
       }
     });

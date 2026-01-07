@@ -299,8 +299,8 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     // -> catch block, trying to delete metadata and real files
     if (!upload) {
       const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
+        name: "Not Found",
+        status: 404,
         message: "File already deleted or moved",
         expected: true
       };

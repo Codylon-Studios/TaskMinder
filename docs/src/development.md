@@ -88,7 +88,7 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.3.3 (last checked: December 12th, 2025).
+You should see at least Bun 1.3.5 (last checked: January 5th, 2026).
 
 [Bun Versions]: https://bun.sh/blog
 
@@ -167,7 +167,7 @@ This step installs the tools that scan files uploaded to the server. This is opt
     brew list clamav
     clamscan --version
     ```
-    You should see binaries like `clamd`, `clamdscan`, `clamscan`, and configuration files in `/opt/homebrew/etc/clamav/`. The version of ClamAV should at least be 1.5.1 (last checked: November 7th, 2025).
+    You should see binaries like `clamd`, `clamdscan`, `clamscan`, and configuration files in `/opt/homebrew/etc/clamav/`. The version of ClamAV should at least be 1.5.1 (last checked: January 5th, 2026).
     
     **Copy sample configuration files**
     
@@ -240,7 +240,7 @@ This step installs the tools that scan files uploaded to the server. This is opt
     brew install ghostscript
     gs --version
     ```
-    Ghostscript should at least return version 10.06.0 (last checked: November 7th, 2025).
+    Ghostscript should at least return version 10.06.0 (last checked: January 5th, 2026).
 
 ---
 
