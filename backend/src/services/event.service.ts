@@ -2,7 +2,6 @@ import logger from "../config/logger";
 import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import sass from "sass";
-
 import { default as prisma } from "../config/prisma";
 import {
   isValidColor,
@@ -16,6 +15,8 @@ import {
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody } from "../schemas/event.schema";
+
+const inFlightStyleBuild = new Map<number, Promise<string>>();
 
 export const eventService = {
   async getEventData(session: Session & Partial<SessionData>) {
@@ -296,7 +297,13 @@ export const eventService = {
       logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
-    this.updateEventTypeStyles(session);
+
+    try { 
+      await this.updateEventTypeStyles(session); 
+    } 
+    catch (e) { 
+      logger.error(String(e)); 
+    }
   },
 
   async getEventTypeStyles(session: Session & Partial<SessionData>) {
@@ -324,33 +331,33 @@ export const eventService = {
   },
 
   async updateEventTypeStyles(session: Session & Partial<SessionData>) {
-    // needed for updateEventTypeStylesCacheKey generation (actually redundant)
-    // to avoid type errors
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const eventTypeData = await this.getEventTypeData(session);
-    const scss = `
+    // session.classId certainly exists here
+    // this function is called by getEventTypeStyles(), 
+    // which returns "", if no class is in session
+    const classId = parseInt(session.classId!, 10);
+
+    // “singleflight” deduplication: 
+    // spamming the endpoint doesn’t spawn many concurrent Sass compiles (prevents CPU spikes)
+    const existing = inFlightStyleBuild.get(classId);
+    if (existing) return existing;
+
+    const buildPromise = (async () => {
+      const eventTypeData = await this.getEventTypeData(session);
+      const scss = `
       @use "sass:color";
 
       ${eventTypeData
-    .map((eventType: { eventTypeId: string; name: string; color: string }) => {
-      return `$event-${eventType.eventTypeId}: ${eventType.color};`;
-    })
-    .join("")}
+        .map((eventType: { eventTypeId: string; name: string; color: string }) => {
+          return `$event-${eventType.eventTypeId}: ${eventType.color};`;
+        })
+        .join("")}
 
       $event-colors: (
         ${eventTypeData
-    .map((eventType: { eventTypeId: string; name: string; color: string }) => {
-      return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`;
-    })
-    .join("")}
+        .map((eventType: { eventTypeId: string; name: string; color: string }) => {
+          return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`;
+        })
+        .join("")}
       );
 
       @each $name, $color in $event-colors {
@@ -402,19 +409,25 @@ export const eventService = {
           }
         }
       }`;
-    const css = sass.compileString(scss).css;
+      const css = sass.compileString(scss).css;
 
-    const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId);
+      const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId!);
 
-    try {
-      await redisClient.set(updateEventTypeStylesCacheKey, css, { EX: cacheExpiration });
-    }
-    catch (err) {
-      logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
-    }
+      try {
+        await redisClient.set(updateEventTypeStylesCacheKey, css, { EX: cacheExpiration });
+      }
+      catch (err) {
+        logger.error(`Error updating Redis cache: ${err}`);
+        throw new Error();
+      }
 
-    return css;
+      return css;
+    })().finally(() => {
+      inFlightStyleBuild.delete(classId);
+    });
+
+    inFlightStyleBuild.set(classId, buildPromise);
+    return buildPromise;
   }
 };
 
