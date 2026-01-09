@@ -202,7 +202,7 @@ export async function init(): Promise<void> {
 
     if (urlParams.get("action") === "join" || urlParams.has("class_code")) {
       $("#decide-action-panel").hide();
-      $("#join-class-panel").show().trigger("shiw");
+      $("#join-class-panel").show().trigger("show");
     }
     else if (urlParams.get("action") === "account") {
       $("#decide-action-panel").hide();

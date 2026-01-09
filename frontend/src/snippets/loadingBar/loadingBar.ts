@@ -79,12 +79,12 @@ function finishLoadingBar(interval: NodeJS.Timeout): void {
 async function confirmUnsavedChanges(): Promise<boolean> {
   return new Promise(res => {
     $("#unsaved-changes-leave").off("click").on("click", () => {
-        res(true);
-      });
+      res(true);
+    });
 
     $("#unsaved-changes-stay").off("click").on("click", () => {
-        res(false);
-      });
+      res(false);
+    });
 
     $("#unsaved-changes-modal").modal("show");
   });
@@ -92,7 +92,7 @@ async function confirmUnsavedChanges(): Promise<boolean> {
 
 export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promise<void> {
   if (await unsavedChanges()) {
-    const leave = await confirmUnsavedChanges()
+    const leave = await confirmUnsavedChanges();
     unsavedChanges(false);
     if (! leave) return;
   }

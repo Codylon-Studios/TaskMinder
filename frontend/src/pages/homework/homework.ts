@@ -715,10 +715,6 @@ async function checkHomework(homeworkId: number, checkStatus?: boolean): Promise
   // Check whether the user is logged in
   if (user.loggedIn) {
     // The user is logged in
-    const data = {
-      homeworkId: homeworkId,
-      checkStatus: checkStatus
-    };
     // Save whether the server has responed
     let hasResponded = false;
 
@@ -726,7 +722,12 @@ async function checkHomework(homeworkId: number, checkStatus?: boolean): Promise
     $.ajax({
       url: "/homework/check_homework",
       type: "POST",
-      data: data,
+      contentType: "application/json",
+      data: JSON.stringify({
+        homeworkId: homeworkId,
+        checkStatus: checkStatus
+      }),
+      processData: false,
       headers: {
         "X-CSRF-Token": await csrfToken()
       },
