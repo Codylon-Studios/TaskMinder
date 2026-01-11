@@ -416,14 +416,14 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 }
 
 async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void> {
-  return new Promise<void>(res => {
-    if (user.loggedIn) {
-      $.get("/teams/get_joined_teams_data", data => {
-        joinedTeamsData.set(data, settings);
-        res();
-      });
-    }
-    else {
+  if (!user.isAuthed) await new Promise(res => {user.on("change", res)})
+
+  if (user.loggedIn) {
+    const data = await $.get("/teams/get_joined_teams_data");
+    joinedTeamsData.set(data, settings);
+  }
+  else {
+    return new Promise<void>(res => {
       try {
         joinedTeamsData.set(JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]"), settings);
       }
@@ -431,8 +431,8 @@ async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void>
         joinedTeamsData.set([], settings);
       }
       res();
-    }
-  }); 
+    });
+  }
 }
 
 async function loadClassSubstitutionsData(): Promise<void> {
@@ -455,15 +455,15 @@ async function loadClassSubstitutionsData(): Promise<void> {
 }
 
 async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<void> {
-  return new Promise<void>(res => {
-    if (user.loggedIn) {
-      // If the user is logged in, get the data from the server
-      $.get("/homework/get_homework_checked_data", data => {
-        homeworkCheckedData.set(data, settings);
-        res();
-      });
-    }
-    else {
+  if (!user.isAuthed) await new Promise(res => {user.on("change", res)})
+
+  if (user.loggedIn) {
+    // If the user is logged in, get the data from the server
+    const data = await $.get("/homework/get_homework_checked_data");
+    homeworkCheckedData.set(data, settings);
+  }
+  else {
+    return new Promise<void>(res => {
       try {
         // If the user is not logged in, get the data from the local storage
         homeworkCheckedData.set(JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]"), settings);
@@ -472,8 +472,8 @@ async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<v
         homeworkCheckedData.set([], settings);
       }
       res();
-    }
-  });
+    });
+  }
 }
 
 async function loadUploadData(): Promise<void> {

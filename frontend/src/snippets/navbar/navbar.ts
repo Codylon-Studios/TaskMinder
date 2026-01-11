@@ -355,32 +355,31 @@ export const user = {
   _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
 
   async auth(settings?: {silent?: boolean}) {
-    await $.get("/account/auth", response => {
-      user.isAuthed = true;
+    const response = await $.get("/account/auth");
+    user.isAuthed = true;
 
-      if (response.loggedIn) {
-        user.loggedIn = true;
-        user.username = response.account.username;
-      }
-      else {
-        user.loggedIn = false;
-        user.username = null;
-      }
-    
-      user.classJoined = response.classJoined;
-      user.permissionLevel = response.permissionLevel ?? 0;
-    
-      if (response.loggedIn) {
-        user.loggedIn = true;
-      }
-      else {
-        user.loggedIn = false;
-        user.username = null;
-      }
+    if (response.loggedIn) {
+      user.loggedIn = true;
+      user.username = response.account.username;
+    }
+    else {
+      user.loggedIn = false;
+      user.username = null;
+    }
+  
+    user.classJoined = response.classJoined;
+    user.permissionLevel = response.permissionLevel ?? 0;
+  
+    if (response.loggedIn) {
+      user.loggedIn = true;
+    }
+    else {
+      user.loggedIn = false;
+      user.username = null;
+    }
 
-      user.changeEvents++;
-      user.trigger("change", settings);
-    });
+    user.changeEvents++;
+    user.trigger("change", settings);
   },
 
   async awaitAuthed() {
