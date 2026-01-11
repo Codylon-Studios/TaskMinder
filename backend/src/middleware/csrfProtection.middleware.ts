@@ -40,7 +40,9 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     const err: RequestError = {
       name: "Unauthorized",
       status: 401,
-      message: "CSRF Check: Validation failed - Token missing or invalid type",
+      message: "CSRF Check failed: Missing or invalid CSRF token. " +
+      "This API is currently intended for browser-based usage only. " +
+      "Please use the application via a web browser instead of calling the API directly.",
       expected: true
     };
     throw err;
@@ -56,7 +58,9 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
-        message: "CSRF Check: Validation failed - Token missing or invalid type",
+        message: "CSRF Check failed: Missing or invalid CSRF token. " +
+        "This API is currently intended for browser-based usage only. " +
+        "Please use the application via a web browser instead of calling the API directly.",
         expected: true
       };
       throw err;
@@ -70,7 +74,9 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
       const err: RequestError = {
         name: "Unauthorized",
         status: 401,
-        message: "CSRF Check: Validation failed - Token missing or invalid type",
+        message: "CSRF Check failed: Missing or invalid CSRF token. " +
+        "This API is currently intended for browser-based usage only. " +
+        "Please use the application via a web browser instead of calling the API directly.",
         expected: true
       };
       throw err;
@@ -81,7 +87,9 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     const err: RequestError = {
       name: "Unauthorized",
       status: 401,
-      message: "CSRF Check: Validation failed - Token missing or invalid type",
+      message: "CSRF Check failed: Missing or invalid CSRF token. " +
+      "This API is currently intended for browser-based usage only. " +
+      "Please use the application via a web browser instead of calling the API directly.",
       expected: true
     };
     throw err;
