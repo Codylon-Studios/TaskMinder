@@ -4,7 +4,9 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.4] - 2026-01-??
+## \[v2.2.4] - 2026-01-11
+
+🎉 Happy New Year! This release kicks off the year with improvements and fixes to make TaskMinder smoother, faster, and more reliable. Thanks for your support—here’s to a productive year ahead!
 
 ### Added
 * feat(main): new homework view on /main

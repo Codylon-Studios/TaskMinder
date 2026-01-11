@@ -46,9 +46,6 @@ nav:
   - Development: development.md
   - Deployment (v2): deploy-v2.md
   - Migrations: migrations.md
-  - Old Documentation:
-      - v1: 
-        - Deployment: deploy-v1.md
 
 extra_css:
   - assets/custom.css
