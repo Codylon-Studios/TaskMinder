@@ -330,9 +330,7 @@ $(() => {
   user.on("change", (function _() {
     $(".class-joined-content").toggle(user.classJoined ?? false);
     $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
-    if (!isSite("join")) {
-      $("#login-register-button").toggle(!user.loggedIn);
-    }
+    $("#login-register-button").toggle(!user.loggedIn && !isSite("join"))
     $("#nav-logout-button").toggle(user.loggedIn ?? false);
     $("#offcanvas-account").toggle(user.loggedIn ?? false);
     $("#offcanvas-account-name").text(user.username ?? "");

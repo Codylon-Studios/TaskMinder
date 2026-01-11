@@ -673,9 +673,7 @@ export async function init(): Promise<void> {
       renderEventList();
     });
 
-    $("#search-events").on("input", () => {
-      renderEventList();
-    });
+    $("#search-events").on("input", renderEventList);
 
     // On changing any information in the add event modal, disable the add button if any information is empty
     $(".add-event-input").on("input", function () {

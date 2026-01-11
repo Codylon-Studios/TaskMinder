@@ -730,9 +730,7 @@ export async function init(): Promise<void> {
       renderUploadList();
     });
 
-    $("#search-uploads").on("input", () => {
-      renderUploadList();
-    });
+    $("#search-uploads").on("input", renderUploadList);
 
     // On changing any information in the add upload modal, disable the add button if any information is empty
     $(".add-upload-input").on("input", function () {

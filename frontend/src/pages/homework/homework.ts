@@ -842,6 +842,8 @@ export async function init(): Promise<void> {
       renderHomeworkList();
     });
 
+    $("#search-homework").on("input", renderHomeworkList);
+
     // On changing any information in the add homework modal, disable the add button if any information is empty
     $(".add-homework-input").on("input", () => {
       // Required so the autocompleted submission date gets updated first if the subject is changed
