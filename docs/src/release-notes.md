@@ -4,6 +4,41 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.4] - 2026-01-11
+
+🎉 Happy New Year! This release kicks off the year with improvements and fixes to make TaskMinder smoother, faster, and more reliable. Thanks for your support—here’s to a productive year ahead!
+
+### Added
+* feat(main): new homework view on /main
+* feat(upload/event): add table/gallery view
+* feat(upload/event/homework): add search boxes
+* feat(timetable): suggest most used room for subject, add autocomplete markings
+* chore(upload): add not supported note for download for webkit-standalone users
+
+### Fixed
+* fix(homework): check animation does not show
+* fix(homework): homework list renders twice
+* fix(homework): homework button stays disabled
+* fix(navbar): reload button does not properly show / hide
+* fix(getTeamsData): data is not stringified with BigIntreplacer, leading to fetch errors
+* fix(migration): demo class homework/event movement does not work
+* fix(upload): upload not found change http code from 400 to 404
+* fix(event/homework): events/homework can be changed/deleted through API even if not in class
+* fix(event): check for valid eventTypeId before adding/editing events
+* fix(checkhomework): homework of foreign classes can be checked through API
+
+### Changed
+* chore(docs): update year to 2026
+* refactor(class): rewrite 62base method to use randomInt from crypto package
+* feat(event): singleflight deduplication for sass compilation of event styles
+* chore(deps): update packages, allow bun > v1.3.5 again
+* fix(rate-limit): increase global threshold to 125req/s
+
+### Removed
+* chore(deps): remove express-async-handler in favor of native ts implemetation
+
+---
+
 ## \[v2.2.3b] - 2025-12-14
 
 ### Fixed

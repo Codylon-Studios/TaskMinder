@@ -19,14 +19,14 @@
       </div>
 
       <div class="container-fluid d-flex justify-content-center align-items-center">
-        <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-l-btn">
+        <button class="btn btn-semivisible calendar-move-button" id="calendar-l-btn">
           <i class="fa-solid fa-chevron-left fa-width-auto" aria-hidden="true"></i>
         </button>
-        <div class="mx-1 user-select-none" id="calendar-week-wrapper">
-          <div class="calendar-week calendar-old" id="calendar-week-old"></div>
-          <div class="d-none calendar-week calendar-new" id="calendar-week-new"></div>
+        <div class="mx-1 user-select-none" id="calendar-wrapper">
+          <div class="calendar calendar-old" id="calendar-old"></div>
+          <div class="d-none calendar calendar-new" id="calendar-new"></div>
         </div>
-        <button class="btn btn-semivisible calendar-week-move-button" id="calendar-week-r-btn">
+        <button class="btn btn-semivisible calendar-move-button" id="calendar-r-btn">
           <i class="fa-solid fa-chevron-right fa-width-auto" aria-hidden="true"></i>
         </button>
       </div>
@@ -81,21 +81,6 @@
               <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true" data-pjax></i>
             </a>
           </h5>
-        </div>
-        <div
-          class="container-fluid d-flex justify-content-center align-items-center mb-3 gap-1 gap-md-3 flex-column flex-md-row"
-          id="homework-mode-wrapper"
-        >
-          <div class="btn-group btn-group-dynamic" id="homework-mode">
-            <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-tomorrow" />
-            <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-tomorrow">Auf den nächsten Tag</label>
-
-            <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-assignment" />
-            <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-assignment">Von diesem Tag</label>
-
-            <input type="radio" class="btn-check" name="homework-mode" id="homework-mode-submission" />
-            <label class="btn btn-sm btn-outline-primary fw-semibold" for="homework-mode-submission">Auf diesen Tag</label>
-          </div>
         </div>
         <div class="ms-3" id="homework-list">
           <!--Gets filled-->

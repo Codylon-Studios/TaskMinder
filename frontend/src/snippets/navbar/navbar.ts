@@ -157,8 +157,6 @@ function checkSecurePassword(password: string): boolean {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
-$("#login-register-button").toggleClass("d-none", isSite("join"));
-
 $("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
   let hasResponded = false;
 
@@ -197,45 +195,33 @@ $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
   $("#navbar-offcanvas").offcanvas("hide");
 });
 
-$(() => {
-  if (isSite("main", "homework", "events", "uploads")) {
-    $(".class-page-content").removeClass("d-none");
-  }
-  user.on("change", (function _() {
-    $(".class-joined-content").toggle(user.classJoined ?? false);
-    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
-    if (!isSite("join")) {
-      $("#login-register-button").toggle(!user.loggedIn);
-    }
-    $("#nav-logout-button").toggle(user.loggedIn ?? false);
-    $("#offcanvas-account").toggle(user.loggedIn ?? false);
-    $("#offcanvas-account-name").text(user.username ?? "");
-    return _;
-  })());
+export async function init(): Promise<void> {
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings"));
+  $("#login-register-button").toggleClass("d-none", isSite("join"));
 
   //
   //LOGIN -- REGISTER
   //
-  $(".login-button").on("click", () => {
+  $(".login-button").off("click").on("click", () => {
     const username = $(".login-register-username").val()?.toString() ?? "";
     const password = $(".login-password").val()?.toString() ?? "";
     loginAccount(username, password);
   });
 
-  $(".register-button").on("click", () => {
+  $(".register-button").off("click").on("click", () => {
     const username = $(".login-register-username").val()?.toString() ?? "";
     const password = $(".register-password").val()?.toString() ?? "";
     registerAccount(username, password);
   });
 
-  $("#login-register-modal").on("show.bs.modal", () => {
+  $("#login-register-modal").off("show.bs.modal").on("show.bs.modal", () => {
     $(".login-register-username").val("");
     $(".login-register-next-button").prop("disabled", true);
     resetLoginRegister();
   });
 
   // Check username
-  $(".login-register-username").on("input", function () {
+  $(".login-register-username").off("input").on("input", function () {
     // Sync multiple instances of login possibilites
     $(".login-register-username").val($(this).val() ?? "");
 
@@ -245,7 +231,7 @@ $(() => {
     }
   });
 
-  $(".login-register-username").on("change", function () {
+  $(".login-register-username").off("change").on("change", function () {
     if (!checkUsername($(".login-register-username").val()?.toString() ?? "")) {
       $(".login-register-next-button").prop("disabled", true);
       $(".login-register-error-invalid-username").removeClass("d-none").addClass("d-flex");
@@ -253,7 +239,7 @@ $(() => {
   });
 
   // Check login password
-  $(".login-password").on("input", function () {
+  $(".login-password").off("input").on("input", function () {
     // Sync multiple instances of login possibilites
     $(".login-password").val($(this).val() ?? "");
 
@@ -261,13 +247,13 @@ $(() => {
     $(".login-button").prop("disabled", false);
   });
 
-  $(".login-password").on("change", function () {
+  $(".login-password").off("change").on("change", function () {
     $(".login-button").prop("disabled", $(this).val() === "");
   });
 
   // Check register password
 
-  $(".register-password").on("input", function () {
+  $(".register-password").off("input").on("input", function () {
     // Sync multiple instances of login possibilites
     $(".register-password").val($(this).val() ?? "");
 
@@ -282,7 +268,7 @@ $(() => {
     }
   });
 
-  $(".register-password").on("change", () => {
+  $(".register-password").off("change").on("change", () => {
     if (!checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
       $(".register-error-insecure-password").removeClass("d-none");
       $(".register-error-insecure-password").addClass("d-flex");
@@ -294,7 +280,7 @@ $(() => {
   });
 
   // Check repeated password
-  $(".register-password-repeat").on("input", function () {
+  $(".register-password-repeat").off("input").on("input", function () {
     // Sync multiple instances of login possibilites
     $(".register-password-repeat").val($(this).val() ?? "");
 
@@ -304,7 +290,7 @@ $(() => {
     }
   });
 
-  $(".register-password-repeat").on("change", () => {
+  $(".register-password-repeat").off("change").on("change", () => {
     if ($(".register-password").val() !== $(".register-password-repeat").val()) {
       $(".register-button").prop("disabled", true);
       $(".register-error-no-matching-passwords").removeClass("d-none").addClass("d-flex");
@@ -314,14 +300,14 @@ $(() => {
     }
   });
 
-  $(".register-checkbox").on("change", function () {
+  $(".register-checkbox").off("change").on("change", function () {
     $(".register-checkbox").prop("checked", $(this).prop("checked"));
     $(".register-button").prop("disabled", !(
       $(this).prop("checked") && $(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== ""
     ));
   });
 
-  $(".login-register-next-button").on("click", async () => {
+  $(".login-register-next-button").off("click").on("click", async () => {
     $(".login-register-back-button").removeClass("d-none");
 
     $(".login-register-element, .login-register-next-button").addClass("d-none");
@@ -337,7 +323,19 @@ $(() => {
     });
   });
 
-  $(".login-register-back-button").on("click", resetLoginRegister);
+  $(".login-register-back-button").off("click").on("click", resetLoginRegister);
+}
+
+$(() => {
+  user.on("change", (function _() {
+    $(".class-joined-content").toggle(user.classJoined ?? false);
+    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
+    $("#login-register-button").toggle(!user.loggedIn && !isSite("join"))
+    $("#nav-logout-button").toggle(user.loggedIn ?? false);
+    $("#offcanvas-account").toggle(user.loggedIn ?? false);
+    $("#offcanvas-account-name").text(user.username ?? "");
+    return _;
+  })());
 });
 
 export const $navbarToasts = {
@@ -351,7 +349,7 @@ export const user = {
   loggedIn: null as boolean | null,
   username: null as string | null,
   classJoined: null as boolean | null,
-  permissionLevel: null as number | null,
+  permissionLevel: 0 as number,
   changeEvents: 0,
 
   _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
@@ -370,7 +368,7 @@ export const user = {
       }
     
       user.classJoined = response.classJoined;
-      user.permissionLevel = response.permissionLevel;
+      user.permissionLevel = response.permissionLevel ?? 0;
     
       if (response.loggedIn) {
         user.loggedIn = true;
@@ -390,8 +388,8 @@ export const user = {
     return new Promise<void>(res => {
       this.on("change", () => {
         if (this.isAuthed) res();
-      })
-    })
+      });
+    });
   },
 
   on(event: UserEventName, callback: UserEventCallback) {

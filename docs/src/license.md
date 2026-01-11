@@ -1,6 +1,6 @@
 # TaskMinder License (Non-Commercial, Source-Available)
 
-**Copyright (c) 2025 Mingqi Li and Fabian Leonardi**
+**Copyright (c) 2025-2026 Mingqi Li and Fabian Leonardi**
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this Software and associated documentation files (the “Software”), to use, copy, modify, merge, publish, and distribute the Software for non-commercial purposes only, subject to the following conditions:
 

@@ -2,7 +2,6 @@ import { io } from "../vendor/socket/socket.io.esm.min.js";
 import { user } from "../snippets/navbar/navbar.js";
 import {
   ClassMemberData,
-  ColorTheme,
   DataAccessor,
   DataAccessorEventCallback,
   DataAccessorEventName,
@@ -20,7 +19,9 @@ import {
   SubjectData,
   SubstitutionsData,
   TeamsData,
-  UploadData
+  UploadData,
+  SocketDataAccessor,
+  RawDate
 } from "./types";
 
 export const lastCommaRegex = /,(?!.*,)/;
@@ -42,6 +43,14 @@ export function isSite(...sites: (string | RegExp)[]): boolean {
   return sites.some(s => {
     return s === site || (s instanceof RegExp && s.test(site));
   });
+}
+
+export function onlyThisSite<T>(fn: (...args: unknown[]) => T): (...args: unknown[]) => T | null {
+  const site = getSite();
+  return function onlyThisSiteWrapper(...args: unknown[]) {
+    if (isSite(site)) return fn(...args);
+    return null;
+  };
 }
 
 export function isValidSite(site: string): boolean {
@@ -70,30 +79,20 @@ export function registerSocketListeners(listeners: Record<string, () => unknown>
   }, 0);
 }
 
-export function getSimpleDisplayDate(raw: number | string | Date): string {
-  let date;
-  if (raw instanceof Date) date = raw;
-  else {
-    let num;
-    if (typeof raw === "string") num = Number.parseInt(raw);
-    else num = raw;
-    date = new Date(num);
-  }
+export function toDate(raw: RawDate): Date {
+  return new Date(raw instanceof Date ? raw : (typeof raw === "number" ? raw : Number.parseInt(raw)));
+}
+
+export function getSimpleDisplayDate(raw: RawDate): string {
+  const date = toDate(raw);
 
   const day = String(date.getDate());
   const month = String(date.getMonth() + 1);
   return `${day}.${month}`;
 }
 
-export function getDisplayDate(raw: number | string | Date): string {
-  let date;
-  if (raw instanceof Date) date = raw;
-  else {
-    let num;
-    if (typeof raw === "string") num = Number.parseInt(raw);
-    else num = raw;
-    date = new Date(num);
-  }
+export function getDisplayDate(raw: RawDate): string {
+  const date = toDate(raw);
 
   const dateStr = getSimpleDisplayDate(raw);
 
@@ -118,10 +117,9 @@ export function getDisplayDate(raw: number | string | Date): string {
   }
 }
 
-export function msToInputDate(ms: number | string): string {
-  if (ms === "") return "";
-  const num = typeof ms === "string" ? Number.parseInt(ms) : ms;
-  const date = new Date(num);
+export function msToInputDate(raw: RawDate): string {
+  if (raw === "") return "";
+  const date = toDate(raw);
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
@@ -154,7 +152,9 @@ export function msToTime(ms: number | string): string {
     .padStart(2, "0")}:${((num / 1000 / 60) % 60).toString().padStart(2, "0")}`;
 }
 
-export function dateDaysDifference(date1: Date, date2: Date): number {
+export function dateDaysDifference(raw1: RawDate, raw2: RawDate): number {
+  const date1 = toDate(raw1);
+  const date2 = toDate(raw2);
   const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
   const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
 
@@ -179,18 +179,14 @@ export function getTimeLeftString(timeLeft: number): string {
   }
 }
 
-export function isSameDay(date1: Date, date2: Date): boolean {
+export function isSameDay(raw1: RawDate, raw2: RawDate): boolean {
+  const date1 = toDate(raw1);
+  const date2 = toDate(raw2);
   return (
     date1.getFullYear() === date2.getFullYear() &&
     date1.getMonth() === date2.getMonth() &&
     date1.getDate() === date2.getDate()
   );
-}
-
-export function isSameDayMs(ms1: number | string, ms2: number | string): boolean {
-  ms1 = typeof ms1 === "string" ? Number.parseInt(ms1) : ms1;
-  ms2 = typeof ms2 === "string" ? Number.parseInt(ms2) : ms2;
-  return isSameDay(new Date(ms1), new Date(ms2));
 }
 
 export function deepCompare(a: unknown, b: unknown): boolean {
@@ -298,10 +294,10 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   
   if (currentSubstitutionsData.data !== "No data") {
     let planId;
-    if (isSameDay(date, new Date(dateToMs(currentSubstitutionsData.data.plan1.date) ?? 0))) {
+    if (isSameDay(date, dateToMs(currentSubstitutionsData.data.plan1.date) ?? 0)) {
       planId = 1;
     }
-    else if (isSameDay(date, new Date(dateToMs(currentSubstitutionsData.data.plan2.date) ?? 0))) {
+    else if (isSameDay(date, dateToMs(currentSubstitutionsData.data.plan2.date) ?? 0)) {
       planId = 2;
     }
     if (planId) {
@@ -327,7 +323,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   
   currentEventData.filter(e =>
     (currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1)
-    && isSameDay(new Date(Number.parseInt(e.startDate)), date)
+    && isSameDay(e.startDate, date)
   ).forEach(e => {
     lessonsWithEvents = lessonsWithEvents.map(l => {
       if (matchesLessonNumber(l.lessonNumber, e.lesson ?? "")) {
@@ -420,19 +416,23 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 }
 
 async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void> {
-  if (user.loggedIn) {
-    $.get("/teams/get_joined_teams_data", data => {
-      joinedTeamsData.set(data, settings);
-    });
-  }
-  else {
-    try {
-      joinedTeamsData.set(JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]"), settings);
+  return new Promise<void>(res => {
+    if (user.loggedIn) {
+      $.get("/teams/get_joined_teams_data", data => {
+        joinedTeamsData.set(data, settings);
+        res();
+      });
     }
-    catch {
-      joinedTeamsData.set([], settings);
+    else {
+      try {
+        joinedTeamsData.set(JSON.parse(localStorage.getItem("joinedTeamsData") ?? "[]"), settings);
+      }
+      catch {
+        joinedTeamsData.set([], settings);
+      }
+      res();
     }
-  }
+  }); 
 }
 
 async function loadClassSubstitutionsData(): Promise<void> {
@@ -455,31 +455,53 @@ async function loadClassSubstitutionsData(): Promise<void> {
 }
 
 async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<void> {
-  if (user.loggedIn) {
-    // If the user is logged in, get the data from the server
-    $.get("/homework/get_homework_checked_data", data => {
-      homeworkCheckedData.set(data, settings);
-    });
-  }
-  else {
-    try {
-      // If the user is not logged in, get the data from the local storage
-      homeworkCheckedData.set(JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]"), settings);
+  return new Promise<void>(res => {
+    if (user.loggedIn) {
+      // If the user is logged in, get the data from the server
+      $.get("/homework/get_homework_checked_data", data => {
+        homeworkCheckedData.set(data, settings);
+        res();
+      });
     }
-    catch {
-      homeworkCheckedData.set([], settings);
+    else {
+      try {
+        // If the user is not logged in, get the data from the local storage
+        homeworkCheckedData.set(JSON.parse(localStorage.getItem("homeworkCheckedData") ?? "[]"), settings);
+      }
+      catch {
+        homeworkCheckedData.set([], settings);
+      }
+      res();
     }
-  }
+  });
 }
 
 async function loadUploadData(): Promise<void> {
-  $.get("/uploads/metadata?all=" + await showAllUploads(), data => {
-    uploadData(data);
+  const _showAllUploads = await showAllUploads();
+  return new Promise<void>(res => {
+    $.get("/uploads/metadata?all=" + _showAllUploads, data => {
+      uploadData(data);
+      res();
+    });
   });
 }
 
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
+}
+
+export async function tryForceReloadEventTypeStyles(): Promise<void> {
+  if (! user.classJoined) return;
+  const currentEventTypeData = (await eventTypeData());
+  currentEventTypeData.sort((a, b) => a.eventTypeId - b.eventTypeId);
+  const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? "{}");
+  const eventTypeString = JSON.stringify(Object.fromEntries(currentEventTypeData.map(e => [e.eventTypeId, e.color])));
+  if (eventTypeString !== cache.data) {
+    cache.data = eventTypeString;
+    cache.date = Date.now();
+  }
+  $("#event-type-styles").attr("href", "/events/event_type_styles?v=" + cache.date);
+  localStorage.setItem("eventTypeDataCache", JSON.stringify(cache));
 }
 
 export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: string): boolean {
@@ -498,6 +520,7 @@ export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: 
 export async function renderAll(): Promise<void> {
   if (!setRenderOnUserChangeListener) {
     user.on("change", async () => {
+      for (const d of socketDataAccessors) d.reload({ silent: true });
       renderAll();
     });
     setRenderOnUserChangeListener = true;
@@ -514,23 +537,27 @@ let setRenderOnUserChangeListener = false;
 // Global socket variable that can be accessed from any script
 export const socket = io();
 
+export enum ColorTheme {
+  DARK = "dark",
+  LIGHT = "light"
+};
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
 
 const themeColor = document.createElement("meta");
 themeColor.name = "theme-color";
-if (localStorage.getItem("colorTheme") === "dark") {
-  colorTheme("dark");
+if (localStorage.getItem("colorTheme") === ColorTheme.DARK) {
+  colorTheme(ColorTheme.DARK);
 }
-else if (localStorage.getItem("colorTheme") === "light") {
-  colorTheme("light");
+else if (localStorage.getItem("colorTheme") === ColorTheme.LIGHT) {
+  colorTheme(ColorTheme.LIGHT);
 }
 else if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
-  colorTheme("dark");
+  colorTheme(ColorTheme.DARK);
 }
 else {
-  colorTheme("light");
+  colorTheme(ColorTheme.LIGHT);
 }
-if ((await colorTheme()) === "light") {
+if ((await colorTheme()) === ColorTheme.LIGHT) {
   themeColor.content = "#f8f9fa";
 }
 else {
@@ -541,9 +568,9 @@ else {
 document.head.appendChild(themeColor);
 
 // Data accessors
-const socketDataAccessors: DataAccessor<unknown>[] = [];
-export function createDataAccessor<DataType>(name: string, config?: {reload?: string | (() => Promise<void>), socket?: string}): DataAccessor<DataType> {
-  const eventName = `dataLoaded:${name}`;
+export function createDataAccessor<DataType>(name: string, config?: {
+  reload?: string | ((settings?: {silent?: boolean}) => Promise<void>)
+}): DataAccessor<DataType> {
   let data: DataType | null = null;
   const _eventListeners = {} as Record<DataAccessorEventName, DataAccessorEventCallback[]>;
   let _initialized = false;
@@ -556,7 +583,7 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
         accessor.set(data, settings);
         res();
       });
-    })
+    });
   } : reload ?? null;
 
   const accessor = async (value?: DataType | null): Promise<DataType> => {
@@ -566,24 +593,21 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
     return accessor.get();
   };
 
-  if (config?.socket) {
-    socketDataAccessors.push(accessor as DataAccessor<unknown>);
-    socket.on(config.socket, () => {
-      accessor.reload();
-    });
-  }
-
   accessor.get = () => {
-    async function getNotNullValue(): Promise<DataType> {
-      if (data === null) {
-        await new Promise(resolve => {
-          $(globalThis).on(eventName, resolve);
-        });
-        return await getNotNullValue();
-      }
-      return data;
+    if (data !== null) {
+      return Promise.resolve(data);
     }
-    return getNotNullValue();
+
+    return new Promise<DataType>(resolve => {
+      const handler = (): void => {
+        if (data !== null) {
+          accessor.off("change", handler);
+          resolve(data);
+        }
+      };
+
+      accessor.on("change", handler);
+    });
   };
 
   accessor.getCurrent = () => {
@@ -592,27 +616,25 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
 
   accessor.set = (value: DataType | null, settings?: {silent?: boolean}) => {
     data = value;
-    if (value !== null) {
-      $(globalThis).trigger(eventName);
-    }
     if (!settings?.silent) {
       accessor.trigger("update");
     }
+    accessor.trigger("change");
     _initialized = true;
     return accessor;
   };
 
-  accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback, settings?: {onlyThisSite?: boolean}) => {
+  accessor.on = (event: DataAccessorEventName, callback: DataAccessorEventCallback) => {
     _eventListeners[event] ??= [];
-    if (settings?.onlyThisSite) {
-      const site = getSite();
-      _eventListeners[event].push(() => {
-        if (getSite() == site) callback()
-      });
-    }
-    else {
-      _eventListeners[event].push(callback);
-    }
+    _eventListeners[event].push(callback);
+    return accessor;
+  };
+
+  accessor.off = (event: DataAccessorEventName, callback?: DataAccessorEventCallback) => {
+    if (!_eventListeners[event]) return accessor;
+
+    _eventListeners[event] = callback ? _eventListeners[event].filter(cb => cb !== callback) : [];
+
     return accessor;
   };
 
@@ -624,10 +646,10 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
     return accessor;
   };
 
-  accessor.reload = (settings?: {silent?: boolean}) => {
+  accessor.reload = async (settings?: {silent?: boolean}) => {
     if (typeof reloadFunction === "function") {
       data = null;
-      reloadFunction(settings);
+      await reloadFunction(settings);
       _initialized = true;
     }
     else {
@@ -656,52 +678,73 @@ export function createDataAccessor<DataType>(name: string, config?: {reload?: st
       };
     }
     return accessor;
-  }
+  };
+
+  accessor.isInitialized = () => {
+    return _initialized;
+  };
+
+  return accessor;
+}
+
+const socketDataAccessors: DataAccessor<unknown>[] = [];
+export function createSocketDataAccessor<DataType>(name: string, socketEv: string, config?: {
+  reload?: string | ((settings?: {silent?: boolean}) => Promise<void>)
+}): SocketDataAccessor<DataType> {
+  const accessor = createDataAccessor<DataType>(name, config);
+
+  socketDataAccessors.push(accessor as DataAccessor<unknown>);
+
+  socket.on(socketEv, () => {
+    accessor.reload();
+  });
 
   return accessor;
 }
 
 // Resources
-export const classMemberData = createDataAccessor<ClassMemberData>("classMemberData", {
-  reload: "/class/get_class_members", socket: "updateMembers"
+export const classMemberData = createSocketDataAccessor<ClassMemberData>("classMemberData", "updateMembers", {
+  reload: "/class/get_class_members"
 });
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", {
   reload: loadClassSubstitutionsData
 });
-export const eventData = createDataAccessor<EventData>("eventData", {
-  reload: "/events/get_event_data", socket: "updateEvents"
+export const eventData = createSocketDataAccessor<EventData>("eventData", "updateEvents", {
+  reload: "/events/get_event_data"
 });
-export const eventTypeData = createDataAccessor<EventTypeData>("eventTypeData", {
-  reload: "/events/get_event_type_data", socket: "updateEventTypes"
+export const eventTypeData = createSocketDataAccessor<EventTypeData>("eventTypeData", "updateEventTypes", {
+  reload: "/events/get_event_type_data"
 });
-export const homeworkData = createDataAccessor<HomeworkData>("homeworkData", {
-  reload: "/homework/get_homework_data", socket: "updateHomework"
+export const homeworkData = createSocketDataAccessor<HomeworkData>("homeworkData", "updateHomework", {
+  reload: "/homework/get_homework_data"
 });
-export const homeworkCheckedData = createDataAccessor<HomeworkCheckedData>("homeworkCheckedData", {
-  reload: loadHomeworkCheckedData, socket: "updateHomework"
+export const homeworkCheckedData = createSocketDataAccessor<HomeworkCheckedData>("homeworkCheckedData", "updateHomework", {
+  reload: loadHomeworkCheckedData
 });
-export const joinedTeamsData = createDataAccessor<JoinedTeamsData>("joinedTeamsData", {
-  reload: loadJoinedTeamsData, socket: "updateJoinedTeams"
+export const joinedTeamsData = createSocketDataAccessor<JoinedTeamsData>("joinedTeamsData", "updateJoinedTeams", {
+  reload: loadJoinedTeamsData
 });
-export const lessonData = createDataAccessor<LessonData>("lessonData", {
-  reload: "/lessons/get_lesson_data", socket: "updateTimetables"
+export const lessonData = createSocketDataAccessor<LessonData>("lessonData", "updateTimetables", {
+  reload: "/lessons/get_lesson_data"
 });
-export const subjectData = createDataAccessor<SubjectData>("subjectData", {
-  reload: "/subjects/get_subject_data", socket: "updateSubjects"
+export const subjectData = createSocketDataAccessor<SubjectData>("subjectData", "updateSubjects", {
+  reload: "/subjects/get_subject_data"
 });
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", {
   reload: "/substitutions/get_substitutions_data"
 });
-export const teamsData = createDataAccessor<TeamsData>("teamsData", {
-  reload: "/teams/get_teams_data", socket: "updateTeams"
+export const teamsData = createSocketDataAccessor<TeamsData>("teamsData", "updateTeams", {
+  reload: "/teams/get_teams_data"
 });
-export const uploadData = createDataAccessor<UploadData>("uploadData", {
-  reload: loadUploadData, socket: "updateUploads"
+export const uploadData = createSocketDataAccessor<UploadData>("uploadData", "updateUploads", {
+  reload: loadUploadData
 });
+
+eventTypeData.on("change", tryForceReloadEventTypeStyles);
 
 $(document).on("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    for (const d of socketDataAccessors) d.reload({ silent: true })
+    for (const d of socketDataAccessors) d.reload({ silent: true });
     renderAll();
   }
 });
@@ -712,6 +755,10 @@ export const csrfToken = createDataAccessor<string>("csrfToken");
 // Show all uploads
 export const showAllUploads = createDataAccessor<boolean>("showAllUploads");
 showAllUploads(false);
+
+// Show all uploads
+export const unsavedChanges = createDataAccessor<boolean>("unsavedChanges");
+unsavedChanges(false);
 
 $('[data-bs-toggle="tooltip"]').tooltip();
 new MutationObserver(mutationsList => {
@@ -803,7 +850,7 @@ setTimeout(() => {
 
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", () => {
-  for (const d of socketDataAccessors) d.reload({ silent: true })
+  for (const d of socketDataAccessors) d.reload({ silent: true });
   renderAll();
 });
 
@@ -825,11 +872,11 @@ $(globalThis).on("pushstate", handleSmallScreenQueryChange);
 handleSmallScreenQueryChange();
 
 (async () => {
-  if ((await colorTheme()) === "light") {
-    $("body").attr("data-bs-theme", "light");
+  if ((await colorTheme()) === ColorTheme.LIGHT) {
+    $("body").attr("data-bs-theme", ColorTheme.LIGHT);
   }
   else {
-    $("body").attr("data-bs-theme", "dark");
+    $("body").attr("data-bs-theme", ColorTheme.DARK);
   }
 
   if (localStorage.getItem("fontSize") === "1") {
@@ -848,20 +895,20 @@ if (!isSite("settings")) {
   if (colorThemeSetting === "auto") {
     async function updateColorTheme(): Promise<void> {
       if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
-        colorTheme("dark");
+        colorTheme(ColorTheme.DARK);
       }
       else {
-        colorTheme("light");
+        colorTheme(ColorTheme.LIGHT);
       }
 
-      if ((await colorTheme()) === "light") {
+      if ((await colorTheme()) === ColorTheme.LIGHT) {
         document.getElementsByTagName("html")[0].style.background = "#ffffff";
-        document.body.dataset.bsTheme = "light";
+        document.body.dataset.bsTheme = ColorTheme.LIGHT;
         $('meta[name="theme-color"]').attr("content", "#f8f9fa");
       }
       else {
         document.getElementsByTagName("html")[0].style.background = "#212529";
-        document.body.dataset.bsTheme = "dark";
+        document.body.dataset.bsTheme = ColorTheme.DARK;
         $('meta[name="theme-color"]').attr("content", "#2b3035");
       }
     }

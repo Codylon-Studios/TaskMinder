@@ -7,6 +7,7 @@ import logger from "../config/logger";
 import { redisClient } from "../config/redis";
 import fs from "fs/promises";
 import path from "path";
+import { randomInt } from "crypto";
 import { FINAL_UPLOADS_DIR } from "../config/upload";
 import {
   changeClassNameTypeBody,
@@ -19,35 +20,13 @@ import {
 } from "../schemas/class.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
-function generateRandomBase62String(length: number = 20): string {
-  const chars: string[] = [];
+const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-  // Add digits 0–9 twice
-  for (let i = 0; i < 10; i++) {
-    chars.push(i.toString());
-    chars.push(i.toString());
-  }
-
-  // Add uppercase A–Z
-  for (let i = 65; i <= 90; i++) {
-    chars.push(String.fromCharCode(i));
-  }
-
-  // Add lowercase a–z
-  for (let i = 97; i <= 122; i++) {
-    chars.push(String.fromCharCode(i));
-  }
-
-  // Build the random string
+function generateRandomBase62String(length = 20): string {
   let result = "";
   for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * 62);
-    if (randomIndex < 0 || randomIndex > 61) {
-      throw new Error(`Random index out of bounds: ${randomIndex}`);
-    }
-    result += chars[randomIndex];
+    result += BASE62[randomInt(0, BASE62.length)];
   }
-
   return result;
 }
 

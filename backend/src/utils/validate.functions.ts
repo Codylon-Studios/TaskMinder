@@ -23,7 +23,7 @@ async function invalidateCache(
   const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES[key], classId);
   try {
     await redisClient.del(cacheKey);
-  } 
+  }
   catch (err) {
     logger.error(`Error invalidating cache for ${CACHE_KEY_PREFIXES[key]}: ${err}`);
   }
@@ -43,6 +43,24 @@ async function isValidUploadInput(uploadName: string, uploadType: string): Promi
       name: "Bad Request",
       status: 400,
       message: "Please provide a valid name, teamId (int) and valid file type (INFO_SHEET,LESSON_NOTE,WORKSHEET,IMAGE,FILE,TEXT)",
+      expected: true
+    };
+    throw err;
+  }
+}
+
+async function isValidEventTypeId(eventTypeId: number, session: Session & Partial<SessionData>): Promise<void> {
+  const eventTypeExists = await prisma.eventType.findUnique({
+    where: {
+      eventTypeId: eventTypeId,
+      classId: parseInt(session.classId!, 10)
+    }
+  });
+  if (!eventTypeExists) {
+    const err: RequestError = {
+      name: "Not Found",
+      status: 404,
+      message: "Invalid eventTypeId (eventType does not exist) for this class: " + eventTypeId,
       expected: true
     };
     throw err;
@@ -156,6 +174,7 @@ export {
   isValidColor,
   isValidSubjectId,
   isValidTeamId,
+  isValidEventTypeId,
   isValidweekDay,
   lessonDateEventAtLeastOneNull,
   isValidGender,

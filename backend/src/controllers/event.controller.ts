@@ -1,7 +1,7 @@
+import { Request, Response, NextFunction } from "express";
 import eventService from "../services/event.service";
-import asyncHandler from "express-async-handler";
 
-export const getEventData = asyncHandler(async (req, res, next) => {
+export const getEventData = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {
     const eventData = await eventService.getEventData(req.session);
     res.status(200).json(eventData);
@@ -9,9 +9,9 @@ export const getEventData = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const addEvent = asyncHandler(async (req, res, next) => {
+export const addEvent = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {
     await eventService.addEvent(req.body, req.session);
     res.sendStatus(200);
@@ -19,9 +19,9 @@ export const addEvent = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const editEvent = asyncHandler(async (req, res, next) => {
+export const editEvent = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {
     await eventService.editEvent(req.body, req.session);
     res.sendStatus(200);
@@ -29,9 +29,9 @@ export const editEvent = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const deleteEvent = asyncHandler(async (req, res, next) => {
+export const deleteEvent = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {
     await eventService.deleteEvent(req.body, req.session);
     res.sendStatus(200);
@@ -39,9 +39,9 @@ export const deleteEvent = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const getEventTypeData = asyncHandler(async (req, res, next) => {
+export const getEventTypeData = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {
     const eventTypeData = await eventService.getEventTypeData(req.session);
     res.status(200).json(eventTypeData);
@@ -49,9 +49,9 @@ export const getEventTypeData = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const setEventTypeData = asyncHandler(async (req, res, next) => {
+export const setEventTypeData = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {
     await eventService.setEventTypeData(req.body, req.session);
     res.sendStatus(200);
@@ -59,9 +59,9 @@ export const setEventTypeData = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const getEventTypeStyles = asyncHandler(async (req, res, next) => {
+export const getEventTypeStyles = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {
     const eventTypeStyles = await eventService.getEventTypeStyles(req.session);
     res.setHeader("Content-Type", "text/css");
@@ -70,7 +70,7 @@ export const getEventTypeStyles = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
 export default {
   getEventData,

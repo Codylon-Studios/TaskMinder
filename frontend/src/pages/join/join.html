@@ -10,27 +10,30 @@
   <body>
     <div class="container" id="app">
       <div class="d-flex justify-content-center">
-        <div class="card p-4 shadow-sm mt-5 panel">
+        <div class="card p-4 shadow-sm mt-5 panel-wrapper">
           <div id="decide-action-panel">
-            <h2 class="text-center mb-4">Was möchtest du tun?</h2>
-            <button class="btn btn-primary w-100 fw-bold mb-3 position-relative" id="show-login-register-btn">
+            <h2 class="text-center">Willkommen bei TaskMinder!</h2>
+            <h4 class="text-center mb-4">Was möchtest du tun?</h4>
+            <button class="btn btn-primary w-100 fw-bold mb-3 position-relative" id="show-login-register-btn" data-next-panel="#login-register-panel">
               Anmelden oder Registrieren
               <i class="fas fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none" aria-hidden="true"></i>
             </button>
-            <button class="btn btn-primary w-100 fw-bold mb-3 position-relative" id="show-join-class-btn">
+            <button class="btn btn-primary w-100 fw-bold mb-3 position-relative" data-next-panel="#join-class-panel">
               Klasse beitreten
               <i class="fa-solid fa-circle-check mx-1 position-absolute top-50 end-0 translate-middle d-none" aria-hidden="true"></i>
             </button>
-            <button class="btn btn-primary w-100 fw-bold" disabled id="show-create-class-btn">Klasse erstellen</button>
+            <button class="btn btn-primary w-100 fw-bold" disabled id="show-create-class-btn" data-next-panel="#create-class-is-test-panel">
+              Klasse erstellen
+            </button>
             <div class="form-text">Du brauchst einen Account, um eine Klasse zu erstellen.</div>
           </div>
 
-          <div id="join-class-panel" class="d-none">
+          <div id="join-class-panel">
             <div class="d-flex align-items-center mb-4">
-              <button class="btn-back" id="join-class-back-btn"></button>
+              <button class="btn-back" data-next-panel="#decide-action-panel"></button>
               <h2 class="text-center mb-0 flex-grow-1">Klasse beitreten</h2>
             </div>
-            <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2" id="error-invalid-class-code">
+            <div class="alert alert-danger p-2 ds-flex align-items-center gap-2" id="error-invalid-class-code">
               <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
               <span class="d-block">Der Klassencode ist ungültig!</span>
             </div>
@@ -66,7 +69,7 @@
             <button class="btn btn-primary w-100 fw-bold" id="join-class-btn">Beitreten</button>
           </div>
 
-          <div id="decide-account-panel" class="d-none">
+          <div id="decide-account-panel">
             <div class="alert alert-success p-2 d-flex align-items-center gap-2">
               <i class="fa-solid fa-circle-check mx-1" aria-hidden="true"></i>
               <span class="d-block">
@@ -76,7 +79,7 @@
               </span>
             </div>
             <h2 class="text-center mb-4">Möchtest du einen Account nutzen?</h2>
-            <button class="btn btn-primary w-100 fw-bold mb-3" id="show-joined-login-register-btn">Anmelden oder Registrieren</button>
+            <button class="btn btn-primary w-100 fw-bold mb-3" data-next-panel="#login-register-panel">Anmelden oder Registrieren</button>
             <div class="text-center mb-3">
               <a href="/main" data-pjax>Ohne Account fortfahren</a>
             </div>
@@ -93,7 +96,7 @@
             </div>
           </div>
 
-          <div id="login-register-panel" class="d-none">
+          <div id="login-register-panel">
             <!--LOGIN REGISTER CONTENT-->
             <div class="d-none login-register-element">
               <div class="d-flex align-items-center mb-4">
@@ -171,9 +174,9 @@
             </div>
           </div>
 
-          <div id="create-class-is-test-panel" class="d-none">
+          <div id="create-class-is-test-panel">
             <div class="d-flex align-items-center mb-4">
-              <button class="btn-back" id="create-class-is-test-back-btn"></button>
+              <button class="btn-back" data-next-panel="#decide-action-panel"></button>
               <h2 class="text-center mb-0 flex-grow-1">Klasse erstellen</h2>
             </div>
             <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content mb-3">
@@ -188,12 +191,12 @@
               <input type="checkbox" class="form-check-input me-2" id="create-class-is-test" checked />
               Als Testklasse erstellen
             </label>
-            <button class="btn btn-primary w-100 fw-bold" id="create-class-to-warning-btn">Weiter</button>
+            <button class="btn btn-primary w-100 fw-bold" data-next-panel="#create-class-warning-panel">Weiter</button>
           </div>
 
-          <div id="create-class-warning-panel" class="d-none">
+          <div id="create-class-warning-panel">
             <div class="d-flex align-items-center mb-4">
-              <button class="btn-back" id="create-class-warning-back-btn"></button>
+              <button class="btn-back" data-next-panel="#create-class-is-test-panel"></button>
               <h2 class="text-center mb-0 flex-grow-1">Achtung</h2>
             </div>
             <div class="alert alert-warning p-2 d-flex align-items-center gap-2 mb-3">
@@ -208,12 +211,12 @@
                 </ul>
               </span>
             </div>
-            <button class="btn btn-primary w-100 fw-bold" id="create-class-to-credentials-btn">Weiter</button>
+            <button class="btn btn-primary w-100 fw-bold" data-next-panel="#create-class-credentials-panel">Weiter</button>
           </div>
 
-          <div id="create-class-credentials-panel" class="d-none">
+          <div id="create-class-credentials-panel">
             <div class="d-flex align-items-center mb-4">
-              <button class="btn-back" id="create-class-credentials-back-btn"></button>
+              <button class="btn-back" data-next-panel="#create-class-warning-panel"></button>
               <h2 class="text-center mb-0 flex-grow-1">Klasse erstellen</h2>
             </div>
             <div class="mb-3">
@@ -225,7 +228,7 @@
             <button class="btn btn-primary w-100 fw-bold" id="create-class-btn">Klasse erstellen</button>
           </div>
 
-          <div id="invite-panel" class="d-none">
+          <div id="invite-panel">
             <div class="d-flex align-items-center mb-4">
               <h2 class="text-center mb-0 flex-grow-1">Mitglieder einladen</h2>
             </div>

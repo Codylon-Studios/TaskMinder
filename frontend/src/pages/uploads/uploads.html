@@ -19,64 +19,94 @@
         </span>
       </div>
 
-      <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3 mb-2">
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-primary fw-bold" id="show-add-upload-button">
-            <i class="fa-solid fa-plus" aria-hidden="true"></i>
-            Neu
-          </button>
-          <input type="checkbox" class="btn-check" id="edit-toggle" />
-          <label class="btn btn-outline-secondary fw-bold" for="edit-toggle" id="edit-toggle-label">
-            <i class="fa-solid fa-edit"></i>
-            Bearbeiten
-          </label>
+      <div class="d-flex align-items-center flex-column flex-lg-row gap-3 mb-2">
+        <div class="d-flex align-items-center flex-column flex-md-row gap-2 gap-md-3">
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary fw-bold" id="show-add-upload-button">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
+              Neu
+            </button>
+            <input type="checkbox" class="btn-check" id="edit-toggle" />
+            <label class="btn btn-outline-secondary fw-bold" for="edit-toggle" id="edit-toggle-label">
+              <i class="fa-solid fa-edit"></i>
+              Bearbeiten
+            </label>
 
-          <input type="checkbox" class="btn-check" id="filter-toggle" />
-          <label class="btn btn-outline-secondary position-relative fw-bold" for="filter-toggle">
-            <i class="fa-solid fa-filter"></i>
-            Filtern
-            <span class="filter-info-circle" id="filter-changed"></span>
-          </label>
-        </div>
-        <div id="filter-content" class="ds-flex align-items-center flex-row gap-2">
-          <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown">Art</button>
-            <div class="dropdown-menu" id="filter-type-dropwdown">
-              <div class="px-2 py-0">
-                <button class="btn btn-outline-secondary btn-sm" id="filter-type-all">Alle</button>
-                <button class="btn btn-outline-secondary btn-sm" id="filter-type-none">Keine</button>
-              </div>
-              <div class="dropdown-divider"></div>
-              <div class="px-2 py-0" id="filter-type-list">
-                <!--Gets filled-->
-              </div>
-            </div>
+            <input type="checkbox" class="btn-check" id="filter-toggle" />
+            <label class="btn btn-outline-secondary position-relative fw-bold" for="filter-toggle">
+              <i class="fa-solid fa-filter"></i>
+              Filtern
+              <span class="filter-info-circle" id="filter-changed"></span>
+            </label>
           </div>
-          <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown">Datum</button>
-            <div class="dropdown-menu" id="filter-date-dropwdown">
-              <div class="px-2 py-1">
-                <div class="d-flex align-items-center mb-3">
-                  <label class="mb-0 me-2 text-nowrap" for="filter-date-from">Von</label>
-                  <input type="date" class="form-control form-control-sm filter-date" id="filter-date-from" />
+          <div id="filter-content" class="ds-flex align-items-center flex-row gap-2">
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                Art
+              </button>
+              <div class="dropdown-menu" id="filter-type-dropwdown">
+                <div class="px-2 py-0">
+                  <button class="btn btn-outline-secondary btn-sm" id="filter-type-all">Alle</button>
+                  <button class="btn btn-outline-secondary btn-sm" id="filter-type-none">Keine</button>
                 </div>
-                <div class="d-flex align-items-center">
-                  <label class="mb-0 me-2 text-nowrap" for="filter-date-until">Bis</label>
-                  <input type="date" class="form-control form-control-sm filter-date" id="filter-date-until" />
+                <div class="dropdown-divider"></div>
+                <div class="px-2 py-0" id="filter-type-list">
+                  <!--Gets filled-->
                 </div>
               </div>
             </div>
+            <div class="dropdown">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                Datum
+              </button>
+              <div class="dropdown-menu" id="filter-date-dropwdown">
+                <div class="px-2 py-1">
+                  <div class="d-flex align-items-center mb-3">
+                    <label class="mb-0 me-2 text-nowrap" for="filter-date-from">Von</label>
+                    <input type="date" class="form-control form-control-sm filter-date" id="filter-date-from" />
+                  </div>
+                  <div class="d-flex align-items-center">
+                    <label class="mb-0 me-2 text-nowrap" for="filter-date-until">Bis</label>
+                    <input type="date" class="form-control form-control-sm filter-date" id="filter-date-until" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+          <button class="btn btn-secondary fw-bold" id="filter-reset">
+            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+            Zurücksetzen
+          </button>
         </div>
-        <button class="btn btn-secondary fw-bold" id="filter-reset">
-          <i class="fa-solid fa-trash" aria-hidden="true"></i>
-          Zurücksetzen
-        </button>
+
+        <div class="d-flex justify-content-center justify-content-lg-start gap-3 flex-grow-1 w-100 w-lg-fit-content">
+          <button class="btn btn-outline-secondary fw-bold" id="view-toggle"></button>
+          <search-box id="search-uploads"></search-box>
+        </div>
       </div>
 
-      <div class="container-fluid mt-3 row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-xl-6 mx-0" id="upload-list">
+      <div class="text-secondary mt-3" id="no-uploads-found">Keine Dateien mit diesen Filtern.</div>
+
+      <div class="mt-3 row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-xl-6 mx-n2" id="upload-gallery">
         <!--Gets filled-->
       </div>
+
+      <div class="rounded-3 overflow-hidden border mt-3" id="upload-table">
+        <div class="table-responsive">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>Art</th>
+                <th>Name & Autor</th>
+                <th>Datum</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody class="table-group-divider" id="upload-table-body"><!--Gets filled--></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="container-fluid text-center" id="upload-load-more">
         <button class="btn btn-primary fw-bold" id="upload-load-more-btn">Mehr laden</button>
       </div>
@@ -102,7 +132,7 @@
 
               <div class="mb-3">
                 <label for="add-upload-files" class="form-label">Wähle Dateien zum Hochladen aus</label>
-                <input type="file" class="form-control add-upload-files" id="add-upload-files" accept=".pdf, .jpg, .jpeg, .png, .txt" multiple />
+                <input type="file" class="form-control add-upload-files add-upload-input" id="add-upload-files" accept=".pdf, .jpg, .jpeg, .png, .txt" multiple />
                 <div class="form-text">Unterstütze Formate: PDF, JPG, PNG, TXT</div>
                 <div class="form-text">Du kannst das nachher nicht mehr ändern, nur alles löschen.</div>
               </div>
@@ -152,7 +182,7 @@
 
               <div class="mb-3">
                 <label for="add-upload-type" class="form-label">Wähle die Art der Datei aus</label>
-                <select class="form-select add-upload-input" id="edit-upload-type">
+                <select class="form-select edit-upload-input" id="edit-upload-type">
                   <!--Gets filled-->
                 </select>
                 <div class="form-text">Das beeinflusst nur die Darstellung und Filter.</div>
@@ -197,10 +227,14 @@
               </div>
 
               <div class="d-flex flex-column flex-md-row gap-2">
-                <a class="btn btn-primary fw-bold w-md-50" id="view-upload-download">
+                <a class="btn btn-primary fw-bold w-md-50" id="view-upload-download" download>
                   <i class="fas fa-download" aria-hidden="true"></i>
                   Herunterladen
                 </a>
+                <div class="form-text mt-0" id="view-upload-download-impossible">
+                  Leider unterstützt iOS das Herunterladen von PDFs in einer Web-App nicht. Du musst den Link in einem Browser öffnen und dann auf
+                  "Teilen" klicken.
+                </div>
                 <a class="btn btn-secondary fw-bold w-md-50" id="view-upload-open" target="_blank">
                   <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true"></i>
                   In neuem Tab öffnen
@@ -230,6 +264,14 @@
             <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
           </div>
           <div class="toast-body">Das Dateiformat ist nicht unterstützt. Kontaktiere uns, wenn dir eine Unterstützung wichtig ist.</div>
+        </div>
+        <div id="add-upload-size-limit-exceeded-toast" class="toast">
+          <div class="toast-progress-bar bg-danger"></div>
+          <div class="toast-header bg-danger text-body-bg">
+            <b class="me-auto">Zu große Datei</b>
+            <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+          </div>
+          <div class="toast-body">Die Datei ist zu groß. Es ist nur möglich, Dateien von maximal 15MB hochzuladen.</div>
         </div>
         <div id="edit-upload-success-toast" class="toast">
           <div class="toast-progress-bar bg-success"></div>

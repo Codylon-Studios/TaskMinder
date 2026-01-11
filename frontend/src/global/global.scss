@@ -2,7 +2,17 @@
 
 @use "../../../node_modules/bootstrap/scss/bootstrap" as * with (
   $primary: #3bb9ca,
-  $enable-negative-margins: true
+  $enable-negative-margins: true,
+  $spacers: (
+    0: 0,
+    1: 0.25rem,
+    2: 0.5rem,
+    "0-75rem": 0.75rem,
+    3: 1rem,
+    4: 1.5rem,
+    5: 3rem,
+    2rem: 2rem
+  )
 );
 $primary-high-contrast: #277b86;
 $warning-high-contrast: #805f00;
@@ -180,22 +190,6 @@ body {
   --bs-spinner-border-width: 0.125rem;
 }
 
-.w-fit-content {
-  width: fit-content;
-}
-
-.w-md-50 {
-  @include media-breakpoint-up(md) {
-    width: 50% !important;
-  }
-}
-
-.w-lg-50 {
-  @include media-breakpoint-up(lg) {
-    width: 50% !important;
-  }
-}
-
 .h-fit-content {
   height: fit-content;
 }
@@ -204,12 +198,45 @@ body {
   cursor: pointer;
 }
 
-.ds-flex {
-  display: flex;
+$width-values: (
+  fit-content: fit-content,
+  0: 0%,
+  50: 50%,
+  100: 100%
+);
+
+@each $key, $value in $width-values {
+  @each $breakpoint in map-keys($grid-breakpoints) {
+    @include media-breakpoint-up($breakpoint) {
+      .w-#{$breakpoint}-#{$key} {
+        width: $value !important;
+      }
+    }
+  }
+
+  .w-#{$key} {
+    width: $value;
+  }
 }
 
-.ds-none {
-  display: none;
+$unimportant-display-values: (
+  none: none,
+  flex: flex,
+  block: block
+);
+
+@each $key, $value in $unimportant-display-values {
+  @each $breakpoint in map-keys($grid-breakpoints) {
+    @include media-breakpoint-up($breakpoint) {
+      .ds-#{$breakpoint}-#{$key} {
+        display: $value;
+      }
+    }
+  }
+
+  .ds-#{$key} {
+    display: $value;
+  }
 }
 
 .text-body-bg {

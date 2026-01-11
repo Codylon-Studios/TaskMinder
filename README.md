@@ -1,36 +1,55 @@
 <h1 align="center">TaskMinder</h1>
 <p align="center">
-  &copy; 2025 Codylon Studios
+  &copy; 2025-2026 Mingqi Li and Fabian Leonardi
 </p>
 
 ## About TaskMinder
-*TaskMinder* is our website to manage your school day: Homework, Exams, Excursions, Timetable, Substitutions - **everything in one place!** And the best part is: One student enters a homework - and it's **synced with everyone** in the class! No more asking for homework or worrying about the next exam!
+[TaskMinder](https://taskminder.de) is a web app for organizing school life in one place—homework, exams, excursions, timetables, substitutions, and shared files.
+It’s built for classes: when one student adds or updates an entry (for example homework), the change is synced for everyone, so the whole class stays consistent and up to date.
 
-<p align="center">
-  <b>TaskMinder takes studying to a new level -</b>
-  <br>
-  <b>Get started NOW!</b>
-</p>
+TaskMinder is currently available in German only. We're considering expanding to more languages based on community interest!
+
+[Join our Discord](https://discord.gg/kZGs92aMae) for active discussions, announcements, feedback and more!
+
+### Key features
+- Central overview for homework, exams, events, file uploads, timetable, and substitutions (DSBMobile with Untis)
+- Real-time class syncing (one entry updates everyone)
+- Demo and test classes to try features without commitment
 
 ## Getting started
 ### Demo
-You have two options to look at the features of TaskMinder quickly:
-1) Click the [join link](taskminder.de/join?class_code=demo) for the demo class - you don't need an account or anything. Alternatively, you can click "join class" on the main page and enter `demo` as classcode.
-2) Login as the user `demo` with the password `demo` - you are automatically part of the demo class
+You can explore TaskMinder using the demo class in two ways:
+1) Open the demo join link: https://taskminder.de/join?class_code=demo  
+   (No account required. Alternatively: click “Join class” on the main page and enter `demo` as the class code.)
+2) Log in with username `demo` and password `demo` (you’ll be in the demo class automatically).
 
-You cannot edit the shown data yourself but you can get a short overview of what TaskMinder is capable.
-
-Just log out (settings > account) and leave the class (settings > student) and you are ready to continue!
+The demo data is read-only, but it provides a quick overview of the main features.
+To set up your own class, log out (Einstellungen → Account) and leave the class (Einstellungen → Schüler:in).
 
 ### Test classes
-**Interested, but not totally sure?** You can simply create a test class which gets deleted after 24 hours so you have enough time to test out all the features!
-
-Just create a new account and create a new class. Tick the option "Create as test class". You are now free to test out all the features of TaskMinder - you can even join with other devices / accounts and see how TaskMinder syncs everything!
+**Want to try it first?** Create a test class (automatically deleted after 24 hours). <br>
+Create an account, create a new class, and check “Create as test class”. You can join from multiple devices/accounts to see syncing in action.
 
 ### Regular classes
-**TaskMinder sounds appealing to you? *Perfect!*** You can turn your test class into a regular class or if you haven't created a test class just create a regular one!
+If you’re ready to use TaskMinder long-term, create a regular class—or convert your test class to a regular one! <br>
+You're all set - **Have fun!**
 
-Now you are ready to use TaskMinder - **Have fun!**
+## Built With
+- **TypeScript** - Type-safe JavaScript for robust development
+- **Bun** - Fast JavaScript runtime and toolkit
+- **Express.js** - Backend web framework
+- **Socket.IO** - Real-time bidirectional communication
+- **Prisma ORM** - Type-safe database access layer
+- **PostgreSQL** - Primary relational database
+- **Redis** - High-performance caching and session storage
+- **jQuery** - Lightweight DOM manipulation
+- **Bootstrap** - Responsive UI component framework
+- **Sass** - CSS preprocessor for maintainable stylesheets
+
+## Source-Available
+TaskMinder is **source-available** for transparency and learning purposes. You can view, modify, and use the code for **non-commercial purposes only** (personal, educational, or research use). **Commercial use requires permission.** This includes selling the software, running ads, offering paid services, or deploying it in enterprise environments.<br>
+For commercial licensing inquiries: [info@taskminder.de](mailto:info@taskminder.de) <br>
+This project is licensed under the [TaskMinder License](https://github.com/Codylon-Studios/TaskMinder/blob/main/LICENSE).
 
 ## Links
 - Contact us! [info@taskminder.de](mailto:info@taskminder.de)

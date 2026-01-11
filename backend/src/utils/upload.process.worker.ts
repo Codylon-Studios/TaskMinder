@@ -299,8 +299,8 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     // -> catch block, trying to delete metadata and real files
     if (!upload) {
       const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
+        name: "Not Found",
+        status: 404,
         message: "File already deleted or moved",
         expected: true
       };
@@ -376,7 +376,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     logger.info(`Successfully processed upload ${uploadId} with ${processedFiles.length} file(s)`);
   }
   catch (error) {
-    logger.error(`Failed to process upload ${uploadId}: ${error}`);
+    logger.error(`Failed to process upload ${uploadId}: `, error);
 
     // Clean up all temp files
     await Promise.all(tempFiles.map(f => fs.unlink(f.path).catch(() => { })));
@@ -452,7 +452,7 @@ export const startUploadWorker = async (): Promise<void> => {
       }
     }
     catch (error) {
-      logger.error(`Worker error: ${error}`);
+      logger.error("Worker error: ", error);
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }

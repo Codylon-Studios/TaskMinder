@@ -105,11 +105,31 @@ async function checkPermissionLevel(
   let effectivePermission = 0;
 
   if (req.session.account) {
-    const account = await prisma.joinedClass.findUnique({
+    const joined = await prisma.joinedClass.findUnique({
       where: { accountId: req.session.account.accountId },
-      select: { permissionLevel: true }
+      select: { permissionLevel: true, classId: true }
     });
-    effectivePermission = account?.permissionLevel ?? 0;
+
+    if (!joined) {
+      // session is stale or tampered
+      delete req.session.account;
+      delete req.session.classId;
+      throwError("Unauthorized", 401, "Account is not linked to any class");
+    }
+
+    if (req.session.classId) {
+      const sessionClassId = parseInt(req.session.classId, 10);
+      if (sessionClassId !== joined.classId) {
+        // prevent cross-class access via forged/stale session.classId
+        delete req.session.classId;
+        throwError("Forbidden", 403, "Selected class does not match account membership");
+      }
+    }
+    else {
+      // keep session consistent
+      req.session.classId = joined.classId.toString();
+    }
+    effectivePermission = joined.permissionLevel;
   } 
   else if (req.session.classId) {
     const aClass = await prisma.class.findUnique({

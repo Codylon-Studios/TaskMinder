@@ -17,7 +17,7 @@ export const checkHomeworkSchema = z.object({
   query: z.object({}),
   body: z.strictObject({
     homeworkId: z.coerce.number(),
-    checkStatus: z.string()
+    checkStatus: z.boolean()
   })
 });
 

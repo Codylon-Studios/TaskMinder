@@ -1,24 +1,25 @@
 export const __placeholder;
 
-// Color Theme
-type ColorTheme = "dark" | "light";
+type RawDate = number | string | Date
 
 // Month Dates
 type MonthDates = Date[][];
 
 // Data Accessors
-type DataAccessorEventName = "update";
+type DataAccessorEventName = "update" | "change";
 type DataAccessorEventCallback = (...args: unknown[]) => void;
 type DataAccessor<DataType> = {
   (value?: DataType | null): Promise<DataType>;
   get(): Promise<DataType>;
   getCurrent(): DataType | null;
   set(value: DataType | null, settings?: {silent?: boolean}): DataAccessor<DataType>;
-  on(event: DataAccessorEventName, callback: DataAccessorEventCallback, settings?: {onlyThisSite?: boolean}): DataAccessor<DataType>;
+  on(event: DataAccessorEventName, callback: DataAccessorEventCallback): DataAccessor<DataType>;
   trigger(event: DataAccessorEventName, ...args: unknown[]): DataAccessor<DataType>;
-  reload(settings?: {silent?: boolean}): DataAccessor<DataType>;
+  reload(settings?: {silent?: boolean}): Promise<DataAccessor<DataType>>;
   init(): Promise<DataAccessor<DataType>>;
+  isInitialized(): boolean;
 }
+type SocketDataAccessor<DataType> = DataAccessor<DataType>;
 
 //  ╭───────────╮
 //  │ RESOURCES │

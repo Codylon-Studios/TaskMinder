@@ -1,7 +1,7 @@
+import { Request, Response, NextFunction } from "express";
 import subjectService from "../services/subject.service";
-import asyncHandler from "express-async-handler";
 
-export const getSubjectData = asyncHandler(async (req, res, next) => {
+export const getSubjectData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const timetableData = await subjectService.getSubjectData(req.session);
     res.status(200).json(timetableData);
@@ -9,8 +9,9 @@ export const getSubjectData = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
-export const setSubjectData = asyncHandler(async (req, res, next) => {
+};
+
+export const setSubjectData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await subjectService.setSubjectData(req.body, req.session);
     res.sendStatus(200);
@@ -18,7 +19,7 @@ export const setSubjectData = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
 export default {
   getSubjectData,

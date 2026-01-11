@@ -12,7 +12,7 @@ repo_name: TaskMinder
 repo_url: https://github.com/Codylon-Studios/TaskMinder
 
 # Copyright
-copyright: Copyright &copy; 2025 Mingqi Li, Fabian Leonardi
+copyright: Copyright &copy; 2025-2026 Mingqi Li, Fabian Leonardi
 
 theme:
   features:
@@ -46,9 +46,6 @@ nav:
   - Development: development.md
   - Deployment (v2): deploy-v2.md
   - Migrations: migrations.md
-  - Old Documentation:
-      - v1: 
-        - Deployment: deploy-v1.md
 
 extra_css:
   - assets/custom.css

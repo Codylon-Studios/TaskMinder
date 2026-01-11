@@ -1,6 +1,6 @@
-import { getSite, isValidSite, renderAll } from "../../global/global.js";
+import { getSite, isValidSite, renderAll, unsavedChanges } from "../../global/global.js";
 import { init as initBottombar } from "../bottombar/bottombar.js";
-import { user } from "../navbar/navbar.js";
+import { init as initNavbar, user } from "../navbar/navbar.js";
 
 function cacheHtml(url: string, html: string): void {
   if (htmlCache.has(url)) {
@@ -46,6 +46,7 @@ async function init(): Promise<void> {
     await mod.init();
   }
   await initBottombar();
+  await initNavbar();
   await renderAll();
 
   setTimeout(() => {
@@ -75,7 +76,27 @@ function finishLoadingBar(interval: NodeJS.Timeout): void {
   }, 300);
 }
 
+async function confirmUnsavedChanges(): Promise<boolean> {
+  return new Promise(res => {
+    $("#unsaved-changes-leave").off("click").on("click", () => {
+      res(true);
+    });
+
+    $("#unsaved-changes-stay").off("click").on("click", () => {
+      res(false);
+    });
+
+    $("#unsaved-changes-modal").modal("show");
+  });
+}
+
 export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promise<void> {
+  if (await unsavedChanges()) {
+    const leave = await confirmUnsavedChanges();
+    unsavedChanges(false);
+    if (! leave) return;
+  }
+
   const interval = startLoadingBar();
   const urlPathname = (new URL(url, globalThis.location.origin)).pathname;
   const hash = (new URL(url, globalThis.location.origin)).hash;
@@ -156,4 +177,10 @@ globalThis.addEventListener("popstate", async () => {
     replaceSitePJAX(location.href, false);
   }
   internalPopstateEvent = true;
+});
+
+globalThis.addEventListener("beforeunload", async ev => {
+  if (await unsavedChanges()) {
+    ev.preventDefault();
+  }
 });

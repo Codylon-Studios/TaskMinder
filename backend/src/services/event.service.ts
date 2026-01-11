@@ -2,7 +2,6 @@ import logger from "../config/logger";
 import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import sass from "sass";
-
 import { default as prisma } from "../config/prisma";
 import {
   isValidColor,
@@ -10,15 +9,18 @@ import {
   lessonDateEventAtLeastOneNull,
   updateCacheData,
   BigIntreplacer,
-  invalidateCache
+  invalidateCache,
+  isValidEventTypeId
 } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody } from "../schemas/event.schema";
 
+const inFlightStyleBuild = new Map<number, Promise<string>>();
+
 export const eventService = {
   async getEventData(session: Session & Partial<SessionData>) {
-
+    // get cache key from class to fetch from cache
     const getEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
 
     const cachedEventData = await redisClient.get(getEventDataCacheKey);
@@ -32,7 +34,7 @@ export const eventService = {
         throw new Error();
       }
     }
-
+    // no cache data available, fetch from database and update cache
     const eventData = await prisma.event.findMany({
       where: {
         classId: parseInt(session.classId!)
@@ -60,12 +62,13 @@ export const eventService = {
   ) {
     const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    isValidTeamId(teamId, session);
+    await isValidTeamId(teamId, session);
+    await isValidEventTypeId(eventTypeId, session);
     try {
       await prisma.event.create({
         data: {
           eventTypeId: eventTypeId,
-          classId: parseInt(session.classId!),
+          classId: parseInt(session.classId!, 10),
           name: name,
           description: description,
           startDate: startDate,
@@ -99,12 +102,13 @@ export const eventService = {
   ) {
     const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    isValidTeamId(teamId, session);
+    await isValidTeamId(teamId, session);
+    await isValidEventTypeId(eventTypeId, session);
     try {
-      await prisma.event.update({
+      const updated = await prisma.event.updateMany({
         where: {
           eventId: eventId,
-          classId: parseInt(session.classId!)
+          classId: parseInt(session.classId!, 10)
         },
         data: {
           eventTypeId: eventTypeId,
@@ -116,8 +120,20 @@ export const eventService = {
           teamId: teamId
         }
       });
+      // if affected rows is 0 -> throw error
+      if (updated.count === 0) {
+        const err: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Event not found for update",
+          expected: true
+        };
+        throw err;
+      }
     }
-    catch {
+    catch (e) {
+      if ((e as RequestError)?.expected) throw e;
+
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
@@ -136,21 +152,23 @@ export const eventService = {
 
   async deleteEvent(reqData: deleteEventTypeBody, session: Session & Partial<SessionData>) {
     const { eventId } = reqData;
-    if (!eventId) {
+
+    const deleted = await prisma.event.deleteMany({
+      where: {
+        eventId: eventId,
+        classId: parseInt(session.classId!, 10)
+      }
+    });
+
+    if (deleted.count === 0) {
       const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
+        name: "Not Found",
+        status: 404,
+        message: "Event not found",
         expected: true
       };
       throw err;
     }
-    await prisma.event.delete({
-      where: {
-        eventId: eventId,
-        classId: parseInt(session.classId!)
-      }
-    });
 
     // invalidate cache
     await invalidateCache("EVENT", session.classId!);
@@ -175,7 +193,7 @@ export const eventService = {
 
     const eventTypeData = await prisma.eventType.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId: parseInt(session.classId!, 10)
       },
       orderBy: {
         name: "asc"
@@ -197,21 +215,21 @@ export const eventService = {
     reqData: setEventTypesTypeBody,
     session: Session & Partial<SessionData>) {
     const { eventTypes } = reqData;
-    const classId = parseInt(session.classId!);
+    const classId = parseInt(session.classId!, 10);
 
     await prisma.$transaction(async tx => {
       const existingEventTypes = await tx.eventType.findMany({
         where: { classId }
       });
 
-      // Delete removed event types
+      // Delete removed event types (scoped)
       for (const existing of existingEventTypes) {
         if (!eventTypes.some(e => e.eventTypeId === existing.eventTypeId)) {
-          await tx.eventType.delete({
-            where: { eventTypeId: existing.eventTypeId }
+          await tx.eventType.deleteMany({
+            where: { eventTypeId: existing.eventTypeId, classId }
           });
           await tx.event.deleteMany({
-            where: { eventTypeId: existing.eventTypeId }
+            where: { eventTypeId: existing.eventTypeId, classId }
           });
         }
       }
@@ -240,14 +258,23 @@ export const eventService = {
           });
         }
         else {
-          await tx.eventType.update({
-            where: { eventTypeId: eventType.eventTypeId },
+          const updated = await tx.eventType.updateMany({
+            where: { eventTypeId: eventType.eventTypeId, classId },
             data: {
-              classId,
               name: eventType.name,
               color: eventType.color
             }
           });
+
+          if (updated.count === 0) {
+            const err: RequestError = {
+              name: "Not Found",
+              status: 404,
+              message: "Event type not found for update",
+              expected: true
+            };
+            throw err;
+          }
         }
       }
     });
@@ -270,7 +297,13 @@ export const eventService = {
       logger.error(`Error updating Redis cache: ${err}`);
       throw new Error();
     }
-    this.updateEventTypeStyles(session);
+
+    try { 
+      await this.updateEventTypeStyles(session); 
+    } 
+    catch (e) { 
+      logger.error(String(e)); 
+    }
   },
 
   async getEventTypeStyles(session: Session & Partial<SessionData>) {
@@ -298,33 +331,33 @@ export const eventService = {
   },
 
   async updateEventTypeStyles(session: Session & Partial<SessionData>) {
-    // needed for updateEventTypeStylesCacheKey generation (actually redundant)
-    // to avoid type errors
-    if (!session.classId) {
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "User not logged into class",
-        expected: true
-      };
-      throw err;
-    }
-    const eventTypeData = await this.getEventTypeData(session);
-    const scss = `
+    // session.classId certainly exists here
+    // this function is called by getEventTypeStyles(), 
+    // which returns "", if no class is in session
+    const classId = parseInt(session.classId!, 10);
+
+    // “singleflight” deduplication: 
+    // spamming the endpoint doesn’t spawn many concurrent Sass compiles (prevents CPU spikes)
+    const existing = inFlightStyleBuild.get(classId);
+    if (existing) return existing;
+
+    const buildPromise = (async () => {
+      const eventTypeData = await this.getEventTypeData(session);
+      const scss = `
       @use "sass:color";
 
       ${eventTypeData
-    .map((eventType: { eventTypeId: string; name: string; color: string }) => {
-      return `$event-${eventType.eventTypeId}: ${eventType.color};`;
-    })
-    .join("")}
+        .map((eventType: { eventTypeId: string; name: string; color: string }) => {
+          return `$event-${eventType.eventTypeId}: ${eventType.color};`;
+        })
+        .join("")}
 
       $event-colors: (
         ${eventTypeData
-    .map((eventType: { eventTypeId: string; name: string; color: string }) => {
-      return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`;
-    })
-    .join("")}
+        .map((eventType: { eventTypeId: string; name: string; color: string }) => {
+          return `${eventType.eventTypeId}: $event-${eventType.eventTypeId},`;
+        })
+        .join("")}
       );
 
       @each $name, $color in $event-colors {
@@ -346,6 +379,10 @@ export const eventService = {
 
         span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
           color: $color-darker;
+        }
+
+        .color-display.event-#{"" + $name} {
+          background-color: $color;
         }
 
         :not([data-high-contrast="true"]) {
@@ -372,19 +409,25 @@ export const eventService = {
           }
         }
       }`;
-    const css = sass.compileString(scss).css;
+      const css = sass.compileString(scss).css;
 
-    const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId);
+      const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId!);
 
-    try {
-      await redisClient.set(updateEventTypeStylesCacheKey, css, { EX: cacheExpiration });
-    }
-    catch (err) {
-      logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
-    }
+      try {
+        await redisClient.set(updateEventTypeStylesCacheKey, css, { EX: cacheExpiration });
+      }
+      catch (err) {
+        logger.error(`Error updating Redis cache: ${err}`);
+        throw new Error();
+      }
 
-    return css;
+      return css;
+    })().finally(() => {
+      inFlightStyleBuild.delete(classId);
+    });
+
+    inFlightStyleBuild.set(classId, buildPromise);
+    return buildPromise;
   }
 };
 

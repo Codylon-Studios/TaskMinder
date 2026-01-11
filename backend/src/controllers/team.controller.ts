@@ -1,7 +1,7 @@
+import { Request, Response, NextFunction } from "express";
 import teamService from "../services/team.service";
-import asyncHandler from "express-async-handler";
 
-export const getTeams = asyncHandler(async (req, res, next) => {
+export const getTeams = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const teamsData = await teamService.getTeamsData(req.session);
     res.status(200).json(teamsData);
@@ -9,9 +9,9 @@ export const getTeams = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const setTeams = asyncHandler(async (req, res, next) => {
+export const setTeams = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await teamService.setTeamsData(req.body, req.session);
     res.sendStatus(200);
@@ -19,9 +19,9 @@ export const setTeams = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const getJoinedTeams = asyncHandler(async (req, res, next) => {
+export const getJoinedTeams = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const joinedTeamsData = await teamService.getJoinedTeamsData(req.session);
     res.status(200).json(joinedTeamsData);
@@ -29,9 +29,9 @@ export const getJoinedTeams = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
-export const setJoinedTeams = asyncHandler(async (req, res, next) => {
+export const setJoinedTeams = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await teamService.setJoinedTeamsData(req.body, req.session);
     res.sendStatus(200);
@@ -39,7 +39,7 @@ export const setJoinedTeams = asyncHandler(async (req, res, next) => {
   catch (error) {
     next(error);
   }
-});
+};
 
 export default {
   getTeams,

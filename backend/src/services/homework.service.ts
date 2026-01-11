@@ -49,9 +49,25 @@ const homeworkService = {
     const { homeworkId, checkStatus } = reqData;
 
     const accountId = session.account!.accountId;
+    const classId = parseInt(session.classId!, 10);
+
+    const homework = await prisma.homework.findFirst({
+      where: { homeworkId, classId },
+      select: { homeworkId: true }
+    });
+
+    if (!homework) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Homework not found",
+        expected: true
+      };
+      throw err;
+    }
 
     await prisma.$transaction(async tx => {
-      if (checkStatus === "true") {
+      if (checkStatus === true) {
         await tx.homeworkCheck.createMany({
           data: [{ accountId, homeworkId, createdAt: Date.now() }],
           skipDuplicates: true // prevents race condition P2002 errors
@@ -70,32 +86,24 @@ const homeworkService = {
 
   async deleteHomework(reqData: deleteHomeworkTypeBody, session: Session & Partial<SessionData>) {
     const { homeworkId } = reqData;
-    if (!homeworkId) {
+
+    const deleted = await prisma.homework.deleteMany({
+      where: {
+        homeworkId: homeworkId,
+        classId: parseInt(session.classId!, 10)
+      }
+    });
+
+    if (deleted.count === 0) {
       const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
-        expected: true
-      };
-      throw err;
-    }
-    try {
-      await prisma.homework.delete({
-        where: {
-          homeworkId: homeworkId,
-          classId: parseInt(session.classId!)
-        }
-      });
-    }
-    catch {
-      const err: RequestError = {
-        name: "Not found",
+        name: "Not Found",
         status: 404,
-        message: "No homework exists with this ID",
+        message: "Homework not found",
         expected: true
       };
       throw err;
     }
+
     // invalidate cache
     await invalidateCache("HOMEWORK", session.classId!);
     // send socket update
@@ -111,10 +119,12 @@ const homeworkService = {
     await isValidSubjectId(subjectId, session);
     await isValidTeamId(teamId, session);
     try {
-      await prisma.homework.update({
-        where: { homeworkId: homeworkId },
+      const updated = await prisma.homework.updateMany({
+        where: { 
+          homeworkId: homeworkId,
+          classId: parseInt(session.classId!, 10)
+        },
         data: {
-          classId: parseInt(session.classId!),
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
@@ -122,8 +132,21 @@ const homeworkService = {
           teamId: teamId
         }
       });
+
+      // if affected rows is 0 -> throw error
+      if (updated.count === 0) {
+        const err: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Homework not found for update",
+          expected: true
+        };
+        throw err;
+      }
     }
-    catch {
+    catch (e) {
+      if ((e as RequestError)?.expected) throw e;
+
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
