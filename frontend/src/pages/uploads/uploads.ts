@@ -747,6 +747,19 @@ export async function init(): Promise<void> {
       }
     });
 
+    // On changing any information in the edit upload modal, disable the add button if any information is empty
+    $(".edit-upload-input").on("input", function () {
+      const name = $("#edit-upload-name").val()?.toString().trim();
+      const type = $("#edit-upload-type").val();
+
+      if (name === "" || type === null) {
+        $("#edit-upload-button").prop("disabled", true);
+      }
+      else {
+        $("#edit-upload-button").prop("disabled", false);
+      }
+    });
+
     // Don't close the dropdown when the user clicked inside of it
     $(".dropdown-menu").each(function () {
       $(this).on("click", ev => {
