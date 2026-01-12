@@ -39,6 +39,7 @@ model Event {
   eventId     Int       @id @default(autoincrement()) @map("eventId")
   classId     Int
   eventTypeId Int
+  isPinned    Boolean
   name        String
   description String?
   startDate   BigInt
@@ -100,6 +101,7 @@ model Class {
 model Homework {
   homeworkId     Int             @id @default(autoincrement()) @map("homeworkId")
   classId        Int
+  isPinned       Boolean
   content        String
   subjectId      Int
   assignmentDate BigInt

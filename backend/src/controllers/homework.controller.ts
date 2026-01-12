@@ -61,11 +61,22 @@ export const getHomeworkCheckedData = async (req: Request, res: Response, next: 
   }
 };
 
+export const pinHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await homeworkService.pinHomework(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
 export default {
   addHomework,
   checkHomework,
   deleteHomework,
   editHomework,
   getHomeworkData,
-  getHomeworkCheckedData
+  getHomeworkCheckedData,
+  pinHomework
 };

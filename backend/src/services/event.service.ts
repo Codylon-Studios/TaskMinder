@@ -14,7 +14,9 @@ import {
 } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
-import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody } from "../schemas/event.schema";
+import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody, pinEventTypeBody } from "../schemas/event.schema";
+
+const MAX_PINNED_EVENT = 3;
 
 const inFlightStyleBuild = new Map<number, Promise<string>>();
 
@@ -56,6 +58,51 @@ export const eventService = {
     return JSON.parse(stringified);
   },
 
+  async pinEvent(reqData: pinEventTypeBody, session: Session & Partial<SessionData>) {
+    const { eventId, pinStatus } = reqData;
+
+    // look if there are more than 3 simultaneously pinned events
+    const countPinned = await prisma.event.count({
+      where: {
+        classId: parseInt(session.classId!, 10),
+        isPinned: true
+      }
+    });
+
+    if (countPinned >= MAX_PINNED_EVENT) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Pin event count > " + MAX_PINNED_EVENT + "for this class, unpin one event to pin this one",
+        expected: true
+      };
+      throw err;
+    }
+
+    const updated = await prisma.event.updateMany({
+      where: {
+        eventId: eventId,
+        classId: parseInt(session.classId!, 10)
+      },
+      data: {
+        isPinned: pinStatus
+      }
+    });
+
+    if (updated.count === 0) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Event not found",
+        expected: true
+      };
+      throw err;
+    }
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
+  },
+
   async addEvent(
     reqData: addEventTypeBody,
     session: Session & Partial<SessionData>
@@ -69,6 +116,7 @@ export const eventService = {
         data: {
           eventTypeId: eventTypeId,
           classId: parseInt(session.classId!, 10),
+          isPinned: false,
           name: name,
           description: description,
           startDate: startDate,
@@ -298,11 +346,11 @@ export const eventService = {
       throw new Error();
     }
 
-    try { 
-      await this.updateEventTypeStyles(session); 
-    } 
-    catch (e) { 
-      logger.error(String(e)); 
+    try {
+      await this.updateEventTypeStyles(session);
+    }
+    catch (e) {
+      logger.error(String(e));
     }
   },
 

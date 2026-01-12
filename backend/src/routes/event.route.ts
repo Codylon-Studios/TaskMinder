@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 import eventController from "../controllers/event.controller";
 import checkAccess from "../middleware/access.middleware";
 import { validate } from "../middleware/validation.middleware";
-import { addEventSchema, deleteEventSchema, editEventSchema, setEventTypesSchema } from "../schemas/event.schema";
+import { addEventSchema, deleteEventSchema, editEventSchema, setEventTypesSchema, pinEventSchema } from "../schemas/event.schema";
 
 // rate limiter
 const eventLimiter = rateLimit({
@@ -21,6 +21,7 @@ router.get("/get_event_data", eventLimiter, checkAccess(["CLASS"]), eventControl
 router.post("/add_event", eventLimiter, checkAccess(["CLASS", "EDITOR"]), validate(addEventSchema), eventController.addEvent);
 router.post("/edit_event", eventLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editEventSchema), eventController.editEvent);
 router.post("/delete_event", eventLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteEventSchema), eventController.deleteEvent);
+router.post("/pin_event", eventLimiter, checkAccess(["CLASS", "EDITOR"]), validate(pinEventSchema), eventController.pinEvent);
 router.get("/get_event_type_data", eventLimiter, checkAccess(["CLASS"]), eventController.getEventTypeData);
 router.post("/set_event_type_data", eventLimiter, checkAccess(["CLASS", "MANAGER"]), validate(setEventTypesSchema), eventController.setEventTypeData);
 router.get("/event_type_styles", eventLimiter, eventController.getEventTypeStyles);

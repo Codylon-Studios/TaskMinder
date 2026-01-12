@@ -5,7 +5,15 @@ import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, inval
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
-import { addHomeworkTypeBody, checkHomeworkTypeBody, deleteHomeworkTypeBody, editHomeworkTypeBody } from "../schemas/homework.schema";
+import { 
+  addHomeworkTypeBody, 
+  checkHomeworkTypeBody, 
+  deleteHomeworkTypeBody, 
+  editHomeworkTypeBody, 
+  pinHomeworkTypeBody 
+} from "../schemas/homework.schema";
+
+const MAX_PINNED_HOMEWORK = 3;
 
 const homeworkService = {
   async addHomework(
@@ -19,6 +27,7 @@ const homeworkService = {
       await prisma.homework.create({
         data: {
           classId: parseInt(session.classId!),
+          isPinned: false,
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
@@ -190,6 +199,51 @@ const homeworkService = {
 
     const stringified = JSON.stringify(data, BigIntreplacer);
     return JSON.parse(stringified);
+  },
+
+  async pinHomework(reqData: pinHomeworkTypeBody, session: Session & Partial<SessionData>) {
+    const { homeworkId, pinStatus } = reqData;
+
+    // look if there are more than 3 simultaneously pinned homework entries
+    const countPinned = await prisma.homework.count({
+      where: {
+        classId: parseInt(session.classId!, 10),
+        isPinned: true
+      }
+    });
+
+    if (countPinned >= MAX_PINNED_HOMEWORK) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Pin homework count > " + MAX_PINNED_HOMEWORK + "for this class, unpin one homework to pin this one",
+        expected: true
+      };
+      throw err;
+    }
+
+    const updated = await prisma.homework.updateMany({
+      where: {
+        homeworkId: homeworkId,
+        classId: parseInt(session.classId!, 10)
+      },
+      data: {
+        isPinned: pinStatus
+      }
+    });
+
+    if (updated.count === 0) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Homework not found",
+        expected: true
+      };
+      throw err;
+    }
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {
