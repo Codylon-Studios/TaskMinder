@@ -1,4 +1,4 @@
-# Server Setup in Production v2
+# Deployment
 
 ## What you'll need
 

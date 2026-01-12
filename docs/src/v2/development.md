@@ -1,4 +1,4 @@
-# Development Setup Guide
+# Development
 
 !!! warning "Docs for develop branch"  
     This guide outlines the current development process and is intended for contributing to the develop branch. It may differ from the steps used in the latest stable release.
