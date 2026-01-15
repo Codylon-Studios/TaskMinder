@@ -1,15 +1,14 @@
 # Migrations
 
-## Migrating from v1 to v2
-
-!!! info "Info"
-      This guide walks you through migrating from the latest **v1** release to the **v2** release.
+> ℹ️ **Info**
+>
+> This guide walks you through migrating from the latest **v1 (v1.2.2)** release to the **v2** release.
 
 ---
 
 ### Before You Begin
 
-- Ensure you’re running the **latest v1** release.
+- Ensure you’re running the **latest v1 (v1.2.2)** release.
 
 - Be aware that **v2 introduces breaking changes**, including:
       - Significant database structure changes across multiple classes (manual intervention required).
