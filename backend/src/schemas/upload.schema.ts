@@ -44,10 +44,37 @@ export const deleteUploadSchema = z.object({
   })
 });
 
+export const addUploadRequestSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: strictObject({
+    uploadRequestName: z.string().trim().min(1).max(255),
+    teamId: z.coerce.number()
+  })
+});
+
+export const getUploadRequestsSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: z.any().optional()
+});
+
+export const deleteUploadRequestSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: strictObject({
+    uploadRequestId: z.coerce.number()
+  })
+});
+
 export type getUploadFileType = z.infer<typeof getUploadFileSchema>;
 export type editUploadType = z.infer<typeof editUploadSchema>;
 export type deleteUploadType = z.infer<typeof deleteUploadSchema>;
+export type addUploadRequestType = z.infer<typeof addUploadRequestSchema>;
+export type deleteUploadRequestType = z.infer<typeof deleteUploadRequestSchema>;
 
 export type uploadFileTypeBody = z.infer<typeof uploadFileSchema>["body"];
 export type editUploadTypeBody = z.infer<typeof editUploadSchema>["body"];
 export type deleteUploadTypeBody = z.infer<typeof deleteUploadSchema>["body"];
+export type addUploadRequestTypeBody = z.infer<typeof addUploadRequestSchema>["body"];
+export type deleteUploadRequestTypeBody = z.infer<typeof deleteUploadRequestSchema>["body"];

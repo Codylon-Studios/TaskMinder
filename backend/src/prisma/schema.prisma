@@ -94,6 +94,7 @@ model Class {
   Subjects                Subjects[]
   Team                    Team[]
   Files                   Upload[]
+  UploadRequest           uploadRequest[]
 
   @@map("class")
 }
@@ -245,4 +246,16 @@ model Upload {
 
   @@index([classId])
   @@map("upload")
+}
+
+model uploadRequest {
+  uploadRequestId     Int        @id @default(autoincrement())
+  uploadRequestName   String
+  classId             Int
+  teamId              Int
+
+  Class               Class      @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([classId])
+  @@map("uploadRequest")
 }

@@ -75,10 +75,43 @@ export const queueFileUpload = async (req: Request, res: Response, next: NextFun
   }
 };
 
+export const createUploadRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await uploadService.addUploadRequest(req.body, req.session);
+    res.sendStatus(201);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const getUploadRequests = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const uploadRequests = await uploadService.getUploadRequests(req.session);
+    res.status(200).json(uploadRequests);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUploadRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await uploadService.deleteUploadRequest(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getUploadMetadata,
   getUploadFile,
   editUpload,
   deleteUpload,
-  queueFileUpload
+  queueFileUpload,
+  createUploadRequest,
+  getUploadRequests,
+  deleteUploadRequest
 };

@@ -6,7 +6,14 @@ import { ReadStream, createReadStream } from "fs";
 import prisma from "../config/prisma";
 import logger from "../config/logger";
 import { RequestError } from "../@types/requestError";
-import { deleteUploadTypeBody, getUploadFileType, editUploadTypeBody, uploadFileTypeBody } from "../schemas/upload.schema";
+import { 
+  deleteUploadTypeBody, 
+  getUploadFileType, 
+  editUploadTypeBody, 
+  uploadFileTypeBody,
+  addUploadRequestTypeBody,
+  deleteUploadRequestTypeBody 
+} from "../schemas/upload.schema";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
 import { invalidateCache } from "../utils/validate.functions";
 import { BigIntreplacer, isValidTeamId, isValidUploadInput, updateCacheData } from "../utils/validate.functions";
@@ -358,6 +365,94 @@ const uploadService = {
 
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+  },
+
+  async addUploadRequest(
+    body: addUploadRequestTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const { uploadRequestName, teamId } = body;
+    const classIdNum = parseInt(session.classId!, 10);
+
+    await isValidTeamId(teamId, session);
+
+    await prisma.uploadRequest.create({
+      data: {
+        uploadRequestName: uploadRequestName,
+        classId: classIdNum,
+        teamId
+      }
+    });
+
+    await invalidateCache("UPLOADREQUESTS", session.classId!);
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
+  },
+
+  async getUploadRequests(session: Session & Partial<SessionData>) {
+    const classIdNum = parseInt(session.classId!, 10);
+
+    const getUploadRequestsCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADREQUESTS, session.classId!);
+    const cachedData = await redisClient.get(getUploadRequestsCacheKey);
+
+    if (cachedData) {
+      try {
+        return JSON.parse(cachedData);
+      }
+      catch (error) {
+        logger.error(`Error parsing Redis data: ${error}`);
+        // Fall through to fetch from database
+      }
+    }
+
+    const uploadRequests = await prisma.uploadRequest.findMany({
+      where: { classId: classIdNum },
+      orderBy: { uploadRequestId: "desc" }
+    });
+
+    try {
+      await updateCacheData(uploadRequests, getUploadRequestsCacheKey);
+    }
+    catch (err) {
+      logger.error(`Error updating Redis data: ${err}`);
+      // Continue without caching
+    }
+
+    const stringified = JSON.stringify(uploadRequests, BigIntreplacer);
+    return JSON.parse(stringified);
+  },
+
+  async deleteUploadRequest(
+    body: deleteUploadRequestTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const { uploadRequestId } = body;
+    const classIdNum = parseInt(session.classId!, 10);
+
+    // Check if upload request exists and belongs to this class
+    const existingRequest = await prisma.uploadRequest.findUnique({
+      where: { uploadRequestId }
+    });
+
+    if (!existingRequest || existingRequest.classId !== classIdNum) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Upload request not found",
+        expected: true
+      };
+      throw err;
+    }
+
+    await prisma.uploadRequest.delete({
+      where: { uploadRequestId }
+    });
+
+    await invalidateCache("UPLOADREQUESTS", session.classId!);
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
   }
 };
 

@@ -9,7 +9,10 @@ import {
   getUploadFileSchema, 
   getUploadMetadataSchema,
   editUploadSchema, 
-  uploadFileSchema 
+  uploadFileSchema,
+  addUploadRequestSchema,
+  getUploadRequestsSchema,
+  deleteUploadRequestSchema
 } from "../schemas/upload.schema";
 
 // rate limiter
@@ -40,5 +43,9 @@ router.post(
 router.get("/:fileId", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
 router.post("/edit", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editUploadSchema), uploadController.editUpload);
 router.post("/delete", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);
+router.post("/add_request", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(addUploadRequestSchema), uploadController.createUploadRequest);
+router.get("/get_request", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadRequestsSchema), uploadController.getUploadRequests);
+// eslint-disable-next-line max-len
+router.post("/delete_request", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadRequestSchema), uploadController.deleteUploadRequest);
 
 export default router;
