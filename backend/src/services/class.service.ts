@@ -562,8 +562,6 @@ const classService = {
       name: "Server Error",
       status: 500,
       message: "Could not generate unique class code",
-      additionalInformation:
-        "All randomly generated class codes were already in use, please try again",
       expected: false
     };
     throw err;

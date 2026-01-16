@@ -124,7 +124,7 @@ This documentation describes all database tables defined in the current Prisma s
 | Table.Field              | Data Type | Intentionally Stored   | Potentially Unintentional                                            |
 | :----------------------- | :-------- | :--------------------- | :------------------------------------------------------------------- |
 | Homework.homeworkId      | Integer   | Assignment identifier  | -                                                                    |
-| Homework.isPinned        | Boolean   | Event pinning          | -                                                                    |
+| Homework.isPinned        | Boolean   | Homework pinning       | -                                                                    |
 | Homework.content         | String    | Assignment details     | May contain student-specific instructions or references              |
 | Homework.submissionDate  | BigInt    | Deadline management    | Reveals individual work patterns                                     |
 | Homework.createdAt       | BigInt    | Record creation timestamp | -                                                                 |
@@ -217,7 +217,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 ### 11. Upload & FileMetadata Tables
 
-**Purpose**: Management of file uploads and their metadata. An upload can contain one or multiple files.
+**Purpose**: Management of file uploads, upload requests and their metadata. An upload can contain one or multiple files.
 
 | Table.Field             | Data Type | Intentionally Stored                         | Potentially Unintentional                                           |
 | :---------------------- | :-------- | :------------------------------------------- | :------------------------------------------------------------------ |
@@ -232,6 +232,10 @@ This documentation describes all database tables defined in the current Prisma s
 | Upload.teamId           | Integer   | Links upload to a specific team              | **Creates connection between users and shared content**             |
 | Upload.accountId        | Integer   | Identifier of user who uploaded              | **Direct link to user and their shared content**                    |
 | Upload.classId          | Integer   | Links upload to a specific class             | -                                                                   |
+| UploadRequest.uploadRequestId   | Integer   | Unique upload request identifier             | -                                                         |
+| UploadRequest.uploadRequestName | String    | User-provided title of the upload request    | **May contain personal or sensitive descriptions**        |
+| UploadRequest.classId           | Integer   | Links request to a specific class            | Reveals class involvement                                 |
+| UploadRequest.teamId            | Integer   | Links request to a specific team             | Maps request to social/working groups                     |
 | FileMetadata.fileMetaDataId | Integer | Unique file metadata identifier            | -                                                                   |
 | FileMetadata.uploadId   | Integer   | Links file to its upload job                 | -                                                                   |
 | FileMetadata.storedFileName | String | UUID-based filename on disk                 | Prevents direct file access but enables file tracking               |
@@ -300,6 +304,6 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 
 - **Document Version:** 2.2
 - **Stable Version Alignment:** v2.2.5
-- **Last Updated:** January 11th, 2026
+- **Last Updated:** January 16th, 2026
 - **Next Scheduled Review:** Quarterly – March 10th, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

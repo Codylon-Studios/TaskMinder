@@ -13,7 +13,7 @@ All changes are grouped by type and the latest version appears first.
 * feat(homework/event): add homework/event pinning
 
 ### Fixed
-* fix(rate-limit): increase proxy and upadte nginx.config
+* fix(rate-limit): increase proxy and update nginx.config
 * fix(subject): subject data not stringified correctly
 * fix(account): send 201 instead of 200 at /register
 

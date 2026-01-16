@@ -41,7 +41,7 @@ We use [https://betterstack.com/](https://betterstack.com/) as it offers custom 
 
 For the monitoring page (`monitoring.example.com`), add the following record:
 
-| **Type** | **Name**   | **Value(replace)**      |
+| **Type** | **Name**   | **Value (replace)**      |
 | -------- | ---------- | -------------- |
 | A        | monitoring | `203.0.113.42` |
 

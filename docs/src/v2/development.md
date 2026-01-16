@@ -94,7 +94,7 @@ You should see at least Bun 1.3.5 (last checked: January 5th, 2026).
 
 [Bun Versions]: https://bun.sh/blog
 
-If not installed, retrieve the download instuctions from the [Bun Download Page]. For Github Codespaces, follow the `npm`instructions under the Mac/Linux Tab.
+If not installed, retrieve the download instructions from the [Bun Download Page]. For Github Codespaces, follow the `npm` instructions under the Mac/Linux Tab.
 
 [Bun Download Page]: https://bun.sh/docs/installation
 
@@ -333,7 +333,7 @@ You can use the `.env.example` file located in the root folder as a reference.
 
 ### Setup mdbook (documentation) - optional
 
-Follow the official guide: [Installation mdbook](https://rust-lang.github.io/mdBook/guide/installation.html). mkbook requires rust and cargo.
+Follow the official guide: [Installation mdbook](https://rust-lang.github.io/mdBook/guide/installation.html). mdbook requires rust and cargo.
 
 ---
 

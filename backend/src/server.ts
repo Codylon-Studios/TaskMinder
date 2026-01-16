@@ -61,7 +61,7 @@ if (!sessionSecret) {
 }
 
 const app = express();
-app.set("trust proxy", true);
+app.set("trust proxy", 2);
 const server = createServer(app);
 
 const globalLimiter = rateLimit({

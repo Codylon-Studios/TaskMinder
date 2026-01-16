@@ -1,5 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { z } from "zod";
+import logger from "../config/logger";
+import { performUploadCleanup } from "../utils/upload.cleanup";
 
 
 type RequestValidationSchema = z.ZodObject<{
@@ -35,6 +37,14 @@ export const validate = <T extends RequestValidationSchema>(schema: T) =>
     }
     catch (err) {
       if (err instanceof z.ZodError) {
+        // Ensure uploaded temp files are cleaned up on validation failure
+        try {
+          await performUploadCleanup(req, res, "validation failure");
+        }
+        catch (cleanupErr) {
+          logger.warn("An error occurred during validation cleanup:\t", cleanupErr);
+        }
+
         const expectedSchema = {
           description: '"params" is for the required URL parameters, "query" for the query parameters and "body" is the expected request body',
           ... z.toJSONSchema(schema).properties
