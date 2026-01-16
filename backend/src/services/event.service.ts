@@ -41,9 +41,12 @@ export const eventService = {
       where: {
         classId: parseInt(session.classId!)
       },
-      orderBy: {
-        startDate: "asc"
-      }
+      orderBy: [
+        { startDate: "asc" },
+        { endDate: "asc" },
+        { name: "asc" },
+        { description: "asc" }
+      ]
     });
 
     try {

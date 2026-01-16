@@ -41,7 +41,14 @@ router.post(
 );
 // get single file (preview or download)
 router.get("/:fileId", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
-router.post("/edit", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editUploadSchema), uploadController.editUpload);
+router.post(
+  "/edit",
+  uploadLimiter,
+  checkAccess(["CLASS", "EDITOR"]),
+  uploadMiddleware.handleFileUpload,
+  validate(editUploadSchema),
+  uploadController.editUpload
+);
 router.post("/delete", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);
 router.post("/add_request", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(addUploadRequestSchema), uploadController.createUploadRequest);
 router.get("/get_request", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadRequestsSchema), uploadController.getUploadRequests);

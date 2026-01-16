@@ -4,19 +4,19 @@ import { FINAL_UPLOADS_DIR } from "../config/upload";
 import fs from "fs/promises";
 import { ReadStream, createReadStream } from "fs";
 import prisma from "../config/prisma";
+import type { Prisma } from "@prisma/client";
 import logger from "../config/logger";
 import { RequestError } from "../@types/requestError";
-import { 
-  deleteUploadTypeBody, 
-  getUploadFileType, 
-  editUploadTypeBody, 
+import {
+  deleteUploadTypeBody,
+  getUploadFileType,
+  editUploadTypeBody,
   uploadFileTypeBody,
   addUploadRequestTypeBody,
-  deleteUploadRequestTypeBody 
+  deleteUploadRequestTypeBody
 } from "../schemas/upload.schema";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
-import { invalidateCache } from "../utils/validate.functions";
-import { BigIntreplacer, isValidTeamId, isValidUploadInput, updateCacheData } from "../utils/validate.functions";
+import { invalidateCache, BigIntreplacer, isValidTeamId, isValidUploadInput, updateCacheData } from "../utils/validate.functions";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 
@@ -119,20 +119,11 @@ const uploadService = {
     const classId = parseInt(session.classId!, 10);
 
     const classInformation = await prisma.class.findUnique({
-      where: {
-        classId: classId
-      },
-      select: {
-        storageUsedBytes: true,
-        storageQuotaBytes: true
-      }
+      where: { classId },
+      select: { storageUsedBytes: true, storageQuotaBytes: true }
     });
 
-    const totalUploads = await prisma.upload.count({
-      where: {
-        classId
-      }
-    });
+    const totalUploads = await prisma.upload.count({ where: { classId } });
 
     if (totalUploads === 0) {
       return {
@@ -149,7 +140,11 @@ const uploadService = {
       Files: true
     } as const;
 
-    const orderBy = { createdAt: "desc" } as const;
+    const orderBy: Prisma.UploadOrderByWithRelationInput[] = [
+      { createdAt: "desc" },
+      { uploadName: "asc" },
+      { uploadId: "desc" }
+    ];
 
     let uploadList;
     if (isGetAllData) {
@@ -172,11 +167,9 @@ const uploadService = {
         }
         catch (error) {
           logger.error(`Error parsing Redis data: ${error}`);
-          // Fall through to fetch from database
         }
       }
 
-      // Only fetch from database if cache miss or parse error
       if (!uploadList) {
         const uploads = await prisma.upload.findMany({
           where: { classId },
@@ -191,7 +184,6 @@ const uploadService = {
         }
         catch (err) {
           logger.error(`Error updating Redis data: ${err}`);
-          // Continue without caching
         }
       }
     }
@@ -213,15 +205,15 @@ const uploadService = {
     const fileData = await prisma.fileMetadata.findUnique({
       where: { fileMetaDataId: fileIdParam },
       include: {
-        Upload: { 
-          select: { 
-            classId: true, 
+        Upload: {
+          select: {
+            classId: true,
             uploadName: true,
             Files: {
               select: { fileMetaDataId: true },
               orderBy: { createdAt: "asc" }
             }
-          } 
+          }
         }
       }
     });
@@ -252,7 +244,7 @@ const uploadService = {
       filename += ` (${fileNumber} von ${totalFiles})`;
     }
     filename += fileExtension;
-    
+
     const safeOriginalName = filename
       .replace(/[\r\n]/g, "") // Remove newlines that could enable header injection
       .replace(/\\/g, "\\\\") // Escape backslashes
@@ -290,27 +282,162 @@ const uploadService = {
     const stream = createReadStream(finalFilePath);
     return { stream, headers };
   },
+
   async editUpload(
     body: editUploadTypeBody,
-    session: Session & Partial<SessionData>
+    session: Session & Partial<SessionData>,
+    files: Express.Multer.File[]
   ) {
-    const { uploadId, uploadName, uploadDescription, uploadType, teamId } = body;
+    const { uploadId, uploadName, uploadDescription, uploadType, teamId, changeFiles } = body;
     const classIdNum = parseInt(session.classId!, 10);
+    const tempFiles = Array.isArray(files) ? files : [];
+
+    const cleanupTempFiles = async (): Promise<void> => {
+      await Promise.all(tempFiles.map(file => fs.unlink(file.path).catch(() => { })));
+    };
 
     await isValidTeamId(teamId, session);
     await isValidUploadInput(uploadName, uploadDescription, uploadType);
 
-    await prisma.upload.update({
-      where: { uploadId: uploadId, classId: classIdNum },
-      data: { uploadName: uploadName, uploadDescription: uploadDescription, uploadType: uploadType, teamId: teamId }
+    const uploadData = await prisma.upload.findUnique({
+      where: { uploadId },
+      include: { Files: true }
     });
 
-    // Invalidate cache after edit
-    await invalidateCache("UPLOADMETADATA", session.classId!);
+    if (!uploadData || uploadData.classId !== classIdNum) {
+      await cleanupTempFiles();
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Upload not found.",
+        expected: true
+      };
+      throw err;
+    }
 
-    const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    const hasFiles = tempFiles.length > 0;
+
+    if (!changeFiles && hasFiles) {
+      await cleanupTempFiles();
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Files cannot be uploaded when changeFiles is false.",
+        expected: true
+      };
+      throw err;
+    }
+
+    if (!changeFiles) {
+      await prisma.upload.update({
+        where: { uploadId: uploadId, classId: classIdNum },
+        data: { uploadName, uploadDescription, uploadType, teamId }
+      });
+
+      await invalidateCache("UPLOADMETADATA", session.classId!);
+
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+      return;
+    }
+
+    if (!hasFiles) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Files are required when changeFiles is true.",
+        expected: true
+      };
+      throw err;
+    }
+
+    const oldFilesSize = uploadData.Files.reduce((sum, file) => sum + BigInt(file.size), 0n);
+    const newFilesSize = tempFiles.reduce((sum, file) => sum + BigInt(file.size), 0n);
+
+    try {
+      await prisma.$transaction(async tx => {
+        const classData = await tx.class.findUnique({
+          where: { classId: classIdNum },
+          select: { storageQuotaBytes: true, storageUsedBytes: true }
+        });
+
+        if (!classData) {
+          const err: RequestError = {
+            name: "Not Found",
+            status: 404,
+            message: "Class not found.",
+            expected: true
+          };
+          throw err;
+        }
+
+        const projectedUsage = classData.storageUsedBytes - oldFilesSize + newFilesSize;
+        if (projectedUsage > classData.storageQuotaBytes) {
+          const err: RequestError = {
+            name: "Insufficient Storage",
+            status: 507,
+            message: "Class storage quota would be exceeded",
+            expected: true
+          };
+          throw err;
+        }
+
+        await tx.fileMetadata.deleteMany({ where: { uploadId } });
+
+        const storageDelta = newFilesSize - oldFilesSize;
+        if (storageDelta !== 0n) {
+          await tx.class.update({
+            where: { classId: classIdNum },
+            data: storageDelta > 0n
+              ? { storageUsedBytes: { increment: storageDelta } }
+              : { storageUsedBytes: { decrement: -storageDelta } }
+          });
+        }
+
+        await tx.upload.update({
+          where: { uploadId },
+          data: {
+            uploadName,
+            uploadDescription,
+            uploadType,
+            teamId,
+            status: "queued",
+            errorReason: null,
+            reservedBytes: newFilesSize
+          }
+        });
+      });
+
+      const classDir = path.join(FINAL_UPLOADS_DIR, classIdNum.toString());
+      await Promise.all(uploadData.Files.map(file => {
+        const filePath = path.join(classDir, file.storedFileName);
+        return fs.unlink(filePath).catch(() => { });
+      }));
+
+      const jobData = {
+        uploadId,
+        classId: classIdNum,
+        tempFiles: tempFiles.map(file => ({
+          path: file.path,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size
+        }))
+      };
+
+      await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
+
+      await invalidateCache("UPLOADMETADATA", session.classId!);
+
+      const io = socketIO.getIO();
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    }
+    catch (error) {
+      await cleanupTempFiles();
+      throw error;
+    }
   },
+
   async deleteUpload(
     body: deleteUploadTypeBody,
     session: Session & Partial<SessionData>
@@ -445,9 +572,7 @@ const uploadService = {
       throw err;
     }
 
-    await prisma.uploadRequest.delete({
-      where: { uploadRequestId }
-    });
+    await prisma.uploadRequest.delete({ where: { uploadRequestId } });
 
     await invalidateCache("UPLOADREQUESTS", session.classId!);
 

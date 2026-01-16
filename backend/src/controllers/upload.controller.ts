@@ -43,7 +43,8 @@ export const getUploadFile = async (req: Request, res: Response, next: NextFunct
 
 export const editUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await uploadService.editUpload(req.body, req.session);
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    await uploadService.editUpload(req.body, req.session, files);
     res.sendStatus(200);
   }
   catch (error) {

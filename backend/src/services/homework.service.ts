@@ -190,9 +190,12 @@ const homeworkService = {
       where: {
         classId: parseInt(session.classId!)
       },
-      orderBy: {
-        submissionDate: "asc"
-      }
+      orderBy: [
+        { submissionDate: "asc" },
+        { assignmentDate: "asc" },
+        { subjectId: "asc" },
+        { content: "asc" }
+      ]
     });
 
     await updateCacheData(data, getHomeworkDataCacheKey);
