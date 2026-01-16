@@ -70,7 +70,7 @@ const classService = {
     const baseData = {
       className: classDisplayName,
       classCode: classCode,
-      classCreated: Date.now(),
+      createdAt: Date.now(),
       isTestClass: isTestClass,
       dsbMobileActivated: false,
       storageQuotaBytes: isTestClass ? 20 * 1024 * 1024 : 1 * 1024 * 1024 * 1024, // 20MB (test class) or 1 GB (normal class)
@@ -281,6 +281,10 @@ const classService = {
       await tx.upload.deleteMany({
         where: { classId: classIdToDelete }
       });
+      // Delete upload request records
+      await tx.uploadRequest.deleteMany({
+        where: { classId: classIdToDelete} 
+      });
       // Delete all joinedClass records
       await tx.joinedClass.deleteMany({
         where: {
@@ -295,6 +299,7 @@ const classService = {
       });
       // invalidate redis caches
       await invalidateCache("UPLOADMETADATA", classIdToDelete.toString());
+      await invalidateCache("UPLOADREQUESTS", classIdToDelete.toString());
       await invalidateCache("HOMEWORK", classIdToDelete.toString());
       await invalidateCache("EVENT", classIdToDelete.toString());
       await invalidateCache("LESSON", classIdToDelete.toString());
@@ -562,8 +567,6 @@ const classService = {
       name: "Server Error",
       status: 500,
       message: "Could not generate unique class code",
-      additionalInformation:
-        "All randomly generated class codes were already in use, please try again",
       expected: false
     };
     throw err;

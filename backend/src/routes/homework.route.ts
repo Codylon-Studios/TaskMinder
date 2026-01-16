@@ -2,7 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import homeworkController from "../controllers/homework.controller";
 import checkAccess from "../middleware/access.middleware";
-import { addHomeworkSchema, checkHomeworkSchema, deleteHomeworkSchema, editHomeworkSchema } from "../schemas/homework.schema";
+import { addHomeworkSchema, checkHomeworkSchema, deleteHomeworkSchema, editHomeworkSchema, pinHomeworkSchema } from "../schemas/homework.schema";
 import { validate } from "../middleware/validation.middleware";
 
 // rate limiter
@@ -20,6 +20,7 @@ router.post("/add_homework", homeworkLimiter, checkAccess(["CLASS", "EDITOR"]), 
 router.post("/check_homework", homeworkLimiter, checkAccess(["CLASS", "ACCOUNT"]), validate(checkHomeworkSchema), homeworkController.checkHomework);
 router.post("/delete_homework", homeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteHomeworkSchema), homeworkController.deleteHomework);
 router.post("/edit_homework", homeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editHomeworkSchema), homeworkController.editHomework);
+router.post("/pin_homework", homeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(pinHomeworkSchema), homeworkController.pinHomework);
 router.get("/get_homework_data", homeworkLimiter, checkAccess(["CLASS"]), homeworkController.getHomeworkData);
 router.get("/get_homework_checked_data", homeworkLimiter, checkAccess(["CLASS", "ACCOUNT"]), homeworkController.getHomeworkCheckedData);
 

@@ -3,7 +3,6 @@ import { CACHE_KEY_PREFIXES, cacheExpiration, generateCacheKey, redisClient } fr
 import prisma from "../config/prisma";
 import logger from "../config/logger";
 import { Session, SessionData } from "express-session";
-import { FileTypes } from "../config/upload";
 
 async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   try {
@@ -35,18 +34,6 @@ export function checkUsername(username: string): boolean {
 
 function BigIntreplacer(key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
-}
-
-async function isValidUploadInput(uploadName: string, uploadType: string): Promise<void> {
-  if (!(uploadName !== "" && Object.values(FileTypes).includes(uploadType as FileTypes))) {
-    const err: RequestError = {
-      name: "Bad Request",
-      status: 400,
-      message: "Please provide a valid name, teamId (int) and valid file type (INFO_SHEET,LESSON_NOTE,WORKSHEET,IMAGE,FILE,TEXT)",
-      expected: true
-    };
-    throw err;
-  }
 }
 
 async function isValidEventTypeId(eventTypeId: number, session: Session & Partial<SessionData>): Promise<void> {
@@ -90,6 +77,8 @@ async function isValidTeamId(teamId: number, session: Session & Partial<SessionD
   }
 }
 
+// @codescene(disable:"Code Duplication")
+// see explaination for isValidTeamId
 async function isValidSubjectId(subjectId: number, session: Session & Partial<SessionData>): Promise<void> {
   if (subjectId !== -1) {
     const subjectExists = await prisma.subjects.findUnique({
@@ -113,6 +102,8 @@ async function isValidSubjectId(subjectId: number, session: Session & Partial<Se
   }
 }
 
+// @codescene(disable:"Code Duplication")
+// see explaination for isValidTeamId
 async function isValidweekDay(weekDay: number): Promise<void> {
   if ([0, 1, 2, 3, 4].includes(weekDay)) return;
   const err: RequestError = {
@@ -124,6 +115,8 @@ async function isValidweekDay(weekDay: number): Promise<void> {
   throw err;
 }
 
+// @codescene(disable:"Code Duplication")
+// see explaination for isValidTeamId
 async function isValidGender(gender: string): Promise<void> {
   if (["d", "w", "m"].includes(gender)) return;
   const err: RequestError = {
@@ -170,7 +163,6 @@ function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | 
 }
 
 export {
-  isValidUploadInput,
   isValidColor,
   isValidSubjectId,
   isValidTeamId,

@@ -1,4 +1,4 @@
-# Welcome to TaskMinder
+# Introduction
 
 Welcome to **TaskMinder**, the best tool for staying organized and synchronizing with your classmates on homework, events, and more.
 

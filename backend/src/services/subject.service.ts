@@ -2,7 +2,7 @@ import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
-import { invalidateCache, isValidGender, updateCacheData } from "../utils/validate.functions";
+import { BigIntreplacer, invalidateCache, isValidGender, updateCacheData } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { setSubjectsTypeBody } from "../schemas/subject.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
@@ -40,7 +40,8 @@ const subjectService = {
       throw new Error();
     }
 
-    return data;
+    const stringified = JSON.stringify(data, BigIntreplacer);
+    return JSON.parse(stringified);
   },
   async setSubjectData(
     reqData: setSubjectsTypeBody,

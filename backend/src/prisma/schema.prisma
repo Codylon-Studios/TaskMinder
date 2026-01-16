@@ -39,6 +39,7 @@ model Event {
   eventId     Int       @id @default(autoincrement()) @map("eventId")
   classId     Int
   eventTypeId Int
+  isPinned    Boolean
   name        String
   description String?
   startDate   BigInt
@@ -73,7 +74,7 @@ model Class {
   classId                 Int           @id @default(autoincrement()) @map("classId")
   className               String
   classCode               String        @unique
-  classCreated            BigInt
+  createdAt               BigInt
   isTestClass             Boolean
   defaultPermissionLevel  Int
   storageUsedBytes        BigInt
@@ -93,6 +94,7 @@ model Class {
   Subjects                Subjects[]
   Team                    Team[]
   Files                   Upload[]
+  UploadRequest           uploadRequest[]
 
   @@map("class")
 }
@@ -100,6 +102,7 @@ model Class {
 model Homework {
   homeworkId     Int             @id @default(autoincrement()) @map("homeworkId")
   classId        Int
+  isPinned       Boolean
   content        String
   subjectId      Int
   assignmentDate BigInt
@@ -222,23 +225,36 @@ model FileMetadata {
 
 // an upload can contain one or multiple files
 model Upload {
-  uploadId      Int    @id @default(autoincrement())
-  uploadName    String 
-  uploadType    String
-  status        String @default("queued") // "queued" | "processing" | "completed" | "failed"
-  errorReason   String?
-  reservedBytes BigInt @default(0) // Storage reserved during upload
-  createdAt     BigInt  // When the upload job was created
+  uploadId            Int    @id @default(autoincrement())
+  uploadName          String 
+  uploadDescription   String?
+  uploadType          String
+  status              String @default("queued") // "queued" | "processing" | "completed" | "failed"
+  errorReason         String?
+  reservedBytes       BigInt @default(0) // Storage reserved during upload
+  createdAt           BigInt  // When the upload job was created
 
-  teamId        Int
-  accountId     Int?
-  classId       Int
+  teamId              Int
+  accountId           Int?
+  classId             Int
 
-  Files         FileMetadata[]
+  Files               FileMetadata[]
 
-  Account       Account?   @relation(fields: [accountId], references: [accountId], onDelete: SetNull, onUpdate: NoAction)
-  Class         Class      @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+  Account             Account?   @relation(fields: [accountId], references: [accountId], onDelete: SetNull, onUpdate: NoAction)
+  Class               Class      @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([classId])
   @@map("upload")
+}
+
+model uploadRequest {
+  uploadRequestId     Int        @id @default(autoincrement())
+  uploadRequestName   String
+  classId             Int
+  teamId              Int
+
+  Class               Class      @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([classId])
+  @@map("uploadRequest")
 }

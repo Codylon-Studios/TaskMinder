@@ -4,6 +4,27 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.5] - 2026-01-??
+
+### Added
+* feat(upload): add upload description
+* feat(upload): request new uploads
+* feat(upload): edit files
+* feat(homework/event): add homework/event pinning
+
+### Fixed
+* fix(rate-limit): increase proxy and update nginx.config
+* fix(subject): subject data not stringified correctly
+* fix(account): send 201 instead of 200 at /register
+
+### Changed
+* chore(getdata): event, homework and upload metadata order by more values
+* chore(docs): migrate to mdbook and github actions/pages for deployment
+* chore(ci): update CI build test
+* chore(package): update package.json version to v2.2.5
+
+---
+
 ## \[v2.2.4] - 2026-01-11
 
 🎉 Happy New Year! This release kicks off the year with improvements and fixes to make TaskMinder smoother, faster, and more reliable. Thanks for your support—here’s to a productive year ahead!

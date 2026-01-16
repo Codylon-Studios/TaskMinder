@@ -1,9 +1,9 @@
-# Server Setup in Production v2
+# Deployment
 
 ## What you'll need
 
 * A valid domain (e.g. `taskminder.de`)
-* A server running Ubuntu (≥ 24.04 LTS) with sudo or root access
+* A server (minimum 2GB RAM and 20GB storage) running Ubuntu (≥ 24.04 LTS) with sudo or root access
 * The codebase of TaskMinder from [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)
 
 ---
@@ -28,7 +28,7 @@ Copy the returned IP (e.g., `203.0.113.42`). Make sure the server is not behind 
 
 Go to your domain registrar’s DNS management page (e.g., Namecheap, GoDaddy, Cloudflare etc.) and add the following records:
 
-| **Type** | **Name** | **Value**      | **TTL**          |
+| **Type** | **Name** | **Value (replace)**      | **TTL**          |
 | -------- | -------- | -------------- | ---------------- |
 | A        | @        | `203.0.113.42` | Automatic / 3600 |
 | A        | www      | `203.0.113.42` | Automatic / 3600 |
@@ -41,7 +41,7 @@ We use [https://betterstack.com/](https://betterstack.com/) as it offers custom 
 
 For the monitoring page (`monitoring.example.com`), add the following record:
 
-| **Type** | **Name**   | **Value**      |
+| **Type** | **Name**   | **Value (replace)**      |
 | -------- | ---------- | -------------- |
 | A        | monitoring | `203.0.113.42` |
 
