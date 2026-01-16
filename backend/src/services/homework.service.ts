@@ -215,11 +215,12 @@ const homeworkService = {
       }
     });
 
-    if (countPinned >= MAX_PINNED_HOMEWORK) {
+    if (countPinned >= MAX_PINNED_HOMEWORK && pinStatus === true) {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
-        message: "Pin homework count > " + MAX_PINNED_HOMEWORK + "for this class, unpin one homework to pin this one",
+        message: `Cannot pin homework: maximum of ${MAX_PINNED_HOMEWORK} pinned homework items reached. 
+        Please unpin an existing homework item first.`,
         expected: true
       };
       throw err;
@@ -245,6 +246,7 @@ const homeworkService = {
       throw err;
     }
 
+    await invalidateCache("HOMEWORK", session.classId!);
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },

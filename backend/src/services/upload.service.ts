@@ -16,7 +16,7 @@ import {
   deleteUploadRequestTypeBody
 } from "../schemas/upload.schema";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
-import { invalidateCache, BigIntreplacer, isValidTeamId, isValidUploadInput, updateCacheData } from "../utils/validate.functions";
+import { invalidateCache, BigIntreplacer, isValidTeamId, updateCacheData } from "../utils/validate.functions";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 
@@ -41,7 +41,7 @@ const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany
     Account: { select: { username: true } };
     Files: true;
   };
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 }>>>) => {
   return uploads.map(upload => ({
     uploadId: upload.uploadId,
@@ -70,11 +70,10 @@ const uploadService = {
     body: uploadFileTypeBody,
     reservedBytes: bigint
   ) {
-    const { uploadName, uploadDescription, uploadType, teamId: teamIdStr } = body;
-    const teamId = Number.parseInt(teamIdStr, 10);
+    const { uploadName, uploadDescription, uploadType, teamId } = body;
+    const teamIdNum = Number(teamId);
 
-    await isValidTeamId(teamId, session);
-    await isValidUploadInput(uploadName, uploadDescription, uploadType);
+    await isValidTeamId(teamIdNum, session);
 
     const classIdNum = Number.parseInt(session.classId!, 10);
     const accountId = session.account?.accountId ?? null;
@@ -85,7 +84,7 @@ const uploadService = {
         uploadDescription,
         uploadType,
         status: "queued",
-        teamId,
+        teamId: teamIdNum,
         classId: classIdNum,
         accountId,
         reservedBytes,
@@ -229,15 +228,15 @@ const uploadService = {
     }
 
     const disposition = action === "download" ? "attachment" : "inline";
-    
+
     // Get file numbering information
     const totalFiles = fileData.Upload.Files.length;
     const fileIndex = fileData.Upload.Files.findIndex(f => f.fileMetaDataId === fileIdParam);
     const fileNumber = fileIndex + 1;
-    
+
     // Extract file extension from stored filename
     const fileExtension = path.extname(fileData.storedFileName);
-    
+
     // Build filename with numbering if multiple files
     let filename = fileData.Upload.uploadName;
     if (totalFiles > 1) {
@@ -249,7 +248,7 @@ const uploadService = {
       .replace(/[\r\n]/g, "") // Remove newlines that could enable header injection
       .replace(/\\/g, "\\\\") // Escape backslashes
       .replace(/"/g, '\\"');  // Escape quotes
-      
+
     const headers = {
       "Content-Type": fileData.mimeType,
       "Content-Disposition": `${disposition}; filename="${safeOriginalName}"`,
@@ -292,12 +291,7 @@ const uploadService = {
     const classIdNum = parseInt(session.classId!, 10);
     const tempFiles = Array.isArray(files) ? files : [];
 
-    const cleanupTempFiles = async (): Promise<void> => {
-      await Promise.all(tempFiles.map(file => fs.unlink(file.path).catch(() => { })));
-    };
-
     await isValidTeamId(teamId, session);
-    await isValidUploadInput(uploadName, uploadDescription, uploadType);
 
     const uploadData = await prisma.upload.findUnique({
       where: { uploadId },
@@ -305,7 +299,6 @@ const uploadService = {
     });
 
     if (!uploadData || uploadData.classId !== classIdNum) {
-      await cleanupTempFiles();
       const err: RequestError = {
         name: "Not Found",
         status: 404,
@@ -318,7 +311,6 @@ const uploadService = {
     const hasFiles = tempFiles.length > 0;
 
     if (!changeFiles && hasFiles) {
-      await cleanupTempFiles();
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
@@ -354,88 +346,83 @@ const uploadService = {
     const oldFilesSize = uploadData.Files.reduce((sum, file) => sum + BigInt(file.size), 0n);
     const newFilesSize = tempFiles.reduce((sum, file) => sum + BigInt(file.size), 0n);
 
-    try {
-      await prisma.$transaction(async tx => {
-        const classData = await tx.class.findUnique({
-          where: { classId: classIdNum },
-          select: { storageQuotaBytes: true, storageUsedBytes: true }
-        });
 
-        if (!classData) {
-          const err: RequestError = {
-            name: "Not Found",
-            status: 404,
-            message: "Class not found.",
-            expected: true
-          };
-          throw err;
-        }
-
-        const projectedUsage = classData.storageUsedBytes - oldFilesSize + newFilesSize;
-        if (projectedUsage > classData.storageQuotaBytes) {
-          const err: RequestError = {
-            name: "Insufficient Storage",
-            status: 507,
-            message: "Class storage quota would be exceeded",
-            expected: true
-          };
-          throw err;
-        }
-
-        await tx.fileMetadata.deleteMany({ where: { uploadId } });
-
-        const storageDelta = newFilesSize - oldFilesSize;
-        if (storageDelta !== 0n) {
-          await tx.class.update({
-            where: { classId: classIdNum },
-            data: storageDelta > 0n
-              ? { storageUsedBytes: { increment: storageDelta } }
-              : { storageUsedBytes: { decrement: -storageDelta } }
-          });
-        }
-
-        await tx.upload.update({
-          where: { uploadId },
-          data: {
-            uploadName,
-            uploadDescription,
-            uploadType,
-            teamId,
-            status: "queued",
-            errorReason: null,
-            reservedBytes: newFilesSize
-          }
-        });
+    await prisma.$transaction(async tx => {
+      const classData = await tx.class.findUnique({
+        where: { classId: classIdNum },
+        select: { storageQuotaBytes: true, storageUsedBytes: true }
       });
 
-      const classDir = path.join(FINAL_UPLOADS_DIR, classIdNum.toString());
-      await Promise.all(uploadData.Files.map(file => {
-        const filePath = path.join(classDir, file.storedFileName);
-        return fs.unlink(filePath).catch(() => { });
-      }));
+      if (!classData) {
+        const err: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Class not found.",
+          expected: true
+        };
+        throw err;
+      }
 
-      const jobData = {
-        uploadId,
-        classId: classIdNum,
-        tempFiles: tempFiles.map(file => ({
-          path: file.path,
-          originalName: file.originalname,
-          mimetype: file.mimetype,
-          size: file.size
-        }))
-      };
+      const projectedUsage = classData.storageUsedBytes - oldFilesSize + newFilesSize;
+      if (projectedUsage > classData.storageQuotaBytes) {
+        const err: RequestError = {
+          name: "Insufficient Storage",
+          status: 507,
+          message: "Class storage quota would be exceeded",
+          expected: true
+        };
+        throw err;
+      }
 
-      await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
+      await tx.fileMetadata.deleteMany({ where: { uploadId } });
 
-      await invalidateCache("UPLOADMETADATA", session.classId!);
+      const storageDelta = newFilesSize - oldFilesSize;
+      if (storageDelta !== 0n) {
+        await tx.class.update({
+          where: { classId: classIdNum },
+          data: storageDelta > 0n
+            ? { storageUsedBytes: { increment: storageDelta } }
+            : { storageUsedBytes: { decrement: -storageDelta } }
+        });
+      }
 
-      const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
-    }
-    catch (error) {
-      await cleanupTempFiles();
-      throw error;
-    }
+      await tx.upload.update({
+        where: { uploadId },
+        data: {
+          uploadName,
+          uploadDescription,
+          uploadType,
+          teamId,
+          status: "queued",
+          errorReason: null,
+          reservedBytes: newFilesSize
+        }
+      });
+    });
+
+    const classDir = path.join(FINAL_UPLOADS_DIR, classIdNum.toString());
+    await Promise.all(uploadData.Files.map(file => {
+      const filePath = path.join(classDir, file.storedFileName);
+      return fs.unlink(filePath).catch(() => { });
+    }));
+
+    const jobData = {
+      uploadId,
+      classId: classIdNum,
+      tempFiles: tempFiles.map(file => ({
+        path: file.path,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      }))
+    };
+
+    await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
+
+    await invalidateCache("UPLOADMETADATA", session.classId!);
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
   },
 
   async deleteUpload(

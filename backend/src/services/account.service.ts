@@ -97,7 +97,6 @@ export default {
         name: "Bad Request",
         status: 400,
         message: "Already logged in",
-        additionalInformation: "The requesting session is already logged in!",
         expected: true
       };
       throw err;
@@ -111,7 +110,6 @@ export default {
         name: "Bad Request",
         status: 400,
         message: "The requested username is already registered!",
-        additionalInformation: "The requested username is already registered!",
         expected: true
       };
       throw err;
@@ -158,7 +156,6 @@ export default {
         name: "Bad Request",
         status: 400,
         message: "Already logged in",
-        additionalInformation: "The requesting session is already logged in!",
         expected: true
       };
       throw err;
@@ -174,7 +171,6 @@ export default {
         name: "Unauthorized",
         status: 401,
         message: "Invalid credentials",
-        additionalInformation: "The requested username is not registered!",
         expected: true
       };
       throw err;

@@ -72,11 +72,12 @@ export const eventService = {
       }
     });
 
-    if (countPinned >= MAX_PINNED_EVENT) {
+    if (countPinned >= MAX_PINNED_EVENT && pinStatus === true) {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
-        message: "Pin event count > " + MAX_PINNED_EVENT + "for this class, unpin one event to pin this one",
+        message: `Cannot pin event: maximum of ${MAX_PINNED_EVENT} pinned event items reached. 
+        Please unpin an existing event item first.`,
         expected: true
       };
       throw err;
@@ -102,6 +103,7 @@ export const eventService = {
       throw err;
     }
 
+    await invalidateCache("EVENT", session.classId!);
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
   },

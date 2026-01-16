@@ -1,11 +1,12 @@
 import z, { strictObject } from "zod";
+import { FileTypes } from "../config/upload";
 
 export const getUploadMetadataSchema = z.object({
   params: z.object({}),
   query: z.object({
     all: z.enum(["true", "false"]).optional()
   }),
-  body: z.any().optional()
+  body: strictObject({}).optional()
 });
 
 export const getUploadFileSchema = z.object({
@@ -15,13 +16,18 @@ export const getUploadFileSchema = z.object({
   query: z.object({
     action: z.enum(["download", "preview"])
   }),
-  body: z.any().optional()
+  body: strictObject({}).optional()
 });
 
 export const uploadFileSchema = z.object({
   params: z.object({}),
   query: z.object({}),
-  body: z.any().optional()
+  body: strictObject({
+    uploadName: z.string().trim().min(1),
+    uploadDescription: z.string().trim().min(1).nullable(),
+    uploadType: z.enum(FileTypes),
+    teamId: z.coerce.number()
+  })
 });
 
 export const editUploadSchema = z.object({
@@ -31,7 +37,7 @@ export const editUploadSchema = z.object({
     uploadId: z.coerce.number(),
     uploadName: z.string().trim().min(1),
     uploadDescription: z.string().trim().min(1).nullable(),
-    uploadType: z.string().trim().min(1),
+    uploadType: z.enum(FileTypes),
     teamId: z.coerce.number(),
     // We need some normalization because multipart fields arrive as strings
     changeFiles: z.union([
@@ -56,12 +62,6 @@ export const addUploadRequestSchema = z.object({
     uploadRequestName: z.string().trim().min(1).max(255),
     teamId: z.coerce.number()
   })
-});
-
-export const getUploadRequestsSchema = z.object({
-  params: z.object({}),
-  query: z.object({}),
-  body: z.any().optional()
 });
 
 export const deleteUploadRequestSchema = z.object({

@@ -10,6 +10,7 @@ import mime from "mime-types";
 import { RequestError } from "../@types/requestError";
 import { randomUUID } from "crypto";
 import prisma from "../config/prisma";
+import { cleanupTempFiles, rollbackStorageQuota } from "../utils/upload.cleanup";
 
 // normalizes file requests into one consistent format
 export const normalizeFiles = async (req: Request,
@@ -117,6 +118,45 @@ export const preflightStorageQuotaCheck = async (
   catch (error) {
     next(error);
   }
+};
+
+// Attach cleanup/rollback hooks for non-error responses or aborted connections
+export const attachUploadCleanupOnFail = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  let finalized = false;
+
+  const cleanup = async (): Promise<void> => {
+    if (finalized) return;
+    finalized = true;
+
+    await cleanupTempFiles(req, res, "non-success response/abort");
+    await rollbackStorageQuota(req, res, "non-success response/abort");
+  };
+
+  // Run cleanup on aborted connections or non-2xx/3xx responses
+  const onFinish = (): void => {
+    if (res.statusCode >= 400) {
+      void cleanup();
+    }
+  };
+  const onClose = (): void => {
+    if (!res.writableEnded) {
+      void cleanup();
+    }
+  };
+  const onError = (): void => {
+    void cleanup();
+  };
+
+  res.on("finish", onFinish);
+  res.on("close", onClose);
+  res.on("error", onError);
+
+  res.locals.uploadCleanupListeners = { onFinish, onClose, onError };
+  next();
 };
 
 //
@@ -234,6 +274,7 @@ export const handleFileUpload = (req: Request, res: Response, next: NextFunction
 export default {
   secureUpload,
   handleFileUpload,
+  attachUploadCleanupOnFail,
   preflightStorageQuotaCheck,
   normalizeFiles
 };

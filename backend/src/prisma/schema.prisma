@@ -229,9 +229,8 @@ model Upload {
   uploadName          String 
   uploadDescription   String?
   uploadType          String
-  status              String @default("queued") // "queued" | "processing" | "completed" | "failed" | "pending"
+  status              String @default("queued") // "queued" | "processing" | "completed" | "failed"
   errorReason         String?
-  // isRequested         Boolean? // null (not requested) | true | false
   reservedBytes       BigInt @default(0) // Storage reserved during upload
   createdAt           BigInt  // When the upload job was created
 
