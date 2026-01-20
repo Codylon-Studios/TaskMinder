@@ -46,7 +46,6 @@ async function buildDirectory(src, dest) {
         <link class="preload-style" rel="preload" href="/pages/${fileName}/${fileName}.css" as="style" data-site="${fileName}">
         <link class="preload-style" rel="preload" href="/global/global.css" as="style" />
         <link class="preload-style" rel="preload" as="style" id="event-type-styles" />
-        <script src="/pages/${fileName}/${fileName}.js" type="module" defer></script>
         <title>${titleMap[fileName]} · TaskMinder</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -94,13 +93,16 @@ async function buildDirectory(src, dest) {
       `);
 
       $("body").append(`
-        <div class="load-snippet" data-target="footer"></div>
         <div class="load-snippet" data-target="bottombar"></div>
         <div class="load-snippet" data-target="loadingBar"></div>
 
         <div class="load-snippet" data-target="colorPicker"></div>
         <div class="load-snippet" data-target="richTextarea"></div>
         <div class="load-snippet" data-target="searchBox"></div>
+      `);
+
+      $("#app-scroll").append(`
+        <div class="load-snippet" data-target="footer"></div>
       `);
 
       $("body").css({ display: "none" });

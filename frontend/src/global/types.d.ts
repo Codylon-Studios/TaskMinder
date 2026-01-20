@@ -1,5 +1,24 @@
 export const __placeholder;
 
+type AjaxError = {
+  status: number;
+  responseText: string;
+}
+
+type AjaxOptions = {
+  body?: unknown;
+  headers?: Record<string, string>;
+  queueable?: boolean;
+  expectedErrors?: number[];
+}
+
+type SerializedRequest = {
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body: ArrayBuffer
+}
+
 type RawDate = number | string | Date
 
 // Month Dates

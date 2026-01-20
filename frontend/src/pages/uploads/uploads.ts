@@ -2,7 +2,6 @@ import {
   joinedTeamsData,
   msToInputDate,
   teamsData,
-  csrfToken,
   escapeHTML,
   dateDaysDifference,
   uploadData,
@@ -11,10 +10,11 @@ import {
   getSimpleDisplayDate,
   showAllUploads,
   onlyThisSite,
-  isSameDay
+  isSameDay,
+  ajax
 } from "../../global/global.js";
-import { SingleUploadData } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { AjaxError, SingleUploadData } from "../../global/types";
+import { user } from "../../snippets/navbar/navbar.js";
 
 async function renderUploadList(): Promise<void> {
   async function getFilteredData(): Promise<SingleUploadData[]> {
@@ -349,73 +349,36 @@ async function addUpload(): Promise<void> {
       const name = $("#add-upload-name").val()?.toString().trim() ?? "";
       const type = $("#add-upload-type").val()?.toString() ?? "";
       const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
-      const team = $("#add-upload-team").val()?.toString() ?? "-1";
+      const teamId = $("#add-upload-team").val()?.toString() ?? "-1";
 
       // Prepare the POST request
       const data = new FormData();
       data.append("uploadName", name);
       data.append("uploadType", type);
-      data.append("teamId", team);
+      data.append("teamId", teamId);
       for (const f of files) {
         data.append("files", f);
       }
 
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/uploads/upload",
-        type: "POST",
-        data: data,
-        processData: false,
-        contentType: false,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification and update the shown uploads
-          $("#add-upload-success-toast").toast("show");
-          // Hide the add upload modal
-          $("#add-upload-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 400) {
-            if (xhr.responseText === "MIME-Type not supported") {
-              $("#add-upload-unsupported-mime-type-toast").toast("show");
-            }
-            else if (xhr.responseText === "File size limit exceeded (Max 15MB)") {
-              $("#add-upload-size-limit-exceeded-toast").toast("show");
-            }
-            else {
-              console.log(xhr.responseText);
-            }
-          }
-          else if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
+      try {
+        await ajax("POST", "/uploads/upload", {
+          body: data,
+          queueable: true,
+          expectedErrors: [400, 413]
+        });
+        
+        $("#add-upload-success-toast").toast("show");
+        $("#add-upload-modal").modal("hide");
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 400 && err.responseText === "MIME-Type not supported") {
+          $("#add-upload-unsupported-mime-type-toast").toast("show");
         }
-      });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
+        else if (err.status === 413) {
+          $("#add-upload-size-limit-exceeded-toast").toast("show");
         }
-      }, 5000);
+      }
     });
 }
 
@@ -429,7 +392,7 @@ async function viewUpload(uploadId: number): Promise<void> {
     
     const $object = $("#view-upload-object");
     const $newObject = $(`
-      <object id="view-upload-object" class="d-block mb-2 w-100 border border-secondary
+      <object id="view-upload-object" class="ds-block mb-2 w-100 border border-secondary
         ${/iPhone/.test(navigator.userAgent) ? "ios" : ""}">
         <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 m-2">
           <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
@@ -463,6 +426,14 @@ async function viewUpload(uploadId: number): Promise<void> {
 
   $("#view-upload-modal-label b").text(upload.uploadName);
   $("#view-upload-modal").modal("show");
+
+
+  $("#view-upload-object").toggle(navigator.onLine);
+  const offline = ! navigator.onLine;
+  $("#view-upload-offline").toggle(offline);
+  $("#view-upload-nav-back, #view-upload-nav-next").prop("disabled", offline);
+
+  if (offline) return;
 
   let shownFileId = 0;
   showFile(shownFileId);
@@ -515,57 +486,20 @@ async function editUpload(uploadId: number): Promise<void> {
       // Save the given information in variables
       const name = $("#edit-upload-name").val();
       const type = $("#edit-upload-type").val();
-      const team = $("#edit-upload-team").val();
+      const teamId = $("#edit-upload-team").val();
 
-      const data = {
-        uploadId,
-        uploadName: name,
-        uploadType: type,
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/uploads/edit",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(data),
-        headers: {
-          "X-CSRF-Token": await csrfToken()
+      await ajax("POST", "/uploads/edit", {
+        body: {
+          uploadId,
+          uploadName: name,
+          uploadType: type,
+          teamId: teamId
         },
-        success: () => {
-          // Show a success notification
-          $("#edit-upload-success-toast").toast("show");
-          $("#edit-upload-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+
+      $("#edit-upload-success-toast").toast("show");
+      $("#edit-upload-modal").modal("hide");
     });
 }
 
@@ -574,50 +508,12 @@ function deleteUpload(uploadId: number, force?: boolean): void {
     // Hide the confirmation toast
     $("#delete-upload-confirm-toast").toast("hide");
 
-    const data = {
-      uploadId: uploadId
-    };
-    // Save whether the server has responed
-    let hasResponded = false;
-
-    // Post the request
-    $.ajax({
-      url: "/uploads/delete",
-      type: "POST",
-      data: data,
-      headers: {
-        "X-CSRF-Token": await csrfToken()
-      },
-      success: () => {
-        // Show a success notification
-        $("#delete-upload-success-toast").toast("show");
-      },
-      error: xhr => {
-        if (xhr.status === 401) {
-          // The user has to be logged in but isn't
-          // Show an error notification
-          $navbarToasts.notLoggedIn.toast("show");
-        }
-        else if (xhr.status === 500) {
-          // An internal server error occurred
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        // The server has responded
-        hasResponded = true;
-      }
+    await ajax("POST", "/uploads/delete", {
+      body: { uploadId: uploadId },
+      queueable: true
     });
-    setTimeout(() => {
-      // Wait for 1s
-      if (!hasResponded) {
-        // If the server hasn't answered, show the internal server error notification
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 5000);
+
+    $("#delete-upload-success-toast").toast("show");
   }
 
   //

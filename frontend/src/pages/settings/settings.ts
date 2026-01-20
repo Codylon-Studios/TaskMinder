@@ -9,7 +9,6 @@ import {
   teamsData,
   lessonData,
   timeToMs,
-  csrfToken,
   classMemberData,
   getTimeLeftString,
   escapeHTML,
@@ -17,10 +16,11 @@ import {
   socket,
   registerSocketListeners,
   onlyThisSite,
-  unsavedChanges
+  unsavedChanges,
+  ajax
 } from "../../global/global.js";
-import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel, AjaxError } from "../../global/types";
+import { user } from "../../snippets/navbar/navbar.js";
 
 function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
@@ -1128,8 +1128,6 @@ export async function init(): Promise<void> {
         else if (fontSize === "2") {
           $("html").css("font-size", "22px");
         }
-
-        $("body").css({ paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + (displayFooter ? 0 : 70) + "px" });
       });
     });
 
@@ -1147,7 +1145,7 @@ export async function init(): Promise<void> {
       displayFooter = $(this).prop("checked");
       localStorage.setItem("displayFooter", displayFooter);
       $("footer").toggle(displayFooter);
-      $("body").css({ paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + (displayFooter ? 0 : 70) + "px" });
+      $("#app-scroll").css({ paddingBottom: displayFooter ? "0" : "1rem" });
     });
 
     const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
@@ -1170,37 +1168,10 @@ export async function init(): Promise<void> {
 
     // Logout
     $("#logout-button").on("click", async () => {
-      let hasResponded = false;
+      await ajax("POST", "/account/logout");
 
-      $.ajax({
-        url: "/account/logout",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#logout-success-toast").toast("show");
-          
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#logout-success-toast").toast("show");
+      user.auth();
     });
 
     // Change username
@@ -1248,52 +1219,32 @@ export async function init(): Promise<void> {
     });
 
     $("#change-username-confirm").on("click", async () => {
-      const data = {
-        password: $("#change-username-password").val(),
-        newUsername: $("#change-username-new-username").val()
-      };
-      let hasResponded = false;
+      try {
+        await ajax("POST", "/account/change_username", {
+          body: {
+            password: $("#change-username-password").val(),
+            newUsername: $("#change-username-new-username").val()
+          },
+          expectedErrors: [401, 409]
+        });
 
-      $.ajax({
-        url: "/account/change_username",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#change-username-success-toast").toast("show");
-          $("#change-username-button").show();
-          $("#change-username").hide();
+        $("#change-username-success-toast").toast("show");
+        $("#change-username-button").show();
+        $("#change-username").hide();
 
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $("#change-username-invalid-password").removeClass("d-none");
-            $("#change-username-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 409) {
-            $("#change-username-taken-username").removeClass("d-none");
-            $("#change-username-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
+        user.auth();
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 401) {
+          $("#change-username-invalid-password").removeClass("d-none");
+          $("#change-username-confirm").prop("disabled", true);
         }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
+        else if (err.status === 409) {
+          $("#change-username-taken-username").removeClass("d-none");
+          $("#change-username-confirm").prop("disabled", true);
         }
-      }, 1000);
+      }
     });
 
     // Change password
@@ -1358,46 +1309,26 @@ export async function init(): Promise<void> {
     });
 
     $("#change-password-confirm").on("click", async () => {
-      const data = {
-        oldPassword: $("#change-password-old").val(),
-        newPassword: $("#change-password-new").val()
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/account/change_password",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#change-password-success-toast").toast("show");
-          $("#change-password-button").show();
-          $("#change-password").hide();
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $("#change-password-invalid-password").removeClass("d-none").addClass("d-flex");
-            $("#change-password-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
+      try {
+        await ajax("POST", "/account/change_password", {
+          body: {
+            oldPassword: $("#change-password-old").val(),
+            newPassword: $("#change-password-new").val()
+          },
+          expectedErrors: [401]
+        });
+        
+        $("#change-password-success-toast").toast("show");
+        $("#change-password-button").show();
+        $("#change-password").hide();
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 401) {
+          $("#change-password-invalid-password").removeClass("d-none").addClass("d-flex");
+          $("#change-password-confirm").prop("disabled", true);
         }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      }
     });
 
     // Delete account
@@ -1429,49 +1360,28 @@ export async function init(): Promise<void> {
     });
 
     $("#delete-account-confirm").on("click", async () => {
-      const data = {
-        password: $("#delete-account-password").val()
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/account/delete",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#delete-account-success-toast").toast("show");
-          
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $("#delete-account-invalid-password").removeClass("d-none").addClass("d-flex");
-            $("#delete-account-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 409) {
-            $("#delete-account-still-in-class").removeClass("d-none").addClass("d-flex");
-            $("#delete-account-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
+      try {
+        await ajax("POST", "/account/delete", {
+          body: {
+            password: $("#delete-account-password").val()
+          },
+          expectedErrors: [401, 409]
+        });
+        
+        $("#delete-account-success-toast").toast("show");
+        user.auth();
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 401) {
+          $("#delete-account-invalid-password").removeClass("d-none").addClass("d-flex");
+          $("#delete-account-confirm").prop("disabled", true);
         }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
+        else if (err.status === 409) {
+          $("#delete-account-still-in-class").removeClass("d-none").addClass("d-flex");
+          $("#delete-account-confirm").prop("disabled", true);
         }
-      }, 1000);
+      }
     });
 
     // TEAM SELECTION
@@ -1485,45 +1395,16 @@ export async function init(): Promise<void> {
       });
 
       if (user.loggedIn) {
-        const data = {
-          teams: newJoinedTeamsData
-        };
-        let hasResponded = false;
-
-        $.ajax({
-          url: "/teams/set_joined_teams_data",
-          type: "POST",
-          data: JSON.stringify(data),
-          contentType: "application/json",
-          headers: {
-            "X-CSRF-Token": await csrfToken()
+        await ajax("POST", "/teams/set_joined_teams_data", {
+          body: {
+            teams: newJoinedTeamsData
           },
-          success: () => {
-            $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-            setTimeout(() => {
-              $("#team-selection-save").text("Speichern").prop("disabled", false);
-            }, 1000);
-          },
-          error: xhr => {
-            if (xhr.status === 401) {
-              $navbarToasts.serverError.toast("show");
-            }
-            else if (xhr.status === 500) {
-              $navbarToasts.serverError.toast("show");
-            }
-            else {
-              $navbarToasts.unknownError.toast("show");
-            }
-          },
-          complete: () => {
-            hasResponded = true;
-          }
+          queueable: true
         });
 
+        $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
         setTimeout(() => {
-          if (!hasResponded) {
-            $navbarToasts.serverError.toast("show");
-          }
+          $("#team-selection-save").text("Speichern").prop("disabled", false);
         }, 1000);
       }
       else {
@@ -1550,43 +1431,24 @@ export async function init(): Promise<void> {
     });
 
     $("#leave-class-confirm").on("click", async () => {
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/leave_class",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#leave-class-success-toast").toast("show");
-          // Force socket to reconnect so it picks up the new session.classId
-          socket.disconnect();
-          socket.connect();
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 409) {
-            $("#leave-class-last-admin").removeClass("d-none").addClass("d-flex");
-            $("#leave-class-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
+      try {
+        await ajax("POST", "/class/leave_class", {
+          expectedErrors: [409]
+        });
+        
+        $("#leave-class-success-toast").toast("show");
+        // Force socket to reconnect so it picks up the new session.classId
+        socket.disconnect();
+        socket.connect();
+        user.auth();
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 409) {
+          $("#leave-class-last-admin").removeClass("d-none").addClass("d-flex");
+          $("#leave-class-confirm").prop("disabled", true);
         }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      }
     });
 
 
@@ -1619,112 +1481,41 @@ export async function init(): Promise<void> {
 
     $("#change-class-name-confirm").on("click", async () => {
       const className = $("#change-class-name-new-class-name").val()?.toString() ?? "";
-      const data = {
-        classDisplayName: className
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/change_class_name",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
+      
+      await ajax("POST", "/class/change_class_name", {
+        body: {
+          classDisplayName: className
         },
-        success: () => {
-          $("#change-class-name-button").show();
-          $("#change-class-name").hide();
-
-          $("#show-qrcode-modal-title b").text(className);
-          $("#class-settings-name").text(className);
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#change-class-name-button").show();
+      $("#change-class-name").hide();
+
+      $("#show-qrcode-modal-title b").text(className);
+      $("#class-settings-name").text(className);
     });
 
 
     // Change classcode
     $("#change-class-code").on("click", async () => {
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/change_class_code",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: res => {
-          $("#class-code").val(res);
-          $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
-          qrCode.makeCode(location.host + `/join?class_code=${res}`);
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      const res = await ajax("POST", "/class/change_class_code", {
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      const classCode = await res.json();
+      $("#class-code").val(classCode);
+      $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
+      qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
     });
 
     // Upgrade test class
     $("#upgrade-test-class").on("click", async () => {
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/upgrade_test_class",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#test-class-alert").addClass("d-none");
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("POST", "/class/upgrade_test_class", {
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#test-class-alert").addClass("d-none");
     });
 
     // Delete class
@@ -1741,39 +1532,13 @@ export async function init(): Promise<void> {
     });
 
     $("#delete-class-confirm").on("click", async () => {
-      let hasResponded = false;
+      await ajax("POST", "/class/delete_class");
 
-      $.ajax({
-        url: "/class/delete_class",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#delete-class-success-toast").toast("show");
-          // Force socket to reconnect so it picks up the new session.classId
-          socket.disconnect();
-          socket.connect();
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#delete-class-success-toast").toast("show");
+      // Force socket to reconnect so it picks up the new session.classId
+      socket.disconnect();
+      socket.connect();
+      user.auth();
     });
 
     // Kick logged out users
@@ -1789,37 +1554,11 @@ export async function init(): Promise<void> {
     });
 
     $("#kick-logged-out-users-confirm").on("click", async () => {
-      let hasResponded = false;
+      await ajax("POST", "/class/kick_logged_out_users");
 
-      $.ajax({
-        url: "/class/kick_logged_out_users",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#kick-logged-out-users-success-toast").toast("show");
-          $("#kick-logged-out-users").hide();
-          $("#kick-logged-out-users-button").show();
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#kick-logged-out-users-success-toast").toast("show");
+      $("#kick-logged-out-users").hide();
+      $("#kick-logged-out-users-button").show();
     });
 
     // Set logged out users role
@@ -1839,42 +1578,17 @@ export async function init(): Promise<void> {
     });
 
     $("#set-logged-out-users-role-confirm").on("click", async () => {
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/change_default_permission",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({role: Number.parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0")}),
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#set-logged-out-users-role-success-toast").toast("show");
-          $("#set-logged-out-users-role").hide();
-          $("#set-logged-out-users-role-button").show();
-          const $newRole = $("#set-logged-out-users-role-select option:selected");
-          $("#set-logged-out-users-role-select option[selected]").removeAttr("selected");
-          $newRole.attr("selected", "");
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("POST", "/class/change_default_permission", {
+        body: { role: Number.parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0") },
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#set-logged-out-users-role-success-toast").toast("show");
+      $("#set-logged-out-users-role").hide();
+      $("#set-logged-out-users-role-button").show();
+      const $newRole = $("#set-logged-out-users-role-select option:selected");
+      $("#set-logged-out-users-role-select option[selected]").removeAttr("selected");
+      $newRole.attr("selected", "");
     });
 
     // CLASS MEMBERS
@@ -1912,71 +1626,20 @@ export async function init(): Promise<void> {
           });
         }
       });
-
-      const kickData = {
-        classMembers: classMembersKickData
-      };
-      const permissionsData = {
-        classMembers: classMembersPermissionsData
-      };
-      let hasResponded = false;
-
-      const csrf = await csrfToken();
-
-      $.ajax({
-        url: "/class/kick_class_members",
-        type: "POST",
-        data: JSON.stringify(kickData),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": csrf
-        },
-        success: () => {
-          $.ajax({
-            url: "/class/set_class_members_permission",
-            type: "POST",
-            data: JSON.stringify(permissionsData),
-            contentType: "application/json",
-            headers: {
-              "X-CSRF-Token": csrf
-            },
-            success: () => {
-              $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
-              $("#class-members-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-              setTimeout(() => {
-                $("#class-members-save").text("Speichern").prop("disabled", false);
-              }, 1000);
-            },
-            error: xhr => {
-              if (xhr.status === 500) {
-                $navbarToasts.serverError.toast("show");
-              }
-              else {
-                $navbarToasts.unknownError.toast("show");
-              }
-            },
-            complete: () => {
-              hasResponded = true;
-            }
-          });
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      
+      await ajax("POST", "/class/kick_class_members", {
+        body: { classMembers: classMembersKickData },
+        queueable: true
+      });
+      await ajax("POST", "/class/set_class_members_permission", {
+        body: { classMembers: classMembersPermissionsData },
+        queueable: true
       });
 
+      $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
+      $("#class-members-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
+        $("#class-members-save").text("Speichern").prop("disabled", false);
       }, 1000);
     }
 
@@ -2083,47 +1746,16 @@ export async function init(): Promise<void> {
         });
       });
 
-      const data = {
-        teams: newTeamsData
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/teams/set_teams_data",
-        type: "POST",
-        data: JSON.stringify(data),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
-          $("#teams-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-          setTimeout(() => {
-            $("#teams-save").text("Speichern").prop("disabled", false);
-          }, 1000);
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("POST", "/teams/set_teams_data", {
+        body: { teams: newTeamsData },
+        queueable: true
       });
 
+      $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
+      $("#teams-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+        $("#teams-save").text("Speichern").prop("disabled", false);
+      }, 1000);
     }
 
     $("#teams-save").on("click", () => {
@@ -2241,54 +1873,21 @@ export async function init(): Promise<void> {
         });
       });
 
-      const data = {
-        eventTypes: newEventTypesData
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/events/set_event_type_data",
-        type: "POST",
-        data: JSON.stringify(data),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
-          $("#event-types-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-          setTimeout(() => {
-            $("#event-types-save").text("Speichern").prop("disabled", false);
-          }, 1000);
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("POST", "/events/set_event_type_data", {
+        body: { eventTypes: newEventTypesData },
+        queueable: true
       });
 
+      $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+      $("#event-types-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+        $("#event-types-save").text("Speichern").prop("disabled", false);
+      }, 1000);
     }
 
     $("#app").on("click", "#event-types-example", async () => {
-      $.ajax({
-        url: "/events/set_event_type_data",
-        type: "POST",
-        data: JSON.stringify({
+      await ajax("POST", "/events/set_event_type_data", {
+        body: {
           eventTypes: [
             { name: "Ausflug", color: "#ff9955" },
             { name: "Geburtstag", color: "#ff55aa" },
@@ -2296,23 +1895,8 @@ export async function init(): Promise<void> {
             { name: "Schulfrei", color: "#44dd33" },
             { name: "Sonstiges", color: "#9955ff" }
           ].map(e => ({ eventTypeId: "", ...e }))
-        }),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
         },
-        success: () => {
-          renderEventTypeList();
-          $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        }
+        queueable: true
       });
     });
 
@@ -2486,47 +2070,16 @@ export async function init(): Promise<void> {
         });
       });
 
-      const data = {
-        subjects: newSubjectData
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/subjects/set_subject_data",
-        type: "POST",
-        data: JSON.stringify(data),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
-          $("#subjects-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-          setTimeout(() => {
-            $("#subjects-save").text("Speichern").prop("disabled", false);
-          }, 1000);
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("POST", "/subjects/set_subject_data", {
+        body: { subjects: newSubjectData },
+        queueable: true
       });
 
+      $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+      $("#subjects-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+        $("#subjects-save").text("Speichern").prop("disabled", false);
+      }, 1000);
     }
 
     $("#subjects-save").on("click", () => {
@@ -2592,47 +2145,16 @@ export async function init(): Promise<void> {
           });
       });
 
-      const data = {
-        lessons: newTimetableData
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/lessons/set_lesson_data",
-        type: "POST",
-        data: JSON.stringify(data),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none");
-          $("#timetable-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-          setTimeout(() => {
-            $("#timetable-save").text("Speichern").prop("disabled", false);
-          }, 1000);
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("POST", "/lessons/set_lesson_data", {
+        body: { lessons: newTimetableData },
+        queueable: true
       });
 
+      $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none");
+      $("#timetable-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+        $("#timetable-save").text("Speichern").prop("disabled", false);
+      }, 1000);
     });
 
     res();

@@ -16,6 +16,15 @@ function getChangedTouchPosition(ev: JQuery.TouchMoveEvent | JQuery.TouchEndEven
   };
 }
 
+function calculateHeight(): void {
+  let height = 38 + Math.max(8, globalThis.innerWidth / 100 * 1.5) * 1.5;
+  if (/OS (18|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
+    height += 16;
+  }
+  if (globalThis.innerWidth >= 992) height = 0;
+  $("body").css("--bottombar-height", height + "px");
+}
+
 export async function init(): Promise<void> {
   siteName = getSite();
   $(".bottombar-link").removeClass("bottombar-current-link").filter(`[href="/${siteName}"]`).addClass("bottombar-current-link");
@@ -24,12 +33,18 @@ export async function init(): Promise<void> {
 if (/OS (18|19|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
   $(".bottombar").css("padding-bottom", "1rem");
 }
+calculateHeight();
+$(globalThis).on("resize", calculateHeight);
+
 let siteName: string;
 
-user.on("change", () => {
+function toggleShownLinks(): void {
   $(".bottombar-joined").toggle(user.classJoined ?? false);
   $(".bottombar-not-joined").toggle(! user.classJoined);
-});
+}
+
+user.on("change", toggleShownLinks);
+toggleShownLinks();
 
 $(".bottombar-overlay").hide();
 

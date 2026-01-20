@@ -12,7 +12,6 @@ import {
   dateToMs,
   homeworkCheckedData,
   msToTime,
-  csrfToken,
   escapeHTML,
   loadTimetableData,
   getTimeLeftString,
@@ -20,10 +19,11 @@ import {
   lessonData,
   teamsData,
   eventTypeData,
-  onlyThisSite
+  onlyThisSite,
+  ajax
 } from "../../global/global.js";
 import { HomeworkData, MonthDates, TimetableData } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 async function getCalendarDayHtml(date: Date, week: number, multiEventPositions: (number | null)[]): Promise<string> {
@@ -207,49 +207,10 @@ async function checkHomework(homeworkId: number): Promise<void> {
 
   // Check whether the user is logged in
   if (user.loggedIn) {
-    // The user is logged in
-
-    const data = {
-      homeworkId: homeworkId,
-      checkStatus: checkStatus
-    };
-    // Save whether the server has responed
-    let hasResponded = false;
-
-    // Post the request
-    $.ajax({
-      url: "/homework/check_homework",
-      type: "POST",
-      data: data,
-      headers: {
-        "X-CSRF-Token": await csrfToken()
-      },
-      error: xhr => {
-        if (xhr.status === 401) {
-          // The user has to be logged in but isn't
-          // Show an error notification
-          $navbarToasts.notLoggedIn.toast("show");
-        }
-        else if (xhr.status === 500) {
-          // An internal server error occurred
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        // The server has responded
-        hasResponded = true;
-      }
+    await ajax("POST", "/homework/check_homework", {
+      body: { homeworkId, checkStatus: "" + checkStatus },
+      queueable: true
     });
-    setTimeout(() => {
-      // Wait for 1s
-      if (!hasResponded) {
-        // If the server hasn't answered, show the internal server error notification
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 1000);
   }
   else {
     // The user is not logged in

@@ -7,14 +7,14 @@ import {
   getDisplayDate,
   msToInputDate,
   teamsData,
-  csrfToken,
   lessonData,
   escapeHTML,
   dateDaysDifference,
-  onlyThisSite
+  onlyThisSite,
+  ajax
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 async function renderEventList(): Promise<void> {
@@ -245,72 +245,32 @@ function addEvent(): void {
 
   // Called when the user clicks the "add" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#add-event-button")
-    .off("click")
-    .on("click", async () => {
-      // Save the given information in variables
-      const eventTypeId = $("#add-event-type").val();
-      const name = $("#add-event-name").val()?.toString().trim();
-      const description = $("#add-event-description").val()?.toString().trim();
-      const startDate = $("#add-event-start-date").val()?.toString() ?? "";
-      const lesson = $("#add-event-lesson").val()?.toString().trim();
-      const endDate = $("#add-event-end-date").val()?.toString() ?? "";
-      const team = $("#add-event-team").val();
+  $("#add-event-button").off("click").on("click", async () => {
+    // Save the given information in variables
+    const eventTypeId = $("#add-event-type").val();
+    const name = $("#add-event-name").val()?.toString().trim();
+    const description = $("#add-event-description").val()?.toString().trim();
+    const startDate = $("#add-event-start-date").val()?.toString() ?? "";
+    const lesson = $("#add-event-lesson").val()?.toString().trim();
+    const endDate = $("#add-event-end-date").val()?.toString() ?? "";
+    const teamId = $("#add-event-team").val();
 
-      // Prepare the POST request
-      const data = {
-        eventTypeId: eventTypeId,
-        name: name,
-        description: description,
+    await ajax("POST", "/events/add_event", {
+      body: {
+        eventTypeId,
+        name,
+        description,
         startDate: dateToMs(startDate),
-        lesson: lesson,
+        lesson,
         endDate: dateToMs(endDate) ?? null,
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/events/add_event",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification and update the shown events
-          $("#add-event-success-toast").toast("show");
-          // Hide the add event modal
-          $("#add-event-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
-      });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+        teamId
+      },
+      queueable: true
     });
+
+    $("#add-event-success-toast").toast("show");
+    $("#add-event-modal").modal("hide");
+  });
 }
 
 async function shareEvent(eventId: number): Promise<void> {
@@ -478,64 +438,26 @@ async function editEvent(eventId: number): Promise<void> {
       const startDate = $("#edit-event-start-date").val()?.toString() ?? "";
       const lesson = $("#edit-event-lesson").val()?.toString().trim() ?? null;
       const endDate = $("#edit-event-end-date").val()?.toString() ?? "";
-      const team = $("#edit-event-team").val();
+      const teamId = $("#edit-event-team").val();
 
-      const data = {
-        eventId: eventId,
-        eventTypeId: eventTypeId,
-        name: name,
-        description: description,
-        startDate: dateToMs(startDate),
-        lesson: lesson,
-        endDate: dateToMs(endDate),
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/events/edit_event",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(data),
-        headers: {
-          "X-CSRF-Token": await csrfToken()
+      await ajax("POST", "/events/edit_event", {
+        body: {
+          eventId,
+          eventTypeId,
+          name,
+          description,
+          startDate: dateToMs(startDate),
+          lesson,
+          endDate: dateToMs(endDate),
+          teamId
         },
-        success: () => {
-          // Show a success notification and update the shown events
-          $("#edit-event-success-toast").toast("show");
-          $("#edit-event-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+
+      $("#edit-event-success-toast").toast("show");
+      $("#edit-event-modal").modal("hide");
     });
 }
-
 function deleteEvent(eventId: number): void {
   //
   // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY DELETES AN EVENT
@@ -552,50 +474,12 @@ function deleteEvent(eventId: number): void {
       // Hide the confirmation toast
       $("#delete-event-confirm-toast").toast("hide");
 
-      const data = {
-        eventId: eventId
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/events/delete_event",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification and update the shown events
-          $("#delete-event-success-toast").toast("show");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+      await ajax("POST", "/events/delete_event", {
+        body: { eventId },
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+      
+      $("#delete-event-success-toast").toast("show");
     });
 }
 
