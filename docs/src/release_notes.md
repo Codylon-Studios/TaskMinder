@@ -21,6 +21,8 @@ All changes are grouped by type and the latest version appears first.
 * chore(getdata): event, homework and upload metadata order by more values
 * chore(docs): migrate to mdbook and github actions/pages for deployment
 * chore(ci): update CI build test
+* chore(sitemap): update sitemap values
+* chore(migration): add migrate upload metadata date script
 * chore(package): update package.json version to v2.2.5
 
 ---

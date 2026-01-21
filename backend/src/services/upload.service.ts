@@ -290,6 +290,7 @@ const uploadService = {
     const { uploadId, uploadName, uploadDescription, uploadType, teamId, changeFiles } = body;
     const classIdNum = parseInt(session.classId!, 10);
     const tempFiles = Array.isArray(files) ? files : [];
+    const accountId = session.account?.accountId ?? null;
 
     await isValidTeamId(teamId, session);
 
@@ -323,7 +324,7 @@ const uploadService = {
     if (!changeFiles) {
       await prisma.upload.update({
         where: { uploadId: uploadId, classId: classIdNum },
-        data: { uploadName, uploadDescription, uploadType, teamId }
+        data: { uploadName, uploadDescription, uploadType, teamId, accountId }
       });
 
       await invalidateCache("UPLOADMETADATA", session.classId!);
@@ -392,6 +393,7 @@ const uploadService = {
           uploadName,
           uploadDescription,
           uploadType,
+          accountId,
           teamId,
           status: "queued",
           errorReason: null,

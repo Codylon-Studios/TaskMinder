@@ -2,21 +2,21 @@ import z, { strictObject } from "zod";
 import { FileTypes } from "../config/upload";
 
 export const getUploadMetadataSchema = z.object({
+  // omit body due to GET request
   params: z.object({}),
   query: z.object({
-    all: z.enum(["true", "false"]).optional()
-  }),
-  body: strictObject({}).optional()
+    all: z.enum(["true", "false"])
+  })
 });
 
 export const getUploadFileSchema = z.object({
+  // omit body due to GET request
   params: z.object({
     fileId: z.coerce.number()
   }),
   query: z.object({
     action: z.enum(["download", "preview"])
-  }),
-  body: strictObject({}).optional()
+  })
 });
 
 export const uploadFileSchema = z.object({

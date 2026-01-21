@@ -18,7 +18,8 @@ import {
   cleanupOldHomework,
   cleanupTestClasses,
   cleanupStuckUploads,
-  migrateEventAndHomeworkDates 
+  migrateEventAndHomeworkDates, 
+  migrateUploadMetadataDates
 } from "./utils/db.cleanup";
 import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker";
 import checkAccess from "./middleware/access.middleware";
@@ -209,9 +210,11 @@ cron.schedule("0 0 * * *", () => {
 });
 
 // Run demo class script every week (once) - only for demo class
+// This is not relevant if you do not have a demo class set up
 cron.schedule("0 0 * * 0", () => {
   logger.info("Starting weekly demo class date migration");
   migrateEventAndHomeworkDates();
+  migrateUploadMetadataDates();
 });
 
 // Run test class deletion every 15mins

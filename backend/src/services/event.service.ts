@@ -16,8 +16,6 @@ import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody, pinEventTypeBody } from "../schemas/event.schema";
 
-const MAX_PINNED_EVENT = 3;
-
 const inFlightStyleBuild = new Map<number, Promise<string>>();
 
 export const eventService = {
@@ -42,6 +40,7 @@ export const eventService = {
         classId: parseInt(session.classId!)
       },
       orderBy: [
+        { isPinned: "desc" },
         { startDate: "asc" },
         { endDate: "asc" },
         { name: "asc" },
@@ -63,25 +62,6 @@ export const eventService = {
 
   async pinEvent(reqData: pinEventTypeBody, session: Session & Partial<SessionData>) {
     const { eventId, pinStatus } = reqData;
-
-    // look if there are more than 3 simultaneously pinned events
-    const countPinned = await prisma.event.count({
-      where: {
-        classId: parseInt(session.classId!, 10),
-        isPinned: true
-      }
-    });
-
-    if (countPinned >= MAX_PINNED_EVENT && pinStatus === true) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: `Cannot pin event: maximum of ${MAX_PINNED_EVENT} pinned event items reached. 
-        Please unpin an existing event item first.`,
-        expected: true
-      };
-      throw err;
-    }
 
     const updated = await prisma.event.updateMany({
       where: {

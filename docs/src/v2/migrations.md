@@ -146,7 +146,7 @@ Prisma validates migration checksums. Any change to a migration file (like editi
    docker compose down
    ```
 
-2. **(Optional but recommended) Apply system updates.**
+2. **(Optional but recommended) Apply system updates**
 
    **Ubuntu:**
 

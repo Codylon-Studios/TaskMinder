@@ -13,8 +13,6 @@ import {
   pinHomeworkTypeBody 
 } from "../schemas/homework.schema";
 
-const MAX_PINNED_HOMEWORK = 3;
-
 const homeworkService = {
   async addHomework(
     reqData: addHomeworkTypeBody,
@@ -191,6 +189,7 @@ const homeworkService = {
         classId: parseInt(session.classId!)
       },
       orderBy: [
+        { isPinned: "desc" }, 
         { submissionDate: "asc" },
         { assignmentDate: "asc" },
         { subjectId: "asc" },
@@ -206,25 +205,6 @@ const homeworkService = {
 
   async pinHomework(reqData: pinHomeworkTypeBody, session: Session & Partial<SessionData>) {
     const { homeworkId, pinStatus } = reqData;
-
-    // look if there are more than 3 simultaneously pinned homework entries
-    const countPinned = await prisma.homework.count({
-      where: {
-        classId: parseInt(session.classId!, 10),
-        isPinned: true
-      }
-    });
-
-    if (countPinned >= MAX_PINNED_HOMEWORK && pinStatus === true) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: `Cannot pin homework: maximum of ${MAX_PINNED_HOMEWORK} pinned homework items reached. 
-        Please unpin an existing homework item first.`,
-        expected: true
-      };
-      throw err;
-    }
 
     const updated = await prisma.homework.updateMany({
       where: {

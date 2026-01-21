@@ -274,6 +274,54 @@ export async function cleanupStuckUploads(): Promise<void> {
 
 
 /*
+// DEMO CLASS MIGRATIONS
+// The following functions are only invoked if a demo class is avaliable (className = "Demo", classCode = "demo").
+*/
+
+/*
+  * Moves upload metadata 1 week further along for demo class
+*/
+export async function migrateUploadMetadataDates(): Promise<void> {
+  try {
+    const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
+
+    const demoClass = await prisma.class.findFirst({
+      where: {
+        OR: [
+          { classCode: { equals: "demo", mode: "insensitive" } },
+          { className: { equals: "Demo", mode: "insensitive" } }
+        ]
+      }
+    });
+
+    if (!demoClass) {
+      logger.info("Demo class not found. Migration of dates for upload metadata not needed.");
+      return;
+    }
+
+    const migratedUploadMetadata = await prisma.upload.updateMany({
+      where: {
+        classId: demoClass.classId
+      },
+      data: {
+        createdAt: {
+          increment: oneWeekInMs
+        }
+      }
+    });
+
+    // invalidate upload metdata cache of demo class
+    await invalidateCache("UPLOADMETADATA", demoClass.classId.toString());
+    logger.info(
+      `Migrated dates of ${migratedUploadMetadata.count} upload metadata entries for demo class. (1 week)`
+    );
+  }
+  catch (error) {
+    logger.error(`Error during upload metadata migration: ${error}`);
+  }
+}
+
+/*
   * Moves events and homework 1 week further along for demo class
 */
 export async function migrateEventAndHomeworkDates(): Promise<void> {
@@ -282,8 +330,10 @@ export async function migrateEventAndHomeworkDates(): Promise<void> {
 
     const demoClass = await prisma.class.findFirst({
       where: {
-        className: "Demo",
-        classCode: "demo"
+        OR: [
+          { classCode: { equals: "demo", mode: "insensitive" } },
+          { className: { equals: "Demo", mode: "insensitive" } }
+        ]
       }
     });
 
