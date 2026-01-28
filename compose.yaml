@@ -36,7 +36,7 @@ services:
       - app-data:/usr/src/app/data
 
   postgres:
-    image: postgres:14
+    image: postgres:18
     container_name: taskminder-postgres
     restart: always
     healthcheck:
@@ -58,7 +58,7 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_DB_FILE: /run/secrets/db_name
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data-18:/var/lib/postgresql/data
 
   redis:
     image: redis:8
@@ -71,7 +71,7 @@ services:
       retries: 30
 
   prometheus:
-    image: prom/prometheus:v3.8.0
+    image: prom/prometheus:v3.9.1
     container_name: prometheus
     restart: always
     ports:
@@ -90,7 +90,7 @@ services:
       - app
 
   loki:
-    image: grafana/loki:3.6.3
+    image: grafana/loki:3.6.4
     container_name: loki
     restart: always
     ports:
@@ -101,7 +101,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
   
   alloy:
-    image: grafana/alloy:v1.12.0
+    image: grafana/alloy:v1.12.2
     container_name: alloy
     restart: always
     volumes:
@@ -119,7 +119,7 @@ services:
       - app
 
   grafana:
-    image: grafana/grafana:12.3.0
+    image: grafana/grafana:12.3.2
     container_name: grafana
     restart: always
     ports:
@@ -155,7 +155,9 @@ secrets:
     file: ./docker_secrets/database_url.txt
 
 volumes:
+  # remove the following line once migrated
   postgres-data:
+  postgres-data-18:
   prometheus-data:
   loki-data:
   alloy-data:

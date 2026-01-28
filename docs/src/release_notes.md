@@ -4,9 +4,13 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.5] - 2026-01-??
+## \[v2.2.5] - 2026-02-??
+
+### Breaking Change
+* chore(db): migrate postgresql@14 to postgresql@18
 
 ### Added
+* feat(frontend): add caching and offline mode
 * feat(upload): add upload description
 * feat(upload): request new uploads
 * feat(upload): edit files
@@ -23,7 +27,7 @@ All changes are grouped by type and the latest version appears first.
 * chore(ci): update CI build test
 * chore(sitemap): update sitemap values
 * chore(migration): add migrate upload metadata date script
-* chore(package): update package.json version to v2.2.5
+* chore(package): update package.json version to v2.2.5, bump packages
 
 ---
 
