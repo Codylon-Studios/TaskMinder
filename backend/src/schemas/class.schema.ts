@@ -4,7 +4,7 @@ export const createClassSchema = z.object({
   params: z.object({}),
   query: z.object({}),
   body: z.strictObject({
-    classDisplayName: z.string().trim().min(1),
+    classDisplayName: z.string().trim().min(1).max(256),
     isTestClass: z.boolean()
   })
 });
@@ -59,9 +59,9 @@ export const updateDSBMobileDataSchema = z.object({
   query: z.object({}),
   body: z.strictObject({
     dsbMobileActivated: z.boolean(),
-    dsbMobileUser: z.string().trim().min(1).nullable(),
-    dsbMobilePassword: z.string().trim().min(1).nullable(),
-    dsbMobileClass: z.string().trim().min(1).nullable()
+    dsbMobileUser: z.string().trim().min(1).max(256).nullable(),
+    dsbMobilePassword: z.string().trim().min(1).max(256).nullable(),
+    dsbMobileClass: z.string().trim().min(1).max(256).nullable()
   })
 });
 
@@ -70,7 +70,7 @@ export const changeClassNameSchema = z.object({
   params: z.object({}),
   query: z.object({}),
   body: z.strictObject({
-    classDisplayName: z.string().trim().min(1)
+    classDisplayName: z.string().trim().min(1).max(256)
   })
 });
 

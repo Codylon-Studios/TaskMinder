@@ -23,8 +23,8 @@ export const uploadFileSchema = z.object({
   params: z.object({}),
   query: z.object({}),
   body: strictObject({
-    uploadName: z.string().trim().min(1),
-    uploadDescription: z.string().trim().min(1).nullable(),
+    uploadName: z.string().trim().min(1).max(256),
+    uploadDescription: z.string().trim().min(1).max(1024).nullable(),
     uploadType: z.enum(FileTypes),
     teamId: z.coerce.number()
   })
@@ -35,8 +35,8 @@ export const editUploadSchema = z.object({
   query: z.object({}),
   body: strictObject({
     uploadId: z.coerce.number(),
-    uploadName: z.string().trim().min(1),
-    uploadDescription: z.string().trim().min(1).nullable(),
+    uploadName: z.string().trim().min(1).max(256),
+    uploadDescription: z.string().trim().min(1).max(1024).nullable(),
     uploadType: z.enum(FileTypes),
     teamId: z.coerce.number(),
     // We need some normalization because multipart fields arrive as strings

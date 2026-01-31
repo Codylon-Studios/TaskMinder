@@ -15,6 +15,7 @@ import {
   addUploadRequestTypeBody,
   deleteUploadRequestTypeBody
 } from "../schemas/upload.schema";
+import { removeTempFiles } from "../utils/upload.cleanup";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
 import { invalidateCache, BigIntreplacer, isValidTeamId, updateCacheData } from "../utils/validate.functions";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
@@ -63,6 +64,54 @@ const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany
   }));
 };
 
+const getUploadList = async (
+  classId: number,
+  isGetAllData: boolean,
+  cacheKey: string,
+  include: {
+    Account: { select: { username: true } };
+    Files: true;
+  },
+  orderBy: Prisma.UploadOrderByWithRelationInput[]
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+) => {
+  if (isGetAllData) {
+    const uploads = await prisma.upload.findMany({
+      where: { classId },
+      include,
+      orderBy
+    });
+    return mapUploadData(uploads);
+  }
+
+  const cachedUploadMetadataData = await redisClient.get(cacheKey);
+  if (cachedUploadMetadataData) {
+    try {
+      return JSON.parse(cachedUploadMetadataData);
+    }
+    catch (error) {
+      logger.error(`Error parsing Redis data: ${error}`);
+    }
+  }
+
+  const uploads = await prisma.upload.findMany({
+    where: { classId },
+    include,
+    orderBy,
+    take: 50
+  });
+  const uploadList = mapUploadData(uploads);
+
+  try {
+    await updateCacheData(uploadList, cacheKey);
+  }
+  catch (err) {
+    logger.error(`Error updating Redis data: ${err}`);
+  }
+
+  return uploadList;
+};
+
 const uploadService = {
   async queueFileUpload(
     files: Express.Multer.File[],
@@ -103,7 +152,20 @@ const uploadService = {
       }))
     };
 
-    await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
+    try {
+      await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
+    }
+    catch (error) {
+      logger.error(`Failed to queue upload ${upload.uploadId}: `, error);
+
+      await prisma.$transaction(async tx => {
+        await tx.upload.delete({ where: { uploadId: upload.uploadId } });
+      });
+
+      await removeTempFiles(files);
+
+      throw error;
+    }
 
     // Invalidate cache after queueing new upload
     await invalidateCache("UPLOADMETADATA", session.classId!);
@@ -145,47 +207,8 @@ const uploadService = {
       { uploadId: "desc" }
     ];
 
-    let uploadList;
-    if (isGetAllData) {
-      const uploads = await prisma.upload.findMany({
-        where: { classId },
-        include,
-        orderBy
-      });
-
-      uploadList = mapUploadData(uploads);
-    }
-    else {
-      // get cache data only if < 50 metadata is asked, at getAll, always get from db
-      const getUploadMetadataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
-
-      const cachedUploadMetadataData = await redisClient.get(getUploadMetadataCacheKey);
-      if (cachedUploadMetadataData) {
-        try {
-          uploadList = JSON.parse(cachedUploadMetadataData);
-        }
-        catch (error) {
-          logger.error(`Error parsing Redis data: ${error}`);
-        }
-      }
-
-      if (!uploadList) {
-        const uploads = await prisma.upload.findMany({
-          where: { classId },
-          include,
-          orderBy,
-          take: 50
-        });
-        uploadList = mapUploadData(uploads);
-
-        try {
-          await updateCacheData(uploadList, getUploadMetadataCacheKey);
-        }
-        catch (err) {
-          logger.error(`Error updating Redis data: ${err}`);
-        }
-      }
-    }
+    const getUploadMetadataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
+    const uploadList = await getUploadList(classId, isGetAllData, getUploadMetadataCacheKey, include, orderBy);
 
     const hasMore = !isGetAllData && totalUploads > 50;
 
@@ -193,8 +216,8 @@ const uploadService = {
       totalUploads,
       uploads: uploadList,
       hasMore,
-      totalStorage: classInformation!.storageQuotaBytes,
-      usedStorage: classInformation!.storageUsedBytes
+      totalStorage: classInformation!.storageQuotaBytes.toString(),
+      usedStorage: classInformation!.storageUsedBytes.toString()
     };
     const stringified = JSON.stringify(res, BigIntreplacer);
     return JSON.parse(stringified);
@@ -244,14 +267,15 @@ const uploadService = {
     }
     filename += fileExtension;
 
-    const safeOriginalName = filename
-      .replace(/[\r\n]/g, "") // Remove newlines that could enable header injection
+    const filenameForHeader = filename.replace(/[\r\n]/g, ""); // Remove newlines that could enable header injection
+    const safeOriginalName = filenameForHeader
       .replace(/\\/g, "\\\\") // Escape backslashes
       .replace(/"/g, '\\"');  // Escape quotes
+    const encodedFileName = encodeURIComponent(filenameForHeader);
 
     const headers = {
       "Content-Type": fileData.mimeType,
-      "Content-Disposition": `${disposition}; filename="${safeOriginalName}"`,
+      "Content-Disposition": `${disposition}; filename="${safeOriginalName}"; filename*=UTF-8''${encodedFileName}`,
       "Cache-Control": "private, no-store"
     };
 
@@ -282,10 +306,12 @@ const uploadService = {
     return { stream, headers };
   },
 
+  // eslint-disable-next-line complexity
   async editUpload(
     body: editUploadTypeBody,
     session: Session & Partial<SessionData>,
-    files: Express.Multer.File[]
+    files: Express.Multer.File[],
+    reservedBytes?: bigint
   ) {
     const { uploadId, uploadName, uploadDescription, uploadType, teamId, changeFiles } = body;
     const classIdNum = parseInt(session.classId!, 10);
@@ -347,6 +373,8 @@ const uploadService = {
     const oldFilesSize = uploadData.Files.reduce((sum, file) => sum + BigInt(file.size), 0n);
     const newFilesSize = tempFiles.reduce((sum, file) => sum + BigInt(file.size), 0n);
 
+    const additionalBytesNeeded = newFilesSize > oldFilesSize ? newFilesSize - oldFilesSize : 0n;
+    const usePreReserved = typeof reservedBytes !== "undefined";
 
     await prisma.$transaction(async tx => {
       const classData = await tx.class.findUnique({
@@ -364,8 +392,26 @@ const uploadService = {
         throw err;
       }
 
-      const projectedUsage = classData.storageUsedBytes - oldFilesSize + newFilesSize;
-      if (projectedUsage > classData.storageQuotaBytes) {
+      if (!usePreReserved) {
+        const projectedUsage = classData.storageUsedBytes + additionalBytesNeeded;
+        if (projectedUsage > classData.storageQuotaBytes) {
+          const err: RequestError = {
+            name: "Insufficient Storage",
+            status: 507,
+            message: "Class storage quota would be exceeded",
+            expected: true
+          };
+          throw err;
+        }
+
+        if (additionalBytesNeeded > 0n) {
+          await tx.class.update({
+            where: { classId: classIdNum },
+            data: { storageUsedBytes: { increment: additionalBytesNeeded } }
+          });
+        }
+      }
+      else if (classData.storageUsedBytes > classData.storageQuotaBytes) {
         const err: RequestError = {
           name: "Insufficient Storage",
           status: 507,
@@ -373,18 +419,6 @@ const uploadService = {
           expected: true
         };
         throw err;
-      }
-
-      await tx.fileMetadata.deleteMany({ where: { uploadId } });
-
-      const storageDelta = newFilesSize - oldFilesSize;
-      if (storageDelta !== 0n) {
-        await tx.class.update({
-          where: { classId: classIdNum },
-          data: storageDelta > 0n
-            ? { storageUsedBytes: { increment: storageDelta } }
-            : { storageUsedBytes: { decrement: -storageDelta } }
-        });
       }
 
       await tx.upload.update({
@@ -397,16 +431,10 @@ const uploadService = {
           teamId,
           status: "queued",
           errorReason: null,
-          reservedBytes: newFilesSize
+          reservedBytes: usePreReserved ? (reservedBytes ?? 0n) : additionalBytesNeeded
         }
       });
     });
-
-    const classDir = path.join(FINAL_UPLOADS_DIR, classIdNum.toString());
-    await Promise.all(uploadData.Files.map(file => {
-      const filePath = path.join(classDir, file.storedFileName);
-      return fs.unlink(filePath).catch(() => { });
-    }));
 
     const jobData = {
       uploadId,
@@ -416,10 +444,36 @@ const uploadService = {
         originalName: file.originalname,
         mimetype: file.mimetype,
         size: file.size
-      }))
+      })),
+      replaceUpload: {
+        oldStoredFiles: uploadData.Files.map(file => file.storedFileName),
+        oldTotalBytes: oldFilesSize.toString()
+      }
     };
 
-    await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
+    try {
+      await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
+    }
+    catch (error) {
+      const bytesToRelease = usePreReserved ? 0n : additionalBytesNeeded;
+      await prisma.$transaction(async tx => {
+        if (bytesToRelease > 0n) {
+          await tx.class.update({
+            where: { classId: classIdNum },
+            data: { storageUsedBytes: { decrement: bytesToRelease } }
+          });
+        }
+        await tx.upload.update({
+          where: { uploadId },
+          data: {
+            status: "failed",
+            errorReason: error instanceof Error ? error.message : "queue_failed",
+            reservedBytes: 0n
+          }
+        });
+      });
+      throw error;
+    }
 
     await invalidateCache("UPLOADMETADATA", session.classId!);
 

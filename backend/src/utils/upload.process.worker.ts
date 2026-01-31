@@ -46,6 +46,10 @@ type FileProcessingJob = {
     mimetype: string;
     size: number;
   }>;
+  replaceUpload?: {
+    oldStoredFiles: string[];
+    oldTotalBytes: string;
+  };
 };
 
 //
@@ -120,12 +124,21 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
 const verifyFileType = async (filePath: string, claimedMime: string): Promise<void> => {
   // Special case for text files - file-type cannot detect them
   if (claimedMime === "text/plain") {
-    // Optionally verify it's actually text by reading a sample
+    // Verify it's actually text by reading a bounded sample
     try {
-      const buffer = await fs.readFile(filePath);
-      // Check if file is valid UTF-8 or ASCII
-      buffer.toString("utf-8");
-      return;
+      const fileHandle = await fs.open(filePath, "r");
+      try {
+        const sampleSize = 8192;
+        const buffer = Buffer.alloc(sampleSize);
+        const { bytesRead } = await fileHandle.read(buffer, 0, sampleSize, 0);
+        const slice = buffer.subarray(0, bytesRead);
+        // Check if file is valid UTF-8 or ASCII
+        slice.toString("utf-8");
+        return;
+      }
+      finally {
+        await fileHandle.close().catch(() => { });
+      }
     }
     catch {
       const err: RequestError = {
@@ -331,6 +344,10 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
 
     // Store metadata and adjust storage atomically
     await prisma.$transaction(async tx => {
+      if (job.replaceUpload) {
+        await tx.fileMetadata.deleteMany({ where: { uploadId } });
+      }
+
       for (const file of processedFiles) {
         await tx.fileMetadata.create({
           data: {
@@ -343,8 +360,12 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
         });
       }
 
-      // Calculate storage adjustment (actual - reserved)
-      const storageAdjustment = totalBytes - upload.reservedBytes;
+      const baselineBytes = job.replaceUpload
+        ? BigInt(job.replaceUpload.oldTotalBytes) + upload.reservedBytes
+        : upload.reservedBytes;
+
+      // Calculate storage adjustment
+      const storageAdjustment = totalBytes - baselineBytes;
 
       // Adjust class storage (can be positive or negative)
       await tx.class.update({
@@ -365,6 +386,15 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
         }
       });
     });
+
+    if (job.replaceUpload) {
+      await Promise.all(
+        job.replaceUpload.oldStoredFiles.map(storedFileName => {
+          const filePath = path.join(FINAL_UPLOADS_DIR, classId.toString(), storedFileName);
+          return fs.unlink(filePath).catch(() => { });
+        })
+      );
+    }
 
     // Invalidate cache when status changes to completed
     await invalidateCache("UPLOADMETADATA", classId.toString());
@@ -393,31 +423,35 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     const errorReason = error instanceof Error ? error.message : "unknown_error";
 
     await prisma.$transaction(async tx => {
-      // Delete any file metadata that was created
-      await tx.fileMetadata.deleteMany({
-        where: { uploadId }
-      });
+      if (!job.replaceUpload) {
+        // Delete any file metadata that was created
+        await tx.fileMetadata.deleteMany({
+          where: { uploadId }
+        });
+      }
       const upload = await tx.upload.findUnique({
         where: { uploadId },
         select: { reservedBytes: true }
       });
 
-      if (upload && upload.reservedBytes > 0n) {
-        // Release reserved storage
-        await tx.class.update({
-          where: { classId },
-          data: { storageUsedBytes: { decrement: upload.reservedBytes } }
+      if (upload) {
+        if (upload.reservedBytes > 0n) {
+          // Release reserved storage
+          await tx.class.update({
+            where: { classId },
+            data: { storageUsedBytes: { decrement: upload.reservedBytes } }
+          });
+        }
+
+        await tx.upload.update({
+          where: { uploadId },
+          data: {
+            status: "failed",
+            errorReason,
+            reservedBytes: 0n
+          }
         });
       }
-
-      await tx.upload.update({
-        where: { uploadId },
-        data: {
-          status: "failed",
-          errorReason,
-          reservedBytes: 0n
-        }
-      });
     });
 
     await invalidateCache("UPLOADMETADATA", classId.toString());

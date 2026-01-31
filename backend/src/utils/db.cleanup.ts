@@ -275,7 +275,7 @@ export async function cleanupStuckUploads(): Promise<void> {
 
 /*
 // DEMO CLASS MIGRATIONS
-// The following functions are only invoked if a demo class is avaliable (className = "Demo", classCode = "demo").
+// The following functions are only invoked if a demo class is available (className = "Demo", classCode = "demo").
 */
 
 /*
@@ -310,7 +310,7 @@ export async function migrateUploadMetadataDates(): Promise<void> {
       }
     });
 
-    // invalidate upload metdata cache of demo class
+    // invalidate upload metadata cache of demo class
     await invalidateCache("UPLOADMETADATA", demoClass.classId.toString());
     logger.info(
       `Migrated dates of ${migratedUploadMetadata.count} upload metadata entries for demo class. (1 week)`

@@ -283,7 +283,7 @@ const classService = {
       });
       // Delete upload request records
       await tx.uploadRequest.deleteMany({
-        where: { classId: classIdToDelete} 
+        where: { classId: classIdToDelete }
       });
       // Delete all joinedClass records
       await tx.joinedClass.deleteMany({

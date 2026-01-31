@@ -34,6 +34,11 @@ export const getUploadFile = async (req: Request, res: Response, next: NextFunct
       }
       next(err);
     });
+    res.on("close", () => {
+      if (!res.writableEnded) {
+        stream.destroy();
+      }
+    });
     stream.pipe(res);
   }
   catch (error) {
@@ -44,7 +49,8 @@ export const getUploadFile = async (req: Request, res: Response, next: NextFunct
 export const editUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const files = (req.files as Express.Multer.File[]) ?? [];
-    await uploadService.editUpload(req.body, req.session, files);
+    const reservedBytes = res.locals.reservedBytes as bigint;
+    await uploadService.editUpload(req.body, req.session, files, reservedBytes);
     res.sendStatus(200);
   }
   catch (error) {

@@ -32,10 +32,12 @@ router.post(
   "/upload", 
   uploadLimiter, 
   checkAccess(["CLASS", "EDITOR"]),
-  uploadMiddleware.preflightStorageQuotaCheck,
+  // installs listeners for errors and fails
   uploadMiddleware.attachUploadCleanupOnFail,
+  // check for multer limits
   uploadMiddleware.handleFileUpload,
   uploadMiddleware.normalizeFiles,
+  uploadMiddleware.preflightStorageQuotaCheck,
   validate(uploadFileSchema),
   uploadController.queueFileUpload
 );
@@ -48,6 +50,8 @@ router.post(
   uploadMiddleware.attachUploadCleanupOnFail,
   uploadMiddleware.handleFileUpload,
   validate(editUploadSchema),
+  uploadMiddleware.normalizeFilesOptional,
+  uploadMiddleware.preflightEditStorageQuotaCheck,
   uploadController.editUpload
 );
 router.post("/delete", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);

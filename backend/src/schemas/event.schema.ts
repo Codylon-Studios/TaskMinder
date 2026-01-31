@@ -5,8 +5,8 @@ export const addEventSchema = z.object({
   query: z.object({}),
   body: z.strictObject({
     eventTypeId: z.coerce.number(),
-    name: z.string().trim().min(1),
-    description: z.string().trim().min(1).nullable().or(z.literal("")),
+    name: z.string().trim().min(1).max(256),
+    description: z.string().trim().min(1).max(1024).nullable().or(z.literal("")),
     startDate: z.coerce.number(),
     lesson: z.string().trim().min(1).nullable().or(z.literal("")),
     endDate: z.preprocess(val => {
@@ -24,8 +24,8 @@ export const editEventSchema = z.object({
   body: z.strictObject({
     eventId: z.coerce.number(),
     eventTypeId: z.coerce.number(),
-    name: z.string().trim().min(1),
-    description: z.string().trim().min(1).nullable().or(z.literal("")),
+    name: z.string().trim().min(1).max(256),
+    description: z.string().trim().min(1).max(1024).nullable().or(z.literal("")),
     startDate: z.coerce.number(),
     lesson: z.string().trim().min(1).nullable().or(z.literal("")),
     endDate: z.coerce.number().nullable(),
@@ -59,7 +59,7 @@ export const setEventTypesSchema = z.object({
     eventTypes: z.array(
       z.object({
         eventTypeId: z.union([z.literal(""), z.coerce.number()]),
-        name: z.string().trim().min(1),
+        name: z.string().trim().min(1).max(256),
         color: z.string().regex(/^#[0-9a-fA-F]{6}$/)
       })
     )

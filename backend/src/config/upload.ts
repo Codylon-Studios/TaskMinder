@@ -4,6 +4,10 @@ import path from "path";
 export const ALLOWED_MIMES = ["application/pdf", "image/jpeg", "image/png", "text/plain"];
 export const ALLOWED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".txt"];
 
+// upload limits
+export const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+export const MAX_FILES_COUNT = 20;
+
 // directories for file storage
 export const TEMP_DIR = path.join(__dirname, "../../../data/temp");
 export const QUARANTINE_DIR = path.join(__dirname, "../../../data/quarantine");

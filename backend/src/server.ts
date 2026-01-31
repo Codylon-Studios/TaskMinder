@@ -22,6 +22,7 @@ import {
   migrateUploadMetadataDates
 } from "./utils/db.cleanup";
 import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker";
+import { cleanupStaleUploadFiles } from "./utils/upload.cleanup";
 import checkAccess from "./middleware/access.middleware";
 import { ErrorHandler } from "./middleware/error.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
@@ -207,6 +208,7 @@ cron.schedule("0 0 * * *", () => {
   cleanupOldHomework();
   cleanupOldEvents();
   cleanupDeletedAccounts();
+  cleanupStaleUploadFiles();
 });
 
 // Run demo class script every week (once) - only for demo class
