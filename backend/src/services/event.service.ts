@@ -447,7 +447,7 @@ export const eventService = {
       const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId!);
 
       try {
-        await redisClient.set(updateEventTypeStylesCacheKey, css, { EX: cacheExpiration });
+        await redisClient.set(updateEventTypeStylesCacheKey, css, { expiration: { type: "EX", value: cacheExpiration } });
       }
       catch (err) {
         logger.error(`Error updating Redis cache: ${err}`);

@@ -64,6 +64,20 @@ const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany
   }));
 };
 
+type UploadListItem = ReturnType<typeof mapUploadData>[number];
+
+const uploadNameCollator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base"
+});
+
+const sortUploads = (uploads: UploadListItem[]): UploadListItem[] =>
+  uploads.sort((a, b) =>
+    a.createdAt !== b.createdAt
+      ? (a.createdAt > b.createdAt ? -1 : 1)
+      : uploadNameCollator.compare(a.uploadName ?? "", b.uploadName ?? "") || (b.uploadId - a.uploadId)
+  );
+
 const getUploadList = async (
   classId: number,
   isGetAllData: boolean,
@@ -81,7 +95,7 @@ const getUploadList = async (
       include,
       orderBy
     });
-    return mapUploadData(uploads);
+    return sortUploads(mapUploadData(uploads));
   }
 
   const cachedUploadMetadataData = await redisClient.get(cacheKey);
@@ -100,7 +114,7 @@ const getUploadList = async (
     orderBy,
     take: 50
   });
-  const uploadList = mapUploadData(uploads);
+  const uploadList = sortUploads(mapUploadData(uploads));
 
   try {
     await updateCacheData(uploadList, cacheKey);
@@ -120,9 +134,8 @@ const uploadService = {
     reservedBytes: bigint
   ) {
     const { uploadName, uploadDescription, uploadType, teamId } = body;
-    const teamIdNum = Number(teamId);
 
-    await isValidTeamId(teamIdNum, session);
+    await isValidTeamId(teamId, session);
 
     const classIdNum = Number.parseInt(session.classId!, 10);
     const accountId = session.account?.accountId ?? null;
@@ -133,7 +146,7 @@ const uploadService = {
         uploadDescription,
         uploadType,
         status: "queued",
-        teamId: teamIdNum,
+        teamId: teamId,
         classId: classIdNum,
         accountId,
         reservedBytes,
@@ -160,9 +173,19 @@ const uploadService = {
 
       await prisma.$transaction(async tx => {
         await tx.upload.delete({ where: { uploadId: upload.uploadId } });
+        if (reservedBytes > 0n) {
+          await tx.class.update({
+            where: { classId: classIdNum },
+            data: { storageUsedBytes: { decrement: reservedBytes } }
+          });
+        }
       });
 
       await removeTempFiles(files);
+
+      if (reservedBytes > 0n && typeof error === "object" && error !== null) {
+        (error as Record<string, unknown>).reservationRolledBack = true;
+      }
 
       throw error;
     }
@@ -455,7 +478,7 @@ const uploadService = {
       await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
     }
     catch (error) {
-      const bytesToRelease = usePreReserved ? 0n : additionalBytesNeeded;
+      const bytesToRelease = usePreReserved ? (reservedBytes ?? 0n) : additionalBytesNeeded;
       await prisma.$transaction(async tx => {
         if (bytesToRelease > 0n) {
           await tx.class.update({
@@ -472,6 +495,9 @@ const uploadService = {
           }
         });
       });
+      if (bytesToRelease > 0n && typeof error === "object" && error !== null) {
+        (error as Record<string, unknown>).reservationRolledBack = true;
+      }
       throw error;
     }
 

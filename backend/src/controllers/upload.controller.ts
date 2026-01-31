@@ -54,6 +54,13 @@ export const editUpload = async (req: Request, res: Response, next: NextFunction
     res.sendStatus(200);
   }
   catch (error) {
+    if (error && typeof error === "object" && (error as Record<string, unknown>).reservationRolledBack) {
+      res.locals.reservedBytes = 0n;
+      res.locals.reservationReleased = true;
+      if (res.locals.uploadCleanupState) {
+        res.locals.uploadCleanupState.reservationReleased = true;
+      }
+    }
     next(error);
   }
 };
@@ -78,6 +85,13 @@ export const queueFileUpload = async (req: Request, res: Response, next: NextFun
     res.sendStatus(200);
   }
   catch (error) {
+    if (error && typeof error === "object" && (error as Record<string, unknown>).reservationRolledBack) {
+      res.locals.reservedBytes = 0n;
+      res.locals.reservationReleased = true;
+      if (res.locals.uploadCleanupState) {
+        res.locals.uploadCleanupState.reservationReleased = true;
+      }
+    }
     next(error);
   }
 };

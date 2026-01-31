@@ -1,3 +1,4 @@
+dotenv.config();
 import { createServer } from "http";
 import path from "path";
 import connectPgSimple from "connect-pg-simple";
@@ -38,8 +39,6 @@ import subjects from "./routes/subject.route";
 import teams from "./routes/team.route";
 import classes from "./routes/class.route";
 import uploads from "./routes/upload.route";
-
-dotenv.config();
 
 prisma
   .$connect()

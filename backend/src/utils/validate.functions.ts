@@ -6,9 +6,8 @@ import { Session, SessionData } from "express-session";
 
 async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   try {
-    await redisClient.set(key, JSON.stringify(data, BigIntreplacer), {
-      EX: cacheExpiration
-    });
+    await redisClient.set(key, JSON.stringify(data, BigIntreplacer), 
+      { expiration: { type: "EX", value: cacheExpiration } });
   }
   catch (err) {
     logger.error(`Error updating Redis ${key} cache: ${err}`);

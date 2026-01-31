@@ -137,7 +137,9 @@ const verifyFileType = async (filePath: string, claimedMime: string): Promise<vo
         return;
       }
       finally {
-        await fileHandle.close().catch(() => { });
+        await fileHandle.close().catch(() => {
+          logger.error("Failed to open file during text/plain sample checking");
+        });
       }
     }
     catch {
@@ -300,6 +302,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
 
   // Declare processedFiles outside try block so it's accessible in catch
   const processedFiles: Array<{ storedFileName: string; originalName: string; mimeType: string; size: number }> = [];
+  let metadataReplaced = false;
 
   try {
     // Update status to processing
@@ -388,6 +391,10 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     });
 
     if (job.replaceUpload) {
+      metadataReplaced = true;
+    }
+
+    if (job.replaceUpload) {
       await Promise.all(
         job.replaceUpload.oldStoredFiles.map(storedFileName => {
           const filePath = path.join(FINAL_UPLOADS_DIR, classId.toString(), storedFileName);
@@ -423,7 +430,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     const errorReason = error instanceof Error ? error.message : "unknown_error";
 
     await prisma.$transaction(async tx => {
-      if (!job.replaceUpload) {
+      if (!job.replaceUpload || metadataReplaced) {
         // Delete any file metadata that was created
         await tx.fileMetadata.deleteMany({
           where: { uploadId }

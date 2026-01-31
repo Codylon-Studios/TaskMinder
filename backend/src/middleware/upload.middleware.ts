@@ -178,6 +178,9 @@ export const attachUploadCleanupOnFail = (
     res.off("finish", onFinish);
     res.off("close", onClose);
     res.off("error", onError);
+    if (res.locals.uploadCleanupListeners) {
+      delete res.locals.uploadCleanupListeners;
+    }
   };
 
   const cleanup = async (reason: string): Promise<void> => {
@@ -352,8 +355,16 @@ const reserveStorage = async (
       storageUsedBytes: true
     }
   });
-  // classQuota certainly exists becuase of the checkAccess middleware
-  if (classQuota!.storageUsedBytes + bytesToReserve > classQuota!.storageQuotaBytes) {
+  if (!classQuota){
+    const err: RequestError = {
+      name: "Not Found",
+      status: 404,
+      message: "Class not found",
+      expected: true
+    };
+    throw err;
+  }
+  if (classQuota.storageUsedBytes + bytesToReserve > classQuota.storageQuotaBytes) {
     const err: RequestError = {
       name: "Insufficient Storage",
       status: 507,

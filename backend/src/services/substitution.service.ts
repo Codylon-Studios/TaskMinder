@@ -81,7 +81,7 @@ export async function loadSubstitutionData(
       data: substitutionsResult,
       timestamp: Date.now()
     };
-    await redisClient.set(cacheKey, JSON.stringify(cachePayload), { EX: cacheExpiration });
+    await redisClient.set(cacheKey, JSON.stringify(cachePayload), { expiration: { type: "EX", value: cacheExpiration } });
     
     return substitutionsResult;
   } 

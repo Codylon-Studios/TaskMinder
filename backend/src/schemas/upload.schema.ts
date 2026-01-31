@@ -5,7 +5,7 @@ export const getUploadMetadataSchema = z.object({
   // omit body due to GET request
   params: z.object({}),
   query: z.object({
-    all: z.enum(["true", "false"])
+    all: z.enum(["true", "false"]).default("false")
   })
 });
 
