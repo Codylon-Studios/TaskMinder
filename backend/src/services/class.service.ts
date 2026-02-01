@@ -9,6 +9,7 @@ import fs from "fs/promises";
 import path from "path";
 import { randomInt } from "crypto";
 import { FINAL_UPLOADS_DIR } from "../config/upload";
+import { encryptionManager } from "../utils/encryption.manager";
 import {
   changeClassNameTypeBody,
   changeDefaultPermissionTypeBody,
@@ -47,7 +48,11 @@ const classService = {
       };
       throw err;
     }
-    return JSON.parse(JSON.stringify(classInfo, BigIntreplacer));
+    const decryptedClassInfo = {
+      ...classInfo,
+      classCode: encryptionManager.decrypt(classInfo.classCode)
+    };
+    return JSON.parse(JSON.stringify(decryptedClassInfo, BigIntreplacer));
   },
 
   async createClass(
@@ -67,9 +72,12 @@ const classService = {
       throw err;
     }
 
+    const encryptedClassCode = encryptionManager.encrypt(classCode);
+    const classCodeHash = encryptionManager.hash(classCode);
     const baseData = {
       className: classDisplayName,
-      classCode: classCode,
+      classCode: encryptedClassCode,
+      classCodeHash: classCodeHash,
       createdAt: Date.now(),
       isTestClass: isTestClass,
       dsbMobileActivated: false,
@@ -94,7 +102,7 @@ const classService = {
             createdAt: Date.now()
           }
         });
-        return createdClass.classCode;
+        return classCode;
       });
     }
     catch {
@@ -109,6 +117,15 @@ const classService = {
   },
   async joinClass(reqData: joinClassTypeBody, session: Session & Partial<SessionData>) {
     const { classCode } = reqData;
+    if (encryptionManager.isEncrypted(classCode)) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Invalid class code",
+        expected: true
+      };
+      throw err;
+    }
     if (session.classId) {
       const err: RequestError = {
         name: "Bad Request",
@@ -118,11 +135,33 @@ const classService = {
       };
       throw err;
     }
-    const targetClass = await prisma.class.findUnique({
+    // try to find class by hash
+    const encryptedClassCode = encryptionManager.encrypt(classCode);
+    const classCodeHash = encryptionManager.hash(classCode);
+    let targetClass = await prisma.class.findUnique({
       where: {
-        classCode: classCode
+        classCodeHash: classCodeHash
       }
     });
+    // if not found, search with non-encrypted value 
+    if (!targetClass) {
+      targetClass = await prisma.class.findUnique({
+        where: {
+          classCode: classCode
+        }
+      });
+      // if found, encrypt the code and update with encrypted class code
+      if (targetClass && !encryptionManager.isEncrypted(targetClass.classCode)) {
+        await prisma.class.update({
+          where: { classId: targetClass.classId },
+          data: {
+            classCode: encryptedClassCode,
+            classCodeHash: classCodeHash
+          }
+        });
+        targetClass = { ...targetClass, classCode: encryptedClassCode };
+      }
+    }
     if (!targetClass) {
       const err: RequestError = {
         name: "Not Found",
@@ -542,18 +581,28 @@ const classService = {
     const maxAttempts = 10;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       code = generateRandomBase62String();
-      const exists = await prisma.class.findUnique({
+      const encryptedCode = encryptionManager.encrypt(code);
+      const classCodeHash = encryptionManager.hash(code);
+      let exists = await prisma.class.findUnique({
         where: {
-          classCode: code
+          classCodeHash: classCodeHash
         }
       });
+      if (!exists) {
+        exists = await prisma.class.findUnique({
+          where: {
+            classCode: code
+          }
+        });
+      }
       if (!exists) {
         await prisma.class.update({
           where: {
             classId: parseInt(session.classId!, 10)
           },
           data: {
-            classCode: code
+            classCode: encryptedCode,
+            classCodeHash: classCodeHash
           }
         });
         const io = socketIO.getIO();
