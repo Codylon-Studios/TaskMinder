@@ -74,6 +74,7 @@ model Class {
   classId                 Int           @id @default(autoincrement()) @map("classId")
   className               String
   classCode               String        @unique
+  classCodeHash           String?       @unique // this will be made non-nullable after migration
   createdAt               BigInt
   isTestClass             Boolean
   defaultPermissionLevel  Int

@@ -25,6 +25,8 @@ services:
       - session_secret
       - unsafe_deactivate_csp
       - database_url
+      - encryption_key
+      - encryption_key_secondary
     depends_on:
       postgres:
         condition: service_healthy
@@ -153,10 +155,12 @@ secrets:
     file: ./docker_secrets/unsafe_deactivate_csp.txt
   database_url:
     file: ./docker_secrets/database_url.txt
+  encryption_key:
+    file: ./docker_secrets/encryption_key.txt
+  encryption_key_secondary:
+    file: ./docker_secrets/encryption_key_secondary.txt
 
 volumes:
-  # remove the following line once migrated
-  postgres-data:
   postgres-data-18:
   prometheus-data:
   loki-data:

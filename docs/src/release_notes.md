@@ -4,6 +4,19 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.3.0] - 2026-03-??
+
+### Breaking Change
+* feat(encryption): introduce server side encryption
+
+### Added
+* feat(team): add private teams (with invite link/code)
+
+### Changed
+* chore(api): rename and change type of API routes
+
+---
+
 ## \[v2.2.5] - 2026-02-??
 
 ### Breaking Change

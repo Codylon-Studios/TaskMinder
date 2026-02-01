@@ -1,9 +1,9 @@
+import * as dotenv from "dotenv";
 dotenv.config();
 import { createServer } from "http";
 import path from "path";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
-import * as dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
