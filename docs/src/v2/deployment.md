@@ -263,7 +263,7 @@ mkdir db-backups
 Before starting the application, create the following **text files inside the `docker_secrets/` folder**. These files are used as Docker secrets for configuration:
 
 | **Filename**                   | **Description**                                                                                                |
-| ---------------------------    | -------------------------------------------------------------------------------------------------------------- |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `db_name.txt`                  | Name of the PostgreSQL database.                                                                               |
 | `db_password.txt`              | Password for the PostgreSQL database user.                                                                     |
 | `db_host.txt`                  | Host for the database, usually postgres when running in docker.                                                |

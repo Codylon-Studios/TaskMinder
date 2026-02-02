@@ -16,6 +16,14 @@ async function migrateClassCodes(): Promise<void> {
   const updated = await prisma.$transaction(async tx => {
     let updatedCount = 0;
     for (const classEntry of classes) {
+      if (
+        encryptionManager.isEncrypted(classEntry.classCode) &&
+        classEntry.classCodeHash === encryptionManager.hash(
+          encryptionManager.decrypt(classEntry.classCode)
+        )
+      ) {
+        continue;
+      }
       let plaintext = classEntry.classCode;
       if (encryptionManager.isEncrypted(classEntry.classCode)) {
         plaintext = encryptionManager.decrypt(classEntry.classCode);
@@ -23,12 +31,6 @@ async function migrateClassCodes(): Promise<void> {
 
       const encryptedCode = encryptionManager.encrypt(plaintext);
       const classCodeHash = encryptionManager.hash(plaintext);
-      if (
-        encryptionManager.isEncrypted(classEntry.classCode) &&
-        classEntry.classCodeHash === classCodeHash
-      ) {
-        continue;
-      }
       await tx.class.update({
         where: { classId: classEntry.classId },
         data: {

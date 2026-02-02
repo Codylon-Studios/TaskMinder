@@ -164,16 +164,14 @@ const classService = {
           });
         }
 
-        const migrated = await tx.class.findUnique({
-          where: { classCodeHash: classCodeHash }
-        });
-        if (migrated) {
-          return migrated;
-        }
-
-        return await tx.class.findUnique({
-          where: { classCode: classCode }
-        });
+        return (
+          (await tx.class.findUnique({
+            where: { classCodeHash: classCodeHash }
+          })) ??
+          (await tx.class.findUnique({
+            where: { classCode: classCode }
+          }))
+        );
       });
     }
     if (!targetClass) {

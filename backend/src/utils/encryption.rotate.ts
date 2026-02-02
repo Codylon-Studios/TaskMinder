@@ -20,7 +20,13 @@ async function rotateClassCodeKeys(): Promise<void> {
   const updated = await prisma.$transaction(async tx => {
     let updatedCount = 0;
     for (const classEntry of classes) {
-      const plaintext = encryptionManager.decryptWithSecondary(classEntry.classCode);
+      let plaintext: string;
+      try {
+        plaintext = encryptionManager.decrypt(classEntry.classCode);
+      }
+      catch {
+        plaintext = encryptionManager.decryptWithSecondary(classEntry.classCode);
+      }
       const reEncrypted = encryptionManager.encrypt(plaintext);
       const classCodeHash = encryptionManager.hash(plaintext);
       if (
