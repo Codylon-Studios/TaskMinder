@@ -34,6 +34,9 @@ export ENCRYPTION_KEY
 ENCRYPTION_KEY_SECONDARY="$(cat /run/secrets/encryption_key_secondary)"
 export ENCRYPTION_KEY_SECONDARY
 
+ENCRYPTION_KEY_LOOKUP="$(cat /run/secrets/encryption_key_lookup)"
+export ENCRYPTION_KEY_LOOKUP
+
 # ==============================================================================
 # Ensure permissions for data are returned to bun user
 # ==============================================================================

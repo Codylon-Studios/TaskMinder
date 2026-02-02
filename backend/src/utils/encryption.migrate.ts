@@ -1,3 +1,5 @@
+import * as dotenv from "dotenv";
+dotenv.config();
 import prisma from "../config/prisma";
 import logger from "../config/logger";
 import { encryptionManager } from "./encryption.manager";
@@ -11,30 +13,35 @@ async function migrateClassCodes(): Promise<void> {
     }
   });
 
-  let updated = 0;
-  for (const classEntry of classes) {
-    let plaintext = classEntry.classCode;
-    if (encryptionManager.isEncrypted(classEntry.classCode)) {
-      plaintext = encryptionManager.decrypt(classEntry.classCode);
-    }
-
-    const encryptedCode = encryptionManager.encrypt(plaintext);
-    const classCodeHash = encryptionManager.hash(plaintext);
-    if (
-      encryptionManager.isEncrypted(classEntry.classCode) &&
-      classEntry.classCodeHash === classCodeHash
-    ) {
-      continue;
-    }
-    await prisma.class.update({
-      where: { classId: classEntry.classId },
-      data: {
-        classCode: encryptedCode,
-        classCodeHash: classCodeHash
+  const updated = await prisma.$transaction(async tx => {
+    let updatedCount = 0;
+    for (const classEntry of classes) {
+      if (
+        encryptionManager.isEncrypted(classEntry.classCode) &&
+        classEntry.classCodeHash === encryptionManager.hash(
+          encryptionManager.decrypt(classEntry.classCode)
+        )
+      ) {
+        continue;
       }
-    });
-    updated += 1;
-  }
+      let plaintext = classEntry.classCode;
+      if (encryptionManager.isEncrypted(classEntry.classCode)) {
+        plaintext = encryptionManager.decrypt(classEntry.classCode);
+      }
+
+      const encryptedCode = encryptionManager.encrypt(plaintext);
+      const classCodeHash = encryptionManager.hash(plaintext);
+      await tx.class.update({
+        where: { classId: classEntry.classId },
+        data: {
+          classCode: encryptedCode,
+          classCodeHash: classCodeHash
+        }
+      });
+      updatedCount += 1;
+    }
+    return updatedCount;
+  });
 
   logger.info(`Class code migration complete. Updated ${updated} records.`);
 }

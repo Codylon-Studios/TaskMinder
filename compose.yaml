@@ -27,6 +27,7 @@ services:
       - database_url
       - encryption_key
       - encryption_key_secondary
+      - encryption_key_lookup
     depends_on:
       postgres:
         condition: service_healthy
@@ -159,6 +160,8 @@ secrets:
     file: ./docker_secrets/encryption_key.txt
   encryption_key_secondary:
     file: ./docker_secrets/encryption_key_secondary.txt
+  encryption_key_lookup:
+    file: ./docker_secrets/encryption_key_lookup.txt
 
 volumes:
   postgres-data-18:

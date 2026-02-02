@@ -48,9 +48,24 @@ const classService = {
       };
       throw err;
     }
+    let decryptedClassCode: string;
+    try {
+      decryptedClassCode = encryptionManager.decrypt(classInfo.classCode);
+    }
+    catch {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message:
+          "Failed to decrypt class code. The stored value may be corrupted or encrypted with a different key.",
+        expected: true
+      };
+      throw err;
+    }
+
     const decryptedClassInfo = {
       ...classInfo,
-      classCode: encryptionManager.decrypt(classInfo.classCode)
+      classCode: decryptedClassCode
     };
     return JSON.parse(JSON.stringify(decryptedClassInfo, BigIntreplacer));
   },
@@ -121,7 +136,7 @@ const classService = {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
-        message: "Invalid class code",
+        message: "Invalid class code (starting with encryption prefix)",
         expected: true
       };
       throw err;
@@ -136,31 +151,43 @@ const classService = {
       throw err;
     }
     // try to find class by hash
-    const encryptedClassCode = encryptionManager.encrypt(classCode);
     const classCodeHash = encryptionManager.hash(classCode);
     let targetClass = await prisma.class.findUnique({
       where: {
         classCodeHash: classCodeHash
       }
     });
-    // if not found, search with non-encrypted value 
+    // if not found, search with non-encrypted value
     if (!targetClass) {
-      targetClass = await prisma.class.findUnique({
-        where: {
-          classCode: classCode
-        }
-      });
-      // if found, encrypt the code and update with encrypted class code
-      if (targetClass && !encryptionManager.isEncrypted(targetClass.classCode)) {
-        await prisma.class.update({
-          where: { classId: targetClass.classId },
+      // Use transaction and idempotent update to prevent race conditions during migration
+      targetClass = await prisma.$transaction(async tx => {
+        const encryptedClassCode = encryptionManager.encrypt(classCode);
+        const updateResult = await tx.class.updateMany({
+          where: {
+            classCode: classCode,
+            classCodeHash: null
+          },
           data: {
             classCode: encryptedClassCode,
             classCodeHash: classCodeHash
           }
         });
-        targetClass = { ...targetClass, classCode: encryptedClassCode };
-      }
+
+        if (updateResult.count > 0) {
+          return await tx.class.findUnique({
+            where: { classCodeHash: classCodeHash }
+          });
+        }
+
+        return (
+          (await tx.class.findUnique({
+            where: { classCodeHash: classCodeHash }
+          })) ??
+          (await tx.class.findUnique({
+            where: { classCode: classCode }
+          }))
+        );
+      });
     }
     if (!targetClass) {
       const err: RequestError = {
@@ -583,18 +610,11 @@ const classService = {
       code = generateRandomBase62String();
       const encryptedCode = encryptionManager.encrypt(code);
       const classCodeHash = encryptionManager.hash(code);
-      let exists = await prisma.class.findUnique({
+      const exists = await prisma.class.findUnique({
         where: {
           classCodeHash: classCodeHash
         }
       });
-      if (!exists) {
-        exists = await prisma.class.findUnique({
-          where: {
-            classCode: code
-          }
-        });
-      }
       if (!exists) {
         await prisma.class.update({
           where: {

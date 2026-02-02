@@ -65,6 +65,7 @@ export async function cleanupTestClasses(): Promise<void> {
     await Promise.all(
       classIdsToDelete.map(async classId => {
         await invalidateCache("UPLOADMETADATA", classId.toString());
+        await invalidateCache("UPLOADREQUESTS", classId.toString());
         await invalidateCache("HOMEWORK", classId.toString());
         await invalidateCache("EVENT", classId.toString());
         await invalidateCache("LESSON", classId.toString());
@@ -286,7 +287,7 @@ export async function migrateUploadMetadataDates(): Promise<void> {
   try {
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
 
-    const demoCodeCandidates = ["demo", "Demo"].map(code =>
+    const demoCodeCandidates = ["demo", "Demo", "DEMO", "DeMo"].map(code =>
       encryptionManager.hash(code)
     );
     const demoClass = await prisma.class.findFirst({
