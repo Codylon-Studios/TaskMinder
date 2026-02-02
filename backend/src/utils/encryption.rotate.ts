@@ -21,20 +21,23 @@ async function rotateClassCodeKeys(): Promise<void> {
     let updatedCount = 0;
     for (const classEntry of classes) {
       let plaintext: string;
+      let decryptedWithSecondary = false;
       try {
         plaintext = encryptionManager.decrypt(classEntry.classCode);
       }
       catch {
         plaintext = encryptionManager.decryptWithSecondary(classEntry.classCode);
+        decryptedWithSecondary = true;
       }
-      const reEncrypted = encryptionManager.encrypt(plaintext);
+
       const classCodeHash = encryptionManager.hash(plaintext);
-      if (
-        classEntry.classCode === reEncrypted &&
-        classEntry.classCodeHash === classCodeHash
-      ) {
+
+      if (!decryptedWithSecondary && classEntry.classCodeHash === classCodeHash) {
         continue;
       }
+
+      const reEncrypted = encryptionManager.encrypt(plaintext);
+
       await tx.class.update({
         where: { classId: classEntry.classId },
         data: {

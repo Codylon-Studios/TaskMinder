@@ -64,7 +64,7 @@ export class EncryptionManager {
     }
 
     const primaryKey = parseBase64Key(primaryKeyValue, "ENCRYPTION_KEY");
-    const lookupKey = parseBase64Key(lookupKeyValue, "ENCRYPTION_LOOKUP_KEY");
+    const lookupKey = parseBase64Key(lookupKeyValue, "ENCRYPTION_KEY_LOOKUP");
     const secondaryKeys = [parseBase64Key(secondaryKeyValue, "ENCRYPTION_KEY_SECONDARY")];
 
     return new EncryptionManager(primaryKey, secondaryKeys, lookupKey);

@@ -48,9 +48,24 @@ const classService = {
       };
       throw err;
     }
+    let decryptedClassCode: string;
+    try {
+      decryptedClassCode = encryptionManager.decrypt(classInfo.classCode);
+    }
+    catch {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message:
+          "Failed to decrypt class code. The stored value may be corrupted or encrypted with a different key.",
+        expected: true
+      };
+      throw err;
+    }
+
     const decryptedClassInfo = {
       ...classInfo,
-      classCode: encryptionManager.decrypt(classInfo.classCode)
+      classCode: decryptedClassCode
     };
     return JSON.parse(JSON.stringify(decryptedClassInfo, BigIntreplacer));
   },
