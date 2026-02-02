@@ -68,7 +68,7 @@ This documentation describes all database tables defined in the current Prisma s
 | :--------------------- | :-------- | :--------------------------------------------- | :----------------------------------------------------------- |
 | classId                | Integer   | Unique class identifier                        | -                                                            |
 | className              | String    | The name of the class                          | May identify a specific group of students                    |
-| classCode              | String    | Unique encoded code for students to join the class     | Could lead to abusive joins if class code is breached        |
+| classCode              | String    | Unique encrypted code for students to join the class     | Could lead to abusive joins if class code is breached        |
 | classCodeHashed        | String    | Unique hashed code for students to join the class (fast lookup)    | Could lead to abusive joins if class code is breached        |
 | createdAt              | BigInt    | Timestamp of class creation                    | -                                                            |
 | isTestClass            | Boolean   | Flag to identify test/demo classes             | -                                                            |

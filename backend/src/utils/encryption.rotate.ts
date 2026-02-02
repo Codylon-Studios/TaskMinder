@@ -1,3 +1,5 @@
+import * as dotenv from "dotenv";
+dotenv.config();
 import prisma from "../config/prisma";
 import logger from "../config/logger";
 import { encryptionManager } from "./encryption.manager";
@@ -15,28 +17,29 @@ async function rotateClassCodeKeys(): Promise<void> {
     }
   });
 
-  let updated = 0;
-  for (const classEntry of classes) {
-    const plaintext = encryptionManager.decrypt(classEntry.classCode);
-    const reEncrypted = encryptionManager.encrypt(plaintext);
-    const classCodeHash = encryptionManager.hash(plaintext);
-
-    if (
-      classEntry.classCode === reEncrypted &&
-      classEntry.classCodeHash === classCodeHash
-    ) {
-      continue;
-    }
-
-    await prisma.class.update({
-      where: { classId: classEntry.classId },
-      data: {
-        classCode: reEncrypted,
-        classCodeHash: classCodeHash
+  const updated = await prisma.$transaction(async tx => {
+    let updatedCount = 0;
+    for (const classEntry of classes) {
+      const plaintext = encryptionManager.decryptWithSecondary(classEntry.classCode);
+      const reEncrypted = encryptionManager.encrypt(plaintext);
+      const classCodeHash = encryptionManager.hash(plaintext);
+      if (
+        classEntry.classCode === reEncrypted &&
+        classEntry.classCodeHash === classCodeHash
+      ) {
+        continue;
       }
-    });
-    updated += 1;
-  }
+      await tx.class.update({
+        where: { classId: classEntry.classId },
+        data: {
+          classCode: reEncrypted,
+          classCodeHash: classCodeHash
+        }
+      });
+      updatedCount += 1;
+    }
+    return updatedCount;
+  });
 
   logger.info(`Key rotation complete. Re-encrypted ${updated} records.`);
 }

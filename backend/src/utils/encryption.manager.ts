@@ -1,13 +1,18 @@
 import {
   createCipheriv,
   createDecipheriv,
+  createHash,
   createHmac,
   hkdfSync,
   randomBytes
 } from "crypto";
+import logger from "../config/logger";
 
 const ENCRYPTION_PREFIX = "enc:v1:";
-const HKDF_SALT = Buffer.alloc(0);
+// Derive a fixed 32-byte salt from a descriptive string
+const HKDF_SALT = createHash("sha256")
+  .update("TaskMinder-Encryption-Key-Salt-v1", "utf8")
+  .digest();
 
 const deriveKey = (masterKey: Buffer, info: string): Buffer =>
   Buffer.from(hkdfSync("sha256", masterKey, HKDF_SALT, Buffer.from(info), 32));
@@ -28,14 +33,16 @@ const parseBase64Key = (keyValue: string, envName: string): Buffer => {
 export class EncryptionManager {
   private readonly primaryEncKey: Buffer;
   private readonly lookupKey: Buffer;
+  private readonly secondaryEncKeys: Buffer[];
   private readonly decryptKeys: Buffer[];
 
-  private constructor(primaryKey: Buffer, secondaryKeys: Buffer[]) {
+  private constructor(primaryKey: Buffer, secondaryKeys: Buffer[], lookupKey: Buffer) {
     this.primaryEncKey = deriveKey(primaryKey, "taskminder:enc");
-    this.lookupKey = deriveKey(primaryKey, "taskminder:lookup");
+    this.lookupKey = deriveKey(lookupKey, "taskminder:lookup");
+    this.secondaryEncKeys = secondaryKeys.map(key => deriveKey(key, "taskminder:enc"));
     this.decryptKeys = [
       this.primaryEncKey,
-      ...secondaryKeys.map(key => deriveKey(key, "taskminder:enc"))
+      ...this.secondaryEncKeys
     ];
   }
 
@@ -46,12 +53,21 @@ export class EncryptionManager {
     }
 
     const secondaryKeyValue = process.env.ENCRYPTION_KEY_SECONDARY;
-    const primaryKey = parseBase64Key(primaryKeyValue, "ENCRYPTION_KEY");
-    const secondaryKeys = secondaryKeyValue
-      ? [parseBase64Key(secondaryKeyValue, "ENCRYPTION_KEY_SECONDARY")]
-      : [];
+    if (!secondaryKeyValue) {
+      throw new Error("ENCRYPTION_KEY_SECONDARY is required.");
+    }
 
-    return new EncryptionManager(primaryKey, secondaryKeys);
+    const lookupKeyValue = process.env.ENCRYPTION_KEY_LOOKUP;
+
+    if (!lookupKeyValue) {
+      throw new Error("ENCRYPTION_KEY_LOOKUP is required.");
+    }
+
+    const primaryKey = parseBase64Key(primaryKeyValue, "ENCRYPTION_KEY");
+    const lookupKey = parseBase64Key(lookupKeyValue, "ENCRYPTION_LOOKUP_KEY");
+    const secondaryKeys = [parseBase64Key(secondaryKeyValue, "ENCRYPTION_KEY_SECONDARY")];
+
+    return new EncryptionManager(primaryKey, secondaryKeys, lookupKey);
   }
 
   isEncrypted(value: string): boolean {
@@ -78,7 +94,7 @@ export class EncryptionManager {
     return `${ENCRYPTION_PREFIX}${iv.toString("base64")}:${tag.toString("base64")}:${ciphertext.toString("base64")}`;
   }
 
-  decrypt(payload: string): string {
+  private decryptWithKeys(payload: string, keys: Buffer[]): string {
     if (!this.isEncrypted(payload)) {
       return payload;
     }
@@ -92,7 +108,7 @@ export class EncryptionManager {
     const tag = Buffer.from(parts[3], "base64");
     const ciphertext = Buffer.from(parts[4], "base64");
 
-    for (const key of this.decryptKeys) {
+    for (const key of keys) {
       try {
         const decipher = createDecipheriv("aes-256-gcm", key, iv);
         decipher.setAuthTag(tag);
@@ -103,11 +119,20 @@ export class EncryptionManager {
         return plaintext.toString("utf8");
       }
       catch {
+        // Intentionally do not log per-key failures to avoid timing/log side-channels
         continue;
       }
     }
-
+    logger.error("Unable to decrypt payload with available keys.");
     throw new Error("Unable to decrypt payload with available keys.");
+  }
+
+  decrypt(payload: string): string {
+    return this.decryptWithKeys(payload, this.decryptKeys);
+  }
+
+  decryptWithSecondary(payload: string): string {
+    return this.decryptWithKeys(payload, this.secondaryEncKeys);
   }
 }
 
