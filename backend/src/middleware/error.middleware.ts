@@ -1,9 +1,10 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
 import { performUploadCleanup } from "../utils/upload.cleanup";
 
-export async function ErrorHandler(err: RequestError, req: Request, res: Response): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function ErrorHandler(err: RequestError, req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Clean up temp files and roll back reserved storage quota if needed
     await performUploadCleanup(req, res, "error");
@@ -22,7 +23,7 @@ export async function ErrorHandler(err: RequestError, req: Request, res: Respons
     }
   }
   catch (err) {
-    logger.warn("An error occured in the error handler middleware", {
+    logger.warn("An error occurred in the error handler middleware", {
       requestId: res.locals.requestId,
       method: req.method,
       path: req.originalUrl || req.url,
