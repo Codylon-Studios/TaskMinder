@@ -3,6 +3,7 @@ import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } fr
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import sass from "sass";
 import { default as prisma } from "../config/prisma";
+import { Prisma } from "@prisma/client";
 import {
   isValidColor,
   isValidTeamId,
@@ -69,23 +70,48 @@ export const eventService = {
   async pinEvent(reqData: pinEventTypeBody, session: Session & Partial<SessionData>) {
     const { eventId, pinStatus } = reqData;
 
-    const updated = await prisma.event.updateMany({
+    const existingEvent = await prisma.event.findFirst({
       where: {
         eventId: eventId,
         classId: parseInt(session.classId!, 10)
       },
-      data: {
-        isPinned: pinStatus
+      select: {
+        teamId: true
       }
     });
 
-    if (updated.count === 0) {
+    if (!existingEvent) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
         message: "Event not found",
         expected: true
       };
+      throw err;
+    }
+
+    await isValidTeamId(existingEvent.teamId, session);
+
+    try {
+      await prisma.event.update({
+        where: {
+          eventId: eventId
+        },
+        data: {
+          isPinned: pinStatus
+        }
+      });
+    }
+    catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+        const reqErr: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Event not found",
+          expected: true
+        };
+        throw reqErr;
+      }
       throw err;
     }
 
@@ -114,7 +140,7 @@ export const eventService = {
           lesson: lesson,
           endDate: endDate,
           teamId: teamId,
-          createdAt: Date.now()
+          createdAt: BigInt(Date.now())
         }
       });
     }
@@ -292,7 +318,7 @@ export const eventService = {
               classId,
               name: eventType.name,
               color: eventType.color,
-              createdAt: Date.now()
+              createdAt: BigInt(Date.now())
             }
           });
         }

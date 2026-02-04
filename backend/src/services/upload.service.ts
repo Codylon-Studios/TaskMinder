@@ -90,54 +90,51 @@ const getUploadList = async (
   teamFilter?: Set<number>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
-  if (teamFilter) {
-    const uploads = await prisma.upload.findMany({
-      where: {
-        classId,
-        OR: [
-          { teamId: -1 },
-          { teamId: { in: Array.from(teamFilter) } }
-        ]
-      },
-      include,
-      orderBy,
-      take: isGetAllData ? undefined : 50
-    });
-    return sortUploads(mapUploadData(uploads));
-  }
-
+  let uploadList: UploadListItem[] = [];
+  // if get all metadata flag is set -> get all data from db and sort
+  // cache only caches first 50 metadata items due to storage constraints 
   if (isGetAllData) {
     const uploads = await prisma.upload.findMany({
       where: { classId },
       include,
       orderBy
     });
-    return sortUploads(mapUploadData(uploads));
+    uploadList = sortUploads(mapUploadData(uploads));
   }
-
-  const cachedUploadMetadataData = await redisClient.get(cacheKey);
-  if (cachedUploadMetadataData) {
-    try {
-      return JSON.parse(cachedUploadMetadataData);
+  else {
+    // metadata get all data flag is false -> get data from cache
+    const cachedUploadMetadataData = await redisClient.get(cacheKey);
+    if (cachedUploadMetadataData) {
+      try {
+        uploadList = JSON.parse(cachedUploadMetadataData) as UploadListItem[];
+      }
+      catch (error) {
+        logger.error(`Error parsing Redis data: ${error}`);
+        // fall through to fetch from database
+      }
     }
-    catch (error) {
-      logger.error(`Error parsing Redis data: ${error}`);
+    // if no cache yet -> fetch from DB and sort
+    if (uploadList.length === 0) {
+      const uploads = await prisma.upload.findMany({
+        where: { classId },
+        include,
+        orderBy,
+        take: 50
+      });
+      uploadList = sortUploads(mapUploadData(uploads));
+
+      // update cache and apply filter
+      try {
+        await updateCacheData(uploadList, cacheKey);
+      }
+      catch (err) {
+        logger.error(`Error updating Redis data: ${err}`);
+        // fall through to prevent unwanted crashes for users
+      }
     }
   }
-
-  const uploads = await prisma.upload.findMany({
-    where: { classId },
-    include,
-    orderBy,
-    take: 50
-  });
-  const uploadList = sortUploads(mapUploadData(uploads));
-
-  try {
-    await updateCacheData(uploadList, cacheKey);
-  }
-  catch (err) {
-    logger.error(`Error updating Redis data: ${err}`);
+  if (teamFilter) {
+    return uploadList.filter(upload => upload.teamId === -1 || teamFilter.has(upload.teamId));
   }
 
   return uploadList;
@@ -167,7 +164,7 @@ const uploadService = {
         classId: classIdNum,
         accountId,
         reservedBytes,
-        createdAt: Date.now()
+        createdAt: BigInt(Date.now())
       }
     });
 
@@ -576,6 +573,8 @@ const uploadService = {
       throw err;
     }
 
+    await isValidTeamId(uploadData.teamId, session);
+
     // Delete all physical files from disk
     const classDir = path.join(FINAL_UPLOADS_DIR, classIdNum.toString());
     for (const file of uploadData.Files) {
@@ -690,6 +689,8 @@ const uploadService = {
       };
       throw err;
     }
+
+    await isValidTeamId(existingRequest.teamId, session);
 
     await prisma.uploadRequest.delete({ where: { uploadRequestId } });
 

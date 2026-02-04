@@ -1,16 +1,17 @@
 import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import { default as prisma } from "../config/prisma";
+import { Prisma } from "@prisma/client";
 import { getAccessibleTeamIds, isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
-import { 
-  addHomeworkTypeBody, 
-  checkHomeworkTypeBody, 
-  deleteHomeworkTypeBody, 
-  editHomeworkTypeBody, 
-  pinHomeworkTypeBody 
+import {
+  addHomeworkTypeBody,
+  checkHomeworkTypeBody,
+  deleteHomeworkTypeBody,
+  editHomeworkTypeBody,
+  pinHomeworkTypeBody
 } from "../schemas/homework.schema";
 
 const homeworkService = {
@@ -31,7 +32,7 @@ const homeworkService = {
           assignmentDate: assignmentDate,
           submissionDate: submissionDate,
           teamId: teamId,
-          createdAt: Date.now()
+          createdAt: BigInt(Date.now())
         }
       });
     }
@@ -60,7 +61,7 @@ const homeworkService = {
 
     const homework = await prisma.homework.findFirst({
       where: { homeworkId, classId },
-      select: { homeworkId: true }
+      select: { homeworkId: true, teamId: true }
     });
 
     if (!homework) {
@@ -73,13 +74,22 @@ const homeworkService = {
       throw err;
     }
 
+    await isValidTeamId(homework.teamId, session);
+
     await prisma.$transaction(async tx => {
-      if (checkStatus === true) {
-        await tx.homeworkCheck.createMany({
-          data: [{ accountId, homeworkId, createdAt: Date.now() }],
-          skipDuplicates: true // prevents race condition P2002 errors
+      if (checkStatus) {
+        await tx.homeworkCheck.upsert({
+          where: {
+            accountId_homeworkId: { accountId, homeworkId }
+          },
+          create: {
+            accountId,
+            homeworkId,
+            createdAt: BigInt(Date.now())
+          },
+          update: {} // no-op update
         });
-      } 
+      }
       else {
         await tx.homeworkCheck.deleteMany({
           where: { accountId, homeworkId }
@@ -127,7 +137,7 @@ const homeworkService = {
     await isValidTeamId(teamId, session);
     try {
       const updated = await prisma.homework.updateMany({
-        where: { 
+        where: {
           homeworkId: homeworkId,
           classId: parseInt(session.classId!, 10)
         },
@@ -193,7 +203,7 @@ const homeworkService = {
         classId: parseInt(session.classId!)
       },
       orderBy: [
-        { isPinned: "desc" }, 
+        { isPinned: "desc" },
         { submissionDate: "asc" },
         { assignmentDate: "asc" },
         { subjectId: "asc" },
@@ -212,23 +222,48 @@ const homeworkService = {
   async pinHomework(reqData: pinHomeworkTypeBody, session: Session & Partial<SessionData>) {
     const { homeworkId, pinStatus } = reqData;
 
-    const updated = await prisma.homework.updateMany({
+    const existingHomework = await prisma.homework.findFirst({
       where: {
         homeworkId: homeworkId,
         classId: parseInt(session.classId!, 10)
       },
-      data: {
-        isPinned: pinStatus
+      select: {
+        teamId: true
       }
     });
 
-    if (updated.count === 0) {
+    if (!existingHomework) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
         message: "Homework not found",
         expected: true
       };
+      throw err;
+    }
+
+    await isValidTeamId(existingHomework.teamId, session);
+
+    try {
+      await prisma.homework.update({
+        where: {
+          homeworkId: homeworkId
+        },
+        data: {
+          isPinned: pinStatus
+        }
+      });
+    }
+    catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+        const reqErr: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Homework not found",
+          expected: true
+        };
+        throw reqErr;
+      }
       throw err;
     }
 

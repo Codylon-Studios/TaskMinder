@@ -19,7 +19,7 @@ This guide outlines the steps necessary to set up your development environment f
 
 ### Installing Redis and PostgreSQL
 
-**Recommended versions:** PostgreSQL 18.0+ and Redis v8+ (Redis Open Source).
+**Recommended versions:** PostgreSQL 18.1+ and Redis 8.4+ (Redis Open Source).
 
 <details open>
 <summary><strong>Linux (Ubuntu / Debian)</strong></summary>

@@ -1,4 +1,5 @@
 import { RequestError } from "../@types/requestError";
+import { Prisma } from "@prisma/client";
 import { Session, SessionData } from "express-session";
 import { default as prisma } from "../config/prisma";
 import { BigIntreplacer, invalidateCache, generateRandomBase62String } from "../utils/validate.functions";
@@ -78,8 +79,7 @@ const classService = {
     session: Session & Partial<SessionData>
   ) {
     const { classDisplayName, isTestClass } = reqData;
-    const classCode = generateRandomBase62String();
-
+    // reject if user is already in a class
     if (session.classId) {
       const err: RequestError = {
         name: "Forbidden",
@@ -89,49 +89,74 @@ const classService = {
       };
       throw err;
     }
-
-    const encryptedClassCode = encryptionManager.encrypt(classCode);
-    const classCodeHash = encryptionManager.hash(classCode);
-    const baseData = {
-      className: classDisplayName,
-      classCode: encryptedClassCode,
-      classCodeHash: classCodeHash,
-      createdAt: Date.now(),
-      isTestClass: isTestClass,
-      dsbMobileActivated: false,
-      storageQuotaBytes: isTestClass ? 20 * 1024 * 1024 : 1 * 1024 * 1024 * 1024, // 20MB (test class) or 1 GB (normal class)
-      storageUsedBytes: 0,
-      defaultPermissionLevel: 0 // default setting when creating class is 0 - member status
-    };
-    try {
-      return await prisma.$transaction(async tx => {
-        const createdClass = await tx.class.create({
-          data: baseData
-        });
-        session.classId = createdClass.classId.toString();
-
-        // add user to classJoined table
-        // change permission of user which created the account to admin
-        await tx.joinedClass.create({
-          data: {
-            accountId: session.account!.accountId,
-            classId: createdClass.classId,
-            permissionLevel: 3, // class creator is admin
-            createdAt: Date.now()
-          }
-        });
-        return classCode;
+    // create class with retry attempt fallback
+    const maxAttempts = 10;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const classCode = generateRandomBase62String();
+      const encryptedClassCode = encryptionManager.encrypt(classCode);
+      const classCodeHash = encryptionManager.hash(classCode);
+      // find already existing class with this hash and reject if present
+      const exists = await prisma.class.findUnique({
+        where: { classCodeHash }
       });
-    }
-    catch {
-      const err: RequestError = {
-        name: "Internal Server Error",
-        status: 500,
-        message: "Could not create class in database, please try again",
-        expected: true
+      if (exists) {
+        continue;
+      }
+
+      const baseData = {
+        className: classDisplayName,
+        classCode: encryptedClassCode,
+        classCodeHash: classCodeHash,
+        createdAt: BigInt(Date.now()),
+        isTestClass: isTestClass,
+        dsbMobileActivated: false,
+        storageQuotaBytes: isTestClass ? 20 * 1024 * 1024 : 1 * 1024 * 1024 * 1024, // 20MB (test class) or 1 GB (normal class)
+        storageUsedBytes: 0,
+        defaultPermissionLevel: 0 // default setting when creating class is 0 - member status
       };
-      throw err;
+      // create class and joinedClass entry
+      try {
+        return await prisma.$transaction(async tx => {
+          const createdClass = await tx.class.create({
+            data: baseData
+          });
+          session.classId = createdClass.classId.toString();
+
+          // add user to classJoined table
+          // change permission of user which created the account to admin
+          await tx.joinedClass.create({
+            data: {
+              accountId: session.account!.accountId,
+              classId: createdClass.classId,
+              permissionLevel: 3, // class creator is admin
+              createdAt: BigInt(Date.now())
+            }
+          });
+          return classCode;
+        });
+      }
+      catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+          // unique constraint collision, retry
+          continue;
+        }
+        const reqErr: RequestError = {
+          name: "Internal Server Error",
+          status: 500,
+          message: "Could not create class in database, please try again",
+          expected: true
+        };
+        throw reqErr;
+      }
     }
+    // return generic error instead
+    const err: RequestError = {
+      name: "Server Error",
+      status: 500,
+      message: "Could not generate unique class code",
+      expected: false
+    };
+    throw err;
   },
   async joinClass(reqData: joinClassTypeBody, session: Session & Partial<SessionData>) {
     const { classCode } = reqData;
@@ -222,14 +247,6 @@ const classService = {
             };
             throw err;
           }
-
-          // DB and target class match, but session was out of sync
-          await tx.joinedClass.update({
-            where: { accountId },
-            data: {
-              permissionLevel: targetClass.defaultPermissionLevel
-            }
-          });
         }
         else {
           await tx.joinedClass.create({
@@ -237,7 +254,7 @@ const classService = {
               accountId: accountId,
               classId: targetClass.classId,
               permissionLevel: targetClass.defaultPermissionLevel,
-              createdAt: Date.now()
+              createdAt: BigInt(Date.now())
             }
           });
         }
@@ -314,10 +331,11 @@ const classService = {
         await invalidateCache("UPLOADMETADATA", classUserEntry.classId.toString());
       });
     }
-
+    // avoid class:undefined when sending socket event
+    const classId = session.classId;
     delete session.classId;
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.MEMBERS);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.MEMBERS);
   },
   async deleteClass(session: Session & Partial<SessionData>) {
     await prisma.$transaction(async tx => {

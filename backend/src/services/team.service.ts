@@ -1,4 +1,5 @@
 import { Session, SessionData } from "express-session";
+import { Prisma } from "@prisma/client";
 import { RequestError } from "../@types/requestError";
 import { default as prisma } from "../config/prisma";
 import logger from "../config/logger";
@@ -20,7 +21,7 @@ import { encryptionManager } from "../utils/encryption.manager";
 
 const checkLoggedIn = (session: Session & Partial<SessionData>): boolean => {
   const accountId = session.account?.accountId;
-  return accountId ? true : false;
+  return !!accountId;
 };
 
 const teamService = {
@@ -55,12 +56,44 @@ const teamService = {
       return teams.filter(t => !t.isPrivate || joinedIds.has(t.teamId));
     };
 
+    const decryptInviteCodes = (
+      teams: {
+        teamId: number;
+        name: string;
+        isPrivate: boolean;
+        inviteCode: string | null;
+      }[]
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+    ) => teams.map(team => ({
+      ...team,
+      inviteCode:
+        team.isPrivate && team.inviteCode && encryptionManager.isEncrypted(team.inviteCode)
+          ? encryptionManager.decrypt(team.inviteCode)
+          : null
+    }));
+
     // Business logic START
     const cached = await redisClient.get(cacheKey);
     if (cached) {
       try {
-        const teams = JSON.parse(cached);
-        return await filterTeams(teams);
+        const teams = JSON.parse(cached) as {
+          teamId: number;
+          name: string;
+          isPrivate: boolean;
+          inviteCode: string | null;
+        }[];
+
+        const hasPlaintextInviteCodes = teams.some(team =>
+          team.isPrivate && team.inviteCode && !encryptionManager.isEncrypted(team.inviteCode)
+        );
+
+        if (!hasPlaintextInviteCodes) {
+          const filtered = await filterTeams(teams);
+          const decrypted = decryptInviteCodes(filtered);
+          return JSON.parse(JSON.stringify(decrypted, BigIntreplacer));
+        }
+
+        logger.warn("Unsafe cached invite codes detected; ignoring teams cache and reloading from DB.");
       }
       catch (err) {
         logger.error(`Error parsing Redis data: ${err}`);
@@ -79,26 +112,19 @@ const teamService = {
       }
     });
 
-    const processedTeams = teams.map(team => ({
-      ...team,
-      inviteCode:
-        team.isPrivate && team.inviteCode
-          ? encryptionManager.decrypt(team.inviteCode)
-          : null
-    }));
-
     // update cache (best effort)
     try {
-      await updateCacheData(processedTeams, cacheKey);
+      await updateCacheData(teams, cacheKey);
     }
     catch (err) {
       logger.error(`Error updating Redis data: ${err}`);
       // fall through to prevent crashes and rely on DB
     }
 
-    const filtered = await filterTeams(processedTeams);
+    const filtered = await filterTeams(teams);
+    const decrypted = decryptInviteCodes(filtered);
     // Avoid BigInt serialization issues
-    return JSON.parse(JSON.stringify(filtered, BigIntreplacer));
+    return JSON.parse(JSON.stringify(decrypted, BigIntreplacer));
   },
   // sets public teams data in class (manager only)
   async setTeamsData(reqData: setTeamsTypeBody, session: Session & Partial<SessionData>) {
@@ -131,7 +157,7 @@ const teamService = {
     }
     // variable to check if cache should be reloaded (e.g. on team deletion)
     let dataChanged = false;
-    // track if teams were deleted (affects homework, events, lessons)
+    // track if teams were deleted (affects homework, events, lessons, upload (requests))
     let teamsDeleted = false;
 
     // Check for duplicate team names
@@ -170,8 +196,12 @@ const teamService = {
             for (const upload of uploads) {
               for (const file of upload.Files) {
                 const filePath = path.join(classDir, file.storedFileName);
-                await fs.unlink(filePath).catch(() => {
-                  logger.error(`File could not be deleted during team deletion, teamId: ${team.teamId}`);
+                await fs.unlink(filePath).catch(error => {
+                  logger.error(`File could not be deleted during team deletion, 
+                  teamId: ${team.teamId},
+                  path: ${filePath},
+                  error: ${error}`
+                  );
                 });
               }
               // Calculate storage to release
@@ -239,7 +269,7 @@ const teamService = {
                 classId: classId,
                 name: team.name,
                 isPrivate: false,
-                createdAt: Date.now()
+                createdAt: BigInt(Date.now())
               }
             });
           }
@@ -274,16 +304,21 @@ const teamService = {
       await invalidateCache("TEAMS", session.classId!);
       const io = socketIO.getIO();
       io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.JOINED_TEAMS);
 
-      // If teams were deleted, also update homework, events, and lessons caches
+      // If teams were deleted, also update homework, events, lesson and upload (request) caches
       if (teamsDeleted) {
         await invalidateCache("HOMEWORK", session.classId!);
         await invalidateCache("EVENT", session.classId!);
         await invalidateCache("LESSON", session.classId!);
+        await invalidateCache("UPLOADMETADATA", session.classId!);
+        await invalidateCache("UPLOADREQUESTS", session.classId!);
 
         io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
         io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
         io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
       }
     }
   },
@@ -308,55 +343,69 @@ const teamService = {
     const { name } = reqData;
     const classId = parseInt(session.classId!, 10);
     const accountId = session.account!.accountId;
-
-    const inviteCode = generateRandomBase62String();
-    const encryptedInviteCode = encryptionManager.encrypt(inviteCode);
-    const inviteCodeHash = encryptionManager.hash(inviteCode);
-
-    try {
-      const createdTeam = await prisma.$transaction(async tx => {
-        const newTeam = await tx.team.create({
-          data: {
-            classId,
-            name,
-            isPrivate: true,
-            inviteCode: encryptedInviteCode,
-            inviteCodeHash,
-            createdAt: Date.now()
-          }
-        });
-
-        await tx.joinedTeams.create({
-          data: {
-            teamId: newTeam.teamId,
-            accountId,
-            createdAt: Date.now()
-          }
-        });
-
-        return newTeam;
+    // create private team based on max 10 attempts
+    const maxAttempts = 10;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const inviteCode = generateRandomBase62String();
+      const encryptedInviteCode = encryptionManager.encrypt(inviteCode);
+      const inviteCodeHash = encryptionManager.hash(inviteCode);
+      // check if hash code is unique, if not -> retry
+      const exists = await prisma.team.findUnique({
+        where: { inviteCodeHash }
       });
-
-      await invalidateCache("TEAMS", session.classId!);
-      const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.JOINED_TEAMS);
-
-      return {
-        teamId: createdTeam.teamId,
-        teamName: createdTeam.name,
-        inviteCode
-      };
+      if (exists) {
+        continue;
+      }
+      // create team and joinedTeam entry in transaction
+      try {
+        await prisma.$transaction(async tx => {
+          const newTeam = await tx.team.create({
+            data: {
+              classId,
+              name,
+              isPrivate: true,
+              inviteCode: encryptedInviteCode,
+              inviteCodeHash,
+              createdAt: BigInt(Date.now())
+            }
+          });
+          await tx.joinedTeams.create({
+            data: {
+              teamId: newTeam.teamId,
+              accountId,
+              createdAt: BigInt(Date.now())
+            }
+          });
+        });
+        // invalidate teams cache and resend socket updates
+        await invalidateCache("TEAMS", session.classId!);
+        const io = socketIO.getIO();
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.JOINED_TEAMS);
+        return;
+      }
+      catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+          // unique constraint collision, retry
+          continue;
+        }
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid data format",
+          expected: true
+        };
+        throw reqErr;
+      }
     }
-    catch {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
-        expected: true
-      };
-      throw err;
-    }
+    // return generic error otherwise
+    const err: RequestError = {
+      name: "Server Error",
+      status: 500,
+      message: "Could not generate unique invite code",
+      expected: false
+    };
+    throw err;
   },
   // join private team based on invite code (logged in users only)
   async joinPrivateTeam(reqData: joinPrivateTeamTypeBody, session: Session & Partial<SessionData>) {
@@ -394,11 +443,20 @@ const teamService = {
       throw err;
     }
     // create new join entry and send socket event
-    await prisma.joinedTeams.create({
-      data: {
+    await prisma.joinedTeams.upsert({
+      where: {
+        teamId_accountId: {
+          teamId: targetTeam.teamId,
+          accountId
+        }
+      },
+      update: {
+        // do nothing if already exists
+      },
+      create: {
         teamId: targetTeam.teamId,
         accountId,
-        createdAt: Date.now()
+        createdAt: BigInt(Date.now())
       }
     });
 
@@ -448,7 +506,7 @@ const teamService = {
             data: teams.map(teamId => ({
               teamId,
               accountId,
-              createdAt: Date.now()
+              createdAt: BigInt(Date.now())
             })),
             skipDuplicates: true
           });
@@ -508,7 +566,7 @@ const teamService = {
     }
 
     await prisma.$transaction(async tx => {
-      //delete all physical files on disk of private team
+      // delete all physical files on disk of private team
       const uploads = await tx.upload.findMany({
         where: { teamId },
         include: { Files: true }
@@ -517,7 +575,14 @@ const teamService = {
       for (const upload of uploads) {
         for (const file of upload.Files) {
           const filePath = path.join(classDir, file.storedFileName);
-          await fs.unlink(filePath).catch(() => { });
+          await fs.unlink(filePath).catch(error => {
+            logger.error(
+              `File could not be deleted during private team deletion, 
+              teamId: ${team.teamId}, 
+              path: ${filePath},
+              error: ${error}`
+            );
+          });
         }
 
         const sizeToRelease = upload.status === "completed"
