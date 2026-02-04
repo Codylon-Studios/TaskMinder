@@ -29,7 +29,6 @@ export const deleteHomeworkSchema = z.object({
   })
 });
 
-
 export const editHomeworkSchema = z.object({
   params: z.object({}),
   query: z.object({}),
@@ -51,13 +50,6 @@ export const pinHomeworkSchema = z.object({
     pinStatus: z.boolean()
   })
 });
-
-
-export type addHomeworkType = z.infer<typeof addHomeworkSchema>;
-export type checkHomeworkType = z.infer<typeof checkHomeworkSchema>;
-export type deleteHomeworkType = z.infer<typeof deleteHomeworkSchema>;
-export type editHomeworkType = z.infer<typeof editHomeworkSchema>;
-export type pinHomeworkType = z.infer<typeof pinHomeworkSchema>;
 
 export type addHomeworkTypeBody = z.infer<typeof addHomeworkSchema>["body"];
 export type checkHomeworkTypeBody = z.infer<typeof checkHomeworkSchema>["body"];

@@ -17,14 +17,14 @@ import {
 } from "../schemas/upload.schema";
 import { removeTempFiles } from "../utils/upload.cleanup";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
-import { invalidateCache, BigIntreplacer, isValidTeamId, updateCacheData } from "../utils/validate.functions";
+import { getAccessibleTeamIds, invalidateCache, BigIntreplacer, isValidTeamId, updateCacheData } from "../utils/validate.functions";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 
 type GetUploadFileInput = {
   fileIdParam: number;
   action: getUploadFileType["query"]["action"];
-  classId: string;
+  session: Session & Partial<SessionData>;
 };
 
 type GetUploadFileResult = {
@@ -86,9 +86,26 @@ const getUploadList = async (
     Account: { select: { username: true } };
     Files: true;
   },
-  orderBy: Prisma.UploadOrderByWithRelationInput[]
+  orderBy: Prisma.UploadOrderByWithRelationInput[],
+  teamFilter?: Set<number>
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 ) => {
+  if (teamFilter) {
+    const uploads = await prisma.upload.findMany({
+      where: {
+        classId,
+        OR: [
+          { teamId: -1 },
+          { teamId: { in: Array.from(teamFilter) } }
+        ]
+      },
+      include,
+      orderBy,
+      take: isGetAllData ? undefined : 50
+    });
+    return sortUploads(mapUploadData(uploads));
+  }
+
   if (isGetAllData) {
     const uploads = await prisma.upload.findMany({
       where: { classId },
@@ -201,13 +218,22 @@ const uploadService = {
 
   async getUploadMetadata(isGetAllData: boolean, session: Session & Partial<SessionData>) {
     const classId = parseInt(session.classId!, 10);
+    const accessibleTeamIds = new Set(await getAccessibleTeamIds(session));
 
     const classInformation = await prisma.class.findUnique({
       where: { classId },
       select: { storageUsedBytes: true, storageQuotaBytes: true }
     });
 
-    const totalUploads = await prisma.upload.count({ where: { classId } });
+    const totalUploads = await prisma.upload.count({
+      where: {
+        classId,
+        OR: [
+          { teamId: -1 },
+          { teamId: { in: Array.from(accessibleTeamIds) } }
+        ]
+      }
+    });
 
     if (totalUploads === 0) {
       return {
@@ -231,7 +257,14 @@ const uploadService = {
     ];
 
     const getUploadMetadataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
-    const uploadList = await getUploadList(classId, isGetAllData, getUploadMetadataCacheKey, include, orderBy);
+    const uploadList = await getUploadList(
+      classId,
+      isGetAllData,
+      getUploadMetadataCacheKey,
+      include,
+      orderBy,
+      accessibleTeamIds
+    );
 
     const hasMore = !isGetAllData && totalUploads > 50;
 
@@ -246,13 +279,15 @@ const uploadService = {
     return JSON.parse(stringified);
   },
 
-  async getUploadFile({ fileIdParam, action, classId }: GetUploadFileInput): Promise<GetUploadFileResult> {
+  async getUploadFile({ fileIdParam, action, session }: GetUploadFileInput): Promise<GetUploadFileResult> {
+    const classId = session.classId!;
     const fileData = await prisma.fileMetadata.findUnique({
       where: { fileMetaDataId: fileIdParam },
       include: {
         Upload: {
           select: {
             classId: true,
+            teamId: true,
             uploadName: true,
             Files: {
               select: { fileMetaDataId: true },
@@ -268,6 +303,18 @@ const uploadService = {
         name: "Not Found",
         status: 404,
         message: "File not found or access denied.",
+        expected: true
+      };
+      throw err;
+    }
+
+    const accessibleTeamIds = new Set(await getAccessibleTeamIds(session));
+
+    if (fileData.Upload.teamId !== -1 && !accessibleTeamIds.has(fileData.Upload.teamId)) {
+      const err: RequestError = {
+        name: "Forbidden",
+        status: 403,
+        message: "You are not allowed to access this upload.",
         expected: true
       };
       throw err;
@@ -588,13 +635,15 @@ const uploadService = {
 
   async getUploadRequests(session: Session & Partial<SessionData>) {
     const classIdNum = parseInt(session.classId!, 10);
+    const accessibleTeamIds = new Set(await getAccessibleTeamIds(session));
 
     const getUploadRequestsCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADREQUESTS, session.classId!);
     const cachedData = await redisClient.get(getUploadRequestsCacheKey);
 
     if (cachedData) {
       try {
-        return JSON.parse(cachedData);
+        const parsed = JSON.parse(cachedData) as { teamId: number }[];
+        return parsed.filter(request => request.teamId === -1 || accessibleTeamIds.has(request.teamId));
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
@@ -615,7 +664,8 @@ const uploadService = {
       // Continue without caching
     }
 
-    const stringified = JSON.stringify(uploadRequests, BigIntreplacer);
+    const filteredRequests = uploadRequests.filter(request => request.teamId === -1 || accessibleTeamIds.has(request.teamId));
+    const stringified = JSON.stringify(filteredRequests, BigIntreplacer);
     return JSON.parse(stringified);
   },
 

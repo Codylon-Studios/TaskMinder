@@ -73,10 +73,6 @@ export const deleteUploadRequestSchema = z.object({
 });
 
 export type getUploadFileType = z.infer<typeof getUploadFileSchema>;
-export type editUploadType = z.infer<typeof editUploadSchema>;
-export type deleteUploadType = z.infer<typeof deleteUploadSchema>;
-export type addUploadRequestType = z.infer<typeof addUploadRequestSchema>;
-export type deleteUploadRequestType = z.infer<typeof deleteUploadRequestSchema>;
 
 export type uploadFileTypeBody = z.infer<typeof uploadFileSchema>["body"];
 export type editUploadTypeBody = z.infer<typeof editUploadSchema>["body"];

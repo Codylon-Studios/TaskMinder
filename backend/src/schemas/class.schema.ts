@@ -74,14 +74,6 @@ export const changeClassNameSchema = z.object({
   })
 });
 
-export type createClassType = z.infer<typeof createClassSchema>;
-export type joinClassType = z.infer<typeof joinClassSchema>;
-export type changeDefaultPermissionType = z.infer<typeof changeDefaultPermissionSchema>;
-export type setClassMembersPermissionsType = z.infer<typeof setClassMembersPermissionsSchema>;
-export type kickClassMembersType = z.infer<typeof kickClassMembersSchema>;
-export type updateDSBMobileDataType = z.infer<typeof updateDSBMobileDataSchema>;
-export type changeClassNameType = z.infer<typeof changeClassNameSchema>;
-
 export type createClassTypeBody = z.infer<typeof createClassSchema>["body"];
 export type joinClassTypeBody = z.infer<typeof joinClassSchema>["body"];
 export type changeDefaultPermissionTypeBody = z.infer<typeof changeDefaultPermissionSchema>["body"];

@@ -41,9 +41,53 @@ export const setJoinedTeams = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+export const addPrivateTeam = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await teamService.addPrivateTeam(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const joinPrivateTeam = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await teamService.joinPrivateTeam(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const deletePrivateTeam = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await teamService.deletePrivateTeam(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const leavePrivateTeam = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await teamService.leavePrivateTeam(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getTeams,
   setTeams,
   getJoinedTeams,
-  setJoinedTeams
+  setJoinedTeams,
+  addPrivateTeam,
+  joinPrivateTeam,
+  deletePrivateTeam,
+  leavePrivateTeam
 };

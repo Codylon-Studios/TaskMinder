@@ -201,6 +201,9 @@ model Team {
   teamId      Int           @id @default(autoincrement()) @map("teamId")
   classId     Int
   name        String
+  isPrivate   Boolean       @default(false)
+  inviteCode  String?       @unique
+  inviteCodeHash String?    @unique
   createdAt   BigInt?
 
   JoinedTeams JoinedTeams[]

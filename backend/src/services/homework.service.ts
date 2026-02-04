@@ -1,7 +1,7 @@
 import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 import { default as prisma } from "../config/prisma";
-import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache } from "../utils/validate.functions";
+import { getAccessibleTeamIds, isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
@@ -169,18 +169,22 @@ const homeworkService = {
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
-
+  // get homework data (for all users)
   async getHomeworkData(session: Session & Partial<SessionData>) {
+    // get cache key and fetch all data from cache
     const getHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     const cachedHomeworkData = await redisClient.get(getHomeworkDataCacheKey);
 
     if (cachedHomeworkData) {
       try {
-        return JSON.parse(cachedHomeworkData);
+        // filter data for private and public teams
+        const cachedData = JSON.parse(cachedHomeworkData) as { teamId: number }[];
+        const accessibleTeamIds = new Set(await getAccessibleTeamIds(session));
+        return cachedData.filter(homework => homework.teamId === -1 || accessibleTeamIds.has(homework.teamId));
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -199,8 +203,10 @@ const homeworkService = {
 
     await updateCacheData(data, getHomeworkDataCacheKey);
 
-    const stringified = JSON.stringify(data, BigIntreplacer);
-    return JSON.parse(stringified);
+    const accessibleTeamIds = new Set(await getAccessibleTeamIds(session));
+    const filtered = data.filter(homework => homework.teamId === -1 || accessibleTeamIds.has(homework.teamId));
+
+    return JSON.parse(JSON.stringify(filtered, BigIntreplacer));
   },
 
   async pinHomework(reqData: pinHomeworkTypeBody, session: Session & Partial<SessionData>) {

@@ -15,6 +15,10 @@ All changes are grouped by type and the latest version appears first.
 ### Changed
 * chore(api): rename and change type of API routes
 
+### Fixed
+* fix(request): upload requests are not deleted when team is deleted
+* fix(schema): remove unnecessary type infers from schemas
+
 ---
 
 ## \[v2.2.5] - 2026-02-??

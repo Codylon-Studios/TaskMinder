@@ -18,6 +18,4 @@ export const setLessonDataSchema = z.object({
   })
 });
 
-export type setLessonDataType = z.infer<typeof setLessonDataSchema>;
-
 export type setLessonDataTypeBody = z.infer<typeof setLessonDataSchema>["body"];

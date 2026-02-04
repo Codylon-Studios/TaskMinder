@@ -1,13 +1,12 @@
 import { RequestError } from "../@types/requestError";
 import { Session, SessionData } from "express-session";
 import { default as prisma } from "../config/prisma";
-import { BigIntreplacer, invalidateCache } from "../utils/validate.functions";
+import { BigIntreplacer, invalidateCache, generateRandomBase62String } from "../utils/validate.functions";
 import { sessionPool } from "../config/pg";
 import logger from "../config/logger";
 import { redisClient } from "../config/redis";
 import fs from "fs/promises";
 import path from "path";
-import { randomInt } from "crypto";
 import { FINAL_UPLOADS_DIR } from "../config/upload";
 import { encryptionManager } from "../utils/encryption.manager";
 import {
@@ -21,22 +20,26 @@ import {
 } from "../schemas/class.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
-const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-function generateRandomBase62String(length = 20): string {
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += BASE62[randomInt(0, BASE62.length)];
-  }
-  return result;
-}
-
 const classService = {
   async getClassInfo(session: Session & Partial<SessionData>) {
     // checkAcces.checkClass middleware
     const classInfo = await prisma.class.findUnique({
       where: {
         classId: parseInt(session.classId!)
+      },
+      select: {
+        classId: true,
+        classCode: true,
+        className: true,
+        createdAt: true,
+        isTestClass: true,
+        defaultPermissionLevel: true,
+        storageUsedBytes: true,
+        storageQuotaBytes: true,
+        dsbMobileActivated: true,
+        dsbMobileUser: true,
+        dsbMobilePassword: true,
+        dsbMobileClass: true
       }
     });
     if (!classInfo) {

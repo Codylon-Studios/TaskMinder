@@ -66,13 +66,6 @@ export const setEventTypesSchema = z.object({
   })
 });
 
-
-export type addEventType = z.infer<typeof addEventSchema>;
-export type editEventType = z.infer<typeof editEventSchema>;
-export type deleteEventType = z.infer<typeof deleteEventSchema>;
-export type setEventTypesType = z.infer<typeof setEventTypesSchema>;
-export type pinEventType = z.infer<typeof pinEventSchema>;
-
 export type addEventTypeBody = z.infer<typeof addEventSchema>["body"];
 export type editEventTypeBody = z.infer<typeof editEventSchema>["body"];
 export type deleteEventTypeBody = z.infer<typeof deleteEventSchema>["body"];

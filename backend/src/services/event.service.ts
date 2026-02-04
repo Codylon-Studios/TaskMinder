@@ -6,6 +6,7 @@ import { default as prisma } from "../config/prisma";
 import {
   isValidColor,
   isValidTeamId,
+  getAccessibleTeamIds,
   lessonDateEventAtLeastOneNull,
   updateCacheData,
   BigIntreplacer,
@@ -19,19 +20,22 @@ import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypes
 const inFlightStyleBuild = new Map<number, Promise<string>>();
 
 export const eventService = {
+  // get event data for all users
   async getEventData(session: Session & Partial<SessionData>) {
     // get cache key from class to fetch from cache
     const getEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
-
     const cachedEventData = await redisClient.get(getEventDataCacheKey);
 
     if (cachedEventData) {
       try {
-        return JSON.parse(cachedEventData);
+        // filter data for private and public teams
+        const cachedData = JSON.parse(cachedEventData) as { teamId: number }[];
+        const accessibleTeamIds = new Set(await getAccessibleTeamIds(session));
+        return cachedData.filter(event => event.teamId === -1 || accessibleTeamIds.has(event.teamId));
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
     // no cache data available, fetch from database and update cache
@@ -53,11 +57,13 @@ export const eventService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
-    const stringified = JSON.stringify(eventData, BigIntreplacer);
-    return JSON.parse(stringified);
+    const accessibleTeamIds = new Set(await getAccessibleTeamIds(session));
+    const filtered = eventData.filter(event => event.teamId === -1 || accessibleTeamIds.has(event.teamId));
+
+    return JSON.parse(JSON.stringify(filtered, BigIntreplacer));
   },
 
   async pinEvent(reqData: pinEventTypeBody, session: Session & Partial<SessionData>) {
@@ -220,7 +226,7 @@ export const eventService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -238,7 +244,7 @@ export const eventService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     return eventTypeData;
@@ -328,7 +334,7 @@ export const eventService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     try {
@@ -354,7 +360,7 @@ export const eventService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -451,7 +457,7 @@ export const eventService = {
       }
       catch (err) {
         logger.error(`Error updating Redis cache: ${err}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
 
       return css;

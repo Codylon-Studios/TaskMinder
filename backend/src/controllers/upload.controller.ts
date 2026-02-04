@@ -19,7 +19,7 @@ export const getUploadFile = async (req: Request, res: Response, next: NextFunct
     const { stream, headers } = await uploadService.getUploadFile({
       fileIdParam: parseInt(req.params.fileId, 10),
       action: req.query.action as getUploadFileType["query"]["action"],
-      classId: req.session.classId!
+      session: req.session
     });
 
     res.setHeader("Content-Type", headers["Content-Type"]);

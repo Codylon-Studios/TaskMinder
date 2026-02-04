@@ -201,18 +201,22 @@ This documentation describes all database tables defined in the current Prisma s
 
 ### 10. Team Table
 
-**Purpose**: Defines a specific group (team) within a class.
+**Purpose**: Defines a specific (invite-only) group (team) within a class.
 
-| Field   | Data Type | Intentionally Stored           | Potentially Unintentional                                     |
-| :------ | :-------- | :----------------------------- | :------------------------------------------------------------ |
-| teamId  | Integer   | Unique team identifier         | -                                                             |
-| name    | String    | Name of the team               | May be revealing (e.g., "Advanced Group", "Remedial Reading") |
-| classId | Integer   | Links team to a specific class | -                                                             |
-| createdAt | BigInt  | Record creation timestamp      | -                                                             |
+| Field         | Data Type | Intentionally Stored               | Potentially Unintentional                                     |
+| :-------------| :-------- | :--------------------------------- | :------------------------------------------------------------ |
+| teamId        | Integer   | Unique team identifier             | -                                                             |
+| name          | String    | Name of the team                   | May be revealing (e.g., "Advanced Group", "Remedial Reading") |
+| classId       | Integer   | Links team to a specific class     | -                                                             |
+| createdAt     | BigInt    | Record creation timestamp          | -                                                             |
+| isPrivate     | Boolean   | Flag for private team              | -                                                             |
+| inviteCode    | String    | Unique encrypted invite code       | Could lead to abusive joins if invite code is breached        |
+| inviteCodeHash| String    | Unique hashed invite code for fast lookup | Could lead to abusive joins if invite code is breached |
 
 **Privacy Concerns**:
 
 - The `name` of a team could imply academic level, behavioral status, or other sensitive classifications about its members.
+- Implemented secure (aes-256-gcm) server-side encryption for invite codes.
 
 ---
 
@@ -303,8 +307,8 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 
 ---
 
-- **Document Version:** 2.3
+- **Document Version:** 2.4
 - **Stable Version Alignment:** v2.3.0
-- **Last Updated:** February 1st, 2026
+- **Last Updated:** February 4th, 2026
 - **Next Scheduled Review:** Quarterly – March 10th, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

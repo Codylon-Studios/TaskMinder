@@ -2,7 +2,7 @@ import { RequestError } from "../@types/requestError";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
 import logger from "../config/logger";
-import { isValidweekDay, BigIntreplacer, updateCacheData, invalidateCache } from "../utils/validate.functions";
+import { getAccessibleTeamIds, isValidweekDay, BigIntreplacer, updateCacheData, invalidateCache } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lesson.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
@@ -87,11 +87,13 @@ const lessonService = {
 
     if (cachedLessonData) {
       try {
-        return JSON.parse(cachedLessonData);
+        const cachedData = JSON.parse(cachedLessonData) as { teamId: number }[];
+        const accessibleTeamIds = new Set(await getAccessibleTeamIds(session));
+        return cachedData.filter(lesson => lesson.teamId === -1 || accessibleTeamIds.has(lesson.teamId));
       }
       catch (error) {
         logger.error(`Error parsing Redis cache: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -110,10 +112,13 @@ const lessonService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
-    const stringified = JSON.stringify(lessonData, BigIntreplacer);
+    const accessibleTeamIds = new Set(await getAccessibleTeamIds(session));
+    const filtered = lessonData.filter(lesson => lesson.teamId === -1 || accessibleTeamIds.has(lesson.teamId));
+
+    const stringified = JSON.stringify(filtered, BigIntreplacer);
     return JSON.parse(stringified);
   }
 };

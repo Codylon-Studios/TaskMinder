@@ -4,6 +4,16 @@ import prisma from "../config/prisma";
 import logger from "../config/logger";
 import { Session, SessionData } from "express-session";
 
+const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+function generateRandomBase62String(length = 20): string {
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += BASE62.charAt(Math.floor(Math.random() * BASE62.length));
+  }
+  return result;
+}
+
 async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   try {
     await redisClient.set(key, JSON.stringify(data, BigIntreplacer), 
@@ -70,10 +80,62 @@ async function isValidTeamId(teamId: number, session: Session & Partial<SessionD
       };
       throw err;
     }
+    if (teamExists.isPrivate) {
+      const accountId = session.account?.accountId;
+      if (!accountId) {
+        const err: RequestError = {
+          name: "Forbidden",
+          status: 403,
+          message: "Private team access requires an account",
+          expected: true
+        };
+        throw err;
+      }
+      const isMember = await prisma.joinedTeams.findUnique({
+        where: {
+          teamId_accountId: {
+            teamId: teamId,
+            accountId: accountId
+          }
+        }
+      });
+      if (!isMember) {
+        const err: RequestError = {
+          name: "Forbidden",
+          status: 403,
+          message: "You are not a member of this private team",
+          expected: true
+        };
+        throw err;
+      }
+    }
   }
   else {
     return;
   }
+}
+
+async function getAccessibleTeamIds(session: Session & Partial<SessionData>): Promise<number[]> {
+  const classId = parseInt(session.classId!, 10);
+  const teams = await prisma.team.findMany({
+    where: { classId },
+    select: { teamId: true, isPrivate: true }
+  });
+
+  const accountId = session.account?.accountId;
+  if (!accountId) {
+    return teams.filter(team => !team.isPrivate).map(team => team.teamId);
+  }
+
+  const joinedTeams = await prisma.joinedTeams.findMany({
+    where: { accountId },
+    select: { teamId: true }
+  });
+  const joinedTeamIds = new Set(joinedTeams.map(team => team.teamId));
+
+  return teams
+    .filter(team => !team.isPrivate || joinedTeamIds.has(team.teamId))
+    .map(team => team.teamId);
 }
 
 // @codescene(disable:"Code Duplication")
@@ -162,9 +224,11 @@ function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | 
 }
 
 export {
+  generateRandomBase62String,
   isValidColor,
   isValidSubjectId,
   isValidTeamId,
+  getAccessibleTeamIds,
   isValidEventTypeId,
   isValidweekDay,
   lessonDateEventAtLeastOneNull,

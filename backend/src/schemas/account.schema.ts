@@ -62,14 +62,6 @@ export const checkUsernameSchema = z.object({
   })
 });
 
-
-export type registerAccountType = z.infer<typeof registerAccountSchema>;
-export type loginAccountType = z.infer<typeof loginAccountSchema>;
-export type deleteAccountType = z.infer<typeof deleteAccountSchema>;
-export type changeUsernameType = z.infer<typeof changeUsernameSchema>;
-export type changePasswordType = z.infer<typeof changePasswordSchema>;
-export type checkUsernameType = z.infer<typeof checkUsernameSchema>;
-
 export type registerAccountTypeBody = z.infer<typeof registerAccountSchema>["body"];
 export type loginAccountTypeBody = z.infer<typeof loginAccountSchema>["body"];
 export type deleteAccountTypeBody = z.infer<typeof deleteAccountSchema>["body"];
