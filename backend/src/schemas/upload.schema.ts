@@ -55,6 +55,15 @@ export const deleteUploadSchema = z.object({
   })
 });
 
+export const pinUploadSchema = z.object({
+  params: z.object({}),
+  query: z.object({}),
+  body: strictObject({
+    uploadId: z.coerce.number(),
+    pinStatus: z.boolean()
+  })
+});
+
 export const addUploadRequestSchema = z.object({
   params: z.object({}),
   query: z.object({}),
@@ -75,11 +84,13 @@ export const deleteUploadRequestSchema = z.object({
 export type getUploadFileType = z.infer<typeof getUploadFileSchema>;
 export type editUploadType = z.infer<typeof editUploadSchema>;
 export type deleteUploadType = z.infer<typeof deleteUploadSchema>;
+export type pinUploadType = z.infer<typeof pinUploadSchema>;
 export type addUploadRequestType = z.infer<typeof addUploadRequestSchema>;
 export type deleteUploadRequestType = z.infer<typeof deleteUploadRequestSchema>;
 
 export type uploadFileTypeBody = z.infer<typeof uploadFileSchema>["body"];
 export type editUploadTypeBody = z.infer<typeof editUploadSchema>["body"];
 export type deleteUploadTypeBody = z.infer<typeof deleteUploadSchema>["body"];
+export type pinUploadTypeBody = z.infer<typeof pinUploadSchema>["body"];
 export type addUploadRequestTypeBody = z.infer<typeof addUploadRequestSchema>["body"];
 export type deleteUploadRequestTypeBody = z.infer<typeof deleteUploadRequestSchema>["body"];

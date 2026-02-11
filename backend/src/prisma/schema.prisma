@@ -229,6 +229,7 @@ model Upload {
   uploadName          String 
   uploadDescription   String?
   uploadType          String
+  isPinned            Boolean
   status              String @default("queued") // "queued" | "processing" | "completed" | "failed"
   errorReason         String?
   reservedBytes       BigInt @default(0) // Storage reserved during upload

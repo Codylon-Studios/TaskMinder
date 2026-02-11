@@ -24,6 +24,7 @@ import {
 } from "./utils/db.cleanup";
 import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker";
 import { cleanupStaleUploadFiles } from "./utils/upload.cleanup";
+import { prefetchSubstitutionDataForAllClasses } from "./services/substitution.service";
 import checkAccess from "./middleware/access.middleware";
 import { ErrorHandler } from "./middleware/error.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
@@ -221,6 +222,14 @@ cron.schedule("0 0 * * 0", () => {
 // Run test class deletion every 15mins
 cron.schedule("*/15 * * * *", () => {
   cleanupTestClasses();
+});
+
+// Prefetch substitutions every minute during weekday mornings (06:00-09:59)
+cron.schedule("*/1 6-9 * * 1-5", () => {
+  logger.info("Starting scheduled substitution prefetch");
+  prefetchSubstitutionDataForAllClasses().catch(err => {
+    logger.error(`Scheduled substitution prefetch failed: ${err}`);
+  });
 });
 
 // Run stuck upload cleanup every 10 minutes

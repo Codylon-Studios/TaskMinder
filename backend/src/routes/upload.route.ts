@@ -10,6 +10,7 @@ import {
   getUploadMetadataSchema,
   editUploadSchema, 
   uploadFileSchema,
+  pinUploadSchema,
   addUploadRequestSchema,
   deleteUploadRequestSchema
 } from "../schemas/upload.schema";
@@ -55,6 +56,7 @@ router.post(
   uploadController.editUpload
 );
 router.post("/delete", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);
+router.post("/pin", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(pinUploadSchema), uploadController.pinUpload);
 router.post("/add_request", uploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(addUploadRequestSchema), uploadController.createUploadRequest);
 router.get("/get_request_data", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), uploadController.getUploadRequests);
 router.post(

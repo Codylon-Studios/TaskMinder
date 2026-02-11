@@ -12,6 +12,7 @@ import {
   getUploadFileType,
   editUploadTypeBody,
   uploadFileTypeBody,
+  pinUploadTypeBody,
   addUploadRequestTypeBody,
   deleteUploadRequestTypeBody
 } from "../schemas/upload.schema";
@@ -49,6 +50,7 @@ const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany
     uploadName: upload.uploadName,
     uploadDescription: upload.uploadDescription,
     uploadType: upload.uploadType,
+    isPinned: upload.isPinned,
     teamId: upload.teamId,
     status: upload.status,
     errorReason: upload.errorReason,
@@ -73,9 +75,11 @@ const uploadNameCollator = new Intl.Collator(undefined, {
 
 const sortUploads = (uploads: UploadListItem[]): UploadListItem[] =>
   uploads.sort((a, b) =>
-    a.createdAt !== b.createdAt
-      ? (a.createdAt > b.createdAt ? -1 : 1)
-      : uploadNameCollator.compare(a.uploadName ?? "", b.uploadName ?? "") || (b.uploadId - a.uploadId)
+    a.isPinned !== b.isPinned
+      ? (a.isPinned ? -1 : 1)
+      : a.createdAt !== b.createdAt
+        ? (a.createdAt > b.createdAt ? -1 : 1)
+        : uploadNameCollator.compare(a.uploadName ?? "", b.uploadName ?? "") || (b.uploadId - a.uploadId)
   );
 
 const getUploadList = async (
@@ -145,6 +149,7 @@ const uploadService = {
         uploadName,
         uploadDescription,
         uploadType,
+        isPinned: false,
         status: "queued",
         teamId: teamId,
         classId: classIdNum,
@@ -225,6 +230,7 @@ const uploadService = {
     } as const;
 
     const orderBy: Prisma.UploadOrderByWithRelationInput[] = [
+      { isPinned: "desc" },
       { createdAt: "desc" },
       { uploadName: "asc" },
       { uploadId: "desc" }
@@ -557,6 +563,39 @@ const uploadService = {
     });
 
     // Invalidate cache after delete
+    await invalidateCache("UPLOADMETADATA", session.classId!);
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+  },
+
+  async pinUpload(
+    body: pinUploadTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const { uploadId, pinStatus } = body;
+    const classIdNum = parseInt(session.classId!, 10);
+
+    const updated = await prisma.upload.updateMany({
+      where: {
+        uploadId: uploadId,
+        classId: classIdNum
+      },
+      data: {
+        isPinned: pinStatus
+      }
+    });
+
+    if (updated.count === 0) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Upload not found",
+        expected: true
+      };
+      throw err;
+    }
+
     await invalidateCache("UPLOADMETADATA", session.classId!);
 
     const io = socketIO.getIO();

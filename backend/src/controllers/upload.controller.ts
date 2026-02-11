@@ -75,6 +75,16 @@ export const deleteUpload = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const pinUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await uploadService.pinUpload(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
 export const queueFileUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const files: Express.Multer.File[] = (res.locals.allFiles as Express.Multer.File[]);
@@ -131,6 +141,7 @@ export default {
   getUploadFile,
   editUpload,
   deleteUpload,
+  pinUpload,
   queueFileUpload,
   createUploadRequest,
   getUploadRequests,

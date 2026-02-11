@@ -1,3 +1,4 @@
+BEGIN;
 -- CreateTable
 CREATE TABLE "uploadRequest" (
     "uploadRequestId" SERIAL NOT NULL,
@@ -13,3 +14,4 @@ CREATE INDEX "uploadRequest_classId_idx" ON "uploadRequest"("classId");
 
 -- AddForeignKey
 ALTER TABLE "uploadRequest" ADD CONSTRAINT "uploadRequest_classId_fkey" FOREIGN KEY ("classId") REFERENCES "class"("classId") ON DELETE CASCADE ON UPDATE NO ACTION;
+COMMIT;
