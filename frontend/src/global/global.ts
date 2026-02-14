@@ -12,7 +12,6 @@ import {
   JoinedTeamsData,
   LessonData,
   LessonGroup,
-  LessonWithEvent,
   LessonWithSubject,
   LessonWithSubstitution,
   TimetableData,
@@ -24,13 +23,16 @@ import {
   RawDate,
   AjaxOptions,
   AjaxError,
-  SerializedRequest
+  SerializedRequest,
+  LessonGroupWithEvent
 } from "./types";
 
 export const VERSION = "v1";
 const REQUEST_QUEUE = "request-queue-" + VERSION;
 
 export const lastCommaRegex = /,(?!.*,)/;
+export const weekDaysSo = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+export const weekDaysMo = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` => {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
@@ -85,6 +87,22 @@ export function registerSocketListeners(listeners: Record<string, () => unknown>
   }, 0);
 }
 
+function openIndexedDB(): Promise<IDBDatabase> {
+  return new Promise((res, rej) => {
+    const request = indexedDB.open("app");
+
+    request.onsuccess = event => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      res(db);
+    };
+
+    request.onerror = event => {
+      const error = (event.target as IDBOpenDBRequest).error;
+      rej(error!);
+    };
+  });
+}
+
 export function toDate(raw: RawDate): Date {
   return new Date(raw instanceof Date ? raw : (typeof raw === "number" ? raw : Number.parseInt(raw)));
 }
@@ -97,30 +115,37 @@ export function getSimpleDisplayDate(raw: RawDate): string {
   return `${day}.${month}`;
 }
 
-export function getDisplayDate(raw: RawDate): string {
+export enum RelativeDirection {
+  PAST,
+  FUTURE
+}
+export function getDisplayDate(raw: RawDate, settings?: { relativeDirection?: RelativeDirection, alwaysDate?: boolean, withTime?: boolean }): string {
+  const {
+    relativeDirection: weekDaysDirection = RelativeDirection.PAST,
+    alwaysDate = true,
+    withTime = false
+  } = settings ?? {};
+
   const date = toDate(raw);
 
-  const dateStr = getSimpleDisplayDate(raw);
+  const simpleDateStr = getSimpleDisplayDate(raw);
 
-  const msDate = date.setHours(0, 0, 0, 0);
+  const msDate = (new Date(date)).setHours(0, 0, 0, 0);
   const msToday = new Date().setHours(0, 0, 0, 0);
-  const diff = (msDate - msToday) / (1000 * 60 * 60 * 24);
+  const daysDiff = (msDate - msToday) / (1000 * 60 * 60 * 24);
 
-  const weekDays = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  const dateInRange = weekDaysDirection === RelativeDirection.FUTURE ? (daysDiff >= -1 && daysDiff <= 6) : (daysDiff >= -6 && daysDiff <= 2);
+  const withDayStr = dateInRange ?
+    `<b>${
+      {"-1": "gestern", "0": "heute", "1": "morgen", "2": "übermorgen"}[daysDiff] ?? weekDaysSo[date.getDay()]
+    }</b>${alwaysDate ? ", " + simpleDateStr : ""}` :
 
-  switch (diff) {
-  case -1: return `<b>gestern</b>, ${dateStr}`;
-  case 0:  return `<b>heute</b>, ${dateStr}`;
-  case 1:  return `<b>morgen</b>, ${dateStr}`;
-  case 2:  return `<b>übermorgen</b>, ${dateStr}`;
-  default: 
-    if (diff < -1 || diff > 6) {
-      return `<b>${dateStr}</b>`;
-    }
-    else {
-      return `<b>${weekDays[date.getDay()]}</b>, ${dateStr}`;
-    }
-  }
+    `<b>${simpleDateStr}</b>`;
+  
+  const pad = (x: number): string => String(x).padStart(2, "0");
+  const withTimeStr = withDayStr + (withTime ? `, um <b>${pad(date.getHours())}:${pad(date.getMinutes())}</b> Uhr` : "");
+  
+  return withTimeStr;
 }
 
 export function msToInputDate(raw: RawDate): string {
@@ -243,6 +268,12 @@ export function escapeHTML(str: string): string {
   });
 }
 
+export function $cloneTemplate(selector: string): JQuery<HTMLElement> {
+  const template = $(selector)[0] as HTMLTemplateElement;
+  const fragment = template.content.cloneNode(true) as DocumentFragment;
+  return $(fragment).children();
+}
+
 export function cutString(str: string, maxLength: number): string {
   if (str.length < maxLength) return str;
   return str.substring(0, maxLength - 1) + "…";
@@ -279,7 +310,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
         subjectNameShort: "Pause",
         subjectNameSubstitution: [],
         teacherGender: "d",
-        teacherNameLong: "",
+        teacherNameLong: "-",
         teacherNameSubstitution: []
       };
 
@@ -287,7 +318,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
         lessonNumber: l.lessonNumber,
         startTime: Number.parseInt(l.startTime),
         endTime: Number.parseInt(l.endTime),
-        room: l.room,
+        room: l.subjectId === -1 ? "-" : l.room,
 
         subjectId: l.subjectId,
         subjectNameLong: subject.subjectNameLong,
@@ -330,21 +361,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
     }
   }
 
-  let lessonsWithEvents: LessonWithEvent[] = lessonsWithSubstitutions;
-  
-  currentEventData.filter(e =>
-    (currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1)
-    && isSameDay(e.startDate, date)
-  ).forEach(e => {
-    lessonsWithEvents = lessonsWithEvents.map(l => {
-      if (matchesLessonNumber(l.lessonNumber, e.lesson ?? "")) {
-        l.events = [...l.events ?? [], e].sort((e1, e2) => e1.eventId - e2.eventId);
-      }
-      return l;
-    });
-  });
-
-  const groupedLessonData = lessonsWithEvents
+  const groupedLessonData = lessonsWithSubstitutions
     .reduce((acc: LessonGroup[], curr) => {
       const group = acc.find(l => l.lessonNumber === curr.lessonNumber);
       if (group) {
@@ -362,6 +379,19 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
     }, [])
     .sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
 
+  let lessonGroupsWithEvent: LessonGroupWithEvent[] = groupedLessonData;
+    
+  currentEventData.filter(e =>
+    (currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1) && isSameDay(e.startDate, date)
+  ).forEach(e => {
+    lessonGroupsWithEvent = lessonGroupsWithEvent.map(l => {
+      if (matchesLessonNumber(l.lessonNumber, e.lesson ?? "")) {
+        l.events = [...l.events ?? [], e].sort((e1, e2) => e1.eventId - e2.eventId);
+      }
+      return l;
+    });
+  });
+
   function isDoubleLesson(lg1: LessonGroup | TimetableData, lg2?: LessonGroup | TimetableData): boolean {
     function checkForSubstitutions(l1: LessonWithSubstitution, l2: LessonWithSubstitution): boolean {
       if (!(l1.substitution === undefined && l2.substitution === undefined)) {
@@ -371,12 +401,13 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
       return true;
     }
 
-    function checkForEvents(l1: LessonWithEvent, l2: LessonWithEvent): boolean {
+    function checkForEvents(l1: LessonGroupWithEvent, l2: LessonGroupWithEvent): boolean {
       if (!(l1.events === undefined && l2.events === undefined)) {
         if (l1.events === undefined || l2.events === undefined) return false;
         else {
-          for (const event in l1.events) {
-            if (!checkKeys(l1.events[event], l2.events[event], ["eventId"])) return false;
+          if (l1.events.length !== l2.events.length) return false;
+          for (const i in l1.events) {
+            if (l1.events[i].eventId !== l2.events[i].eventId) return false;
           }
         };
       }
@@ -389,15 +420,14 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 
     if (! (lg1 && lg2)) return false;
     if (lg1.lessons.length !== lg2?.lessons.length) return false;
+    if (!checkForEvents(lg1, lg2)) return false;
 
     for (const lessonId in lg1.lessons) {
       const l1 = lg1.lessons[lessonId];
       const l2 = lg2.lessons[lessonId];
 
       if (!checkKeys(l1, l2, ["subjectId", "room"])) return false;
-
       if (!checkForSubstitutions(l1, l2)) return false;
-      if (!checkForEvents(l1, l2)) return false;
     }
     return true;
   }
@@ -427,11 +457,14 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 }
 
 async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void> {
-  if (!user.isAuthed) await new Promise(res => {user.on("change", res)})
+  if (!user.isAuthed) await new Promise(res => {
+    user.on("change", res);
+  });
 
   if (user.loggedIn) {
-    const data = await $.get("/teams/get_joined_teams_data");
-    joinedTeamsData.set(data, settings);
+    const res = await fetch("/teams/get_joined_teams_data");
+    if (!res.ok) throw new Error("HTTP error during fetch of joinedTeams: " + res.status + " " + await res.text());
+    joinedTeamsData.set(await res.json(), settings);
   }
   else {
     return new Promise<void>(res => {
@@ -466,12 +499,15 @@ async function loadClassSubstitutionsData(): Promise<void> {
 }
 
 async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<void> {
-  if (!user.isAuthed) await new Promise(res => {user.on("change", res)})
+  if (!user.isAuthed) await new Promise(res => {
+    user.on("change", res);
+  });
 
   if (user.loggedIn) {
     // If the user is logged in, get the data from the server
-    const data = await $.get("/homework/get_homework_checked_data");
-    homeworkCheckedData.set(data, settings);
+    const res = await fetch("/homework/get_homework_checked_data");
+    if (!res.ok) throw new Error("HTTP error during fetch of homeworkCheckedData: " + res.status + " " + await res.text());
+    homeworkCheckedData.set(await res.json(), settings);
   }
   else {
     return new Promise<void>(res => {
@@ -488,13 +524,11 @@ async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<v
 }
 
 async function loadUploadData(): Promise<void> {
-  const _showAllUploads = await showAllUploads();
-  return new Promise<void>(res => {
-    $.get("/uploads/metadata?all=" + _showAllUploads, data => {
-      uploadData(data);
-      res();
-    });
-  });
+  const currentShowAllUploads = await showAllUploads();
+
+  const res = await fetch("/uploads/metadata?all=" + currentShowAllUploads);
+  if (!res.ok) throw new Error("HTTP error during fetch of uploadMetadata: " + res.status + " " + await res.text());
+  uploadData(await res.json());
 }
 
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
@@ -941,12 +975,20 @@ $(document).on("visibilitychange", () => {
   }
 });
 
-
-function onOffline(): void {
+async function onOffline(): Promise<void> {
   $("#offline-hint").show();
   $("#offline-popup").show();
   $("#navbar-reload-button").hide();
   socket.disconnect();
+
+  const db = await openIndexedDB();
+  const lastUpdatedReq = db.transaction("meta", "readwrite").objectStore("meta").get("lastUpdated");
+  const lastUpdated: number = await new Promise(res => {
+    lastUpdatedReq.onsuccess = () => res(lastUpdatedReq.result);
+  });
+  $("#offline-popup-last-updated").html("<b>Stand: </b>" + getDisplayDate(lastUpdated, {
+    relativeDirection: RelativeDirection.PAST, alwaysDate: false, withTime: true
+  }));
 }
 
 async function onOnline(): Promise<void> {

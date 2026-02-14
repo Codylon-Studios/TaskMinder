@@ -2,6 +2,7 @@ import { ColorTheme, colorTheme, isSite } from "../../global/global.js";
 
 if (localStorage.getItem("displayFooter") === "false") {
   $("footer").hide();
+  $("#app-scroll").css({ paddingBottom: "1rem" });
 }
 
 $("#footer-close").on("click", () => {

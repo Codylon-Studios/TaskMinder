@@ -268,7 +268,7 @@ $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
 
 export async function init(): Promise<void> {
   $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && navigator.onLine);
-  $("#login-register-button").toggleClass("d-none", isSite("join"));
+  $("#login-register-button").toggle(! isSite("join"));
 
   //
   //LOGIN -- REGISTER
@@ -403,7 +403,7 @@ $(() => {
   user.on("change", (function _() {
     $(".class-joined-content").toggle(user.classJoined ?? false);
     $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
-    $("#login-register-button").toggle(!user.loggedIn && !isSite("join"))
+    $("#login-register-button").toggle(!user.loggedIn && !isSite("join"));
     $("#nav-logout-button").toggle(user.loggedIn ?? false);
     $("#offcanvas-account").toggle(user.loggedIn ?? false);
     $("#offcanvas-account-name").text(user.username ?? "");
@@ -439,22 +439,25 @@ export const user = {
   _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
 
   async auth(settings?: {silent?: boolean}) {
-    const response = await $.get("/account/auth");
+    const res = await fetch("/account/auth");
+    if (!res.ok) throw new Error("HTTP error during auth: " + res.status + " " + await res.text());
+    const json = await res.json();
+
     user.isAuthed = true;
 
-    if (response.loggedIn) {
+    if (json.loggedIn) {
       user.loggedIn = true;
-      user.username = response.account.username;
+      user.username = json.account.username;
     }
     else {
       user.loggedIn = false;
       user.username = null;
     }
   
-    user.classJoined = response.classJoined;
-    user.permissionLevel = response.permissionLevel ?? 0;
+    user.classJoined = json.classJoined;
+    user.permissionLevel = json.permissionLevel ?? 0;
   
-    if (response.loggedIn) {
+    if (json.loggedIn) {
       user.loggedIn = true;
     }
     else {

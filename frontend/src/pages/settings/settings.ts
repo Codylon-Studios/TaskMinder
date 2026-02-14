@@ -968,28 +968,27 @@ async function renderTimetable(): Promise<void> {
 }
 
 async function updateClassInfo(): Promise<void> {
-  let classCode = "";
 
-  $.get("/class/get_class_info")
-    .done(res => {
-      const resClassCode = res.classCode;
-      $("#class-code").val(resClassCode);
-      $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
-      classCode = resClassCode;
+  const res = await fetch("/class/get_class_info");
+  if (res.ok) {
+    const json = await res.json();
+    const classCode = json.classCode;
+    $("#class-code").val(classCode);
+    $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
 
-      qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
-      $("#show-qrcode-modal-title b").text(res.className);
-      $("#class-settings-name").text(res.className);
+    qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
+    $("#show-qrcode-modal-title b").text(json.className);
+    $("#class-settings-name").text(json.className);
 
-      isTestClass = res.isTestClass;
-      $("#test-class-alert").toggleClass("d-none", !isTestClass);
-      testClassTimeCreated = Number.parseInt(res.classCreated);
-      updateTestClassTimeLeft();
-    })
-    .fail(() => {
-      $("#class-code").val("Fehler beim Laden");
-      $("#invite-copy-link, #invite-qrcode").prop("disabled", true);
-    });
+    isTestClass = json.isTestClass;
+    $("#test-class-alert").toggleClass("d-none", !isTestClass);
+    testClassTimeCreated = Number.parseInt(json.classCreated);
+    updateTestClassTimeLeft();
+  }
+  else {
+    $("#class-code").val("Fehler beim Laden");
+    $("#invite-copy-link, #invite-qrcode").prop("disabled", true);
+  }
 
   $("#invite-copy-link").on("click", async () => {
     try {
@@ -1008,7 +1007,9 @@ async function updateClassInfo(): Promise<void> {
 
   let loggedOutUsersRole;
   try {
-    loggedOutUsersRole = await $.get("/class/get_logged_out_users_role");
+    const res = await fetch("/class/get_logged_out_users_role");
+    if (!res.ok) throw new Error("HTTP error during fetch of loggedOutUsersRole: " + res.status + " " + await res.text());
+    loggedOutUsersRole = await res.json();
   }
   catch {
     loggedOutUsersRole = 0;
@@ -1078,11 +1079,14 @@ async function updateOnUserChange(): Promise<void> {
         .prop("disabled", false);
     }
     $("#change-class-name-button").toggle(permissionLevel >= 2);
+
+    $(`show-change-classcode,
+      #delete-class-button, #delete-class ~ .form-text,
+      #kick-logged-out-users-button, #kick-logged-out-users ~ .form-text`).toggle(permissionLevel === 3);
     $(`#change-class-code,
       #upgrade-test-class,
-      #delete-class-button,
-      #kick-logged-out-users-button,
       #set-logged-out-users-role-select`).prop("disabled", permissionLevel !== 3);
+
     $(".is-current-user").prop("disabled", true);
   }
 }

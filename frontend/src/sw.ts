@@ -1,7 +1,28 @@
 /// <reference lib="webworker" />
 const sw = globalThis as unknown as ServiceWorkerGlobalScope;
 
-const CACHE_ENABLED = true;
+function openIndexedDB(): Promise<IDBDatabase> {
+  return new Promise((res, rej) => {
+    const request = indexedDB.open("app", 2);
+
+    request.onupgradeneeded = event => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains("meta")) {
+        db.createObjectStore("meta");
+      }
+    };
+
+    request.onsuccess = event => {
+      res((event.target as IDBOpenDBRequest).result);
+    };
+
+    request.onerror = event => {
+      rej((event.target as IDBOpenDBRequest).error);
+    };
+  });
+}
+
+const CACHE_ENABLED = false;
 const VERSION = "v-dev-1";
 const CORE_CACHE = "core-" + VERSION;
 const API_CACHE = "api-" + VERSION;
@@ -121,6 +142,9 @@ sw.addEventListener("fetch", async ev => {
           ev.waitUntil(
             cache.put(request, response.clone())
           );
+
+          const db = await openIndexedDB();
+          db.transaction("meta", "readwrite").objectStore("meta").put(Date.now(), "lastUpdated");
 
           return response;
         }

@@ -28,6 +28,7 @@ async function init(): Promise<void> {
   await initBottombar();
   await initNavbar();
   await renderAll();
+  $("#app-scroll").scrollTop(0);
 
   setTimeout(() => {
     const hash = globalThis.location.hash;

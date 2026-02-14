@@ -25,6 +25,7 @@ export function richTextToHtml(
       if (options?.displayBlockIfNewline && parsedText.html().includes("<br>")) {
         targetElement.addClass("d-block");
       }
+      targetElement.css("white-space", "pre-wrap");
     }
     if (options?.parseLinks) {
       parsedText.find("span[data-link-url]").each(function () {

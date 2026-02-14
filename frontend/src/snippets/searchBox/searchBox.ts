@@ -31,7 +31,7 @@ class SearchBox extends HTMLElement {
   }
 
   set value(val: string) {
-    this.$input.val(val);
+    this.$input.val(val).trigger("input");
   }
 
   searchMatches(...content: string[]): boolean {

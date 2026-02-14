@@ -95,6 +95,10 @@ body {
   }
 }
 
+::selection {
+  background-color: rgba(var(--bs-primary-rgb), 0.6);
+}
+
 .navbar {
   margin-top: var(--pwa-banner-height)
 }
@@ -215,7 +219,7 @@ body {
 }
 
 .h-fit-content {
-  height: fit-content;
+  height: fit-content !important;
 }
 
 .cursor-pointer {
@@ -261,6 +265,15 @@ $unimportant-display-values: (
   .ds-#{$key} {
     display: $value;
   }
+}
+
+.badge-tertiary {
+  background-color: var(--btn-tertiary-normal);
+  color: var(--btn-color) !important;
+}
+
+.border-dashed {
+  border-style: dashed;
 }
 
 .text-body-bg {
@@ -470,12 +483,15 @@ footer a {
   top: 0;
   left: 100%;
   transform: translate(-50%, -50%);
-  padding: 0.5rem;
+  padding: 0.4rem;
   background-color: var(--bs-primary);
   border: 1px solid var(--bs-body-bg);
   border-radius: 50%;
 }
 
+.offcanvas-body-grow-75 {
+  max-height: calc(75vh - 4rem);
+}
 
 @function get-circle-pos($id, $axis, $radius) {
   @if ($axis == x) {

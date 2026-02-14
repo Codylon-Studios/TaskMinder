@@ -48,6 +48,13 @@ toggleShownLinks();
 
 $(".bottombar-overlay").hide();
 
+$(".bottombar-link").on("click", function() {
+  $(this).addClass("pop");
+  setTimeout(() => {
+    $(this).removeClass("pop");
+  }, 300);
+});
+
 let startX = 0;
 let startY = 0;
 let overlayShowsMore = false;
@@ -167,8 +174,4 @@ $(document).on("touchend", ev => {
     right: getTargetRight()
   }, endProgress === 0 ? 500 : 200, $(".bottombar-overlay").hide);
   hideOverlay(endProgress, endProgress === 1 ? changeSite : undefined);
-});
-
-$("#bottombar-more-cancel").on("click", ev => {
-  ev.preventDefault();
 });

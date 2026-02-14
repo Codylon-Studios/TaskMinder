@@ -25,11 +25,16 @@
   & i {
     font-size: 1.2rem;
     margin: 0.8rem 0.8rem 0 0.8rem;
+    transition: transform 0.2s ease;
   }
 
   & span {
     font-size: max(0.5rem, 1.5vw);
     margin-bottom: 0.3rem;
+  }
+
+  &.pop i {
+    transform: scale(1.2);
   }
 }
 

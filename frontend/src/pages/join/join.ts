@@ -53,12 +53,10 @@ export async function init(): Promise<void> {
       $("#create-class-btn").prop("disabled", true);
     });
 
-    $(() => {
-      $.get("/class/get_class_info")
-        .done(res => {
-          const resClassName = res.className;
-          $("#decide-account-class-name").text(resClassName);
-        });
+    $(async () => {
+      const res = await fetch("/class/get_class_info");
+      if (!res.ok) throw new Error("HTTP error during fetch of classInfo: " + res.status + " " + await res.text());
+      $("#decide-account-class-name").text((await res.json()).className);
     });
 
     $("#login-register-back-btn").on("click", () => {

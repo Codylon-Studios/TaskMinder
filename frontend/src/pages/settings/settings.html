@@ -77,7 +77,7 @@
           </div>
 
           <div class="tab-pane fade" id="nav-settings-account">
-            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-logged-in-info">
+            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 not-logged-in-info">
               <i class="fa-solid fa-circle-xmark mx-1" aria-hidden="true"></i>
               <div>
                 <div class="d-block">Für diese Einstellungen musst du angemeldet sein.</div>
@@ -86,13 +86,12 @@
             </div>
 
             <div id="settings-account">
+              <!-- prettier-ignore -->
               <h5>
-                Du bist angemeldet als
-                <b id="settings-account-name">a26b25c24</b>
-                .
+                Du bist angemeldet als <b id="settings-account-name"></b>.
               </h5>
 
-              <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
+              <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
                 <i class="fa-solid fa-circle-info mx-1" aria-hidden="true"></i>
                 <div class="d-block">Diese Einstellungen betreffen deinen gesamten Account, auch geräteübergreifend.</div>
               </div>
@@ -205,7 +204,7 @@
           </div>
 
           <div class="tab-pane fade" id="nav-settings-student">
-            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
+            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 not-joined-info">
               <i class="fa-solid fa-circle-xmark mx-1" aria-hidden="true"></i>
               <div>
                 <div class="d-block">Für diese Einstellungen musst du einer Klasse beigetreten sein.</div>
@@ -216,7 +215,7 @@
             </div>
 
             <div id="settings-student">
-              <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content">
+              <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
                 <i class="fa-solid fa-circle-info mx-1" aria-hidden="true"></i>
                 <div class="d-block">Wenn du einen Account hast, werden diese Einstellungen mit anderen angemeldeten Geräten synchronisiert.</div>
               </div>
@@ -259,7 +258,7 @@
           </div>
 
           <div class="tab-pane fade" id="nav-settings-class">
-            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 width-fit-content not-joined-info">
+            <div class="alert alert-primary p-2 d-flex align-items-center gap-2 not-joined-info">
               <i class="fa-solid fa-circle-xmark mx-1" aria-hidden="true"></i>
               <div>
                 <div class="d-block">Für diese Einstellungen musst du einer Klasse beigetreten sein.</div>
@@ -270,7 +269,7 @@
             </div>
 
             <div id="settings-class">
-              <div class="alert alert-warning p-2 d-flex align-items-center gap-2 width-fit-content">
+              <div class="alert alert-warning p-2 d-flex align-items-center gap-2">
                 <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
                 <div>
                   <div class="d-block">
@@ -312,7 +311,12 @@
                 <div class="col-12 col-lg" id="class-code-container">
                   <div class="d-flex gap-2 flex-column flex-lg-row mb-2">
                     <input id="class-code" type="text" class="form-control user-select-all" value="" readonly />
-                    <button class="btn btn-primary w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#change-classcode-confirm-modal">
+                    <button
+                      class="btn btn-primary w-100 fw-bold"
+                      data-bs-toggle="modal"
+                      data-bs-target="#change-classcode-confirm-modal"
+                      id="show-change-classcode"
+                    >
                       <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                       Neuen Klassencode anfordern
                     </button>

@@ -20,7 +20,9 @@ import {
   teamsData,
   eventTypeData,
   onlyThisSite,
-  ajax
+  ajax,
+  weekDaysSo,
+  weekDaysMo
 } from "../../global/global.js";
 import { HomeworkData, MonthDates, TimetableData } from "../../global/types";
 import { user } from "../../snippets/navbar/navbar.js";
@@ -121,7 +123,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
 
   await applyEvents();
 
-  const weekday = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][date.getDay()];
+  const weekday = weekDaysSo[date.getDay()];
 
   // Append the days (All days will be added into an .calendar element)
   return `
@@ -159,7 +161,7 @@ async function getNewCalendarContent(): Promise<string> {
   }
   else {
     newCalendarWeekContent += '<div class="d-flex weekdays">';
-    newCalendarWeekContent += ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(e => `<div>${e}</div>`).join("");
+    newCalendarWeekContent += weekDaysMo.map(e => `<div>${e}</div>`).join("");
     newCalendarWeekContent += "</div>";
     for (const week in await monthDates()) {
       const weekDates = (await monthDates())[week];
@@ -208,7 +210,7 @@ async function checkHomework(homeworkId: number): Promise<void> {
   // Check whether the user is logged in
   if (user.loggedIn) {
     await ajax("POST", "/homework/check_homework", {
-      body: { homeworkId, checkStatus: "" + checkStatus },
+      body: { homeworkId, checkStatus: checkStatus },
       queueable: true
     });
   }
@@ -300,7 +302,7 @@ async function renderHomeworkList(): Promise<void> {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const currentHomeworkData = (await homeworkData()).filter(h => currentJoinedTeams.includes(h.teamId) || h.teamId === -1);
 
-  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-50 mt-0\">Auf diesen Tag</div>");
+  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-75 mt-0\">Auf diesen Tag</div>");
   let foundToday = false;
   for (const homework of currentHomeworkData.filter(h => isSameDay(selectedDate, h.submissionDate))) {
     await insertHomework(homework);
@@ -308,7 +310,7 @@ async function renderHomeworkList(): Promise<void> {
   }
   if (!foundToday) newContent.append("<div class=\"text-secondary\">Keine Hausaufgaben auf diesen Tag!</div>");
 
-  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-50 mt-0\">Auf den nächsten Tag</div>");
+  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-75 mt-0\">Auf den nächsten Tag</div>");
   let foundTomorrow = false;
   for (const homework of currentHomeworkData.filter(h => isSameDay(tomorrow, h.submissionDate))) {
     await insertHomework(homework);
@@ -435,7 +437,7 @@ async function renderSubstitutionList(): Promise<void> {
   }
 
   const updatedDate = new Date(dateToMs(data.updated.split(" ")[0]) ?? 0);
-  const updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][updatedDate.getDay()];
+  const updatedWeekDay = weekDaysSo[updatedDate.getDay()];
   $("#substitutions-updated").text(updatedWeekDay + ", " + data.updated.split(" ")[1]);
 
   if (substitutionsMode === "none") {
@@ -525,15 +527,13 @@ async function renderTimetable(): Promise<void> {
   const timetableData = await loadTimetableData(selectedDate);
 
   for (const multiLesson of timetableData) {
-    if (! multiLesson.lessons.some(l => l.subjectId !== -1 || l.substitution !== undefined || l.events !== undefined)) {
-      continue;
-    }
+    const isBreak = multiLesson.lessons.every(l => l.subjectId === -1 && l.substitution === undefined);
+    const isNormalBreak = isBreak && multiLesson.events === undefined;
 
     const templateModeLess = `
-      <div class="card flex-grow-1" data-start-lesson-number="${multiLesson.startLessonNumber}"
-        data-end-lesson-number="${multiLesson.endLessonNumber}">
+      <div class="card ${isNormalBreak ? "flex-grow-0 border-dashed" : "flex-grow-1"}">
         <div class="card-body d-flex align-items-center justify-content-center flex-column">
-          <div class="d-flex align-items-center flex-column mx-4">
+          <div class="d-flex align-items-center flex-column">
             <span>
               ${/* eslint-disable indent */
                 multiLesson.lessons
@@ -562,14 +562,9 @@ async function renderTimetable(): Promise<void> {
                 }).join("")
               /* eslint-enable indent */}
             ${/* eslint-disable indent */
-              multiLesson.lessons
-                .map(l => {
-                  if (l.events !== undefined) {
-                    return l.events.map(e => {
-                      return `<span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>`;
-                    }).join("");
-                  }
-                }).join("")
+              (multiLesson.events ?? []).map(e => {
+                return `<span class="event-${e.eventTypeId} fw-bold mt-0 d-block text-center">${escapeHTML(e.name)}</span>`;
+              }).join("").replace("mt-0", "mt-2")
               /* eslint-enable indent */}
           </div>
 
@@ -583,8 +578,8 @@ async function renderTimetable(): Promise<void> {
     const thisLessLesson = $(templateModeLess);
 
     const templateModeMore = `
-      <div class="card" data-start-lesson-number="${multiLesson.startLessonNumber}" data-end-lesson-number="${multiLesson.endLessonNumber}">
-        <div class="card-body pt-4 text-center">
+      <div class="card ${isNormalBreak ? "border-dashed" : ""}">
+        <div class="card-body text-center ${isNormalBreak ? "pt-1 py-1" : "pt-4"}">
           <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start
               ${multiLesson.lessons.every(l =>l.substitution?.type === "Entfall") ? "line-through-red" : ""}
             ">
@@ -615,21 +610,26 @@ async function renderTimetable(): Promise<void> {
                   .join(" / ")
                 /* eslint-enable indent */}</span>
 
-            <span>
+            <span ${isBreak ? "class=\"d-none\"" : ""}>
               <span>
                 ${/* eslint-disable indent */
                   multiLesson.lessons
                     .map(l => {
                       let cssClass = "";
                       let append = "";
+                      let room = l.room;
                       if (l.substitution !== undefined) {
-                        if (l.substitution.type === "Entfall") cssClass = "line-through-red";
+                        if (l.substitution.type === "Entfall") {
+                          cssClass = "line-through-red";
+                          if (l.subjectId === -1) room = "----";
+                        }
                         else if (l.substitution.room !== l.room) {
                           cssClass = "line-through-yellow";
                           append = ` <span class="text-yellow fw-bold">${l.substitution.room}</span>`;
+                          if (l.subjectId === -1) room = "";
                         }
                       }
-                      return `<span class="${cssClass}">${escapeHTML(l.room)}</span>${append}`;
+                      return `<span class="${cssClass}">${escapeHTML(room)}</span>${append}`;
                     })
                     .join(" / ")
                   /* eslint-enable indent */}</span>,
@@ -639,14 +639,19 @@ async function renderTimetable(): Promise<void> {
                     .map(l => {
                       let cssClass = "";
                       let append = "";
+                      let teacher = l.teacherName;
                       if (l.substitution !== undefined) {
-                        if (l.substitution.type === "Entfall") cssClass = "line-through-red";
+                        if (l.substitution.type === "Entfall") {
+                          cssClass = "line-through-red";
+                          if (l.subjectId === -1) teacher = "----";
+                        }
                         else if (!(l.teacherNameSubstitution ?? []).includes(l.substitution.teacher)) {
                           cssClass = "line-through-yellow";
                           append = ` <span class="text-yellow fw-bold">${l.substitution.teacher}</span>`;
+                          if (l.subjectId === -1) teacher = "";
                         }
                       }
-                      return `<span class="${cssClass}">${escapeHTML(l.teacherName)}</span>${append}`;
+                      return `<span class="${cssClass}">${escapeHTML(teacher)}</span>${append}`;
                     })
                     .join(" / ")
                   /* eslint-enable indent */}</span>
@@ -664,18 +669,13 @@ async function renderTimetable(): Promise<void> {
                 }).join("")
               /* eslint-enable indent */}
             ${/* eslint-disable indent */
-              multiLesson.lessons
-                .map(l => {
-                  if (l.events !== undefined) {
-                    return l.events.map(e => {
-                      return `
-                        <span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>
-                        <span class="event-${e.eventTypeId} text-centered-block rich-text" data-event-type-id="${e.eventTypeId}"
-                          >${escapeHTML(e.description ?? "")}</span>
-                      `;
-                    }).join("");
-                  }
-                }).join("")
+              (multiLesson.events ?? []).map(e => {
+                return `
+                  <span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>
+                  <span class="event-${e.eventTypeId} text-centered-block rich-text" data-event-type-id="${e.eventTypeId}"
+                    >${escapeHTML(e.description ?? "")}</span>
+                `;
+              }).join("")
               /* eslint-enable indent */}
           </div>
 
@@ -752,8 +752,8 @@ async function updateTimetableFeedback(): Promise<void> {
   }
   function lessonToText(l: TimetableData, showMoreInfo: boolean): string {
     return (
-      (l.lessons[0].events
-        ? (l.lessons[0].events).map(e => `<span class="fw-bold event-${e.eventTypeId}">${e.name}</span>`)
+      (l.events
+        ? (l.events).map(e => `<span class="fw-bold event-${e.eventTypeId}">${e.name}</span>`)
           .join(", ").replace(lastCommaRegex, " und") + " während "
         : "")
 

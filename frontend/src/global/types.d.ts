@@ -62,6 +62,7 @@ type SingleEventData = {
   endDate: string | null;
   lesson: string | null;
   teamId: number;
+  isPinned: boolean;
 };
 type EventData = SingleEventData[];
 
@@ -80,6 +81,7 @@ type HomeworkData = {
   assignmentDate: string;
   submissionDate: string;
   teamId: number;
+  isPinned: boolean;
 }[];
 
 // Homework Checked
@@ -159,16 +161,16 @@ type LessonWithSubject = {
 type LessonWithSubstitution = LessonWithSubject & {
   substitution?: SubstitutionEntry
 };
-type LessonWithEvent = LessonWithSubstitution & {
-  events?: SingleEventData[]
-};
 type LessonGroup = {
   lessonNumber: number;
   startTime: number;
   endTime: number;
-  lessons: LessonWithEvent[];
+  lessons: LessonWithSubstitution[];
 };
-type TimetableData = LessonGroup & {
+type LessonGroupWithEvent = LessonGroup & {
+  events?: SingleEventData[]
+};
+type TimetableData = LessonGroupWithEvent & {
   startLessonNumber: number;
   endLessonNumber: number;
   lessonTimes: {
@@ -181,6 +183,7 @@ type TimetableData = LessonGroup & {
 type SingleUploadData = {
   uploadId: number;
   uploadName: string;
+  uploadDescription: string | null;
   uploadType: string;
   teamId: number;
   status: string;

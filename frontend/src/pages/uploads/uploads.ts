@@ -15,6 +15,7 @@ import {
 } from "../../global/global.js";
 import { AjaxError, SingleUploadData } from "../../global/types";
 import { user } from "../../snippets/navbar/navbar.js";
+import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
 
 async function renderUploadList(): Promise<void> {
   async function getFilteredData(): Promise<SingleUploadData[]> {
@@ -32,7 +33,7 @@ async function renderUploadList(): Promise<void> {
     }
     // Filter by search
     const sb = ($("#search-uploads")[0] as SearchBox);
-    data = data.filter(u => sb.searchMatches(u.accountName ?? "", u.uploadName));
+    data = data.filter(u => sb.searchMatches(u.accountName ?? "", u.uploadName, richTextToPlainText(u.uploadDescription ?? "")));
     // Filter by type
     data = data.filter(u => $(`#filter-type-${u.uploadType}`).prop("checked"));
     // Filter by team
@@ -150,11 +151,14 @@ async function renderUploadList(): Promise<void> {
           <br>
           <span class="fw-bold word-wrap-break">${escapeHTML(name)}</span>
           <br>
-          <span class="badge badge-tertiary rounded-pill"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
-          <span class="badge badge-tertiary rounded-pill"><i class="far fa-file me-1" aria-hidden="true"></i>${numberFiles}</span>
-          <span class="badge badge-tertiary rounded-pill">
+          <span class="badge badge-tertiary rounded-pill border"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
+          <span class="badge badge-tertiary rounded-pill border"><i class="far fa-file me-1" aria-hidden="true"></i>${numberFiles}</span>
+          <span class="badge badge-tertiary rounded-pill border">
             <i class="far fa-calendar me-1" aria-hidden="true"></i>${getDisplayDate(upload.createdAt)}
           </span>
+          ${upload.uploadDescription === "" || upload.uploadDescription === null ? ""
+    : '<span class="badge badge-tertiary rounded-pill border"><i class="far fa-message me-1" aria-hidden="true"></i>Beschreibung</span>'
+}
           </div>
         </button>
       </div>
@@ -166,9 +170,16 @@ async function renderUploadList(): Promise<void> {
 
     const tableTemplate = $(`
       <tr>
-        <td class="text-nowrap text-center">${fileIconSmall}</td>
+        <td class="text-nowrap text-center align-middle">
+          ${$(fileIconSmall).addClass("cursor-pointer view-upload").attr("data-id", uploadId).prop("outerHTML")}
+        </td>
         <td class="text-break">
-          <span class="fw-bold">${escapeHTML(name)}</span><br>@${author}
+          <span class="fw-bold cursor-pointer view-upload" data-id="${uploadId}">${escapeHTML(name)}</span>
+          <br>
+          <span class="badge badge-tertiary rounded-pill border"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
+          ${upload.uploadDescription === "" || upload.uploadDescription === null ? ""
+    : '<span class="badge badge-tertiary rounded-pill border"><i class="far fa-message me-1" aria-hidden="true"></i>Beschreibung</span>'
+}
           <div class="upload-failed">
             <span class="form-text text-danger">
               <i class="fas fa-circle-xmark" aria-hidden="true"></i>
@@ -199,9 +210,6 @@ async function renderUploadList(): Promise<void> {
             <div class="d-flex flex-nowrap">
               <button class="btn btn-sm btn-semivisible upload-copy-link" aria-label="Link kopieren" data-id="${uploadId}">
                 <i class="fa-solid fa-copy opacity-75" aria-hidden="true"></i>
-              </button>
-              <button class="btn btn-sm btn-semivisible view-upload" aria-label="Ansehen" data-id="${uploadId}">
-                <i class="fa-solid fa-eye opacity-75" aria-hidden="true"></i>
               </button>
             </div>
           </div>
@@ -239,12 +247,8 @@ async function renderUploadTypeList(): Promise<void> {
     {uploadTypeId: "IMAGE", name: "Anderes Bild"}
   ];
 
-  // Clear the select element in the add upload modal
-  $("#add-upload-type").empty();
-  $("#add-upload-type").append('<option value="" disabled selected>Art</option>');
-  // Clear the select element in the edit upload modal
-  $("#edit-upload-type").empty();
-  $("#edit-upload-type").append('<option value="" disabled selected>Art</option>');
+  // Clear the select element in the add & edit upload modal
+  $("#add-upload-type, #edit-upload-type").html('<option value="" disabled selected>Art</option>');
   // Clear the list for filtering by type
   $("#filter-type-list").empty();
 
@@ -257,54 +261,32 @@ async function renderUploadTypeList(): Promise<void> {
     const uploadTypeName = uploadType.name;
 
     filterData.type[uploadTypeId] ??= true;
-    const isChecked = filterData.type[uploadTypeId] ? "checked" : "";
-    if (isChecked !== "checked") $("#filter-changed").show();
+    const checkedStatus = filterData.type[uploadTypeId] ? "checked" : "";
+    if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by type
     const templateFilterType = `
-      <div class="form-check">
-        <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${uploadTypeId}" data-id="${uploadTypeId}" ${isChecked}>
-        <label class="form-check-label" for="filter-type-${uploadTypeId}">
-          ${escapeHTML(uploadTypeName)}
-        </label>
-      </div>`;
+      <label class="form-check flex-grow-1 text-center mb-0 ps-2rem pe-2 py-1 border rounded bg-body-tertiary">
+        <input type="checkbox" class="form-check-input filter-type-option me-2"
+          id="filter-type-${uploadTypeId}" data-id="${uploadTypeId}" ${checkedStatus}>
+        ${uploadTypeName}
+      </label>`;
     $("#filter-type-list").append(templateFilterType);
 
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${uploadTypeId}">${escapeHTML(uploadTypeName)}</option>`;
-    $("#add-upload-type").append(templateFormSelect);
-    $("#edit-upload-type").append(templateFormSelect);
+    $("#add-upload-type, #edit-upload-type").append(`<option value="${uploadTypeId}">${uploadTypeName}</option>`);
   };
-
-  // If any type filter gets changed, update the shown uploads
-  $(".filter-type-option").on("change", function () {
-    renderUploadList();
-    const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
-    filterData.type ??= {};
-    filterData.type[$(this).data("id")] = $(this).prop("checked");
-    localStorage.setItem("uploadFilter", JSON.stringify(filterData));
-    updateFilters();
-  });
 
   localStorage.setItem("uploadFilter", JSON.stringify(filterData));
 };
 
 async function renderTeamList(): Promise<void> {
-  // Clear the select element in the add upload modal
-  $("#add-upload-team").empty();
-  $("#add-upload-team").append('<option value="-1" selected>Alle</option>');
-  // Clear the select element in the edit upload modal
-  $("#edit-upload-team").empty();
-  $("#edit-upload-team").append('<option value="-1" selected>Alle</option>');
+  // Clear the select element in the add & edit upload modal
+  $("#add-upload-team, #edit-upload-team").html('<option value="-1" selected>Alle</option>');
 
   for (const team of (await teamsData())) {
-    // Get the team data
-    const teamName = team.name;
-
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${team.teamId}">${escapeHTML(teamName)}</option>`;
-    $("#add-upload-team").append(templateFormSelect);
-    $("#edit-upload-team").append(templateFormSelect);
+    $("#add-upload-team, #edit-upload-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   }
 };
 
@@ -330,6 +312,7 @@ async function addUpload(): Promise<void> {
         $(this).val("").removeClass("autocomplete");
       });
   }
+  $("#add-upload-description").val("");
   $("#add-upload-files").val("");
   $("#add-upload-type").val("");
   $("#add-upload-team").val("-1");
@@ -347,13 +330,15 @@ async function addUpload(): Promise<void> {
     .on("click", async () => {
       // Save the given information in variables
       const name = $("#add-upload-name").val()?.toString().trim() ?? "";
-      const type = $("#add-upload-type").val()?.toString() ?? "";
       const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
+      const description = $("#add-upload-description").val()?.toString().trim() ?? "";
+      const type = $("#add-upload-type").val()?.toString() ?? "";
       const teamId = $("#add-upload-team").val()?.toString() ?? "-1";
 
       // Prepare the POST request
       const data = new FormData();
       data.append("uploadName", name);
+      data.append("uploadDescription", description);
       data.append("uploadType", type);
       data.append("teamId", teamId);
       for (const f of files) {
@@ -373,10 +358,10 @@ async function addUpload(): Promise<void> {
       catch (e) {
         const err = e as AjaxError;
         if (err.status === 400 && err.responseText === "MIME-Type not supported") {
-          $("#add-upload-unsupported-mime-type-toast").toast("show");
+          $("#upload-unsupported-mime-type-toast").toast("show");
         }
         else if (err.status === 413) {
-          $("#add-upload-size-limit-exceeded-toast").toast("show");
+          $("#upload-size-limit-exceeded-toast").toast("show");
         }
       }
     });
@@ -427,6 +412,12 @@ async function viewUpload(uploadId: number): Promise<void> {
   $("#view-upload-modal-label b").text(upload.uploadName);
   $("#view-upload-modal").modal("show");
 
+  $("#view-upload-description-wrapper").toggle(upload.uploadDescription !== "");
+  richTextToHtml(upload.uploadDescription, $("#view-upload-description"), {
+    showMoreButton: true,
+    parseLinks: true,
+    merge: true
+  });
 
   $("#view-upload-object").toggle(navigator.onLine);
   const offline = ! navigator.onLine;
@@ -469,6 +460,7 @@ async function editUpload(uploadId: number): Promise<void> {
 
   // Set the inputs on the already saved information
   $("#edit-upload-name").val(upload.uploadName);
+  $("#edit-upload-description").val(upload.uploadDescription ?? "").trigger("change");
   $("#edit-upload-type").val(upload.uploadType);
   $("#edit-upload-team").val(upload.teamId);
 
@@ -484,22 +476,46 @@ async function editUpload(uploadId: number): Promise<void> {
     .off("click")
     .on("click", async () => {
       // Save the given information in variables
-      const name = $("#edit-upload-name").val();
-      const type = $("#edit-upload-type").val();
-      const teamId = $("#edit-upload-team").val();
+      const name = $("#edit-upload-name").val()?.toString().trim() ?? "";
+      const changeFiles = $("#edit-upload-change-files").prop("checked");
+      const files = ($("#edit-upload-files")[0] as HTMLInputElement).files ?? [];
+      const description = $("#edit-upload-description").val()?.toString().trim() ?? "";;
+      const type = $("#edit-upload-type").val()?.toString() ?? "";
+      const teamId = $("#edit-upload-team").val()?.toString() ?? "-1";
 
-      await ajax("POST", "/uploads/edit", {
-        body: {
-          uploadId,
-          uploadName: name,
-          uploadType: type,
-          teamId: teamId
-        },
-        queueable: true
-      });
+      // Prepare the POST request
+      const data = new FormData();
+      data.append("uploadId", "" + uploadId);
+      data.append("uploadName", name);
+      data.append("uploadDescription", description);
+      data.append("uploadType", type);
+      data.append("teamId", teamId);
+      data.append("changeFiles", changeFiles);
+      if (changeFiles) {
+        for (const f of files) {
+          data.append("files", f);
+        }
+      }
 
-      $("#edit-upload-success-toast").toast("show");
-      $("#edit-upload-modal").modal("hide");
+      try {
+        await ajax("POST", "/uploads/edit", {
+          body: data,
+          queueable: true,
+          expectedErrors: [400, 413]
+        });
+        
+        $("#edit-upload-success-toast").toast("show");
+        $("#edit-upload-modal").modal("hide");
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 400 && err.responseText === "MIME-Type not supported") {
+          $("#upload-unsupported-mime-type-toast").toast("show");
+        }
+        else if (err.status === 413) {
+          $("#upload-size-limit-exceeded-toast").toast("show");
+        }
+      }
     });
 }
 
@@ -576,7 +592,7 @@ function toggleView(): void {
     $("#upload-gallery").hide();
     $("#upload-table").show();
   }
-  localStorage.setItem("uploads/view", view);
+  localStorage.setItem("uploadView", view);
 }
 
 export async function init(): Promise<void> {
@@ -598,29 +614,37 @@ export async function init(): Promise<void> {
     });
 
     $("#edit-toggle").on("click", function () {
-      $(".edit-option").toggle($("#edit-toggle").is(":checked"));
-    });
-    $("#edit-toggle").prop("checked", false);
-    $(".edit-option").hide();
+      $("#upload-gallery .edit-option").toggle($(this).is(":checked"));
+    }).prop("checked", false);
+    $("#upload-gallery .edit-option").hide();
+
+    function appendFilterContent(): void {
+      $("#filter-content").appendTo(`#filter-${window.innerWidth >= 768 ? "modal" : "offcanvas"}-body`);
+    }
 
     $("#filter-toggle").on("click", function () {
-      $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
+      appendFilterContent();
+      if (window.innerWidth >= 768) $("#filter-modal").modal("show");
+      else $("#filter-offcanvas").offcanvas("show");
     });
-    $("#filter-toggle").prop("checked", false);
-    $("#filter-content, #filter-reset").hide();
+    appendFilterContent();
 
-    view = localStorage.getItem("uploads/view") as View ?? View.Gallery;
+    $("#search-toggle").on("change", function () {
+      const checked = $(this).is(":checked");
+      $("#search-uploads").toggle(checked);
+      if (checked) $("#search-uploads input").trigger("focus");
+      else $("#search-uploads").val("");
+    }).prop("checked", false).trigger("change");
+
+    view = localStorage.getItem("uploadView") as View ?? View.Gallery;
     toggleView();
     $("#view-toggle").on("click", () => {
       view = view === View.Gallery ? View.Table : View.Gallery;
       toggleView();
     });
 
-    if (!localStorage.getItem("uploadFilter")) {
-      localStorage.setItem("uploadFilter", "{}");
-    }
     updateFilters(true);
-    $("#filter-reset").on("click", () => {
+    $(".filter-reset").on("click", () => {
       localStorage.setItem("uploadFilter", "{}");
       updateFilters();
       renderUploadList();
@@ -635,33 +659,22 @@ export async function init(): Promise<void> {
       const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
 
       $("#add-upload-max-files").toggle(files.length > 20);
-      if (name === "" || type === null || files.length === 0 || files.length > 20) {
-        $("#add-upload-button").prop("disabled", true);
-      }
-      else {
-        $("#add-upload-button").prop("disabled", false);
-      }
+      $("#add-upload-button").prop("disabled", name === "" || type === null || files.length === 0 || files.length > 20);
     });
 
     // On changing any information in the edit upload modal, disable the add button if any information is empty
     $(".edit-upload-input").on("input", function () {
       const name = $("#edit-upload-name").val()?.toString().trim();
       const type = $("#edit-upload-type").val();
+      const changeFiles = $("#edit-upload-change-files").prop("checked");
+      const files = ($("#edit-upload-files")[0] as HTMLInputElement).files ?? [];
 
-      if (name === "" || type === null) {
-        $("#edit-upload-button").prop("disabled", true);
-      }
-      else {
-        $("#edit-upload-button").prop("disabled", false);
-      }
+      $("#edit-upload-button").prop("disabled", name === "" || type === null || (changeFiles && (files.length === 0 || files.length > 20)));
     });
 
-    // Don't close the dropdown when the user clicked inside of it
-    $(".dropdown-menu").each(function () {
-      $(this).on("click", ev => {
-        ev.stopPropagation();
-      });
-    });
+    $("#edit-upload-change-files").on("change", function () {
+      $("#edit-upload-files, #edit-upload-files + .form-text").toggle($(this).prop("checked"));
+    }).prop("checked", false).trigger("change");
 
     // View the upload on clicking it
     $("#app").on("click", ".view-upload", function () {
@@ -709,6 +722,16 @@ export async function init(): Promise<void> {
       localStorage.setItem("uploadFilter", JSON.stringify(filterData));
       updateFilters();
       renderUploadList();
+    });
+
+    // If any type filter gets changed, update the shown uploads
+    $("#app").on("change", ".filter-type-option", function () {
+      renderUploadList();
+      const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
+      filterData.type ??= {};
+      filterData.type[$(this).data("id")] = $(this).prop("checked");
+      localStorage.setItem("uploadFilter", JSON.stringify(filterData));
+      updateFilters();
     });
 
     // On changing any filter date option, update the upload list

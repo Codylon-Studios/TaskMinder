@@ -15,12 +15,15 @@ import {
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { user } from "../../snippets/navbar/navbar.js";
-import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
+import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
 
 async function renderEventList(): Promise<void> {
   async function getFilteredData(): Promise<EventData> {
     // Get the event data
     let data = await eventData();
+    
+    const pinned = data.filter(e => e.isPinned);
+    data = data.filter(e => ! e.isPinned);
     // Filter by min. date
     const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMin)) {
@@ -33,12 +36,14 @@ async function renderEventList(): Promise<void> {
     }
     // Filter by search
     const sb = ($("#search-events")[0] as SearchBox);
-    data = data.filter(e => sb.searchMatches(e.name, e.description ?? ""));
+    data = data.filter(e => sb.searchMatches(e.name, richTextToPlainText(e.description ?? "")));
     // Filter by type
     data = data.filter(e => $(`#filter-type-${e.eventTypeId}`).prop("checked"));
     // Filter by team
     const currentJoinedTeamsData = await joinedTeamsData();
     data = data.filter(e => currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1);
+
+    data = pinned.concat(data);
     
     return data;
   }
@@ -103,6 +108,9 @@ async function renderEventList(): Promise<void> {
                   <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
                     <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
+                  <button class="btn btn-sm btn-semivisible event-pin" data-id="${eventId}" aria-label="Anheften">
+                    <i class="fa-solid fa-thumbtack${event.isPinned ? "-slash" : ""} event-${eventTypeId} opacity-75" aria-hidden="true"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -111,13 +119,17 @@ async function renderEventList(): Promise<void> {
         </div>
       </div>
       `);
+    galleryTemplate.find(".event-pin").toggle(event.isPinned || user.permissionLevel >= 1);
     galleryTemplate.find(".edit-option").toggle(editEnabled);
 
     const tableTemplate = $(`
       <tr>
         <td class="text-nowrap"><div class="color-display event-${eventTypeId}"></div></td>
-        <td class="text-break"><span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span></td>
-        <td class="text-nowrap">${timeSpan.html()}</td>
+        <td class="text-break">
+          <span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span>
+          <br>
+          <span class="badge badge-tertiary rounded-pill border"><i class="far fa-calendar me-1" aria-hidden="true"></i>${timeSpan.html()}</span>
+        </td>
         <td class="text-break"><div class="event-description"></div></td>
         <td class="text-nowrap">
           <div class="d-flex flex-nowrap">
@@ -130,10 +142,14 @@ async function renderEventList(): Promise<void> {
             <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
               <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
             </button>
+            <button class="btn btn-sm btn-semivisible event-pin" data-id="${eventId}" aria-label="Anheften">
+              <i class="fa-solid fa-thumbtack${event.isPinned ? "-slash" : ""} event-${eventTypeId} opacity-75" aria-hidden="true"></i>
+            </button>
           </div>
         </td>
       </tr>
     `);
+    tableTemplate.find(".event-pin").toggle(event.isPinned || user.permissionLevel >= 1);
     tableTemplate.find(".edit-option").toggle(editAllowed);
 
     const templates = galleryTemplate.add(tableTemplate);
@@ -191,12 +207,13 @@ async function renderEventTypeList(): Promise<void> {
     if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by type
-    const templateFilterType = `<div class="form-check">
-        <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
-        <label class="form-check-label" for="filter-type-${eventTypeId}">
-          ${eventTypeName}
-        </label>
-      </div>`;
+    const templateFilterType = `
+      <label class="form-check flex-grow-1 text-center mb-0 ps-2rem pe-2 py-1 border rounded bg-body-tertiary">
+        <input type="checkbox" class="form-check-input filter-type-option me-2"
+          id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
+        ${eventTypeName}
+      </label>
+      `;
     $("#filter-type-list").append(templateFilterType);
 
     // Add the template for the select elements
@@ -401,6 +418,19 @@ async function shareEvent(eventId: number): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+async function pinEvent(eventId: number): Promise<void> {
+  const event = (await eventData()).find(e => e.eventId === eventId);
+  if (!event) return;
+
+  await ajax("POST", "/events/pin_event", {
+    body: {
+      eventId,
+      pinStatus: !event.isPinned
+    },
+    queueable: true
+  });
+}
+
 async function editEvent(eventId: number): Promise<void> {
   //
   // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY EDITS AN EVENT
@@ -458,6 +488,7 @@ async function editEvent(eventId: number): Promise<void> {
       $("#edit-event-modal").modal("hide");
     });
 }
+
 function deleteEvent(eventId: number): void {
   //
   // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY DELETES AN EVENT
@@ -510,10 +541,9 @@ async function updateFilters(ingoreEventTypes?: boolean): Promise<void> {
 }
 
 function toggleShownButtons(): void {
-  const loggedIn = user.loggedIn;
   $("#edit-toggle-label").toggle(user.permissionLevel >= 1);
   $("#show-add-event-button").toggle(user.permissionLevel >= 1);
-  if (!loggedIn) {
+  if (user.permissionLevel < 1) {
     $(".edit-option").addClass("d-none");
   }
 }
@@ -529,21 +559,35 @@ function toggleView(): void {
     $("#event-gallery").hide();
     $("#event-table").show();
   }
-  localStorage.setItem("events/view", view);
+  localStorage.setItem("eventView", view);
 }
 
 export async function init(): Promise<void> {
   return new Promise(res => {
-    $("#edit-toggle").on("click", function () {
+    $("#edit-toggle").on("change", function () {
       $("#event-gallery .edit-option").toggle($(this).is(":checked"));
     }).prop("checked", false);
     $("#event-gallery .edit-option").hide();
 
-    $("#filter-toggle").on("click", function () {
-      $("#filter-content, #filter-reset").toggle($(this).is(":checked"));
-    }).prop("checked", true).trigger("click");
+    function appendFilterContent(): void {
+      $("#filter-content").appendTo(`#filter-${window.innerWidth >= 768 ? "modal" : "offcanvas"}-body`);
+    }
 
-    view = localStorage.getItem("events/view") as View ?? View.Gallery;
+    $("#filter-toggle").on("click", function () {
+      appendFilterContent();
+      if (window.innerWidth >= 768) $("#filter-modal").modal("show");
+      else $("#filter-offcanvas").offcanvas("show");
+    });
+    appendFilterContent();
+
+    $("#search-toggle").on("change", function () {
+      const checked = $(this).is(":checked");
+      $("#search-events").toggle(checked);
+      if (checked) $("#search-events input").trigger("focus");
+      else $("#search-events").val("");
+    }).prop("checked", false).trigger("change");
+
+    view = localStorage.getItem("eventView") as View ?? View.Gallery;
     toggleView();
     $("#view-toggle").on("click", () => {
       view = view === View.Gallery ? View.Table : View.Gallery;
@@ -551,7 +595,7 @@ export async function init(): Promise<void> {
     });
 
     updateFilters(true);
-    $("#filter-reset").on("click", () => {
+    $(".filter-reset").on("click", () => {
       localStorage.setItem("eventFilter", "{}");
       updateFilters();
       renderEventList();
@@ -596,6 +640,11 @@ export async function init(): Promise<void> {
       shareEvent($(this).data("id"));
     });
 
+    // Pin the event on clicking its pin icon
+    $("#app").on("click", ".event-pin", function () {
+      pinEvent($(this).data("id"));
+    });
+
     // Request deleting the event on clicking its delete icon
     $("#app").on("click", ".event-delete", function () {
       deleteEvent($(this).data("id"));
@@ -621,7 +670,6 @@ export async function init(): Promise<void> {
     // On clicking the none types option, uncheck all and update the event list
     $("#filter-type-none").on("click", () => {
       const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-      filterData.type ??= {};
       $(".filter-type-option").prop("checked", false);
       $(".filter-type-option").each(function () {
         filterData.type[$(this).data("id")] = false;
@@ -632,7 +680,7 @@ export async function init(): Promise<void> {
     });
 
     // If any type filter gets changed, update the shown events
-    $(".filter-type-option").on("change", function () {
+    $("#app").on("change", ".filter-type-option", function () {
       renderEventList();
       const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
       filterData.type ??= {};
