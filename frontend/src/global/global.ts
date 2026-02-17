@@ -24,7 +24,8 @@ import {
   AjaxOptions,
   AjaxError,
   SerializedRequest,
-  LessonGroupWithEvent
+  LessonGroupWithEvent,
+  UploadRequestsData
 } from "./types";
 
 export const VERSION = "v1";
@@ -279,6 +280,10 @@ export function cutString(str: string, maxLength: number): string {
   return str.substring(0, maxLength - 1) + "…";
 }
 
+export function toCommaAndAnd(strings: string[]): string {
+  return strings.join(", ").replace(/,(?!.*,)/, " und");
+}
+
 export function getInputValue(element: JQuery<HTMLElement>, fallback?: string): string {
   return element.val()?.toString() ?? (fallback ?? "");
 }
@@ -461,6 +466,8 @@ async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void>
     user.on("change", res);
   });
 
+  if (!user.classJoined) return;
+
   if (user.loggedIn) {
     const res = await fetch("/teams/get_joined_teams_data");
     if (!res.ok) throw new Error("HTTP error during fetch of joinedTeams: " + res.status + " " + await res.text());
@@ -503,6 +510,8 @@ async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<v
     user.on("change", res);
   });
 
+  if (!user.classJoined) return;
+
   if (user.loggedIn) {
     // If the user is logged in, get the data from the server
     const res = await fetch("/homework/get_homework_checked_data");
@@ -524,6 +533,8 @@ async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<v
 }
 
 async function loadUploadData(): Promise<void> {
+  if (!user.classJoined) return;
+
   const currentShowAllUploads = await showAllUploads();
 
   const res = await fetch("/uploads/metadata?all=" + currentShowAllUploads);
@@ -746,7 +757,6 @@ let setRenderOnUserChangeListener = false;
 
 export async function reloadAll(): Promise<void> {
   for (const d of socketDataAccessors) await d.reload({ silent: true });
-  await renderAll();
 }
 
 // Global socket variable that can be accessed from any script
@@ -893,8 +903,8 @@ export function createDataAccessor<DataType>(name: string, config?: {
     if (!_initialized) {
       if (typeof reloadFunction === "function") {
         data = null;
-        _initialized = true;
         await reloadFunction();
+        _initialized = true;
       }
       else {
         console.warn(
@@ -945,7 +955,7 @@ export const eventTypeData = createSocketDataAccessor<EventTypeData>("eventTypeD
 export const homeworkData = createSocketDataAccessor<HomeworkData>("homeworkData", "updateHomework", {
   reload: "/homework/get_homework_data"
 });
-export const homeworkCheckedData = createSocketDataAccessor<HomeworkCheckedData>("homeworkCheckedData", "updateHomework", {
+export const homeworkCheckedData = createSocketDataAccessor<HomeworkCheckedData>("homeworkCheckedData", "updateCheckedHomework", {
   reload: loadHomeworkCheckedData
 });
 export const joinedTeamsData = createSocketDataAccessor<JoinedTeamsData>("joinedTeamsData", "updateJoinedTeams", {
@@ -965,6 +975,9 @@ export const teamsData = createSocketDataAccessor<TeamsData>("teamsData", "updat
 });
 export const uploadData = createSocketDataAccessor<UploadData>("uploadData", "updateUploads", {
   reload: loadUploadData
+});
+export const uploadRequestsData = createSocketDataAccessor<UploadRequestsData>("uploadRequestsData", "updateUploadRequests", {
+  reload: "/uploads/get_request_data"
 });
 
 eventTypeData.on("change", tryForceReloadEventTypeStyles);
@@ -1003,7 +1016,9 @@ async function onOnline(): Promise<void> {
 }
 
 $(globalThis).on("offline", onOffline);
-$(globalThis).on("online", onOnline);
+$(globalThis).on("online", () => {
+  onOnline();
+});
 if (navigator.onLine) {
   onOnline();
 }
@@ -1124,6 +1139,7 @@ setTimeout(() => {
 $(document).on("click", "#navbar-reload-button", async function () {
   $(this).find("i").addClass("fa-spin");
   await reloadAll();
+  await renderAll();
   $(this).find("i").removeClass("fa-spin fa-rotate").addClass("fa-check text-success");
   $(this).prop("disabled", true);
   setTimeout(() => {
@@ -1198,4 +1214,8 @@ if (!isSite("settings")) {
 
 $(document).on("input", ".autocomplete", function () {
   $(this).removeClass("autocomplete");
+});
+
+$(document).on("focus", 'input[type="text"].autocomplete', function () {
+  $(this).val("").removeClass("autocomplete");
 });

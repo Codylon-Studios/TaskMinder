@@ -3,10 +3,14 @@
 
 $fa-font-path: "/assets/fonts/fontawesome";
 
+color-picker {
+  display: inline-block;
+}
+
 .color-picker-trigger {
   width: 2rem;
   height: 2rem;
-  position: relative;
+  display: block;
   border: none;
   background-color: rgb(var(--selected-color));
 
@@ -165,8 +169,4 @@ $color-picker-colors: (
   height: 1.75rem;
   display: flex !important;
   justify-content: center;
-}
-
-input[type="text"].color-picker {
-  display: none;
 }

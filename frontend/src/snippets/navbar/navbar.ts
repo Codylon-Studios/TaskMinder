@@ -105,6 +105,10 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
     const name = (await eventData()).find(e => e.eventId === jsonBody.eventId)?.name ?? "?";
     return `Ereignis "${cutString(escapeHTML(name), 40)}" löschen`;
   }
+  case "/events/pin_event": {
+    const name = (await eventData()).find(e => e.eventId === jsonBody.eventId)?.name ?? "?";
+    return `Ereignis "${cutString(escapeHTML(name), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+  }
   case "/homework/add_homework": {
     return `Hausaufgabe "${cutString(escapeHTML(jsonBody.content), 40)}" hinzufügen`;
   }
@@ -117,19 +121,29 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
   }
   case "/homework/check_homework": {
     const content = (await homeworkData()).find(h => h.homeworkId === jsonBody.homeworkId)?.content ?? "?";
-    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.checkStatus === "true" ? "erledigt" : "nicht erledigt"}`;
+    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.checkStatus === true ? "erledigt" : "nicht erledigt"}`;
+  }
+  case "/homework/pin_homework": {
+    const content = (await homeworkData()).find(h => h.homeworkId === jsonBody.homeworkId)?.content ?? "?";
+    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
   }
   case "/uploads/upload": {
-    const match = textBody.match(/name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/);
-    const uploadName = match ? match[1].trim() : "?";
-    return `Datei "${cutString(escapeHTML(uploadName), 40)}" hochladen`;
+    const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
+    const name = match ? match[1].trim() : "?";
+    return `Datei "${cutString(escapeHTML(name), 40)}" hochladen`;
   }
   case "/uploads/edit": {
-    return `Datei "${cutString(escapeHTML(jsonBody.uploadName), 40)}" bearbeiten`;
+    const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
+    const name = match ? match[1].trim() : "?";
+    return `Datei "${cutString(escapeHTML(name), 40)}" bearbeiten`;
   }
   case "/uploads/delete": {
-    const uploadName = (await uploadData()).uploads.find(u => u.uploadId === jsonBody.uploadId)?.uploadName ?? "?";
-    return `Datei "${cutString(escapeHTML(uploadName), 40)}" löschen`;
+    const name = (await uploadData()).uploads.find(u => u.uploadId === jsonBody.uploadId)?.uploadName ?? "?";
+    return `Datei "${cutString(escapeHTML(name), 40)}" löschen`;
+  }
+  case "/uploads/pin": {
+    const name = (await uploadData()).uploads.find(u => u.uploadId === jsonBody.uploadId)?.uploadName ?? "?";
+    return `Datei "${cutString(escapeHTML(name), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
   }
 
   case "/teams/set_joined_teams_data": {
@@ -201,9 +215,6 @@ function getResponseFailReason(req: SerializedRequest, res: Response): string {
 }
 
 export async function updateRequestQueue(): Promise<void> {
-  await eventData.init();
-  await homeworkData.init();
-  
   const db = await openRequestQueueDB();
   const tx = db.transaction("queue", "readwrite");
   const store = tx.objectStore("queue");
@@ -268,7 +279,7 @@ $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
 
 export async function init(): Promise<void> {
   $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && navigator.onLine);
-  $("#login-register-button").toggle(! isSite("join"));
+  $("#login-register-button").toggle(!user.loggedIn && !isSite("join"));
 
   //
   //LOGIN -- REGISTER
@@ -492,7 +503,7 @@ export const user = {
   },
 
   trigger(event: UserEventName, ...args: unknown[]) {
-    for (const cb of this._eventListeners[event]) {
+    for (const cb of this._eventListeners[event] ?? []) {
       cb(...args);
     }
     return this;

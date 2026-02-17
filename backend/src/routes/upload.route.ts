@@ -43,7 +43,7 @@ router.post(
   uploadController.queueFileUpload
 );
 // get single file (preview or download)
-router.get("/:fileId", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
+router.get("/file/:fileId", uploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
 router.post(
   "/edit",
   uploadLimiter,

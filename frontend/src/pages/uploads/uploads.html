@@ -52,6 +52,15 @@
           <search-box class="me-2 mb-2" id="search-uploads"></search-box>
         </div>
 
+        <div class="alert alert-primary p-2 d-flex align-items-center gap-2 mt-3" id="upload-requests">
+          <i class="fas fa-circle-check mx-1 fs-5" aria-hidden="true" id="upload-requests-done"></i>
+          <i class="fas fa-circle-exclamation mx-1 fs-5" aria-hidden="true" id="upload-requests-todo"></i>
+          <div class="flex-grow-1">
+            <div id="upload-requests-body"></div>
+            <button id="show-add-upload-request-button" class="btn btn-primary btn-sm fw-semibold mt-1">Neue Anfrage</button>
+          </div>
+        </div>
+
         <div class="text-secondary mt-3" id="no-uploads-found">Keine Dateien mit diesen Filtern.</div>
 
         <div class="mt-3 row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-xl-6 mx-n2" id="upload-gallery">
@@ -133,6 +142,33 @@
           </div>
         </div>
 
+        <div class="modal fade" id="add-upload-request-modal" aria-labelledby="add-upload-request-label">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="add-upload-modal-label">Neue Anfrage</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label for="add-upload-request-name" class="form-label">Bennene die Anfrage</label>
+                  <input type="text" class="form-control mb-2" id="add-upload-request-name" placeholder='zum Beispiel "Mathe vom 30.11"' />
+                </div>
+
+                <label for="add-upload-team" class="form-label">Wähle ein Team für die Anfrage (optional)</label>
+                <select class="form-select add-upload-request-input" id="add-upload-request-team">
+                  <option value="-1" selected>Alle</option>
+                  <!-- Gets filled -->
+                </select>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
+                <button class="btn btn-primary fw-bold" id="add-upload-request-button">Anfragen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="modal fade" id="add-upload-modal" aria-labelledby="add-upload-modal-label">
           <div class="modal-dialog">
             <div class="modal-content">
@@ -143,8 +179,8 @@
               <div class="modal-body">
                 <div class="mb-3">
                   <label for="add-upload-name" class="form-label">Bennene die Dateien</label>
-                  <input type="text" class="form-control add-upload-input" id="add-upload-name" placeholder='zum Beispiel "Mathe vom 30.11" ' />
-                  <div class="autocomplete-feedback">Automatisch: Das aktuelle Fach & Datum</div>
+                  <input type="text" class="form-control add-upload-input" id="add-upload-name" placeholder='zum Beispiel "Mathe vom 30.11"' />
+                  <div class="autocomplete-feedback"></div>
                 </div>
 
                 <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 mb-3" id="add-upload-max-files" style="display: none">
@@ -182,6 +218,7 @@
                   <option value="-1" selected>Alle</option>
                   <!-- Gets filled -->
                 </select>
+                <div class="autocomplete-feedback">Automatisch: Aus der Anfrage</div>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
@@ -201,7 +238,7 @@
               <div class="modal-body">
                 <div class="mb-3">
                   <label for="edit-upload-name" class="form-label">Bennene die Dateien</label>
-                  <input type="text" class="form-control edit-upload-input" id="edit-upload-name" placeholder='zum Beispiel "Mathe vom 30.11" ' />
+                  <input type="text" class="form-control edit-upload-input" id="edit-upload-name" placeholder='zum Beispiel "Mathe vom 30.11"' />
                 </div>
 
                 <div class="mb-3">

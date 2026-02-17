@@ -66,7 +66,7 @@ body {
   overflow: hidden;
   padding-top: var(--navbar-height);  
   font-weight: 500;
-  margin-top: var(--pwa-banner-height);
+  min-height: 100dvh !important;
 
   &[data-bs-theme="light"] {
     --btn-semivisible-normal: #{$semivisible-normal-light};
@@ -99,18 +99,14 @@ body {
   background-color: rgba(var(--bs-primary-rgb), 0.6);
 }
 
-.navbar {
-  margin-top: var(--pwa-banner-height)
-}
-
 #app-scroll {
   overflow-y: auto;
   padding-top: 1rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: calc(100vh - var(--pwa-banner-height) - var(--navbar-height) - var(--bottombar-height));
-  height: calc(100dvh - var(--pwa-banner-height) - var(--navbar-height) - var(--bottombar-height));
+  height: calc(100vh - var(--navbar-height) - var(--bottombar-height));
+  height: calc(100dvh - var(--navbar-height) - var(--bottombar-height));
 }
 
 @include media-breakpoint-down(lg) {
@@ -220,6 +216,10 @@ body {
 
 .h-fit-content {
   height: fit-content !important;
+}
+
+.min-w-0 {
+  min-width: 0;
 }
 
 .cursor-pointer {

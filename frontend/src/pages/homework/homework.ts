@@ -19,6 +19,7 @@ import {
 import { HomeworkData } from "../../global/types";
 import { user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
+import { SearchBox } from "../../snippets/searchBox/searchBox.js";
 
 async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { checked: boolean })[]> {
   // Add the check value to each homework
@@ -29,8 +30,8 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
     }))
   );
     
-  const pinned = data.filter(e => e.isPinned);
-  data = data.filter(e => ! e.isPinned);
+  const pinned = data.filter(h => h.isPinned);
+  data = data.filter(h => ! h.isPinned);
 
   // Filter by min. date
   const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
@@ -75,6 +76,7 @@ async function renderHomeworkList(): Promise<void> {
 
   let foundNextWeek = false;
   let foundLater = false;
+  let foundPinned = false;
 
   for (const homework of data) {
     function showCheckAnimation(): void {
@@ -91,7 +93,17 @@ async function renderHomeworkList(): Promise<void> {
       }
     }
     function showSections(): void {
-      if (!homework.isPinned) {
+      if (homework.isPinned) {
+        foundPinned = true;
+      }
+      else {
+        if (foundPinned) {
+          foundPinned = false;
+          newContent.append(`
+            <hr class="border-2 text-primary mb-0 mt-2">
+            <div class="form-text text-primary opacity-75 mt-0 section-divider">Diese Woche</div>
+          `);
+        }
         if (!foundNextWeek && Number.parseInt(homework.submissionDate) > nextWeekDate.getTime()) {
           foundNextWeek = true;
           newContent.append(`
@@ -410,6 +422,9 @@ async function prepareRandomHomework(): Promise<void> {
 }
 
 async function renderSubjectList(): Promise<void> {
+  const addHomeworkSubjectVal = $("#add-homework-subject").val() ?? "";
+  const editHomeworkSubjectVal = $("#edit-homework-subject").val() ?? "";
+
   // Clear the select element in the add & edit homework modal
   $("#add-homework-subject, #edit-homework-subject").html('<option value="" disabled selected>Fach</option>');
   // Clear the list for filtering by subject
@@ -443,6 +458,9 @@ async function renderSubjectList(): Promise<void> {
 
   $("#add-homework-subject, #edit-homework-subject").append('<option value="-1">Sonstiges</option>');
 
+  if (addHomeworkSubjectVal !== "") $("#add-homework-subject").val(addHomeworkSubjectVal);
+  if (editHomeworkSubjectVal !== "") $("#edit-homework-subject").val(editHomeworkSubjectVal);
+
   localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
 
   $("#add-homework-no-subjects").toggleClass("d-none", (await subjectData()).length !== 0).find("b").text(
@@ -453,6 +471,9 @@ async function renderSubjectList(): Promise<void> {
 };
 
 async function renderTeamList(): Promise<void> {
+  const addHomeworkTeamVal = $("#add-homework-team").val() ?? "-1";
+  const editHomeworkTeamVal = $("#edit-homework-team").val() ?? "-1";
+
   // Clear the select element in the add & edit homework modal
   $("#add-homework-team, #edit-homework-team").empty().append('<option value="-1" selected>Alle</option>');
 
@@ -460,6 +481,9 @@ async function renderTeamList(): Promise<void> {
     // Add the template for the select elements
     $("#add-homework-team, #edit-homework-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   };
+
+  $("#add-homework-team").val(addHomeworkTeamVal);
+  $("#edit-homework-team").val(editHomeworkTeamVal);
 };
 
 async function addHomework(): Promise<void> {
@@ -941,22 +965,21 @@ let homeworkFeedbackLastPercentage: null | number;
 let randomHomeworkDeactivated: number[] = [];
 
 await lessonData.init();
-(await homeworkData.init()).on("update", onlyThisSite(renderHomeworkList));
+homeworkData.on("update", onlyThisSite(renderHomeworkList));
 (await homeworkCheckedData.init());
-(await subjectData.init()).on("update", onlyThisSite(renderSubjectList));
-(await teamsData.init()).on("update", onlyThisSite(() => {
+subjectData.on("update", onlyThisSite(renderSubjectList));
+teamsData.on("update", onlyThisSite(() => {
   renderTeamList(); 
   renderHomeworkList(); 
 }));
 
 await user.awaitAuthed();
 
-(await joinedTeamsData.init()).on("update", onlyThisSite(renderHomeworkList));
+joinedTeamsData.on("update", onlyThisSite(renderHomeworkList));
 
 export async function renderAllFn(): Promise<void> {
   await renderSubjectList();
   await renderHomeworkList();
-  await renderHomeworkFeedback();
   await renderTeamList();
 
   toggleShownButtons();

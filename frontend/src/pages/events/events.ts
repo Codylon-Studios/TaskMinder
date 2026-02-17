@@ -16,6 +16,7 @@ import {
 import { EventData, SingleEventData } from "../../global/types";
 import { user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
+import { SearchBox } from "../../snippets/searchBox/searchBox.js";
 
 async function renderEventList(): Promise<void> {
   async function getFilteredData(): Promise<EventData> {
@@ -189,6 +190,8 @@ async function renderEventList(): Promise<void> {
 async function renderEventTypeList(): Promise<void> {
   const currentEventTypeData = await eventTypeData();
 
+  const addEventTypeVal = $("#add-event-type").val() ?? "";
+  const editEventTypeVal = $("#edit-event-type").val() ?? "";
   // Clear the select element in the add & edit event modal
   $("#add-event-type, #edit-event-type").html('<option value="" disabled selected>Art</option>');
   // Clear the list for filtering by type
@@ -220,6 +223,9 @@ async function renderEventTypeList(): Promise<void> {
     $("#add-event-type, #edit-event-type").append(`<option value="${eventTypeId}">${eventTypeName}</option>`);
   };
 
+  if (addEventTypeVal !== "") $("#add-event-type").val(addEventTypeVal);
+  if (editEventTypeVal !== "") $("#edit-event-type").val(editEventTypeVal);
+
   localStorage.setItem("eventFilter", JSON.stringify(filterData));
 
   $("#add-event-no-types").toggleClass("d-none", currentEventTypeData.length !== 0).find("b").text(
@@ -230,6 +236,9 @@ async function renderEventTypeList(): Promise<void> {
 };
 
 async function renderTeamList(): Promise<void> {
+  const addEventTeamVal = $("#add-event-team").val() ?? "-1";
+  const editEventTeamVal = $("#edit-event-team").val() ?? "-1";
+
   // Clear the select element in the add & edit event modal
   $("#add-event-team, #edit-event-team").html('<option value="-1" selected>Alle</option>');
 
@@ -237,6 +246,9 @@ async function renderTeamList(): Promise<void> {
     // Add the template for the select elements
     $("#add-event-team, #edit-event-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   }
+
+  $("#add-event-team").val(addEventTeamVal);
+  $("#edit-event-team").val(editEventTeamVal);
 };
 
 function addEvent(): void {
@@ -733,16 +745,16 @@ let view: View;
 
 $(globalThis).on("resize", toggleView);
 
-(await eventData.init()).on("update", onlyThisSite(renderEventList));
-(await eventTypeData.init()).on("update", onlyThisSite(renderEventTypeList));
-(await teamsData.init()).on("update", onlyThisSite(() => {
+eventData.on("update", onlyThisSite(renderEventList));
+eventTypeData.on("update", onlyThisSite(renderEventTypeList));
+teamsData.on("update", onlyThisSite(() => {
   renderTeamList();
   renderEventList(); 
 }));
 
 await user.awaitAuthed();
 
-(await joinedTeamsData.init()).on("update", onlyThisSite(renderEventList));
+joinedTeamsData.on("update", onlyThisSite(renderEventList));
 
 export async function renderAllFn(): Promise<void> {
   await renderEventTypeList();

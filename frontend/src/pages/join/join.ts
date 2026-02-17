@@ -53,11 +53,12 @@ export async function init(): Promise<void> {
       $("#create-class-btn").prop("disabled", true);
     });
 
-    $(async () => {
+    (async () => {
+      if (! user.classJoined) return;
       const res = await fetch("/class/get_class_info");
       if (!res.ok) throw new Error("HTTP error during fetch of classInfo: " + res.status + " " + await res.text());
       $("#decide-account-class-name").text((await res.json()).className);
-    });
+    })();
 
     $("#login-register-back-btn").on("click", () => {
       $(".login-register-element, .login-element, .register-element").addClass("d-none");

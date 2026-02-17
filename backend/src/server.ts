@@ -75,11 +75,11 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
-  app.use(CSPMiddleware());
+if (process.env.UNSAFE_DEACTIVATE_CSP === "true") {
+  logger.warn("Helmet and CSP is disabled! This is not recommended for production!");
 }
 else {
-  logger.warn("Helmet and CSP is disabled! This is not recommended for production!");
+  app.use(CSPMiddleware());
 }
 
 app.use(express.static("frontend/dist"));

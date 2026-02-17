@@ -1,15 +1,13 @@
-class SearchBox extends HTMLElement {
+import { $cloneTemplate } from "../../global/global.js";
+
+export class SearchBox extends HTMLElement {
   private $input!: JQuery<HTMLElement>;
   private initialized = false;
 
   connectedCallback(): void {
     if (this.initialized) return;
     this.initialized = true;
-
-    const template = $("#search-box-template")[0] as HTMLTemplateElement;
-    
-    const content = template.content.cloneNode(true);
-    this.replaceChildren(content);
+    $(this).append($cloneTemplate("#search-box-template"));
 
     const $wrapper = $(this);
     const $input = $wrapper.find(".search-input");

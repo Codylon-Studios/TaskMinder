@@ -66,15 +66,22 @@ textarea.rich-textarea {
   }
 }
 
-.rich-textarea-color-picker ~ .color-picker-trigger {
-  visibility: hidden;
+.rich-textarea-color-picker-btn-group {
   margin-right: -26px;
-  transform: translateX(-26px);
-  width: 26px;
-  height: 36px;
 
+  & .rich-textarea-color-picker > .position-relative {
+    width: 26px;
+    height: 36px;
+  }
+
+  & .color-picker-trigger {
+    visibility: hidden;
+    width: 26px;
+    height: 36px;
+  }
+  
   & .color-picker-popup {
-    visibility: visible;
+    transform: translateX(-26px);
   }
 }
 

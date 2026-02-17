@@ -17,7 +17,9 @@ import {
   registerSocketListeners,
   onlyThisSite,
   unsavedChanges,
-  ajax
+  ajax,
+  $cloneTemplate,
+  toCommaAndAnd
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel, AjaxError } from "../../global/types";
 import { user } from "../../snippets/navbar/navbar.js";
@@ -272,153 +274,135 @@ async function renderTeamLists(): Promise<void> {
 }
 
 async function renderEventTypeList(): Promise<void> {
-  let newEventTypesContent = "";
+  function $changes(id: number): JQuery<HTMLElement> {
+    return $(`.event-type-changes[data-id="${id}"]`);
+  }
+  function $renamed(id: number): JQuery<HTMLElement> {
+    return $(`.event-type-renamed[data-id="${id}"]`);
+  }
+  function $recolored(id: number): JQuery<HTMLElement> {
+    return $(`.event-type-recolored[data-id="${id}"]`);
+  }
+  function $deleted(id: number): JQuery<HTMLElement> {
+    return $(`.event-type-deleted[data-id="${id}"]`);
+  }
+
+  function toggleChangesContainer(eventTypeId: number): void {
+    const $el = $changes(eventTypeId);
+    $el.show().toggle($el.children().is(":visible"));
+  }
+
+  function changedAnything(): void {
+    $("#event-types-cancel").show();
+    unsavedChanges(true);
+    $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
+  }
+
+  let newEventTypesContent = $("<div></div>");
 
   for (const eventType of await eventTypeData()) {
     const eventTypeId = eventType.eventTypeId;
-
-    const template = `
-      <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${eventTypeId}">
-        <div class="d-flex flex-column flex-lg-row align-items-lg-center">
-          <div class="d-flex">
-            <div>
-              <label>
-                Name
-                <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 event-type-name-input" type="text"
-                  value="${escapeHTML(eventType.name)}" placeholder="${escapeHTML(eventType.name)}"
-                  data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
-                <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
-              </label>
-            </div>
-            <label class="d-flex align-items-center">
-              <div class="me-2">Farbe</div>
-              <input type="text" value="${escapeHTML(eventType.color)}" class="color-picker event-type-color-input"
-                data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
-            </label>
-          </div>
-          <span class="text-warning fw-bold mt-2 mt-md-0 d-none me-2 event-type-renamed" data-id="${eventTypeId}">
-            Umbenannt
-            <span class="text-secondary fw-normal event-type-renamed-name" data-id="${eventTypeId}">
-              (${escapeHTML(eventType.name)} zu <b></b>)
-            </span>
-          </span>
-          <span class="text-warning fw-bold mt-2 mt-md-0 d-none event-type-recolored" data-id="${eventTypeId}">
-            Farbe gändert
-            <span class="text-secondary fw-normal event-type-recolored-color" data-id="${eventTypeId}">
-              (<div class="color-display"></div>
-              zu
-              <div class="color-display"></div>)
-            </span>
-          </span>
-          <span class="text-danger fw-bold mt-2 mt-md-0 d-none event-type-deleted" data-id="${eventTypeId}">Gelöscht</span>
-        </div
-        <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete"
-            data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"} aria-label="Ereignisart entfernen">
-            <i class="fa-solid fa-trash" aria-hidden="true"></i>
-          </button>
-        </div>
-      </div>`;
-    newEventTypesContent += template;
+    const name = escapeHTML(eventType.name);
+    const t = $cloneTemplate("#event-type-template");
+    t.find(".event-type-name-input").val(name).attr("placeholder", name);
+    t.find(".event-type-changes").hide();
+    t.find(".event-type-renamed-name-old").text(name);
+    t.find(".event-type-color-input").attr("value", escapeHTML(eventType.color));
+    t.add(t.find("[data-id]")).attr("data-id", eventTypeId);
+    t.find("[disabled]").attr("disabled", null);
+    t.find('[id="ID"]').attr("id", "event-type-" + eventTypeId);
+    t.find('[for="ID"]').attr("for", "event-type-" + eventTypeId);
+    newEventTypesContent.append(t);
   }
 
-  if ((await eventTypeData()).length === 0) {
-    newEventTypesContent = `<span class="text-secondary no-event-types">
-      Keine Ereignisarten vorhanden
-      <button class="btn btn-primary btn-sm fw-semibold" id="event-types-example">Beispiele erstellen</button>
-    </span>`;
+  if (newEventTypesContent.children().length === 0) {
+    newEventTypesContent = $(`
+      <div>
+        <span class="text-secondary no-event-types">
+          Keine Ereignisarten vorhanden
+          <button class="btn btn-primary btn-sm fw-semibold" id="event-types-example">Beispiele erstellen</button>
+        </span>
+      </div>
+    `);
   }
-  $("#event-types-list").html(newEventTypesContent);
+  $("#event-types-list").empty().append(newEventTypesContent.children());
+
+  $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
+  $(".event-type-changes > div").hide();
 
   $("#app").off("change", ".event-type-name-input").on("change", ".event-type-name-input", async function () {
-    $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
-
     if ($(this).val().trim() === "") {
       $(this).addClass("is-invalid");
       $("#event-types-save").prop("disabled", true);
     }
-
-    const eventTypeId = $(this).data("id");
-    if (eventTypeId !== "") {
-      const newName = $(this).val();
-      const oldName = (await eventTypeData()).find(eventType => eventType.eventTypeId === eventTypeId)?.name;
-      if (newName === oldName) {
-        $(`.event-type-renamed[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
-      }
-      else if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
-        $(`.event-type-renamed[data-id="${eventTypeId}"]`)
-          .removeClass("d-none")
-          .find("*")
-          .removeClass("d-none")
-          .find("b")
-          .text(newName);
-      }
-    }
   });
 
-  $("#app").off("input", ".event-type-name-input").on("input", ".event-type-name-input", function () {
-    $("#event-types-cancel").show();
-    unsavedChanges(true);
-    unsavedChanges(true);
+  $("#app").off("input", ".event-type-name-input").on("input", ".event-type-name-input", async function () {
+    changedAnything();
+    
     $(this).removeClass("is-invalid");
     if (!$(".event-type-name-input").hasClass("is-invalid")) {
       $("#event-types-save").prop("disabled", false);
+    }
+
+    const id = $(this).data("id");
+    if (id !== "") {
+      const newName = $(this).val();
+      const oldName = (await eventTypeData()).find(eventType => eventType.eventTypeId === id)?.name;
+      if (newName === oldName) {
+        $renamed(id).hide();
+      }
+      else if (! $deleted(id).is(":visible")) {
+        $renamed(id).show().find("b").text(newName);
+      }
+      toggleChangesContainer(id);
     }
   });
 
   $("#app").off("change", ".event-type-color-input").on("change", ".event-type-color-input", async function () {
     $("#event-types-cancel").show();
     unsavedChanges(true);
-    unsavedChanges(true);
-    $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+    $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
 
-    const eventTypeId = $(this).data("id");
-    if (eventTypeId !== "") {
+    const id = $(this).data("id");
+    if (id !== "") {
       const newColor = $(this).val();
-      const oldColor = (await eventTypeData()).find(eventType => eventType.eventTypeId === eventTypeId)?.color ?? "";
+      const oldColor = (await eventTypeData()).find(eventType => eventType.eventTypeId === id)?.color ?? "";
       if (newColor === oldColor) {
-        $(`.event-type-recolored[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
+        $recolored(id).hide();
       }
-      else if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
-        const $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`);
-        $recoloredElement.removeClass("d-none").find("*").removeClass("d-none");
-        $recoloredElement.find(".color-display").first().css("background-color", oldColor);
-        $recoloredElement.find(".color-display").last().css("background-color", newColor);
+      else if (! $deleted(id).is(":visible")) {
+        $recolored(id).show().find(".color-display").first().css("background-color", oldColor).next().css("background-color", newColor);
       }
+      toggleChangesContainer(id);
     }
   });
 
   $(".event-type-delete").on("click", function () {
     $("#event-types-cancel").show();
     unsavedChanges(true);
-    unsavedChanges(true);
-    $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+    $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
 
-    const eventTypeId = $(this).data("id");
+    const id = $(this).data("id");
     if ($(this).hasClass("btn-danger")) {
-      $(`.event-type-deleted[data-id="${eventTypeId}"]`).removeClass("d-none");
-      $(`.event-type-renamed[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
-      $(`.event-type-recolored[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
+      $changes(id).find("> div").hide();
+      $deleted(id).show();
 
       $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
         .attr("aria-label", "Ereginisart doch nicht entfernen");
     }
     else {
-      $(`.event-type-deleted[data-id="${eventTypeId}"]`).addClass("d-none");
-      $(`.event-type-name-input[data-id="${eventTypeId}"]`).trigger("change");
-      $(`.event-type-color-input[data-id="${eventTypeId}"]`).trigger("change");
+      $deleted(id).hide();
+      $(".event-type-name-input, .event-type-color-input").filter(`[data-id="${id}"]`).trigger("change");
 
       $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash" aria-hidden="true"></i>')
         .attr("aria-label", "Ereginisart entfernen");
     }
+    toggleChangesContainer(id);
   });
 }
 
 async function renderSubjectList(): Promise<void> {
-  if ((await substitutionsData()).data !== "No data") {
-    dsbActivated = true;
-  }
-
   let newSubjectsContent = "";
 
   let currentSubjectData = await subjectData();
@@ -982,7 +966,7 @@ async function updateClassInfo(): Promise<void> {
 
     isTestClass = json.isTestClass;
     $("#test-class-alert").toggleClass("d-none", !isTestClass);
-    testClassTimeCreated = Number.parseInt(json.classCreated);
+    testClassTimeCreated = Number.parseInt(json.createdAt);
     updateTestClassTimeLeft();
   }
   else {
@@ -1057,13 +1041,13 @@ async function updateOnUserChange(): Promise<void> {
     if (permissionLevel < 2) {
       canEditClassSettings = false;
       $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
-        .find("input, button, select, .color-picker-trigger")
+        .find("input, button, select, .color-picker")
         .prop("disabled", true);
     }
     else {
       canEditClassSettings = true;
       $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
-        .find("input, button, select, .color-picker-trigger")
+        .find("input, button, select, .color-picker")
         .prop("disabled", false);
     }
     if (permissionLevel < 3) {
@@ -1095,6 +1079,8 @@ export async function init(): Promise<void> {
   return new Promise(res => {
     setInterval(updateTestClassTimeLeft, 1000);
 
+    $(`#settings-nav-tabs button[data-bs-target="#nav-settings-${location.hash.substring(1)}"]`).tab("show");
+
     dsbActivated = false;
     canEditClassSettings = false;
     canEditMemberSettings = false;
@@ -1109,6 +1095,8 @@ export async function init(): Promise<void> {
     $("#show-qrcode-modal-qrcode img").attr("alt", "Der QR-Code, um eurer Klasse beizutreten");
 
     $(".cancel-btn").hide();
+
+    $("#pwa-notice").toggle(/iphone|ipad|ipod/i.test(navigator.userAgent) && !globalThis.matchMedia("(display-mode: standalone)").matches);
 
     let animations = JSON.parse(localStorage.getItem("animations") ?? "true") ?? true;
     $("#animations-check").prop("checked", animations);
@@ -1664,10 +1652,7 @@ export async function init(): Promise<void> {
         else {
           $("#class-members-save-confirm-list").html(
             "werden die Schüler:innen " +
-              deleted
-                .map(s => `<b>${escapeHTML(s)}</b>`)
-                .join(", ")
-                .replace(/,(?!.*,)/, " und")
+              toCommaAndAnd(deleted.map(s => `<b>${escapeHTML(s)}</b>`))
           );
         }
       }
@@ -1779,10 +1764,7 @@ export async function init(): Promise<void> {
         else {
           $("#teams-save-confirm-list").html(
             "der Teams " +
-              deleted
-                .map(t => `<b>${escapeHTML(t)}</b>`)
-                .join(", ")
-                .replace(/,(?!.*,)/, " und")
+              toCommaAndAnd(deleted.map(t => `<b>${escapeHTML(t)}</b>`))
           );
         }
       }
@@ -1801,36 +1783,20 @@ export async function init(): Promise<void> {
     $("#new-event-type").on("click", () => {
       $("#event-types-cancel").show();
       unsavedChanges(true);
-      $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+      $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
 
       $("#event-types-list .no-event-types").remove();
 
-      const template = `
-        <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="">
-          <div class="d-flex flex-column flex-md-row align-items-md-center">
-            <div class="d-flex">
-              <div>
-                <label>
-                  Name
-                  <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 event-type-name-input"
-                    type="text" value="" placeholder="Neue Ereignisart" data-id="">
-                  <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
-                </label>
-              </div>
-              <label class="d-flex align-items-center">
-                <div class="me-2">Farbe</div>
-                <input type="text" value="#3bb9ca" class="color-picker event-type-color-input" data-id="">
-              </label>
-            </div>
-            <span class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</span>
-          </div
-          <div>
-            <button class="btn btn-sm btn-sm-square btn-danger float-end new-event-type-delete" data-id="" aria-label="Ereignisart entfernen">
-              <i class="fa-solid fa-trash" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>`;
-      $("#event-types-list").append(template);
+      const uuid = crypto.randomUUID();
+      const t = $cloneTemplate("#event-type-template");
+      t.find(".event-type-name-input").prop("placeholder", "Neue Ereignisart");
+      t.find(".event-type-color-input").attr("value", "#3bb9ca");
+      t.find("[disabled]").attr("disabled", null);
+      t.find('[id="ID"]').attr("id", uuid);
+      t.find('[for="ID"]').attr("for", uuid);
+      t.find(".event-type-changes").html("<div class=\"text-success fw-bold\" data-id=\"\">Neu</div>");
+      t.find(".event-type-delete").removeClass("event-type-delete").addClass("new-event-type-delete");
+      $("#event-types-list").append(t);
       $(".event-type-name-input").last().trigger("focus");
 
       $(".event-type-name-input")
@@ -1843,9 +1809,9 @@ export async function init(): Promise<void> {
         });
 
       $(".new-event-type-delete").off("click").on("click", function () {
-        $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+        $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
+        $(this).parent().parent().remove();
         $(".event-type-name-input").first().trigger("input");
-        $(this).parent().remove();
         if ($("#event-types-list").children().length === 0) {
           $("#event-types-list").append(
             `<span class="text-secondary no-event-types">
@@ -1861,7 +1827,7 @@ export async function init(): Promise<void> {
       $("#event-types-cancel").hide();
       unsavedChanges(false);
       renderEventTypeList();
-      $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+      $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
     });
 
     async function saveEventTypes(): Promise<void> {
@@ -1882,7 +1848,7 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+      $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
       $("#event-types-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
       setTimeout(() => {
         $("#event-types-save").text("Speichern").prop("disabled", false);
@@ -1914,17 +1880,14 @@ export async function init(): Promise<void> {
         saveEventTypes();
       }
       else {
-        $("#event-types-save-confirm-container, #event-types-save-confirm").removeClass("d-none");
+        $("#event-types-save-confirm-container, #event-types-save-confirm").show();
         if (deleted.length === 1) {
           $("#event-types-save-confirm-list").html(`der Art <b>${escapeHTML(deleted[0])}</b>`);
         }
         else {
           $("#event-types-save-confirm-list").html(
             "der Arten " +
-              deleted
-                .map(e => `<b>${escapeHTML(e)}</b>`)
-                .join(", ")
-                .replace(/,(?!.*,)/, " und")
+              toCommaAndAnd(deleted.map(e => `<b>${escapeHTML(e)}</b>`))
           );
         }
       }
@@ -2103,10 +2066,7 @@ export async function init(): Promise<void> {
         else {
           $("#subjects-save-confirm-list").html(
             "der Fächer " +
-              deleted
-                .map(s => `<b>${escapeHTML(s)}</b>`)
-                .join(", ")
-                .replace(/,(?!.*,)/, " und")
+              toCommaAndAnd(deleted.map(s => `<b>${escapeHTML(s)}</b>`))
           );
         }
       }
@@ -2179,19 +2139,24 @@ registerSocketListeners({
   updateDefaultPermission: updateClassInfo
 });
 
-(await classMemberData.init()).on("update", onlyThisSite(renderClassMemberList));
-(await subjectData.init()).on("update", onlyThisSite(renderSubjectList));
-(await teamsData.init()).on("update", onlyThisSite(renderTeamLists));
-(await eventTypeData.init()).on("update", onlyThisSite(renderEventTypeList));
-(await lessonData.init()).on("update", onlyThisSite(renderTimetable));
-(await substitutionsData.init()).on("update", onlyThisSite(renderSubjectList));
+classMemberData.on("update", onlyThisSite(renderClassMemberList));
+subjectData.on("update", onlyThisSite(renderSubjectList));
+teamsData.on("update", onlyThisSite(renderTeamLists));
+eventTypeData.on("update", onlyThisSite(renderEventTypeList));
+lessonData.on("update", onlyThisSite(renderTimetable));
+substitutionsData.on("update", onlyThisSite(renderSubjectList));
 
 await user.awaitAuthed();
 
-(await joinedTeamsData.init()).on("update", onlyThisSite(renderTeamLists));
+joinedTeamsData.on("update", onlyThisSite(renderTeamLists));
 
 export async function renderAllFn(): Promise<void> {
   if (user.classJoined) {
+    if ((await substitutionsData()).data !== "No data") {
+      dsbActivated = true;
+    }
+    $(".description-dsb").toggle(dsbActivated);
+
     await renderClassMemberList();
     await renderTeamLists();
     await renderEventTypeList();

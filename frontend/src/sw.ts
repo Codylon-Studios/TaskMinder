@@ -30,7 +30,7 @@ const API_CACHE = "api-" + VERSION;
 const CORE_GLOBAL = ["/global/global.js", "/global/global.css"];
 const CORE_PAGES = ["main", "events", "homework", "uploads", "settings"]
   .flatMap(p => ["/" + p, `/pages/${p}/${p}.js`, `/pages/${p}/${p}.css`]);
-const CORE_SNIPPETS = ["pwaBanner", "navbar", "footer", "bottombar", "loadingBar", "colorPicker", "richTextarea", "searchBox"]
+const CORE_SNIPPETS = ["navbar", "footer", "bottombar", "loadingBar", "colorPicker", "richTextarea", "searchBox"]
   .map(s => `/snippets/${s}/${s}.js`);
 const CORE_ASSETS = [
   "/static/manifest.json",

@@ -15,14 +15,14 @@ import {
   escapeHTML,
   loadTimetableData,
   getTimeLeftString,
-  lastCommaRegex,
   lessonData,
   teamsData,
   eventTypeData,
   onlyThisSite,
   ajax,
   weekDaysSo,
-  weekDaysMo
+  weekDaysMo,
+  toCommaAndAnd
 } from "../../global/global.js";
 import { HomeworkData, MonthDates, TimetableData } from "../../global/types";
 import { user } from "../../snippets/navbar/navbar.js";
@@ -753,8 +753,7 @@ async function updateTimetableFeedback(): Promise<void> {
   function lessonToText(l: TimetableData, showMoreInfo: boolean): string {
     return (
       (l.events
-        ? (l.events).map(e => `<span class="fw-bold event-${e.eventTypeId}">${e.name}</span>`)
-          .join(", ").replace(lastCommaRegex, " und") + " während "
+        ? toCommaAndAnd((l.events).map(e => `<span class="fw-bold event-${e.eventTypeId}">${e.name}</span>`)) + " während "
         : "")
 
       + (showMoreInfo
@@ -1179,31 +1178,31 @@ let calendarMode: string;
 // Is a list of the dates (number of day in the month) of the week which is currently selected
 const monthDates = createDataAccessor<MonthDates>("monthDates", { reload: loadMonthDates });
 
-(await homeworkData.init()).on("update", onlyThisSite(renderHomeworkList));
+homeworkData.on("update", onlyThisSite(renderHomeworkList));
 (await homeworkCheckedData.init());
-(await subjectData.init()).on("update", onlyThisSite(renderHomeworkList));
-(await eventData.init()).on("update", onlyThisSite(() => {
+subjectData.on("update", onlyThisSite(renderHomeworkList));
+eventData.on("update", onlyThisSite(() => {
   renderEventList();
   updateCalendarContent("#calendar-old");
   renderTimetable();
 }));
 (await eventTypeData.init());
-(await lessonData.init()).on("update", onlyThisSite(renderTimetable));
-(await teamsData.init()).on("update", onlyThisSite(() => {
+lessonData.on("update", onlyThisSite(renderTimetable));
+teamsData.on("update", onlyThisSite(() => {
   renderHomeworkList();
   renderEventList();
   updateCalendarContent("#calendar-old");
   renderTimetable();
 }));
-(await substitutionsData.init()).on("update", onlyThisSite(renderSubstitutionList));
-(await classSubstitutionsData.init()).on("update", onlyThisSite(() => {
+substitutionsData.on("update", onlyThisSite(renderSubstitutionList));
+classSubstitutionsData.on("update", onlyThisSite(() => {
   renderSubstitutionList();
   renderTimetable();
 }));
 
 await user.awaitAuthed();
 
-(await joinedTeamsData.init()).on("update", onlyThisSite(() => {
+joinedTeamsData.on("update", onlyThisSite(() => {
   renderHomeworkList();
   renderEventList();
   updateCalendarContent("#calendar-old");

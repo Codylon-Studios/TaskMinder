@@ -191,6 +191,7 @@ type SingleUploadData = {
   accountName: string | null;
   filesCount: number;
   createdAt: string;
+  isPinned: boolean;
   files: {
     fileMetaDataId: 1;
     mimeType: string;
@@ -206,3 +207,10 @@ type UploadData = {
   usedStorage: string;
   uploads: SingleUploadData[];
 }
+
+type UploadRequestsData = {
+  uploadRequestId: number;
+  uploadRequestName: string;
+  classId: number;
+  teamId: number;
+}[]

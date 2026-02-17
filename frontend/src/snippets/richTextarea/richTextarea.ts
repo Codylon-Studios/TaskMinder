@@ -355,11 +355,12 @@ function replaceRichTextareas(): void {
         newVal += singleValue;
       });
 
-      let previousVal = "";
-      do {
+      let previousVal;
+
+      while (newVal !== previousVal) {
         previousVal = newVal;
         newVal = newVal.replace(/<\/(.+)>((?:<[^<>]*?>)*?)<\1>/g, "$2");
-      } while (newVal !== previousVal);
+      }
 
       input.val(newVal);
     }
@@ -950,13 +951,13 @@ function replaceRichTextareas(): void {
 
     richTextarea.find(".rich-textarea-color-picker-toggle").on("click", ev => {
       ev.stopPropagation();
-      richTextarea.find(".rich-textarea-color-picker ~ .color-picker-trigger").trigger("click");
+      richTextarea.find(".rich-textarea-color-picker .color-picker-trigger").trigger("click");
     });
 
     richTextarea.find(".rich-textarea-color-picker").on("change", function () {
       const color = $(this).val()?.toString() ?? "#3bb9ca";
       currentStyles.color.value = color;
-      if (color === "auto") {
+      if (color === "auto" || color === "Automatisch") {
         richTextarea.find(".rich-textarea-color svg").hide().find("~ span").show();
         richTextarea.find(".rich-textarea-color-enabled").hide();
       }

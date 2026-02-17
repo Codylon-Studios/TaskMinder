@@ -88,7 +88,6 @@ async function buildDirectory(src, dest) {
       `);
 
       $("body").prepend(`
-        <div class="load-snippet" data-target="pwaBanner"></div>
         <div class="load-snippet" data-target="navbar"></div>
       `);
 

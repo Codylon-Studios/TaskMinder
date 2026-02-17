@@ -10,7 +10,7 @@
   <body>
     <div id="app-scroll">
       <div class="container" id="app">
-        <div class="nav nav-tabs mb-3">
+        <div class="nav nav-tabs mb-3" id="settings-nav-tabs">
           <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#nav-settings-app">App</button>
           <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-account">Account</button>
           <button class="nav-link" data-bs-toggle="tab" data-bs-target="#nav-settings-student">Schüler:in</button>
@@ -19,6 +19,27 @@
 
         <div class="tab-content container">
           <div class="tab-pane fade show active" id="nav-settings-app">
+            <div class="alert alert-primary p-2 ds-flex align-items-center gap-2" id="pwa-notice">
+              <i class="fa-solid fa-mobile-screen-button mx-1" aria-hidden="true"></i>
+              <div class="d-block">
+                <b>Wusstest du schon?</b>
+                <br />
+                Du kannst mit nur wenigen Klicks TaskMinder wie eine App installieren! Es geht ganz einfach:
+                <br />
+                <span class="d-inline-flex align-items-center my-n2">
+                  1. Auf Teilen
+                  <img src="/assets/ios-share-icon.svg" alt="Teilen-Icon" width="32" />
+                  klicken
+                </span>
+                <br />
+                <span class="d-inline-flex align-items-center my-n2">
+                  2. Zum Home-Bildschirm
+                  <img src="/assets/ios-add-icon.svg" alt="Zum-Home-Bildschirm-Icon" width="32" />
+                  klicken
+                </span>
+              </div>
+            </div>
+
             <div class="d-flex align-items-center mb-2">
               <label class="me-3" for="animations-check">Animationen</label>
               <div class="form-check form-switch fs-5 mb-0" id="animations">
@@ -378,6 +399,29 @@
                   Klassenmitglieder:innen
                 </h5>
                 <div id="class-members-wrapper">
+                  <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-lightbulb mx-1 flex-shrink-0" aria-hidden="true"></i>
+                    <div>
+                      <a class="text-primary-emphasis" data-bs-toggle="collapse" href="#class-members-description">
+                        Erklärung zu Klassenmitglieder:innen
+                      </a>
+                      <div class="me-1 form-text text-primary-emphasis collapse" id="class-members-description">
+                        Hier siehst du alle Klassenmitglieder:innen mit Account und ihre Rollen. Höhere Rollen enthalten die Rechte der Niedrigeren.
+                        <br />
+                        <b>Mitglied:</b>
+                        Kann Hausaufgaben, Ereignisse & Dateien ansehen.
+                        <br />
+                        <b>Bearbeiter:in:</b>
+                        Kann Hausaufgaben, Ereignisse & Dateien erstellen, bearbeiten & löschen.
+                        <br />
+                        <b>Manager:in:</b>
+                        Kann Klasseneinstellungen wie Teams, Ereignisarten, Fächer & Stundenplan verwalten.
+                        <br />
+                        <b>Admin:</b>
+                        Kann Klassenmitglieder verwalten und die Klasse löschen. Mindestens ein Admin pro Klasse erforderlich!
+                      </div>
+                    </div>
+                  </div>
                   <div class="mb-2" id="class-members-list">
                     <!--Gets filled-->
                   </div>
@@ -391,39 +435,24 @@
                     unwiderruflich gelöscht!
                   </div>
                   <button class="btn btn-danger btn-sm fw-semibold d-none" id="class-members-save-confirm">Fortfahren</button>
-                  <div class="form-text mt-2 mb-4">
-                    Hier kannst du die Schüler und Schülerinnen deiner Klasse sehen, die einen Account haben. Es gibt verschiedene Rollen. Jede höhere
-                    hat auch die Berechtigungen der niedrigeren.
-                    <br />
-                    <b>Mitglied:</b>
-                    Kann Informationen wie Hausaufgaben und Ereignisse nur sehen, nicht bearbeiten.
-                    <br />
-                    <b>Bearbeiter:in:</b>
-                    Kann Hausaufgaben und Ereignisse hinzufügen, bearbeiten und löschen.
-                    <br />
-                    <b>Manager:in:</b>
-                    Kann Klasseneinstellungen wie Teams, Ereignisarten, Fächer und Stundenplan anpassen.
-                    <br />
-                    <b>Admin:</b>
-                    Kann hier Berechtigungen von Klassenmitgliedern einstellen und die Klasse löschen. Es muss immer mindestens ein Admin in einer
-                    Klasse sein.
-                  </div>
 
-                  <button class="btn btn-danger fw-bold" id="kick-logged-out-users-button">
-                    <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
-                    Alle unangemeldeten Nutzer entfernen
-                  </button>
-                  <div id="kick-logged-out-users">
-                    <button class="btn btn-secondary fw-bold" id="kick-logged-out-users-cancel">
-                      <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-                      Abbrechen
-                    </button>
-                    <button class="btn btn-danger fw-bold" id="kick-logged-out-users-confirm">
+                  <div class="mt-4">
+                    <button class="btn btn-danger fw-bold" id="kick-logged-out-users-button">
                       <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
-                      Bestätigen
+                      Alle unangemeldeten Nutzer entfernen
                     </button>
+                    <div id="kick-logged-out-users">
+                      <button class="btn btn-secondary fw-bold" id="kick-logged-out-users-cancel">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                        Abbrechen
+                      </button>
+                      <button class="btn btn-danger fw-bold" id="kick-logged-out-users-confirm">
+                        <i class="fa-solid fa-users-slash" aria-hidden="true"></i>
+                        Bestätigen
+                      </button>
+                    </div>
+                    <div class="form-text">Achtung, das kann nicht rückgängig gemacht werden!</div>
                   </div>
-                  <div class="form-text">Achtung, das kann nicht rückgängig gemacht werden!</div>
 
                   <div class="mt-2">
                     <div class="d-flex mb-1">
@@ -446,7 +475,7 @@
                       </button>
                     </div>
                   </div>
-                  <div class="form-text mt-2">Hier kannst du die Standardrolle für alle unangemeldeten und angemeldeten Nutzer festlegen.</div>
+                  <div class="form-text mt-2">Hier kannst du die Standardrolle für alle unangemeldeten und neuen Nutzer festlegen.</div>
                 </div>
               </div>
 
@@ -458,6 +487,18 @@
                   Teams
                 </h5>
                 <div id="teams-wrapper">
+                  <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-lightbulb mx-1 flex-shrink-0" aria-hidden="true"></i>
+                    <div>
+                      <a class="text-primary-emphasis" data-bs-toggle="collapse" href="#teams-description">Erklärung zu Teams</a>
+                      <div class="me-1 form-text text-primary-emphasis collapse" id="teams-description">
+                        Teams sind Untergruppen deiner Klasse. Schüler:innen sehen dann nur die Hausaufgaben, Ereignisse & Dateien der Teams, die sie
+                        unter "Schüler:in" ausgewählt haben.
+                        <br />
+                        Du kannst Teams zum Beispiel für Sprachkurse oder getrennten Sportunterricht benutzen.
+                      </div>
+                    </div>
+                  </div>
                   <div class="mb-2" id="teams-list">
                     <!--Gets filled-->
                   </div>
@@ -471,10 +512,6 @@
                     gelöscht! Das kann nicht rückgängig gemacht werden!
                   </div>
                   <button class="btn btn-danger btn-sm fw-semibold d-none" id="teams-save-confirm">Fortfahren</button>
-                  <div class="form-text mt-2">
-                    Teams sind Untergruppen deiner Klasse, zum Beispiel für verschiedene Sprachkurse. Schülerinnen und Schüler sehen dann nur die
-                    Hausaufgaben und Ereignisse der Teams, die sie unter "Schüler" ausgewählt haben.
-                  </div>
                 </div>
               </div>
 
@@ -486,23 +523,82 @@
                   Ereignisarten
                 </h5>
                 <div id="event-types-wrapper">
+                  <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-lightbulb mx-1 flex-shrink-0" aria-hidden="true"></i>
+                    <div>
+                      <a class="text-primary-emphasis" data-bs-toggle="collapse" href="#event-types-description">Erklärung zu Ereignisarten</a>
+                      <div class="me-1 form-text text-primary-emphasis collapse" id="event-types-description">
+                        Mit Ereignisarten kannst du verschiedene Ereignisse gruppieren. Sie werden dann auch farblich hervorgehoben.
+                        <br />
+                        Du kannst zum Beispiel nach Prüfungen, Ausflügen oder Ferien gruppieren.
+                      </div>
+                    </div>
+                  </div>
                   <div class="mb-2" id="event-types-list">
                     <!--Gets filled-->
                   </div>
+                  <template id="event-type-template">
+                    <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id>
+                      <div class="d-flex flex-column flex-lg-row align-items-lg-center">
+                        <div class="d-flex flex-column flex-sm-row gap-2 min-w-0">
+                          <div>
+                            <label>
+                              Name
+                              <input class="form-control form-control-sm d-inline w-fit-content event-type-name-input" type="text" data-id disabled />
+                              <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
+                            </label>
+                          </div>
+                          <div class="d-flex align-items-center gap-2">
+                            <label for="ID">Farbe</label>
+                            <color-picker class="event-type-color-input" data-id disabled id="ID"></color-picker>
+                          </div>
+                        </div>
+                        <div class="event-type-changes mt-2 mt-lg-0 ms-lg-2" data-id>
+                          <div class="text-warning fw-bold me-2 event-type-renamed" data-id>
+                            Umbenannt
+                            <span class="text-secondary fw-normal event-type-renamed-name" data-id>
+                              (
+                              <span class="event-type-renamed-name-old"></span>
+                              zu
+                              <b></b>
+                              )
+                            </span>
+                          </div>
+                          <div class="text-warning fw-bold event-type-recolored" data-id>
+                            Farbe gändert
+                            <span class="text-secondary fw-normal event-type-recolored-color" data-id>
+                              (
+                              <div class="color-display"></div>
+                              zu
+                              <div class="color-display"></div>
+                              )
+                            </span>
+                          </div>
+                          <div class="text-danger fw-bold event-type-deleted" data-id>Gelöscht</div>
+                        </div>
+                      </div>
+                      <div>
+                        <button
+                          class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete"
+                          data-id
+                          disabled
+                          aria-label="Ereignisart entfernen"
+                        >
+                          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </template>
                   <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="event-types-cancel">Abbrechen</button>
                   <button class="btn btn-success btn-sm fw-semibold" id="new-event-type">Neue Art</button>
                   <button class="btn btn-primary btn-sm fw-semibold" id="event-types-save">Speichern</button>
-                  <div class="my-2 d-none" id="event-types-save-confirm-container">
+                  <div class="my-2" id="event-types-save-confirm-container">
                     <span class="fw-bold text-danger">Achtung!</span>
                     Es werden alle Ereignisse
                     <span id="event-types-save-confirm-list"></span>
                     gelöscht! Das kann nicht rückgängig gemacht werden!
                   </div>
-                  <button class="btn btn-danger btn-sm fw-semibold d-none" id="event-types-save-confirm">Fortfahren</button>
-                  <div class="form-text mt-2">
-                    Mit Ereignisarten kannst du verschiedene Ereignisse gruppieren, zum Beispiel nach Prüfungen, Ausflügen oder Ferien. Durch
-                    verschiedene Farben kannst du die Ereignisse besser unterscheiden.
-                  </div>
+                  <button class="btn btn-danger btn-sm fw-semibold" id="event-types-save-confirm">Fortfahren</button>
                 </div>
               </div>
               <div class="mb-4">
@@ -513,6 +609,37 @@
                   Fächer
                 </h5>
                 <div id="subjects-wrapper">
+                  <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-lightbulb mx-1 flex-shrink-0" aria-hidden="true"></i>
+                    <div>
+                      <a class="text-primary-emphasis" data-bs-toggle="collapse" href="#subjects-description">Erklärung zu Fächern</a>
+                      <div class="me-1 form-text text-primary-emphasis collapse" id="subjects-description">
+                        Jede Hausaufgabe und jeder Stundenplaneintrag muss einem Fach zugeordnet werden.
+                        <br />
+                        <b>Fachname:</b>
+                        Der Name des Fachs, angezeigt in der Stundenplanansicht "Mehr" & bei Hausaufgaben
+                        <br />
+                        <b>Fachabkürzung:</b>
+                        Standardmäßig die drei ersten Buchstaben des Fachnamens, angezeigt in der Stundenplanansicht "Weniger", zum Beispiel "PuG" für
+                        "Politik und Gesellschaft"
+                        <br />
+                        <b>Lehrkraftname:</b>
+                        Der Name der Lehrkraft, angezeigt in der Stundenplanansicht "Mehr"
+                        <div class="description-dsb">
+                          <b>Lehrkraftkürzel:</b>
+                          Standardmäßig die drei ersten Buchstaben des Lehrkraftnamens, zum Beispiel "Fis" für "Fischer"
+                          <br />
+                          <b>Vertretungen - Fachname:</b>
+                          Standardmäßig der Fachname, nach diesem Fach werden Vertretungen gefiltert, mehrere Möglichkeiten können durch "," getrennt
+                          werden, zum Beispiel "Mathematik" statt "Mathe"
+                          <br />
+                          <b>Vertretungen - Lehrkraftname:</b>
+                          Standardmäßig das Lehrkraftkürzel, nach dieser Lehrkraft werden Vertretungen gefiltert, mehrere Möglichkeiten können durch
+                          "," getrennt werden
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div class="alert alert-warning p-2 d-flex align-items-center gap-2 w-fit-content">
                     <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
                     <span class="d-block me-1">Bitte deine Lehrkräfte um Erlaubnis, bevor du ihre Namen einträgst.</span>
@@ -531,14 +658,6 @@
                     gelöscht! Das kann nicht rückgängig gemacht werden!
                   </div>
                   <button class="btn btn-danger btn-sm fw-semibold d-none" id="subjects-save-confirm">Fortfahren</button>
-                  <div class="form-text mt-2">
-                    Jede Hausaufgabe und jeder Stundenplaneintrag muss einem Fach zugeordnet werden. Der kurze Fachname wird in der kleineren
-                    Stundenplanansicht angezeigt, der lange in der größeren. Der lange Lehrername wird in der größeren Stundenplanansicht angezeigt.
-                    Wenn nicht angegeben, ist der kurze Fachname die ersten drei Buchstaben des Langen, ebenso für den kurzen Lehrernamen. Wenn
-                    DSBmobile verwendet wird, werden die Vertretungen anhand den Angaben in der Zeile "Vertretung" gefiltert. Wenn nichts angegeben
-                    ist, ist der gefilterte Fachname der Lange und der gefilterte Lehrername der Kurze. Mehrere Möglichkeiten können durch ","
-                    getrennt werden.
-                  </div>
                 </div>
               </div>
 
@@ -550,17 +669,32 @@
                   Stundenplan
                 </h5>
                 <div id="timetable-wrapper">
+                  <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-lightbulb mx-1 flex-shrink-0" aria-hidden="true"></i>
+                    <div>
+                      <a class="text-primary-emphasis" data-bs-toggle="collapse" href="#timetable-description">Erklärung zum Stundenplan</a>
+                      <div class="me-1 form-text text-primary-emphasis collapse" id="timetable-description">
+                        Der Stundenplan besteht aus mehreren Stunden und wird auf der Hauptseite angezeigt.
+                        <br />
+                        <b>Stundennummer:</b>
+                        Anhand der Stundennummer werden im Stundenplan Ereignisse
+                        <span class="description-dsb">und Vertretungen</span>
+                        zur passenden Stunde angezeigt.
+                        <br />
+                        <b>Team:</b>
+                        Nur Mitglieder:inenn dieses Teams sehen diese Stunde.
+                        <br />
+                        <b>In einer Stunde wechselt jede Woche das Fach / zwei Teams haben ein verschiedenes Fach:</b>
+                        Trage zwei Stunden mit beiden Fächern und der gleichen Zeit und Stundennummer ein. Dann werden im Stundenplan alle passenden
+                        Optionen angezeigt.
+                      </div>
+                    </div>
+                  </div>
                   <div class="mb-2 row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-5 p-2" id="timetable">
                     <!--Gets filled-->
                   </div>
                   <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="timetable-cancel">Abbrechen</button>
                   <button class="btn btn-primary btn-sm fw-semibold" id="timetable-save">Speichern</button>
-                  <div class="form-text mt-2">
-                    Der Stundenplan besteht aus mehreren Stunden. Der Stundenplan wird auf der Hauptseite angezeigt. Jede Stunde hat eine
-                    Stundennummer, Ereignisse und Vertretungen von DSBmobile können sich auf diese beziehen und werden dann passend angezeigt. Wenn
-                    ein Team ausgewählt ist, wird Mitgliedern des Teams diese Unterrichtsstunde angezeigt. Wenn es je nach Team oder wöchentlich
-                    verschiedene Fächer in einer Stunde gibt, sollte einfach die Stundennummer gleich sein, dann werden alle Optionen angezeigt.
-                  </div>
                 </div>
               </div>
             </div>

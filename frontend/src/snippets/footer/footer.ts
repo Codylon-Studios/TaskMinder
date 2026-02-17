@@ -13,7 +13,7 @@ $("#footer-close").on("click", () => {
   }
 });
 
-$("body").addClass("flex-column min-vh-100");
+$("body").addClass("flex-column");
 
 if ((await colorTheme()) === ColorTheme.DARK) {
   $("footer").removeClass("bg-dark").addClass("bg-dark-subtle");
