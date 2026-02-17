@@ -115,14 +115,17 @@ const subjectService = {
                 teacherNameLong: subject.teacherNameLong,
                 teacherNameShort: subject.teacherNameShort,
                 teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
-                createdAt: Date.now()
+                createdAt: BigInt(Date.now())
               }
             });
           }
           else {
             dataChanged = true;
-            await tx.subjects.update({
-              where: { subjectId: subject.subjectId },
+            const updated = await tx.subjects.updateMany({
+              where: {
+                subjectId: subject.subjectId,
+                classId: classId
+              },
               data: {
                 subjectNameLong: subject.subjectNameLong,
                 subjectNameShort: subject.subjectNameShort,
@@ -133,6 +136,16 @@ const subjectService = {
                 teacherNameSubstitution: subject.teacherNameSubstitution ?? []
               }
             });
+
+            if (updated.count === 0) {
+              const err: RequestError = {
+                name: "Not Found",
+                status: 404,
+                message: "Subject not found for update",
+                expected: true
+              };
+              throw err;
+            }
           }
         }
         catch {

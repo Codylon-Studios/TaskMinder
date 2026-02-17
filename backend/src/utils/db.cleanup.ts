@@ -287,7 +287,7 @@ export async function migrateUploadMetadataDates(): Promise<void> {
   try {
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
 
-    const demoCodeCandidates = ["demo", "Demo", "DEMO", "DeMo"].map(code =>
+    const demoCodeCandidates = ["demo", "Demo"].map(code =>
       encryptionManager.hash(code)
     );
     const demoClass = await prisma.class.findFirst({

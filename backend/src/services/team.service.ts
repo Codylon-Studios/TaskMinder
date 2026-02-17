@@ -48,7 +48,7 @@ const teamService = {
     const classId = parseInt(session.classId!, 10);
     // variable to check if cache should be reloaded (e.g. on team deletion)
     let dataChanged = false;
-    // track if teams were deleted (affects homework, events, lessons)
+    // track if teams were deleted (affects homework, events, lessons, upload (requests))
     let teamsDeleted = false;
 
     // Check for duplicate team names
@@ -86,7 +86,13 @@ const teamService = {
             for (const upload of uploads) {
               for (const file of upload.Files) {
                 const filePath = path.join(classDir, file.storedFileName);
-                await fs.unlink(filePath).catch(() => { });
+                await fs.unlink(filePath).catch(error => {
+                  logger.error(`File could not be deleted during team deletion, 
+                  teamId: ${team.teamId},
+                  path: ${filePath},
+                  error: ${error}`
+                  );
+                });  
               }
               // Calculate storage to release
               const sizeToRelease = upload.status === "completed"
@@ -143,15 +149,6 @@ const teamService = {
       );
 
       for (const team of teams) {
-        if (team.name.trim() === "") {
-          const err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data (Team name cannot be empty)",
-            expected: true
-          };
-          throw err;
-        }
         try {
           if (team.teamId === "") {
             dataChanged = true;
@@ -159,7 +156,7 @@ const teamService = {
               data: {
                 classId: classId,
                 name: team.name,
-                createdAt: Date.now()
+                createdAt: BigInt(Date.now())
               }
             });
           }
@@ -172,7 +169,6 @@ const teamService = {
             await tx.team.update({
               where: { teamId: team.teamId },
               data: {
-                classId: classId,
                 name: team.name
               }
             });
@@ -195,16 +191,21 @@ const teamService = {
       await invalidateCache("TEAMS", session.classId!);
       const io = socketIO.getIO();
       io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.JOINED_TEAMS);
 
-      // If teams were deleted, also update homework, events, and lessons caches
+      // If teams were deleted, also update homework, events, lesson and upload (request) caches
       if (teamsDeleted) {
         await invalidateCache("HOMEWORK", session.classId!);
         await invalidateCache("EVENT", session.classId!);
         await invalidateCache("LESSON", session.classId!);
+        await invalidateCache("UPLOADMETADATA", session.classId!);
+        await invalidateCache("UPLOADREQUESTS", session.classId!);
 
         io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
         io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
         io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
       }
     }
   },
@@ -240,7 +241,7 @@ const teamService = {
             data: {
               teamId: teamId,
               accountId: accountId,
-              createdAt: Date.now()
+              createdAt: BigInt(Date.now())
             }
           });
         }

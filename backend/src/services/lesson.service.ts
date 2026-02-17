@@ -2,7 +2,7 @@ import { RequestError } from "../@types/requestError";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
 import logger from "../config/logger";
-import { isValidweekDay, BigIntreplacer, updateCacheData, invalidateCache } from "../utils/validate.functions";
+import { isValidweekDay, BigIntreplacer, updateCacheData, invalidateCache, isValidTeamId, isValidSubjectId } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lesson.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
@@ -15,6 +15,8 @@ const lessonService = {
     const { lessons } = reqData;
     for (const lesson of lessons) {
       await isValidweekDay(lesson.weekDay);
+      await isValidTeamId(lesson.teamId, session);
+      await isValidSubjectId(lesson.subjectId, session);
     }
 
     const classId = parseInt(session.classId!, 10);
@@ -58,7 +60,7 @@ const lessonService = {
               room: lesson.room,
               startTime: lesson.startTime,
               endTime: lesson.endTime,
-              createdAt: Date.now()
+              createdAt: BigInt(Date.now())
             }
           });
         }
