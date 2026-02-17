@@ -5,18 +5,13 @@ import checkAccess from "../middleware/access.middleware";
 import { validate } from "../middleware/validation.middleware";
 import { setSubjectsSchema } from "../schemas/subject.schema";
 
-// rate limiter
-const subjectLimiter = rateLimit({
-  windowMs: 1000, // 1 second
-  limit: 15, // Max 15 requests per IP per second
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { status: 429, message: "Too many requests, please slow down." }
-});
+// subject rate limiters
+const readSubjectLimiter = rateLimit({ windowMs: 1000, limit: 30 });
+const writeSubjectLimiter = rateLimit({ windowMs: 1000, limit: 10 });
 
 const router = express.Router();
 
-router.get("/get_subject_data", subjectLimiter, checkAccess(["CLASS"]), subjectController.getSubjectData);
-router.post("/set_subject_data", subjectLimiter, checkAccess(["CLASS", "MANAGER"]), validate(setSubjectsSchema), subjectController.setSubjectData);
+router.get("/", readSubjectLimiter, checkAccess(["CLASS"]), subjectController.getSubjects);
+router.put("/", writeSubjectLimiter, checkAccess(["CLASS", "MANAGER"]), validate(setSubjectsSchema), subjectController.setSubjects);
 
 export default router;

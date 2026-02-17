@@ -8,25 +8,22 @@ import type { Prisma } from "@prisma/client";
 import logger from "../config/logger";
 import { RequestError } from "../@types/requestError";
 import {
-  deleteUploadTypeBody,
-  getUploadFileType,
+  getUploadFileQuery,
+  getUploadMetadataQuery,
+  getUploadFileParams,
+  editUploadTypeParams,
+  deleteUploadTypeParams,
+  pinUploadTypeParams,
+  deleteUploadRequestTypeParams,
   editUploadTypeBody,
   uploadFileTypeBody,
   pinUploadTypeBody,
-  addUploadRequestTypeBody,
-  deleteUploadRequestTypeBody
+  addUploadRequestTypeBody
 } from "../schemas/upload.schema";
 import { removeTempFiles } from "../utils/upload.cleanup";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
 import { invalidateCache, BigIntreplacer, isValidTeamId, updateCacheData } from "../utils/validate.functions";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
-
-
-type GetUploadFileInput = {
-  fileIdParam: number;
-  action: getUploadFileType["query"]["action"];
-  classId: string;
-};
 
 type GetUploadFileResult = {
   stream: ReadStream;
@@ -204,7 +201,9 @@ const uploadService = {
     logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s)`);
   },
 
-  async getUploadMetadata(isGetAllData: boolean, session: Session & Partial<SessionData>) {
+  async getUploadMetadata(reqQuery: getUploadMetadataQuery, session: Session & Partial<SessionData>) {
+    const { all } = reqQuery;
+    const isGetAllData = all === "true";
     const classId = parseInt(session.classId!, 10);
 
     const classInformation = await prisma.class.findUnique({
@@ -252,7 +251,15 @@ const uploadService = {
     return JSON.parse(stringified);
   },
 
-  async getUploadFile({ fileIdParam, action, classId }: GetUploadFileInput): Promise<GetUploadFileResult> {
+  async getUploadFile(
+    params: getUploadFileParams,
+    query: getUploadFileQuery,
+    session: Session & Partial<SessionData>
+  ): Promise<GetUploadFileResult> {
+    const { id: fileIdParam } = params;
+    const { action } = query;
+    const classId = session.classId!;
+
     const fileData = await prisma.fileMetadata.findUnique({
       where: { fileMetaDataId: fileIdParam },
       include: {
@@ -337,12 +344,14 @@ const uploadService = {
 
   // eslint-disable-next-line complexity
   async editUpload(
+    params: editUploadTypeParams,
     body: editUploadTypeBody,
     session: Session & Partial<SessionData>,
     files: Express.Multer.File[],
     reservedBytes?: bigint
   ) {
-    const { uploadId, uploadName, uploadDescription, uploadType, teamId, changeFiles } = body;
+    const { uploadName, uploadDescription, uploadType, teamId, changeFiles } = body;
+    const { id: uploadId } = params;
     const classIdNum = parseInt(session.classId!, 10);
     const tempFiles = Array.isArray(files) ? files : [];
     const accountId = session.account?.accountId ?? null;
@@ -514,10 +523,10 @@ const uploadService = {
   },
 
   async deleteUpload(
-    body: deleteUploadTypeBody,
+    params: deleteUploadTypeParams,
     session: Session & Partial<SessionData>
   ) {
-    const { uploadId } = body;
+    const { id: uploadId } = params;
     const classIdNum = parseInt(session.classId!, 10);
 
     const uploadData = await prisma.upload.findUnique({
@@ -570,10 +579,12 @@ const uploadService = {
   },
 
   async pinUpload(
+    params: pinUploadTypeParams,
     body: pinUploadTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { uploadId, pinStatus } = body;
+    const { pinStatus } = body;
+    const { id: uploadId } = params;
     const classIdNum = parseInt(session.classId!, 10);
 
     const updated = await prisma.upload.updateMany({
@@ -659,10 +670,10 @@ const uploadService = {
   },
 
   async deleteUploadRequest(
-    body: deleteUploadRequestTypeBody,
+    params: deleteUploadRequestTypeParams,
     session: Session & Partial<SessionData>
   ) {
-    const { uploadRequestId } = body;
+    const { id: uploadRequestId } = params;
     const classIdNum = parseInt(session.classId!, 10);
 
     // Check if upload request exists and belongs to this class

@@ -1,12 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import logger from "../config/logger";
-import { getUploadFileType } from "../schemas/upload.schema";
 import uploadService from "../services/upload.service";
+import { getUploadFileQuery } from "../schemas/upload.schema";
 
-export const getUploadMetadata = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getUploadMetadata = async (
+  req: Request<unknown, unknown, unknown, { all?: string }>, 
+  res: Response, 
+  next: NextFunction
+): Promise<void> => {
   try {
-    const isGetAllData = req.query.all === "true";
-    const uploadData = await uploadService.getUploadMetadata(isGetAllData, req.session);
+    const isAll = req.query.all === "true";
+    const uploadData = await uploadService.getUploadMetadata({all: isAll ? "true" : "false"}, req.session);
     res.status(200).json(uploadData);
   }
   catch (error) {
@@ -14,13 +18,15 @@ export const getUploadMetadata = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const getUploadFile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getUploadFile = async (
+  req: Request<
+    { id: string },
+    unknown, // ResBody: any/unknown
+    unknown, // ReqBody: any/unknown (GET request has no body)
+    getUploadFileQuery
+  >, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { stream, headers } = await uploadService.getUploadFile({
-      fileIdParam: parseInt(req.params.fileId, 10),
-      action: req.query.action as getUploadFileType["query"]["action"],
-      classId: req.session.classId!
-    });
+    const { stream, headers } = await uploadService.getUploadFile({ id: Number(req.params.id) }, req.query, req.session);
 
     res.setHeader("Content-Type", headers["Content-Type"]);
     res.setHeader("Content-Disposition", headers["Content-Disposition"]);
@@ -46,11 +52,11 @@ export const getUploadFile = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const editUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const editUpload = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
     const files = (req.files as Express.Multer.File[]) ?? [];
     const reservedBytes = res.locals.reservedBytes as bigint;
-    await uploadService.editUpload(req.body, req.session, files, reservedBytes);
+    await uploadService.editUpload({ id: Number(req.params.id) }, req.body, req.session, files, reservedBytes);
     res.sendStatus(200);
   }
   catch (error) {
@@ -75,9 +81,9 @@ export const deleteUpload = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const pinUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const pinUpload = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await uploadService.pinUpload(req.body, req.session);
+    await uploadService.pinUpload({ id: Number(req.params.id) }, req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {

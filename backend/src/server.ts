@@ -163,7 +163,7 @@ app.use(`${API_PREFIX}/teams`, teams);
 app.use(`${API_PREFIX}/events`, events);
 app.use(`${API_PREFIX}/subjects`, subjects);
 app.use(`${API_PREFIX}/lessons`, lessons);
-app.use(`${API_PREFIX}/class`, classes);
+app.use(`${API_PREFIX}/classes`, classes);
 app.use(`${API_PREFIX}/uploads`, uploads);
 
 //

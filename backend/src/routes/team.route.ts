@@ -5,20 +5,16 @@ import checkAccess from "../middleware/access.middleware";
 import { setJoinedTeamsSchema, setTeamsSchema } from "../schemas/team.schema";
 import { validate } from "../middleware/validation.middleware";
 
-// rate limiter
-const teamLimiter = rateLimit({
-  windowMs: 1000, // 1 second
-  limit: 15, // Max 15 requests per IP per second
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { status: 429, message: "Too many requests, please slow down." }
-});
+// team rate limiters
+const readTeamLimiter = rateLimit({ windowMs: 1000, limit: 30 });
+const writeTeamLimiter = rateLimit({ windowMs: 1000, limit: 10 });
 
 const router = express.Router();
 
-router.get("/get_teams_data", teamLimiter, checkAccess(["CLASS"]), teamsController.getTeams);
-router.post("/set_teams_data", teamLimiter, checkAccess(["CLASS", "MANAGER"]), validate(setTeamsSchema), teamsController.setTeams);
-router.get("/get_joined_teams_data", teamLimiter, checkAccess(["CLASS", "ACCOUNT"]), teamsController.getJoinedTeams);
-router.post("/set_joined_teams_data", teamLimiter, checkAccess(["CLASS", "ACCOUNT"]), validate(setJoinedTeamsSchema), teamsController.setJoinedTeams);
+router.get("/", readTeamLimiter, checkAccess(["CLASS"]), teamsController.getTeams);
+router.get("/joined", readTeamLimiter, checkAccess(["CLASS", "ACCOUNT"]), teamsController.getJoinedTeams);
+
+router.put("/", writeTeamLimiter, checkAccess(["CLASS", "MANAGER"]), validate(setTeamsSchema), teamsController.setTeams);
+router.put("/joined", writeTeamLimiter, checkAccess(["CLASS", "ACCOUNT"]), validate(setJoinedTeamsSchema), teamsController.setJoinedTeams);
 
 export default router;

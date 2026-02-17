@@ -5,14 +5,15 @@ export const getUploadMetadataSchema = z.object({
   // omit body due to GET request
   params: z.object({}),
   query: z.object({
-    all: z.enum(["true", "false"]).default("false")
+    all: z.enum(["true", "false"])
+      .default("false")
   })
 });
 
 export const getUploadFileSchema = z.object({
   // omit body due to GET request
   params: z.object({
-    fileId: z.coerce.number()
+    id: z.coerce.number()
   }),
   query: z.object({
     action: z.enum(["download", "preview"])
@@ -31,10 +32,11 @@ export const uploadFileSchema = z.object({
 });
 
 export const editUploadSchema = z.object({
-  params: z.object({}),
+  params: z.object({
+    id: z.coerce.number()
+  }),
   query: z.object({}),
   body: strictObject({
-    uploadId: z.coerce.number(),
     uploadName: z.string().trim().min(1).max(256),
     uploadDescription: z.string().trim().min(1).max(1024).nullable().or(z.literal("")),
     uploadType: z.enum(FileTypes),
@@ -48,18 +50,19 @@ export const editUploadSchema = z.object({
 });
 
 export const deleteUploadSchema = z.object({
-  params: z.object({}),
+  params: z.object({
+    id: z.coerce.number()
+  }),
   query: z.object({}),
-  body: strictObject({
-    uploadId: z.coerce.number()
-  })
+  body: strictObject({})
 });
 
 export const pinUploadSchema = z.object({
-  params: z.object({}),
+  params: z.object({
+    id: z.coerce.number()
+  }),
   query: z.object({}),
   body: strictObject({
-    uploadId: z.coerce.number(),
     pinStatus: z.boolean()
   })
 });
@@ -74,23 +77,23 @@ export const addUploadRequestSchema = z.object({
 });
 
 export const deleteUploadRequestSchema = z.object({
-  params: z.object({}),
+  params: z.object({
+    id: z.coerce.number()
+  }),
   query: z.object({}),
-  body: strictObject({
-    uploadRequestId: z.coerce.number()
-  })
+  body: strictObject({})
 });
 
-export type getUploadFileType = z.infer<typeof getUploadFileSchema>;
-export type editUploadType = z.infer<typeof editUploadSchema>;
-export type deleteUploadType = z.infer<typeof deleteUploadSchema>;
-export type pinUploadType = z.infer<typeof pinUploadSchema>;
-export type addUploadRequestType = z.infer<typeof addUploadRequestSchema>;
-export type deleteUploadRequestType = z.infer<typeof deleteUploadRequestSchema>;
+export type getUploadFileQuery = z.infer<typeof getUploadFileSchema>["query"];
+export type getUploadMetadataQuery = z.infer<typeof getUploadMetadataSchema>["query"];
+
+export type getUploadFileParams = z.infer<typeof getUploadFileSchema>["params"];
+export type editUploadTypeParams = z.infer<typeof editUploadSchema>["params"];
+export type deleteUploadTypeParams = z.infer<typeof deleteUploadSchema>["params"];
+export type pinUploadTypeParams = z.infer<typeof pinUploadSchema>["params"];
+export type deleteUploadRequestTypeParams = z.infer<typeof deleteUploadRequestSchema>["params"];
 
 export type uploadFileTypeBody = z.infer<typeof uploadFileSchema>["body"];
 export type editUploadTypeBody = z.infer<typeof editUploadSchema>["body"];
-export type deleteUploadTypeBody = z.infer<typeof deleteUploadSchema>["body"];
 export type pinUploadTypeBody = z.infer<typeof pinUploadSchema>["body"];
 export type addUploadRequestTypeBody = z.infer<typeof addUploadRequestSchema>["body"];
-export type deleteUploadRequestTypeBody = z.infer<typeof deleteUploadRequestSchema>["body"];

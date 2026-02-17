@@ -19,6 +19,4 @@ export const setSubjectsSchema = z.object({
   })
 });
 
-export type setSubjectsType = z.infer<typeof setSubjectsSchema>;
-
 export type setSubjectsTypeBody = z.infer<typeof setSubjectsSchema>["body"];
