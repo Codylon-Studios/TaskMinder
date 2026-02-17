@@ -14,7 +14,15 @@ import {
 } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
-import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody, pinEventTypeBody } from "../schemas/event.schema";
+import { 
+  editEventTypeParams,
+  deleteEventTypeParams,
+  pinEventTypeParams,
+  addEventTypeBody,
+  editEventTypeBody, 
+  setEventTypesTypeBody, 
+  pinEventTypeBody 
+} from "../schemas/event.schema";
 
 const inFlightStyleBuild = new Map<number, Promise<string>>();
 
@@ -60,8 +68,9 @@ export const eventService = {
     return JSON.parse(stringified);
   },
 
-  async pinEvent(reqData: pinEventTypeBody, session: Session & Partial<SessionData>) {
-    const { eventId, pinStatus } = reqData;
+  async pinEvent(reqParams: pinEventTypeParams, reqBody: pinEventTypeBody, session: Session & Partial<SessionData>) {
+    const { pinStatus } = reqBody;
+    const { id: eventId } = reqParams;
 
     const updated = await prisma.event.updateMany({
       where: {
@@ -130,10 +139,12 @@ export const eventService = {
   },
 
   async editEvent(
-    reqData: editEventTypeBody,
+    reqParams: editEventTypeParams,
+    reqBody: editEventTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
+    const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqBody;
+    const { id: eventId } = reqParams;
     lessonDateEventAtLeastOneNull(endDate, lesson);
     await isValidTeamId(teamId, session);
     await isValidEventTypeId(eventTypeId, session);
@@ -183,8 +194,8 @@ export const eventService = {
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
   },
 
-  async deleteEvent(reqData: deleteEventTypeBody, session: Session & Partial<SessionData>) {
-    const { eventId } = reqData;
+  async deleteEvent(reqParams: deleteEventTypeParams, session: Session & Partial<SessionData>) {
+    const { id: eventId } = reqParams;
 
     const deleted = await prisma.event.deleteMany({
       where: {

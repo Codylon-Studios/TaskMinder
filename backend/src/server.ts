@@ -41,6 +41,8 @@ import teams from "./routes/team.route";
 import classes from "./routes/class.route";
 import uploads from "./routes/upload.route";
 
+const API_PREFIX = "/api/v1";
+
 prisma
   .$connect()
   .then(() => {
@@ -154,15 +156,15 @@ app.get("/about", (req, res) => {
   res.sendFile(path.join(pagesPath, "about", "about.html"));
 });
 
-app.use("/account", account);
-app.use("/homework", homework);
-app.use("/substitutions", substitutions);
-app.use("/teams", teams);
-app.use("/events", events);
-app.use("/subjects", subjects);
-app.use("/lessons", lessons);
-app.use("/class", classes);
-app.use("/uploads", uploads);
+app.use(`${API_PREFIX}/account`, account);
+app.use(`${API_PREFIX}/homework`, homework);
+app.use(`${API_PREFIX}/substitutions`, substitutions);
+app.use(`${API_PREFIX}/teams`, teams);
+app.use(`${API_PREFIX}/events`, events);
+app.use(`${API_PREFIX}/subjects`, subjects);
+app.use(`${API_PREFIX}/lessons`, lessons);
+app.use(`${API_PREFIX}/class`, classes);
+app.use(`${API_PREFIX}/uploads`, uploads);
 
 //
 // Protected routes: Redirect to /join if not logged in

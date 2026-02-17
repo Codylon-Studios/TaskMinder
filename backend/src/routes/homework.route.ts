@@ -5,23 +5,20 @@ import checkAccess from "../middleware/access.middleware";
 import { addHomeworkSchema, checkHomeworkSchema, deleteHomeworkSchema, editHomeworkSchema, pinHomeworkSchema } from "../schemas/homework.schema";
 import { validate } from "../middleware/validation.middleware";
 
-// rate limiter
-const homeworkLimiter = rateLimit({
-  windowMs: 1000, // 1 second
-  limit: 15, // Max 15 requests per IP per second
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { status: 429, message: "Too many requests, please slow down." }
-});
+// homework rate limiters
+const readHomeworkLimiter = rateLimit({ windowMs: 1000, limit: 30 });
+const writeHomeworkLimiter = rateLimit({ windowMs: 1000, limit: 10 });
 
 const router = express.Router();
 
-router.post("/add_homework", homeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(addHomeworkSchema), homeworkController.addHomework);
-router.post("/check_homework", homeworkLimiter, checkAccess(["CLASS", "ACCOUNT"]), validate(checkHomeworkSchema), homeworkController.checkHomework);
-router.post("/delete_homework", homeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteHomeworkSchema), homeworkController.deleteHomework);
-router.post("/edit_homework", homeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editHomeworkSchema), homeworkController.editHomework);
-router.post("/pin_homework", homeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(pinHomeworkSchema), homeworkController.pinHomework);
-router.get("/get_homework_data", homeworkLimiter, checkAccess(["CLASS"]), homeworkController.getHomeworkData);
-router.get("/get_homework_checked_data", homeworkLimiter, checkAccess(["CLASS", "ACCOUNT"]), homeworkController.getHomeworkCheckedData);
+router.get("/", readHomeworkLimiter, checkAccess(["CLASS"]), homeworkController.getHomeworkData);
+router.get("/checked", readHomeworkLimiter, checkAccess(["CLASS", "ACCOUNT"]), homeworkController.getHomeworkCheckedData);
+
+router.post("/", writeHomeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(addHomeworkSchema), homeworkController.addHomework);
+router.patch("/:id", writeHomeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editHomeworkSchema), homeworkController.editHomework);
+router.delete("/:id", writeHomeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteHomeworkSchema), homeworkController.deleteHomework);
+
+router.patch("/:id/check", writeHomeworkLimiter, checkAccess(["CLASS", "ACCOUNT"]), validate(checkHomeworkSchema), homeworkController.checkHomework);
+router.patch("/:id/pin", writeHomeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(pinHomeworkSchema), homeworkController.pinHomework);
 
 export default router;

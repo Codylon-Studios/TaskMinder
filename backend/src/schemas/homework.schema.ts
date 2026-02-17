@@ -12,29 +12,12 @@ export const addHomeworkSchema = z.object({
   })
 });
 
-export const checkHomeworkSchema = z.object({
-  params: z.object({}),
-  query: z.object({}),
-  body: z.strictObject({
-    homeworkId: z.coerce.number(),
-    checkStatus: z.boolean()
-  })
-});
-
-export const deleteHomeworkSchema = z.object({
-  params: z.object({}),
-  query: z.object({}),
-  body: z.strictObject({
-    homeworkId: z.coerce.number()
-  })
-});
-
-
 export const editHomeworkSchema = z.object({
-  params: z.object({}),
+  params: z.object({
+    id: z.coerce.number()
+  }),
   query: z.object({}),
   body: z.strictObject({
-    homeworkId: z.coerce.number(),
     subjectId: z.coerce.number(),
     content: z.string().trim().min(1).max(1024),
     assignmentDate: z.coerce.number(),
@@ -43,25 +26,41 @@ export const editHomeworkSchema = z.object({
   })
 });
 
-export const pinHomeworkSchema = z.object({
-  params: z.object({}),
+export const deleteHomeworkSchema = z.object({
+  params: z.object({
+    id: z.coerce.number()
+  }),
+  query: z.object({}),
+  body: z.strictObject({})
+});
+
+export const checkHomeworkSchema = z.object({
+  params: z.object({
+    id: z.coerce.number()
+  }),
   query: z.object({}),
   body: z.strictObject({
-    homeworkId: z.coerce.number(),
+    checkStatus: z.boolean()
+  })
+});
+
+export const pinHomeworkSchema = z.object({
+  params: z.object({
+    id: z.coerce.number()
+  }),
+  query: z.object({}),
+  body: z.strictObject({
     pinStatus: z.boolean()
   })
 });
 
-
-export type addHomeworkType = z.infer<typeof addHomeworkSchema>;
-export type checkHomeworkType = z.infer<typeof checkHomeworkSchema>;
-export type deleteHomeworkType = z.infer<typeof deleteHomeworkSchema>;
-export type editHomeworkType = z.infer<typeof editHomeworkSchema>;
-export type pinHomeworkType = z.infer<typeof pinHomeworkSchema>;
+export type editHomeworkTypeParams = z.infer<typeof editHomeworkSchema>["params"];
+export type deleteHomeworkTypeParams = z.infer<typeof deleteHomeworkSchema>["params"];
+export type checkHomeworkTypeParams = z.infer<typeof checkHomeworkSchema>["params"];
+export type pinHomeworkTypeParams = z.infer<typeof pinHomeworkSchema>["params"];
 
 export type addHomeworkTypeBody = z.infer<typeof addHomeworkSchema>["body"];
-export type checkHomeworkTypeBody = z.infer<typeof checkHomeworkSchema>["body"];
-export type deleteHomeworkTypeBody = z.infer<typeof deleteHomeworkSchema>["body"];
 export type editHomeworkTypeBody = z.infer<typeof editHomeworkSchema>["body"];
+export type checkHomeworkTypeBody = z.infer<typeof checkHomeworkSchema>["body"];
 export type pinHomeworkTypeBody = z.infer<typeof pinHomeworkSchema>["body"];
 

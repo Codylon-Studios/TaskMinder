@@ -11,50 +11,10 @@ export const getEventData = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const addEvent = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
-  try {
-    await eventService.addEvent(req.body, req.session);
-    res.sendStatus(200);
-  }
-  catch (error) {
-    next(error);
-  }
-};
-
-export const editEvent = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
-  try {
-    await eventService.editEvent(req.body, req.session);
-    res.sendStatus(200);
-  }
-  catch (error) {
-    next(error);
-  }
-};
-
-export const deleteEvent = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
-  try {
-    await eventService.deleteEvent(req.body, req.session);
-    res.sendStatus(200);
-  }
-  catch (error) {
-    next(error);
-  }
-};
-
 export const getEventTypeData = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {
     const eventTypeData = await eventService.getEventTypeData(req.session);
     res.status(200).json(eventTypeData);
-  }
-  catch (error) {
-    next(error);
-  }
-};
-
-export const setEventTypeData = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
-  try {
-    await eventService.setEventTypeData(req.body, req.session);
-    res.sendStatus(200);
   }
   catch (error) {
     next(error);
@@ -72,9 +32,49 @@ export const getEventTypeStyles = async (req: Request, res: Response, next: Next
   }
 };
 
-export const pinEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const addEvent = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {
-    await eventService.pinEvent(req.body, req.session);
+    await eventService.addEvent(req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const editEvent = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void>  => {
+  try {
+    await eventService.editEvent({ id: Number(req.params.id) }, req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const deleteEvent = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void>  => {
+  try {
+    await eventService.deleteEvent({ id: Number(req.params.id) }, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const pinEvent = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await eventService.pinEvent({ id: Number(req.params.id) }, req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const setEventTypeData = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
+  try {
+    await eventService.setEventTypeData(req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -84,11 +84,11 @@ export const pinEvent = async (req: Request, res: Response, next: NextFunction):
 
 export default {
   getEventData,
+  getEventTypeData,
+  getEventTypeStyles,
   addEvent,
   editEvent,
   deleteEvent,
-  getEventTypeData,
-  setEventTypeData,
-  getEventTypeStyles,
-  pinEvent
+  pinEvent,
+  setEventTypeData
 };

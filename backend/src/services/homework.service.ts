@@ -6,11 +6,14 @@ import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError";
 import logger from "../config/logger";
 import { 
+  editHomeworkTypeParams,
+  deleteHomeworkTypeParams,
+  checkHomeworkTypeParams,
+  pinHomeworkTypeParams,
   addHomeworkTypeBody, 
-  checkHomeworkTypeBody, 
-  deleteHomeworkTypeBody, 
   editHomeworkTypeBody, 
-  pinHomeworkTypeBody 
+  checkHomeworkTypeBody, 
+  pinHomeworkTypeBody
 } from "../schemas/homework.schema";
 
 const homeworkService = {
@@ -52,8 +55,9 @@ const homeworkService = {
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
-  async checkHomework(reqData: checkHomeworkTypeBody, session: Session & Partial<SessionData>) {
-    const { homeworkId, checkStatus } = reqData;
+  async checkHomework(reqParams: checkHomeworkTypeParams, reqBody: checkHomeworkTypeBody, session: Session & Partial<SessionData>) {
+    const { checkStatus } = reqBody;
+    const { id: homeworkId } = reqParams;
 
     const accountId = session.account!.accountId;
     const classId = parseInt(session.classId!, 10);
@@ -91,8 +95,8 @@ const homeworkService = {
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK_CHECK);
   },
 
-  async deleteHomework(reqData: deleteHomeworkTypeBody, session: Session & Partial<SessionData>) {
-    const { homeworkId } = reqData;
+  async deleteHomework(reqParams: deleteHomeworkTypeParams, session: Session & Partial<SessionData>) {
+    const { id: homeworkId } = reqParams;
 
     const deleted = await prisma.homework.deleteMany({
       where: {
@@ -119,10 +123,12 @@ const homeworkService = {
   },
 
   async editHomework(
-    reqData: editHomeworkTypeBody,
+    reqParams: editHomeworkTypeParams,
+    reqBody: editHomeworkTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
+    const { subjectId, content, assignmentDate, submissionDate, teamId } = reqBody;
+    const { id: homeworkId } = reqParams;
     await isValidSubjectId(subjectId, session);
     await isValidTeamId(teamId, session);
     try {
@@ -203,8 +209,9 @@ const homeworkService = {
     return JSON.parse(stringified);
   },
 
-  async pinHomework(reqData: pinHomeworkTypeBody, session: Session & Partial<SessionData>) {
-    const { homeworkId, pinStatus } = reqData;
+  async pinHomework(reqParams: pinHomeworkTypeParams, reqBody: pinHomeworkTypeBody, session: Session & Partial<SessionData>) {
+    const { pinStatus } = reqBody;
+    const { id: homeworkId } = reqParams;
 
     const updated = await prisma.homework.updateMany({
       where: {

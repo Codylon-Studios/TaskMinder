@@ -11,9 +11,9 @@ export const addHomework = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const checkHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const editHomework = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await homeworkService.checkHomework(req.body, req.session);
+    await homeworkService.editHomework({ id: Number(req.params.id) }, req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -21,9 +21,9 @@ export const checkHomework = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const deleteHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const deleteHomework = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await homeworkService.deleteHomework(req.body, req.session);
+    await homeworkService.deleteHomework({ id: Number(req.params.id) }, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -31,9 +31,20 @@ export const deleteHomework = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-export const editHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+
+export const checkHomework = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await homeworkService.editHomework(req.body, req.session);
+    await homeworkService.checkHomework({ id: Number(req.params.id) }, req.body, req.session);
+    res.sendStatus(200);
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+export const pinHomework = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await homeworkService.pinHomework({ id: Number(req.params.id) }, req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -61,22 +72,12 @@ export const getHomeworkCheckedData = async (req: Request, res: Response, next: 
   }
 };
 
-export const pinHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    await homeworkService.pinHomework(req.body, req.session);
-    res.sendStatus(200);
-  }
-  catch (error) {
-    next(error);
-  }
-};
-
 export default {
   addHomework,
-  checkHomework,
-  deleteHomework,
   editHomework,
+  deleteHomework,
+  checkHomework,
+  pinHomework,
   getHomeworkData,
-  getHomeworkCheckedData,
-  pinHomework
+  getHomeworkCheckedData
 };
