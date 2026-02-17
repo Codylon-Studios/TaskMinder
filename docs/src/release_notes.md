@@ -4,30 +4,41 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.5] - 2026-02-??
+## \[v2.2.5] - 2026-02-19
 
 ### Breaking Change
 * chore(db): migrate postgresql@14 to postgresql@18
 
 ### Added
 * feat(frontend): add caching and offline mode
-* feat(upload): add upload description
-* feat(upload): request new uploads
+* feat(upload): add upload description and request new uploads
 * feat(upload): edit files
-* feat(homework/event): add homework/event pinning
+* feat(homework/event/upload): add homework/event/upload pinning
+* chore(homework): add "later" section
+* chore(ui): show breaks in the timetable and correctly display them (respect events/substitutions)
 
 ### Fixed
 * fix(rate-limit): increase proxy and update nginx.config
 * fix(subject): subject data not stringified correctly
 * fix(account): send 201 instead of 200 at /register
+* fix(links): /main links to events/homework do not use pjax
+* fix(homework/check): homework check on /main does not work
+* fix(navbar/login): login button in navbar does not always show up 
+* fix(richtextarea): allow multiple spaces in rich textarea
+* fix(search): search in plaintext not styled rich textarea text
 
 ### Changed
+* behaviour(substitution): change DSBMobile fetch to weekday prefetch
+* chore(ui): make bottombar icons pop on click
+* chore(ui): scroll to top on site change
+* chore(frontend/logic): remove $.get and replace with modern fetch
+* chore(ui): change filter interface to modal and offcanvas (mobile)
+* chore(tableview): improve table layouts for events & uploads
 * chore(getdata): event, homework and upload metadata order by more values
 * chore(docs): migrate to mdbook and github actions/pages for deployment
-* chore(ci): update CI build test
 * chore(sitemap): update sitemap values
 * chore(migration): add migrate upload metadata date script
-* chore(package): update package.json version to v2.2.5, bump packages
+* chore(package): update package.json version to v2.2.5, bump packages, update CI
 
 ---
 

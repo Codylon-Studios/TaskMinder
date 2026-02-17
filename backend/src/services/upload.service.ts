@@ -379,7 +379,7 @@ const uploadService = {
     if (!changeFiles) {
       await prisma.upload.update({
         where: { uploadId: uploadId, classId: classIdNum },
-        data: { uploadName, uploadDescription, uploadType, teamId, accountId }
+        data: { uploadName, uploadDescription, uploadType, teamId }
       });
 
       await invalidateCache("UPLOADMETADATA", session.classId!);

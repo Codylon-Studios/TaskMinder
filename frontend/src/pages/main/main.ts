@@ -1194,8 +1194,8 @@ teamsData.on("update", onlyThisSite(() => {
   updateCalendarContent("#calendar-old");
   renderTimetable();
 }));
-substitutionsData.on("update", onlyThisSite(renderSubstitutionList));
-classSubstitutionsData.on("update", onlyThisSite(() => {
+(await substitutionsData.init()).on("update", onlyThisSite(renderSubstitutionList));
+(await classSubstitutionsData.init()).on("update", onlyThisSite(() => {
   renderSubstitutionList();
   renderTimetable();
 }));

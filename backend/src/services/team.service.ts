@@ -21,7 +21,7 @@ const teamService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -36,7 +36,7 @@ const teamService = {
     }
     catch (err) {
       logger.error(`Error updating Redis data: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     const stringified = JSON.stringify(data, BigIntreplacer);
@@ -110,6 +110,11 @@ const teamService = {
             });
             // Delete upload records
             await tx.upload.deleteMany({
+              where: { teamId: team.teamId }
+            });
+
+            // Delete upload requests which were linked to team
+            await tx.uploadRequest.deleteMany({
               where: { teamId: team.teamId }
             });
 

@@ -91,7 +91,7 @@ const lessonService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis cache: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -110,7 +110,7 @@ const lessonService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     const stringified = JSON.stringify(lessonData, BigIntreplacer);

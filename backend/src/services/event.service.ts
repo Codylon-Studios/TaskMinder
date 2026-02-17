@@ -31,7 +31,7 @@ export const eventService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
     // no cache data available, fetch from database and update cache
@@ -53,7 +53,7 @@ export const eventService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     const stringified = JSON.stringify(eventData, BigIntreplacer);
@@ -220,7 +220,7 @@ export const eventService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -238,7 +238,7 @@ export const eventService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     return eventTypeData;
@@ -328,7 +328,7 @@ export const eventService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     try {
@@ -354,7 +354,7 @@ export const eventService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -451,7 +451,7 @@ export const eventService = {
       }
       catch (err) {
         logger.error(`Error updating Redis cache: ${err}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
 
       return css;

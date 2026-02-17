@@ -2144,7 +2144,7 @@ subjectData.on("update", onlyThisSite(renderSubjectList));
 teamsData.on("update", onlyThisSite(renderTeamLists));
 eventTypeData.on("update", onlyThisSite(renderEventTypeList));
 lessonData.on("update", onlyThisSite(renderTimetable));
-substitutionsData.on("update", onlyThisSite(renderSubjectList));
+(await substitutionsData.init()).on("update", onlyThisSite(renderSubjectList));
 
 await user.awaitAuthed();
 

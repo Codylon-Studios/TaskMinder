@@ -225,6 +225,7 @@ This documentation describes all database tables defined in the current Prisma s
 | Upload.uploadName       | String    | User-provided name for the upload            | **May contain personal info or sensitive content descriptions**     |
 | Upload.uploadDescription| String    | User-provided description for the upload     | **May contain personal info or sensitive content descriptions**     |
 | Upload.uploadType       | String    | Category/type of upload                      | Could reveal the nature of shared content                           |
+| Upload.isPinned         | Boolean   | Upload pinning                               | -                                                                   |
 | Upload.status           | String    | Processing state of upload                   | Reveals system usage patterns                                       |
 | Upload.errorReason      | String    | Error details if upload failed               | **May leak technical details or file content information**          |
 | Upload.reservedBytes    | BigInt    | Storage space reserved for upload            | Indicates size/scope of content being shared                        |

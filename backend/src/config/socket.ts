@@ -9,6 +9,7 @@ let io: socketIo.Server;
 export const SOCKET_EVENTS = {
   EVENTS: "updateEvents",
   HOMEWORK: "updateHomework",
+  HOMEWORK_CHECK: "updateCheckedHomework",
   UPLOADS: "updateUploads",
   UPLOAD_REQUESTS: "updateUploadRequests",
   MEMBERS: "updateMembers",

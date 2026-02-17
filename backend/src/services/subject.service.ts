@@ -19,7 +19,7 @@ const subjectService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis cache: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -37,7 +37,7 @@ const subjectService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     const stringified = JSON.stringify(data, BigIntreplacer);

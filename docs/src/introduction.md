@@ -1,9 +1,24 @@
 # Introduction
 
-Welcome to **TaskMinder**, the best tool for staying organized and synchronizing with your classmates on homework, events, files and more.
+Welcome to **TaskMinder**: a platform built to simplify school organization and improve collaboration between students, teams, and classes.
 
-- **For Development**: To start with the development environment, follow the instructions here [to install](./v2/development.md).
+TaskMinder combines planning, communication, and file handling in one place, so you spend less time switching between tools and more time focusing on your actual work.
 
-- **For Production**: To guide you on how best to set up TaskMinder for production use, check the guide [here to set up](./v2/deployment.md).
+With TaskMinder, you can:
 
-It's great to have you onboard and we hope that TaskMinder helps you streamline your work.
+- Track homework, lessons, events, and substitutions in a structured way.
+- Collaborate with classmates through shared class and team workflows.
+- Upload and manage files relevant to your school tasks.
+- Keep important information synchronized and accessible across your school setup.
+
+Whether you are setting up TaskMinder for local development, self-hosting it for production, or just exploring the project, this documentation will guide you step by step.
+
+- **Development setup**: Start your local environment by following the [development guide](./v2/development.md).
+
+- **Production deployment**: Deploy TaskMinder in production with the [deployment guide](./v2/deployment.md).
+
+You can explore the project on GitHub: https://github.com/Taskminder/TaskMinder
+
+If you want a quick preview, visit: https://taskminder.de
+
+Thanks for using TaskMinder! We hope it helps make school organization simpler, clearer, and more reliable for everyone involved.

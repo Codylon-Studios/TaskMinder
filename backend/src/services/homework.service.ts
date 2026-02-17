@@ -88,7 +88,7 @@ const homeworkService = {
     });
 
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK_CHECK);
   },
 
   async deleteHomework(reqData: deleteHomeworkTypeBody, session: Session & Partial<SessionData>) {
@@ -180,7 +180,7 @@ const homeworkService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
