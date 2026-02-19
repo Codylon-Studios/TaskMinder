@@ -68,7 +68,8 @@ This documentation describes all database tables defined in the current Prisma s
 | :--------------------- | :-------- | :--------------------------------------------- | :----------------------------------------------------------- |
 | classId                | Integer   | Unique class identifier                        | -                                                            |
 | className              | String    | The name of the class                          | May identify a specific group of students                    |
-| classCode              | String    | Unique code for students to join the class     | Could lead to abusive joins if class code is breached        |
+| classCode              | String    | Unique encrypted code for students to join the class     | Could lead to abusive joins if class code is breached        |
+| classCodeHash          | String    | Unique hashed code for students to join the class (fast lookup)    | Could lead to abusive joins if class code is breached        |
 | createdAt              | BigInt    | Timestamp of class creation                    | -                                                            |
 | isTestClass            | Boolean   | Flag to identify test/demo classes             | -                                                            |
 | defaultPermissionLevel | Integer   | Default user permission level for new members  | -                                                            |
@@ -86,7 +87,7 @@ This documentation describes all database tables defined in the current Prisma s
 **Solutions**:
 - Implemented change class code function/button for class members.
 - Implemented strict access controls for rows containing third-party credentials.
-- Move to only store server-encrypted authId, no user or password
+- Implemented secure (aes-256-gcm) server-side encryption for class codes, 3rd-party (DSB Mobile) migration coming soon
 
 ---
 
@@ -303,8 +304,8 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 
 ---
 
-- **Document Version:** 2.2
-- **Stable Version Alignment:** v2.2.5
-- **Last Updated:** January 16th, 2026
+- **Document Version:** 2.3
+- **Stable Version Alignment:** v2.3.0
+- **Last Updated:** February 1st, 2026
 - **Next Scheduled Review:** Quarterly – March 10th, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

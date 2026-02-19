@@ -6,6 +6,7 @@ import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload";
 import { invalidateCache } from "./validate.functions";
 import socketIO from "../config/socket";
+import { encryptionManager } from "./encryption.manager";
 
 /**
  * Deletes class records that are older than 1 day and are TEST CLASSES
@@ -64,6 +65,7 @@ export async function cleanupTestClasses(): Promise<void> {
     await Promise.all(
       classIdsToDelete.map(async classId => {
         await invalidateCache("UPLOADMETADATA", classId.toString());
+        await invalidateCache("UPLOADREQUESTS", classId.toString());
         await invalidateCache("HOMEWORK", classId.toString());
         await invalidateCache("EVENT", classId.toString());
         await invalidateCache("LESSON", classId.toString());
@@ -285,11 +287,15 @@ export async function migrateUploadMetadataDates(): Promise<void> {
   try {
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
 
+    const demoCodeCandidates = ["demo", "Demo"].map(code =>
+      encryptionManager.hash(code)
+    );
     const demoClass = await prisma.class.findFirst({
       where: {
         OR: [
-          { classCode: { equals: "demo", mode: "insensitive" } },
-          { className: { equals: "Demo", mode: "insensitive" } }
+          { className: { equals: "Demo", mode: "insensitive" } },
+          { classCodeHash: { in: demoCodeCandidates } },
+          { classCode: { equals: "demo", mode: "insensitive" } }
         ]
       }
     });
@@ -328,11 +334,15 @@ export async function migrateEventAndHomeworkDates(): Promise<void> {
   try {
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
 
+    const demoCodeCandidates = ["demo", "Demo"].map(code =>
+      encryptionManager.hash(code)
+    );
     const demoClass = await prisma.class.findFirst({
       where: {
         OR: [
-          { classCode: { equals: "demo", mode: "insensitive" } },
-          { className: { equals: "Demo", mode: "insensitive" } }
+          { className: { equals: "Demo", mode: "insensitive" } },
+          { classCodeHash: { in: demoCodeCandidates } },
+          { classCode: { equals: "demo", mode: "insensitive" } }
         ]
       }
     });

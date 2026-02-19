@@ -5,6 +5,7 @@ import { BigIntreplacer, invalidateCache, updateCacheData } from "../utils/valid
 import { Session, SessionData } from "express-session";
 import { setSubjectsTypeBody } from "../schemas/subject.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
+import { RequestError } from "../@types/requestError";
 
 const subjectService = {
   async getSubjectData(session: Session & Partial<SessionData>) {
@@ -97,14 +98,17 @@ const subjectService = {
               teacherNameLong: subject.teacherNameLong,
               teacherNameShort: subject.teacherNameShort,
               teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
-              createdAt: BigInt(Date.now())
+              createdAt: BigInt(BigInt(Date.now()))
             }
           });
         }
         else {
           dataChanged = true;
-          await tx.subjects.update({
-            where: { subjectId: subject.subjectId },
+          const updated = await tx.subjects.updateMany({
+            where: {
+              subjectId: subject.subjectId,
+              classId: classId
+            },
             data: {
               subjectNameLong: subject.subjectNameLong,
               subjectNameShort: subject.subjectNameShort,
@@ -115,6 +119,16 @@ const subjectService = {
               teacherNameSubstitution: subject.teacherNameSubstitution ?? []
             }
           });
+
+          if (updated.count === 0) {
+            const err: RequestError = {
+              name: "Not Found",
+              status: 404,
+              message: "Subject not found for update",
+              expected: true
+            };
+            throw err;
+          }
         }
       }
     });

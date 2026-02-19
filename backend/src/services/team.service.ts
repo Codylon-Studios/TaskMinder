@@ -49,7 +49,7 @@ const teamService = {
     const classId = parseInt(session.classId!, 10);
     // variable to check if cache should be reloaded (e.g. on team deletion)
     let dataChanged = false;
-    // track if teams were deleted (affects homework, events, lessons)
+    // track if teams were deleted (affects homework, events, lessons, upload (requests))
     let teamsDeleted = false;
 
     // Check for duplicate team names
@@ -87,9 +87,13 @@ const teamService = {
             for (const upload of uploads) {
               for (const file of upload.Files) {
                 const filePath = path.join(classDir, file.storedFileName);
-                await fs.unlink(filePath).catch(() => { 
-                  logger.error(`Falied to delete file for classId: ${classId}, filePath: ${path} during team deletion`);
-                });
+                await fs.unlink(filePath).catch(error => {
+                  logger.error(`File could not be deleted during team deletion, 
+                  teamId: ${team.teamId},
+                  path: ${filePath},
+                  error: ${error}`
+                  );
+                });  
               }
               // Calculate storage to release
               const sizeToRelease = upload.status === "completed"
@@ -165,7 +169,6 @@ const teamService = {
           await tx.team.update({
             where: { teamId: team.teamId },
             data: {
-              classId,
               name: team.name
             }
           });
@@ -178,16 +181,21 @@ const teamService = {
       await invalidateCache("TEAMS", classId.toString());
       const io = socketIO.getIO();
       io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
+      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.JOINED_TEAMS);
 
-      // If teams were deleted, also update homework, events, and lessons caches
+      // If teams were deleted, also update homework, events, lesson and upload (request) caches
       if (teamsDeleted) {
-        await invalidateCache("HOMEWORK", classId.toString());
-        await invalidateCache("EVENT", classId.toString());
-        await invalidateCache("LESSON", classId.toString());
+        await invalidateCache("HOMEWORK", session.classId!);
+        await invalidateCache("EVENT", session.classId!);
+        await invalidateCache("LESSON", session.classId!);
+        await invalidateCache("UPLOADMETADATA", session.classId!);
+        await invalidateCache("UPLOADREQUESTS", session.classId!);
 
-        io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
-        io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
-        io.to(`class:${classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
       }
       logger.info(`teams data changed for class: ${classId}`);
     }

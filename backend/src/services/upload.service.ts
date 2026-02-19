@@ -546,6 +546,8 @@ const uploadService = {
       throw err;
     }
 
+    await isValidTeamId(uploadData.teamId, session);
+
     // Delete all physical files from disk
     const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
     for (const file of uploadData.Files) {
@@ -696,6 +698,8 @@ const uploadService = {
       };
       throw err;
     }
+
+    await isValidTeamId(existingRequest.teamId, session);
 
     await prisma.uploadRequest.delete({ where: { uploadRequestId } });
 

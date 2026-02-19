@@ -1,4 +1,5 @@
 import { RequestError } from "../@types/requestError";
+import { Prisma } from "@prisma/client";
 import { Session, SessionData } from "express-session";
 import { default as prisma } from "../config/prisma";
 import { BigIntreplacer, generateRandomBase62String, invalidateCache } from "../utils/validate.functions";
@@ -8,6 +9,7 @@ import { redisClient } from "../config/redis";
 import fs from "fs/promises";
 import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload";
+import { encryptionManager } from "../utils/encryption.manager";
 import {
   changeClassCodeTypeParams,
   changeClassNameTypeBody,
@@ -83,8 +85,27 @@ const classService = {
       };
       throw err;
     }
+    let decryptedClassCode: string;
+    try {
+      decryptedClassCode = encryptionManager.decrypt(classInfo.classCode);
+    }
+    catch {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message:
+          "Failed to decrypt class code. The stored value may be corrupted or encrypted with a different key.",
+        expected: true
+      };
+      throw err;
+    }
+
+    const decryptedClassInfo = {
+      ...classInfo,
+      classCode: decryptedClassCode
+    };
     // parse stringified data to avoid BigInt serialize errors
-    return JSON.parse(JSON.stringify(classInfo, BigIntreplacer));
+    return JSON.parse(JSON.stringify(decryptedClassInfo, BigIntreplacer));
   },
   /*
   createClass(
@@ -99,9 +120,8 @@ const classService = {
     session: Session & Partial<SessionData>
   ) {
     const { classDisplayName, isTestClass } = reqData;
-    const accountId = session.account!.accountId;
-    const MAX_ATTEMPTS = 10;
-    // forbid already in class users to create a new class
+
+    // reject if user is already in a class
     if (session.classId) {
       const err: RequestError = {
         name: "Forbidden",
@@ -111,63 +131,63 @@ const classService = {
       };
       throw err;
     }
-    // set base data
-    const baseData = {
-      className: classDisplayName,
-      classCode: null,
-      createdAt: BigInt(Date.now()),
-      isTestClass: isTestClass,
-      dsbMobileActivated: false,
-      storageQuotaBytes: isTestClass ? 20 * 1024 * 1024 : 1 * 1024 * 1024 * 1024, // 20MB (test class) or 1 GB (normal class)
-      storageUsedBytes: 0,
-      defaultPermissionLevel: 0 // default setting when creating class is 0 - member status
-    };
-    // continously try to create class with class code, if class code already used, retry
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    // create class with retry attempt fallback
+    const maxAttempts = 10;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const classCode = generateRandomBase62String();
+      const encryptedClassCode = encryptionManager.encrypt(classCode);
+      const classCodeHash = encryptionManager.hash(classCode);
+      // find already existing class with this hash and reject if present
+      const exists = await prisma.class.findUnique({
+        where: { classCodeHash }
+      });
+      if (exists) {
+        continue;
+      }
+
+      const baseData = {
+        className: classDisplayName,
+        classCode: encryptedClassCode,
+        classCodeHash: classCodeHash,
+        createdAt: BigInt(Date.now()),
+        isTestClass: isTestClass,
+        dsbMobileActivated: false,
+        storageQuotaBytes: isTestClass ? 20 * 1024 * 1024 : 1 * 1024 * 1024 * 1024, // 20MB (test class) or 1 GB (normal class)
+        storageUsedBytes: 0,
+        defaultPermissionLevel: 0 // default setting when creating class is 0 - member status
+      };
+      // create class and joinedClass entry
       try {
         return await prisma.$transaction(async tx => {
           const createdClass = await tx.class.create({
-            data: { ...baseData, classCode }
+            data: baseData
           });
-          // session bind
           session.classId = createdClass.classId.toString();
-          // creator becomes admin
+          // add user to classJoined table
+          // change permission of user which created the account to admin
           await tx.joinedClass.create({
             data: {
               accountId: session.account!.accountId,
               classId: createdClass.classId,
-              permissionLevel: 3,
+              permissionLevel: 3, // class creator is admin
               createdAt: BigInt(Date.now())
             }
           });
-          logger.info(`User ${accountId} created class: ${createdClass.classId}`);
-          return createdClass.classCode;
+          return classCode;
         });
-      } 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      catch (e: any) {
-        if (e.code === "P2002" && e.meta?.target?.includes("classCode")) {
-          if (attempt === MAX_ATTEMPTS) {
-            const err: RequestError = {
-              name: "Conflict",
-              status: 409,
-              message: "Unique class code could not be generated. Please retry.",
-              expected: true
-            };
-            throw err;
-          }
+      }
+      catch (err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+          // unique constraint collision, retry
           continue;
         }
-        // other errors
-        logger.error(`Error occured during class creation: ${e}`);
-        const err: RequestError = {
+        const reqErr: RequestError = {
           name: "Internal Server Error",
           status: 500,
-          message: "Class creation failed",
+          message: "Could not create class in database, please try again",
           expected: true
         };
-        throw err;
+        throw reqErr;
       }
     }
   },
@@ -181,6 +201,15 @@ const classService = {
   async joinClass(reqData: joinClassTypeBody, session: Session & Partial<SessionData>) {
     const { classCode } = reqData;
     const accountId = session.account?.accountId;
+    if (encryptionManager.isEncrypted(classCode)) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Invalid class code (starting with encryption prefix)",
+        expected: true
+      };
+      throw err;
+    }
     if (session.classId) {
       const err: RequestError = {
         name: "Bad Request",
@@ -190,9 +219,11 @@ const classService = {
       };
       throw err;
     }
+    // try to find class by hash
+    const classCodeHash = encryptionManager.hash(classCode);
     const targetClass = await prisma.class.findUnique({
       where: {
-        classCode: classCode
+        classCodeHash: classCodeHash
       }
     });
     if (!targetClass) {
@@ -332,7 +363,7 @@ const classService = {
     }
     delete session.classId;
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.MEMBERS);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.MEMBERS);
   },
   /*
   deleteClass(
@@ -751,9 +782,11 @@ const classService = {
     const MAX_ATTEMPTS = 10;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       code = generateRandomBase62String();
+      const encryptedCode = encryptionManager.encrypt(code);
+      const classCodeHash = encryptionManager.hash(code);
       const exists = await prisma.class.findUnique({
         where: {
-          classCode: code
+          classCodeHash: classCodeHash
         }
       });
       if (!exists) {
@@ -762,7 +795,8 @@ const classService = {
             classId
           },
           data: {
-            classCode: code
+            classCode: encryptedCode,
+            classCodeHash: classCodeHash
           }
         });
         const io = socketIO.getIO();

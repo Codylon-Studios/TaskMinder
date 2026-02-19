@@ -1,7 +1,7 @@
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
 import logger from "../config/logger";
-import { BigIntreplacer, updateCacheData, invalidateCache } from "../utils/validate.functions";
+import { BigIntreplacer, updateCacheData, invalidateCache, isValidTeamId, isValidSubjectId } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lesson.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
@@ -12,6 +12,10 @@ const lessonService = {
     session: Session & Partial<SessionData>
   ) {
     const { lessons } = reqData;
+    for (const lesson of lessons) {
+      await isValidTeamId(lesson.teamId, session);
+      await isValidSubjectId(lesson.subjectId, session);
+    }
 
     const classId = parseInt(session.classId!, 10);
 

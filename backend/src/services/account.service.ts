@@ -121,7 +121,7 @@ export default {
         data: {
           username,
           password: hashedPassword,
-          createdAt: Date.now()
+          createdAt: BigInt(Date.now())
         }
       });
 
@@ -131,7 +131,7 @@ export default {
             accountId: newAccount.accountId,
             classId: parseInt(session.classId),
             permissionLevel: 0, // assume lowest role for class
-            createdAt: Date.now()
+            createdAt: BigInt(Date.now())
           }
         });
       }
@@ -194,12 +194,31 @@ export default {
       }
     });
     if (joinedClassExists === null && session.classId) {
+      // find if class exists
+      const classIdNum = parseInt(session.classId, 10);
+      const classInfo = await prisma.class.findUnique({
+        where: { classId: classIdNum },
+        select: { defaultPermissionLevel: true }
+      });
+
+      if (!classInfo) {
+        delete session.classId;
+        const err: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Selected class no longer exists",
+          expected: true
+        };
+        throw err;
+      }
+
+      // create joinedClass entry if class exists
       await prisma.joinedClass.create({
         data: {
           accountId: accountId,
-          classId: parseInt(session.classId),
+          classId: classIdNum,
           permissionLevel: 0, // assume lowest level
-          createdAt: Date.now()
+          createdAt: BigInt(Date.now())
         }
       });
     }
@@ -253,7 +272,7 @@ export default {
           accountId: account!.accountId
         },
         data: {
-          deletedAt: Date.now()
+          deletedAt: BigInt(Date.now())
         }
       });
       // delete related records in JoinedClass, JoinedTeams, and HomeworkCheck

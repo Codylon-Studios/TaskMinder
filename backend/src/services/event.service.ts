@@ -23,6 +23,7 @@ import {
   setEventTypesTypeBody, 
   pinEventTypeBody 
 } from "../schemas/event.schema";
+import { Prisma } from "@prisma/client";
 
 const inFlightStyleBuild = new Map<number, Promise<string>>();
 
@@ -76,18 +77,17 @@ export const eventService = {
     // always use classId instead of session.classId
     // since session.classId can change during concurrent requests
     const classId = parseInt(session.classId!, 10);
-
-    const updated = await prisma.event.updateMany({
+    const existingEvent = await prisma.event.findFirst({
       where: {
-        eventId: eventId,
+        eventId,
         classId
       },
-      data: {
-        isPinned: pinStatus
+      select: {
+        teamId: true
       }
     });
 
-    if (updated.count === 0) {
+    if (!existingEvent) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
@@ -97,6 +97,33 @@ export const eventService = {
       throw err;
     }
 
+
+    await isValidTeamId(existingEvent.teamId, session);
+
+    try {
+      await prisma.event.update({
+        where: {
+          eventId: eventId
+        },
+        data: {
+          isPinned: pinStatus
+        }
+      });
+    }
+    catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+        const reqErr: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Event not found",
+          expected: true
+        };
+        throw reqErr;
+      }
+      throw err;
+    }
+
+    await invalidateCache("EVENT", session.classId!);
     await invalidateCache("EVENT", classId.toString());
     const io = socketIO.getIO();
     io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
