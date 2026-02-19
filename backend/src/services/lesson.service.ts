@@ -1,8 +1,7 @@
-import { RequestError } from "../@types/requestError";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
 import { default as prisma } from "../config/prisma";
 import logger from "../config/logger";
-import { isValidweekDay, BigIntreplacer, updateCacheData, invalidateCache } from "../utils/validate.functions";
+import { BigIntreplacer, updateCacheData, invalidateCache } from "../utils/validate.functions";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lesson.schema";
 import socketIO, { SOCKET_EVENTS } from "../config/socket";
@@ -13,15 +12,12 @@ const lessonService = {
     session: Session & Partial<SessionData>
   ) {
     const { lessons } = reqData;
-    for (const lesson of lessons) {
-      await isValidweekDay(lesson.weekDay);
-    }
 
     const classId = parseInt(session.classId!, 10);
 
     // Check if data actually changed
     const existingLessons = await prisma.lesson.findMany({
-      where: { classId: classId }
+      where: { classId }
     });
 
     // Compare existing and new lessons
@@ -42,46 +38,36 @@ const lessonService = {
     await prisma.$transaction(async tx => {
       await tx.lesson.deleteMany({
         where: {
-          classId: classId
+          classId
         }
       });
 
       for (const lesson of lessons) {
-        try {
-          await tx.lesson.create({
-            data: {
-              classId: classId,
-              lessonNumber: lesson.lessonNumber,
-              weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
-              teamId: lesson.teamId,
-              subjectId: lesson.subjectId,
-              room: lesson.room,
-              startTime: lesson.startTime,
-              endTime: lesson.endTime,
-              createdAt: Date.now()
-            }
-          });
-        }
-        catch {
-          const err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data format",
-            expected: true
-          };
-          throw err;
-        }
+        await tx.lesson.create({
+          data: {
+            classId,
+            lessonNumber: lesson.lessonNumber,
+            weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
+            teamId: lesson.teamId,
+            subjectId: lesson.subjectId,
+            room: lesson.room,
+            startTime: lesson.startTime,
+            endTime: lesson.endTime,
+            createdAt: BigInt(Date.now())
+          }
+        });
       }
     });
 
     if (dataChanged) {
-      await invalidateCache("LESSON", session.classId!);
+      await invalidateCache("LESSON", classId.toString());
       const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
-
+      io.to(`class:${classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+      logger.info(`Lesson data changed for class: ${classId}`);
     }
   },
   async getLessonData(session: Session & Partial<SessionData>) {
+    const classId = parseInt(session.classId!, 10);
     const getLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
     const cachedLessonData = await redisClient.get(getLessonDataCacheKey);
 
@@ -97,7 +83,7 @@ const lessonService = {
 
     const lessonData = await prisma.lesson.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId
       },
       orderBy: {
         lessonNumber: "asc"

@@ -12,6 +12,7 @@ import socketIO, { SOCKET_EVENTS } from "../config/socket";
 
 const teamService = {
   async getTeamsData(session: Session & Partial<SessionData>) {
+    const classId = parseInt(session.classId!, 10);
     const getTeamsDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.TEAMS, session.classId!);
     const cachedTeamsData = await redisClient.get(getTeamsDataCacheKey);
 
@@ -27,7 +28,7 @@ const teamService = {
 
     const data = await prisma.team.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId
       }
     });
 
@@ -66,7 +67,7 @@ const teamService = {
 
     const existingTeams = await prisma.team.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId
       }
     });
 
@@ -86,7 +87,9 @@ const teamService = {
             for (const upload of uploads) {
               for (const file of upload.Files) {
                 const filePath = path.join(classDir, file.storedFileName);
-                await fs.unlink(filePath).catch(() => { });
+                await fs.unlink(filePath).catch(() => { 
+                  logger.error(`Falied to delete file for classId: ${classId}, filePath: ${path} during team deletion`);
+                });
               }
               // Calculate storage to release
               const sizeToRelease = upload.status === "completed"
@@ -143,69 +146,50 @@ const teamService = {
       );
 
       for (const team of teams) {
-        if (team.name.trim() === "") {
-          const err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data (Team name cannot be empty)",
-            expected: true
-          };
-          throw err;
-        }
-        try {
-          if (team.teamId === "") {
-            dataChanged = true;
-            await tx.team.create({
-              data: {
-                classId: classId,
-                name: team.name,
-                createdAt: Date.now()
-              }
-            });
-          }
-          else {
-            // Check if name actually changed
-            const existingTeam = existingTeams.find(t => t.teamId === team.teamId);
-            if (!existingTeam || existingTeam.name !== team.name) {
-              dataChanged = true;
+        if (team.teamId === "") {
+          dataChanged = true;
+          await tx.team.create({
+            data: {
+              classId,
+              name: team.name,
+              createdAt: BigInt(Date.now())
             }
-            await tx.team.update({
-              where: { teamId: team.teamId },
-              data: {
-                classId: classId,
-                name: team.name
-              }
-            });
-          }
+          });
         }
-        catch {
-          const err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data format",
-            expected: true
-          };
-          throw err;
+        else {
+          // Check if name actually changed
+          const existingTeam = existingTeams.find(t => t.teamId === team.teamId);
+          if (!existingTeam || existingTeam.name !== team.name) {
+            dataChanged = true;
+          }
+          await tx.team.update({
+            where: { teamId: team.teamId },
+            data: {
+              classId,
+              name: team.name
+            }
+          });
         }
       }
     });
 
     if (dataChanged) {
       // invalidate team cache
-      await invalidateCache("TEAMS", session.classId!);
+      await invalidateCache("TEAMS", classId.toString());
       const io = socketIO.getIO();
       io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TEAMS);
 
       // If teams were deleted, also update homework, events, and lessons caches
       if (teamsDeleted) {
-        await invalidateCache("HOMEWORK", session.classId!);
-        await invalidateCache("EVENT", session.classId!);
-        await invalidateCache("LESSON", session.classId!);
+        await invalidateCache("HOMEWORK", classId.toString());
+        await invalidateCache("EVENT", classId.toString());
+        await invalidateCache("LESSON", classId.toString());
 
-        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
-        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
-        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+        io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+        io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
+        io.to(`class:${classId}`).emit(SOCKET_EVENTS.TIMETABLES);
       }
+      logger.info(`teams data changed for class: ${classId}`);
     }
   },
 
@@ -235,24 +219,13 @@ const teamService = {
       });
 
       for (const teamId of teams) {
-        try {
-          await tx.joinedTeams.create({
-            data: {
-              teamId: teamId,
-              accountId: accountId,
-              createdAt: Date.now()
-            }
-          });
-        }
-        catch {
-          const err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data format",
-            expected: true
-          };
-          throw err;
-        }
+        await tx.joinedTeams.create({
+          data: {
+            teamId: teamId,
+            accountId: accountId,
+            createdAt: BigInt(Date.now())
+          }
+        });
       }
     });
   }

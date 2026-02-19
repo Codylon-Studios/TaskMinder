@@ -113,32 +113,6 @@ async function isValidSubjectId(subjectId: number, session: Session & Partial<Se
   }
 }
 
-// @codescene(disable:"Code Duplication")
-// see explaination for isValidTeamId
-async function isValidweekDay(weekDay: number): Promise<void> {
-  if ([0, 1, 2, 3, 4].includes(weekDay)) return;
-  const err: RequestError = {
-    name: "Not Found",
-    status: 404,
-    message: "Invalid weekday: " + weekDay,
-    expected: true
-  };
-  throw err;
-}
-
-// @codescene(disable:"Code Duplication")
-// see explaination for isValidTeamId
-async function isValidGender(gender: string): Promise<void> {
-  if (["d", "w", "m"].includes(gender)) return;
-  const err: RequestError = {
-    name: "Not Found",
-    status: 404,
-    message: "The provided gender is not valid: " + gender,
-    expected: true
-  };
-  throw err;
-}
-
 function isValidColor(color: string): void {
   const hexColorRegex = /^#[0-9a-f]{6}$/i;
   const colorValid = hexColorRegex.test(color);
@@ -179,9 +153,7 @@ export {
   isValidSubjectId,
   isValidTeamId,
   isValidEventTypeId,
-  isValidweekDay,
   lessonDateEventAtLeastOneNull,
-  isValidGender,
   BigIntreplacer,
   updateCacheData,
   invalidateCache

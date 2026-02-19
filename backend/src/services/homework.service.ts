@@ -18,23 +18,26 @@ import {
 
 const homeworkService = {
   async addHomework(
-    reqData: addHomeworkTypeBody,
+    reqBody: addHomeworkTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
+    const { subjectId, content, assignmentDate, submissionDate, teamId } = reqBody;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
     await isValidSubjectId(subjectId, session);
     await isValidTeamId(teamId, session);
     try {
       await prisma.homework.create({
         data: {
-          classId: parseInt(session.classId!),
+          classId,
           isPinned: false,
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
           submissionDate: submissionDate,
           teamId: teamId,
-          createdAt: Date.now()
+          createdAt: BigInt(Date.now())
         }
       });
     }
@@ -49,10 +52,10 @@ const homeworkService = {
     }
 
     // invalidate cache
-    await invalidateCache("HOMEWORK", session.classId!);
+    await invalidateCache("HOMEWORK", classId.toString());
     // send socket update
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async checkHomework(reqParams: checkHomeworkTypeParams, reqBody: checkHomeworkTypeBody, session: Session & Partial<SessionData>) {
@@ -80,7 +83,7 @@ const homeworkService = {
     await prisma.$transaction(async tx => {
       if (checkStatus === true) {
         await tx.homeworkCheck.createMany({
-          data: [{ accountId, homeworkId, createdAt: Date.now() }],
+          data: [{ accountId, homeworkId, createdAt: BigInt(Date.now()) }],
           skipDuplicates: true // prevents race condition P2002 errors
         });
       } 
@@ -92,16 +95,19 @@ const homeworkService = {
     });
 
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK_CHECK);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK_CHECK);
   },
 
   async deleteHomework(reqParams: deleteHomeworkTypeParams, session: Session & Partial<SessionData>) {
     const { id: homeworkId } = reqParams;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
 
     const deleted = await prisma.homework.deleteMany({
       where: {
         homeworkId: homeworkId,
-        classId: parseInt(session.classId!, 10)
+        classId
       }
     });
 
@@ -116,10 +122,10 @@ const homeworkService = {
     }
 
     // invalidate cache
-    await invalidateCache("HOMEWORK", session.classId!);
+    await invalidateCache("HOMEWORK", classId.toString());
     // send socket update
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async editHomework(
@@ -129,13 +135,16 @@ const homeworkService = {
   ) {
     const { subjectId, content, assignmentDate, submissionDate, teamId } = reqBody;
     const { id: homeworkId } = reqParams;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
     await isValidSubjectId(subjectId, session);
     await isValidTeamId(teamId, session);
     try {
       const updated = await prisma.homework.updateMany({
         where: { 
           homeworkId: homeworkId,
-          classId: parseInt(session.classId!, 10)
+          classId
         },
         data: {
           content: content,
@@ -170,13 +179,16 @@ const homeworkService = {
     }
 
     // invalidate cache
-    await invalidateCache("HOMEWORK", session.classId!);
+    await invalidateCache("HOMEWORK", classId.toString());
     // send socket update
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async getHomeworkData(session: Session & Partial<SessionData>) {
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
     const getHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     const cachedHomeworkData = await redisClient.get(getHomeworkDataCacheKey);
 
@@ -192,7 +204,7 @@ const homeworkService = {
 
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId
       },
       orderBy: [
         { isPinned: "desc" }, 
@@ -210,13 +222,16 @@ const homeworkService = {
   },
 
   async pinHomework(reqParams: pinHomeworkTypeParams, reqBody: pinHomeworkTypeBody, session: Session & Partial<SessionData>) {
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
     const { pinStatus } = reqBody;
     const { id: homeworkId } = reqParams;
 
     const updated = await prisma.homework.updateMany({
       where: {
         homeworkId: homeworkId,
-        classId: parseInt(session.classId!, 10)
+        classId
       },
       data: {
         isPinned: pinStatus
@@ -233,9 +248,9 @@ const homeworkService = {
       throw err;
     }
 
-    await invalidateCache("HOMEWORK", session.classId!);
+    await invalidateCache("HOMEWORK", classId.toString());
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {

@@ -128,6 +128,7 @@ const getUploadList = async (
 };
 
 const uploadService = {
+  // file upload -> queue upload for worker to pick up
   async queueFileUpload(
     files: Express.Multer.File[],
     session: Session & Partial<SessionData>,
@@ -135,12 +136,11 @@ const uploadService = {
     reservedBytes: bigint
   ) {
     const { uploadName, uploadDescription, uploadType, teamId } = body;
-
-    await isValidTeamId(teamId, session);
-
-    const classIdNum = Number.parseInt(session.classId!, 10);
+    const classId = parseInt(session.classId!, 10);
     const accountId = session.account?.accountId ?? null;
 
+    await isValidTeamId(teamId, session);
+    // create upload entry in DB
     const upload = await prisma.upload.create({
       data: {
         uploadName,
@@ -148,17 +148,17 @@ const uploadService = {
         uploadType,
         isPinned: false,
         status: "queued",
-        teamId: teamId,
-        classId: classIdNum,
+        teamId,
+        classId,
         accountId,
         reservedBytes,
-        createdAt: Date.now()
+        createdAt: BigInt(Date.now())
       }
     });
 
     const jobData = {
       uploadId: upload.uploadId,
-      classId: classIdNum,
+      classId,
       tempFiles: files.map(f => ({
         path: f.path,
         originalName: f.originalname,
@@ -172,17 +172,17 @@ const uploadService = {
     }
     catch (error) {
       logger.error(`Failed to queue upload ${upload.uploadId}: `, error);
-
+      // on failure, delete the upload DB entry and reset the reservedBytes
       await prisma.$transaction(async tx => {
         await tx.upload.delete({ where: { uploadId: upload.uploadId } });
         if (reservedBytes > 0n) {
           await tx.class.update({
-            where: { classId: classIdNum },
+            where: { classId },
             data: { storageUsedBytes: { decrement: reservedBytes } }
           });
         }
       });
-
+      // remove the physical files on the system
       await removeTempFiles(files);
 
       if (reservedBytes > 0n && typeof error === "object" && error !== null) {
@@ -193,14 +193,14 @@ const uploadService = {
     }
 
     // Invalidate cache after queueing new upload
-    await invalidateCache("UPLOADMETADATA", session.classId!);
+    await invalidateCache("UPLOADMETADATA", classId.toString());
 
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
 
-    logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s)`);
+    logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s) for class ${classId}`);
   },
-
+  // get upload metadata service
   async getUploadMetadata(reqQuery: getUploadMetadataQuery, session: Session & Partial<SessionData>) {
     const { all } = reqQuery;
     const isGetAllData = all === "true";
@@ -250,7 +250,7 @@ const uploadService = {
     const stringified = JSON.stringify(res, BigIntreplacer);
     return JSON.parse(stringified);
   },
-
+  // send upload file to user
   async getUploadFile(
     params: getUploadFileParams,
     query: getUploadFileQuery,
@@ -258,7 +258,7 @@ const uploadService = {
   ): Promise<GetUploadFileResult> {
     const { id: fileIdParam } = params;
     const { action } = query;
-    const classId = session.classId!;
+    const classId = parseInt(session.classId!, 10);
 
     const fileData = await prisma.fileMetadata.findUnique({
       where: { fileMetaDataId: fileIdParam },
@@ -276,7 +276,7 @@ const uploadService = {
       }
     });
 
-    if (!fileData || fileData.Upload.classId !== parseInt(classId, 10)) {
+    if (!fileData || fileData.Upload.classId !== classId) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
@@ -352,7 +352,7 @@ const uploadService = {
   ) {
     const { uploadName, uploadDescription, uploadType, teamId, changeFiles } = body;
     const { id: uploadId } = params;
-    const classIdNum = parseInt(session.classId!, 10);
+    const classId = parseInt(session.classId!, 10);
     const tempFiles = Array.isArray(files) ? files : [];
     const accountId = session.account?.accountId ?? null;
 
@@ -363,7 +363,7 @@ const uploadService = {
       include: { Files: true }
     });
 
-    if (!uploadData || uploadData.classId !== classIdNum) {
+    if (!uploadData || uploadData.classId !== classId) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
@@ -387,7 +387,7 @@ const uploadService = {
 
     if (!changeFiles) {
       await prisma.upload.update({
-        where: { uploadId: uploadId, classId: classIdNum },
+        where: { uploadId: uploadId, classId },
         data: { uploadName, uploadDescription, uploadType, teamId }
       });
 
@@ -395,6 +395,7 @@ const uploadService = {
 
       const io = socketIO.getIO();
       io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+      logger.info(`Upload for class ${classId} was edited`);
       return;
     }
 
@@ -416,7 +417,7 @@ const uploadService = {
 
     await prisma.$transaction(async tx => {
       const classData = await tx.class.findUnique({
-        where: { classId: classIdNum },
+        where: { classId },
         select: { storageQuotaBytes: true, storageUsedBytes: true }
       });
 
@@ -444,7 +445,7 @@ const uploadService = {
 
         if (additionalBytesNeeded > 0n) {
           await tx.class.update({
-            where: { classId: classIdNum },
+            where: { classId },
             data: { storageUsedBytes: { increment: additionalBytesNeeded } }
           });
         }
@@ -476,7 +477,7 @@ const uploadService = {
 
     const jobData = {
       uploadId,
-      classId: classIdNum,
+      classId,
       tempFiles: tempFiles.map(file => ({
         path: file.path,
         originalName: file.originalname,
@@ -497,7 +498,7 @@ const uploadService = {
       await prisma.$transaction(async tx => {
         if (bytesToRelease > 0n) {
           await tx.class.update({
-            where: { classId: classIdNum },
+            where: { classId },
             data: { storageUsedBytes: { decrement: bytesToRelease } }
           });
         }
@@ -520,6 +521,7 @@ const uploadService = {
 
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    logger.info(`Upload was edited for class: ${classId} with file change(s)`);
   },
 
   async deleteUpload(
@@ -527,14 +529,14 @@ const uploadService = {
     session: Session & Partial<SessionData>
   ) {
     const { id: uploadId } = params;
-    const classIdNum = parseInt(session.classId!, 10);
+    const classId = parseInt(session.classId!, 10);
 
     const uploadData = await prisma.upload.findUnique({
       where: { uploadId },
       include: { Files: true }
     });
 
-    if (!uploadData || uploadData.classId !== classIdNum) {
+    if (!uploadData || uploadData.classId !== classId) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
@@ -545,10 +547,12 @@ const uploadService = {
     }
 
     // Delete all physical files from disk
-    const classDir = path.join(FINAL_UPLOADS_DIR, classIdNum.toString());
+    const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
     for (const file of uploadData.Files) {
       const filePath = path.join(classDir, file.storedFileName);
-      await fs.unlink(filePath).catch(() => { });
+      await fs.unlink(filePath).catch(() => {
+        logger.error(`Falied to delete file for classId: ${classId}, filePath: ${path} during upload deletion`);
+      });
     }
 
     // Calculate actual size (for completed uploads) or reserved size (for failed/queued)
@@ -565,7 +569,7 @@ const uploadService = {
       // Update class storage usage
       if (sizeToRelease > 0n) {
         await tx.class.update({
-          where: { classId: classIdNum },
+          where: { classId },
           data: { storageUsedBytes: { decrement: sizeToRelease } }
         });
       }
@@ -576,6 +580,7 @@ const uploadService = {
 
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    logger.info(`upload deleted for class: ${classId}`);
   },
 
   async pinUpload(
@@ -585,12 +590,12 @@ const uploadService = {
   ) {
     const { pinStatus } = body;
     const { id: uploadId } = params;
-    const classIdNum = parseInt(session.classId!, 10);
+    const classId = parseInt(session.classId!, 10);
 
     const updated = await prisma.upload.updateMany({
       where: {
         uploadId: uploadId,
-        classId: classIdNum
+        classId
       },
       data: {
         isPinned: pinStatus
@@ -607,10 +612,10 @@ const uploadService = {
       throw err;
     }
 
-    await invalidateCache("UPLOADMETADATA", session.classId!);
+    await invalidateCache("UPLOADMETADATA", classId.toString());
 
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
   },
 
   async addUploadRequest(
@@ -618,26 +623,27 @@ const uploadService = {
     session: Session & Partial<SessionData>
   ) {
     const { uploadRequestName, teamId } = body;
-    const classIdNum = parseInt(session.classId!, 10);
+    const classId = parseInt(session.classId!, 10);
 
     await isValidTeamId(teamId, session);
 
     await prisma.uploadRequest.create({
       data: {
         uploadRequestName: uploadRequestName,
-        classId: classIdNum,
+        classId,
         teamId
       }
     });
 
-    await invalidateCache("UPLOADREQUESTS", session.classId!);
+    await invalidateCache("UPLOADREQUESTS", classId.toString());
 
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
+    logger.info(`Upload Request added for class: ${classId}`);
   },
 
   async getUploadRequests(session: Session & Partial<SessionData>) {
-    const classIdNum = parseInt(session.classId!, 10);
+    const classId = parseInt(session.classId!, 10);
 
     const getUploadRequestsCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADREQUESTS, session.classId!);
     const cachedData = await redisClient.get(getUploadRequestsCacheKey);
@@ -653,7 +659,7 @@ const uploadService = {
     }
 
     const uploadRequests = await prisma.uploadRequest.findMany({
-      where: { classId: classIdNum },
+      where: { classId },
       orderBy: { uploadRequestId: "desc" }
     });
 
@@ -674,14 +680,14 @@ const uploadService = {
     session: Session & Partial<SessionData>
   ) {
     const { id: uploadRequestId } = params;
-    const classIdNum = parseInt(session.classId!, 10);
+    const classId = parseInt(session.classId!, 10);
 
     // Check if upload request exists and belongs to this class
     const existingRequest = await prisma.uploadRequest.findUnique({
       where: { uploadRequestId }
     });
 
-    if (!existingRequest || existingRequest.classId !== classIdNum) {
+    if (!existingRequest || existingRequest.classId !== classId) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
@@ -693,10 +699,10 @@ const uploadService = {
 
     await prisma.uploadRequest.delete({ where: { uploadRequestId } });
 
-    await invalidateCache("UPLOADREQUESTS", session.classId!);
+    await invalidateCache("UPLOADREQUESTS", classId.toString());
 
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
   }
 };
 
