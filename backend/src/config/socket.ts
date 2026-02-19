@@ -18,10 +18,7 @@ export const SOCKET_EVENTS = {
   JOINED_TEAMS: "updateJoinedTeams",
   EVENT_TYPES: "updateEventTypes",
   TIMETABLES: "updateTimetables",
-  CLASS_CODES: "updateClassCodes",
-  CLASS_NAMES: "updateClassNames",
-  UPGRADE_TEST_CLASS: "updateUpgradeTestClass",
-  DEFAULT_PERMISSION: "updateDefaultPermission"
+  CLASS_INFO: "updateClassInfo"
 };
 
 // Initialize the Socket.IO instance

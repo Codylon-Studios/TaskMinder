@@ -3,6 +3,18 @@ import { CACHE_KEY_PREFIXES, cacheExpiration, generateCacheKey, redisClient } fr
 import prisma from "../config/prisma";
 import logger from "../config/logger";
 import { Session, SessionData } from "express-session";
+import { randomBytes } from "crypto";
+
+const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+function generateRandomBase62String(length = 20): string {
+  const bytes = randomBytes(length);
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += BASE62.charAt(bytes[i] % BASE62.length);
+  }
+  return result;
+}
 
 async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   try {
@@ -162,6 +174,7 @@ function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | 
 }
 
 export {
+  generateRandomBase62String,
   isValidColor,
   isValidSubjectId,
   isValidTeamId,
