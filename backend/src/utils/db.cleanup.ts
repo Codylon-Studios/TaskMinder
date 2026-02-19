@@ -1,12 +1,12 @@
-import prisma from "../config/prisma";
-import { redisClient } from "../config/redis";
-import logger from "../config/logger";
+import prisma from "../config/prisma.js";
+import { redisClient } from "../config/redis.js";
+import logger from "../config/logger.js";
 import fs from "fs/promises";
 import path from "path";
-import { FINAL_UPLOADS_DIR } from "../config/upload";
-import { invalidateCache } from "./validate.functions";
-import socketIO from "../config/socket";
-import { encryptionManager } from "./encryption.manager";
+import { FINAL_UPLOADS_DIR } from "../config/upload.js";
+import { invalidateCache } from "./validate.functions.js";
+import socketIO from "../config/socket.js";
+import { encryptionManager } from "./encryption.manager.js";
 
 /**
  * Deletes class records that are older than 1 day and are TEST CLASSES
@@ -227,47 +227,64 @@ export async function cleanupStuckUploads(): Promise<void> {
     // 10 minutes ago
     const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
 
-    const stuckUploads = await prisma.upload.findMany({
-      where: {
-        status: "processing",
-        createdAt: {
-          lt: tenMinutesAgo
+    const cleanedCount = await prisma.$transaction(async tx => {
+      const stuckUploads = await tx.upload.findMany({
+        where: {
+          status: "processing",
+          createdAt: {
+            lt: tenMinutesAgo
+          }
+        },
+        select: {
+          uploadId: true,
+          classId: true,
+          reservedBytes: true
         }
-      },
-      select: {
-        uploadId: true,
-        classId: true,
-        reservedBytes: true
+      });
+
+      if (stuckUploads.length === 0) {
+        return 0;
       }
+
+      const reservedByClass = new Map<number, bigint>();
+      for (const upload of stuckUploads) {
+        if (upload.reservedBytes <= 0n) {
+          continue;
+        }
+        const current = reservedByClass.get(upload.classId) ?? 0n;
+        reservedByClass.set(upload.classId, current + upload.reservedBytes);
+      }
+
+      const uploadIds = stuckUploads.map(upload => upload.uploadId);
+
+      await tx.upload.updateMany({
+        where: {
+          uploadId: { in: uploadIds },
+          status: "processing"
+        },
+        data: {
+          status: "failed",
+          errorReason: "processing_timeout",
+          reservedBytes: 0n
+        }
+      });
+
+      for (const [classId, reservedBytes] of reservedByClass.entries()) {
+        await tx.class.update({
+          where: { classId },
+          data: { storageUsedBytes: { decrement: reservedBytes } }
+        });
+      }
+
+      return uploadIds.length;
     });
 
-    if (stuckUploads.length === 0) {
+    if (cleanedCount === 0) {
       logger.info("No stuck uploads found (10min)");
       return;
     }
 
-    // Release reserved storage and mark as failed
-    for (const upload of stuckUploads) {
-      await prisma.$transaction(async tx => {
-        if (upload.reservedBytes > 0n) {
-          await tx.class.update({
-            where: { classId: upload.classId },
-            data: { storageUsedBytes: { decrement: upload.reservedBytes } }
-          });
-        }
-
-        await tx.upload.update({
-          where: { uploadId: upload.uploadId },
-          data: {
-            status: "failed",
-            errorReason: "processing_timeout",
-            reservedBytes: 0n
-          }
-        });
-      });
-    }
-
-    logger.info(`Cleaned up ${stuckUploads.length} stuck uploads (10min)`);
+    logger.info(`Cleaned up ${cleanedCount} stuck uploads (10min)`);
   }
   catch (error) {
     logger.error(`Error during stuck upload cleanup: ${error}`);

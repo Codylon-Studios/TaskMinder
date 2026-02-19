@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import substitutionService from "../services/substitution.service";
+import substitutionService from "../services/substitution.service.js";
 
 export const getSubstitutions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

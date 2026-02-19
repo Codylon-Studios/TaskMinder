@@ -1,10 +1,10 @@
-import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
-import { default as prisma } from "../config/prisma";
-import logger from "../config/logger";
-import { BigIntreplacer, updateCacheData, invalidateCache, isValidTeamId, isValidSubjectId } from "../utils/validate.functions";
+import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
+import { default as prisma } from "../config/prisma.js";
+import logger from "../config/logger.js";
+import { BigIntreplacer, updateCacheData, invalidateCache, isValidTeamId, isValidSubjectId } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
-import { setLessonDataTypeBody } from "../schemas/lesson.schema";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
+import { setLessonDataTypeBody } from "../schemas/lesson.schema.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
 
 const lessonService = {
   async setLessonData(

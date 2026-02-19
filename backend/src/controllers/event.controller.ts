@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import eventService from "../services/event.service";
+import eventService from "../services/event.service.js";
 
 export const getEventData = async (req: Request, res: Response, next: NextFunction): Promise<void>  => {
   try {

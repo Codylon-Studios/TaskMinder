@@ -1,12 +1,12 @@
 import { Session, SessionData } from "express-session";
 import path from "path";
-import { FINAL_UPLOADS_DIR } from "../config/upload";
+import { FINAL_UPLOADS_DIR } from "../config/upload.js";
 import fs from "fs/promises";
 import { ReadStream, createReadStream } from "fs";
-import prisma from "../config/prisma";
+import prisma from "../config/prisma.js";
 import type { Prisma } from "@prisma/client";
-import logger from "../config/logger";
-import { RequestError } from "../@types/requestError";
+import logger from "../config/logger.js";
+import { RequestError } from "../@types/requestError.js";
 import {
   getUploadFileQuery,
   getUploadMetadataQuery,
@@ -19,11 +19,11 @@ import {
   uploadFileTypeBody,
   pinUploadTypeBody,
   addUploadRequestTypeBody
-} from "../schemas/upload.schema";
-import { removeTempFiles } from "../utils/upload.cleanup";
-import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis";
-import { invalidateCache, BigIntreplacer, isValidTeamId, updateCacheData } from "../utils/validate.functions";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
+} from "../schemas/upload.schema.js";
+import { removeTempFiles } from "../utils/upload.cleanup.js";
+import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis.js";
+import { invalidateCache, BigIntreplacer, isValidTeamId, updateCacheData } from "../utils/validate.functions.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
 
 type GetUploadFileResult = {
   stream: ReadStream;
@@ -63,22 +63,6 @@ const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany
   }));
 };
 
-type UploadListItem = ReturnType<typeof mapUploadData>[number];
-
-const uploadNameCollator = new Intl.Collator(undefined, {
-  numeric: true,
-  sensitivity: "base"
-});
-
-const sortUploads = (uploads: UploadListItem[]): UploadListItem[] =>
-  uploads.sort((a, b) =>
-    a.isPinned !== b.isPinned
-      ? (a.isPinned ? -1 : 1)
-      : a.createdAt !== b.createdAt
-        ? (a.createdAt > b.createdAt ? -1 : 1)
-        : uploadNameCollator.compare(a.uploadName ?? "", b.uploadName ?? "") || (b.uploadId - a.uploadId)
-  );
-
 const getUploadList = async (
   classId: number,
   isGetAllData: boolean,
@@ -96,7 +80,7 @@ const getUploadList = async (
       include,
       orderBy
     });
-    return sortUploads(mapUploadData(uploads));
+    return mapUploadData(uploads);
   }
 
   const cachedUploadMetadataData = await redisClient.get(cacheKey);
@@ -115,7 +99,7 @@ const getUploadList = async (
     orderBy,
     take: 50
   });
-  const uploadList = sortUploads(mapUploadData(uploads));
+  const uploadList = mapUploadData(uploads);
 
   try {
     await updateCacheData(uploadList, cacheKey);
@@ -211,16 +195,14 @@ const uploadService = {
       select: { storageUsedBytes: true, storageQuotaBytes: true }
     });
 
-    const totalUploads = await prisma.upload.count({ where: { classId } });
-
-    if (totalUploads === 0) {
-      return {
-        totalUploads: 0,
-        uploads: [],
-        hasMore: false,
-        totalStorage: classInformation!.storageQuotaBytes.toString(),
-        usedStorage: classInformation!.storageUsedBytes.toString()
+    if (!classInformation) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Class not found.",
+        expected: true
       };
+      throw err;
     }
 
     const include = {
@@ -238,14 +220,38 @@ const uploadService = {
     const getUploadMetadataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
     const uploadList = await getUploadList(classId, isGetAllData, getUploadMetadataCacheKey, include, orderBy);
 
+    if (isGetAllData) {
+      const res = {
+        totalUploads: uploadList.length,
+        uploads: uploadList,
+        hasMore: false,
+        totalStorage: classInformation.storageQuotaBytes.toString(),
+        usedStorage: classInformation.storageUsedBytes.toString()
+      };
+      const stringified = JSON.stringify(res, BigIntreplacer);
+      return JSON.parse(stringified);
+    }
+
+    const totalUploads = await prisma.upload.count({ where: { classId } });
+
+    if (totalUploads === 0) {
+      return {
+        totalUploads: 0,
+        uploads: [],
+        hasMore: false,
+        totalStorage: classInformation.storageQuotaBytes.toString(),
+        usedStorage: classInformation.storageUsedBytes.toString()
+      };
+    }
+
     const hasMore = !isGetAllData && totalUploads > 50;
 
     const res = {
       totalUploads,
       uploads: uploadList,
       hasMore,
-      totalStorage: classInformation!.storageQuotaBytes.toString(),
-      usedStorage: classInformation!.storageUsedBytes.toString()
+      totalStorage: classInformation.storageQuotaBytes.toString(),
+      usedStorage: classInformation.storageUsedBytes.toString()
     };
     const stringified = JSON.stringify(res, BigIntreplacer);
     return JSON.parse(stringified);
@@ -553,7 +559,7 @@ const uploadService = {
     for (const file of uploadData.Files) {
       const filePath = path.join(classDir, file.storedFileName);
       await fs.unlink(filePath).catch(() => {
-        logger.error(`Falied to delete file for classId: ${classId}, filePath: ${path} during upload deletion`);
+        logger.error(`Failed to delete file for classId: ${classId}, filePath: ${filePath} during upload deletion`);
       });
     }
 

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import prisma from "../config/prisma";
-import { RequestError } from "../@types/requestError";
-import { redisClient } from "../config/redis";
+import prisma from "../config/prisma.js";
+import { RequestError } from "../@types/requestError.js";
+import { redisClient } from "../config/redis.js";
 
 const ROLES = {
   MEMBER: 0,

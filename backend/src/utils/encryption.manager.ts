@@ -6,7 +6,7 @@ import {
   hkdfSync,
   randomBytes
 } from "crypto";
-import logger from "../config/logger";
+import logger from "../config/logger.js";
 
 const ENCRYPTION_PREFIX = "enc:v1:";
 // Derive a fixed 32-byte salt from a descriptive string

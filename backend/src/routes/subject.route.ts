@@ -1,9 +1,9 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import subjectController from "../controllers/subject.controller";
-import checkAccess from "../middleware/access.middleware";
-import { validate } from "../middleware/validation.middleware";
-import { setSubjectsSchema } from "../schemas/subject.schema";
+import subjectController from "../controllers/subject.controller.js";
+import checkAccess from "../middleware/access.middleware.js";
+import { validate } from "../middleware/validation.middleware.js";
+import { setSubjectsSchema } from "../schemas/subject.schema.js";
 
 // subject rate limiters
 const readSubjectLimiter = rateLimit({ windowMs: 1000, limit: 30 });

@@ -1,17 +1,18 @@
 import bcrypt from "bcrypt";
-import { default as prisma } from "../config/prisma";
+import { default as prisma } from "../config/prisma.js";
 import { Session, SessionData } from "express-session";
-import { RequestError } from "../@types/requestError";
-import { redisClient } from "../config/redis";
+import { RequestError } from "../@types/requestError.js";
+import { redisClient } from "../config/redis.js";
 import {
   changePasswordTypeBody,
   changeUsernameTypeBody,
-  checkUsernameTypeBody,
+  checkUsernameTypeQuery,
+  deleteAccountTypeParams,
   deleteAccountTypeBody,
   loginAccountTypeBody,
   registerAccountTypeBody
-} from "../schemas/account.schema";
-import { invalidateCache } from "../utils/validate.functions";
+} from "../schemas/account.schema.js";
+import { invalidateCache } from "../utils/validate.functions.js";
 
 const SALTROUNDS = 10;
 
@@ -56,7 +57,7 @@ export default {
 
     if (res.loggedIn && accountId) {
       const joinedClass = await prisma.joinedClass.findUnique({
-        where: { accountId: accountId },
+        where: { accountId },
         select: { permissionLevel: true, classId: true }
       });
 
@@ -74,7 +75,7 @@ export default {
     else if (!res.loggedIn && session.classId) {
       const classId = parseInt(session.classId, 10);
       const classInDb = await prisma.class.findUnique({
-        where: { classId: classId },
+        where: { classId},
         select: { defaultPermissionLevel: true }
       });
 
@@ -90,8 +91,11 @@ export default {
 
     return res;
   },
-  async registerAccount(reqData: registerAccountTypeBody, session: Session & Partial<SessionData>) {
-    const { username, password } = reqData;
+  async registerAccount(reqBody: registerAccountTypeBody, session: Session & Partial<SessionData>) {
+    const { username, password } = reqBody;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
     if (session.account) {
       const err: RequestError = {
         name: "Bad Request",
@@ -125,12 +129,20 @@ export default {
         }
       });
 
-      if (session.classId) {
+      if (classId) {
+        // check if class exists -> delete classId from session
+        const classExists = await tx.class.findUnique({
+          where: { classId }
+        });
+        if (!classExists) {
+          delete session.classId;
+          return newAccount;
+        }
         await tx.joinedClass.create({
           data: {
             accountId: newAccount.accountId,
-            classId: parseInt(session.classId),
-            permissionLevel: 0, // assume lowest role for class
+            classId,
+            permissionLevel: classExists.defaultPermissionLevel,
             createdAt: BigInt(Date.now())
           }
         });
@@ -149,8 +161,11 @@ export default {
     delete session.account;
   },
 
-  async loginAccount(reqData: loginAccountTypeBody, session: Session & Partial<SessionData>) {
-    const { username, password } = reqData;
+  async loginAccount(reqBody: loginAccountTypeBody, session: Session & Partial<SessionData>) {
+    const { username, password } = reqBody;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
     if (session.account) {
       const err: RequestError = {
         name: "Bad Request",
@@ -193,31 +208,24 @@ export default {
         accountId: accountId
       }
     });
-    if (joinedClassExists === null && session.classId) {
+    if (joinedClassExists === null && classId) {
       // find if class exists
-      const classIdNum = parseInt(session.classId, 10);
       const classInfo = await prisma.class.findUnique({
-        where: { classId: classIdNum },
+        where: { classId},
         select: { defaultPermissionLevel: true }
       });
 
       if (!classInfo) {
         delete session.classId;
-        const err: RequestError = {
-          name: "Not Found",
-          status: 404,
-          message: "Selected class no longer exists",
-          expected: true
-        };
-        throw err;
+        return;
       }
 
       // create joinedClass entry if class exists
       await prisma.joinedClass.create({
         data: {
           accountId: accountId,
-          classId: classIdNum,
-          permissionLevel: 0, // assume lowest level
+          classId,
+          permissionLevel: classInfo.defaultPermissionLevel,
           createdAt: BigInt(Date.now())
         }
       });
@@ -227,13 +235,48 @@ export default {
     }
   },
 
-  async deleteAccount(reqData: deleteAccountTypeBody, session: Session & Partial<SessionData>) {
-    const { password } = reqData;
+  async deleteAccount(
+    reqParams: deleteAccountTypeParams,
+    reqBody: deleteAccountTypeBody,
+    session: Session & Partial<SessionData>
+  ) {
+    const { password } = reqBody;
+    const { id: accountId } = reqParams;
+
+    // check if params and session are the same
+    if (session.account!.accountId !== accountId) {
+      const err: RequestError = {
+        name: "Forbidden",
+        status: 403,
+        message: "Cannot delete another account",
+        expected: true
+      };
+      throw err;
+    }
+
+    // account is certainly not soft-deleted and if found (accessMiddleware)
+    // no deletedAt query needed
+    const account = await prisma.account.findUnique({
+      where: {
+        accountId
+      }
+    });
+
+    if (!account){
+      delete session.account;
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "Account session invalid",
+        expected: true
+      };
+      throw err;
+    }
     // account and session.account certainly exist here 
     // -> checkAccess.checkAccount middleware
     const joinedClassAccount = await prisma.joinedClass.findUnique({
       where: {
-        accountId: session.account!.accountId
+        accountId
       }
     });
     // if user is in a class, evaluate if user is admin
@@ -248,14 +291,7 @@ export default {
         throw err;
       }
     }
-    // account is certainly not soft-deleted and if found (accessMiddleware)
-    // no deletedAt query needed
-    const account = await prisma.account.findUnique({
-      where: {
-        accountId: session.account!.accountId
-      }
-    });
-    const isPasswordValid = await bcrypt.compare(password, account!.password);
+    const isPasswordValid = await bcrypt.compare(password, account.password);
     if (!isPasswordValid) {
       const err: RequestError = {
         name: "Unauthorized",
@@ -269,7 +305,7 @@ export default {
       // mark account as deleted
       await tx.account.update({
         where: {
-          accountId: account!.accountId
+          accountId: account.accountId
         },
         data: {
           deletedAt: BigInt(Date.now())
@@ -278,23 +314,23 @@ export default {
       // delete related records in JoinedClass, JoinedTeams, and HomeworkCheck
       await tx.joinedClass.deleteMany({
         where: {
-          accountId: account!.accountId
+          accountId: account.accountId
         }
       });
       await tx.joinedTeams.deleteMany({
         where: {
-          accountId: account!.accountId
+          accountId: account.accountId
         }
       });
       await tx.homeworkCheck.deleteMany({
         where: {
-          accountId: account!.accountId
+          accountId: account.accountId
         }
       });
       // set relevant accountId in uploads to null
       await tx.upload.updateMany({
         where: {
-          accountId: account!.accountId
+          accountId: account.accountId
         },
         data: {
           accountId: null
@@ -304,12 +340,12 @@ export default {
     if (joinedClassAccount){
       await invalidateCache("UPLOADMETADATA", joinedClassAccount.classId.toString());
     }
-    await redisClient.del(`auth_user:${account!.accountId}`);
+    await redisClient.del(`auth_user:${account.accountId}`);
     delete session.account;
   },
 
-  async changeUsername(reqData: changeUsernameTypeBody, session: Session & Partial<SessionData>) {
-    const { password, newUsername } = reqData;
+  async changeUsername(reqBody: changeUsernameTypeBody, session: Session & Partial<SessionData>) {
+    const { password, newUsername } = reqBody;
     // soft delete needed, so prisma can find usernames which are not deleted
     // deletedAt needed
     const accountWithNewUsername = await prisma.account.findFirst({
@@ -371,10 +407,10 @@ export default {
   },
 
   async changePassword(
-    reqData: changePasswordTypeBody,
+    reqBody: changePasswordTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { oldPassword, newPassword } = reqData;
+    const { oldPassword, newPassword } = reqBody;
     // account is certainly not soft-deleted and if found (accessMiddleware)
     // no deletedAt query needed
     const changePasswordAccount = await prisma.account.findUnique({
@@ -406,8 +442,8 @@ export default {
     });
   },
 
-  async checkUsername(reqData: checkUsernameTypeBody) {
-    const { username } = reqData;
+  async checkUsername(reqQuery: checkUsernameTypeQuery) {
+    const { username } = reqQuery;
     const accountExists = await prisma.account.findFirst({
       where: { username: username, deletedAt: null }
     });

@@ -2,17 +2,18 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import { createServer } from "http";
 import path from "path";
+import { fileURLToPath } from "url";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
 import express, { Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
-import prisma from "./config/prisma";
-import socketIO from "./config/socket";
-import logger from "./config/logger";
-import { connectRedis } from "./config/redis";
-import { sessionPool } from "./config/pg";
-import { startMetricsServer } from "./utils/metrics.server";
+import prisma from "./config/prisma.js";
+import socketIO from "./config/socket.js";
+import logger from "./config/logger.js";
+import { connectRedis } from "./config/redis.js";
+import { sessionPool } from "./config/pg.js";
+import { startMetricsServer } from "./utils/metrics.server.js";
 import {
   cleanupDeletedAccounts,
   cleanupOldEvents,
@@ -21,41 +22,30 @@ import {
   cleanupStuckUploads,
   migrateEventAndHomeworkDates, 
   migrateUploadMetadataDates
-} from "./utils/db.cleanup";
-import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker";
-import { cleanupStaleUploadFiles } from "./utils/upload.cleanup";
-import { prefetchSubstitutionDataForAllClasses } from "./services/substitution.service";
-import checkAccess from "./middleware/access.middleware";
-import { ErrorHandler } from "./middleware/error.middleware";
-import { loggerMiddleware } from "./middleware/logger.middleware";
-import { metricsMiddleware } from "./middleware/metrics.middleware";
-import { CSPMiddleware } from "./middleware/CSP.middleware";
-import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware";
-import account from "./routes/account.route";
-import events from "./routes/event.route";
-import homework from "./routes/homework.route";
-import lessons from "./routes/lesson.route";
-import substitutions from "./routes/substitution.route";
-import subjects from "./routes/subject.route";
-import teams from "./routes/team.route";
-import classes from "./routes/class.route";
-import uploads from "./routes/upload.route";
+} from "./utils/db.cleanup.js";
+import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker.js";
+import { cleanupStaleUploadFiles } from "./utils/upload.cleanup.js";
+import { prefetchSubstitutionDataForAllClasses } from "./services/substitution.service.js";
+import checkAccess from "./middleware/access.middleware.js";
+import { ErrorHandler } from "./middleware/error.middleware.js";
+import { loggerMiddleware } from "./middleware/logger.middleware.js";
+import { metricsMiddleware } from "./middleware/metrics.middleware.js";
+import { CSPMiddleware } from "./middleware/CSP.middleware.js";
+import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware.js";
+import account from "./routes/account.route.js";
+import events from "./routes/event.route.js";
+import homework from "./routes/homework.route.js";
+import lessons from "./routes/lesson.route.js";
+import substitutions from "./routes/substitution.route.js";
+import subjects from "./routes/subject.route.js";
+import teams from "./routes/team.route.js";
+import classes from "./routes/class.route.js";
+import uploads from "./routes/upload.route.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const API_PREFIX = "/api/v1";
-
-prisma
-  .$connect()
-  .then(() => {
-    logger.info("Connected to Database");
-  })
-  .catch(err => {
-    logger.error(`DB connection failed: ${err}`);
-    process.exit(1);
-  });
-
-connectRedis();
-initializeUploadWorkerServices();
-startUploadWorker();
 
 const sessionSecret = process.env.SESSION_SECRET;
 
@@ -242,7 +232,27 @@ setInterval(() => {
   });
 }, 10 * 60 * 1000); // 10 minutes
 
-server.listen(3000, () => {
-  logger.info("Server running at http://localhost:3000");
-  startMetricsServer();
-});
+const bootstrap = async (): Promise<void> => {
+  try {
+    await prisma.$connect();
+    logger.info("Connected to Database");
+
+    await connectRedis();
+    await initializeUploadWorkerServices();
+
+    void startUploadWorker().catch(err => {
+      logger.error(`Upload worker failed unexpectedly: ${err}`);
+    });
+
+    server.listen(3000, () => {
+      logger.info("Server running at http://localhost:3000");
+      startMetricsServer();
+    });
+  }
+  catch (err) {
+    logger.error(`Startup failed: ${err}`);
+    process.exit(1);
+  }
+};
+
+void bootstrap();

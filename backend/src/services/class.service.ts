@@ -1,15 +1,15 @@
-import { RequestError } from "../@types/requestError";
+import { RequestError } from "../@types/requestError.js";
 import { Prisma } from "@prisma/client";
 import { Session, SessionData } from "express-session";
-import { default as prisma } from "../config/prisma";
-import { BigIntreplacer, generateRandomBase62String, invalidateCache } from "../utils/validate.functions";
-import { sessionPool } from "../config/pg";
-import logger from "../config/logger";
-import { redisClient } from "../config/redis";
+import { default as prisma } from "../config/prisma.js";
+import { BigIntreplacer, generateRandomBase62String, invalidateCache } from "../utils/validate.functions.js";
+import { sessionPool } from "../config/pg.js";
+import logger from "../config/logger.js";
+import { redisClient } from "../config/redis.js";
 import fs from "fs/promises";
 import path from "path";
-import { FINAL_UPLOADS_DIR } from "../config/upload";
-import { encryptionManager } from "../utils/encryption.manager";
+import { FINAL_UPLOADS_DIR } from "../config/upload.js";
+import { encryptionManager } from "../utils/encryption.manager.js";
 import {
   changeClassCodeTypeParams,
   changeClassNameTypeBody,
@@ -28,8 +28,8 @@ import {
   setClassMembersPermissionsTypeBody,
   setClassMembersPermissionsTypeParams,
   upgradeTestClassTypeParams
-} from "../schemas/class.schema";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
+} from "../schemas/class.schema.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
 
 const classService = {
   /*
@@ -190,6 +190,14 @@ const classService = {
         throw reqErr;
       }
     }
+
+    const err: RequestError = {
+      name: "Internal Server Error",
+      status: 500,
+      message: "Could not generate a unique class code. Please try again.",
+      expected: true
+    };
+    throw err;
   },
   /*
   joinClass(
@@ -384,32 +392,10 @@ const classService = {
       };
       throw err;
     }
+    const room = `class:${session.classId}`;
     // delete everything from this class in transaction to enable rollback
     await prisma.$transaction(async tx => {
-      // Delete all file metadata and upload records for this class
-      const uploads = await tx.upload.findMany({
-        where: { classId },
-        include: { Files: true }
-      });
-      // Delete physical files from disk
-      const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
-      try {
-        await fs.rm(classDir, { recursive: true, force: true });
-        logger.info(`Deleted class directory: ${classDir}`);
-      }
-      catch (error) {
-        logger.error(`Error deleting class directory ${classDir}: ${error}`);
-        // Continue with database cleanup even if file deletion fails
-      }
-      // Delete file metadata records
-      await tx.fileMetadata.deleteMany({
-        where: {
-          uploadId: {
-            in: uploads.map(u => u.uploadId)
-          }
-        }
-      });
-      // Delete upload records
+      // Delete upload records first (FileMetadata rows cascade via FK)
       await tx.upload.deleteMany({
         where: { classId }
       });
@@ -425,25 +411,38 @@ const classService = {
       await tx.class.delete({
         where: { classId }
       });
-      // invalidate redis caches
-      await invalidateCache("UPLOADMETADATA", classId.toString());
-      await invalidateCache("UPLOADREQUESTS", classId.toString());
-      await invalidateCache("HOMEWORK", classId.toString());
-      await invalidateCache("EVENT", classId.toString());
-      await invalidateCache("LESSON", classId.toString());
-      await invalidateCache("EVENTTYPESTYLE", classId.toString());
-      await invalidateCache("SUBJECT", classId.toString());
-      await invalidateCache("EVENTTYPE", classId.toString());
-      await invalidateCache("TEAMS", classId.toString());
-      await redisClient.del(`auth_class:${classId}`);
-      const room = `class:${session.classId}`;
-      // delete session classId
-      delete session.classId;
-      // Make all sockets in the room leave it
-      const io = socketIO.getIO();
-      const sockets = await io.in(room).fetchSockets();
-      sockets.forEach(socket => socket.leave(room));
     });
+
+    // invalidate redis caches
+    await invalidateCache("UPLOADMETADATA", classId.toString());
+    await invalidateCache("UPLOADREQUESTS", classId.toString());
+    await invalidateCache("HOMEWORK", classId.toString());
+    await invalidateCache("EVENT", classId.toString());
+    await invalidateCache("LESSON", classId.toString());
+    await invalidateCache("EVENTTYPESTYLE", classId.toString());
+    await invalidateCache("SUBJECT", classId.toString());
+    await invalidateCache("EVENTTYPE", classId.toString());
+    await invalidateCache("TEAMS", classId.toString());
+    await redisClient.del(`auth_class:${classId}`);
+
+    // delete session classId
+    delete session.classId;
+
+    // Make all sockets in the room leave it
+    const io = socketIO.getIO();
+    const sockets = await io.in(room).fetchSockets();
+    sockets.forEach(socket => socket.leave(room));
+
+    // Delete physical files from disk after DB commit to avoid DB lock coupling
+    const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
+    try {
+      await fs.rm(classDir, { recursive: true, force: true });
+      logger.info(`Deleted class directory: ${classDir}`);
+    }
+    catch (error) {
+      logger.error(`Error deleting class directory ${classDir}: ${error}`);
+    }
+
     logger.info(`Class ${classId} was deleted`);
   },
   /*

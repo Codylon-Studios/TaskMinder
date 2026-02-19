@@ -1,9 +1,9 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import eventController from "../controllers/event.controller";
-import checkAccess from "../middleware/access.middleware";
-import { validate } from "../middleware/validation.middleware";
-import { addEventSchema, deleteEventSchema, editEventSchema, setEventTypesSchema, pinEventSchema } from "../schemas/event.schema";
+import eventController from "../controllers/event.controller.js";
+import checkAccess from "../middleware/access.middleware.js";
+import { validate } from "../middleware/validation.middleware.js";
+import { addEventSchema, deleteEventSchema, editEventSchema, setEventTypesSchema, pinEventSchema } from "../schemas/event.schema.js";
 
 // event rate limiters
 const readEventLimiter = rateLimit({ windowMs: 1000, limit: 30 });

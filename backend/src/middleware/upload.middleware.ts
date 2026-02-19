@@ -5,15 +5,15 @@ import {
   TEMP_DIR,
   MAX_FILE_SIZE,
   MAX_FILES_COUNT
-} from "../config/upload";
+} from "../config/upload.js";
 import path from "path";
 import { Request, Response, NextFunction } from "express";
 import mime from "mime-types";
-import { RequestError } from "../@types/requestError";
+import { RequestError } from "../@types/requestError.js";
 import { randomUUID } from "crypto";
-import prisma from "../config/prisma";
+import prisma from "../config/prisma.js";
 import type { Prisma } from "@prisma/client";
-import { getUploadedFiles, performUploadCleanup, registerReservedBytes, registerTempFiles } from "../utils/upload.cleanup";
+import { getUploadedFiles, performUploadCleanup, registerReservedBytes, registerTempFiles } from "../utils/upload.cleanup.js";
 
 //
 // normalizes file requests into one consistent format
@@ -121,7 +121,17 @@ export const preflightEditStorageQuotaCheck = async (
   }
 
   const classIdNum = parseInt(req.session.classId!, 10);
-  const uploadId = Number.parseInt(req.body?.uploadId, 10);
+  const uploadId = Number.parseInt(req.params.id, 10);
+
+  if (Number.isNaN(uploadId)) {
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "Invalid upload id.",
+      expected: true
+    };
+    return next(err);
+  }
 
   try {
     await prisma.$transaction(async tx => {

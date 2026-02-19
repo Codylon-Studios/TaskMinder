@@ -1,9 +1,9 @@
 import fs from "fs/promises";
 import path from "path";
-import logger from "../config/logger";
-import prisma from "../config/prisma";
+import logger from "../config/logger.js";
+import prisma from "../config/prisma.js";
 import { Request, Response } from "express";
-import { TEMP_DIR } from "../config/upload";
+import { TEMP_DIR } from "../config/upload.js";
 
 const STALE_UPLOAD_FILE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -20,7 +20,7 @@ const ensureUploadCleanupState = (res: Response): UploadCleanupState => {
     res.locals.uploadCleanupState = {
       tempFiles: new Set<string>(),
       filesCleanedUp: false,
-      reservationReleased: false
+      reservationReleased: Boolean(res.locals.reservationReleased)
     } as UploadCleanupState;
   }
 
@@ -162,6 +162,10 @@ export async function rollbackStorageQuota(
 ): Promise<void> {
   const state = ensureUploadCleanupState(res);
 
+  if (res.locals.reservationReleased) {
+    state.reservationReleased = true;
+  }
+
   if (state.reservationReleased) {
     return;
   }
@@ -215,7 +219,7 @@ export async function performUploadCleanup(
 const cleanupStaleFilesInDir = async (dirPath: string, maxAgeMs: number): Promise<number> => {
   let removedCount = 0;
 
-  let entries: string[] = [];
+  let entries: string[];
   try {
     entries = await fs.readdir(dirPath);
   }

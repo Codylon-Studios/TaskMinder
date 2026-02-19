@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import subjectService from "../services/subject.service";
+import subjectService from "../services/subject.service.js";
 
 export const getSubjects = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

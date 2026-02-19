@@ -1,8 +1,8 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import classController from "../controllers/class.controller";
-import checkAccess from "../middleware/access.middleware";
-import { validate } from "../middleware/validation.middleware";
+import classController from "../controllers/class.controller.js";
+import checkAccess from "../middleware/access.middleware.js";
+import { validate } from "../middleware/validation.middleware.js";
 import { 
   changeClassNameSchema,
   changeDefaultPermissionSchema, 
@@ -10,7 +10,7 @@ import {
   joinClassSchema, 
   kickClassMembersSchema, 
   setClassMembersPermissionsSchema
-} from "../schemas/class.schema";
+} from "../schemas/class.schema.js";
 
 // class rate limiters
 const readClassLimiter = rateLimit({ windowMs: 1000, limit: 30 });

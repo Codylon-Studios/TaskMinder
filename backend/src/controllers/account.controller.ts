@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import accountService from "../services/account.service";
+import accountService from "../services/account.service.js";
 
 export const registerAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -32,9 +32,9 @@ export const logoutAccount = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const deleteAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const deleteAccount = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await accountService.deleteAccount(req.body, req.session);
+    await accountService.deleteAccount({ id: Number(req.params.id) }, req.body, req.session);
     res.clearCookie("UserLogin");
     res.sendStatus(200);
   }
@@ -75,7 +75,7 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
 
 export const checkUsername = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const response = await accountService.checkUsername(req.body);
+    const response = await accountService.checkUsername({ username: String(req.query.username ?? "") });
     res.status(200).json(response);
   }
   catch (error) {

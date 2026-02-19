@@ -199,6 +199,7 @@ model Subjects {
 
   Class                   Class    @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([classId])
   @@map("subjects")
 }
 
@@ -226,6 +227,7 @@ model FileMetadata {
   createdAt        BigInt
 
   Upload Upload @relation(fields: [uploadId], references: [uploadId], onDelete: Cascade, onUpdate: NoAction)
+  @@index([uploadId])
   @@map("fileMetadata")
 }
 

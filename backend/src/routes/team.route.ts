@@ -1,9 +1,9 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import teamsController from "../controllers/team.controller";
-import checkAccess from "../middleware/access.middleware";
-import { setJoinedTeamsSchema, setTeamsSchema } from "../schemas/team.schema";
-import { validate } from "../middleware/validation.middleware";
+import teamsController from "../controllers/team.controller.js";
+import checkAccess from "../middleware/access.middleware.js";
+import { setJoinedTeamsSchema, setTeamsSchema } from "../schemas/team.schema.js";
+import { validate } from "../middleware/validation.middleware.js";
 
 // team rate limiters
 const readTeamLimiter = rateLimit({ windowMs: 1000, limit: 30 });

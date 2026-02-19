@@ -1,11 +1,11 @@
-import logger from "../config/logger";
-import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
-import { default as prisma } from "../config/prisma";
-import { BigIntreplacer, invalidateCache, updateCacheData } from "../utils/validate.functions";
+import logger from "../config/logger.js";
+import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
+import { default as prisma } from "../config/prisma.js";
+import { BigIntreplacer, invalidateCache, updateCacheData } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
-import { setSubjectsTypeBody } from "../schemas/subject.schema";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
-import { RequestError } from "../@types/requestError";
+import { setSubjectsTypeBody } from "../schemas/subject.schema.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { RequestError } from "../@types/requestError.js";
 
 const subjectService = {
   async getSubjectData(session: Session & Partial<SessionData>) {
@@ -98,7 +98,7 @@ const subjectService = {
               teacherNameLong: subject.teacherNameLong,
               teacherNameShort: subject.teacherNameShort,
               teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
-              createdAt: BigInt(BigInt(Date.now()))
+              createdAt: BigInt(Date.now())
             }
           });
         }

@@ -1,9 +1,9 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import uploadController from "../controllers/upload.controller";
-import checkAccess from "../middleware/access.middleware";
-import uploadMiddleware from "../middleware/upload.middleware";
-import { validate } from "../middleware/validation.middleware";
+import uploadController from "../controllers/upload.controller.js";
+import checkAccess from "../middleware/access.middleware.js";
+import uploadMiddleware from "../middleware/upload.middleware.js";
+import { validate } from "../middleware/validation.middleware.js";
 import { 
   deleteUploadSchema, 
   getUploadFileSchema, 
@@ -13,7 +13,7 @@ import {
   pinUploadSchema,
   addUploadRequestSchema,
   deleteUploadRequestSchema
-} from "../schemas/upload.schema";
+} from "../schemas/upload.schema.js";
 
 // upload rate limiters
 const readUploadLimiter = rateLimit({ windowMs: 1000, limit: 30 });

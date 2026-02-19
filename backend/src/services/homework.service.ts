@@ -1,10 +1,10 @@
-import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
-import { default as prisma } from "../config/prisma";
-import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache } from "../utils/validate.functions";
+import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { default as prisma } from "../config/prisma.js";
+import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
-import { RequestError } from "../@types/requestError";
-import logger from "../config/logger";
+import { RequestError } from "../@types/requestError.js";
+import logger from "../config/logger.js";
 import { 
   editHomeworkTypeParams,
   deleteHomeworkTypeParams,
@@ -14,7 +14,7 @@ import {
   editHomeworkTypeBody, 
   checkHomeworkTypeBody, 
   pinHomeworkTypeBody
-} from "../schemas/homework.schema";
+} from "../schemas/homework.schema.js";
 import { Prisma } from "@prisma/client";
 
 const homeworkService = {

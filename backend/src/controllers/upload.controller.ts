@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import logger from "../config/logger";
-import uploadService from "../services/upload.service";
-import { getUploadFileQuery } from "../schemas/upload.schema";
+import logger from "../config/logger.js";
+import uploadService from "../services/upload.service.js";
+import { getUploadFileQuery } from "../schemas/upload.schema.js";
 
 export const getUploadMetadata = async (
   req: Request<unknown, unknown, unknown, { all?: string }>, 
@@ -71,9 +71,9 @@ export const editUpload = async (req: Request<{ id: string }>, res: Response, ne
   }
 };
 
-export const deleteUpload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const deleteUpload = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await uploadService.deleteUpload(req.body, req.session);
+    await uploadService.deleteUpload({ id: Number(req.params.id) }, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -132,9 +132,9 @@ export const getUploadRequests = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const deleteUploadRequest = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const deleteUploadRequest = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await uploadService.deleteUploadRequest(req.body, req.session);
+    await uploadService.deleteUploadRequest({ id: Number(req.params.id) }, req.session);
     res.sendStatus(200);
   }
   catch (error) {

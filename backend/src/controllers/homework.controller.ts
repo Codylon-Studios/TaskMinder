@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import homeworkService from "../services/homework.service";
+import homeworkService from "../services/homework.service.js";
 
 export const addHomework = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

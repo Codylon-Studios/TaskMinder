@@ -4,26 +4,14 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.3.0] - 2026-03-??
-
-### Breaking Change
-* feat(encryption): introduce server side encryption
-
-### Added
-* feat(team): add private teams (with invite link/code)
-
-### Changed
-* chore(api): rename and change type of API routes
-
----
-
-## \[v2.2.5] - 2026-02-19
+## \[v2.2.5] - 2026-03-??
 
 ### Breaking Change
 * chore(db): migrate postgresql@14 to postgresql@18
 
 ### Added
 * feat(frontend): add caching and offline mode
+* feat(encryption): introduce server-side encryption
 * feat(upload): add upload description and request new uploads
 * feat(upload): edit files
 * feat(homework/event/upload): add homework/event/upload pinning
@@ -42,6 +30,8 @@ All changes are grouped by type and the latest version appears first.
 
 ### Changed
 * behaviour(substitution): change DSBMobile fetch to weekday prefetch
+* chore(api): rename and change type of API routes
+* chore(password): bump password requirements
 * chore(ui): make bottombar icons pop on click
 * chore(ui): scroll to top on site change
 * chore(frontend/logic): remove $.get and replace with modern fetch

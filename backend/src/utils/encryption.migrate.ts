@@ -1,8 +1,8 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-import prisma from "../config/prisma";
-import logger from "../config/logger";
-import { encryptionManager } from "./encryption.manager";
+import prisma from "../config/prisma.js";
+import logger from "../config/logger.js";
+import { encryptionManager } from "./encryption.manager.js";
 
 async function migrateClassCodes(): Promise<void> {
   const classes = await prisma.class.findMany({

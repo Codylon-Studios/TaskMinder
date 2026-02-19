@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { httpRequestDurationMicroseconds } from "../config/prom.client";
+import { httpRequestDurationMicroseconds } from "../config/prom.client.js";
 
 export const metricsMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const end = httpRequestDurationMicroseconds.startTimer();

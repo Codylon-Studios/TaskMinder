@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import lessonService from "../services/lesson.service";
+import lessonService from "../services/lesson.service.js";
 
 export const getLessons = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

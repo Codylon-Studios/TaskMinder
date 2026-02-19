@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import substitutionController from "../controllers/substitution.controller";
-import checkAccess from "../middleware/access.middleware";
+import substitutionController from "../controllers/substitution.controller.js";
+import checkAccess from "../middleware/access.middleware.js";
 
 // substitution rate limiter
 const readSubstitutionLimiter = rateLimit({ windowMs: 1000, limit: 30 });

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import classService from "../services/class.service";
+import classService from "../services/class.service.js";
 
 export const getClassInfo = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {

@@ -1,5 +1,5 @@
 import z, { strictObject } from "zod";
-import { FileTypes } from "../config/upload";
+import { FileTypes } from "../config/upload.js";
 
 export const getUploadMetadataSchema = z.object({
   // omit body due to GET request

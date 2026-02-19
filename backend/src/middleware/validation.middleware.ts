@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { z } from "zod";
-import logger from "../config/logger";
-import { performUploadCleanup } from "../utils/upload.cleanup";
+import logger from "../config/logger.js";
+import { performUploadCleanup } from "../utils/upload.cleanup.js";
 
 
 type RequestValidationSchema = z.ZodObject<{

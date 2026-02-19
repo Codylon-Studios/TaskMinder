@@ -1,9 +1,9 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import homeworkController from "../controllers/homework.controller";
-import checkAccess from "../middleware/access.middleware";
-import { addHomeworkSchema, checkHomeworkSchema, deleteHomeworkSchema, editHomeworkSchema, pinHomeworkSchema } from "../schemas/homework.schema";
-import { validate } from "../middleware/validation.middleware";
+import homeworkController from "../controllers/homework.controller.js";
+import checkAccess from "../middleware/access.middleware.js";
+import { addHomeworkSchema, checkHomeworkSchema, deleteHomeworkSchema, editHomeworkSchema, pinHomeworkSchema } from "../schemas/homework.schema.js";
+import { validate } from "../middleware/validation.middleware.js";
 
 // homework rate limiters
 const readHomeworkLimiter = rateLimit({ windowMs: 1000, limit: 30 });

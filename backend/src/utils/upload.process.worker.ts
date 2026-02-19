@@ -1,7 +1,7 @@
-import { dequeueJob, QUEUE_KEYS } from "../config/redis";
-import { invalidateCache } from "./validate.functions";
-import logger from "../config/logger";
-import prisma from "../config/prisma";
+import { dequeueJob, QUEUE_KEYS } from "../config/redis.js";
+import { invalidateCache } from "./validate.functions.js";
+import logger from "../config/logger.js";
+import prisma from "../config/prisma.js";
 import fs from "fs/promises";
 import path from "path";
 import {
@@ -12,15 +12,15 @@ import {
   GHOSTSCRIPT_TIMEOUT,
   MAX_IMAGE_PIXELS,
   TEMP_DIR
-} from "../config/upload";
+} from "../config/upload.js";
 import { execFile, ExecException } from "child_process";
 import { promisify } from "util";
 import sharp from "sharp";
 import mime from "mime-types";
 import { randomUUID } from "crypto";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
-import { RequestError } from "../@types/requestError";
-import { fileTypeFromFile } from "../../../node_modules/file-type";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { RequestError } from "../@types/requestError.js";
+import { fileTypeFromFile } from "file-type";
 
 const execFileAsync = promisify(execFile);
 
@@ -71,7 +71,8 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
     logger.info("ClamAV (clamdscan) enabled for worker");
   }
   catch {
-    logger.warn("ClamAV (clamdscan) not found in worker. Antivirus scanning is DISABLED. Server security degraded.");
+    logger.warn("ClamAV (clamdscan) not found in worker. Please install it..");
+    process.exit(1);
   }
 
   try {
@@ -80,7 +81,8 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
     logger.info("Ghostscript enabled for worker");
   }
   catch {
-    logger.warn("Ghostscript not found in worker. PDF sanitization is DISABLED. Server security degraded.");
+    logger.warn("Ghostscript not found in worker. Please install it.");
+    process.exit(1);
   }
 };
 

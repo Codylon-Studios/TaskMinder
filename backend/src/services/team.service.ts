@@ -1,14 +1,14 @@
 import { Session, SessionData } from "express-session";
-import { RequestError } from "../@types/requestError";
-import { default as prisma } from "../config/prisma";
-import logger from "../config/logger";
-import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
-import { BigIntreplacer, invalidateCache, updateCacheData } from "../utils/validate.functions";
-import { setJoinedTeamsTypeBody, setTeamsTypeBody } from "../schemas/team.schema";
+import { RequestError } from "../@types/requestError.js";
+import { default as prisma } from "../config/prisma.js";
+import logger from "../config/logger.js";
+import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
+import { BigIntreplacer, invalidateCache, isValidTeamId, updateCacheData } from "../utils/validate.functions.js";
+import { setJoinedTeamsTypeBody, setTeamsTypeBody } from "../schemas/team.schema.js";
 import fs from "fs/promises";
 import path from "path";
-import { FINAL_UPLOADS_DIR } from "../config/upload";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
+import { FINAL_UPLOADS_DIR } from "../config/upload.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
 
 const teamService = {
   async getTeamsData(session: Session & Partial<SessionData>) {
@@ -47,10 +47,12 @@ const teamService = {
   async setTeamsData(reqData: setTeamsTypeBody, session: Session & Partial<SessionData>) {
     const { teams } = reqData;
     const classId = parseInt(session.classId!, 10);
+    const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
     // variable to check if cache should be reloaded (e.g. on team deletion)
     let dataChanged = false;
     // track if teams were deleted (affects homework, events, lessons, upload (requests))
     let teamsDeleted = false;
+    const filesToDelete: string[] = [];
 
     // Check for duplicate team names
     const teamNames = teams.map(t => t.name.trim().toLowerCase());
@@ -71,83 +73,67 @@ const teamService = {
       }
     });
 
+    // eslint-disable-next-line complexity
     await prisma.$transaction(async tx => {
-      await Promise.all(
-        existingTeams.map(async (team: { teamId: number }) => {
-          if (!teams.some(t => t.teamId === team.teamId)) {
-            dataChanged = true;
-            teamsDeleted = true;
-            // Get all uploads for this team to delete files
-            const uploads = await tx.upload.findMany({
-              where: { teamId: team.teamId },
-              include: { Files: true }
-            });
-            // Delete physical files from disk
-            const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
-            for (const upload of uploads) {
-              for (const file of upload.Files) {
-                const filePath = path.join(classDir, file.storedFileName);
-                await fs.unlink(filePath).catch(error => {
-                  logger.error(`File could not be deleted during team deletion, 
-                  teamId: ${team.teamId},
-                  path: ${filePath},
-                  error: ${error}`
-                  );
-                });  
-              }
-              // Calculate storage to release
-              const sizeToRelease = upload.status === "completed"
-                ? BigInt(upload.Files.reduce((sum, file) => sum + file.size, 0))
-                : upload.reservedBytes;
-              // Update class storage usage
-              if (sizeToRelease > 0n) {
-                await tx.class.update({
-                  where: { classId },
-                  data: { storageUsedBytes: { decrement: sizeToRelease } }
-                });
-              }
+      for (const team of existingTeams) {
+        if (!teams.some(t => t.teamId === team.teamId)) {
+          dataChanged = true;
+          teamsDeleted = true;
+          // Read uploads for size accounting and deferred filesystem cleanup
+          const uploads = await tx.upload.findMany({
+            where: { teamId: team.teamId },
+            include: { Files: true }
+          });
+
+          for (const upload of uploads) {
+            for (const file of upload.Files) {
+              filesToDelete.push(file.storedFileName);
             }
-            // Delete file metadata records
-            await tx.fileMetadata.deleteMany({
-              where: {
-                uploadId: {
-                  in: uploads.map(u => u.uploadId)
-                }
-              }
-            });
-            // Delete upload records
-            await tx.upload.deleteMany({
-              where: { teamId: team.teamId }
-            });
 
-            // Delete upload requests which were linked to team
-            await tx.uploadRequest.deleteMany({
-              where: { teamId: team.teamId }
-            });
+            const sizeToRelease = upload.status === "completed"
+              ? BigInt(upload.Files.reduce((sum, file) => sum + file.size, 0))
+              : upload.reservedBytes;
 
-            // delete homework which were linked to team
-            await tx.homework.deleteMany({
-              where: { teamId: team.teamId }
-            });
-            // delete events which were linked to team
-            await tx.event.deleteMany({
-              where: { teamId: team.teamId }
-            });
-            // delete lessons which were linked to team
-            await tx.lesson.deleteMany({
-              where: { teamId: team.teamId }
-            });
-            // delete joined teams (team memberships) - already done with cascade, but here explicitly again
-            await tx.joinedTeams.deleteMany({
-              where: { teamId: team.teamId }
-            });
-            // delete team
-            await tx.team.delete({
-              where: { teamId: team.teamId }
-            });
+            if (sizeToRelease > 0n) {
+              await tx.class.update({
+                where: { classId },
+                data: { storageUsedBytes: { decrement: sizeToRelease } }
+              });
+            }
           }
-        })
-      );
+
+          // Delete upload records (FileMetadata rows cascade via FK)
+          await tx.upload.deleteMany({
+            where: { teamId: team.teamId }
+          });
+
+          // Delete upload requests which were linked to team
+          await tx.uploadRequest.deleteMany({
+            where: { teamId: team.teamId }
+          });
+
+          // delete homework which were linked to team
+          await tx.homework.deleteMany({
+            where: { teamId: team.teamId }
+          });
+          // delete events which were linked to team
+          await tx.event.deleteMany({
+            where: { teamId: team.teamId }
+          });
+          // delete lessons which were linked to team
+          await tx.lesson.deleteMany({
+            where: { teamId: team.teamId }
+          });
+          // delete joined teams (team memberships) - already done with cascade, but here explicitly again
+          await tx.joinedTeams.deleteMany({
+            where: { teamId: team.teamId }
+          });
+          // delete team
+          await tx.team.delete({
+            where: { teamId: team.teamId }
+          });
+        }
+      }
 
       for (const team of teams) {
         if (team.teamId === "") {
@@ -175,6 +161,17 @@ const teamService = {
         }
       }
     });
+
+    if (filesToDelete.length > 0) {
+      await Promise.all(
+        filesToDelete.map(async storedFileName => {
+          const filePath = path.join(classDir, storedFileName);
+          await fs.unlink(filePath).catch(error => {
+            logger.error(`File could not be deleted during team deletion, path: ${filePath}, error: ${error}`);
+          });
+        })
+      );
+    }
 
     if (dataChanged) {
       // invalidate team cache
@@ -227,6 +224,7 @@ const teamService = {
       });
 
       for (const teamId of teams) {
+        await isValidTeamId(teamId, session);
         await tx.joinedTeams.create({
           data: {
             teamId: teamId,

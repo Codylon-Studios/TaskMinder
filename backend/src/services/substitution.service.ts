@@ -1,10 +1,10 @@
-import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
+import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
-import logger from "../config/logger";
+import logger from "../config/logger.js";
 import { Session, SessionData } from "express-session";
-import { default as prisma } from "../config/prisma";
+import { default as prisma } from "../config/prisma.js";
 
 type SubstitutionData = {
   plan1: { substitutions: unknown; date: string };

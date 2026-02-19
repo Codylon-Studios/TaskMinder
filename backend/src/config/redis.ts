@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import logger from "../config/logger";
+import logger from "../config/logger.js";
 
 export const CACHE_KEY_PREFIXES = {
   HOMEWORK: "homework_data",
@@ -53,7 +53,7 @@ export const connectRedis = async (): Promise<void> => {
       throw new Error("Redis connection failed", { cause: err });
     }
     logger.error("Unknown error connecting to Redis!");
-    throw new Error("Redis connection failed");
+    throw new Error("Redis connection failed", { cause: err });
   }
 };
 
@@ -70,7 +70,7 @@ export const disconnectRedis = async (): Promise<void> => {
       throw new Error("Redis disconnect failed", { cause: err });
     }
     logger.error("Unknown error disconnecting from Redis!");
-    throw new Error("Redis disconnect failed");
+    throw new Error("Redis disconnect failed", { cause: err });
   }
 };
 

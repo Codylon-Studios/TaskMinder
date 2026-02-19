@@ -1,8 +1,8 @@
-import logger from "../config/logger";
-import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
+import logger from "../config/logger.js";
+import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
 import sass from "sass";
-import { default as prisma } from "../config/prisma";
+import { default as prisma } from "../config/prisma.js";
 import {
   isValidColor,
   isValidTeamId,
@@ -11,9 +11,9 @@ import {
   BigIntreplacer,
   invalidateCache,
   isValidEventTypeId
-} from "../utils/validate.functions";
+} from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
-import { RequestError } from "../@types/requestError";
+import { RequestError } from "../@types/requestError.js";
 import { 
   editEventTypeParams,
   deleteEventTypeParams,
@@ -22,7 +22,7 @@ import {
   editEventTypeBody, 
   setEventTypesTypeBody, 
   pinEventTypeBody 
-} from "../schemas/event.schema";
+} from "../schemas/event.schema.js";
 import { Prisma } from "@prisma/client";
 
 const inFlightStyleBuild = new Map<number, Promise<string>>();
@@ -123,7 +123,6 @@ export const eventService = {
       throw err;
     }
 
-    await invalidateCache("EVENT", session.classId!);
     await invalidateCache("EVENT", classId.toString());
     const io = socketIO.getIO();
     io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);

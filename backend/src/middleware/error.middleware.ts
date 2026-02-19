@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { RequestError } from "../@types/requestError";
-import logger from "../config/logger";
-import { performUploadCleanup } from "../utils/upload.cleanup";
+import { RequestError } from "../@types/requestError.js";
+import logger from "../config/logger.js";
+import { performUploadCleanup } from "../utils/upload.cleanup.js";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function ErrorHandler(err: RequestError, req: Request, res: Response, next: NextFunction): Promise<void> {
