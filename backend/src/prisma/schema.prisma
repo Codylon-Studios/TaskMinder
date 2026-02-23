@@ -53,6 +53,7 @@ model Event {
 
   @@index([classId])
   @@index([teamId])
+  @@index([startDate, classId])
   @@index([classId, isPinned, startDate])
   @@map("event")
 }
@@ -99,6 +100,7 @@ model Class {
   Files                   Upload[]
   UploadRequest           uploadRequest[]
 
+  @@index([isTestClass, createdAt])
   @@map("class")
 }
 
@@ -119,6 +121,7 @@ model Homework {
 
   @@index([classId])
   @@index([teamId])
+  @@index([submissionDate, classId])
   @@index([classId, isPinned, submissionDate])
   @@map("homework")
 }
@@ -255,6 +258,7 @@ model Upload {
   @@index([classId])
   @@index([teamId])
   @@index([classId, teamId, createdAt])
+  @@index([classId, isPinned(sort: Desc), createdAt(sort: Desc), uploadName, uploadId(sort: Desc)])
   @@index([status, createdAt])
   @@map("upload")
 }

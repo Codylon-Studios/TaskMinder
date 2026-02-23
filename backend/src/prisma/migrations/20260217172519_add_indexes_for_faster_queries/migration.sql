@@ -14,5 +14,9 @@ CREATE INDEX "upload_status_createdAt_idx" ON "upload"("status", "createdAt");
 CREATE INDEX "uploadRequest_teamId_idx" ON "uploadRequest"("teamId");
 CREATE INDEX "fileMetadata_uploadId_idx" ON "fileMetadata"("uploadId");
 CREATE INDEX "subjects_classId_idx" ON "subjects"("classId");
+CREATE INDEX "event_startDate_classId_idx" ON "event"("startDate", "classId");
+CREATE INDEX "class_isTestClass_createdAt_idx" ON "class"("isTestClass", "createdAt");
+CREATE INDEX "homework_submissionDate_classId_idx" ON "homework"("submissionDate", "classId");
+CREATE INDEX "upload_classId_isPinned_createdAt_uploadName_uploadId_idx" ON "upload"("classId", "isPinned" DESC, "createdAt" DESC, "uploadName", "uploadId" DESC);
 
 COMMIT;

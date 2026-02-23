@@ -155,13 +155,28 @@ export const eventService = {
         }
       });
     }
-    catch {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
-        expected: true
-      };
+    catch (err) {
+      if (err instanceof Prisma.PrismaClientValidationError) {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid data format",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid relation reference",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      logger.error(`addEvent failed with unexpected database error: ${err}`);
       throw err;
     }
 
@@ -212,15 +227,30 @@ export const eventService = {
         throw err;
       }
     }
-    catch (e) {
-      if ((e as RequestError)?.expected) throw e;
+    catch (err) {
+      if ((err as RequestError)?.expected) throw err;
 
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
-        expected: true
-      };
+      if (err instanceof Prisma.PrismaClientValidationError) {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid data format",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid relation reference",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      logger.error(`editEvent failed with unexpected database error: ${err}`);
       throw err;
     }
 

@@ -1,8 +1,33 @@
 import { Request, Response, NextFunction } from "express";
 import accountService from "../services/account.service.js";
 
+const regenerateSession = (
+  req: Request,
+  preservedData: { classId?: string; csrfToken?: string }
+): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    req.session.regenerate(err => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      if (preservedData.classId) {
+        req.session.classId = preservedData.classId;
+      }
+      if (preservedData.csrfToken) {
+        req.session.csrfToken = preservedData.csrfToken;
+      }
+      resolve();
+    });
+  });
+};
+
 export const registerAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    await regenerateSession(req, {
+      classId: req.session.classId,
+      csrfToken: req.session.csrfToken
+    });
     await accountService.registerAccount(req.body, req.session);
     res.sendStatus(201);
   }
@@ -13,6 +38,10 @@ export const registerAccount = async (req: Request, res: Response, next: NextFun
 
 export const loginAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    await regenerateSession(req, {
+      classId: req.session.classId,
+      csrfToken: req.session.csrfToken
+    });
     await accountService.loginAccount(req.body, req.session);
     res.sendStatus(200);
   }
@@ -24,7 +53,10 @@ export const loginAccount = async (req: Request, res: Response, next: NextFuncti
 export const logoutAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await accountService.logoutAccount(req.session);
-    res.clearCookie("UserLogin");
+    await regenerateSession(req, {
+      classId: req.session.classId,
+      csrfToken: req.session.csrfToken
+    });
     res.sendStatus(200);
   }
   catch (error) {
@@ -35,7 +67,10 @@ export const logoutAccount = async (req: Request, res: Response, next: NextFunct
 export const deleteAccount = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
     await accountService.deleteAccount({ id: Number(req.params.id) }, req.body, req.session);
-    res.clearCookie("UserLogin");
+    await regenerateSession(req, {
+      classId: req.session.classId,
+      csrfToken: req.session.csrfToken
+    });
     res.sendStatus(200);
   }
   catch (error) {

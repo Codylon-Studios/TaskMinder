@@ -62,6 +62,8 @@ const classService = {
         classId
       },
       select: {
+        // omit dsbMobileUser and password since it is not needed currently 
+        // and a better solution will be created when dsbMobile for all classes in introduced
         classId: true,
         classCode: true,
         className: true,
@@ -71,8 +73,6 @@ const classService = {
         storageUsedBytes: true,
         storageQuotaBytes: true,
         dsbMobileActivated: true,
-        dsbMobileUser: true,
-        dsbMobilePassword: true,
         dsbMobileClass: true
       }
     });
