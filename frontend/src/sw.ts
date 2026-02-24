@@ -22,8 +22,13 @@ function openIndexedDB(): Promise<IDBDatabase> {
   });
 }
 
-const CACHE_ENABLED = false;
-const VERSION = "v-dev-1";
+declare const process: { env: { NODE_ENV: string } };
+
+const CACHE_ENABLED =
+  location.hostname !== "localhost" &&
+  location.hostname !== "127.0.0.1" &&
+  process.env.NODE_ENV === "production";
+const VERSION = "v2.2.5";
 const CORE_CACHE = "core-" + VERSION;
 const API_CACHE = "api-" + VERSION;
 
