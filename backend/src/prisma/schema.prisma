@@ -21,7 +21,7 @@ model Account {
 
   // FIXME: account_username_unique_active_key partial index for
   // deletedAt and username; manual migration in: improve_schema 20251121
-  // prisma does not have this natively implemented yet (11/22/2025)
+  // prisma v7 implemented this, however it is not stable enough
   @@index([deletedAt])
   @@map("account")
 }

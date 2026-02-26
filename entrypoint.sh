@@ -56,14 +56,14 @@ echo "Running database migrations..."
 su-exec bun:bun bunx prisma migrate deploy
 
 # ==============================================================================
-# One time migration cmd for server encryption (v2.3.0)
-# Ignore if first time setting up server or your current version is >= v2.3.0
+# One time migration cmd for server encryption (v2.2.5)
+# Ignore if first time setting up server or your current version is >= v2.2.5
 # ==============================================================================
 # su-exec bun:bun bun run encrypt:migrate
 
 # ==============================================================================
-# Regular migration cmds for server encryption key rotation (>= v2.3.0)
-# Ignore if first time setting up server or your current version is < v2.3.0
+# Regular migration cmds for server encryption key rotation (>= v2.2.5)
+# Ignore if first time setting up server or your current version is < v2.2.5
 # ==============================================================================
 # su-exec bun:bun bun run encrypt:rotate
 
