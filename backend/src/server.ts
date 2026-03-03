@@ -12,7 +12,6 @@ import prisma from "./config/prisma.js";
 import socketIO from "./config/socket.js";
 import logger from "./config/logger.js";
 import { connectRedis } from "./config/redis.js";
-import { sessionPool } from "./config/pg.js";
 import { startMetricsServer } from "./utils/metrics.server.js";
 import {
   cleanupDeletedAccounts,
@@ -32,6 +31,8 @@ import { loggerMiddleware } from "./middleware/logger.middleware.js";
 import { metricsMiddleware } from "./middleware/metrics.middleware.js";
 import { CSPMiddleware } from "./middleware/CSP.middleware.js";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware.js";
+import { authLimiter } from "./routes/account.route.js";
+import accountService from "./services/account.service.js";
 import account from "./routes/account.route.js";
 import events from "./routes/event.route.js";
 import homework from "./routes/homework.route.js";
@@ -82,7 +83,13 @@ const PgSession = connectPgSimple(session);
 
 const sessionMiddleware = session({
   store: new PgSession({
-    pool: sessionPool,
+    conObject: {
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASSWORD,
+      port: 5432
+    },
     tableName: "account_sessions",
     createTableIfMissing: true
   }),
@@ -107,6 +114,18 @@ socketIO.initialize(server, sessionMiddleware);
 
 app.use(sessionMiddleware);
 app.use(csrfSessionInit);
+
+app.get("/bootstrap", authLimiter, async (req, res, next) => {
+  try {
+    const auth = await accountService.getAuth(req.session);
+    res.set("Cache-Control", "no-store");
+    res.status(200).json({ classJoined: auth.classJoined });
+  }
+  catch (error) {
+    next(error);
+  }
+});
+
 app.get("/csrf-token", (req, res) => {
   res.json({ csrfToken: req.session.csrfToken });
 });

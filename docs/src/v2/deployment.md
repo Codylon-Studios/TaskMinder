@@ -61,11 +61,19 @@ Once your domain resolves to your server’s IP, proceed to the next step.
 
 ### Update and install dependencies:
 
-This installs (if not already installed) Git, curl, NGINX, UFW, and Fail2Ban:
+This installs (if not already installed) Git, curl, NGINX, libnginx-mod-http-lua (for Lua in NGINX), UFW, and Fail2Ban:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl nginx ufw fail2ban
+sudo apt install -y git curl nginx ufw fail2ban libnginx-mod-http-lua
+```
+
+### Verify lua was installed and is enabled:
+
+See if the module was auto-enabled, if not, enable it first before proceeding:
+
+```bash
+ls /etc/nginx/modules-enabled/ | grep lua
 ```
 
 ### Install Docker and Docker Compose:
@@ -164,6 +172,46 @@ sudo certbot -d example.com -d www.example.com -d monitoring.example.com
 Certbot will automatically update the configuration file at `/etc/nginx/sites-available/taskminder`. **Delete this file**, as you’ll be using your custom config instead.
 
 Now that you know the location and filenames of the generated certificates, update your original `nginx.config` at `/opt/TaskMinder/nginx.config`. Replace the certificate paths with the correct ones provided by Certbot.
+
+### Add Gzip and Lua settings in general nginx.config
+
+Open the main nginx configuration file:
+
+```bash
+sudo nano /etc/nginx/nginx.conf
+```
+
+Inside the `http { } block`, delete the (eventually commented out gzip block) and replace it with the following lines:
+
+```bash
+##
+# Gzip Settings
+##
+
+gzip on;
+
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 6;
+gzip_buffers 16 8k;
+gzip_http_version 1.1;
+gzip_types 
+	text/plain 
+	text/css 
+	application/json 
+	application/javascript 
+	text/xml 
+	application/xml 
+	application/xml+rss 
+	text/javascript
+
+
+##
+# Lua Maintenance Flag Setting
+##
+lua_shared_dict maintenance_flag 1m;
+```
+
 
 ### Deploy Your Final NGINX Configuration
 
@@ -342,7 +390,11 @@ Your TaskMinder server should now be running at:
 
 This guide covers minor version upgrades.
 For **major version upgrades**, please refer to the relevant migration guides to check for any breaking changes.
-Before upgrading, inform users about the upcoming server maintenance, as the server will be temporarily unavailable during the update (HTTP 503 status).
+Before upgrading, enable maintenance mode by adding a file flag with:
+
+```bash
+touch /etc/nginx/maintenance.flag
+```
 
 1. Navigate to the root folder of the project and stop the Docker Compose process:
 
@@ -360,5 +412,11 @@ Before upgrading, inform users about the upcoming server maintenance, as the ser
 
    ```bash
    docker compose up -d --build
+   ```
+
+4. Disable maintenance mode:
+
+   ```bash
+   rm /etc/nginx/maintenance.flag
    ```
 ---

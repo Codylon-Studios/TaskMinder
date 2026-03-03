@@ -21,7 +21,7 @@ Follow the instructions in the [TaskMinder Docs Development Section](docs.taskmi
 1. Branch off `main` using the naming conventions below.
 2. Include updated documentation where appropriate.
 3. Manually verify your changes thoroughly before pushing (see [Testing](#testing)).
-4. Open a PR against `main`, fill out the template completely, and link related issues (e.g. `Closes #123`).
+4. Open a PR against `main` and link related issues (e.g. `Closes #123`).
 5. Respond to reviewer feedback — PRs stale for 30+ days may be closed.
 
 Keep PRs focused. For unrelated fixes, open separate PRs.

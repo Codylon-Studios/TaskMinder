@@ -73,7 +73,7 @@ const API_ROUTES = new Set([
   "/uploads/metadata",
   "/substitutions/get_substitutions_data",
   "/events/event_type_styles"
-]); 
+]);
 
 sw.addEventListener("install", () => {
   sw.skipWaiting();

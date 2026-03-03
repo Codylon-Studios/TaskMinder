@@ -4,14 +4,15 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.5] - 2026-03-??
+## \[v2.2.5] - 2026-03-07
 
 ### Breaking Change
 * chore(db): migrate postgresql@14 to postgresql@18
+* feat(encryption): add server-side encryption
 
 ### Added
 * feat(frontend): add caching and offline mode
-* feat(encryption): introduce server-side encryption
+* feat(maintenance): add maintenance mode
 * feat(upload): add upload description and request new uploads
 * feat(upload): edit files
 * feat(homework/event/upload): add homework/event/upload pinning
@@ -29,8 +30,8 @@ All changes are grouped by type and the latest version appears first.
 * fix(search): search in plaintext not styled rich textarea text
 
 ### Changed
-* behaviour(substitution): change DSBMobile fetch to weekday prefetch
-* chore(api): rename and change type of API routes
+* chore(substitution): change DSBMobile fetch to weekday peak time prefetch
+* chore(api): rename and change method of API routes
 * chore(password): bump password requirements
 * chore(ui): make bottombar icons pop on click
 * chore(ui): scroll to top on site change

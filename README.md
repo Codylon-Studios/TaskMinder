@@ -1,6 +1,6 @@
 <h1 align="center">TaskMinder</h1>
 <p align="center">
-  &copy; 2025-2026 Mingqi Li and Fabian Leonardi
+  &copy; 2024-2026 Mingqi Li and Fabian Leonardi
 </p>
 
 ## About TaskMinder

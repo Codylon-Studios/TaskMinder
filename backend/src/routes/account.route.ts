@@ -13,7 +13,7 @@ import {
 } from "../schemas/account.schema.js";
 
 // account rate limiter
-const authLimiter = rateLimit({ windowMs: 1000, limit: 10 });
+export const authLimiter = rateLimit({ windowMs: 1000, limit: 10 });
 
 const router = express.Router();
 
