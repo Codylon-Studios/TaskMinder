@@ -31,6 +31,7 @@ import { loggerMiddleware } from "./middleware/logger.middleware.js";
 import { metricsMiddleware } from "./middleware/metrics.middleware.js";
 import { CSPMiddleware } from "./middleware/CSP.middleware.js";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware.js";
+import apiVersionMiddleware from "./middleware/version.middleware.js";
 import { authLimiter } from "./routes/account.route.js";
 import accountService from "./services/account.service.js";
 import account from "./routes/account.route.js";
@@ -132,6 +133,7 @@ app.get("/csrf-token", (req, res) => {
 app.use(csrfProtection);
 app.use(metricsMiddleware);
 app.use(loggerMiddleware);
+app.use(API_PREFIX, apiVersionMiddleware);
 
 app.get("/", (req: Request, res: Response) => {
   if (req.session.account && req.session.classId) {
