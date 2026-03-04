@@ -50,14 +50,20 @@ const __dirname = path.dirname(__filename);
 const API_PREFIX = "/api/v1";
 
 const sessionSecret = process.env.SESSION_SECRET;
+const proxyHop = process.env.PROXY_HOP;
 
 if (!sessionSecret) {
   logger.error("SESSION_SECRET is undefined! Please define in the .env file.");
   process.exit(1);
 }
 
+if (!proxyHop) {
+  logger.error("PROXY_HOP is undefined! Please define in the .env file.");
+  process.exit(1);
+}
+
 const app = express();
-app.set("trust proxy", 2);
+app.set("trust proxy", proxyHop);
 const server = createServer(app);
 
 const globalLimiter = rateLimit({

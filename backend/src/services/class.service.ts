@@ -358,7 +358,6 @@ const classService = {
             throw err;
           }
         }
-
         const classUserEntry = await tx.joinedClass.delete({
           where: {
             accountId: session.account!.accountId
@@ -366,9 +365,30 @@ const classService = {
         });
         // delete cache of upload metadata as author may not be in class anymore
         await invalidateCache("UPLOADMETADATA", classUserEntry.classId.toString());
+        // delete joinedTeams, homeworkCheck and set relevant upload author to null
+        await tx.joinedTeams.deleteMany({
+          where: {
+            accountId: session.account!.accountId
+          }
+        });
+        await tx.homeworkCheck.deleteMany({
+          where: {
+            accountId: session.account!.accountId
+          }
+        });
+        await tx.upload.updateMany({
+          where: {
+            accountId: session.account!.accountId
+          },
+          data: {
+            accountId: null
+          }
+        });
         logger.info(`User ${session.account} left class: ${classId}`);
+        const io = socketIO.getIO();
+        io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
       });
-    }
+    };
     delete session.classId;
     const io = socketIO.getIO();
     io.to(`class:${classId}`).emit(SOCKET_EVENTS.MEMBERS);

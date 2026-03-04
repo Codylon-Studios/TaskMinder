@@ -37,6 +37,9 @@ export ENCRYPTION_KEY_SECONDARY
 ENCRYPTION_KEY_LOOKUP="$(cat /run/secrets/encryption_key_lookup)"
 export ENCRYPTION_KEY_LOOKUP
 
+PROXY_HOP="$(cat /run/secrets/proxy_hop)"
+export PROXY_HOP
+
 # ==============================================================================
 # Ensure permissions for data are returned to bun user
 # ==============================================================================

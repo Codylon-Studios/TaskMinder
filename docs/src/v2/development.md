@@ -323,9 +323,7 @@ CREATE DATABASE your_db_name;
 
 ### Create the `.env` File
 
-To securely manage credentials, create a `.env` file in the root directory of your project.
-
-You can use the `.env.example` file located in the root folder as a reference.
+To securely manage credentials, create a `.env` file in the root directory of your project. Use the `.env.example` file located in the root folder as a reference.
 
 ---
 

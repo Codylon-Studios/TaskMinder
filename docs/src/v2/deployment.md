@@ -318,11 +318,12 @@ Before starting the application, create the following **text files inside the `d
 | `db_user.txt`                  | PostgreSQL database username.                                                                                  |
 | `redis_port.txt`               | Redis port (default is `6379`).                                                                                |
 | `session_secret.txt`           | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                                         |
-| `unsafe_deactivate_csp.txt`    | Deactivates all csp headers when set to `true`, in production, set to `false`.                                 |
+| `unsafe_deactivate_csp.txt`    | Deactivates all csp headers when set to `true`, in production, always set to `false`.                          |
 | `database_url.txt`             | Provides the database URL for Prisma ORM: `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`  |
 | `encryption_key.txt`           | Encryption key for server-side encryption in the database, generated with `openssl rand -base64 32`            |
 | `encryption_key_secondary.txt` | Rotation key for server-side encryption, generated with `openssl rand -base64 32`                              |
 | `encryption_key_lookup.txt`    | Lookup key for hashes for server-side encryption, generated with `openssl rand -base64 32`                     |
+| `proxy_hop.txt`                | Proxy hop count for additional reverse proxies that are configured by the server provider. Add +1 for the NGINX reverse proxy you have configured in your local machine. |
 
 ---
 

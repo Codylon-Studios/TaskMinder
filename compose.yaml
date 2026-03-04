@@ -28,6 +28,7 @@ services:
       - encryption_key
       - encryption_key_secondary
       - encryption_key_lookup
+      - proxy_hop
     depends_on:
       postgres:
         condition: service_healthy
@@ -162,6 +163,8 @@ secrets:
     file: ./docker_secrets/encryption_key_secondary.txt
   encryption_key_lookup:
     file: ./docker_secrets/encryption_key_lookup.txt
+  proxy_hop:
+    file: ./docker_secrets/proxy_hop.txt
 
 volumes:
   # remove the following line once migrated (> v2.2.5)

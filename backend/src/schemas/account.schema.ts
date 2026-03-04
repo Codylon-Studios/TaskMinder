@@ -57,7 +57,7 @@ export const changePasswordSchema = z.object({
   query: z.object({}),
   body: z.strictObject({
     oldPassword: z.string().trim().min(4),
-    newPassword: z.string().trim().min(4)
+    newPassword: passwordSchema
   })
 });
 
