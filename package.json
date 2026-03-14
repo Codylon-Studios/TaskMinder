@@ -47,7 +47,7 @@
     "express": "5.2.1",
     "express-rate-limit": "8.2.1",
     "express-session": "1.18.2",
-    "file-type": "21.3.0",
+    "file-type": "21.3.2",
     "fs-extra": "11.3.3",
     "helmet": "8.1.0",
     "iconv-lite": "0.7.2",
