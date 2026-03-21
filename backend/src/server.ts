@@ -31,7 +31,7 @@ import { loggerMiddleware } from "./middleware/logger.middleware.js";
 import { metricsMiddleware } from "./middleware/metrics.middleware.js";
 import { CSPMiddleware } from "./middleware/CSP.middleware.js";
 import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware.js";
-import apiVersionMiddleware from "./middleware/version.middleware.js";
+import apiVersionMiddleware, { MAX_VERSION } from "./middleware/version.middleware.js";
 import { authLimiter } from "./routes/account.route.js";
 import accountService from "./services/account.service.js";
 import account from "./routes/account.route.js";
@@ -46,8 +46,6 @@ import uploads from "./routes/upload.route.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const API_PREFIX = "/api/v1";
 
 const sessionSecret = process.env.SESSION_SECRET;
 const proxyHop = process.env.PROXY_HOP;
@@ -126,7 +124,7 @@ app.get("/bootstrap", authLimiter, async (req, res, next) => {
   try {
     const auth = await accountService.getAuth(req.session);
     res.set("Cache-Control", "no-store");
-    res.status(200).json({ classJoined: auth.classJoined });
+    res.status(200).json({ classJoined: auth.classJoined, version: MAX_VERSION });
   }
   catch (error) {
     next(error);
@@ -139,7 +137,6 @@ app.get("/csrf-token", (req, res) => {
 app.use(csrfProtection);
 app.use(metricsMiddleware);
 app.use(loggerMiddleware);
-app.use(API_PREFIX, apiVersionMiddleware);
 
 app.get("/", (req: Request, res: Response) => {
   if (req.session.account && req.session.classId) {
@@ -173,15 +170,18 @@ app.get("/about", (req, res) => {
   res.sendFile(path.join(pagesPath, "about", "about.html"));
 });
 
-app.use(`${API_PREFIX}/account`, account);
-app.use(`${API_PREFIX}/homework`, homework);
-app.use(`${API_PREFIX}/substitutions`, substitutions);
-app.use(`${API_PREFIX}/teams`, teams);
-app.use(`${API_PREFIX}/events`, events);
-app.use(`${API_PREFIX}/subjects`, subjects);
-app.use(`${API_PREFIX}/lessons`, lessons);
-app.use(`${API_PREFIX}/classes`, classes);
-app.use(`${API_PREFIX}/uploads`, uploads);
+// Apply API version check only to API routes
+app.use("/api", apiVersionMiddleware);
+
+app.use("/api/account", account);
+app.use("/api/homework", homework);
+app.use("/api/substitutions", substitutions);
+app.use("/api/teams", teams);
+app.use("/api/events", events);
+app.use("/api/subjects", subjects);
+app.use("/api/lessons", lessons);
+app.use("/api/classes", classes);
+app.use("/api/uploads", uploads);
 
 //
 // Protected routes: Redirect to /join if not logged in
