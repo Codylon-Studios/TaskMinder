@@ -301,14 +301,14 @@
                 </div>
               </div>
 
-              <div class="fs-3 mb-2 d-flex align-items-center">
+              <h3 class="d-flex align-items-center">
                 Klasse
                 <b id="class-settings-name" class="ms-1"></b>
                 <button class="btn btn-tertiary fw-bold ms-2" id="change-class-name-button">
                   <i class="fa-solid fa-pencil" aria-hidden="true"></i>
                   Umbenennen
                 </button>
-              </div>
+              </h3>
 
               <div class="mb-2" id="change-class-name">
                 <div class="mb-2">
@@ -392,11 +392,11 @@
               </div>
 
               <div class="mb-4">
-                <h5>
-                  <button class="display-toggle btn btn-semivisible p-0" id="class-members-toggle">
-                    <span class="fa fa-caret-right"></span>
+                <h5 class="section-toggle cursor-pointer w-fit-content">
+                  <button class="btn btn-semivisible p-0">
+                    <i class="fa fa-caret-right" aria-hidden="true"></i>
                   </button>
-                  Klassenmitglieder:innen
+                  <span>Klassenmitglieder:innen</span>
                 </h5>
                 <div id="class-members-wrapper">
                   <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
@@ -406,7 +406,7 @@
                         Erklärung zu Klassenmitglieder:innen
                       </a>
                       <div class="me-1 form-text text-primary-emphasis collapse" id="class-members-description">
-                        Hier siehst du alle Klassenmitglieder:innen mit Account und ihre Rollen. Höhere Rollen enthalten die Rechte der Niedrigeren.
+                        Hier siehst du alle Klassenmitglieder:innen mit Account und ihre Rollen. Höhere Rollen haben auch die Rechte der Niedrigeren.
                         <br />
                         <b>Mitglied:</b>
                         Kann Hausaufgaben, Ereignisse & Dateien ansehen.
@@ -425,16 +425,52 @@
                   <div class="mb-2" id="class-members-list">
                     <!--Gets filled-->
                   </div>
+                  <template id="class-member-template">
+                    <div class="card m-2 p-2 flex-row justify-content-between align-items-center class-member" data-id>
+                      <div class="d-flex flex-column flex-lg-row align-items-lg-center flex-grow-1">
+                        <div class="d-flex gap-2 w-100 w-md-50 pe-3 pe-md-1">
+                          <div class="class-member-name d-flex align-items-center gap-1 flex-grow-1"></div>
+                          <label class="d-flex align-items-center gap-1">
+                            Rolle
+                            <select class="form-select form-select-sm class-member-role-input" data-id disabled>
+                              <option value="0">Mitglied</option>
+                              <option value="1">Bearbeiter:in</option>
+                              <option value="2">Manager:in</option>
+                              <option value="3">Admin</option>
+                            </select>
+                          </label>
+                        </div>
+                        <div class="class-member-is-current-user form-text w-100 w-lg-50">
+                          Du kannst deine eigenen Berechtigungen nicht ändern. Du kannst die Klasse unter "Schüler:in" verlassen.
+                        </div>
+                        <div class="class-member-changes mt-2 mt-lg-0 ms-lg-2" data-id>
+                          <div class="text-warning fw-bold me-2 class-member-changed-role" data-id>
+                            Rolle geändert
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal" data-id>
+                              (<span class="class-member-changed-role-old"></span> zu <b></b>)
+                            </span>
+                          </div>
+                          <div class="text-danger fw-bold class-member-kicked" data-id>Entfernt</div>
+                        </div>
+                      </div>
+                      <div>
+                        <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick" data-id disabled aria-label="Nutzer entfernen">
+                          <i class="fa-solid fa-user-minus" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </template>
                   <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="class-members-cancel">Abbrechen</button>
                   <button class="btn btn-primary btn-sm fw-semibold" id="class-members-save">Speichern</button>
-                  <div class="my-2 d-none" id="class-members-save-confirm-container">
+                  <div class="my-2" id="class-members-save-confirm-container">
                     <span class="fw-bold text-danger">Achtung!</span>
                     Es
                     <span id="class-members-save-confirm-list"></span>
                     entfernt! Für ein erneutes Beitreten braucht es den Klassencode! Erledigte Hausaufgaben und ausgewählte Teams werden
                     unwiderruflich gelöscht!
                   </div>
-                  <button class="btn btn-danger btn-sm fw-semibold d-none" id="class-members-save-confirm">Fortfahren</button>
+                  <button class="btn btn-danger btn-sm fw-semibold" id="class-members-save-confirm">Fortfahren</button>
 
                   <div class="mt-4">
                     <button class="btn btn-danger fw-bold" id="kick-logged-out-users-button">
@@ -480,11 +516,11 @@
               </div>
 
               <div class="mb-4">
-                <h5>
-                  <button class="display-toggle btn btn-semivisible p-0" id="teams-toggle">
-                    <span class="fa fa-caret-right"></span>
+                <h5 class="section-toggle cursor-pointer w-fit-content">
+                  <button class="btn btn-semivisible p-0">
+                    <i class="fa fa-caret-right" aria-hidden="true"></i>
                   </button>
-                  Teams
+                  <span>Teams</span>
                 </h5>
                 <div id="teams-wrapper">
                   <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
@@ -502,25 +538,53 @@
                   <div class="mb-2" id="teams-list">
                     <!--Gets filled-->
                   </div>
+                  <template id="team-template">
+                    <div class="card m-2 p-2 flex-row justify-content-between align-items-center team" data-id>
+                      <div class="d-flex flex-column flex-lg-row align-items-lg-center">
+                        <div class="d-flex flex-column flex-sm-row gap-2">
+                          <label>
+                            Name
+                            <input class="form-control form-control-sm d-inline w-fit-content team-name-input" type="text" data-id disabled />
+                            <div class="invalid-feedback">Teamnamen dürfen nicht leer sein!</div>
+                          </label>
+                        </div>
+                        <div class="team-changes mt-2 mt-lg-0 ms-lg-2" data-id>
+                          <div class="text-warning fw-bold me-2 team-renamed" data-id>
+                            Umbenannt
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal team-renamed-name" data-id>
+                              (<span class="team-renamed-name-old"></span> zu <b></b>)
+                            </span>
+                          </div>
+                          <div class="text-danger fw-bold team-deleted" data-id>Gelöscht</div>
+                        </div>
+                      </div>
+                      <div>
+                        <button class="btn btn-sm btn-sm-square btn-danger float-end team-delete" data-id disabled aria-label="Team entfernen">
+                          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </template>
                   <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="teams-cancel">Abbrechen</button>
                   <button class="btn btn-success btn-sm fw-semibold" id="new-team">Neues Team</button>
                   <button class="btn btn-primary btn-sm fw-semibold" id="teams-save">Speichern</button>
-                  <div class="my-2 d-none" id="teams-save-confirm-container">
+                  <div class="my-2" id="teams-save-confirm-container">
                     <span class="fw-bold text-danger">Achtung!</span>
                     Es werden alle Hausaufgaben, Ereignisse und Stundenplaneinträge
                     <span id="teams-save-confirm-list"></span>
                     gelöscht! Das kann nicht rückgängig gemacht werden!
                   </div>
-                  <button class="btn btn-danger btn-sm fw-semibold d-none" id="teams-save-confirm">Fortfahren</button>
+                  <button class="btn btn-danger btn-sm fw-semibold" id="teams-save-confirm">Fortfahren</button>
                 </div>
               </div>
 
               <div class="mb-4">
-                <h5>
-                  <button class="display-toggle btn btn-semivisible p-0" id="event-types-toggle">
-                    <span class="fa fa-caret-right"></span>
+                <h5 class="section-toggle cursor-pointer w-fit-content">
+                  <button class="btn btn-semivisible p-0">
+                    <i class="fa fa-caret-right" aria-hidden="true"></i>
                   </button>
-                  Ereignisarten
+                  <span>Ereignisarten</span>
                 </h5>
                 <div id="event-types-wrapper">
                   <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
@@ -538,52 +602,41 @@
                     <!--Gets filled-->
                   </div>
                   <template id="event-type-template">
-                    <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id>
+                    <div class="card m-2 p-2 flex-row justify-content-between align-items-center event-type" data-id>
                       <div class="d-flex flex-column flex-lg-row align-items-lg-center">
-                        <div class="d-flex flex-column flex-sm-row gap-2 min-w-0">
-                          <div>
-                            <label>
-                              Name
-                              <input class="form-control form-control-sm d-inline w-fit-content event-type-name-input" type="text" data-id disabled />
-                              <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
-                            </label>
-                          </div>
+                        <div class="d-flex flex-column flex-sm-row gap-2">
+                          <label>
+                            Name
+                            <input class="form-control form-control-sm d-inline w-fit-content event-type-name-input" type="text" data-id disabled />
+                            <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
+                          </label>
                           <div class="d-flex align-items-center gap-2">
-                            <label for="ID">Farbe</label>
-                            <color-picker class="event-type-color-input" data-id disabled id="ID"></color-picker>
+                            <label for="event-type-{{ID}}-color-picker">Farbe</label>
+                            <color-picker class="event-type-color-input" data-id disabled id="event-type-{{ID}}-color-picker"></color-picker>
                           </div>
                         </div>
                         <div class="event-type-changes mt-2 mt-lg-0 ms-lg-2" data-id>
                           <div class="text-warning fw-bold me-2 event-type-renamed" data-id>
                             Umbenannt
-                            <span class="text-secondary fw-normal event-type-renamed-name" data-id>
-                              (
-                              <span class="event-type-renamed-name-old"></span>
-                              zu
-                              <b></b>
-                              )
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal" data-id>
+                              (<span class="event-type-renamed-name-old"></span> zu <b></b>)
                             </span>
                           </div>
                           <div class="text-warning fw-bold event-type-recolored" data-id>
                             Farbe gändert
-                            <span class="text-secondary fw-normal event-type-recolored-color" data-id>
-                              (
-                              <div class="color-display"></div>
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal event-type-recolored-color d-inline-flex align-items-center" data-id>
+                              (<div class="color-display event-type-recolored-color-old ms-0"></div>
                               zu
-                              <div class="color-display"></div>
-                              )
+                              <div class="color-display event-type-recolored-color-new me-0"></div>)
                             </span>
                           </div>
                           <div class="text-danger fw-bold event-type-deleted" data-id>Gelöscht</div>
                         </div>
                       </div>
                       <div>
-                        <button
-                          class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete"
-                          data-id
-                          disabled
-                          aria-label="Ereignisart entfernen"
-                        >
+                        <button class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete" data-id disabled aria-label="Ereignisart entfernen">
                           <i class="fa-solid fa-trash" aria-hidden="true"></i>
                         </button>
                       </div>
@@ -602,11 +655,11 @@
                 </div>
               </div>
               <div class="mb-4">
-                <h5>
-                  <button class="display-toggle btn btn-semivisible p-0" id="subjects-toggle">
-                    <span class="fa fa-caret-right"></span>
+                <h5 class="section-toggle cursor-pointer w-fit-content">
+                  <button class="btn btn-semivisible p-0">
+                    <i class="fa fa-caret-right" aria-hidden="true"></i>
                   </button>
-                  Fächer
+                  <span>Fächer</span>
                 </h5>
                 <div id="subjects-wrapper">
                   <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
@@ -640,7 +693,7 @@
                       </div>
                     </div>
                   </div>
-                  <div class="alert alert-warning p-2 d-flex align-items-center gap-2 w-fit-content">
+                  <div class="alert alert-warning p-2 d-flex align-items-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
                     <span class="d-block me-1">Bitte deine Lehrkräfte um Erlaubnis, bevor du ihre Namen einträgst.</span>
                   </div>
@@ -648,25 +701,133 @@
                   <div class="mb-2" id="subjects-list">
                     <!--Gets filled-->
                   </div>
+                  <template id="subject-template">
+                    <div class="card m-2 p-2 flex-row justify-content-between align-items-center subject" data-id>
+                      <div class="w-100 pe-2 d-flex flex-column flex-xl-row align-items-xl-center">
+                        <div class="d-flex flex-column gap-3 gap-lg-2 flex-grow-1 mw-75">
+                          <div class="d-flex flex-column flex-lg-row gap-1 gap-lg-2 align-items-lg-center">
+                            <b>Fach</b>
+                            <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between flex-wrap">
+                              Name
+                              <input class="form-control form-control-sm d-inline subject-name-long-input w-50 w-lg-fit-content flex-grow-lg-1" type="text" data-id disabled />
+                              <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
+                            </label>
+                            <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">
+                              Abkürzung
+                              <input class="form-control form-control-sm d-inline subject-name-short-input w-50 w-lg-100" type="text" data-id disabled />
+                            </label>
+                          </div>
+                          <div class="d-flex flex-column flex-lg-row gap-1 gap-lg-2 align-items-lg-center">
+                            <b>Lehrkraft</b>
+                            <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">
+                              Anrede
+                              <select class="form-select form-select-sm subject-teacher-gender-input w-50 w-lg-100" data-id disabled>
+                                <option value="d">Keine</option>
+                                <option value="w">Frau</option>
+                                <option value="m">Herr</option>
+                              </select>
+                            </label>
+                            <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between flex-wrap">
+                              Name
+                              <input class="form-control form-control-sm d-inline subject-teacher-long-input w-50 w-lg-fit-content flex-grow-lg-1" type="text" data-id disabled />
+                              <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
+                            </label>
+                            <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">
+                              Kürzel
+                              <input class="form-control form-control-sm d-inline subject-teacher-short-input w-50 w-lg-100" type="text" data-id disabled />
+                            </label>
+                          </div>
+                          <div class="ds-flex flex-column flex-lg-row gap-1 gap-lg-2 align-items-lg-center subject-substitutions">
+                            <b>Vertretung</b>
+                            <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">
+                              Fachname
+                              <input class="form-control form-control-sm d-inline subject-name-substitution-input w-50 w-lg-100" type="text" data-id disabled />
+                            </label>
+                            <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">
+                              Lehrkraftname
+                              <input class="form-control form-control-sm d-inline subject-teacher-substitution-input w-50 w-lg-100" type="text" data-id disabled />
+                            </label>
+                          </div>
+                        </div>
+                        <div class="subject-changes mt-2 mt-xl-0 ms-xl-2 word-wrap-anywhere" data-id>
+                          <div class="text-warning fw-bold me-2 subject-changed-name-long" data-id>
+                            Fachname geändert
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal" data-id>
+                              (<span class="subject-changed-name-long-old"></span> zu <b></b>)
+                            </span>
+                          </div>
+                          <div class="text-warning fw-bold me-2 subject-changed-name-short" data-id>
+                            Abkürzung geändert
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal" data-id>
+                              (<span class="subject-changed-name-short-old"></span> zu <b></b>)
+                            </span>
+                          </div>
+                          <div class="text-warning fw-bold me-2 subject-changed-teacher-gender" data-id>
+                            Anrede geändert
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal" data-id>
+                              (<span class="subject-changed-teacher-gender-old"></span> zu <b></b>)
+                            </span>
+                          </div>
+                          <div class="text-warning fw-bold me-2 subject-changed-teacher-long" data-id>
+                            Lehrkraft geändert
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal" data-id>
+                              (<span class="subject-changed-teacher-long-old"></span> zu <b></b>)
+                            </span>
+                          </div>
+                          <div class="text-warning fw-bold me-2 subject-changed-teacher-short" data-id>
+                            Kürzel geändert
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal" data-id>
+                              (<span class="subject-changed-teacher-short-old"></span> zu <b></b>)
+                            </span>
+                          </div>
+                          <div class="text-warning fw-bold me-2 subject-changed-name-substitution" data-id>
+                            Vertr.-Fachname geändert
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal" data-id>
+                              (<span class="subject-changed-name-substitution-old"></span> zu <b></b>)
+                            </span>
+                          </div>
+                          <div class="text-warning fw-bold me-2 subject-changed-teacher-substitution" data-id>
+                            Vertr.-Lehrkraft geändert
+                            <!-- prettier-ignore -->
+                            <span class="text-secondary fw-normal" data-id>
+                              (<span class="subject-changed-teacher-substitution-old"></span> zu <b></b>)
+                            </span>
+                          </div>
+                          <div class="text-danger fw-bold subject-deleted" data-id>Gelöscht</div>
+                        </div>
+                      </div>
+                      <div>
+                        <button class="btn btn-sm btn-sm-square btn-danger float-end subject-delete" data-id disabled aria-label="Ereignisart entfernen">
+                          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </template>
                   <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="subjects-cancel">Abbrechen</button>
                   <button class="btn btn-success btn-sm fw-semibold" id="new-subject">Neues Fach</button>
                   <button class="btn btn-primary btn-sm fw-semibold" id="subjects-save">Speichern</button>
-                  <div class="my-2 d-none" id="subjects-save-confirm-container">
+                  <div class="my-2" id="subjects-save-confirm-container">
                     <span class="fw-bold text-danger">Achtung!</span>
                     Es werden alle Hausaufgaben und Stundenplaneinträge
                     <span id="subjects-save-confirm-list"></span>
                     gelöscht! Das kann nicht rückgängig gemacht werden!
                   </div>
-                  <button class="btn btn-danger btn-sm fw-semibold d-none" id="subjects-save-confirm">Fortfahren</button>
+                  <button class="btn btn-danger btn-sm fw-semibold" id="subjects-save-confirm">Fortfahren</button>
                 </div>
               </div>
 
               <div class="mb-4">
-                <h5>
-                  <button class="display-toggle btn btn-semivisible p-0" id="timetable-toggle">
-                    <span class="fa fa-caret-right"></span>
+                <h5 class="section-toggle cursor-pointer w-fit-content">
+                  <button class="btn btn-semivisible p-0">
+                    <i class="fa fa-caret-right" aria-hidden="true"></i>
                   </button>
-                  Stundenplan
+                  <span>Stundenplan</span>
                 </h5>
                 <div id="timetable-wrapper">
                   <div class="alert alert-primary p-2 d-flex align-items-center gap-2">
@@ -676,7 +837,7 @@
                       <div class="me-1 form-text text-primary-emphasis collapse" id="timetable-description">
                         Der Stundenplan besteht aus mehreren Stunden und wird auf der Hauptseite angezeigt.
                         <br />
-                        <b>Stundennummer:</b>
+                        <b>Stunde:</b>
                         Anhand der Stundennummer werden im Stundenplan Ereignisse
                         <span class="description-dsb">und Vertretungen</span>
                         zur passenden Stunde angezeigt.
@@ -690,9 +851,54 @@
                       </div>
                     </div>
                   </div>
-                  <div class="mb-2 row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-5 p-2" id="timetable">
+                  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 row-cols-xxl-5 px-3" id="timetable">
                     <!--Gets filled-->
                   </div>
+                  <template id="day-template">
+                    <div class="col px-1 mb-2">
+                      <div class="card p-2">
+                        <div class="timetable-day-name fw-bold text-center"></div>
+                        <hr class="mt-2">
+                        <div class="timetable-lesson-list d-flex flex-column gap-3 mb-3"></div>
+                        <button class="btn btn-sm btn-success fw-semibold timetable-new-lesson">
+                          Neue Stunde
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                  <template id="lesson-template">
+                    <div class="lesson card p-2 gap-2">
+                      <div class="d-flex align-items-center gap-1 justify-content-between">
+                        <label for="lesson-number-{{ID}}">Stunde</label>
+                        <div class="d-flex align-items-center gap-2 w-75">
+                          <input class="lesson-number form-control form-control-sm" type="number" min="1" id="lesson-number-{{ID}}">
+                          <button class="btn btn-sm btn-danger lesson-delete" aria-label="Stunde entfernen">
+                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <label class="d-flex align-items-center gap-1 justify-content-between">
+                        Von
+                        <input class="lesson-start-time form-control form-control-sm w-75" type="time">
+                      </label>
+                      <label class="d-flex align-items-center gap-1 justify-content-between">
+                        Bis
+                        <input class="lesson-end-time form-control form-control-sm w-75" type="time">
+                      </label>
+                      <label class="d-flex align-items-center gap-1 justify-content-between">
+                        Fach
+                        <select class="lesson-subject-select form-select form-select-sm w-75"></select>
+                      </label>
+                      <label class="d-flex align-items-center gap-1 justify-content-between">
+                        Raum
+                        <input class="lesson-room form-control form-control-sm w-75" type="text" placeholder="Raum">
+                      </label>
+                      <label class="d-flex align-items-center gap-1 justify-content-between">
+                        Team
+                        <select class="lesson-team-select form-select form-select-sm w-75"></select>
+                      </label>
+                    </div>
+                  </template>
                   <button class="btn btn-secondary btn-sm fw-semibold cancel-btn" id="timetable-cancel">Abbrechen</button>
                   <button class="btn btn-primary btn-sm fw-semibold" id="timetable-save">Speichern</button>
                 </div>

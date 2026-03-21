@@ -1,49 +1,150 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Maintenance | TaskMinder</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wartungsarbeiten · TaskMinder</title>
   <style>
-    :root { color-scheme: light dark; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      padding: 1.5rem;
+    html {
+      font-size: 20px;
+    }
+    * {
       box-sizing: border-box;
     }
-    main {
-      max-width: 42rem;
-      width: 100%;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      border-radius: 14px;
-      padding: 1.5rem;
-      background: rgba(15, 23, 42, 0.8);
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100dvh;
+      margin: 0;
+      padding: 0 1rem;
+      font: 1rem Helvetica, sans-serif;
+      color: #212529;
+      overflow: hidden;
     }
-    h1 { margin-top: 0; font-size: 1.5rem; }
-    p { line-height: 1.55; color: #cbd5e1; }
-    .status {
-      display: inline-block;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      border-radius: 999px;
-      padding: 0.2rem 0.65rem;
-      font-size: 0.85rem;
-      margin-bottom: 0.75rem;
-      color: #cbd5e1;
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #212529;
+        color: #dee2e6;
+      }
+    }
+    h1 {
+      font-size: 2rem;
+    }
+    p {
+      text-align: center;
+      margin: 0.5rem 0;
+    }
+    a {
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-thickness: 0.1rem;
+      text-decoration-color: #3bb9ca;
+      transition: 0.1s ease;
+    }
+    a:hover {
+      color: #3bb9ca;
+    }
+    ::selection {
+      background-color: rgba(59, 185, 202, 0.6);
+    }
+    #matrix-wrapper {
+      flex-grow: 1;
+      position: relative;
+      width: 100%;
+    }
+    .matrix {
+      position: absolute;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+      transform: translate(-50%, -100%);
+      white-space: pre;
+    }
+    .matrix-changed {
+      color: #3bb9ca
     }
   </style>
 </head>
 <body>
-  <main>
-    <span class="status">HTTP 503</span>
-    <h1>TaskMinder is temporarily in maintenance mode</h1>
-    <p>We are currently applying updates. Please try again in a few minutes.</p>
-    <p>This page is served directly by the reverse proxy while maintenance mode is active.</p>
-  </main>
+  <div id="matrix-wrapper"></div>
+  <h1 style="margin-top: 0;">Wartungsarbeiten</h1>
+  <p>Tut uns leid, wir führen gerade Wartungsarbeiten durch! Wir sind so bald wie möglich wieder für euch da!</p>
+  <p><b id="funny-text"></b></p>
+  <p>Mehr Infos auf unserer <a href="https://status.taskminder.de/" target="_blank">Statusseite</a></p>
+  <p style="font-size: 0.75rem;">
+    Brauchst du sehr dringend etwas? Schreib uns auf <a href="https://discord.gg/kZGs92aMae" target="_blank">Discord</a>
+  </p>
+  <div style="flex-grow: 1;"></div>
+
+  <script>
+    const normalFunnyTexts = [
+      "Server mit Kaffee gießen",
+      "Zahnräder einölen",
+      "Ein paar Bits sortieren",
+      "Ritscheratsche ritscheratsche",
+      "Quantenbeschleuniger neustarten",
+      "Quingolanz-Extrakt dekondensieren",
+      "In Dogecoins investieren",
+      "Avada Kedavra",
+      "Threads auffädeln",
+      "Programmierer im Keller füttern",
+      "Matrix verlassen",
+      "Letzte Kabel überzeugen",
+      "Einhornstaub nachfüllen",
+      "Rekursion beenden... Rekursion beenden... Rekursion beenden",
+      "UnderMaintenanceException",
+      "linguam corrigere",
+      "Bürokänguru einfangen",
+      "Trommelwirbel bitte",
+      "Docker andocken",
+      "Wir haben unsere Hausaufgaben nicht gemacht",
+      "Datenbank um Kredit bitten"
+    ].map(s => s + "...")
+    const specialFunnyTexts = [
+      "Berühre doch kurz Gras!",
+      "༻ 𝔇𝔢𝔰𝔦𝔤𝔫 𝔳𝔢𝔯𝔟𝔢𝔰𝔰𝔢𝔯𝔫 ༺",
+      "$ sudo maintenance end --force",
+      "U3VwZXIsIHVuZCBqZXR6dD8=",
+      "🔧🖥️🖱️⌨️🧑‍💻🛠️"
+    ]
+    const funnyTexts = normalFunnyTexts.concat(specialFunnyTexts)
+    let lastFunnyText = -1;
+    function funnyText() {
+      let index;
+      do { index = Math.floor(Math.random() * funnyTexts.length) } while ( index == lastFunnyText )
+      document.getElementById("funny-text").textContent = funnyTexts[index]
+      lastFunnyText = index
+    }
+    setInterval(funnyText, 10000)
+    funnyText()
+
+    const matrixWrapper = document.getElementById("matrix-wrapper")
+    const leftPositions = []
+    for (let i = 0; i < Math.round(window.innerWidth / 160) + 2; i++) {
+      const m = document.createElement("div")
+      m.classList.add("matrix")
+      m.style.top = 10 + Math.round(Math.random() * 80) + "%"
+      let left;
+      do {
+        left = Math.round(Math.random() * 100)
+      } while (leftPositions.some(p => Math.abs(p - left) / 100 * matrixWrapper.clientWidth < 40))
+      leftPositions.push(left)
+      m.style.left = left + "%"
+      matrixWrapper.appendChild(m)
+      m.innerHTML = "<div> </div>".repeat(Math.floor(Number.parseInt(getComputedStyle(m).top) / 23)) + '<div class="matrix-changed"> </div>'
+    }
+    setInterval(() => {
+      const changed = document.getElementsByClassName("matrix-changed")
+      for (const c of changed) {
+        c.style.transition = c.parentElement.childElementCount * 0.1 + "s ease"
+        c.classList.remove("matrix-changed")
+        const next = c.nextElementSibling ?? c.parentElement.firstChild
+        next.style.transition = ""
+        next.classList.add("matrix-changed")
+        next.textContent = Math.round(Math.random())
+      }
+    }, 200)
+  </script>
 </body>
 </html>

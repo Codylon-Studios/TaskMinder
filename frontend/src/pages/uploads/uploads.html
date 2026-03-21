@@ -294,7 +294,29 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
               </div>
               <div class="modal-body">
-                <object id="view-upload-object">Placeholder</object>
+
+                <div id="view-upload-loading">
+                  <i aria-hidden="true" class="fas fa-file text-body"></i>
+                  <div class="spinner-border text-body-bg">
+                    <span class="visually-hidden">Laden...</span>
+                  </div>
+                </div>
+
+                <object id="view-upload-object" class="ds-block mb-2 w-100 border border-secondary">Ein Fehler ist aufgetreten</object>
+
+                <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 m-2" id="view-upload-error">
+                  <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+                  <span class="d-block">
+                    Die Datei kann nicht angezeigt werden. Entweder
+                    <ul>
+                      <li>Die Datei lädt noch oder</li>
+                      <li>Die Datei ist nicht mehr verfügbar oder</li>
+                      <li>Wir haben einen Fehler gemacht - Kontaktiere uns, wenn du den Rest ausschließen kannst.</li>
+                    </ul>
+                    Vielleicht kannst du die Datei unten herunterladen oder in einem neuem Tab öffnen.
+                  </span>
+                </div>
+
                 <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 m-2" id="view-upload-offline">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                   <span class="d-block">Du bist offline, du kannst keine Dateien ansehen.</span>
@@ -321,10 +343,6 @@
                     <i class="fas fa-download" aria-hidden="true"></i>
                     Herunterladen
                   </a>
-                  <div class="form-text mt-0" id="view-upload-download-impossible">
-                    Leider unterstützt iOS das Herunterladen von PDFs in einer Web-App nicht. Du musst den Link in einem Browser öffnen und dann auf
-                    "Teilen" klicken.
-                  </div>
                   <a class="btn btn-secondary fw-bold w-md-50" id="view-upload-open" target="_blank">
                     <i class="fas fa-arrow-up-right-from-square fs-6" aria-hidden="true"></i>
                     In neuem Tab öffnen

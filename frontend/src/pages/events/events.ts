@@ -745,16 +745,16 @@ let view: View;
 
 $(globalThis).on("resize", toggleView);
 
-eventData.on("update", onlyThisSite(renderEventList));
-eventTypeData.on("update", onlyThisSite(renderEventTypeList));
-teamsData.on("update", onlyThisSite(() => {
+(await eventData.init()).on("update", onlyThisSite(renderEventList));
+(await eventTypeData.init()).on("update", onlyThisSite(renderEventTypeList));
+(await teamsData.init()).on("update", onlyThisSite(() => {
   renderTeamList();
   renderEventList(); 
 }));
 
 await user.awaitAuthed();
 
-joinedTeamsData.on("update", onlyThisSite(renderEventList));
+(await joinedTeamsData.init()).on("update", onlyThisSite(renderEventList));
 
 export async function renderAllFn(): Promise<void> {
   await renderEventTypeList();

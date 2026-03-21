@@ -44,6 +44,15 @@ type SocketDataAccessor<DataType> = DataAccessor<DataType>;
 //  │ RESOURCES │
 //  ╰───────────╯
 
+// Class Info
+type ClassInfo = {
+  classCode: string;
+  className: string;
+  isTestClass: boolean;
+  createdAt: string;
+  defaultPermission: number;
+}
+
 // Class Members
 type ClassMemberPermissionLevel = 0 | 1 | 2 | 3
 type ClassMemberData = {

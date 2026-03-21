@@ -119,7 +119,7 @@ class ColorPicker extends HTMLElement {
     popup.find(".color-picker-suggestions").html(suggestedColorsHtml);
     popup.find(".color-picker-saved").html(savedColorsHtml);
 
-    this.value = this.getAttribute("value") ?? "#3bb9ca";
+    this.setValue(this.getAttribute("value") ?? "#3bb9ca", false);
     this.setHsvSelection(this.value);
 
     const trigger = $(this).find(".color-picker-trigger").css("--selected-color", hexToCSS(this.value));
@@ -421,18 +421,22 @@ class ColorPicker extends HTMLElement {
     });
   }
 
-  get value(): string {
-    return this._value;
-  }
-
-  set value(val: string) {
+  private setValue(val: string, triggerChange: boolean) {
     this._value = val;
     $(this).find(".color-picker-trigger").css("--selected-color", hexToCSS(val));
     $(this).find(".color-picker-hex").val(val).removeClass("is-invalid");
     $(this).find(".color-picker-option").removeClass("selected");
     $(this).find(`.color-picker-option[data-color="${escapeHTML(val)}"]`).addClass("selected");
     $(this).find(".color-picker-save i").toggleClass("far", !savedColors.includes(val));
-    $(this).trigger("change");
+    if (triggerChange) $(this).trigger("change");
+  }
+
+  get value(): string {
+    return this._value;
+  }
+
+  set value(val: string) {
+    this.setValue(val, true);
   }
   
   get disabled(): boolean {

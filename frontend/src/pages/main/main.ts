@@ -1178,17 +1178,17 @@ let calendarMode: string;
 // Is a list of the dates (number of day in the month) of the week which is currently selected
 const monthDates = createDataAccessor<MonthDates>("monthDates", { reload: loadMonthDates });
 
-homeworkData.on("update", onlyThisSite(renderHomeworkList));
-(await homeworkCheckedData.init());
-subjectData.on("update", onlyThisSite(renderHomeworkList));
-eventData.on("update", onlyThisSite(() => {
+(await homeworkData.init()).on("update", onlyThisSite(renderHomeworkList));
+(await homeworkCheckedData.init()).on("update", onlyThisSite(renderHomeworkList));
+(await subjectData.init()).on("update", onlyThisSite(renderHomeworkList));
+(await eventData.init()).on("update", onlyThisSite(() => {
   renderEventList();
   updateCalendarContent("#calendar-old");
   renderTimetable();
 }));
 (await eventTypeData.init());
-lessonData.on("update", onlyThisSite(renderTimetable));
-teamsData.on("update", onlyThisSite(() => {
+(await lessonData.init()).on("update", onlyThisSite(renderTimetable));
+(await teamsData.init()).on("update", onlyThisSite(() => {
   renderHomeworkList();
   renderEventList();
   updateCalendarContent("#calendar-old");
@@ -1202,7 +1202,7 @@ teamsData.on("update", onlyThisSite(() => {
 
 await user.awaitAuthed();
 
-joinedTeamsData.on("update", onlyThisSite(() => {
+(await joinedTeamsData.init()).on("update", onlyThisSite(() => {
   renderHomeworkList();
   renderEventList();
   updateCalendarContent("#calendar-old");

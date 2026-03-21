@@ -222,6 +222,14 @@ body {
   min-width: 0;
 }
 
+.mw-50 {
+  min-width: 50% !important;
+}
+
+.mw-75 {
+  min-width: 75% !important;
+}
+
 .cursor-pointer {
   cursor: pointer;
 }
@@ -234,6 +242,12 @@ $width-values: (
 );
 
 @each $key, $value in $width-values {
+  .w-#{$key} {
+    width: $value !important;
+  }
+}
+
+@each $key, $value in $width-values {
   @each $breakpoint in map-keys($grid-breakpoints) {
     @include media-breakpoint-up($breakpoint) {
       .w-#{$breakpoint}-#{$key} {
@@ -241,9 +255,23 @@ $width-values: (
       }
     }
   }
+}
 
-  .w-#{$key} {
-    width: $value;
+$flex-grow-values: (
+  1: 1
+);
+
+@each $key, $value in $flex-grow-values {
+  @each $breakpoint in map-keys($grid-breakpoints) {
+    @include media-breakpoint-up($breakpoint) {
+      .flex-grow-#{$breakpoint}-#{$key} {
+        flex-grow: $value !important;
+      }
+    }
+  }
+
+  .flex-grow-#{$key} {
+    flex-grow: $value !important;
   }
 }
 
@@ -282,6 +310,10 @@ $unimportant-display-values: (
 
 .word-wrap-break {
   word-wrap: break-word
+}
+
+.word-wrap-anywhere {
+  word-wrap: anywhere;
 }
 
 @include media-breakpoint-down(sm) {
@@ -557,5 +589,11 @@ footer a {
 @supports (-webkit-touch-callout: none) {
   b, strong, .fw-semibold, .fw-bold, *[style*="font-weight: 700"] {
     letter-spacing: calc(-0.5em / 16);
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .form-control-sm, .form-select-sm {
+      font-size: 1rem !important;
+    }
   }
 }

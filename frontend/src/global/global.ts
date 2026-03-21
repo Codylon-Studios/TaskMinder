@@ -25,8 +25,10 @@ import {
   AjaxError,
   SerializedRequest,
   LessonGroupWithEvent,
-  UploadRequestsData
+  UploadRequestsData,
+  ClassInfo
 } from "./types";
+import { updateClassInfo } from "../pages/settings/settings.js";
 
 export const VERSION = "v1";
 const REQUEST_QUEUE = "request-queue-" + VERSION;
@@ -269,10 +271,33 @@ export function escapeHTML(str: string): string {
   });
 }
 
-export function $cloneTemplate(selector: string): JQuery<HTMLElement> {
+export function $cloneTemplate(selector: string, settings?: {id?: string, dataId?: string, disabled?: boolean}): JQuery<HTMLElement> {
+  const { id = crypto.randomUUID(), dataId, disabled } = settings ?? {};
+
+  const t = $(selector);
+  if (t.length == null) {
+    console.warn(`No <template> with selector "${selector}"!`);
+    return $();
+  }
   const template = $(selector)[0] as HTMLTemplateElement;
   const fragment = template.content.cloneNode(true) as DocumentFragment;
-  return $(fragment).children();
+  const children = $(fragment).children();
+
+  children.find('[id*="{{ID}}"]').addBack('[id*="{{ID}}"]').each(function () {
+    $(this).attr("id", $(this).attr("id")?.replaceAll("{{ID}}", id) ?? "");
+  });
+  children.find('[for*="{{ID}}"]').addBack('[for*="{{ID}}"]').each(function () {
+    $(this).attr("for", $(this).attr("for")?.replaceAll("{{ID}}", id ) ?? "");
+  });
+
+  if (dataId) {
+    children.find("[data-id]").addBack("[data-id]").attr("data-id", dataId);
+  }
+
+  if (disabled !== undefined) {
+    children.find("[disabled]").addBack("[disabled]").attr("disabled", disabled ? "" : null);
+  }
+  return children;
 }
 
 export function cutString(str: string, maxLength: number): string {
@@ -630,6 +655,61 @@ async function queueRequest(request: Request): Promise<void> {
   updateRequestQueue();
 }
 
+function getDirtyDataAccessor(req: SerializedRequest): DataAccessor<unknown> | null {
+  switch ((new URL(req.url, globalThis.location.origin)).pathname) {
+  case "/events/add_event":
+  case "/events/edit_event":
+  case "/events/delete_event":
+  case "/events/pin_event": {
+    return eventData as DataAccessor<unknown>
+  }
+  case "/homework/add_homework":
+  case "/homework/edit_homework":
+  case "/homework/delete_homework":
+  case "/homework/pin_homework": {
+    return homeworkData as DataAccessor<unknown>
+  }
+  case "/homework/check_homework": {
+    return homeworkCheckedData as DataAccessor<unknown>
+  }
+  case "/uploads/upload":
+  case "/uploads/edit":
+  case "/uploads/delete":
+  case "/uploads/pin": {
+    return uploadData as DataAccessor<unknown>
+  }
+
+  case "/teams/set_joined_teams_data": {
+    return joinedTeamsData as DataAccessor<unknown>
+  }
+  case "/class/change_class_name":
+  case "/class/change_class_code":
+  case "/class/upgrade_test_class":
+  case "/class/change_default_permission": {
+    return classInfo as DataAccessor<unknown>
+  }
+  case "/class/kick_class_members":
+  case "/class/set_class_members_permission": {
+    return classMemberData as DataAccessor<unknown>
+  }
+  case "/teams/set_teams_data": {
+    return teamsData as DataAccessor<unknown>
+  }
+  case "/events/set_event_type_data": {
+    return eventTypeData as DataAccessor<unknown>
+  }
+  case "/subjects/set_subject_data": {
+    return subjectData as DataAccessor<unknown>
+  }
+  case "/lessons/set_lesson_data": {
+    return lessonData as DataAccessor<unknown>
+  }
+
+  default:
+    return null;
+  }
+}
+
 async function clearRequestQueue(): Promise<void> {
   const db = await openRequestQueueDB();
   const tx = db.transaction("queue", "readwrite");
@@ -643,6 +723,7 @@ async function clearRequestQueue(): Promise<void> {
   });
 
   const reqAndRes: {request: SerializedRequest, response: Response}[] = [];
+  const dirtyData: Set<DataAccessor<unknown>> = new Set()
 
   for (const item of all) {
     const res = await fetch(item.url, { method: item.method, headers: item.headers, body: new Uint8Array(item.body) });
@@ -650,16 +731,18 @@ async function clearRequestQueue(): Promise<void> {
       request: item,
       response: res
     });
-    await new Promise<void>(res => setTimeout(res, 40));
+    const dirtyDataAccessor = getDirtyDataAccessor(item)
+    if (dirtyDataAccessor !== null) dirtyData.add(dirtyDataAccessor)
+    await new Promise<void>(res => setTimeout(res, 75));
   }
 
   const clearDb = await openRequestQueueDB();
   clearDb.transaction("queue", "readwrite").objectStore("queue").clear();
 
-  clearedRequestQueue(reqAndRes);
+  await clearedRequestQueue(reqAndRes);
 
   if (user.classJoined) {
-    await reloadAll();
+    for (const d of dirtyData) d.reload()
     socket.connect();
   }
 }
@@ -757,6 +840,7 @@ let setRenderOnUserChangeListener = false;
 
 export async function reloadAll(): Promise<void> {
   for (const d of socketDataAccessors) await d.reload({ silent: true });
+  await renderAll();
 }
 
 // Global socket variable that can be accessed from any script
@@ -940,6 +1024,9 @@ export function createSocketDataAccessor<DataType>(name: string, socketEv: strin
 }
 
 // Resources
+export const classInfo = createSocketDataAccessor<ClassInfo>("classInfo", "updateClassInfo", {
+  reload: "/class/get_class_info"
+});
 export const classMemberData = createSocketDataAccessor<ClassMemberData>("classMemberData", "updateMembers", {
   reload: "/class/get_class_members"
 });
@@ -1025,6 +1112,7 @@ if (navigator.onLine) {
 else {
   onOffline();
   updateRequestQueue();
+  $("body").css({ display: "flex" });
 }
 
 // CSRF token

@@ -8,8 +8,29 @@
 
   .fa-info, .fa-question {
     font-size: 0.4em;
-    top: 1.15em;
+    top: 1.1em;
     -webkit-text-stroke: 0.05em;
+  }
+}
+
+#view-upload-loading {
+  position: relative;
+  height: 12rem;
+
+  * {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+
+    font-size: 8rem;
+    --bs-spinner-width: 4rem;
+    --bs-spinner-height: 4rem;
+    --bs-spinner-border-width: 0.5rem;
+  }
+
+  .spinner-border {
+    translate: -50% -20%;
   }
 }
 
@@ -22,6 +43,19 @@
 
   &[type="text/plain"] {
     min-height: calc((min(500px, 100vw - 1rem) - 7rem)) !important;
+  }
+
+  &[type="application/pdf"], &[type="text/plain"], &[type="image/jpg"], &[type="image/jpeg"] {
+    background-color: white;
+  }
+
+  &[type="image/png"] {
+    image-rendering: pixelated;
+    background: repeating-conic-gradient(#7f7f7f 0 25%, #bfbfbf 0 50%) 50% / 2rem 2rem;
+
+    [data-bs-theme="dark"] & {
+      background: repeating-conic-gradient(#7f7f7f 0 25%, #3f3f3f 0 50%) 50% / 2rem 2rem;
+    }
   }
 }
 

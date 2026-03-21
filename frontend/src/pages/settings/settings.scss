@@ -2,18 +2,24 @@
   min-height: min-content;
 }
 
-.display-toggle {
-  width: 2rem;
-  height: 2rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  span {
-    transition: transform 0.2s ease;
+.section-toggle {
+  span:hover {
+    text-decoration: underline;
   }
-  &.rotate-90 span {
-    transform: rotate(90deg);
+
+  button {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+      transition: transform 0.2s ease;
+    }
+    &.rotate-90 i {
+      transform: rotate(90deg);
+    }
   }
 }
 
@@ -26,39 +32,6 @@
   width: 6rem;
 }
 
-.team-name-input,
-.team-name-new-input,
-.event-type-name-input,
-.event-type-name-new-input,
-.subject-name-long-input,
-.subject-name-long-new-input {
-  padding-right: 0.5rem;
-}
-
-.event-type-color-input + .color-picker-trigger {
-  margin-right: 1rem;
-}
-
-.subject-changed span {
-  color: var(--bs-secondary);
-  font-weight: 400;
-}
-
-.subject-changed span:not(.d-none) {
-  &::after {
-    content: ", ";
-  }
-  &:not(:has(~ span:not(.d-none))) {
-    &::after {
-      content: ")";
-    }
-  }
-  &::before {
-    content: "(";
-  }
-  & ~ span:not(.d-none) {
-    &::before {
-      content: "";
-    }
-  }
+.subject-teacher-gender-input {
+  min-width: 6rem;
 }

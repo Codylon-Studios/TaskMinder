@@ -450,42 +450,65 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
 }
 
 async function viewUpload(uploadId: number): Promise<void> {
-  function showFile(fileId: number): void {
-    if (!upload) return;
+  async function showFile(fileId: number): Promise<void> {
+    function getFilenameFromContentDisposition(header: string): string | null {
+      if (!header) return null;
 
-    const route = `/uploads/file/${upload.files[fileId].fileMetaDataId}`;
-    const mime = upload.files[fileId].mimeType;
-    $("#view-upload-first-page-note").toggle(mime === "application/pdf");
-    
-    const $object = $("#view-upload-object");
-    const $newObject = $(`
-      <object id="view-upload-object" class="ds-block mb-2 w-100 border border-secondary
-        ${/iPhone/.test(navigator.userAgent) ? "ios" : ""}">
-        <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 m-2">
-          <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-          <span class="d-block">
-            Die Datei kann nicht angezeigt werden. Entweder
-            <ul>
-              <li>Die Datei lädt noch oder</li>
-              <li>Die Datei ist nicht mehr verfügbar oder</li>
-              <li>Wir haben einen Fehler gemacht - Kontaktiere uns, wenn du den Rest ausschließen kannst.</li>
-            </ul>
-            Vielleicht kannst du die Datei unten herunterladen oder in einem neuem Tab öffnen.
-          </span>
-        </div>
-      </object>
-    `);
-    $newObject.attr("data", route + "?action=preview").attr("type", mime).find("a").attr("href", route + "?action=preview");
-    $object.replaceWith($newObject);
+      const filenameStarMatch = new RegExp(/filename\*\s*=\s*([^;]+)/i).exec(header);
+      if (!filenameStarMatch) return null;
+      let value = filenameStarMatch[1].trim();
+
+      const parts = value.split("''");
+      if (parts.length === 2) {
+        return decodeURIComponent(parts[1]);
+      }
+
+      return decodeURIComponent(value);
+    }
+
+    if (!upload) return;
 
     $("#view-upload-nav-info").text(fileId + 1 + "/" + upload.filesCount);
     $("#view-upload-nav-back").prop("disabled", fileId === 0);
     $("#view-upload-nav-next").prop("disabled", upload.filesCount === fileId + 1);
 
-    $("#view-upload-download").attr("href", route + "?action=download");
-    $("#view-upload-open").attr("href", route + "?action=preview");
+    const route = `/uploads/file/${upload.files[fileId].fileMetaDataId}`;
 
-    $("#view-upload-download-impossible").toggle(isIOS && isStandalone && (mime === "application/pdf"));
+    $("#view-upload-loading").show()
+    $("#view-upload-object").hide()
+    $("#view-upload-error").hide()
+
+    const response = await fetch(route + "?action=preview", { cache: "force-cache" });
+
+    if (response.ok) {
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const filename = getFilenameFromContentDisposition(response.headers.get("content-disposition") ?? "Datei") ?? "Datei";
+      const file = new File([blob], filename, { type: blob.type });
+
+      $("#view-upload-loading").hide()
+      $("#view-upload-error").hide()
+
+      const mime = upload.files[fileId].mimeType;
+      $("#view-upload-first-page-note").toggle(mime === "application/pdf");
+      
+      $("#view-upload-object").attr("data", blobUrl).attr("type", mime).toggleClass("ios", /iPhone/.test(navigator.userAgent)).show()
+
+      $("#view-upload-download").off("click").on("click", () => {
+        if (navigator.canShare?.({ files: [file] })) {
+          navigator.share({ files: [file] })
+        }
+        else {
+          location.href = route + "?action=download"
+        }
+      })
+
+      $("#view-upload-open").attr("href", route + "?action=preview");
+    }
+    else {
+      $("#view-upload-loading").hide()
+      $("#view-upload-error").show()
+    }
   }
 
   const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
@@ -494,7 +517,7 @@ async function viewUpload(uploadId: number): Promise<void> {
   $("#view-upload-modal-label b").text(upload.uploadName);
   $("#view-upload-modal").modal("show");
 
-  $("#view-upload-description-wrapper").toggle(upload.uploadDescription !== "");
+  $("#view-upload-description-wrapper").toggle((upload.uploadDescription ?? "") !== "");
   richTextToHtml(upload.uploadDescription, $("#view-upload-description"), {
     showMoreButton: true,
     parseLinks: true,
@@ -516,9 +539,18 @@ async function viewUpload(uploadId: number): Promise<void> {
 }
 
 async function copyLinkUpload(uploadId: number) : Promise<void> {
+  const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
+  if (!upload) return;
+
   const $el = $(`.upload-copy-link[data-id=${uploadId}]`);
   try {
-    await navigator.clipboard.writeText(`${location.protocol}//${location.host}/uploads?view-upload=${uploadId}`);
+    const url = `${location.protocol}//${location.host}/uploads?view-upload=${uploadId}`
+    const html = `<a href="${url}" class="taskminder-link">${upload.uploadName}</a>`;
+
+    await navigator.clipboard.write([new ClipboardItem({
+      "text/plain": new Blob([url], { type: "text/plain" }),
+      "text/html": new Blob([html], { type: "text/html" })
+    })]);
 
     $el.prop("disabled", true).html("<i class=\"fas fa-check opacity-75\" aria-hidden=\"true\"></i>");
 
@@ -918,16 +950,16 @@ $(globalThis).on("resize", toggleView);
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const isStandalone = ("standalone" in navigator && navigator.standalone) as boolean;
 
-uploadData.on("update", onlyThisSite(renderUploadList));
-uploadRequestsData.on("update", onlyThisSite(renderUploadRequests));
-teamsData.on("update", onlyThisSite(() => {
+(await uploadData.init()).on("update", onlyThisSite(renderUploadList));
+(await uploadRequestsData.init()).on("update", onlyThisSite(renderUploadRequests));
+(await teamsData.init()).on("update", onlyThisSite(() => {
   renderTeamList(); 
   renderUploadList(); 
 }));
 
 await user.awaitAuthed();
 
-joinedTeamsData.on("update", onlyThisSite(renderUploadList));
+(await joinedTeamsData.init()).on("update", onlyThisSite(renderUploadList));
 
 export async function renderAllFn(): Promise<void> {
   await renderUploadTypeList();

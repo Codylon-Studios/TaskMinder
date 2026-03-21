@@ -629,12 +629,11 @@ function replaceRichTextareas(): void {
         
           // Get all text nodes and <br> tags
           const nodes = getAllNodes(doc.body);
-          
-          pasteAreaShadowRoot.appendChild(doc.body);
+          const n = pasteAreaShadowRoot.appendChild(doc.body);
           for (const node of nodes) {
             handleNode(node);
           }
-          pasteAreaShadowRoot.innerHTML = "";
+          n.remove()
           return result.html();
         }
       
@@ -675,6 +674,14 @@ function replaceRichTextareas(): void {
       return;
     }
     const pasteAreaShadowRoot = pasteAreaElement.attachShadow({ mode: "open" });
+    $(pasteAreaShadowRoot).append(`
+      <style>
+        .taskminder-link {
+          color: #3bb9ca;
+          font-weight: bold;
+        }
+      </style>
+    `);
     const textarea = richTextarea.find(".rich-textarea-input");
     $(`label[for="${$(this).attr("id")}"]`).on("click", () => {
       textarea.trigger("focus");

@@ -433,7 +433,7 @@ async function renderSubjectList(): Promise<void> {
   const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
   filterData.subject ??= {};
 
-  for (const subject of await subjectData()) {
+  for (const subject of [...await subjectData(), {subjectId: -1, subjectNameLong: "Sonstiges"}]) {
     // Get the subject data
     const subjectId = subject.subjectId;
     const subjectName = subject.subjectNameLong;
@@ -455,8 +455,6 @@ async function renderSubjectList(): Promise<void> {
     const templateFormSelect = `<option value="${subjectId}">${escapeHTML(subjectName)}</option>`;
     $("#add-homework-subject, #edit-homework-subject").append(templateFormSelect);
   };
-
-  $("#add-homework-subject, #edit-homework-subject").append('<option value="-1">Sonstiges</option>');
 
   if (addHomeworkSubjectVal !== "") $("#add-homework-subject").val(addHomeworkSubjectVal);
   if (editHomeworkSubjectVal !== "") $("#edit-homework-subject").val(editHomeworkSubjectVal);
@@ -965,17 +963,17 @@ let homeworkFeedbackLastPercentage: null | number;
 let randomHomeworkDeactivated: number[] = [];
 
 await lessonData.init();
-homeworkData.on("update", onlyThisSite(renderHomeworkList));
-(await homeworkCheckedData.init());
-subjectData.on("update", onlyThisSite(renderSubjectList));
-teamsData.on("update", onlyThisSite(() => {
+(await homeworkData.init()).on("update", onlyThisSite(renderHomeworkList));
+(await homeworkCheckedData.init()).on("update", onlyThisSite(renderHomeworkList));
+(await subjectData.init()).on("update", onlyThisSite(renderSubjectList));
+(await teamsData.init()).on("update", onlyThisSite(() => {
   renderTeamList(); 
   renderHomeworkList(); 
 }));
 
 await user.awaitAuthed();
 
-joinedTeamsData.on("update", onlyThisSite(renderHomeworkList));
+(await joinedTeamsData.init()).on("update", onlyThisSite(renderHomeworkList));
 
 export async function renderAllFn(): Promise<void> {
   await renderSubjectList();

@@ -102,10 +102,12 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
     return `Ereignis "${cutString(escapeHTML(jsonBody.name), 40)}" bearbeiten`;
   }
   case "/events/delete_event": {
+    await eventData.init();
     const name = (await eventData()).find(e => e.eventId === jsonBody.eventId)?.name ?? "?";
     return `Ereignis "${cutString(escapeHTML(name), 40)}" löschen`;
   }
   case "/events/pin_event": {
+    await eventData.init();
     const name = (await eventData()).find(e => e.eventId === jsonBody.eventId)?.name ?? "?";
     return `Ereignis "${cutString(escapeHTML(name), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
   }
@@ -116,14 +118,17 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
     return `Hausaufgabe "${cutString(escapeHTML(jsonBody.content), 40)}" bearbeiten`;
   }
   case "/homework/delete_homework": {
+    await homeworkData.init();
     const content = (await homeworkData()).find(h => h.homeworkId === jsonBody.homeworkId)?.content ?? "?";
     return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" löschen`;
   }
   case "/homework/check_homework": {
+    await homeworkData.init();
     const content = (await homeworkData()).find(h => h.homeworkId === jsonBody.homeworkId)?.content ?? "?";
     return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.checkStatus === true ? "erledigt" : "nicht erledigt"}`;
   }
   case "/homework/pin_homework": {
+    await homeworkData.init();
     const content = (await homeworkData()).find(h => h.homeworkId === jsonBody.homeworkId)?.content ?? "?";
     return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
   }
@@ -138,10 +143,12 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
     return `Datei "${cutString(escapeHTML(name), 40)}" bearbeiten`;
   }
   case "/uploads/delete": {
+    await uploadData.init();
     const name = (await uploadData()).uploads.find(u => u.uploadId === jsonBody.uploadId)?.uploadName ?? "?";
     return `Datei "${cutString(escapeHTML(name), 40)}" löschen`;
   }
   case "/uploads/pin": {
+    await uploadData.init();
     const name = (await uploadData()).uploads.find(u => u.uploadId === jsonBody.uploadId)?.uploadName ?? "?";
     return `Datei "${cutString(escapeHTML(name), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
   }
