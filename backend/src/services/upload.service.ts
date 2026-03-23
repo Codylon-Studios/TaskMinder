@@ -9,7 +9,6 @@ import logger from "../config/logger.js";
 import { RequestError } from "../@types/requestError.js";
 import {
   getUploadFileQuery,
-  getUploadMetadataQuery,
   getUploadFileParams,
   editUploadTypeParams,
   deleteUploadTypeParams,
@@ -38,7 +37,7 @@ type GetUploadFileResult = {
 const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany<{
   include: {
     Account: { select: { username: true } };
-    Files: true;
+    Files: { select: { fileMetaDataId: true, mimeType: true, size: true, createdAt: true } };
   };
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 }>>>) => {
@@ -63,53 +62,6 @@ const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany
   }));
 };
 
-const getUploadList = async (
-  classId: number,
-  isGetAllData: boolean,
-  cacheKey: string,
-  include: {
-    Account: { select: { username: true } };
-    Files: true;
-  },
-  orderBy: Prisma.UploadOrderByWithRelationInput[]
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-) => {
-  if (isGetAllData) {
-    const uploads = await prisma.upload.findMany({
-      where: { classId },
-      include,
-      orderBy
-    });
-    return mapUploadData(uploads);
-  }
-
-  const cachedUploadMetadataData = await redisClient.get(cacheKey);
-  if (cachedUploadMetadataData) {
-    try {
-      return JSON.parse(cachedUploadMetadataData);
-    }
-    catch (error) {
-      logger.error(`Error parsing Redis data: ${error}`);
-    }
-  }
-
-  const uploads = await prisma.upload.findMany({
-    where: { classId },
-    include,
-    orderBy,
-    take: 50
-  });
-  const uploadList = mapUploadData(uploads);
-
-  try {
-    await updateCacheData(uploadList, cacheKey);
-  }
-  catch (err) {
-    logger.error(`Error updating Redis data: ${err}`);
-  }
-
-  return uploadList;
-};
 
 const uploadService = {
   // file upload -> queue upload for worker to pick up
@@ -185,9 +137,7 @@ const uploadService = {
     logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s) for class ${classId}`);
   },
   // get upload metadata service
-  async getUploadMetadata(reqQuery: getUploadMetadataQuery, session: Session & Partial<SessionData>) {
-    const { all } = reqQuery;
-    const isGetAllData = all === "true";
+  async getUploadMetadata(session: Session & Partial<SessionData>) {
     const classId = parseInt(session.classId!, 10);
 
     const classInformation = await prisma.class.findUnique({
@@ -205,11 +155,47 @@ const uploadService = {
       throw err;
     }
 
+    // if no uploads available, return directly with 0 file upload metadata
+    const totalUploads = await prisma.upload.count({ where: { classId } });
+    if (totalUploads === 0) {
+      return {
+        totalUploads: 0,
+        uploads: [],
+        totalStorage: classInformation.storageQuotaBytes.toString(),
+        usedStorage: classInformation.storageUsedBytes.toString()
+      };
+    }
+
+    // check if data is available in cache
+    const getUploadMetadataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
+    const cachedUploadMetadataData = await redisClient.get(getUploadMetadataCacheKey);
+
+    if (cachedUploadMetadataData) {
+      try {
+        // Early return — skip DB fetch entirely 
+        const cached = JSON.parse(cachedUploadMetadataData);
+        // return directly from cache
+        return {
+          totalUploads,
+          uploads: cached,
+          totalStorage: classInformation.storageQuotaBytes.toString(),
+          usedStorage: classInformation.storageUsedBytes.toString()
+        };
+      }
+      catch (error) {
+        logger.error(`Error parsing Redis data: ${error}`);
+        // fall through to fetch from database
+      }
+    };
+
+    // include Account username and Files (except storedFileName) in metadata fetch too
+    // omit storedFileName due to security risk (internal server detail)
     const include = {
       Account: { select: { username: true } },
-      Files: true
+      Files: { select: { fileMetaDataId: true, mimeType: true, size: true, createdAt: true } }
     } as const;
 
+    // define prisma relations for ordered fetch from database
     const orderBy: Prisma.UploadOrderByWithRelationInput[] = [
       { isPinned: "desc" },
       { createdAt: "desc" },
@@ -217,39 +203,25 @@ const uploadService = {
       { uploadId: "desc" }
     ];
 
-    const getUploadMetadataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
-    const uploadList = await getUploadList(classId, isGetAllData, getUploadMetadataCacheKey, include, orderBy);
+    // find and map databse data
+    const uploads = await prisma.upload.findMany({
+      where: { classId },
+      include,
+      orderBy
+    });
+    const uploadList = mapUploadData(uploads);
 
-    if (isGetAllData) {
-      const res = {
-        totalUploads: uploadList.length,
-        uploads: uploadList,
-        hasMore: false,
-        totalStorage: classInformation.storageQuotaBytes.toString(),
-        usedStorage: classInformation.storageUsedBytes.toString()
-      };
-      const stringified = JSON.stringify(res, BigIntreplacer);
-      return JSON.parse(stringified);
+    try {
+      await updateCacheData(uploadList, getUploadMetadataCacheKey);
     }
-
-    const totalUploads = await prisma.upload.count({ where: { classId } });
-
-    if (totalUploads === 0) {
-      return {
-        totalUploads: 0,
-        uploads: [],
-        hasMore: false,
-        totalStorage: classInformation.storageQuotaBytes.toString(),
-        usedStorage: classInformation.storageUsedBytes.toString()
-      };
+    catch (err) {
+      logger.error(`Error updating Redis data: ${err}`);
+      // fall through to prevent server error/crash
     }
-
-    const hasMore = !isGetAllData && totalUploads > 50;
 
     const res = {
       totalUploads,
       uploads: uploadList,
-      hasMore,
       totalStorage: classInformation.storageQuotaBytes.toString(),
       usedStorage: classInformation.storageUsedBytes.toString()
     };

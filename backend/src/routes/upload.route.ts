@@ -31,6 +31,7 @@ router.post(
   "/", 
   writeUploadLimiter, 
   checkAccess(["CLASS", "EDITOR"]),
+  uploadMiddleware.checkClassFileCountLimit,
   // installs listeners for errors and fails
   uploadMiddleware.attachUploadCleanupOnFail,
   // check for multer limits

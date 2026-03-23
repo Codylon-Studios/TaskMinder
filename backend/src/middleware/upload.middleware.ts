@@ -173,6 +173,38 @@ export const preflightEditStorageQuotaCheck = async (
 };
 
 //
+// check if current upload would exceed the max file upload limit per class
+//
+export const checkClassFileCountLimit = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  // session.classId sertainly exists here because the access check ran before it
+  const classId = parseInt(req.session.classId!, 10);
+
+  const fileCount = await prisma.fileMetadata.count({
+    where: {
+      Upload: {
+        classId: classId
+      }
+    }
+  });
+
+  if (fileCount > MAX_FILES_COUNT) {
+    const err: RequestError = {
+      name: "Content Too Large",
+      status: 413,
+      message: "Upload limit reached: this class already has the maximum number of files allowed.",
+      expected: true
+    };
+    return next(err);
+  }
+
+  next();
+};
+
+//
 // Attach cleanup/rollback hooks for non-error responses or aborted connections
 //
 export const attachUploadCleanupOnFail = (
@@ -365,7 +397,7 @@ const reserveStorage = async (
       storageUsedBytes: true
     }
   });
-  if (!classQuota){
+  if (!classQuota) {
     const err: RequestError = {
       name: "Not Found",
       status: 404,
@@ -399,6 +431,7 @@ export default {
   attachUploadCleanupOnFail,
   preflightStorageQuotaCheck,
   preflightEditStorageQuotaCheck,
+  checkClassFileCountLimit,
   normalizeFiles,
   normalizeFilesOptional
 };

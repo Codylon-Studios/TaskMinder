@@ -4,10 +4,7 @@ import { FileTypes } from "../config/upload.js";
 export const getUploadMetadataSchema = z.object({
   // omit body due to GET request
   params: z.object({}),
-  query: z.object({
-    all: z.enum(["true", "false"])
-      .default("false")
-  })
+  query: z.object({})
 });
 
 export const getUploadFileSchema = z.object({
@@ -85,7 +82,6 @@ export const deleteUploadRequestSchema = z.object({
 });
 
 export type getUploadFileQuery = z.infer<typeof getUploadFileSchema>["query"];
-export type getUploadMetadataQuery = z.infer<typeof getUploadMetadataSchema>["query"];
 
 export type getUploadFileParams = z.infer<typeof getUploadFileSchema>["params"];
 export type editUploadTypeParams = z.infer<typeof editUploadSchema>["params"];

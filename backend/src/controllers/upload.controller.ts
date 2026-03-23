@@ -4,13 +4,12 @@ import uploadService from "../services/upload.service.js";
 import { getUploadFileQuery } from "../schemas/upload.schema.js";
 
 export const getUploadMetadata = async (
-  req: Request<unknown, unknown, unknown, { all?: string }>, 
+  req: Request, 
   res: Response, 
   next: NextFunction
 ): Promise<void> => {
   try {
-    const isAll = req.query.all === "true";
-    const uploadData = await uploadService.getUploadMetadata({all: isAll ? "true" : "false"}, req.session);
+    const uploadData = await uploadService.getUploadMetadata(req.session);
     res.status(200).json(uploadData);
   }
   catch (error) {
