@@ -1,5 +1,4 @@
 import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
-import axios from "axios";
 import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
 import logger from "../config/logger.js";
@@ -12,6 +11,7 @@ type SubstitutionData = {
   updated: string;
 };
 
+// 5 min for offpeak cache expiration
 const SUBSTITUTION_OFFPEAK_TTL_SECONDS = 5 * 60;
 const SUBSTITUTION_PREFETCH_TTL_SECONDS = cacheExpiration;
 const SUBSTITUTION_PREFETCH_CONCURRENCY = 3;
@@ -30,19 +30,21 @@ async function fetchFromDSBMobileServer(authId: string): Promise<{
     plan2Url: string;
 }> {
   const timetablesUrl = `https://mobileapi.dsbcontrol.de/dsbtimetables?authid=${authId}`;
-  const timetablesRes = await axios.get<{ Childs: { Detail: string }[] }[]>(
-    timetablesUrl,
-    { timeout: 8_000 }
-  );
-  const plan1Url = timetablesRes.data[0]?.Childs[0]?.Detail;
-  const plan2Url = timetablesRes.data[2]?.Childs[0]?.Detail;
+  const timetablesRes = await fetch(timetablesUrl, { signal: AbortSignal.timeout(8_000) });
+  if (!timetablesRes.ok) {
+    throw new Error(`DSB timetables request failed with status ${timetablesRes.status}`);
+  }
+  const timetablesData: { Childs: { Detail: string }[] }[] = await timetablesRes.json();
+  const plan1Url = timetablesData[0]?.Childs[0]?.Detail;
+  const plan2Url = timetablesData[2]?.Childs[0]?.Detail;
 
   if (!plan1Url || !plan2Url) {
     throw new Error("Could not retrieve timetable URLs from DSB.");
   }
-  return {plan1Url, plan2Url};
+  return { plan1Url, plan2Url };
 }
 
+// eslint-disable-next-line complexity
 export async function loadSubstitutionData(
   dsbMobileUser: string, 
   dsbMobilePassword: string, 
@@ -52,8 +54,11 @@ export async function loadSubstitutionData(
   try {
     const generalReqData = "appversion=&bundleid=&osversion=&pushid=";
     const authUrl = `https://mobileapi.dsbcontrol.de/authid?user=${dsbMobileUser}&password=${dsbMobilePassword}&${generalReqData}`;
-    const authRes = await axios.get<string>(authUrl, { timeout: 10_000 });
-    const authId = authRes.data;
+    const authRes = await fetch(authUrl, { signal: AbortSignal.timeout(10_000) });
+    if (!authRes.ok) {
+      throw new Error(`DSB auth request failed with status ${authRes.status}`);
+    }
+    const authId = await authRes.text();
     if (!authId) {
       throw new Error("The DSB credentials did not return a valid authId.");
     }
@@ -70,15 +75,19 @@ export async function loadSubstitutionData(
     for (const id of [1, 2] as const) {
       const planData: { [key: string]: string }[] = [];
       const url = (id === 1) ? plan1Url : plan2Url;
-      const planRes = await axios.get(url, { responseType: "arraybuffer" });
-      const planHtml = iconv.decode(Buffer.from(planRes.data), "ISO-8859-1");
+      const planRes = await fetch(url);
+      if (!planRes.ok) {
+        throw new Error(`DSB plan${id} request failed with status ${planRes.status}`);
+      }
+      const planBuffer = await planRes.arrayBuffer();
+      const planHtml = iconv.decode(Buffer.from(planBuffer), "ISO-8859-1");
       const $ = cheerio.load(planHtml);
 
       $(".mon_list tr:not(:nth-child(1))").each((_, substitutionEntry) => {
         const data: { [key: string]: string } = {};
         $(substitutionEntry).find("td").each((j, substitutionEntryData) => {
           const val = $(substitutionEntryData).text().trim();
-          data[substitutionEntryKeys[j]] = ["---", " ", ""].includes(val) ? "-" : val;
+          data[substitutionEntryKeys[j]] = ["---", " ", ""].includes(val) ? "-" : val;
         });
         planData.push(data);
       });

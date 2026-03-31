@@ -123,8 +123,13 @@ app.use(csrfSessionInit);
 app.get("/bootstrap", authLimiter, async (req, res, next) => {
   try {
     const auth = await accountService.getAuth(req.session);
+
+    const cacheEnabled =
+      process.env.NODE_ENV !== "DEVELOPMENT" ||
+      process.env.CACHE_ENABLED === "true";
+    
     res.set("Cache-Control", "no-store");
-    res.status(200).json({ classJoined: auth.classJoined, version: MAX_VERSION });
+    res.status(200).json({ classJoined: auth.classJoined, version: MAX_VERSION, cacheEnabled: cacheEnabled });
   }
   catch (error) {
     next(error);

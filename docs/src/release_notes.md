@@ -37,6 +37,7 @@ All changes are grouped by type and the latest version appears first.
 * chore(password): bump password requirements
 * chore(ui): make bottombar icons pop on click
 * chore(ui): scroll to top on site change
+* chore(substitution): replace axios with node fetch
 * chore(frontend/logic): remove $.get and replace with modern fetch
 * chore(ui): change filter interface to modal and offcanvas (mobile)
 * chore(tableview): improve table layouts for events & uploads

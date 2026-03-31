@@ -2,6 +2,8 @@ name: docs deployment (github pages)
 on:
   push:
     branches: [main]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -9,7 +11,6 @@ jobs:
     environment: github-pages
     
     permissions:
-      contents: write  # To push a branch 
       pages: write  # To push to a GitHub Pages site
       id-token: write # To update the deployment status
 
@@ -37,9 +38,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          # Upload built documentation
           path: 'docs/book'
         
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
