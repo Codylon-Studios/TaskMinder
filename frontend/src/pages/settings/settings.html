@@ -169,9 +169,9 @@
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                   <span class="d-block me-1">Die Passwörter stimmen nicht überein!</span>
                 </div>
-                <div class="alert alert-warning p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-insecure-password">
-                  <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
-                  <span class="d-block me-1">Das Passwort ist nicht sehr sicher!</span>
+                <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-insecure-password">
+                  <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+                  <span class="d-block me-1">Das Passwort ist nicht sicher genug!</span>
                 </div>
 
                 <div class="mb-2 d-flex flex-column flex-md-row gap-2">
@@ -455,7 +455,12 @@
                         </div>
                       </div>
                       <div>
-                        <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick" data-id disabled aria-label="Nutzer entfernen">
+                        <button
+                          class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick"
+                          data-id
+                          disabled
+                          aria-label="Nutzer entfernen"
+                        >
                           <i class="fa-solid fa-user-minus" aria-hidden="true"></i>
                         </button>
                       </div>
@@ -496,8 +501,6 @@
                       <select class="form-control w-fit-content" id="set-logged-out-users-role-select">
                         <option value="0">Mitglied</option>
                         <option value="1">Bearbeiter:in</option>
-                        <option value="2">Manager:in</option>
-                        <option value="3">Admin</option>
                       </select>
                     </div>
                     <div id="set-logged-out-users-role">
@@ -636,7 +639,12 @@
                         </div>
                       </div>
                       <div>
-                        <button class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete" data-id disabled aria-label="Ereignisart entfernen">
+                        <button
+                          class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete"
+                          data-id
+                          disabled
+                          aria-label="Ereignisart entfernen"
+                        >
                           <i class="fa-solid fa-trash" aria-hidden="true"></i>
                         </button>
                       </div>
@@ -709,12 +717,22 @@
                             <b>Fach</b>
                             <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between flex-wrap">
                               Name
-                              <input class="form-control form-control-sm d-inline subject-name-long-input w-50 w-lg-fit-content flex-grow-lg-1" type="text" data-id disabled />
+                              <input
+                                class="form-control form-control-sm d-inline subject-name-long-input w-50 w-lg-fit-content flex-grow-lg-1"
+                                type="text"
+                                data-id
+                                disabled
+                              />
                               <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
                             </label>
                             <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">
                               Abkürzung
-                              <input class="form-control form-control-sm d-inline subject-name-short-input w-50 w-lg-100" type="text" data-id disabled />
+                              <input
+                                class="form-control form-control-sm d-inline subject-name-short-input w-50 w-lg-100"
+                                type="text"
+                                data-id
+                                disabled
+                              />
                             </label>
                           </div>
                           <div class="d-flex flex-column flex-lg-row gap-1 gap-lg-2 align-items-lg-center">
@@ -729,23 +747,43 @@
                             </label>
                             <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between flex-wrap">
                               Name
-                              <input class="form-control form-control-sm d-inline subject-teacher-long-input w-50 w-lg-fit-content flex-grow-lg-1" type="text" data-id disabled />
+                              <input
+                                class="form-control form-control-sm d-inline subject-teacher-long-input w-50 w-lg-fit-content flex-grow-lg-1"
+                                type="text"
+                                data-id
+                                disabled
+                              />
                               <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
                             </label>
                             <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">
                               Kürzel
-                              <input class="form-control form-control-sm d-inline subject-teacher-short-input w-50 w-lg-100" type="text" data-id disabled />
+                              <input
+                                class="form-control form-control-sm d-inline subject-teacher-short-input w-50 w-lg-100"
+                                type="text"
+                                data-id
+                                disabled
+                              />
                             </label>
                           </div>
                           <div class="ds-flex flex-column flex-lg-row gap-1 gap-lg-2 align-items-lg-center subject-substitutions">
                             <b>Vertretung</b>
                             <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">
                               Fachname
-                              <input class="form-control form-control-sm d-inline subject-name-substitution-input w-50 w-lg-100" type="text" data-id disabled />
+                              <input
+                                class="form-control form-control-sm d-inline subject-name-substitution-input w-50 w-lg-100"
+                                type="text"
+                                data-id
+                                disabled
+                              />
                             </label>
                             <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">
                               Lehrkraftname
-                              <input class="form-control form-control-sm d-inline subject-teacher-substitution-input w-50 w-lg-100" type="text" data-id disabled />
+                              <input
+                                class="form-control form-control-sm d-inline subject-teacher-substitution-input w-50 w-lg-100"
+                                type="text"
+                                data-id
+                                disabled
+                              />
                             </label>
                           </div>
                         </div>
@@ -803,7 +841,12 @@
                         </div>
                       </div>
                       <div>
-                        <button class="btn btn-sm btn-sm-square btn-danger float-end subject-delete" data-id disabled aria-label="Ereignisart entfernen">
+                        <button
+                          class="btn btn-sm btn-sm-square btn-danger float-end subject-delete"
+                          data-id
+                          disabled
+                          aria-label="Ereignisart entfernen"
+                        >
                           <i class="fa-solid fa-trash" aria-hidden="true"></i>
                         </button>
                       </div>
@@ -858,11 +901,9 @@
                     <div class="col px-1 mb-2">
                       <div class="card p-2">
                         <div class="timetable-day-name fw-bold text-center"></div>
-                        <hr class="mt-2">
+                        <hr class="mt-2" />
                         <div class="timetable-lesson-list d-flex flex-column gap-3 mb-3"></div>
-                        <button class="btn btn-sm btn-success fw-semibold timetable-new-lesson">
-                          Neue Stunde
-                        </button>
+                        <button class="btn btn-sm btn-success fw-semibold timetable-new-lesson">Neue Stunde</button>
                       </div>
                     </div>
                   </template>
@@ -871,7 +912,7 @@
                       <div class="d-flex align-items-center gap-1 justify-content-between">
                         <label for="lesson-number-{{ID}}">Stunde</label>
                         <div class="d-flex align-items-center gap-2 w-75">
-                          <input class="lesson-number form-control form-control-sm" type="number" min="1" id="lesson-number-{{ID}}">
+                          <input class="lesson-number form-control form-control-sm" type="number" min="1" id="lesson-number-{{ID}}" />
                           <button class="btn btn-sm btn-danger lesson-delete" aria-label="Stunde entfernen">
                             <i class="fa-solid fa-trash" aria-hidden="true"></i>
                           </button>
@@ -879,11 +920,11 @@
                       </div>
                       <label class="d-flex align-items-center gap-1 justify-content-between">
                         Von
-                        <input class="lesson-start-time form-control form-control-sm w-75" type="time">
+                        <input class="lesson-start-time form-control form-control-sm w-75" type="time" />
                       </label>
                       <label class="d-flex align-items-center gap-1 justify-content-between">
                         Bis
-                        <input class="lesson-end-time form-control form-control-sm w-75" type="time">
+                        <input class="lesson-end-time form-control form-control-sm w-75" type="time" />
                       </label>
                       <label class="d-flex align-items-center gap-1 justify-content-between">
                         Fach
@@ -891,7 +932,7 @@
                       </label>
                       <label class="d-flex align-items-center gap-1 justify-content-between">
                         Raum
-                        <input class="lesson-room form-control form-control-sm w-75" type="text" placeholder="Raum">
+                        <input class="lesson-room form-control form-control-sm w-75" type="text" placeholder="Raum" />
                       </label>
                       <label class="d-flex align-items-center gap-1 justify-content-between">
                         Team

@@ -101,6 +101,7 @@ body {
 
 #app-scroll {
   overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
   padding-top: 1rem;
   display: flex;
   flex-direction: column;
@@ -425,11 +426,11 @@ $unimportant-display-values: (
   }
 }
 
-#offline-hint {
+#unavailable-hint {
   --fa-animation-duration: 0.5s;
 }
 
-#offline-popup {
+#unavailable-popup {
   position: absolute;
   padding: 0.5rem;
   background: var(--bs-body-bg);
@@ -441,7 +442,7 @@ $unimportant-display-values: (
   width: 13rem;
 }
 
-#offline-queue-circle {
+#unavailable-queue-circle {
   transform: translate(0, 0);
   background-color: var(--bs-danger);
   border-radius: 50%;

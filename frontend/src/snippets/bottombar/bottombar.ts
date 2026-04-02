@@ -1,6 +1,4 @@
-import { getSite } from "../../global/global.js";
-import { replaceSitePJAX } from "../loadingBar/loadingBar.js";
-import { user } from "../navbar/navbar.js";
+import { getSite, user } from "../../global/global.js";
 
 function getTouchPosition(ev: JQuery.TouchStartEvent): {x: number, y: number} {
   return {
@@ -128,7 +126,8 @@ $(document).on("touchend", ev => {
       const prev = $(".row:visible > .bottombar-current-link").prevAll().first();
       if (prev.length === 0) hideOverlay(0, $(".bottombar-overlay").hide);
       else {
-        await replaceSitePJAX(prev.attr("href") ?? siteName);
+        const loadingBarMod = await import("../loadingBar/loadingBar.js");
+        await loadingBarMod.replaceSitePJAX(prev.attr("href") ?? siteName);
         $(".bottombar-overlay").css("--progress", "0").hide();
       }
     }
@@ -136,7 +135,8 @@ $(document).on("touchend", ev => {
       const next = $(".row:visible > .bottombar-current-link").nextAll().first();
       if (next.length === 0) hideOverlay(0, $(".bottombar-overlay").hide);
       else {
-        await replaceSitePJAX(next.attr("href") ?? siteName);
+        const loadingBarMod = await import("../loadingBar/loadingBar.js");
+        await loadingBarMod.replaceSitePJAX(next.attr("href") ?? siteName);
         $(".bottombar-overlay").css("--progress", "0").hide();
       }
     }

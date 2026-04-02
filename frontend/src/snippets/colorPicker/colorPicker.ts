@@ -421,7 +421,7 @@ class ColorPicker extends HTMLElement {
     });
   }
 
-  private setValue(val: string, triggerChange: boolean) {
+  private setValue(val: string, triggerChange: boolean): void {
     this._value = val;
     $(this).find(".color-picker-trigger").css("--selected-color", hexToCSS(val));
     $(this).find(".color-picker-hex").val(val).removeClass("is-invalid");

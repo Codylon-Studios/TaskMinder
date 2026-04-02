@@ -38,7 +38,7 @@ export const deleteEventSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: z.strictObject({})
+  body: z.any() // TODO: type
 });
 
 export const pinEventSchema = z.object({

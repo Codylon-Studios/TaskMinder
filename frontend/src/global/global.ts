@@ -1,5 +1,4 @@
 import { io } from "../vendor/socket/socket.io.esm.min.js";
-import { clearedRequestQueue, highlightOffline, updateRequestQueue, user } from "../snippets/navbar/navbar.js";
 import {
   ClassMemberData,
   DataAccessor,
@@ -26,24 +25,15 @@ import {
   SerializedRequest,
   LessonGroupWithEvent,
   UploadRequestsData,
-  ClassInfo
+  ClassInfo,
+  Bootstrap,
+  UserEventName,
+  UserEventCallback
 } from "./types";
-import { updateClassInfo } from "../pages/settings/settings.js";
-
-export const VERSION = "v1";
-const REQUEST_QUEUE = "request-queue-" + VERSION;
 
 export const lastCommaRegex = /,(?!.*,)/;
 export const weekDaysSo = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 export const weekDaysMo = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-
-crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
-    const r = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
-    const v = c === "x" ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  }) as `${string}-${string}-${string}-${string}-${string}`;
-};
 
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
@@ -92,7 +82,26 @@ export function registerSocketListeners(listeners: Record<string, () => unknown>
 
 function openIndexedDB(): Promise<IDBDatabase> {
   return new Promise((res, rej) => {
-    const request = indexedDB.open("app");
+    const request = indexedDB.open("app", 1);
+
+    request.onupgradeneeded = event => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains("meta")) {
+        db.createObjectStore("meta");
+      }
+    };
+
+    request.onsuccess = event => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (db.objectStoreNames.contains("meta")) {
+        res(db);
+      }
+      else {
+        db.close();
+        indexedDB.deleteDatabase("app");
+        openIndexedDB().then(res => res);
+      }
+    };
 
     request.onsuccess = event => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -275,7 +284,7 @@ export function $cloneTemplate(selector: string, settings?: {id?: string, dataId
   const { id = crypto.randomUUID(), dataId, disabled } = settings ?? {};
 
   const t = $(selector);
-  if (t.length == null) {
+  if (t.length === null) {
     console.warn(`No <template> with selector "${selector}"!`);
     return $();
   }
@@ -494,7 +503,7 @@ async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void>
   if (!user.classJoined) return;
 
   if (user.loggedIn) {
-    const res = await fetch("/teams/get_joined_teams_data");
+    const res = await ajax("GET", "/api/teams/joined", { forceOffline: true });
     if (!res.ok) throw new Error("HTTP error during fetch of joinedTeams: " + res.status + " " + await res.text());
     joinedTeamsData.set(await res.json(), settings);
   }
@@ -539,7 +548,7 @@ async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<v
 
   if (user.loggedIn) {
     // If the user is logged in, get the data from the server
-    const res = await fetch("/homework/get_homework_checked_data");
+    const res = await ajax("GET", "/api/homework/checked", { forceOffline: true });
     if (!res.ok) throw new Error("HTTP error during fetch of homeworkCheckedData: " + res.status + " " + await res.text());
     homeworkCheckedData.set(await res.json(), settings);
   }
@@ -557,16 +566,6 @@ async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<v
   }
 }
 
-async function loadUploadData(): Promise<void> {
-  if (!user.classJoined) return;
-
-  const currentShowAllUploads = await showAllUploads();
-
-  const res = await fetch("/uploads/metadata?all=" + currentShowAllUploads);
-  if (!res.ok) throw new Error("HTTP error during fetch of uploadMetadata: " + res.status + " " + await res.text());
-  uploadData(await res.json());
-}
-
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
 }
@@ -581,7 +580,7 @@ export async function tryForceReloadEventTypeStyles(): Promise<void> {
     cache.data = eventTypeString;
     cache.date = Date.now();
   }
-  $("#event-type-styles").attr("href", "/events/event_type_styles?v=" + cache.date);
+  $("#event-type-styles").text(await (await ajax("GET", "/api/events/types/styles?v=" + cache.date, { forceOffline: true })).text()); // TODO: Ewww
   localStorage.setItem("eventTypeDataCache", JSON.stringify(cache));
 }
 
@@ -598,12 +597,18 @@ export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: 
   return true;
 }
 
-export function handleStatusCodes(xhr: JQueryXHR, actions?: Record<number, () => unknown>): void {
+export function highlightUnavailable(): void {
+  $("#unavailable-hint").addClass("fa-beat");
+  setTimeout(() => $("#unavailable-hint").removeClass("fa-beat"), 1500);
+  $("#unavailable-popup").show();
+}
+
+export async function handleStatusCodes(xhr: JQueryXHR, actions?: Record<number, () => unknown>): Promise<void> {
   if (xhr.status === 500) {
     $("#error-server-toast").toast("show");
   }
   else if (xhr.status === 503) {
-    highlightOffline();
+    highlightUnavailable();
   }
   else if (actions?.[xhr.status] === undefined) {
     $("#unknown-error-toast").toast("show");
@@ -619,7 +624,7 @@ export function handleBasicStatusCodes(xhr: JQueryXHR): void {
 
 export function openRequestQueueDB(): Promise<IDBDatabase> {
   return new Promise(res => {
-    const db = indexedDB.open(REQUEST_QUEUE, 1);
+    const db = indexedDB.open("request-queue", 1);
 
     db.addEventListener("upgradeneeded", () => {
       db.result.createObjectStore("queue", {
@@ -635,10 +640,7 @@ export function openRequestQueueDB(): Promise<IDBDatabase> {
 }
 
 async function queueRequest(request: Request): Promise<void> {
-  const headers: Record<string, string> = {};
-  request.headers.forEach((value, key) => {
-    headers[key] = value;
-  });
+  const headers = Object.fromEntries(request.headers.entries());
 
   const serializedReq = {
     url: request.url,
@@ -652,62 +654,188 @@ async function queueRequest(request: Request): Promise<void> {
   const store = tx.objectStore("queue");
   store.add(serializedReq);
   
-  updateRequestQueue();
+  renderRequestQueue()
 }
 
-function getDirtyDataAccessor(req: SerializedRequest): DataAccessor<unknown> | null {
-  switch ((new URL(req.url, globalThis.location.origin)).pathname) {
-  case "/events/add_event":
-  case "/events/edit_event":
-  case "/events/delete_event":
-  case "/events/pin_event": {
-    return eventData as DataAccessor<unknown>
+async function getRequestDescription(req: SerializedRequest): Promise<string> {
+  const rawBody = req.body;
+  const textBody = rawBody instanceof ArrayBuffer ? new TextDecoder().decode(rawBody) : rawBody;
+  let jsonBody;
+  try {
+    jsonBody = JSON.parse(textBody);
   }
-  case "/homework/add_homework":
-  case "/homework/edit_homework":
-  case "/homework/delete_homework":
-  case "/homework/pin_homework": {
-    return homeworkData as DataAccessor<unknown>
+  catch {
+    jsonBody = null;
   }
-  case "/homework/check_homework": {
-    return homeworkCheckedData as DataAccessor<unknown>
+  const url = new URL(req.url, globalThis.location.origin)
+  let path = url.pathname.replace(/^\/api/, "")
+  const ids = Array.from(
+    path.matchAll(/\/(\d+)/g),
+    m => Number.parseInt(m[1])
+  );
+  path = path.replaceAll(/\/\d+/g, "/:id")
+
+  switch (req.method + " " + path) {
+  case "POST /events": {
+    return `Ereignis "${cutString(escapeHTML(jsonBody.name), 40)}" hinzufügen`;
   }
-  case "/uploads/upload":
-  case "/uploads/edit":
-  case "/uploads/delete":
-  case "/uploads/pin": {
-    return uploadData as DataAccessor<unknown>
+  case "PATCH /events/:id": {
+    return `Ereignis "${cutString(escapeHTML(jsonBody.name), 40)}" bearbeiten`;
+  }
+  case "DELETE /events/:id": {
+    await eventData.init();
+    const name = (await eventData()).find(e => e.eventId === ids[0])?.name ?? "?";
+    return `Ereignis "${cutString(escapeHTML(name), 40)}" löschen`;
+  }
+  case "PATCH /events/:id/pin": {
+    await eventData.init();
+    const name = (await eventData()).find(e => e.eventId === ids[0])?.name ?? "?";
+    return `Ereignis "${cutString(escapeHTML(name), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+  }
+  case "POST /homework": {
+    return `Hausaufgabe "${cutString(escapeHTML(jsonBody.content), 40)}" hinzufügen`;
+  }
+  case "PATCH /homework/:id": {
+    return `Hausaufgabe "${cutString(escapeHTML(jsonBody.content), 40)}" bearbeiten`;
+  }
+  case "DELETE /homework/:id": {
+    await homeworkData.init();
+    const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
+    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" löschen`;
+  }
+  case "PATCH /homework/:id/check": {
+    await homeworkData.init();
+    const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
+    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.checkStatus === true ? "erledigt" : "nicht erledigt"}`;
+  }
+  case "PATCH /homework/:id/pin": {
+    await homeworkData.init();
+    const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
+    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+  }
+  case "POST /uploads": {
+    const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
+    const name = match ? match[1].trim() : "?";
+    return `Datei "${cutString(escapeHTML(name), 40)}" hochladen`;
+  }
+  case "PATCH /uploads/:id": {
+    const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
+    const name = match ? match[1].trim() : "?";
+    return `Datei "${cutString(escapeHTML(name), 40)}" bearbeiten`;
+  }
+  case "DELETE /uploads/:id": {
+    await uploadData.init();
+    const name = (await uploadData()).uploads.find(u => u.uploadId === ids[0])?.uploadName ?? "?";
+    return `Datei "${cutString(escapeHTML(name), 40)}" löschen`;
+  }
+  case "PATCH /uploads/:id/pin": {
+    await uploadData.init();
+    const name = (await uploadData()).uploads.find(u => u.uploadId === ids[0])?.uploadName ?? "?";
+    return `Datei "${cutString(escapeHTML(name), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
   }
 
-  case "/teams/set_joined_teams_data": {
-    return joinedTeamsData as DataAccessor<unknown>
+  case "PUT /teams/joined": {
+    return "Beigetretene Teams auswählen";
   }
-  case "/class/change_class_name":
-  case "/class/change_class_code":
-  case "/class/upgrade_test_class":
-  case "/class/change_default_permission": {
-    return classInfo as DataAccessor<unknown>
+  case "PATCH /classes/:id/name": {
+    return `Klassennamen zu ${escapeHTML(jsonBody.classDisplayName)} ändern`;
   }
-  case "/class/kick_class_members":
-  case "/class/set_class_members_permission": {
-    return classMemberData as DataAccessor<unknown>
+  case "PATCH /classes/:id/code": {
+    return "Neuen Klassencode anfordern";
   }
-  case "/teams/set_teams_data": {
-    return teamsData as DataAccessor<unknown>
+  case "POST /classes/:id/upgrade-test-class": {
+    return "Testklasse zu normaler Klasse machen";
   }
-  case "/events/set_event_type_data": {
-    return eventTypeData as DataAccessor<unknown>
+  case "PATCH /classes/:id/default-permission": {
+    return "Standardrolle der Klasse ändern";
   }
-  case "/subjects/set_subject_data": {
-    return subjectData as DataAccessor<unknown>
+  case "DELETE /classes/:id/members": {
+    return "Einige Klassenmitglieder entfernen";
   }
-  case "/lessons/set_lesson_data": {
-    return lessonData as DataAccessor<unknown>
+  case "PATCH /classes/:id/members/permissions": {
+    return "Berechtigungen einiger Klassenmitglieder ändern";
+  }
+  case "PUT /teams": {
+    return "Verfügbare Teams bearbeiten";
+  }
+  case "PUT /events/types": {
+    return "Verfügbare Ereignisarten bearbeiten";
+  }
+  case "PUT /subjects": {
+    return "Verfügbare Fächer bearbeiten";
+  }
+  case "PUT /lessons": {
+    return "Stundenplan bearbeiten";
   }
 
   default:
-    return null;
+    return "?";
   }
+}
+
+export async function renderRequestQueue(): Promise<void> {
+  const db = await openRequestQueueDB();
+  const tx = db.transaction("queue", "readwrite");
+  const store = tx.objectStore("queue");
+  
+  const allRequest = store.getAll();
+  const requests = await new Promise<({id: number} & SerializedRequest)[]>(res => {
+    allRequest.addEventListener("success", () => {
+      res(allRequest.result);
+    });
+  });
+  if ($("#unavailable-queue-circle").text() === "0" && requests.length > 0) highlightUnavailable();
+  $("#unavailable-queue-title, #unavailable-queue-description, #unavailable-queue-circle").toggle(requests.length > 0);
+  $(".unavailable-queue-length").text(requests.length);
+
+  const newList = $("<div></div>");
+  
+  for (const req of requests) {
+    newList.append(`
+      <li>${await getRequestDescription(req)}</li>
+    `);
+  }
+
+  $("#unavailable-queue-list").empty().append(newList.children());
+}
+
+function getDirtyDataAccessor(req: SerializedRequest): DataAccessor<unknown> | null {
+  const path = (new URL(req.url, globalThis.location.origin)).pathname.replace("/api", "")
+
+  if (path == "/events/types") {
+    return eventTypeData as DataAccessor<unknown>;
+  }
+  if (path.startsWith("/events")) {
+    return eventData as DataAccessor<unknown>;
+  }
+  if (/\/homework\/\d+\/check/.exec(path)) {
+    return homeworkCheckedData as DataAccessor<unknown>;
+  }
+  if (path.startsWith("/homework")) {
+    return homeworkData as DataAccessor<unknown>;
+  }
+  if (path.startsWith("/uploads")) {
+    return uploadData as DataAccessor<unknown>;
+  }
+  if (/\/classes\/\d+\/members/.exec(path)) {
+    return classInfo as DataAccessor<unknown>;
+  }
+  if (path.startsWith("/classes")) { // TODO: too broad?
+    return classInfo as DataAccessor<unknown>;
+  }
+  if (path === "/teams/joined") {
+    return joinedTeamsData as DataAccessor<unknown>;
+  }
+  if (path === "/teams") {
+    return teamsData as DataAccessor<unknown>;
+  }
+  if (path === "/subjects") {
+    return subjectData as DataAccessor<unknown>;
+  }
+  if (path === "/lessons") {
+    return lessonData as DataAccessor<unknown>;
+  }
+  return null;
 }
 
 async function clearRequestQueue(): Promise<void> {
@@ -717,34 +845,88 @@ async function clearRequestQueue(): Promise<void> {
 
   const allRequest = store.getAll();
   const all = await new Promise<({id: number} & SerializedRequest)[]>(res => {
-    allRequest.addEventListener("success", () => {
-      res(allRequest.result);
-    });
+    allRequest.onsuccess = () => res(allRequest.result);
   });
 
   const reqAndRes: {request: SerializedRequest, response: Response}[] = [];
-  const dirtyData: Set<DataAccessor<unknown>> = new Set()
+  const dirtyData: Set<DataAccessor<unknown>> = new Set();
 
   for (const item of all) {
-    const res = await fetch(item.url, { method: item.method, headers: item.headers, body: new Uint8Array(item.body) });
+    const res = await ajax(item.method, item.url, { headers: item.headers, body: item.body, passFailedRequests: true });
     reqAndRes.push({
       request: item,
       response: res
     });
-    const dirtyDataAccessor = getDirtyDataAccessor(item)
-    if (dirtyDataAccessor !== null) dirtyData.add(dirtyDataAccessor)
+    const dirtyDataAccessor = getDirtyDataAccessor(item);
+    if (dirtyDataAccessor !== null) dirtyData.add(dirtyDataAccessor);
     await new Promise<void>(res => setTimeout(res, 75));
   }
 
   const clearDb = await openRequestQueueDB();
   clearDb.transaction("queue", "readwrite").objectStore("queue").clear();
 
-  await clearedRequestQueue(reqAndRes);
+  clearedRequestQueue(reqAndRes);
 
   if (user.classJoined) {
-    for (const d of dirtyData) d.reload()
-    socket.connect();
+    for (const d of dirtyData) d.reload();
+    if (! (await bootstrap()).maintenance) {
+      socket.connect();
+    }
   }
+}
+
+function getResponseFailReason(req: SerializedRequest, res: Response): string {
+  const rawResBody = res.body;
+  const textResBody = rawResBody instanceof ArrayBuffer ? new TextDecoder().decode(rawResBody) : rawResBody;
+  const path = (new URL(req.url, globalThis.location.origin)).pathname;
+  if (res.ok) return "";
+  if (res.status === 401)
+    return "Du hast nicht mehr die Berechtigung, diese Änderung auszuführen. "
+      + "Entweder deine Rolle wurde aktualisiert oder du musst dich erneut anmelden";
+  if (res.status === 500) return "Auf unserem Server ist ein Problem aufgetreten.";
+  if (res.status === 404) {
+    const type = "";
+    if (path.startsWith("/homework")) return "Die Hausaufgabe";
+    if (path.startsWith("/events")) return "Das Ereignis";
+    if (path.startsWith("/uploads")) return "Die Datei";
+    return type + " wurde in der Zwischenzeit gelöscht.";
+  }
+  if (res.status === 413) {
+    if (path === "/uploads/upload") {
+      return "Die Datei ist zu groß (maximal 15MB erlaubt).";
+    }
+  }
+  if (res.status === 400) {
+    if (path === "/uploads/upload") {
+      if (textResBody === "MIME-Type not supported") return "Das Dateiformat ist nicht unterstützt.";
+    }
+  }
+  return "Ein unbekannter Fehler ist aufgetreten.";
+}
+
+export async function clearedRequestQueue(requestsAndResponses: {request: SerializedRequest, response: Response}[]): Promise<void> {
+  renderRequestQueue();
+
+  const newList = $("<div></div>");
+  
+  for (const reqAndRes of requestsAndResponses) {
+    const req = reqAndRes.request;
+    const res = reqAndRes.response;
+    newList.append(`
+      <li class="list-group-item d-flex align-items-center gap-2">
+        <i class="fas ${res.ok ? "fa-circle-check text-success" : "fa-circle-xmark text-danger"} ms-n1"
+          role="img" aria-label="${res.ok ? "Erfolgreich" : "Fehler"}"></i>
+        <div>
+          ${await getRequestDescription(req)}
+          <div class="form-text text-danger mt-0">${getResponseFailReason(req, res)}</div>
+        </div>
+      </li>
+    `);
+  }
+
+  $("#request-queue-cleared-modal-list").empty().append(newList.children());
+
+  if (requestsAndResponses.length > 0) $("#request-queue-cleared-modal").modal("show");
 }
 
 export async function ajax(method: string, url: string, options?: AjaxOptions): Promise<Response> {
@@ -752,43 +934,49 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
     body,
     headers = {},
     queueable = false,
+    forceOffline = false,
+    passFailedRequests = false,
     expectedErrors = []
   } = options ?? {};
+  
+  const mergedHeaders = new Headers(headers);
+  mergedHeaders.set("Accept", "application/json");
+  mergedHeaders.set("X-CSRF-Token", await csrfToken());
+  mergedHeaders.set("X-API-Version", (await bootstrap()).version);
 
   const fetchOptions: RequestInit = {
     method,
-    headers: {
-      "Accept": "application/json",
-      "X-CSRF-Token": await csrfToken(),
-      ...headers
-    }
+    headers: mergedHeaders
   };
 
   if (body) {
-    if (body instanceof FormData) {
-      fetchOptions.body = body;
-    }
-    else {
-      fetchOptions.headers = {
-        ...fetchOptions.headers,
-        "Content-Type": "application/json"
-      };
+    if (Object.getPrototypeOf(body) === Object.prototype) {
+      mergedHeaders.set("Content-Type", "application/json");
       fetchOptions.body = JSON.stringify(body);
+    }
+    else if (body instanceof FormData || body instanceof ArrayBuffer) {
+      fetchOptions.body = body;
     }
   }
 
   const req = new Request(url, fetchOptions);
 
-  if (navigator.onLine) {
+  const b = await bootstrap();
+  if ((b.online && !b.maintenance) || forceOffline) {
     const timeout = setTimeout(() => {
       $("#error-server-toast").toast("show");
     }, 5000);
 
+    if (url === "/api/classes/1/members/me") {
+      req.headers.forEach((v, k) => {
+        alert(k + " " + v);
+      });
+    }
     const res = await fetch(req);
     
     clearTimeout(timeout);
 
-    if (!res.ok) {
+    if (!res.ok && !passFailedRequests) {
       const text = await res.text();
 
       const error: AjaxError = {
@@ -801,7 +989,7 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
         throw error;
       }
       else if (res.status === 503) {
-        highlightOffline();
+        highlightUnavailable();
       }
       else if (expectedErrors.includes(res.status)) {
         throw error;
@@ -819,7 +1007,7 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
     return new Response("Request queued, waiting for the network to become available", { status: 202 });
   }
   else {
-    highlightOffline();
+    highlightUnavailable();
     return new Response("Request cannot be queued and no network available", { status: 503 });
   }
 }
@@ -854,30 +1042,6 @@ export enum ColorTheme {
 };
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
 
-const themeColor = document.createElement("meta");
-themeColor.name = "theme-color";
-if (localStorage.getItem("colorTheme") === ColorTheme.DARK) {
-  colorTheme(ColorTheme.DARK);
-}
-else if (localStorage.getItem("colorTheme") === ColorTheme.LIGHT) {
-  colorTheme(ColorTheme.LIGHT);
-}
-else if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
-  colorTheme(ColorTheme.DARK);
-}
-else {
-  colorTheme(ColorTheme.LIGHT);
-}
-if ((await colorTheme()) === ColorTheme.LIGHT) {
-  themeColor.content = "#f8f9fa";
-}
-else {
-  document.getElementsByTagName("html")[0].style.background = "#212529";
-  themeColor.content = "#2b3035";
-}
-
-document.head.appendChild(themeColor);
-
 // Data accessors
 export function createDataAccessor<DataType>(name: string, config?: {
   reload?: string | ((settings?: {silent?: boolean}) => Promise<void>)
@@ -889,7 +1053,7 @@ export function createDataAccessor<DataType>(name: string, config?: {
   const reload = config?.reload;
 
   const reloadFunction = typeof reload === "string" ? async (settings?: {silent?: boolean}) => {
-    const res = await fetch(reload);
+    const res = await ajax("GET", reload, { forceOffline: true });
     if (res.redirected) {
       accessor.set(null, settings);
       return;
@@ -1023,24 +1187,106 @@ export function createSocketDataAccessor<DataType>(name: string, socketEv: strin
   return accessor;
 }
 
+// User
+export const user = {
+  isAuthed: false as boolean,
+  loggedIn: null as boolean | null,
+  username: null as string | null,
+  classJoined: null as boolean | null,
+  permissionLevel: 0 as number,
+  changeEvents: 0,
+
+  _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
+
+  async auth(settings?: {silent?: boolean}) {
+    const res = await ajax("GET", "/api/account/auth", { forceOffline: true });
+    if (!res.ok) throw new Error("HTTP error during auth: " + res.status + " " + await res.text());
+    const json = await res.json();
+
+    user.isAuthed = true;
+
+    if (json.loggedIn) {
+      user.loggedIn = true;
+      user.username = json.account.username;
+    }
+    else {
+      user.loggedIn = false;
+      user.username = null;
+    }
+  
+    user.classJoined = json.classJoined;
+    user.permissionLevel = json.permissionLevel ?? 0;
+  
+    if (json.loggedIn) {
+      user.loggedIn = true;
+    }
+    else {
+      user.loggedIn = false;
+      user.username = null;
+    }
+
+    user.changeEvents++;
+    user.trigger("change", settings);
+  },
+
+  async awaitAuthed() {
+    if (this.isAuthed) return;
+    return new Promise<void>(res => {
+      this.on("change", () => {
+        if (this.isAuthed) res();
+      });
+    });
+  },
+
+  on(event: UserEventName, callback: UserEventCallback) {
+    if (!this._eventListeners[event]) {
+      this._eventListeners[event] = [];
+    }
+    this._eventListeners[event].push(callback);
+    return this;
+  },
+
+  off(event: UserEventName) {
+    this._eventListeners[event] = [];
+    return this;
+  },
+
+  trigger(event: UserEventName, ...args: unknown[]) {
+    for (const cb of this._eventListeners[event] ?? []) {
+      cb(...args);
+    }
+    return this;
+  }
+};
+
+// CSRF token
+export const csrfToken = createDataAccessor<string>("csrfToken");
+
+// Bootstrap
+export const bootstrap = createDataAccessor<Bootstrap>("bootstrap");
+
+// Show all uploads
+export const unsavedChanges = createDataAccessor<boolean>("unsavedChanges");
+unsavedChanges(false);
+
 // Resources
 export const classInfo = createSocketDataAccessor<ClassInfo>("classInfo", "updateClassInfo", {
-  reload: "/class/get_class_info"
+  reload: "/api/classes/1" // TODO: own class id, Necessary?
 });
 export const classMemberData = createSocketDataAccessor<ClassMemberData>("classMemberData", "updateMembers", {
-  reload: "/class/get_class_members"
+  reload: "/api/classes/1/members" // TODO: own class id, Necessary?
 });
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", {
   reload: loadClassSubstitutionsData
 });
 export const eventData = createSocketDataAccessor<EventData>("eventData", "updateEvents", {
-  reload: "/events/get_event_data"
+  reload: "/api/events"
 });
 export const eventTypeData = createSocketDataAccessor<EventTypeData>("eventTypeData", "updateEventTypes", {
-  reload: "/events/get_event_type_data"
+  reload: "/api/events/types"
 });
 export const homeworkData = createSocketDataAccessor<HomeworkData>("homeworkData", "updateHomework", {
-  reload: "/homework/get_homework_data"
+  reload: "/api/homework"
 });
 export const homeworkCheckedData = createSocketDataAccessor<HomeworkCheckedData>("homeworkCheckedData", "updateCheckedHomework", {
   reload: loadHomeworkCheckedData
@@ -1049,35 +1295,27 @@ export const joinedTeamsData = createSocketDataAccessor<JoinedTeamsData>("joined
   reload: loadJoinedTeamsData
 });
 export const lessonData = createSocketDataAccessor<LessonData>("lessonData", "updateTimetables", {
-  reload: "/lessons/get_lesson_data"
+  reload: "/api/lessons"
 });
 export const subjectData = createSocketDataAccessor<SubjectData>("subjectData", "updateSubjects", {
-  reload: "/subjects/get_subject_data"
+  reload: "/api/subjects"
 });
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", {
-  reload: "/substitutions/get_substitutions_data"
+  reload: "/api/substitutions"
 });
 export const teamsData = createSocketDataAccessor<TeamsData>("teamsData", "updateTeams", {
-  reload: "/teams/get_teams_data"
+  reload: "/api/teams"
 });
 export const uploadData = createSocketDataAccessor<UploadData>("uploadData", "updateUploads", {
-  reload: loadUploadData
+  reload: "/api/uploads"
 });
 export const uploadRequestsData = createSocketDataAccessor<UploadRequestsData>("uploadRequestsData", "updateUploadRequests", {
-  reload: "/uploads/get_request_data"
+  reload: "/api/uploads/requests"
 });
 
-eventTypeData.on("change", tryForceReloadEventTypeStyles);
-
-$(document).on("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    if (navigator.onLine) reloadAll();
-  }
-});
-
-async function onOffline(): Promise<void> {
-  $("#offline-hint").show();
-  $("#offline-popup").show();
+async function onUnavailable(): Promise<void> {
+  $("#unavailable-hint").show();
+  $("#unavailable-popup").show();
   $("#navbar-reload-button").hide();
   socket.disconnect();
 
@@ -1086,47 +1324,94 @@ async function onOffline(): Promise<void> {
   const lastUpdated: number = await new Promise(res => {
     lastUpdatedReq.onsuccess = () => res(lastUpdatedReq.result);
   });
-  $("#offline-popup-last-updated").html("<b>Stand: </b>" + getDisplayDate(lastUpdated, {
+  $("#unavailable-popup-last-updated").html("<b>Stand: </b>" + getDisplayDate(lastUpdated, {
     relativeDirection: RelativeDirection.PAST, alwaysDate: false, withTime: true
   }));
 }
 
+async function onOffline(): Promise<void> {
+  const b = await bootstrap();
+  b.online = false;
+  await bootstrap(b);
+  $(".unavailable-offline").show();
+  $(".unavailable-maintenance").hide();
+  onUnavailable();
+}
+
 async function onOnline(): Promise<void> {
-  $("#offline-hint").hide();
-  $("#offline-popup").hide();
+  const b = await bootstrap();
+  b.online = true;
+  await bootstrap(b);
+  if (b.maintenance) {
+    $(".unavailable-offline").hide();
+    $(".unavailable-maintenance").show();
+    return;
+  }
+
+  $("#unavailable-hint").hide();
+  $("#unavailable-popup").hide();
   $("#navbar-reload-button").show();
-  await user.auth();
   if (! user.classJoined && isSite("main", "events", "homework", "uploads")) {
     document.location.href = document.location.origin + "/join";
   }
   clearRequestQueue();
 }
 
-$(globalThis).on("offline", onOffline);
-$(globalThis).on("online", () => {
-  onOnline();
+try {
+  const res = await fetch("/csrf-token");
+  if (!res.ok) {
+    console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
+  }
+  const data = await res.json();
+  csrfToken(data.csrfToken);
+}
+catch (error) {
+  console.error("initCSRF: Error fetching token:", error);
+}
+
+try {
+  const res = await fetch("/bootstrap");
+
+  if (!res.ok) {
+    console.error(`bootstrap: Failed to fetch - status: ${res.status}`);
+  }
+  const data = await res.json();
+  data.online ??= true;
+  bootstrap(data);
+
+  if (data.maintenance) {
+    $(".unavailable-offline").hide();
+    $(".unavailable-maintenance").show();
+    renderRequestQueue();
+    onUnavailable();
+  }
+
+  await user.auth();
+  if (data.online) {
+    onOnline();
+  }
+  else {
+    renderRequestQueue();
+    onOffline();
+  }
+}
+catch (error) {
+  console.error("Error fetching bootstrap:", error);
+}
+
+eventTypeData.on("change", tryForceReloadEventTypeStyles);
+
+$(document).on("visibilitychange", async () => {
+  if (document.visibilityState === "visible") {
+    if ((await bootstrap()).online) reloadAll();
+  }
 });
-if (navigator.onLine) {
-  onOnline();
-}
-else {
-  onOffline();
-  updateRequestQueue();
-  $("body").css({ display: "flex" });
-}
 
-// CSRF token
-export const csrfToken = createDataAccessor<string>("csrfToken");
-
-// Show all uploads
-export const showAllUploads = createDataAccessor<boolean>("showAllUploads");
-showAllUploads(false);
-
-// Show all uploads
-export const unsavedChanges = createDataAccessor<boolean>("unsavedChanges");
-unsavedChanges(false);
+$(globalThis).on("offline", onOffline);
+$(globalThis).on("online", onOnline);
 
 if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
   window.addEventListener("load", async () => {
     navigator.serviceWorker.register("/sw.js");
   });
@@ -1134,6 +1419,38 @@ if ("serviceWorker" in navigator) {
     console.log("Received msg", ev.data);
   });
 }
+
+crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+    const r = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
+    const v = c === "x" ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  }) as `${string}-${string}-${string}-${string}-${string}`;
+};
+
+const themeColor = document.createElement("meta");
+themeColor.name = "theme-color";
+if (localStorage.getItem("colorTheme") === ColorTheme.DARK) {
+  colorTheme(ColorTheme.DARK);
+}
+else if (localStorage.getItem("colorTheme") === ColorTheme.LIGHT) {
+  colorTheme(ColorTheme.LIGHT);
+}
+else if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
+  colorTheme(ColorTheme.DARK);
+}
+else {
+  colorTheme(ColorTheme.LIGHT);
+}
+if ((await colorTheme()) === ColorTheme.LIGHT) {
+  themeColor.content = "#f8f9fa";
+}
+else {
+  document.getElementsByTagName("html")[0].style.background = "#212529";
+  themeColor.content = "#2b3035";
+}
+
+document.head.appendChild(themeColor);
 
 $('[data-bs-toggle="tooltip"]').tooltip();
 new MutationObserver(mutationsList => {
@@ -1171,19 +1488,6 @@ $(document).on("shown.bs.toast", ev => {
 
   $toast.one("hidden.bs.toast", () => $toast.off(".toastProgress"));
 });
-
-
-try {
-  const res = await fetch("/csrf-token");
-  if (!res.ok) {
-    console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
-  }
-  const data = await res.json();
-  csrfToken(data.csrfToken);
-}
-catch (error) {
-  console.error("initCSRF: Error fetching token:", error);
-}
 
 setTimeout(() => {
   const fillRow = (): void => {

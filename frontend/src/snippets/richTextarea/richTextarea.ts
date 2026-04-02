@@ -633,7 +633,7 @@ function replaceRichTextareas(): void {
           for (const node of nodes) {
             handleNode(node);
           }
-          n.remove()
+          n.remove();
           return result.html();
         }
       

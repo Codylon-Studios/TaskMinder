@@ -1,11 +1,4 @@
-import { PrismaClient, Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-const developmentLogLevels: Prisma.LogLevel[] = ["query", "info", "warn", "error"];
-const productionLogLevels: Prisma.LogLevel[] = ["warn", "error"];
-
-const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === "DEVELOPMENT" 
-    ? developmentLogLevels 
-    : productionLogLevels
-});
+const prisma = new PrismaClient();
 export default prisma;

@@ -14,10 +14,10 @@ import {
   getCirclePath,
   dateDaysDifference,
   onlyThisSite,
-  ajax
+  ajax,
+  user
 } from "../../global/global.js";
 import { HomeworkData } from "../../global/types";
-import { user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
 import { SearchBox } from "../../snippets/searchBox/searchBox.js";
 
@@ -551,7 +551,7 @@ async function addHomework(): Promise<void> {
       const submissionDate = $("#add-homework-date-submission").val()?.toString() ?? "";
       const teamId = $("#add-homework-team").val();
 
-      await ajax("POST", "/homework/add_homework", {
+      await ajax("POST", "/api/homework", {
         body: {
           subjectId,
           content,
@@ -571,9 +571,8 @@ async function pinHomework(homeworkId: number): Promise<void> {
   const homework = (await homeworkData()).find(h => h.homeworkId === homeworkId);
   if (!homework) return;
 
-  await ajax("POST", "/homework/pin_homework", {
+  await ajax("PATCH", `/api/homework/${homeworkId}/pin`, {
     body: {
-      homeworkId,
       pinStatus: !homework.isPinned
     },
     queueable: true
@@ -613,9 +612,8 @@ async function editHomework(homeworkId: number): Promise<void> {
       const submissionDate = $("#edit-homework-date-submission").val()?.toString() ?? "";
       const teamId = $("#edit-homework-team").val();
 
-      await ajax("POST", "/homework/edit_homework", {
+      await ajax("PATCH", `/api/homework/${homeworkId}`, {
         body: {
-          homeworkId,
           subjectId,
           content,
           assignmentDate: dateToMs(assignmentDate),
@@ -646,8 +644,7 @@ function deleteHomework(homeworkId: number): void {
       // Hide the confirmation toast
       $("#delete-homework-confirm-toast").toast("hide");
 
-      await ajax("POST", "/homework/delete_homework", {
-        body: { homeworkId },
+      await ajax("DELETE", `/api/homework/${homeworkId}`, {
         queueable: true
       });
 
@@ -662,8 +659,8 @@ async function checkHomework(homeworkId: number, checkStatus?: boolean): Promise
 
   // Check whether the user is logged in
   if (user.loggedIn) {
-    await ajax("POST", "/homework/check_homework", {
-      body: { homeworkId, checkStatus: checkStatus },
+    await ajax("PATCH", `/api/homework/${homeworkId}/check`, {
+      body: { checkStatus: checkStatus },
       queueable: true
     });
   }

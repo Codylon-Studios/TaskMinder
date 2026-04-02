@@ -44,7 +44,7 @@ router.post(
 // get single file (preview or download)
 router.get("/:id", readUploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
 // edit file
-router.patch(
+router.patch( // TODO: isn't it PUT?
   "/:id",
   writeUploadLimiter,
   checkAccess(["CLASS", "EDITOR"]),

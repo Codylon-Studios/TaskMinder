@@ -11,10 +11,10 @@ import {
   escapeHTML,
   dateDaysDifference,
   onlyThisSite,
-  ajax
+  ajax,
+  user
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
-import { user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
 import { SearchBox } from "../../snippets/searchBox/searchBox.js";
 
@@ -284,7 +284,7 @@ function addEvent(): void {
     const endDate = $("#add-event-end-date").val()?.toString() ?? "";
     const teamId = $("#add-event-team").val();
 
-    await ajax("POST", "/events/add_event", {
+    await ajax("POST", "/api/events", {
       body: {
         eventTypeId,
         name,
@@ -434,9 +434,8 @@ async function pinEvent(eventId: number): Promise<void> {
   const event = (await eventData()).find(e => e.eventId === eventId);
   if (!event) return;
 
-  await ajax("POST", "/events/pin_event", {
+  await ajax("PATCH", `/api/events/${eventId}/pin`, {
     body: {
-      eventId,
       pinStatus: !event.isPinned
     },
     queueable: true
@@ -482,9 +481,8 @@ async function editEvent(eventId: number): Promise<void> {
       const endDate = $("#edit-event-end-date").val()?.toString() ?? "";
       const teamId = $("#edit-event-team").val();
 
-      await ajax("POST", "/events/edit_event", {
+      await ajax("PATCH", `/api/events/${eventId}`, {
         body: {
-          eventId,
           eventTypeId,
           name,
           description,
@@ -517,8 +515,7 @@ function deleteEvent(eventId: number): void {
       // Hide the confirmation toast
       $("#delete-event-confirm-toast").toast("hide");
 
-      await ajax("POST", "/events/delete_event", {
-        body: { eventId },
+      await ajax("DELETE", `/api/events/${eventId}`, {
         queueable: true
       });
       

@@ -1,13 +1,13 @@
-import { ajax, socket } from "../../global/global.js";
+import { ajax, socket, user } from "../../global/global.js";
 import { AjaxError } from "../../global/types.js";
-import { replaceSitePJAX as openSitePJAX } from "../../snippets/loadingBar/loadingBar.js";
-import { resetLoginRegister, user } from "../../snippets/navbar/navbar.js";
+import { resetLoginRegister } from "../../snippets/navbar/navbar.js";
 
-function changeContentOnLogin(): void {
+async function changeContentOnLogin(): Promise<void> {
   if (user.loggedIn && !justCreatedClass) {
     $("#show-login-register-btn").prop("disabled", true).find("i").removeClass("d-none");
     if (user.classJoined) {
-      openSitePJAX("/main");
+      const loadingBarMod = await import("../../snippets/loadingBar/loadingBar.js");
+      loadingBarMod.replaceSitePJAX("/main");
     }
     else if (urlParams.get("action") !== "join") {
       $("#decide-action-panel").show();
@@ -55,7 +55,7 @@ export async function init(): Promise<void> {
 
     (async () => {
       if (! user.classJoined) return;
-      const res = await fetch("/class/get_class_info");
+      const res = await fetch("/api/classes/1"); // TODO: custom id
       if (!res.ok) throw new Error("HTTP error during fetch of classInfo: " + res.status + " " + await res.text());
       $("#decide-account-class-name").text((await res.json()).className);
     })();
@@ -74,13 +74,14 @@ export async function init(): Promise<void> {
       const classCode = $("#join-class-class-code").val();
 
       try {
-        const res = await ajax("POST", "/class/join", {
+        const res = await ajax("POST", "/api/classes/join", {
           body: { classCode },
           expectedErrors: [404]
         });
 
         if (user.loggedIn) {
-          openSitePJAX("/main");
+          const loadingBarMod = await import("../../snippets/loadingBar/loadingBar.js");
+          loadingBarMod.replaceSitePJAX("/main");
         }
         $("#join-class-panel").hide();
         $("#decide-account-panel").show();
@@ -121,7 +122,7 @@ export async function init(): Promise<void> {
       const className = $("#create-class-name").val()?.toString() ?? "";
       $("#show-qrcode-modal-title b").text(className);
 
-      const res = await ajax("POST", "/class/create_class", {
+      const res = await ajax("POST", "/api/classes", {
         body: {
           classDisplayName: className,
           isTestClass: $("#create-class-is-test").prop("checked")

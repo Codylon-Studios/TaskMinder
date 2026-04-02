@@ -9,6 +9,8 @@ type AjaxOptions = {
   body?: unknown;
   headers?: Record<string, string>;
   queueable?: boolean;
+  forceOffline?: boolean;
+  passFailedRequests?: boolean;
   expectedErrors?: number[];
 }
 
@@ -23,6 +25,11 @@ type RawDate = number | string | Date
 
 // Month Dates
 type MonthDates = Date[][];
+
+export type UserEventName = "change";
+export type UserEventCallback = (...args: unknown[]) => void;
+
+type Bootstrap = { version: string, maintenance: boolean, online: boolean }
 
 // Data Accessors
 type DataAccessorEventName = "update" | "change";
@@ -211,7 +218,6 @@ type SingleUploadData = {
 
 type UploadData = {
   totalUploads: number;
-  hasMore: boolean;
   totalStorage: string;
   usedStorage: string;
   uploads: SingleUploadData[];

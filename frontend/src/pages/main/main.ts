@@ -22,10 +22,10 @@ import {
   ajax,
   weekDaysSo,
   weekDaysMo,
-  toCommaAndAnd
+  toCommaAndAnd,
+  user
 } from "../../global/global.js";
 import { HomeworkData, MonthDates, TimetableData } from "../../global/types";
-import { user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 async function getCalendarDayHtml(date: Date, week: number, multiEventPositions: (number | null)[]): Promise<string> {
@@ -209,8 +209,8 @@ async function checkHomework(homeworkId: number): Promise<void> {
 
   // Check whether the user is logged in
   if (user.loggedIn) {
-    await ajax("POST", "/homework/check_homework", {
-      body: { homeworkId, checkStatus: checkStatus },
+    await ajax("PATCH", `/api/homework/${homeworkId}/check`, {
+      body: { checkStatus: checkStatus },
       queueable: true
     });
   }

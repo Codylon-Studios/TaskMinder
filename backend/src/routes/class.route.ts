@@ -37,7 +37,7 @@ router.patch(
   validate(changeDefaultPermissionSchema),
   classController.changeDefaultPermission
 );
-router.put(
+router.patch(
   "/:id/members/permissions",
   writeClassLimiter,
   checkAccess(["CLASS", "ADMIN"]),
@@ -55,7 +55,7 @@ router.post(
 );
 router.patch("/:id/name", writeClassLimiter, checkAccess(["CLASS", "MANAGER"]), validate(changeClassNameSchema), classController.changeClassName);
 router.patch(
-  "/:id/code/regenerate", 
+  "/:id/code", 
   writeClassLimiter, 
   checkAccess(["CLASS", "ADMIN"]), 
   validate(changeClassCodeSchema), 

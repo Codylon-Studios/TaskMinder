@@ -121,6 +121,7 @@ app.use(sessionMiddleware);
 app.use(csrfSessionInit);
 
 app.get("/bootstrap", authLimiter, async (req, res, next) => {
+  console.log("GET BOOTSTRAP");
   try {
     const auth = await accountService.getAuth(req.session);
 
@@ -129,7 +130,7 @@ app.get("/bootstrap", authLimiter, async (req, res, next) => {
       process.env.CACHE_ENABLED === "true";
     
     res.set("Cache-Control", "no-store");
-    res.status(200).json({ classJoined: auth.classJoined, version: MAX_VERSION, cacheEnabled: cacheEnabled });
+    res.status(200).json({ maintenance: false, classJoined: auth.classJoined, version: MAX_VERSION, cacheEnabled });
   }
   catch (error) {
     next(error);
@@ -212,13 +213,13 @@ app.use((req, res) => {
 
   switch (ext) {
   case ".css":
-    res.sendFile(path.join(pagesPath, "404", "404.css"));
+    res.status(404).sendFile(path.join(pagesPath, "404", "404.css"));
     break;
   case ".js":
-    res.sendFile(path.join(pagesPath, "404", "404.js"));
+    res.status(404).sendFile(path.join(pagesPath, "404", "404.js"));
     break;
   default:
-    res.sendFile(path.join(pagesPath, "404", "404.html"));
+    res.status(404).sendFile(path.join(pagesPath, "404", "404.html"));
     break;
   }
 });

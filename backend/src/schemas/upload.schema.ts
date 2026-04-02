@@ -78,7 +78,7 @@ export const deleteUploadRequestSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: strictObject({})
+  body: z.any() // TODO: type?
 });
 
 export type getUploadFileQuery = z.infer<typeof getUploadFileSchema>["query"];

@@ -5,7 +5,7 @@ export const getClassInfoSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: z.strictObject({})
+  body: z.any() // TODO: good type?
 });
 
 export const createClassSchema = z.object({
@@ -30,7 +30,7 @@ export const leaveClassSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: z.strictObject({})
+  body: z.any() // TODO: good type?
 });
 
 export const deleteClassSchema = z.object({
@@ -85,7 +85,7 @@ export const getClassMembersSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: z.strictObject({})
+  body: z.any() // TODO: good type?
 });
 
 export const kickLoggedOutUsersSchema = z.object({

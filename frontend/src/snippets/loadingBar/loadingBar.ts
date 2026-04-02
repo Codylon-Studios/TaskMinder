@@ -1,6 +1,6 @@
-import { getSite, isValidSite, renderAll, unsavedChanges } from "../../global/global.js";
+import { getSite, isValidSite, renderAll, unsavedChanges, highlightUnavailable } from "../../global/global.js";
 import { init as initBottombar } from "../bottombar/bottombar.js";
-import { highlightOffline, init as initNavbar, user } from "../navbar/navbar.js";
+import { init as initNavbar } from "../navbar/navbar.js";
 
 async function init(): Promise<void> {
   let s = getSite();
@@ -15,9 +15,6 @@ async function init(): Promise<void> {
     $("head").append(`<link rel="stylesheet" href="/pages/${s}/${s}.css" data-site="${s}">`);
   }
   
-  if (! user.isAuthed) {
-    await user.auth({ silent: true });
-  }
   const mod = await import(`../../pages/${s}/${s}.js`);
   await new Promise(res => {
     $(res);
@@ -90,7 +87,7 @@ export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promi
       const res = await fetch(url);
 
       if (res.status === 503) {
-        throw new Error("Offline");
+        throw new Error("Unavailable");
       }
 
       const doc = await res.text();
@@ -100,7 +97,7 @@ export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promi
     }
     catch {
       clearInterval(interval);
-      highlightOffline();
+      highlightUnavailable();
       return;
     }
 

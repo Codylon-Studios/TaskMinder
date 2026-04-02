@@ -8,14 +8,14 @@ import {
   getDisplayDate,
   loadTimetableData,
   getSimpleDisplayDate,
-  showAllUploads,
   onlyThisSite,
   isSameDay,
   ajax,
-  uploadRequestsData
+  uploadRequestsData,
+  bootstrap,
+  user
 } from "../../global/global.js";
 import { AjaxError, SingleUploadData } from "../../global/types";
-import { user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
 import { SearchBox } from "../../snippets/searchBox/searchBox.js";
 
@@ -250,7 +250,6 @@ async function renderUploadList(): Promise<void> {
   $("#upload-gallery").empty().append(newGalleryContent.children()).toggleClass("d-none", data.length === 0);
   $("#upload-table-body").empty().append(newTableContent.children());
   $("#upload-table").toggleClass("d-none", data.length === 0);
-  $("#upload-load-more").toggle((await uploadData()).hasMore);
 
   renderUploadRequests();
 };
@@ -421,7 +420,7 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
       }
 
       try {
-        await ajax("POST", "/uploads/upload", {
+        await ajax("POST", "/api/uploads", {
           body: data,
           queueable: true,
           expectedErrors: [400, 413]
@@ -431,8 +430,7 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
         $("#add-upload-modal").modal("hide");
 
         if (uploadRequestId) {
-          await ajax("POST", "/uploads/delete_request", {
-            body: { uploadRequestId },
+          await ajax("DELETE", `/api/uploads/requests/${uploadRequestId}`, {
             queueable: true
           });
         }
@@ -440,10 +438,10 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
       catch (e) {
         const err = e as AjaxError;
         if (err.status === 400 && err.responseText === "MIME-Type not supported") {
-          $("#upload-unsupported-mime-type-toast").toast("show");
+          $("#unsupported-mime-type-toast").toast("show");
         }
         else if (err.status === 413) {
-          $("#upload-size-limit-exceeded-toast").toast("show");
+          $("#size-limit-exceeded-toast").toast("show");
         }
       }
     });
@@ -456,7 +454,7 @@ async function viewUpload(uploadId: number): Promise<void> {
 
       const filenameStarMatch = new RegExp(/filename\*\s*=\s*([^;]+)/i).exec(header);
       if (!filenameStarMatch) return null;
-      let value = filenameStarMatch[1].trim();
+      const value = filenameStarMatch[1].trim();
 
       const parts = value.split("''");
       if (parts.length === 2) {
@@ -472,11 +470,11 @@ async function viewUpload(uploadId: number): Promise<void> {
     $("#view-upload-nav-back").prop("disabled", fileId === 0);
     $("#view-upload-nav-next").prop("disabled", upload.filesCount === fileId + 1);
 
-    const route = `/uploads/file/${upload.files[fileId].fileMetaDataId}`;
+    const route = `/api/uploads/${upload.files[fileId].fileMetaDataId}`;
 
-    $("#view-upload-loading").show()
-    $("#view-upload-object").hide()
-    $("#view-upload-error").hide()
+    $("#view-upload-loading").show();
+    $("#view-upload-object").hide();
+    $("#view-upload-error").hide();
 
     const response = await fetch(route + "?action=preview", { cache: "force-cache" });
 
@@ -486,28 +484,28 @@ async function viewUpload(uploadId: number): Promise<void> {
       const filename = getFilenameFromContentDisposition(response.headers.get("content-disposition") ?? "Datei") ?? "Datei";
       const file = new File([blob], filename, { type: blob.type });
 
-      $("#view-upload-loading").hide()
-      $("#view-upload-error").hide()
+      $("#view-upload-loading").hide();
+      $("#view-upload-error").hide();
 
       const mime = upload.files[fileId].mimeType;
       $("#view-upload-first-page-note").toggle(mime === "application/pdf");
       
-      $("#view-upload-object").attr("data", blobUrl).attr("type", mime).toggleClass("ios", /iPhone/.test(navigator.userAgent)).show()
+      $("#view-upload-object").attr("data", blobUrl).attr("type", mime).toggleClass("ios", /iPhone/.test(navigator.userAgent)).show();
 
       $("#view-upload-download").off("click").on("click", () => {
         if (navigator.canShare?.({ files: [file] })) {
-          navigator.share({ files: [file] })
+          navigator.share({ files: [file] });
         }
         else {
-          location.href = route + "?action=download"
+          location.href = route + "?action=download";
         }
-      })
+      });
 
       $("#view-upload-open").attr("href", route + "?action=preview");
     }
     else {
-      $("#view-upload-loading").hide()
-      $("#view-upload-error").show()
+      $("#view-upload-loading").hide();
+      $("#view-upload-error").show();
     }
   }
 
@@ -524,12 +522,13 @@ async function viewUpload(uploadId: number): Promise<void> {
     merge: true
   });
 
-  $("#view-upload-object").toggle(navigator.onLine);
-  const offline = ! navigator.onLine;
-  $("#view-upload-offline").toggle(offline);
-  $("#view-upload-nav-back, #view-upload-nav-next").prop("disabled", offline);
+  const b = await bootstrap();
+  const unavailable = (! b.online) || b.maintenance;
+  $("#view-upload-object").toggle(!unavailable);
+  $("#view-upload-unavailable").toggle(unavailable);
+  $("#view-upload-nav-back, #view-upload-nav-next").prop("disabled", unavailable);
 
-  if (offline) return;
+  if (unavailable) return;
 
   let shownFileId = 0;
   showFile(shownFileId);
@@ -544,7 +543,7 @@ async function copyLinkUpload(uploadId: number) : Promise<void> {
 
   const $el = $(`.upload-copy-link[data-id=${uploadId}]`);
   try {
-    const url = `${location.protocol}//${location.host}/uploads?view-upload=${uploadId}`
+    const url = `${location.protocol}//${location.host}/uploads?view-upload=${uploadId}`;
     const html = `<a href="${url}" class="taskminder-link">${upload.uploadName}</a>`;
 
     await navigator.clipboard.write([new ClipboardItem({
@@ -567,9 +566,8 @@ async function pinUpload(uploadId: number): Promise<void> {
   const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
   if (!upload) return;
 
-  await ajax("POST", "/uploads/pin", {
+  await ajax("PATCH", `/api/uploads/${uploadId}/pin`, {
     body: {
-      uploadId,
       pinStatus: !upload.isPinned
     },
     queueable: true
@@ -612,7 +610,6 @@ async function editUpload(uploadId: number): Promise<void> {
 
       // Prepare the POST request
       const data = new FormData();
-      data.append("uploadId", "" + uploadId);
       data.append("uploadName", name);
       data.append("uploadDescription", description);
       data.append("uploadType", type);
@@ -625,7 +622,7 @@ async function editUpload(uploadId: number): Promise<void> {
       }
 
       try {
-        await ajax("POST", "/uploads/edit", {
+        await ajax("PATCH", `/api/uploads/${uploadId}`, {
           body: data,
           queueable: true,
           expectedErrors: [400, 413]
@@ -637,10 +634,10 @@ async function editUpload(uploadId: number): Promise<void> {
       catch (e) {
         const err = e as AjaxError;
         if (err.status === 400 && err.responseText === "MIME-Type not supported") {
-          $("#upload-unsupported-mime-type-toast").toast("show");
+          $("#unsupported-mime-type-toast").toast("show");
         }
-        else if (err.status === 413) {
-          $("#upload-size-limit-exceeded-toast").toast("show");
+        else if (err.status === 413) { // Max files number
+          $("#size-limit-exceeded-toast").toast("show");
         }
       }
     });
@@ -651,7 +648,7 @@ function deleteUpload(uploadId: number, force?: boolean): void {
     // Hide the confirmation toast
     $("#delete-upload-confirm-toast").toast("hide");
 
-    await ajax("POST", "/uploads/delete", {
+    await ajax("DELETE", `/api/uploads/${uploadId}`, {
       body: { uploadId: uploadId },
       queueable: true
     });
@@ -733,12 +730,6 @@ export async function init(): Promise<void> {
     if (!/iPhone/.test(navigator.userAgent)) {
       $("#view-upload-first-page-note").remove();
     }
-
-    $("#upload-load-more-btn").on("click", () => {
-      showAllUploads(true);
-      uploadData.reload();
-      renderUploadList();
-    });
 
     $("#edit-toggle").on("click", function () {
       $("#upload-gallery .edit-option").toggle($(this).is(":checked"));
@@ -845,7 +836,7 @@ export async function init(): Promise<void> {
     $("#add-upload-request-button").on("click", async () => {
       const uploadRequestName = $("#add-upload-request-name").val()?.toString().trim();
       const teamId = $("#add-upload-request-team").val();
-      await ajax("POST", "/uploads/add_request", {
+      await ajax("POST", "/api/uploads/requests", {
         body: {
           uploadRequestName,
           teamId
@@ -857,8 +848,7 @@ export async function init(): Promise<void> {
     });
 
     $("#app").on("click", ".upload-request-delete", async function () {
-      await ajax("POST", "/uploads/delete_request", {
-        body: { uploadRequestId: $(this).data("id") },
+      await ajax("DELETE", `/api/uploads/requests/${$(this).data("id")}`, {
         queueable: true
       });
     });
@@ -946,9 +936,6 @@ enum View {
 let view: View;
 
 $(globalThis).on("resize", toggleView);
-
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-const isStandalone = ("standalone" in navigator && navigator.standalone) as boolean;
 
 (await uploadData.init()).on("update", onlyThisSite(renderUploadList));
 (await uploadRequestsData.init()).on("update", onlyThisSite(renderUploadRequests));

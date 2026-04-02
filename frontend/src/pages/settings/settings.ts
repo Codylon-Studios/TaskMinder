@@ -19,17 +19,17 @@ import {
   ajax,
   $cloneTemplate,
   toCommaAndAnd,
-  classInfo
+  classInfo,
+  user
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel, AjaxError } from "../../global/types";
-import { user } from "../../snippets/navbar/navbar.js";
 
 function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
 }
 
 function checkSecurePassword(password: string): boolean {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
+  return /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{6,128}$/.test(password);
 }
 
 async function updateColorTheme(): Promise<void> {
@@ -88,21 +88,21 @@ async function renderClassMemberList(): Promise<void> {
   const currentClassMemberData = await classMemberData();
 
   const roles = ["Mitglied", "Bearbeiter:in", "Manager:in", "Admin"];
-  let newClassMembersContent = $("<div></div>");
+  const newClassMembersContent = $("<div></div>");
 
   for (const classMember of currentClassMemberData) {
     const classMemberId = classMember.accountId;
     const isCurrentUser = classMember.username === user.username;
-    const isMe = user.username == classMember.username
+    const isMe = user.username === classMember.username;
 
     const t = $cloneTemplate("#class-member-template", { dataId: classMemberId.toString(), disabled: !canEditClassSettings });
     t.find(".class-member-name").html(escapeHTML(classMember.username) + (isCurrentUser ? " <b>(Du)</b>" : ""));
-    t.find(".class-member-role-input").val(classMember.permissionLevel ?? 0)
-    t.find(".class-member-is-current-user").toggle(isMe)
+    t.find(".class-member-role-input").val(classMember.permissionLevel ?? 0);
+    t.find(".class-member-is-current-user").toggle(isMe);
     t.find(".class-member-changes").hide();
     t.find(".class-member-changed-role-old").text(roles[classMember.permissionLevel ?? 0]);
     if (isMe) {
-      t.find(".class-member-role-input, .class-member-kick").attr("disabled", "").addClass("is-current-user")
+      t.find(".class-member-role-input, .class-member-kick").attr("disabled", "").addClass("is-current-user");
     }
     newClassMembersContent.append(t);
   }
@@ -437,126 +437,22 @@ async function renderSubjectList(): Promise<void> {
     $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
   }
 
-  let currentSubjectData = await subjectData();
+  const currentSubjectData = await subjectData();
 
   let newSubjectsContent = $("<div></div>");
 
   for (const subject of currentSubjectData) {
-
-    function getTemplate(): JQuery<HTMLElement> {
-      function getHtmlFromValue(value: unknown, fallback: string): string {
-        return escapeHTML(value?.toString() ?? fallback);
-      }
-      const isDisabled = canEditClassSettings ? "" : "disabled";
-
-      const teacherGenderOptions = [
-        { value: "d", label: "-" },
-        { value: "w", label: "Frau" },
-        { value: "m", label: "Herr" }
-      ];
-      const teacherGenderOptionsHtml = teacherGenderOptions.map(opt => 
-        `<option value="${opt.value}" ${subject.teacherGender === opt.value ? "selected" : ""}>${opt.label}</option>`
-      ).join("");
-
-      const subjectNameSubstitution = getHtmlFromValue(subject.subjectNameSubstitution, "keine Angabe");
-      const teacherNameSubstitution = getHtmlFromValue(subject.teacherNameSubstitution, "keine Angabe");
-      return $(`
-        <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
-          <div class="d-flex flex-column w-100 me-3">
-            <div class="me-3">
-              <div class="d-flex align-items-center gap-3 mb-2">
-                <b>Fach</b>
-                <label for="subject-name-long-input-${subject.subjectId}">Name</label>
-                <div class="d-inline-block w-100">
-                  <input class="form-control form-control-sm subject-name-long-input" type="text" id="subject-name-long-input-${subject.subjectId}"
-                    value="${subjectNameLong}" placeholder="${subjectNameLong}" data-id="${subjectId}" ${isDisabled}>
-                  <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
-                </div>
-                <label for="subject-name-short-input-${subject.subjectId}">Abkürzung</label>
-                <input class="form-control form-control-sm d-inline-block subject-name-short-input w-25" type="text"
-                  id="subject-name-short-input-${subject.subjectId}" value="${subjectNameShort}" placeholder="${subjectNameShort}"
-                  data-id="${subjectId}" ${isDisabled}>
-              </div>
-              <div class="d-flex gap-3 align-items-center ${dsbActivated ? "mb-2" : ""}">
-                <b>Lehrkraft</b>
-                <label for="subject-teacher-gender-input-${subject.subjectId}">Anrede</label>
-                <div class="d-inline-block w-50">
-                  <select class="form-control form-control-sm subject-teacher-gender-input" data-id="${subjectId}" ${isDisabled}
-                    id="subject-teacher-gender-input-${subject.subjectId}">
-                    ${teacherGenderOptionsHtml}
-                  </select>
-                </div>
-                <label for="subject-teacher-long-input-${subject.subjectId}">Name</label>
-                <div class="d-inline-block w-100">
-                  <input class="form-control form-control-sm subject-teacher-long-input" type="text" value="${teacherNameLong}"
-                    placeholder="${teacherNameLong}" data-id="${subjectId}" ${isDisabled} id="subject-teacher-long-input-${subject.subjectId}">
-                  <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
-                </div>
-                <label for="subject-teacher-short-input-${subject.subjectId}">Kürzel</label>
-                <input class="form-control form-control-sm subject-teacher-short-input w-100" type="text" value="${teacherNameShort}"
-                  placeholder="${teacherNameShort}" data-id="${subjectId}" ${isDisabled} id="subject-teacher-short-input-${subject.subjectId}">
-              </div>
-              <div class="d-flex gap-3 align-items-center ${dsbActivated ? "" : "d-none"}">
-                <b>Vertretungen</b>
-                <label for="subject-name-substitution-input-${subject.subjectId}">Fachname</label>
-                <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"
-                  type="text" value="${escapeHTML(subject.subjectNameSubstitution?.toString() ?? "")}" ${isDisabled}
-                  placeholder="${subjectNameSubstitution}" id="subject-name-substitution-input-${subject.subjectId}">
-                <label for="subject-teacher-substitution-input-${subject.subjectId}">Lehrkraftname</label>
-                <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id="${subjectId}"
-                  type="text" value="${escapeHTML(subject.teacherNameSubstitution?.toString() ?? "")}" ${isDisabled}
-                  placeholder="${teacherNameSubstitution}" id="subject-teacher-substitution-input-${subject.subjectId}">
-              </div>
-            </div>
-            <div>
-              <div class="text-warning fw-bold mt-2 d-none subject-changed" data-id="${subjectId}">
-                Geändert
-                <span class="subject-changed-name-long">
-                  ${escapeHTML(subject.subjectNameLong)} zu <b></b>
-                </span>
-                <span class="subject-changed-name-short">
-                  ${escapeHTML(subject.subjectNameShort)} zu <b></b>
-                </span>
-                <span class="subject-changed-name-substitution">
-                  ${subjectNameSubstitution} zu <b></b>
-                </span>
-                <span class="subject-changed-teacher-gender">
-                  ${{ w: "Frau", m: "Herr", d: "Keine Anrede" }[subject.teacherGender]} zu <b></b>
-                </span>
-                <span class="subject-changed-teacher-long">
-                  ${escapeHTML(subject.teacherNameLong)} zu <b></b>
-                </span>
-                <span class="subject-changed-teacher-short">
-                  ${escapeHTML(subject.teacherNameShort)} zu <b></b>
-                </span>
-                <span class="subject-changed-teacher-substitution">
-                  ${teacherNameSubstitution} zu <b></b>
-                </span>
-              </div>
-              <div class="text-danger fw-bold mt-2 d-none subject-deleted" data-id="${subjectId}">Gelöscht</div>
-            </div>
-          </div
-          <div>
-            <button class="btn btn-sm btn-sm-square btn-danger float-end subject-delete"
-              data-id="${subjectId}" ${isDisabled} aria-label="Fach entfernen">
-              <i class="fa-solid fa-trash" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>
-      `);
-    }
-
     const subjectId = subject.subjectId;
     const subjectNameLong = escapeHTML(subject.subjectNameLong);
     const subjectNameShort = escapeHTML(subject.subjectNameShort);
     const teacherNameLong = escapeHTML(subject.teacherNameLong);
     const teacherNameShort = escapeHTML(subject.teacherNameShort);
-    const subjectNameSubstitution = subject.subjectNameSubstitution?.toString() ?? ""
-    const teacherNameSubstitution = subject.teacherNameSubstitution?.toString() ?? ""
+    const subjectNameSubstitution = subject.subjectNameSubstitution?.toString() ?? "";
+    const teacherNameSubstitution = subject.teacherNameSubstitution?.toString() ?? "";
 
     const t = $cloneTemplate("#subject-template", { dataId: subjectId.toString(), disabled: !canEditClassSettings });
 
-    t.find(".subject-substitutions").toggle(dsbActivated)
+    t.find(".subject-substitutions").toggle(dsbActivated);
     t.find(".subject-changes").hide();
 
     t.find(".subject-name-long-input").val(subjectNameLong).attr("placeholder", subjectNameLong);
@@ -597,14 +493,14 @@ async function renderSubjectList(): Promise<void> {
 
     const newVal = $(this).val()?.toString() ?? "";
 
-    const shortInput = $(this).closest(".subject").find(".subject-name-short-input")
+    const shortInput = $(this).closest(".subject").find(".subject-name-short-input");
     if (shortInput.is(".autocomplete") || (shortInput.val()?.toString() ?? "").trim() === "") {
-      shortInput.addClass("autocomplete").val(newVal.substring(0, 3)).trigger("autoinput")
+      shortInput.addClass("autocomplete").val(newVal.substring(0, 3)).trigger("autoinput");
     }
 
-    const substitutionInput = $(this).closest(".subject").find(".subject-name-substitution-input")
+    const substitutionInput = $(this).closest(".subject").find(".subject-name-substitution-input");
     if (substitutionInput.is(".autocomplete") || (substitutionInput.val()?.toString() ?? "").trim() === "") {
-      substitutionInput.addClass("autocomplete").val(newVal).trigger("autoinput")
+      substitutionInput.addClass("autocomplete").val(newVal).trigger("autoinput");
     }
 
     const id = $(this).data("id");
@@ -664,9 +560,9 @@ async function renderSubjectList(): Promise<void> {
 
     const newVal = $(this).val()?.toString() ?? "";
 
-    const shortInput = $(this).closest(".subject").find(".subject-teacher-short-input")
+    const shortInput = $(this).closest(".subject").find(".subject-teacher-short-input");
     if (shortInput.is(".autocomplete") || (shortInput.val()?.toString() ?? "").trim() === "") {
-      shortInput.addClass("autocomplete").val(newVal.substring(0, 3)).trigger("autoinput")
+      shortInput.addClass("autocomplete").val(newVal.substring(0, 3)).trigger("autoinput");
     }
 
     const id = $(this).data("id");
@@ -687,9 +583,9 @@ async function renderSubjectList(): Promise<void> {
 
     const newVal = $(this).val()?.toString() ?? "";
 
-    const substitutionInput = $(this).closest(".subject").find(".subject-teacher-substitution-input")
+    const substitutionInput = $(this).closest(".subject").find(".subject-teacher-substitution-input");
     if (substitutionInput.is(".autocomplete") || (substitutionInput.val()?.toString() ?? "").trim() === "") {
-      substitutionInput.addClass("autocomplete").val(newVal).trigger("autoinput")
+      substitutionInput.addClass("autocomplete").val(newVal).trigger("autoinput");
     }
 
     const id = $(this).data("id");
@@ -705,41 +601,43 @@ async function renderSubjectList(): Promise<void> {
     }
   });
 
-  $("#app").off("input autoinput", ".subject-name-substitution-input").on("input autoinput", ".subject-name-substitution-input", async function () {
-    changedAnything();
+  $("#app").off("input autoinput", ".subject-name-substitution-input")
+    .on("input autoinput", ".subject-name-substitution-input", async function () {
+      changedAnything();
 
-    const newVal = $(this).val()?.toString() ?? "";
+      const newVal = $(this).val()?.toString() ?? "";
 
-    const id = $(this).data("id");
-    if (id !== "") {
-      const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameShort;
-      if (newVal === oldVal) {
-        $changedNameSubstitution(id).hide();
+      const id = $(this).data("id");
+      if (id !== "") {
+        const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameShort;
+        if (newVal === oldVal) {
+          $changedNameSubstitution(id).hide();
+        }
+        else if (! $deleted(id).is(":visible")) {
+          $changedNameSubstitution(id).show().find("b").text(newVal);
+        }
+        toggleChangesContainer(id);
       }
-      else if (! $deleted(id).is(":visible")) {
-        $changedNameSubstitution(id).show().find("b").text(newVal);
-      }
-      toggleChangesContainer(id);
-    }
-  });
+    });
 
-  $("#app").off("input autoinput", ".subject-teacher-substitution-input").on("input autoinput", ".subject-teacher-substitution-input", async function () {
-    changedAnything();
+  $("#app").off("input autoinput", ".subject-teacher-substitution-input")
+    .on("input autoinput", ".subject-teacher-substitution-input", async function () {
+      changedAnything();
 
-    const newVal = $(this).val()?.toString() ?? "";
+      const newVal = $(this).val()?.toString() ?? "";
 
-    const id = $(this).data("id");
-    if (id !== "") {
-      const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameShort;
-      if (newVal === oldVal) {
-        $changedTeacherSubstitution(id).hide();
+      const id = $(this).data("id");
+      if (id !== "") {
+        const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameShort;
+        if (newVal === oldVal) {
+          $changedTeacherSubstitution(id).hide();
+        }
+        else if (! $deleted(id).is(":visible")) {
+          $changedTeacherSubstitution(id).show().find("b").text(newVal);
+        }
+        toggleChangesContainer(id);
       }
-      else if (! $deleted(id).is(":visible")) {
-        $changedTeacherSubstitution(id).show().find("b").text(newVal);
-      }
-      toggleChangesContainer(id);
-    }
-  });
+    });
 
   $(".subject-delete").on("click", function () {
     changedAnything();
@@ -748,8 +646,10 @@ async function renderSubjectList(): Promise<void> {
     const id = $(this).data("id");
     if (subject.hasClass("is-deleted")) {
       $deleted(id).hide();
-      $(".subject-name-long-input, .subject-teacher-gender-input, .subject-teacher-long-input").filter(`[data-id="${id}"]`).trigger("input").trigger("change");
-      $(".subject-name-short-input, .subject-teacher-short-input, .subject-name-substitution-input, .subject-teacher-substitution-input").filter(`[data-id="${id}"]`).trigger("autoinput");
+      $(".subject-name-long-input, .subject-teacher-gender-input, .subject-teacher-long-input")
+        .filter(`[data-id="${id}"]`).trigger("input").trigger("change");
+      $(".subject-name-short-input, .subject-teacher-short-input, .subject-name-substitution-input, .subject-teacher-substitution-input")
+        .filter(`[data-id="${id}"]`).trigger("autoinput");
 
       $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash" aria-hidden="true"></i>')
         .attr("aria-label", "Fach entfernen");
@@ -772,10 +672,11 @@ async function renderSubjectList(): Promise<void> {
 async function renderTimetable(): Promise<void> {
   const newTimetableContent = $("<div></div>");
 
-  const subjectOptions = (await subjectData()).map(s => `<option value="${s.subjectId}">${escapeHTML(s.subjectNameLong)}</option>`).join("")
-  $("#lesson-template .timetable-subject-select").html(`<option value="" disabled>Fach</option><option value="-1">Pause</option>` + subjectOptions)
-  const teamOptions = (await teamsData()).map(t => `<option value="${t.teamId}">${escapeHTML(t.name)}</option>`).join("")
-  $("#lesson-template .timetable-team-select").html(`<option value="-1">Alle</option>` + teamOptions)
+  const subjectOptions = (await subjectData()).map(s => `<option value="${s.subjectId}">${escapeHTML(s.subjectNameLong)}</option>`).join("");
+  $("#lesson-template .timetable-subject-select")
+    .html("<option value=\"\" disabled>Fach</option><option value=\"-1\">Pause</option>" + subjectOptions);
+  const teamOptions = (await teamsData()).map(t => `<option value="${t.teamId}">${escapeHTML(t.name)}</option>`).join("");
+  $("#lesson-template .timetable-team-select").html("<option value=\"-1\">Alle</option>" + teamOptions);
 
   for (let dayId = 0; dayId < 5; dayId++) {
 
@@ -787,15 +688,15 @@ async function renderTimetable(): Promise<void> {
 
   (await lessonData()).forEach(lesson => {
     const t = $cloneTemplate("#lesson-template", { disabled: !canEditClassSettings });
-    t.find(".lesson-number").val(lesson.lessonNumber)
-    t.find(".lesson-start-time").val(msToTime(lesson.startTime))
-    t.find(".lesson-end-time").val(msToTime(lesson.endTime))
-    t.find(".lesson-room").val(lesson.room)
+    t.find(".lesson-number").val(lesson.lessonNumber);
+    t.find(".lesson-start-time").val(msToTime(lesson.startTime));
+    t.find(".lesson-end-time").val(msToTime(lesson.endTime));
+    t.find(".lesson-room").val(lesson.room);
     t.find(".lesson-subject-select")
-      .html(`<option value="" disabled>Fach</option><option value="-1">Pause</option>` + subjectOptions)
+      .html("<option value=\"\" disabled>Fach</option><option value=\"-1\">Pause</option>" + subjectOptions)
       .val(lesson.subjectId);
     t.find(".lesson-team-select")
-      .html(`<option value="-1">Alle</option>` + subjectOptions)
+      .html("<option value=\"-1\">Alle</option>" + subjectOptions)
       .val(lesson.teamId);
 
     newTimetableContent.find(".timetable-lesson-list").eq(lesson.weekDay).append(t);
@@ -809,10 +710,10 @@ async function renderTimetable(): Promise<void> {
   });
 
   $("#app").off("input autoinput", ".lesson-number").on("input autoinput", ".lesson-number", function () {
-    const thisLesson = $(this).closest(".lesson")
+    const thisLesson = $(this).closest(".lesson");
     const lessonNumber = $(this).val()?.toString() ?? "1";
     $("#timetable").find(".lesson").each(function () {
-      if ($(this).is(thisLesson)) return
+      if ($(this).is(thisLesson)) return;
 
       if ($(this).find(".lesson-number").val() === lessonNumber) {
         const start = thisLesson.find(".lesson-start-time");
@@ -833,18 +734,18 @@ async function renderTimetable(): Promise<void> {
 
     const t = $cloneTemplate("#lesson-template", { disabled: false });
     t.find(".lesson-subject-select")
-      .html(`<option value="" disabled>Fach</option><option value="-1">Pause</option>` + subjectOptions)
+      .html("<option value=\"\" disabled>Fach</option><option value=\"-1\">Pause</option>" + subjectOptions);
     t.find(".lesson-team-select")
-      .html(`<option value="-1">Alle</option>` + subjectOptions)
+      .html("<option value=\"-1\">Alle</option>" + subjectOptions);
 
     const lessonList = $(this).prev();
     lessonList.append(t);
 
     const prevLesson = lessonList.find(".lesson").last().prev();
 
-    let prevLessonNumber = Number.parseInt(prevLesson.find(".lesson-number").val()?.toString() ?? "0") + 1;
+    const prevLessonNumber = Number.parseInt(prevLesson.find(".lesson-number").val()?.toString() ?? "0") + 1;
     t.find(".lesson-number").val(prevLessonNumber).addClass("autocomplete").trigger("autoinput");
-    t.find(".lesson-start-time").val(prevLesson.find(".lesson-end-time").val() ?? "--:--").addClass("autocomplete")
+    t.find(".lesson-start-time").val(prevLesson.find(".lesson-end-time").val() ?? "--:--").addClass("autocomplete");
 
     const rooms = Array.from($("#timetable").find(".lesson-room"), r => $(r).val()?.toString() ?? "");
     const roomOccurences = rooms.reduce((acc, room) => {
@@ -853,7 +754,7 @@ async function renderTimetable(): Promise<void> {
       return acc;
     }, {} as Record<string, number>);
     const mostFrequentRoom = Object.entries(roomOccurences).reduce((a, b) => b[1] > a[1] ? b : a, ["", 0])[0];
-    t.find(".lesson-room").val(mostFrequentRoom).addClass("autocomplete")
+    t.find(".lesson-room").val(mostFrequentRoom).addClass("autocomplete");
   });
 
   $("#app").off("click", ".lesson-delete").on("click", ".lesson-delete", function () {
@@ -944,13 +845,11 @@ async function updateOnUserChange(): Promise<void> {
         .prop("disabled", false);
     }
     if (permissionLevel < 3) {
-      canEditMemberSettings = false;
       $("#class-members-wrapper")
         .find("button, select")
         .prop("disabled", true);
     }
     else {
-      canEditMemberSettings = true;
       $("#class-members-wrapper")
         .find("button, select")
         .prop("disabled", false);
@@ -976,7 +875,6 @@ export async function init(): Promise<void> {
 
     dsbActivated = false;
     canEditClassSettings = false;
-    canEditMemberSettings = false;
     isTestClass = false;
     testClassTimeCreated = 0;
 
@@ -1058,7 +956,7 @@ export async function init(): Promise<void> {
 
     // Logout
     $("#logout-button").on("click", async () => {
-      await ajax("POST", "/account/logout");
+      await ajax("POST", "/api/account/logout");
 
       $("#logout-success-toast").toast("show");
       user.auth();
@@ -1110,7 +1008,7 @@ export async function init(): Promise<void> {
 
     $("#change-username-confirm").on("click", async () => {
       try {
-        await ajax("POST", "/account/change_username", {
+        await ajax("PATCH", "/api/account/username", {
           body: {
             password: $("#change-username-password").val(),
             newUsername: $("#change-username-new-username").val()
@@ -1176,6 +1074,7 @@ export async function init(): Promise<void> {
     $("#change-password-new").on("change", () => {
       if (! checkSecurePassword($("#change-password-new").val()?.toString() ?? "")) {
         $("#change-password-insecure-password").removeClass("d-none").addClass("d-flex");
+        $("#change-password-confirm").prop("disabled", true);
       }
     });
 
@@ -1191,6 +1090,7 @@ export async function init(): Promise<void> {
           return $(this).val(); 
         }
       ).get().includes("")
+            || $("#change-password-insecure-password").hasClass("d-flex")
             || $("#change-password-invalid-password").hasClass("d-flex")
             || $("#change-password-not-matching-passwords").hasClass("d-flex"))
       ) {
@@ -1200,7 +1100,7 @@ export async function init(): Promise<void> {
 
     $("#change-password-confirm").on("click", async () => {
       try {
-        await ajax("POST", "/account/change_password", {
+        await ajax("PATCH", "/api/account/password", {
           body: {
             oldPassword: $("#change-password-old").val(),
             newPassword: $("#change-password-new").val()
@@ -1251,7 +1151,7 @@ export async function init(): Promise<void> {
 
     $("#delete-account-confirm").on("click", async () => {
       try {
-        await ajax("POST", "/account/delete", {
+        await ajax("DELETE", "/api/account/ID", { // TODO: my id
           body: {
             password: $("#delete-account-password").val()
           },
@@ -1285,7 +1185,7 @@ export async function init(): Promise<void> {
       });
 
       if (user.loggedIn) {
-        await ajax("POST", "/teams/set_joined_teams_data", {
+        await ajax("PUT", "/api/teams/joined", {
           body: {
             teams: newJoinedTeamsData
           },
@@ -1322,7 +1222,7 @@ export async function init(): Promise<void> {
 
     $("#leave-class-confirm").on("click", async () => {
       try {
-        await ajax("POST", "/class/leave_class", {
+        await ajax("DELETE", "/api/classes/1/members/me", { // TODO: classID
           expectedErrors: [409]
         });
         
@@ -1372,7 +1272,7 @@ export async function init(): Promise<void> {
     $("#change-class-name-confirm").on("click", async () => {
       const className = $("#change-class-name-new-class-name").val()?.toString() ?? "";
       
-      await ajax("POST", "/class/change_class_name", {
+      await ajax("PATCH", "/api/classes/1/name", { // TODO: my id
         body: {
           classDisplayName: className
         },
@@ -1389,7 +1289,7 @@ export async function init(): Promise<void> {
 
     // Change classcode
     $("#change-class-code").on("click", async () => {
-      const res = await ajax("POST", "/class/change_class_code", {
+      const res = await ajax("PATCH", "/api/classes/1/code", { // TODO: My Id
         queueable: true
       });
 
@@ -1401,7 +1301,7 @@ export async function init(): Promise<void> {
 
     // Upgrade test class
     $("#upgrade-test-class").on("click", async () => {
-      await ajax("POST", "/class/upgrade_test_class", {
+      await ajax("POST", "/api/classes/1/upgrade-test-class", { // TODO: My Id
         queueable: true
       });
 
@@ -1422,7 +1322,7 @@ export async function init(): Promise<void> {
     });
 
     $("#delete-class-confirm").on("click", async () => {
-      await ajax("POST", "/class/delete_class");
+      await ajax("DELETE", "/api/classes/1"); // TODO: My Id
 
       $("#delete-class-success-toast").toast("show");
       // Force socket to reconnect so it picks up the new session.classId
@@ -1444,7 +1344,7 @@ export async function init(): Promise<void> {
     });
 
     $("#kick-logged-out-users-confirm").on("click", async () => {
-      await ajax("POST", "/class/kick_logged_out_users");
+      await ajax("POST", "/api/classes/1/members/kick-logged-out"); // TODO: My Id
 
       $("#kick-logged-out-users-success-toast").toast("show");
       $("#kick-logged-out-users").hide();
@@ -1468,7 +1368,7 @@ export async function init(): Promise<void> {
     });
 
     $("#set-logged-out-users-role-confirm").on("click", async () => {
-      await ajax("POST", "/class/change_default_permission", {
+      await ajax("PATCH", "/api/classes/1/default-permission", {
         body: { role: Number.parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0") },
         queueable: true
       });
@@ -1511,11 +1411,11 @@ export async function init(): Promise<void> {
         });
       });
       
-      await ajax("POST", "/class/kick_class_members", {
+      await ajax("DELETE", "/api/classes/1/members", { // TODO: my id
         body: { classMembers: classMembersKickData },
         queueable: true
       });
-      await ajax("POST", "/class/set_class_members_permission", {
+      await ajax("PATCH", "/api/classes/1/members/permissions", { // TODO: my id
         body: { classMembers: classMembersPermissionsData },
         queueable: true
       });
@@ -1601,7 +1501,7 @@ export async function init(): Promise<void> {
         });
       });
 
-      await ajax("POST", "/teams/set_teams_data", {
+      await ajax("PUT", "/api/teams", {
         body: { teams: newTeamsData },
         queueable: true
       });
@@ -1693,7 +1593,7 @@ export async function init(): Promise<void> {
         });
       });
 
-      await ajax("POST", "/events/set_event_type_data", {
+      await ajax("PUT", "/api/events/types", {
         body: { eventTypes: newEventTypesData },
         queueable: true
       });
@@ -1706,7 +1606,7 @@ export async function init(): Promise<void> {
     }
 
     $("#app").on("click", "#event-types-example", async () => {
-      await ajax("POST", "/events/set_event_type_data", {
+      await ajax("PUT", "/api/events/types", {
         body: {
           eventTypes: [
             { name: "Ausflug", color: "#ff9955" },
@@ -1752,7 +1652,7 @@ export async function init(): Promise<void> {
       $("#subjects-list .no-subjects").remove();
 
       const t = $cloneTemplate("#subject-template", { disabled: false });
-      t.find(".subject-substitutions").toggle(dsbActivated)
+      t.find(".subject-substitutions").toggle(dsbActivated);
 
       t.find(".subject-name-long-input").attr("placeholder", "Name");
       t.find(".subject-name-short-input").attr("placeholder", "Abkürzung");
@@ -1814,7 +1714,7 @@ export async function init(): Promise<void> {
         });
       });
 
-      await ajax("POST", "/subjects/set_subject_data", {
+      await ajax("PUT", "/api/subjects", {
         body: { subjects: newSubjectData },
         queueable: true
       });
@@ -1875,7 +1775,7 @@ export async function init(): Promise<void> {
           });
       });
 
-      await ajax("POST", "/lessons/set_lesson_data", {
+      await ajax("PUT", "/api/lessons", {
         body: { lessons: newTimetableData },
         queueable: true
       });
@@ -1892,7 +1792,6 @@ export async function init(): Promise<void> {
 
 let dsbActivated: boolean;
 let canEditClassSettings: boolean;
-let canEditMemberSettings: boolean;
 let isTestClass: boolean;
 let testClassTimeCreated: number;
 let qrCode: QRCode;

@@ -65,7 +65,7 @@ export const checkUsernameSchema = z.object({
   // omit body due to GET request
   params: z.object({}),
   query: z.object({
-    username: z.string().trim().min(4)
+    username: z.string().trim().min(4) // TODO: /username?username=, twice :(
   })
 });
 

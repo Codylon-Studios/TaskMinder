@@ -31,7 +31,7 @@ export const deleteHomeworkSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: z.strictObject({})
+  body: z.any() // TODO: type?
 });
 
 export const checkHomeworkSchema = z.object({
