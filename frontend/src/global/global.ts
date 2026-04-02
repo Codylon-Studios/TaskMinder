@@ -967,11 +967,6 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
       $("#error-server-toast").toast("show");
     }, 5000);
 
-    if (url === "/api/classes/1/members/me") {
-      req.headers.forEach((v, k) => {
-        alert(k + " " + v);
-      });
-    }
     const res = await fetch(req);
     
     clearTimeout(timeout);

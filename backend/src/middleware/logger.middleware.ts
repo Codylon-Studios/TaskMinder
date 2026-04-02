@@ -11,13 +11,15 @@ export const loggerMiddleware = (req: Request, res: Response, next: NextFunction
 
   res.on("finish", () => {
     const duration = Date.now() - start;
+    const errorMessage = res.locals.errorMessage;
     
     logger.info("", {
       requestId,
       method: req.method,
       path: req.originalUrl || req.url,
       status: res.statusCode,
-      duration
+      duration,
+      ...(errorMessage && { errorMessage })
     });
   });
 

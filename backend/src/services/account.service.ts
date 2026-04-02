@@ -7,7 +7,6 @@ import {
   changePasswordTypeBody,
   changeUsernameTypeBody,
   checkUsernameTypeQuery,
-  deleteAccountTypeParams,
   deleteAccountTypeBody,
   loginAccountTypeBody,
   registerAccountTypeBody
@@ -21,7 +20,9 @@ export default {
     type AuthResponse = {
       loggedIn: boolean;
       classJoined: boolean;
+      classId?: number;
       account?: {
+        accountId: number;
         username: string;
       };
       permissionLevel?: number;
@@ -36,7 +37,7 @@ export default {
       classJoined: false
     };
 
-    let accountId: number | undefined;
+    let accountIdInDatabase: number | undefined;
 
     if (session.account) {
       const accountInDb = await prisma.account.findFirst({
@@ -46,8 +47,8 @@ export default {
 
       if (accountInDb) {
         res.loggedIn = true;
-        res.account = { username: accountInDb.username };
-        accountId = accountInDb.accountId;
+        accountIdInDatabase = accountInDb.accountId;
+        res.account = { username: accountInDb.username, accountId: accountIdInDatabase };
         session.account = { accountId: accountInDb.accountId, username: accountInDb.username };
       }
       else {
@@ -55,15 +56,16 @@ export default {
       }
     }
 
-    if (res.loggedIn && accountId) {
+    if (res.loggedIn && accountIdInDatabase) {
       const joinedClass = await prisma.joinedClass.findUnique({
-        where: { accountId },
+        where: { accountId: accountIdInDatabase },
         select: { permissionLevel: true, classId: true }
       });
 
       if (joinedClass) {
         res.classJoined = true;
         res.permissionLevel = joinedClass.permissionLevel;
+        res.classId = joinedClass.classId;
         session.classId = joinedClass.classId.toString();
       }
       else {
@@ -76,11 +78,12 @@ export default {
       const classId = parseInt(session.classId, 10);
       const classInDb = await prisma.class.findUnique({
         where: { classId},
-        select: { defaultPermissionLevel: true }
+        select: { defaultPermissionLevel: true, classId: true }
       });
 
       if (classInDb) {
         res.classJoined = true;
+        res.classId = classInDb.classId;
         res.permissionLevel = classInDb.defaultPermissionLevel;
       }
       else {
@@ -236,23 +239,11 @@ export default {
   },
 
   async deleteAccount(
-    reqParams: deleteAccountTypeParams,
     reqBody: deleteAccountTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { password } = reqBody;
-    const { id: accountId } = reqParams;
-
-    // check if params and session are the same
-    if (session.account!.accountId !== accountId) {
-      const err: RequestError = {
-        name: "Forbidden",
-        status: 403,
-        message: "Cannot delete another account",
-        expected: true
-      };
-      throw err;
-    }
+    const accountId = session.account!.accountId;
 
     // account is certainly not soft-deleted and if found (accessMiddleware)
     // no deletedAt query needed
@@ -418,6 +409,17 @@ export default {
         accountId: session.account!.accountId
       }
     });
+
+    // check if newPassword contains username
+    if (newPassword.toLowerCase().includes(changePasswordAccount!.username.toLowerCase())) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Password cannot contain username",
+        expected: true
+      };
+      throw err;
+    }
 
     const isPasswordValid = await bcrypt.compare(oldPassword, changePasswordAccount!.password);
     if (!isPasswordValid) {

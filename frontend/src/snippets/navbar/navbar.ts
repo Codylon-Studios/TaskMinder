@@ -226,7 +226,7 @@ export async function init(): Promise<void> {
 
     $(".login-register-element, .login-register-next-button").addClass("d-none");
 
-    const res = await ajax("GET", "/api/account/username?username=" + ($(".login-register-username").val()?.toString() ?? ""));
+    const res = await ajax("GET", "/api/account/check-username?username=" + ($(".login-register-username").val()?.toString() ?? ""));
 
     const isTaken = await res.json();
     if (isTaken) {

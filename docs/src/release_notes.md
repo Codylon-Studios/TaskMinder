@@ -4,7 +4,7 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.5] - 2026-03-31
+## \[v2.2.5] - 2026-04-05
 
 ### Breaking Change
 * chore(db): migrate postgresql@14 to postgresql@18
@@ -30,6 +30,7 @@ All changes are grouped by type and the latest version appears first.
 * fix(search): search in plaintext not styled rich textarea text
 
 ### Changed
+* chore(logging): imporve error logs on server
 * chore(ui): improve frontend class settings on mobile
 * chore(upload/loading): add upload loading animation
 * chore(substitution): change DSBMobile fetch to weekday peak time prefetch

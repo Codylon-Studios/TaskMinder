@@ -121,7 +121,6 @@ app.use(sessionMiddleware);
 app.use(csrfSessionInit);
 
 app.get("/bootstrap", authLimiter, async (req, res, next) => {
-  console.log("GET BOOTSTRAP");
   try {
     const auth = await accountService.getAuth(req.session);
 
@@ -138,7 +137,11 @@ app.get("/bootstrap", authLimiter, async (req, res, next) => {
 });
 
 app.get("/csrf-token", (req, res) => {
-  res.json({ csrfToken: req.session.csrfToken });
+  res
+    .set("Cache-Control", "no-store, no-cache, must-revalidate, private")
+    .set("Pragma", "no-cache")  // HTTP/1.0 compat
+    .set("Surrogate-Control", "no-store") // CDN layer
+    .json({ csrfToken: req.session.csrfToken });
 });
 app.use(csrfProtection);
 app.use(metricsMiddleware);

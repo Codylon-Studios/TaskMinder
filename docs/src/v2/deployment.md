@@ -61,11 +61,11 @@ Once your domain resolves to your server’s IP, proceed to the next step.
 
 ### Update and install dependencies:
 
-This installs (if not already installed) Git, curl, NGINX, libnginx-mod-http-lua (for Lua in NGINX), UFW, and Fail2Ban:
+This installs (if not already installed) Git, curl, NGINX, libnginx-mod-http-lua (for Lua in NGINX), lua-cjson (for NGINX), UFW, and Fail2Ban:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl nginx ufw fail2ban libnginx-mod-http-lua
+sudo apt install -y git curl nginx ufw fail2ban libnginx-mod-http-lua lua-cjson
 ```
 
 ### Verify lua was installed and is enabled:

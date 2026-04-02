@@ -36,6 +36,15 @@ if (compareSemver(MIN_VERSION, MAX_VERSION) > 0) {
 }
 
 export default function apiVersionMiddleware(req: Request, res: Response, next: NextFunction): void {
+  // Skip version check for this route (/api/events/types/styles)
+  // Else frontend has to fetch manually and add the textContent in a <style>
+  // through we are not that strict, but it would not adhere to CSP-standards.
+  // The problem is that <link> does not offer a possibility to set a header 
+  // and setting it in SW since the type is no-cors, so immutable...
+  if (req.path === "/events/types/styles") {
+    return next();
+  }
+
   const rawClientVersion = req.headers["x-api-version"];
   const clientVersion = Array.isArray(rawClientVersion)
     ? rawClientVersion.length === 1

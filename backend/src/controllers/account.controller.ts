@@ -66,7 +66,7 @@ export const logoutAccount = async (req: Request, res: Response, next: NextFunct
 
 export const deleteAccount = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await accountService.deleteAccount({ id: Number(req.params.id) }, req.body, req.session);
+    await accountService.deleteAccount(req.body, req.session);
     await regenerateSession(req, {
       classId: req.session.classId,
       csrfToken: req.session.csrfToken

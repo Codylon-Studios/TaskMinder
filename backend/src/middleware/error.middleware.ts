@@ -11,6 +11,7 @@ export async function ErrorHandler(err: RequestError, req: Request, res: Respons
 
     if (err.expected) {
       res.status(err.status ?? 500).send(err.message);
+      res.locals.errorMessage = err.message;
     }
     else {
       logger.error("Unhandled error", {

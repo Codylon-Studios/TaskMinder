@@ -1,6 +1,8 @@
 import z from "zod";
 import { checkUsername } from "../utils/validate.functions.js";
 
+const isDevelopment = process.env.NODE_ENV === "DEVELOPMENT";
+
 export const passwordSchema = z
   .string()
   .min(6, "Password must be at least 6 characters long")
@@ -17,6 +19,14 @@ export const registerAccountSchema = z.object({
       message: "Username must be 4-20 characters, letters, digits, or underscore only"
     }),
     password: passwordSchema
+  }).refine(body => {
+    // disable this check if in development
+    if (isDevelopment) {
+      return true;
+    }
+    return !(body.password.toLowerCase().includes(body.username.toLowerCase()));
+  }, {
+    message: "Password cannot contain username"
   })
 });
 
@@ -28,13 +38,12 @@ export const loginAccountSchema = z.object({
       message: "Username must be 4-20 characters, letters, digits, or underscore only"
     }),
     password: z.string().trim().min(4)
-  })
+  }) // do not enforce password musnt contain username 
+  // since we don't know if old accounts have this, thus preventing them from logging in
 });
 
 export const deleteAccountSchema = z.object({
-  params: z.object({
-    id: z.coerce.number()
-  }),
+  params: z.object({}),
   query: z.object({}),
   body: z.strictObject({
     password: z.string().trim().min(4)
@@ -49,6 +58,14 @@ export const changeUsernameSchema = z.object({
     newUsername: z.string().refine(checkUsername, {
       message: "Username must be 4-20 characters, letters, digits, or underscore only"
     })
+  }).refine(body => {
+    // disable this check if in development
+    if (isDevelopment) {
+      return true;
+    }
+    return !(body.password.toLowerCase().includes(body.newUsername.toLowerCase()));
+  }, {
+    message: "Password cannot contain username"
   })
 });
 
@@ -58,18 +75,17 @@ export const changePasswordSchema = z.object({
   body: z.strictObject({
     oldPassword: z.string().trim().min(4),
     newPassword: passwordSchema
-  })
+  }) // checking if newPassword contains username is checked in service
+  // since we do not have access to the username here
 });
 
 export const checkUsernameSchema = z.object({
   // omit body due to GET request
   params: z.object({}),
   query: z.object({
-    username: z.string().trim().min(4) // TODO: /username?username=, twice :(
+    username: z.string().trim().min(4)
   })
 });
-
-export type deleteAccountTypeParams = z.infer<typeof deleteAccountSchema>["params"];
 
 export type checkUsernameTypeQuery = z.infer<typeof checkUsernameSchema>["query"];
 

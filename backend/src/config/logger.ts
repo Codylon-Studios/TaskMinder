@@ -46,12 +46,13 @@ const buildPrefix = (level: string, timestamp?: string, isSocket?: boolean): str
 
 const customFormat = winston.format.printf(({ message, timestamp, level, ...metadata }) => {
   // Extract additional metadata if present
-  const { duration, method, path, status, isSocket } = metadata as {
+  const { duration, method, path, status, isSocket, errorMessage } = metadata as {
     duration?: number;
     method?: string;
     path?: string;
     status?: number;
     isSocket?: boolean;
+    errorMessage?: string;
   };
 
   let logMessage = buildPrefix(level, timestamp as string, isSocket);
@@ -63,6 +64,9 @@ const customFormat = winston.format.printf(({ message, timestamp, level, ...meta
   if (method && path && status !== undefined) {
     const coloredStatus = colorizeStatus(status);
     logMessage += ` ${chalk.bold(method)}  ${path} ${coloredStatus}`;
+    if (errorMessage) {
+      logMessage += `  ${chalk.gray("→")} ${chalk.red(errorMessage)}`;
+    }
   }
   else if (message) {
     logMessage += ` ${message}`;

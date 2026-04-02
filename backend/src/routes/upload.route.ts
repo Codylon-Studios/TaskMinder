@@ -43,8 +43,8 @@ router.post(
 );
 // get single file (preview or download)
 router.get("/:id", readUploadLimiter, checkAccess(["CLASS", "MEMBER"]), validate(getUploadFileSchema), uploadController.getUploadFile);
-// edit file
-router.patch( // TODO: isn't it PUT?
+// edit file upload
+router.patch(
   "/:id",
   writeUploadLimiter,
   checkAccess(["CLASS", "EDITOR"]),
@@ -55,7 +55,7 @@ router.patch( // TODO: isn't it PUT?
   uploadMiddleware.preflightEditStorageQuotaCheck,
   uploadController.editUpload
 );
-// delete file
+// delete file upload
 router.delete("/:id", writeUploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteUploadSchema), uploadController.deleteUpload);
 // pin file upload
 router.patch("/:id/pin", writeUploadLimiter, checkAccess(["CLASS", "EDITOR"]), validate(pinUploadSchema), uploadController.pinUpload);

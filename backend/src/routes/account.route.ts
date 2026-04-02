@@ -19,11 +19,11 @@ const router = express.Router();
 
 router.post("/register", authLimiter, validate(registerAccountSchema), userController.registerAccount);
 router.post("/login", authLimiter, validate(loginAccountSchema), userController.loginAccount);
-router.delete("/:id", authLimiter, checkAccess(["ACCOUNT"]), validate(deleteAccountSchema), userController.deleteAccount); // TODO: Why here id but nowhere else???
+router.delete("/me", authLimiter, checkAccess(["ACCOUNT"]), validate(deleteAccountSchema), userController.deleteAccount);
 router.patch("/username", authLimiter, checkAccess(["ACCOUNT"]), validate(changeUsernameSchema), userController.changeUsername);
 router.patch("/password", authLimiter, checkAccess(["ACCOUNT"]), validate(changePasswordSchema), userController.changePassword);
-router.get("/auth", authLimiter, userController.getAuth); // Give me the userId and classId!
+router.get("/auth", authLimiter, userController.getAuth);
 router.post("/logout", authLimiter, checkAccess(["ACCOUNT"]), userController.logoutAccount);
-router.get("/username", authLimiter, validate(checkUsernameSchema), userController.checkUsername);
+router.get("/check-username", authLimiter, validate(checkUsernameSchema), userController.checkUsername);
 
 export default router;
