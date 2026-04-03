@@ -67,11 +67,19 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
 
   try {
     await execFileAsync("which", ["clamdscan"]);
+  }
+  catch {
+    logger.warn("ClamAV (clamdscan) not found in worker. Please install it..");
+    process.exit(1);
+  }
+
+  try {
+    await execFileAsync("clamdscan", ["--ping", "5"]);
     clamavEnabled = true;
     logger.info("ClamAV (clamdscan) enabled for worker");
   }
   catch {
-    logger.warn("ClamAV (clamdscan) not found in worker. Please install it..");
+    logger.error("ClamAV check failed, please (re-)start the service before trying again");
     process.exit(1);
   }
 
@@ -100,7 +108,7 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
     const scanError = error as ExecException & { stdout?: string; stderr?: string };
     if (scanError.code === 1 && scanError.stdout?.includes("FOUND")) {
       const quarantinePath = path.join(QUARANTINE_DIR, `${Date.now()}-${path.basename(originalName)}`);
-      await fs.rename(filePath, quarantinePath).catch(() => {});
+      await fs.rename(filePath, quarantinePath).catch(() => { });
       logger.warn(`File quarantined: ${quarantinePath}`);
       const err: RequestError = {
         name: "Bad Request",

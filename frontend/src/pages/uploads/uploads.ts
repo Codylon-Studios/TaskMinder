@@ -649,7 +649,7 @@ function deleteUpload(uploadId: number, force?: boolean): void {
     $("#delete-upload-confirm-toast").toast("hide");
 
     await ajax("DELETE", `/api/uploads/${uploadId}`, {
-      body: { uploadId: uploadId },
+      body: { },
       queueable: true
     });
 

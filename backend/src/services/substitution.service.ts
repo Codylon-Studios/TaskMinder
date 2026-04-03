@@ -58,7 +58,7 @@ export async function loadSubstitutionData(
     if (!authRes.ok) {
       throw new Error(`DSB auth request failed with status ${authRes.status}`);
     }
-    const authId = await authRes.text();
+    const authId = await authRes.json();
     if (!authId) {
       throw new Error("The DSB credentials did not return a valid authId.");
     }

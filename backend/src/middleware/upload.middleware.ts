@@ -4,7 +4,8 @@ import {
   ALLOWED_EXTENSIONS,
   TEMP_DIR,
   MAX_FILE_SIZE,
-  MAX_FILES_COUNT
+  MAX_FILES_PER_UPLOAD,
+  MAX_FILES_PER_CLASS
 } from "../config/upload.js";
 import path from "path";
 import { Request, Response, NextFunction } from "express";
@@ -191,7 +192,7 @@ export const checkClassFileCountLimit = async (
     }
   });
 
-  if (fileCount > MAX_FILES_COUNT) {
+  if (fileCount > MAX_FILES_PER_CLASS) {
     const err: RequestError = {
       name: "Content Too Large",
       status: 413,
@@ -336,7 +337,7 @@ export const secureUpload = multer({
   fileFilter: secureFileFilter,
   limits: {
     fileSize: MAX_FILE_SIZE,
-    files: MAX_FILES_COUNT
+    files: MAX_FILES_PER_UPLOAD
   }
 });
 
@@ -344,7 +345,7 @@ export const secureUpload = multer({
 // Wrapper to catch Multer errors (specifically file size limit)
 //
 export const handleFileUpload = (req: Request, res: Response, next: NextFunction): void => {
-  const upload = secureUpload.array("files", MAX_FILES_COUNT);
+  const upload = secureUpload.array("files", MAX_FILES_PER_UPLOAD);
 
   upload(req, res, err => {
     if (err instanceof multer.MulterError) {
@@ -361,7 +362,7 @@ export const handleFileUpload = (req: Request, res: Response, next: NextFunction
         const error: RequestError = {
           name: "Bad Request",
           status: 400,
-          message: `Too many files uploaded (Max ${MAX_FILES_COUNT} files)`,
+          message: `Too many files uploaded (Max ${MAX_FILES_PER_UPLOAD} files)`,
           expected: true
         };
         return next(error);

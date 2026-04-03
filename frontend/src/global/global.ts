@@ -1484,44 +1484,6 @@ $(document).on("shown.bs.toast", ev => {
   $toast.one("hidden.bs.toast", () => $toast.off(".toastProgress"));
 });
 
-setTimeout(() => {
-  const fillRow = (): void => {
-    styles.push(...Array.from({ length: 16 }, (_, i) => `margin: 0 0.25rem; color: ${colors[i % 2]};`));
-  };
-  const fillBorder = (type: number, emphasize?: boolean): void => {
-    styles.push(
-      `margin: 0 0.25rem; color: ${colors[type]};`,
-      emphasize ? "font-weight: bold; color: #dc3545;" : "",
-      `margin: 0 0.25rem; color: ${colors[(type + 1) % 2]};`
-    );
-  };
-  const colors = ["#3bb9ca", "#70d8e6"];
-  const styles: string[] = [];
-
-  const fullRow = "⬤".repeat(16);
-  const line1 = "⬤%c       Hello curious person!       ⬤";
-  const line2 = "⬤%c      Please don't hack us ;)      ⬤";
-  const line3 = "⬤%c  You can leave feedback / bugs !  ⬤";
-  const line4 = "⬤%c  https://taskminder.de/feedback#  ⬤";
-  const line5 = "⬤%c Please be precise, fellow dev! :D ⬤";
-  const line6 = "⬤%c Don't know what this is? Bye Bye! ⬤";
-  const line7 = "⬤%c (Evil people can steal your data) ⬤";
-
-  fillRow();
-  fillBorder(1);
-  fillBorder(0);
-  fillBorder(1);
-  fillBorder(0);
-  fillBorder(1);
-  fillBorder(0, true);
-  fillBorder(1, true);
-  fillRow();
-
-  const text = [fullRow, line1, line2, line3, line4, line5, line6, line7, fullRow].join("\n").replaceAll("⬤", "%c⬤");
-
-  console.info(text, ...styles);
-}, 1);
-
 // Update everything on clicking the reload button
 $(document).on("click", "#navbar-reload-button", async function () {
   $(this).find("i").addClass("fa-spin");
