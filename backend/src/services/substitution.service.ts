@@ -97,7 +97,7 @@ export async function loadSubstitutionData(
       substitutionsResult.updated = $(".mon_head p").text().split("Stand: ")[1] || "";
     }
 
-    logger.info(`Substitution successfully fetched for class: ${dsbMobileUser}, cacheKey: ${cacheKey}`);
+    logger.info(`Substitution successfully fetched for school: ${dsbMobileUser}, cacheKey: ${cacheKey}`);
 
     const cachePayload = {
       data: substitutionsResult,
@@ -145,7 +145,7 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
     return { data: "No data", classFilterRegex: null};
   }
 
-  const { dsbMobileUser, dsbMobilePassword, classId } = substitutionClass;
+  const { dsbMobileUser, dsbMobilePassword } = substitutionClass;
 
   // Transform class name to regex if it follows the "NumberLetter" pattern (e.g., "10d")
   // It generates a regex that matches the class number, any sequence of letters, the class letter,
@@ -158,8 +158,8 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
       classFilterRegex = `^${classNumber}[a-zA-Z]*${classLetter}[a-zA-Z]*`;
     }
   }
-
-  const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBSTITUTIONS, classId.toString());
+  // get the cache key of the school
+  const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBSTITUTIONS, dsbMobileUser.toString());
   const inPeakWindow = isPeakSubstitutionWindow();
   const ttlSeconds = inPeakWindow ? SUBSTITUTION_PREFETCH_TTL_SECONDS : SUBSTITUTION_OFFPEAK_TTL_SECONDS;
 
@@ -186,6 +186,7 @@ export async function getSubstitutionData(session: Session & Partial<SessionData
 let isSubstitutionPrefetchRunning = false;
 
 // Prefetch substitution data for all classes that have DSB Mobile enabled,
+// fetches for classes with the same school dsbMobileUser will only be fetched once (shared cache) 
 // with a small concurrency limit to reduce load on the DSB Mobile API.
 export async function prefetchSubstitutionDataForAllClasses(): Promise<void> {
   if (isSubstitutionPrefetchRunning) {
@@ -202,7 +203,6 @@ export async function prefetchSubstitutionDataForAllClasses(): Promise<void> {
         dsbMobilePassword: { not: null }
       },
       select: {
-        classId: true,
         dsbMobileUser: true,
         dsbMobilePassword: true
       }
@@ -213,12 +213,16 @@ export async function prefetchSubstitutionDataForAllClasses(): Promise<void> {
       return;
     }
 
+    const uniqueClassesWithDsb = [
+      ...new Map(classesWithDsb.map(c => [c.dsbMobileUser, c])).values()
+    ];
+
     const results: PromiseSettledResult<void>[] = [];
-    for (let i = 0; i < classesWithDsb.length; i += SUBSTITUTION_PREFETCH_CONCURRENCY) {
-      const batch = classesWithDsb.slice(i, i + SUBSTITUTION_PREFETCH_CONCURRENCY);
+    for (let i = 0; i < uniqueClassesWithDsb.length; i += SUBSTITUTION_PREFETCH_CONCURRENCY) {
+      const batch = uniqueClassesWithDsb.slice(i, i + SUBSTITUTION_PREFETCH_CONCURRENCY);
       const batchResults = await Promise.allSettled(
         batch.map(async entry => {
-          const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBSTITUTIONS, entry.classId.toString());
+          const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES.SUBSTITUTIONS, entry.dsbMobileUser!.toString());
           await loadSubstitutionData(entry.dsbMobileUser!, entry.dsbMobilePassword!, cacheKey, SUBSTITUTION_PREFETCH_TTL_SECONDS);
         })
       );
@@ -230,7 +234,7 @@ export async function prefetchSubstitutionDataForAllClasses(): Promise<void> {
       logger.warn(`Substitution prefetch completed with ${failedCount} failures`);
     }
     else {
-      logger.info(`Substitution prefetch completed for ${results.length} classes`);
+      logger.info(`Substitution prefetch completed for ${results.length} schools with ${classesWithDsb.length} classes in total`);
     }
   }
   finally {

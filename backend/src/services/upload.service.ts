@@ -1,6 +1,6 @@
 import { Session, SessionData } from "express-session";
 import path from "path";
-import { FINAL_UPLOADS_DIR } from "../config/upload.js";
+import { FINAL_UPLOADS_DIR, MAX_FILE_SIZE, MAX_FILES_PER_CLASS } from "../config/upload.js";
 import fs from "fs/promises";
 import { ReadStream, createReadStream } from "fs";
 import prisma from "../config/prisma.js";
@@ -161,6 +161,8 @@ const uploadService = {
       return {
         totalUploads: 0,
         uploads: [],
+        maxFilesPerClass: MAX_FILES_PER_CLASS,
+        sizeLimitPerFile: MAX_FILE_SIZE,
         totalStorage: classInformation.storageQuotaBytes.toString(),
         usedStorage: classInformation.storageUsedBytes.toString()
       };
@@ -178,6 +180,8 @@ const uploadService = {
         return {
           totalUploads,
           uploads: cached,
+          maxFilesPerClass: MAX_FILES_PER_CLASS,
+          sizeLimitPerFile: MAX_FILE_SIZE,
           totalStorage: classInformation.storageQuotaBytes.toString(),
           usedStorage: classInformation.storageUsedBytes.toString()
         };
@@ -222,6 +226,8 @@ const uploadService = {
     const res = {
       totalUploads,
       uploads: uploadList,
+      maxFilesPerClass: MAX_FILES_PER_CLASS,
+      sizeLimitPerFile: MAX_FILE_SIZE,
       totalStorage: classInformation.storageQuotaBytes.toString(),
       usedStorage: classInformation.storageUsedBytes.toString()
     };
@@ -413,9 +419,9 @@ const uploadService = {
         const projectedUsage = classData.storageUsedBytes + additionalBytesNeeded;
         if (projectedUsage > classData.storageQuotaBytes) {
           const err: RequestError = {
-            name: "Insufficient Storage",
-            status: 507,
-            message: "Class storage quota would be exceeded",
+            name: "Content Too Large",
+            status: 413,
+            message: "Class storage quota will be exceeded",
             expected: true
           };
           throw err;
@@ -430,9 +436,9 @@ const uploadService = {
       }
       else if (classData.storageUsedBytes > classData.storageQuotaBytes) {
         const err: RequestError = {
-          name: "Insufficient Storage",
-          status: 507,
-          message: "Class storage quota would be exceeded",
+          name: "Content Too Large",
+          status: 413,
+          message: "Class storage quota will be exceeded",
           expected: true
         };
         throw err;

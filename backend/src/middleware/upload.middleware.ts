@@ -351,9 +351,9 @@ export const handleFileUpload = (req: Request, res: Response, next: NextFunction
     if (err instanceof multer.MulterError) {
       if (err.code === "LIMIT_FILE_SIZE") {
         const error: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: `File size limit exceeded (Max ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+          name: "Content Too Large",
+          status: 413,
+          message: "File size limit exceeded",
           expected: true
         };
         return next(error);
@@ -361,8 +361,8 @@ export const handleFileUpload = (req: Request, res: Response, next: NextFunction
       if (err.code === "LIMIT_UNEXPECTED_FILE") {
         const error: RequestError = {
           name: "Bad Request",
-          status: 400,
-          message: `Too many files uploaded (Max ${MAX_FILES_PER_UPLOAD} files)`,
+          status: 413,
+          message: "Too many files uploaded",
           expected: true
         };
         return next(error);
@@ -409,8 +409,8 @@ const reserveStorage = async (
   }
   if (classQuota.storageUsedBytes + bytesToReserve > classQuota.storageQuotaBytes) {
     const err: RequestError = {
-      name: "Insufficient Storage",
-      status: 507,
+      name: "Content Too Large",
+      status: 413,
       message: "Class storage quota will be exceeded",
       expected: true
     };

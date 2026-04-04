@@ -234,6 +234,9 @@ const teamService = {
         });
       }
     });
+
+    const io = socketIO.getIO();
+    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.JOINED_TEAMS);
   }
 };
 

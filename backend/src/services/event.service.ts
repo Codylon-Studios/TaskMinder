@@ -1,7 +1,7 @@
 import logger from "../config/logger.js";
 import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
 import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
-import sass from "sass";
+import * as sass from "sass";
 import { default as prisma } from "../config/prisma.js";
 import {
   isValidColor,

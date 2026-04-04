@@ -6,7 +6,7 @@ All changes are grouped by type and the latest version appears first.
 
 ## \[v2.2.5] - 2026-04-05
 
-### Breaking Change
+### Breaking Changes
 * chore(db): migrate postgresql@14 to postgresql@18
 * feat(encryption): add server-side encryption
 
@@ -20,7 +20,7 @@ All changes are grouped by type and the latest version appears first.
 * chore(ui): show breaks in the timetable and correctly display them (respect events/substitutions)
 
 ### Fixed
-* fix(rate-limit): increase proxy and update nginx.config
+* fix(rate-limit): proxy setting and update nginx.config
 * fix(subject): subject data not stringified correctly
 * fix(account): send 201 instead of 200 at /register
 * fix(links): /main links to events/homework do not use pjax
@@ -30,7 +30,7 @@ All changes are grouped by type and the latest version appears first.
 * fix(search): search in plaintext not styled rich textarea text
 
 ### Changed
-* chore(logging): imporve error logs on server
+* chore(logging): improve error logs on server
 * chore(ui): improve frontend class settings on mobile
 * chore(upload/loading): add upload loading animation
 * chore(substitution): change DSBMobile fetch to weekday peak time prefetch
@@ -39,6 +39,7 @@ All changes are grouped by type and the latest version appears first.
 * chore(ui): make bottombar icons pop on click
 * chore(ui): scroll to top on site change
 * chore(substitution): replace axios with node fetch
+* chore(substitution): use shared cache key per school, avoiding redundant DSB API fetches for classes within the same school
 * chore(frontend/logic): remove $.get and replace with modern fetch
 * chore(ui): change filter interface to modal and offcanvas (mobile)
 * chore(tableview): improve table layouts for events & uploads

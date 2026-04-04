@@ -51,6 +51,7 @@ jobs:
           echo "${{ secrets.ENCRYPTION_KEY }}" > docker_secrets/encryption_key.txt
           echo "${{ secrets.ENCRYPTION_KEY_SECONDARY }}" > docker_secrets/encryption_key_secondary.txt
           echo "${{ secrets.ENCRYPTION_KEY_LOOKUP }}" > docker_secrets/encryption_key_lookup.txt
+          echo "${{ secrets.PROXY_HOP }}" > docker_secrets/proxy_hop.txt
 
       - name: Build Docker Compose
         run: docker compose build
