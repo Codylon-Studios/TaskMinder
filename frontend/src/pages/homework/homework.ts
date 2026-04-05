@@ -15,11 +15,17 @@ import {
   dateDaysDifference,
   onlyThisSite,
   ajax,
-  user
+  user,
+  getInputValue,
+  tryAutocomplete,
+  autocomplete,
+  getCurrentLesson,
+  getNextLessonWithDate,
+  checkTeamInputForSuspicious
 } from "../../global/global.js";
 import { HomeworkData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
-import { SearchBox } from "../../snippets/searchBox/searchBox.js";
+import { SearchBox } from "../../snippets/richInput/richInput.js";
 
 async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { checked: boolean })[]> {
   // Add the check value to each homework
@@ -490,48 +496,20 @@ async function addHomework(): Promise<void> {
   //
 
   // Set the data inputs in the add homework modal
-  const now = new Date();
-  const currentJoinedTeamsData = (await joinedTeamsData());
-  const timeNow = (now.getHours() * 60 + now.getMinutes() - 5) * 60 * 1000; // Pretend it's 5min earlier, in case the lesson was just over
-  const currentLessonData = await lessonData();
-  const currentLesson = currentLessonData.find(lesson => // Find the current lesson
-    (lesson.teamId === -1 || currentJoinedTeamsData.includes(lesson.teamId)) // The user is in the team
-    && lesson.weekDay === now.getDay() - 1 // The lesson is today
-    && Number.parseInt(lesson.startTime) < timeNow && Number.parseInt(lesson.endTime) > timeNow // The lesson is now
-  );
+  $("#add-homework-team").val("-1").removeClass("is-autocompleted is-suspicious");
+  $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious");
+
+  const currentLesson = await getCurrentLesson();
+
   if (currentLesson) {
-    $("#add-homework-subject").val(currentLesson.subjectId).addClass("autocomplete");
-    const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === currentLesson.subjectId); // The next lessons of the subject
-
-    const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
-    const minDiff = nextLessonsWeekdays.reduce((previous, current) => {
-      let diff = (current - (now.getDay() - 1) + 7) % 7; // The difference in days
-      if (diff === 0) diff = 7;
-      return Math.min(diff, previous);
-    }, 7);
-    
-    const nextLessonDate = (new Date());
-    nextLessonDate.setDate(nextLessonDate.getDate() + minDiff);
-
-    $("#add-homework-date-submission").val(msToInputDate(nextLessonDate.getTime())).addClass("autocomplete")
-      .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
-    
-    if (currentLesson.teamId === -1) {
-      $("#add-homework-team").val("-1").removeClass("autocomplete");
-    }
-    else {
-      $("#add-homework-team").val(currentLesson.teamId).addClass("autocomplete")
-        .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
-    }
+    autocomplete($("#add-homework-subject"), currentLesson.lessons[0].subjectId);
   }
   else {
-    $("#add-homework-subject").val("").removeClass("autocomplete");
-    $("#add-homework-date-submission").val("").removeClass("autocomplete");
-    $("#add-homework-team").val("-1").removeClass("autocomplete");
+    $("#add-homework-subject").val("").removeClass("is-autocompleted");
+    $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious");
   }
-  $("#add-homework-content").val("");
-  $("#add-homework-content").trigger("change");
-  $("#add-homework-date-assignment").val(msToInputDate(Date.now())).addClass("autocomplete");
+  $("#add-homework-content").val("").trigger("change");
+  autocomplete($("#add-homework-date-assignment"), msToInputDate(Date.now()));
 
   // Disable the actual "add" button, because not all information is given
   $("#add-homework-button").prop("disabled", true);
@@ -590,9 +568,9 @@ async function editHomework(homeworkId: number): Promise<void> {
   // Set the inputs on the already saved information
   $("#edit-homework-subject").val(homework.subjectId);
   $("#edit-homework-content").val(homework.content).trigger("change");
-  $("#edit-homework-date-assignment").val(msToInputDate(homework.assignmentDate));
-  $("#edit-homework-date-submission").val(msToInputDate(homework.submissionDate));
-  $("#edit-homework-team").val(homework.teamId);
+  $("#edit-homework-date-assignment").val(msToInputDate(homework.assignmentDate)).removeClass("is-suspicious");
+  $("#edit-homework-date-submission").val(msToInputDate(homework.submissionDate)).removeClass("is-autocompleted is-suspicious is-invalid");
+  $("#edit-homework-team").val(homework.teamId).removeClass("is-autocompleted is-suspicious");
 
   // Enable the actual "edit" button, because all information is given
   $("#edit-homework-button").prop("disabled", false);
@@ -763,6 +741,99 @@ export async function init(): Promise<void> {
 
     $("#search-homework").on("input", renderHomeworkList);
 
+    async function subjectInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): Promise<void> {
+      const now = new Date();
+
+      const selectedSubjectId = $(this).val()?.toString();
+      const selectedSubjectName = $(this).find("option:selected").text();
+      if (selectedSubjectId === undefined) {
+        return;
+      }
+
+      const nextLessonWithDate = await getNextLessonWithDate(Number.parseInt(selectedSubjectId));
+
+      if (nextLessonWithDate === null) { // "Other" or never in timetable
+        $(`#${addOrEdit}-homework-team`).val("-1").removeClass("is-autocompleted is-suspicious");
+        tryAutocomplete($(`#${addOrEdit}-homework-date-submission`), msToInputDate(now.setDate(now.getDate() + 7)));
+        $(`#${addOrEdit}-homework-date-submission`).removeClass("is-suspicious").find("~ .autocompleted-feedback")
+          .html("Automatisch: Eine Woche");
+        return;
+      }
+
+      $(`#${addOrEdit}-homework-date-submission ~ .autocompleted-feedback`).html("Automatisch: Die nächste Stunde in <b></b>");
+
+      const $submissionDate = $(`#${addOrEdit}-homework-date-submission`);
+      if (tryAutocomplete($submissionDate, msToInputDate(nextLessonWithDate.date.getTime()))) {
+        // The user hasn't decided for a specific submission date
+        $submissionDate.find("~ .autocompleted-feedback b").text(selectedSubjectName);
+      }
+      else {
+        $submissionDate.trigger("autocomplete");
+      }
+
+      const teamId = nextLessonWithDate.lesson.teamId;
+      tryAutocomplete($(`#${addOrEdit}-homework-team`), nextLessonWithDate.lesson.teamId, "-1");
+      $(`#${addOrEdit}-homework-team`).find("~ .autocompleted-feedback b").text(selectedSubjectName);
+      if (teamId === -1) {
+        $(`#${addOrEdit}-homework-team`).removeClass("is-autocompleted");
+      }
+    }
+
+    const checkSubmissionAfterAssignment = (addOrEdit: "add" | "edit"): void => {
+      const assignment = getInputValue($(`#${addOrEdit}-homework-date-assignment`));
+      const submission = getInputValue($(`#${addOrEdit}-homework-date-submission`));
+      if (assignment === "" || submission === "") return;
+      $(`#${addOrEdit}-homework-date-submission`).toggleClass("is-invalid", new Date(assignment).getTime() > new Date(submission).getTime());
+    };
+
+    async function dateAssignmentInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): Promise<void> {
+      const val = getInputValue($(this));
+      if (val === "") {
+        $(this).removeClass("is-suspicious");
+        return;
+      }
+
+      checkSubmissionAfterAssignment(addOrEdit);
+
+      const date = new Date(val);
+      const now = new Date();
+
+      $(this).toggleClass("is-suspicious", date.getTime() > now.getTime() && !isSameDay(date, now));
+    }
+
+    async function dateSubmissionInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): Promise<void> {
+      const val = getInputValue($(this));
+      if (val === "") {
+        $(this).removeClass("is-suspicious is-invalid");
+        return;
+      }
+
+      checkSubmissionAfterAssignment(addOrEdit);
+      
+      const date = new Date(val);
+      const now = new Date();
+      if (date.getTime() < now.getTime() && !isSameDay(date, now)) {
+        $(this).addClass("is-suspicious").find("~ .suspicious-feedback")
+          .html("Bist du dir sicher? Dieses Datum liegt in der Vergangenheit!");
+        return;
+      }
+
+      const selectedSubjectId = $(`#${addOrEdit}-homework-subject`).val()?.toString() ?? "";
+      const selectedSubjectName = $(`#${addOrEdit}-homework-subject option:selected`).text();
+
+      const nextLessonWithDate = await getNextLessonWithDate(Number.parseInt(selectedSubjectId));
+
+      if (nextLessonWithDate !== null) {
+        if (!nextLessonWithDate.otherWeekDays.includes(new Date(val).getDay() - 1)) {
+          $(this).addClass("is-suspicious").find("~ .suspicious-feedback")
+            .html(`Bist du dir sicher? An diesem Tag gibt es im Fach <b>${escapeHTML(selectedSubjectName)}</b> keinen Unterricht!`);
+          return;
+        }
+      }
+
+      $(this).removeClass("is-suspicious");
+    }
+
     // On changing any information in the add homework modal, disable the add button if any information is empty
     $(".add-homework-input").on("input", () => {
       // Required so the autocompleted submission date gets updated first if the subject is changed
@@ -772,66 +843,24 @@ export async function init(): Promise<void> {
         const assignmentDate = $("#add-homework-date-assignment").val();
         const submissionDate = $("#add-homework-date-submission").val();
 
-        $("#add-homework-button").prop("disabled", [content, assignmentDate, submissionDate].includes("") || subject === null);
+        $("#add-homework-button").prop("disabled",
+          [content, assignmentDate, submissionDate].includes("")
+          || subject === null
+          || $("#add-homework-date-submission").hasClass("is-invalid")
+        );
       });
     });
 
-    $("#add-homework-subject").on("input", async function () {
-      const currentLessonData = await lessonData();
-      const now = new Date();
-
-      const selectedSubjectId = $(this).val()?.toString();
-      if (selectedSubjectId === undefined) {
-        return;
-      }
-      if (selectedSubjectId === "-1") {
-        $("#add-homework-team").val("-1").removeClass("autocomplete");
-        $("#add-homework-date-submission").val(msToInputDate(now.setDate(now.getDate() + 7))).addClass("autocomplete")
-          .find("~ .autocomplete-feedback").html("Automatisch: Eine Woche");
-        return;
-      }
-      $("#add-homework-date-submission").find("~ .autocomplete-feedback").html("Automatisch: Die nächste Stunde in <b></b>");
-
-      // The next lessons of the new selected subject
-      const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === Number.parseInt(selectedSubjectId));
-
-      const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
-      const minDiff = nextLessonsWeekdays.reduce((previous, current) => {
-        let diff = (current - (now.getDay() - 1) + 7) % 7; // The difference in days
-        if (diff === 0) diff = 7;
-        return Math.min(diff, previous);
-      }, 7);
-      
-      const nextLessonDate = (new Date());
-      nextLessonDate.setDate(nextLessonDate.getDate() + minDiff);
-
-      // Only overwrite if the user hasn't decided for a specific date
-      const $submissionDate = $("#add-homework-date-submission");
-      if (nextLessonsWeekdays.length > 0) {
-        if ($submissionDate.is(".autocomplete") || $submissionDate.val() === "") {
-          $submissionDate.val(msToInputDate(nextLessonDate.getTime())).addClass("autocomplete")
-            .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
-        }
-      }
-      else {
-        $submissionDate.val("").removeClass("autocomplete");
-      }
-
-      if (nextLessons.length > 0) {
-        if ($("#add-homework-team").is(".autocomplete") || $("#add-homework-team").val() === "-1") {
-          if (nextLessons[0].teamId === -1) {
-            $("#add-homework-team").val("-1").removeClass("autocomplete");
-          }
-          else {
-            $("#add-homework-team").val(nextLessons[0].teamId).addClass("autocomplete")
-              .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
-          }
-        }
-      }
-      else {
-        $("#add-homework-team").val("-1").removeClass("autocomplete");
-      }
+    $("#add-homework-subject").on("input autocomplete", function () {
+      subjectInputCallback.call(this, "add");
     });
+    $("#add-homework-date-assignment").on("input autocomplete", function () {
+      dateAssignmentInputCallback.call(this, "add");
+    });
+    $("#add-homework-date-submission").on("input autocomplete", function () {
+      dateSubmissionInputCallback.call(this, "add");
+    });
+    $("#add-homework-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // On changing any information in the edit homework modal, disable the edit button if any information is empty
     $(".edit-homework-input").on("input", () => {
@@ -840,8 +869,23 @@ export async function init(): Promise<void> {
       const assignmentDate = $("#edit-homework-date-assignment").val();
       const submissionDate = $("#edit-homework-date-submission").val();
 
-      $("#edit-homework-button").prop("disabled", [content, assignmentDate, submissionDate].includes("") || subject === null);
+      $("#edit-homework-button").prop(
+        "disabled", [content, assignmentDate, submissionDate].includes("")
+        || subject === null
+        || $("#edit-homework-date-submission").hasClass("is-invalid")
+      );
     });
+
+    $("#edit-homework-subject").on("input autocomplete", function () {
+      subjectInputCallback.call(this, "edit");
+    });
+    $("#edit-homework-date-assignment").on("input autocomplete", function () {
+      dateAssignmentInputCallback.call(this, "edit");
+    });
+    $("#edit-homework-date-submission").on("input autocomplete", function () {
+      dateSubmissionInputCallback.call(this, "edit");
+    });
+    $("#edit-homework-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     $("#app").on("click", "#homework-feedback-random", prepareRandomHomework);
 

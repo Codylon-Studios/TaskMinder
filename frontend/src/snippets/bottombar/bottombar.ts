@@ -55,9 +55,15 @@ $(".bottombar-link").on("click", function() {
 
 let startX = 0;
 let startY = 0;
+let aborted = false;
 let overlayShowsMore = false;
 
 $(document).on("touchstart", ev => {
+  aborted = false;
+  if (screen.width / window.innerWidth !== 1) {
+    aborted = true;
+  }
+
   if ($(".modal").is(":visible")) return;
 
   if (overlayShowsMore) {
@@ -84,7 +90,8 @@ $(document).on("touchstart", ev => {
 $(document).on("touchmove", ev => {
   if ($(".modal").is(":visible")) return;
 
-  if (ev.changedTouches.length !== 1 && ev.touches.length !== 0) {
+  if (ev.touches.length !== 1 || false) {
+    aborted = true;
     return;
   }
 
@@ -148,7 +155,7 @@ $(document).on("touchend", ev => {
   }
 
 
-  if (ev.changedTouches.length !== 1 && ev.touches.length !== 0) {
+  if (aborted) {
     return;
   }
 

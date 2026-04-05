@@ -107,7 +107,7 @@ type HomeworkCheckedData = number[];
 type JoinedTeamsData = number[];
 
 // Lessons
-type LessonData = {
+type SingleLessonData = {
   lessonId: number;
   lessonNumber: number;
   weekDay: 0 | 1 | 2 | 3 | 4;
@@ -116,7 +116,8 @@ type LessonData = {
   room: string;
   startTime: string;
   endTime: string;
-}[];
+};
+type LessonData = SingleLessonData[];
 
 // Subjects
 type SubjectData = {
@@ -173,6 +174,7 @@ type LessonWithSubject = {
   room: string;
   startTime: number;
   endTime: number;
+  teamId: number;
 };
 type LessonWithSubstitution = LessonWithSubject & {
   substitution?: SubstitutionEntry
@@ -220,6 +222,8 @@ type UploadData = {
   totalUploads: number;
   totalStorage: string;
   usedStorage: string;
+  sizeLimitPerFile: number;
+  maxFilesPerClass: number;
   uploads: SingleUploadData[];
 }
 

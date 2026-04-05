@@ -41,7 +41,7 @@ export default function apiVersionMiddleware(req: Request, res: Response, next: 
   // through we are not that strict, but it would not adhere to CSP-standards.
   // The problem is that <link> does not offer a possibility to set a header 
   // and setting it in SW since the type is no-cors, so immutable...
-  if (req.path === "/events/types/styles") {
+  if (req.path === "/events/types/styles" || (/\/uploads\/\d+/.exec(req.path) && req.method === "GET")) {
     return next();
   }
 

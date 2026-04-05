@@ -865,7 +865,7 @@ async function renameCalendarMonthYear(): Promise<void> {
 function slideCalendar(direction: "l" | "r", transition: string, slideTime: number): Promise<void> {
   selectedNewDay = false;
   return new Promise<void>(resolve => {
-    if (!animations) {
+    if (!animationCalendar) {
       transition = "";
       slideTime = 0;
     }
@@ -913,6 +913,7 @@ export async function init(): Promise<void> {
   return new Promise(res => {
     justCheckedHomeworkId = -1;
     animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
+    animationCalendar = JSON.parse(localStorage.getItem("animation-calendar") ?? "null") ?? animations;
 
     $(".calendar-move-button").on("click", function () {
       // If the calendar is already moving, stop; else set it moving
@@ -1169,6 +1170,7 @@ export async function init(): Promise<void> {
 
 let justCheckedHomeworkId: number;
 let animations: boolean;
+let animationCalendar: boolean;
 let selectedDate: Date = new Date();
 let selectedNewDay: boolean;
 // Save whether the calendar is currently moving (It shouldn't be moved then, as bugs could appear)

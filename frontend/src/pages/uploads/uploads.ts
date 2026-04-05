@@ -6,18 +6,21 @@ import {
   dateDaysDifference,
   uploadData,
   getDisplayDate,
-  loadTimetableData,
   getSimpleDisplayDate,
   onlyThisSite,
   isSameDay,
   ajax,
   uploadRequestsData,
   bootstrap,
-  user
+  user,
+  autocomplete,
+  bytesToText,
+  getCurrentLesson,
+  checkTeamInputForSuspicious
 } from "../../global/global.js";
 import { AjaxError, SingleUploadData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
-import { SearchBox } from "../../snippets/searchBox/searchBox.js";
+import { SearchBox } from "../../snippets/richInput/richInput.js";
 
 async function renderUploadList(): Promise<void> {
   async function getFilteredData(): Promise<SingleUploadData[]> {
@@ -69,22 +72,11 @@ async function renderUploadList(): Promise<void> {
     .toggleClass("text-bg-danger", storageUsed >= 90)
     .end().find("span").text(storageUsed + "%").toggle(storageUsed < 5);
   
-  const byteToText = (b: number): string => {
-    b /= 1024;
-    if (b < 100) {
-      return Math.round(b * 10) / 10 + "KB";
-    }
-    else {
-      b /= 1024;
-      if (b < 100) {
-        return Math.round(b * 10) / 10 + "MB";
-      }
-      else {
-        return Math.round(b / 1024 * 10) / 10 + "GB";
-      }
-    }
-  };
-  $("#storage-description b").eq(0).text(byteToText(usedStorage)).end().eq(1).text(byteToText(totalStorage));
+  $("#storage-description b").eq(0).text(bytesToText(usedStorage)).end().eq(1).text(bytesToText(totalStorage));
+  
+  $("#storage-limit-exceeded-toast .toast-body b").text(bytesToText(totalStorage));
+  $("#size-limit-exceeded-toast .toast-body b").text(bytesToText(currentUploadData.sizeLimitPerFile));
+  $("#file-limit-exceeded-toast .toast-body b").text(currentUploadData.maxFilesPerClass);
 
   for (const upload of data) {
     const uploadId = upload.uploadId;
@@ -364,28 +356,28 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
   //
 
   // Reset the data inputs in the add upload modal
-  const now = new Date();
-  const timeNow = (now.getHours() * 60 + now.getMinutes() - 5) * 60 * 1000; // Pretend it's 5min earlier, in case the lesson was just over
-  const currentTimetableData = await loadTimetableData(new Date());
-  const currentLesson = currentTimetableData.find(l => l.startTime < timeNow && l.endTime > timeNow);
+  const currentLesson = await getCurrentLesson();
   
+  $("#add-upload-name").val("").removeClass("is-autocompleted");
+  $("#add-upload-team").val("-1").removeClass("is-autocompleted is-suspicious");
+
   if (uploadRequestId) {
     const uploadRequest = (await uploadRequestsData()).find(r => r.uploadRequestId === uploadRequestId);
     if (uploadRequest) {
-      $("#add-upload-name").val(uploadRequest.uploadRequestName).addClass("autocomplete").next().text("Automatisch: Aus der Anfrage");
-      $("#add-upload-team").val(uploadRequest.teamId).addClass("autocomplete");
+      autocomplete($("#add-upload-name"), uploadRequest.uploadRequestName);
+      autocomplete($("#add-upload-team"), uploadRequest.teamId);
+      $("#add-upload-name, #add-upload-team").find("~ .autocompleted-feedback").text("Automatisch: Aus der Anfrage");
     }
   }
-  else if (currentLesson === undefined) {
-    $("#add-upload-name").val("").removeClass("autocomplete");
-    $("#add-upload-team").val("-1");
-  }
-  else {
-    $("#add-upload-name")
-      .val(currentLesson?.lessons[0].subjectNameLong + " vom " + getSimpleDisplayDate(now))
-      .addClass("autocomplete")
-      .next().text("Automatisch: Der Name der Anfrage");
-    $("#add-upload-team").val("-1");
+  else if (currentLesson !== undefined) {
+    const subjectName = currentLesson.lessons[0].subjectNameLong;
+    autocomplete($("#add-upload-name"), subjectName + " vom " + getSimpleDisplayDate(new Date()));
+    $("#add-upload-name ~ .autocompleted-feedback").text("Automatisch: Das aktuelle Fach");
+    const teamId = currentLesson.lessons[0].teamId;
+    if (teamId !== -1) {
+      autocomplete($("#add-upload-team"), teamId);
+      $("#add-upload-team ~ .autocompleted-feedback").html(`Automatisch: Das Team, das <b>${escapeHTML(subjectName)}</b> hat`);
+    }
   }
   $("#add-upload-description").val("");
   $("#add-upload-files").val("");
@@ -441,7 +433,15 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
           $("#unsupported-mime-type-toast").toast("show");
         }
         else if (err.status === 413) {
-          $("#size-limit-exceeded-toast").toast("show");
+          if (err.responseText === "Upload limit reached: this class already has the maximum number of files allowed.") {
+            $("#file-limit-exceeded-toast").toast("show");
+          }
+          else if (err.responseText === "Class storage quota will be exceeded") {
+            $("#storage-limit-exceeded-toast").toast("show");
+          }
+          else if (err.responseText === "File size limit exceeded") {
+            $("#size-limit-exceeded-toast").toast("show");
+          }
         }
       }
     });
@@ -585,6 +585,9 @@ async function editUpload(uploadId: number): Promise<void> {
 
   // Set the inputs on the already saved information
   $("#edit-upload-name").val(upload.uploadName);
+  $("#edit-upload-change-files").prop("checked", false);
+  $("#edit-upload-files, #edit-upload-files + .form-text").hide();
+  $("#edit-upload-files").val("");
   $("#edit-upload-description").val(upload.uploadDescription ?? "").trigger("change");
   $("#edit-upload-type").val(upload.uploadType);
   $("#edit-upload-team").val(upload.teamId);
@@ -636,8 +639,16 @@ async function editUpload(uploadId: number): Promise<void> {
         if (err.status === 400 && err.responseText === "MIME-Type not supported") {
           $("#unsupported-mime-type-toast").toast("show");
         }
-        else if (err.status === 413) { // Max files number
-          $("#size-limit-exceeded-toast").toast("show");
+        else if (err.status === 413) {
+          if (err.responseText === "Upload limit reached: this class already has the maximum number of files allowed.") {
+            $("#file-limit-exceeded-toast").toast("show");
+          }
+          else if (err.responseText === "Class storage quota will be exceeded") {
+            $("#storage-limit-exceeded-toast").toast("show");
+          }
+          else if (err.responseText === "File size limit exceeded") {
+            $("#size-limit-exceeded-toast").toast("show");
+          }
         }
       }
     });
@@ -649,7 +660,6 @@ function deleteUpload(uploadId: number, force?: boolean): void {
     $("#delete-upload-confirm-toast").toast("hide");
 
     await ajax("DELETE", `/api/uploads/${uploadId}`, {
-      body: { },
       queueable: true
     });
 
@@ -780,6 +790,8 @@ export async function init(): Promise<void> {
       $("#add-upload-button").prop("disabled", name === "" || type === null || files.length === 0 || files.length > 20);
     });
 
+    $("#add-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
+
     // On changing any information in the edit upload modal, disable the add button if any information is empty
     $(".edit-upload-input").on("input", function () {
       const name = $("#edit-upload-name").val()?.toString().trim();
@@ -789,6 +801,8 @@ export async function init(): Promise<void> {
 
       $("#edit-upload-button").prop("disabled", name === "" || type === null || (changeFiles && (files.length === 0 || files.length > 20)));
     });
+
+    $("#edit-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     $("#edit-upload-change-files").on("change", function () {
       $("#edit-upload-files, #edit-upload-files + .form-text").toggle($(this).prop("checked"));
@@ -832,6 +846,8 @@ export async function init(): Promise<void> {
     $("#add-upload-request-name").on("input", function () {
       $("#add-upload-request-button").prop("disabled", $(this).val()?.toString().trim() === "");
     });
+
+    $("#add-upload-request-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     $("#add-upload-request-button").on("click", async () => {
       const uploadRequestName = $("#add-upload-request-name").val()?.toString().trim();

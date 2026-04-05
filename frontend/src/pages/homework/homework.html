@@ -138,7 +138,7 @@
                     <option value="" disabled selected>Fach</option>
                     <!-- Gets filled -->
                   </select>
-                  <div class="autocomplete-feedback">Automatisch: Das aktuelle Fach</div>
+                  <div class="autocompleted-feedback">Automatisch: Das aktuelle Fach</div>
                 </div>
 
                 <div class="mb-3">
@@ -149,13 +149,16 @@
                 <div class="mb-3">
                   <label for="add-homework-date-assignment" class="form-label">Gib ein, wann die Hausaufgabe aufgegeben wurde</label>
                   <input type="date" class="form-control add-homework-input" id="add-homework-date-assignment" />
-                  <div class="autocomplete-feedback">Automatisch: Heute</div>
+                  <div class="suspicious-feedback">Bist du dir sicher? Dieses Datum liegt in der Zukunft!</div>
+                  <div class="autocompleted-feedback">Automatisch: Heute</div>
                 </div>
 
                 <div class="mb-3">
                   <label for="add-homework-date-submission" class="form-label">Gib ein, bis wann die Hausaufgabe abgegeben werden muss</label>
                   <input type="date" class="form-control add-homework-input" id="add-homework-date-submission" />
-                  <div class="autocomplete-feedback">
+                  <div class="invalid-feedback">Das Abgabedatum muss nach dem Aufgabedatum liegen!</div>
+                  <div class="suspicious-feedback"></div>
+                  <div class="autocompleted-feedback">
                     Automatisch: Die nächste Stunde in
                     <b></b>
                   </div>
@@ -167,7 +170,11 @@
                     <option value="" selected>Alle</option>
                     <!-- Gets filled -->
                   </select>
-                  <div class="autocomplete-feedback">
+                  <!--prettier-ignore-->
+                  <div class="suspicious-feedback">
+                    Bist du dir sicher? Du bist nicht im Team <b></b>!
+                  </div>
+                  <div class="autocompleted-feedback">
                     Automatisch: Das Team, das
                     <b></b>
                     hat
@@ -211,11 +218,19 @@
                 <div class="mb-3">
                   <label for="edit-homework-date-assignment" class="form-label">Gib ein, wann die Hausaufgabe aufgegeben wurde</label>
                   <input type="date" class="form-control edit-homework-input" id="edit-homework-date-assignment" />
+                  <div class="suspicious-feedback">Bist du dir sicher? Dieses Datum liegt in der Zukunft!</div>
+                  <div class="autocompleted-feedback">Automatisch: Heute</div>
                 </div>
 
                 <div class="mb-3">
                   <label for="edit-homework-date-submission" class="form-label">Gib ein, bis wann die Hausaufgabe abgegeben werden muss</label>
                   <input type="date" class="form-control edit-homework-input" id="edit-homework-date-submission" />
+                  <div class="invalid-feedback">Das Abgabedatum muss nach dem Aufgabedatum liegen!</div>
+                  <div class="suspicious-feedback"></div>
+                  <div class="autocompleted-feedback">
+                    Automatisch: Die nächste Stunde in
+                    <b></b>
+                  </div>
                 </div>
 
                 <label for="edit-homework-team" class="form-label">Wähle ein Team für die Hausaufgabe aus (optional)</label>
@@ -223,6 +238,15 @@
                   <option value="" selected>Alle</option>
                   <!-- Gets filled -->
                 </select>
+                <!--prettier-ignore-->
+                <div class="suspicious-feedback">
+                  Bist du dir sicher? Du bist nicht im Team <b></b>!
+                </div>
+                <div class="autocompleted-feedback">
+                  Automatisch: Das Team, das
+                  <b></b>
+                  hat
+                </div>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>

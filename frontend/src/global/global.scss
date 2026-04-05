@@ -398,31 +398,88 @@ $unimportant-display-values: (
   }
 }
 
-.autocomplete-feedback {
+.autocompleted-feedback, .suspicious-feedback {
   display: none;
   margin-top: 0.25rem;
   font-size: 0.875em;
+}
+
+.autocompleted-feedback {
   color: var(--bs-primary);
 }
 
+.suspicious-feedback {
+  color: var(--bs-warning);
+}
+
 .form-control, .form-select, .rich-textarea-input {
-  &.autocomplete {
-    border-color: $input-focus-border-color !important;
-    background-color: color.change($color: $primary, $alpha: 0.1);
+  &.is-autocompleted, &.is-suspicious {
     padding-right: calc(1.5em + 0.75rem);
 
-    background-image: svgs.make-sparkling-wand(to-rgb($primary));
-    [data-high-contrast="true"][data-bs-theme="light"] & {
-      background-image: svgs.make-sparkling-wand(to-rgb($primary-high-contrast));
-    }
-    
     background-repeat: no-repeat;
     background-position: right calc(0.375em + 0.1875rem) center;
     background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
 
-    & ~ .autocomplete-feedback {
+  &.is-autocompleted {
+    border-color: $input-focus-border-color !important;
+    background-color: color.change($color: $primary, $alpha: 0.1);
+
+    background-image: svgs.make-sparkling-wand(to-rgb($primary));
+    --bs-form-select-bg-icon: #{svgs.make-sparkling-wand(to-rgb($primary))};
+    [data-high-contrast="true"][data-bs-theme="light"] & {
+      background-image: svgs.make-sparkling-wand(to-rgb($primary-high-contrast));
+      --bs-form-select-bg-icon: #{svgs.make-sparkling-wand(to-rgb($primary-high-contrast))};
+    }
+
+    & ~ .autocompleted-feedback {
       display: block;
     }
+  }
+
+  &.is-suspicious {
+    border-color: $warning !important;
+    background-color: color.change($color: $warning, $alpha: 0.1);
+
+    background-image: svgs.make-circle-question(to-rgb($warning));
+    --bs-form-select-bg-icon: #{svgs.make-circle-question(to-rgb($warning))};
+    [data-high-contrast="true"][data-bs-theme="light"] & {
+      background-image: svgs.make-circle-question(to-rgb($warning-high-contrast));
+      --bs-form-select-bg-icon: #{svgs.make-circle-question(to-rgb($warning-high-contrast))};
+    }
+    
+    &:focus {
+      box-shadow: 0 0 0 .25rem rgba(var(--bs-warning-rgb), 0.25);
+    }
+
+    & ~ .suspicious-feedback {
+      display: block;
+    }
+  }
+
+  &.is-invalid {
+    border-color: $danger !important;
+    background-color: color.change($color: $danger, $alpha: 0.1);
+
+    background-image: svgs.make-circle-exclamation(to-rgb($danger));
+    --bs-form-select-bg-icon: #{svgs.make-circle-exclamation(to-rgb($danger))};
+    [data-high-contrast="true"][data-bs-theme="dark"] & {
+      background-image: svgs.make-circle-exclamation(to-rgb($danger-high-contrast));
+      --bs-form-select-bg-icon: #{svgs.make-circle-exclamation(to-rgb($danger-high-contrast))};
+    }
+    
+    &:focus {
+      box-shadow: 0 0 0 .25rem rgba(var(--bs-danger-rgb), 0.25);
+    }
+  }
+}
+
+.form-select {
+  &.is-autocompleted, &.is-suspicious, &.is-invalid {
+    padding-right: 4.125rem;
+    background-position: center right 2.25rem, right .75rem center;
+    background-size: 16px 12px, calc(.75em + .375rem) calc(.75em + .375rem);
+    background-image: var(--bs-form-select-bg-img),var(--bs-form-select-bg-icon, none);
   }
 }
 

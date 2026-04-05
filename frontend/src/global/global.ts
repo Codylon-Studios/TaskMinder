@@ -28,12 +28,14 @@ import {
   ClassInfo,
   Bootstrap,
   UserEventName,
-  UserEventCallback
+  UserEventCallback,
+  SingleLessonData
 } from "./types";
 
 export const lastCommaRegex = /,(?!.*,)/;
 export const weekDaysSo = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 export const weekDaysMo = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+export const isStandalone = globalThis.matchMedia("(display-mode: standalone)").matches;
 
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
@@ -322,6 +324,35 @@ export function getInputValue(element: JQuery<HTMLElement>, fallback?: string): 
   return element.val()?.toString() ?? (fallback ?? "");
 }
 
+export function canAutocomplete(element: JQuery<HTMLElement>, unsetVal?: string): boolean {
+  return element.hasClass("is-autocompleted") || getInputValue(element).trim() === (unsetVal ?? "");
+}
+
+export function autocomplete(element: JQuery<HTMLElement>, val: string | string[] | number): void {
+  element.val(val).addClass("is-autocompleted").trigger("autocomplete");
+}
+
+export function tryAutocomplete(element: JQuery<HTMLElement>, val: string | string[] | number, unsetVal?: string): boolean {
+  if (canAutocomplete(element, unsetVal)) { // The user hasn't decided for a specific value
+    autocomplete(element, val);
+    return true;
+  }
+  return false;
+}
+
+export async function checkTeamInputForSuspicious(this: HTMLElement): Promise<void> {
+  const teamId = Number.parseInt(getInputValue($(this)));
+  if (teamId === -1) {
+    $(this).removeClass("is-suspicious");
+  }
+  else {
+    const currentJoinedTeamsData = await joinedTeamsData();
+    const selectedTeamName = $(this).find("option:selected").text();
+    $(this).val(teamId).find("~ .suspicious-feedback b").text(selectedTeamName);
+    $(this).toggleClass("is-suspicious", !currentJoinedTeamsData.includes(teamId));
+  }
+}
+
 export function getCirclePath(cx: number, cy: number, r: number, a: number, full?: boolean): string {
   if (full) {
     return `M${cx} ${cy - r} A${r} ${r} 0 1 1 ${cx} ${cy + r} A${r} ${r} 0 1 1 ${cx} ${cy - r} Z`;
@@ -331,6 +362,26 @@ export function getCirclePath(cx: number, cy: number, r: number, a: number, full
   return `M${cx} ${cy} l0 ${-r} A${r} ${r} 0 ${a % 360 > 180 ? 1 : 0} 1 ${x} ${y} Z`;
 }
 
+export function bytesToText(b: number): string {
+  b /= 1024;
+  if (b < 100) {
+    return Math.round(b * 10) / 10 + "KB";
+  }
+  else {
+    b /= 1024;
+    if (b < 100) {
+      return Math.round(b * 10) / 10 + "MB";
+    }
+    else {
+      return Math.round(b / 1024 * 10) / 10 + "GB";
+    }
+  }
+};
+
+export function checkSecurePassword(username: string, password: string): boolean {
+  return !password.toLowerCase().includes(username.toLowerCase()) && /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{6,128}$/.test(password);
+}
+
 export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   await joinedTeamsData.init(); await subjectData.init(); await lessonData.init(); await classSubstitutionsData.init(); await eventData.init();
 
@@ -338,7 +389,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   const currentSubjectData = await subjectData();
   const currentLessonData = await lessonData();
   const currentSubstitutionsData = await classSubstitutionsData();
-  const currentEventData = (await eventData());
+  const currentEventData = await eventData();
 
   const lessonsWithSubject: LessonWithSubject[] = currentLessonData.filter(l => l.weekDay === date.getDay() - 1)
     .filter(l => (currentJoinedTeamsData.includes(l.teamId) || l.teamId === -1))
@@ -358,6 +409,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
         startTime: Number.parseInt(l.startTime),
         endTime: Number.parseInt(l.endTime),
         room: l.subjectId === -1 ? "-" : l.room,
+        teamId: l.teamId,
 
         subjectId: l.subjectId,
         subjectNameLong: subject.subjectNameLong,
@@ -495,11 +547,45 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   return multiLessonGroups;
 }
 
-async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void> {
-  if (!user.isAuthed) await new Promise(res => {
-    user.on("change", res);
-  });
+export async function getCurrentLesson(): Promise<TimetableData | undefined> {
+  const now = new Date();
+  const timeNow = (now.getHours() * 60 + now.getMinutes() - 5) * 60 * 1000; // Pretend it's 5min earlier, in case the lesson was just over
+  const currentTimetableData = await loadTimetableData(new Date());
+  return currentTimetableData.find(l => l.startTime < timeNow && l.endTime > timeNow);
+}
 
+export async function getNextLessonWithDate(subjectId: number): Promise<{lesson: SingleLessonData, date: Date, otherWeekDays: number[]} | null> {
+  const currentLessonData = await lessonData();
+  // The next lessons of the new selected subject
+  const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === subjectId);
+
+  const now = new Date();
+  let minDiff = 7;
+  let minLesson: SingleLessonData | null = null;
+  const otherWeekDays: number[] = [];
+  for (const l of nextLessons) {
+    otherWeekDays.push(l.weekDay);
+    let diff = (l.weekDay - (now.getDay() - 1) + 7) % 7; // The difference in days
+    if (diff === 0) diff = 7;
+    if (diff <= minDiff) {
+      minDiff = diff;
+      minLesson = l;
+    }
+  }
+
+  if (minLesson === null) return null;
+
+  const nextLessonDate = now;
+  nextLessonDate.setDate(nextLessonDate.getDate() + minDiff);
+  return {
+    otherWeekDays,
+    lesson: minLesson,
+    date: nextLessonDate
+  };
+}
+
+async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void> {
+  await user.awaitAuthed();
   if (!user.classJoined) return;
 
   if (user.loggedIn) {
@@ -539,11 +625,24 @@ async function loadClassSubstitutionsData(): Promise<void> {
   classSubstitutionsData({data: data, classFilterRegex: currentSubstitutionsData.classFilterRegex});
 }
 
-async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<void> {
-  if (!user.isAuthed) await new Promise(res => {
-    user.on("change", res);
-  });
+async function loadClassInfo(settings?: {silent?: boolean}): Promise<void> {
+  await user.awaitAuthed();
+  if (!user.classJoined) return;
 
+  const res = await ajax("GET", `/api/classes/${user.classId}`, { forceOffline: true });
+  classInfo.set(await res.json(), settings);
+}
+
+async function loadClassMemberData(settings?: {silent?: boolean}): Promise<void> {
+  await user.awaitAuthed();
+  if (!user.classJoined) return;
+  
+  const res = await ajax("GET",  `/api/classes/${user.classId}/members`, { forceOffline: true });
+  classMemberData.set(await res.json(), settings);
+}
+
+async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<void> {
+  await user.awaitAuthed();
   if (!user.classJoined) return;
 
   if (user.loggedIn) {
@@ -580,7 +679,7 @@ export async function tryForceReloadEventTypeStyles(): Promise<void> {
     cache.data = eventTypeString;
     cache.date = Date.now();
   }
-  $("#event-type-styles").text(await (await ajax("GET", "/api/events/types/styles?v=" + cache.date, { forceOffline: true })).text()); // TODO: Ewww
+  $("#event-type-styles").attr("href", "/api/events/types/styles?v=" + cache.date);
   localStorage.setItem("eventTypeDataCache", JSON.stringify(cache));
 }
 
@@ -654,7 +753,7 @@ async function queueRequest(request: Request): Promise<void> {
   const store = tx.objectStore("queue");
   store.add(serializedReq);
   
-  renderRequestQueue()
+  renderRequestQueue();
 }
 
 async function getRequestDescription(req: SerializedRequest): Promise<string> {
@@ -667,20 +766,20 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
   catch {
     jsonBody = null;
   }
-  const url = new URL(req.url, globalThis.location.origin)
-  let path = url.pathname.replace(/^\/api/, "")
+  const url = new URL(req.url, globalThis.location.origin);
+  let path = url.pathname.replace(/^\/api/, "");
   const ids = Array.from(
     path.matchAll(/\/(\d+)/g),
     m => Number.parseInt(m[1])
   );
-  path = path.replaceAll(/\/\d+/g, "/:id")
+  path = path.replaceAll(/\/\d+/g, "/:id");
 
   switch (req.method + " " + path) {
   case "POST /events": {
     return `Ereignis "${cutString(escapeHTML(jsonBody.name), 40)}" hinzufügen`;
   }
   case "PATCH /events/:id": {
-    return `Ereignis "${cutString(escapeHTML(jsonBody.name), 40)}" bearbeiten`;
+    return `Ereignis zu "${cutString(escapeHTML(jsonBody.name), 40)}" bearbeiten`;
   }
   case "DELETE /events/:id": {
     await eventData.init();
@@ -696,7 +795,7 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
     return `Hausaufgabe "${cutString(escapeHTML(jsonBody.content), 40)}" hinzufügen`;
   }
   case "PATCH /homework/:id": {
-    return `Hausaufgabe "${cutString(escapeHTML(jsonBody.content), 40)}" bearbeiten`;
+    return `Hausaufgabe zu "${cutString(escapeHTML(jsonBody.content), 40)}" bearbeiten`;
   }
   case "DELETE /homework/:id": {
     await homeworkData.init();
@@ -721,7 +820,7 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
   case "PATCH /uploads/:id": {
     const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
     const name = match ? match[1].trim() : "?";
-    return `Datei "${cutString(escapeHTML(name), 40)}" bearbeiten`;
+    return `Datei zu "${cutString(escapeHTML(name), 40)}" bearbeiten`;
   }
   case "DELETE /uploads/:id": {
     await uploadData.init();
@@ -800,9 +899,9 @@ export async function renderRequestQueue(): Promise<void> {
 }
 
 function getDirtyDataAccessor(req: SerializedRequest): DataAccessor<unknown> | null {
-  const path = (new URL(req.url, globalThis.location.origin)).pathname.replace("/api", "")
+  const path = (new URL(req.url, globalThis.location.origin)).pathname.replace("/api", "");
 
-  if (path == "/events/types") {
+  if (path === "/events/types") {
     return eventTypeData as DataAccessor<unknown>;
   }
   if (path.startsWith("/events")) {
@@ -878,26 +977,37 @@ async function clearRequestQueue(): Promise<void> {
 function getResponseFailReason(req: SerializedRequest, res: Response): string {
   const rawResBody = res.body;
   const textResBody = rawResBody instanceof ArrayBuffer ? new TextDecoder().decode(rawResBody) : rawResBody;
-  const path = (new URL(req.url, globalThis.location.origin)).pathname;
+  const path = (new URL(req.url, globalThis.location.origin)).pathname.replace("/api", "");
   if (res.ok) return "";
   if (res.status === 401)
     return "Du hast nicht mehr die Berechtigung, diese Änderung auszuführen. "
       + "Entweder deine Rolle wurde aktualisiert oder du musst dich erneut anmelden";
   if (res.status === 500) return "Auf unserem Server ist ein Problem aufgetreten.";
   if (res.status === 404) {
-    const type = "";
-    if (path.startsWith("/homework")) return "Die Hausaufgabe";
-    if (path.startsWith("/events")) return "Das Ereignis";
-    if (path.startsWith("/uploads")) return "Die Datei";
+    let type = "";
+    if (path.startsWith("/homework")) type = "Die Hausaufgabe";
+    if (path.startsWith("/events")) type = "Das Ereignis";
+    if (path.startsWith("/uploads")) type = "Die Datei";
     return type + " wurde in der Zwischenzeit gelöscht.";
   }
   if (res.status === 413) {
-    if (path === "/uploads/upload") {
-      return "Die Datei ist zu groß (maximal 15MB erlaubt).";
+    if (textResBody === "NGINX request size limit exceeded") {
+      return "Diese Anfrage ist zu groß für unseren Server. Bitte versuche, sie in kleinere Anfragen aufzuteilen.";
+    }
+    if (path === "/uploads") {
+      if (textResBody === "Upload limit reached: this class already has the maximum number of files allowed.") {
+        return $("#file-limit-exceeded-toast .toast-body").text();
+      }
+      else if (textResBody === "Class storage quota will be exceeded") {
+        return $("#storage-limit-exceeded-toast .toast-body").text();
+      }
+      else if (textResBody === "File size limit exceeded") {
+        return $("#size-limit-exceeded-toast .toast-body").text();
+      }
     }
   }
   if (res.status === 400) {
-    if (path === "/uploads/upload") {
+    if (path === "/uploads") {
       if (textResBody === "MIME-Type not supported") return "Das Dateiformat ist nicht unterstützt.";
     }
   }
@@ -981,6 +1091,10 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
 
       if (res.status === 500) {
         $("#error-server-toast").toast("show");
+        throw error;
+      }
+      else if (res.status === 413 && text === "NGINX request size limit exceeded") {
+        $("#nginx-size-limit-toast").toast("show");
         throw error;
       }
       else if (res.status === 503) {
@@ -1186,12 +1300,15 @@ export function createSocketDataAccessor<DataType>(name: string, socketEv: strin
 export const user = {
   isAuthed: false as boolean,
   loggedIn: null as boolean | null,
-  username: null as string | null,
+  username: "" as string,
   classJoined: null as boolean | null,
   permissionLevel: 0 as number,
+  classId: 0 as number,
+  accountId: 0 as number,
   changeEvents: 0,
 
   _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
+  _authAwaits: [] as ((value: void) => void)[],
 
   async auth(settings?: {silent?: boolean}) {
     const res = await ajax("GET", "/api/account/auth", { forceOffline: true });
@@ -1199,37 +1316,23 @@ export const user = {
     const json = await res.json();
 
     user.isAuthed = true;
-
-    if (json.loggedIn) {
-      user.loggedIn = true;
-      user.username = json.account.username;
-    }
-    else {
-      user.loggedIn = false;
-      user.username = null;
-    }
   
+    user.loggedIn = json.loggedIn;
+    user.username = json.account?.username ?? "";
     user.classJoined = json.classJoined;
     user.permissionLevel = json.permissionLevel ?? 0;
-  
-    if (json.loggedIn) {
-      user.loggedIn = true;
-    }
-    else {
-      user.loggedIn = false;
-      user.username = null;
-    }
+    user.classId = json.classId;
+    user.accountId = json.account?.accountId ?? "";
 
     user.changeEvents++;
+    this._authAwaits.forEach(res => res());
     user.trigger("change", settings);
   },
 
   async awaitAuthed() {
     if (this.isAuthed) return;
     return new Promise<void>(res => {
-      this.on("change", () => {
-        if (this.isAuthed) res();
-      });
+      this._authAwaits.push(res);
     });
   },
 
@@ -1266,10 +1369,10 @@ unsavedChanges(false);
 
 // Resources
 export const classInfo = createSocketDataAccessor<ClassInfo>("classInfo", "updateClassInfo", {
-  reload: "/api/classes/1" // TODO: own class id, Necessary?
+  reload: loadClassInfo
 });
 export const classMemberData = createSocketDataAccessor<ClassMemberData>("classMemberData", "updateMembers", {
-  reload: "/api/classes/1/members" // TODO: own class id, Necessary?
+  reload: loadClassMemberData
 });
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", {
   reload: loadClassSubstitutionsData
@@ -1561,10 +1664,10 @@ if (!isSite("settings")) {
   }
 }
 
-$(document).on("input", ".autocomplete", function () {
-  $(this).removeClass("autocomplete");
+$(document).on("input", ".is-autocompleted", function () {
+  $(this).removeClass("is-autocompleted");
 });
 
-$(document).on("focus", 'input[type="text"].autocomplete', function () {
-  $(this).val("").removeClass("autocomplete");
+$(document).on("focus", 'input[type="text"].is-autocompleted', function () {
+  $(this).val("").removeClass("is-autocompleted");
 });

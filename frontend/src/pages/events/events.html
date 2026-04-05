@@ -163,6 +163,8 @@
                   <div class="col">
                     <label for="add-event-end-date" class="form-label">Gib ein Enddatum an (optional)</label>
                     <input type="date" class="form-control add-event-input" id="add-event-end-date" />
+                    <div class="invalid-feedback">Das Enddatum muss nach dem Startdatum liegen!</div>
+                    <div class="suspicious-feedback">Bist du dir sicher? Dieses Datum liegt in der Vergangenheit!</div>
                     <div class="form-text">zum Beispiel für Ferien</div>
                   </div>
                 </div>
@@ -172,6 +174,10 @@
                   <option value="-1" selected>Alle</option>
                   <!-- Gets filled -->
                 </select>
+                <!--prettier-ignore-->
+                <div class="suspicious-feedback">
+                  Bist du dir sicher? Du bist nicht im Team <b></b>!
+                </div>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
@@ -227,6 +233,8 @@
                   <div class="col">
                     <label for="edit-event-end-date" class="form-label">Gib ein Enddatum an (optional)</label>
                     <input type="date" class="form-control edit-event-input" id="edit-event-end-date" />
+                    <div class="invalid-feedback">Das Enddatum muss nach dem Startdatum liegen!</div>
+                    <div class="suspicious-feedback">Bist du dir sicher? Dieses Datum liegt in der Vergangenheit!</div>
                     <div class="form-text">zum Beispiel für Ferien</div>
                   </div>
                 </div>
@@ -236,6 +244,10 @@
                   <option value="-1" selected>Alle</option>
                   <!-- Gets filled -->
                 </select>
+                <!--prettier-ignore-->
+                <div class="suspicious-feedback">
+                  Bist du dir sicher? Du bist nicht im Team <b></b>!
+                </div>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>

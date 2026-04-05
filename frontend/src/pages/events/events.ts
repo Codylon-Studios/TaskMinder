@@ -12,11 +12,13 @@ import {
   dateDaysDifference,
   onlyThisSite,
   ajax,
-  user
+  user,
+  checkTeamInputForSuspicious,
+  getInputValue
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
-import { SearchBox } from "../../snippets/searchBox/searchBox.js";
+import { SearchBox } from "../../snippets/richInput/richInput.js";
 
 async function renderEventList(): Promise<void> {
   async function getFilteredData(): Promise<EventData> {
@@ -261,10 +263,10 @@ function addEvent(): void {
   $("#add-event-name").val("");
   $("#add-event-description").val("");
   $("#add-event-description").trigger("change");
-  $("#add-event-start-date").val("");
+  $("#add-event-start-date").val("").removeClass("is-suspicious");
   $("#add-event-lesson").val("");
-  $("#add-event-end-date").val("");
-  $("#add-event-team").val("-1");
+  $("#add-event-end-date").val("").removeClass("is-suspicious is-invalid");
+  $("#add-event-team").val("-1").removeClass("is-suspicious");
 
   // Disable the actual "add" button, because not all information is given
   $("#add-event-button").prop("disabled", true);
@@ -456,10 +458,10 @@ async function editEvent(eventId: number): Promise<void> {
   $("#edit-event-name").val(event.name);
   $("#edit-event-description").val(event.description ?? "");
   $("#edit-event-description").trigger("change");
-  $("#edit-event-start-date").val(msToInputDate(event.startDate));
+  $("#edit-event-start-date").val(msToInputDate(event.startDate)).removeClass("is-suspicious");
   $("#edit-event-lesson").val(event.lesson ?? "");
-  $("#edit-event-end-date").val(msToInputDate(event.endDate ?? ""));
-  $("#edit-event-team").val(event.teamId);
+  $("#edit-event-end-date").val(msToInputDate(event.endDate ?? "")).removeClass("is-suspicious is-invalid");
+  $("#edit-event-team").val(event.teamId).removeClass("is-suspicious");
 
   // Enable the actual "edit" button, because all information is given
   $("#edit-event-button").prop("disabled", false);
@@ -612,13 +614,39 @@ export async function init(): Promise<void> {
 
     $("#search-events").on("input", renderEventList);
 
+    const checkEndDateAfterStartDate = (addOrEdit: "add" | "edit"): void => {
+      const start = getInputValue($(`#${addOrEdit}-event-start-date`));
+      const end = getInputValue($(`#${addOrEdit}-event-end-date`));
+      if (start === "" || end === "") return;
+      $(`#${addOrEdit}-event-end-date`).toggleClass("is-invalid", new Date(start).getTime() > new Date(end).getTime());
+    };
+
+    function startDateInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): void {
+      checkEndDateAfterStartDate(addOrEdit);
+    }
+
+    function endDateInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): void {
+      const val = getInputValue($(this));
+      if (val === "") {
+        $(this).removeClass("is-suspicious");
+        return;
+      }
+
+      checkEndDateAfterStartDate(addOrEdit);
+
+      const date = new Date(val);
+      const now = new Date();
+
+      $(this).toggleClass("is-suspicious", date.getTime() < now.getTime() && !isSameDay(date, now));
+    }
+
     // On changing any information in the add event modal, disable the add button if any information is empty
     $(".add-event-input").on("input", function () {
       const type = $("#add-event-type").val();
       const name = $("#add-event-name").val()?.toString().trim();
       const startDate = $("#add-event-start-date").val();
 
-      $("#add-event-button").prop("disabled", [name, startDate].includes("") || type === null);
+      $("#add-event-button").prop("disabled", [name, startDate].includes("") || type === null || $("#add-event-end-date").hasClass("is-invalid"));
 
       if ($(this).is("#add-event-end-date")) {
         $("#add-event-lesson").val("");
@@ -627,6 +655,14 @@ export async function init(): Promise<void> {
         $("#add-event-end-date").val("");
       }
     });
+    
+    $("#add-event-start-date").on("input autocomplete", function () {
+      startDateInputCallback.call(this, "add");
+    });
+    $("#add-event-end-date").on("input autocomplete", function () {
+      endDateInputCallback.call(this, "add");
+    });
+    $("#add-event-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // On changing any information in the edit event modal, disable the edit button if any information is empty
     $(".edit-event-input").on("input", function () {
@@ -634,7 +670,7 @@ export async function init(): Promise<void> {
       const name = $("#edit-event-name").val()?.toString().trim();
       const startDate = $("#edit-event-start-date").val();
 
-      $("#edit-event-button").prop("disabled", [name, startDate].includes("") || type === null);
+      $("#edit-event-button").prop("disabled", [name, startDate].includes("") || type === null || $("#edit-event-end-date").hasClass("is-invalid"));
 
       if ($(this).is("#edit-event-end-date")) {
         $("#edit-event-lesson").val("");
@@ -643,6 +679,14 @@ export async function init(): Promise<void> {
         $("#edit-event-end-date").val("");
       }
     });
+    
+    $("#edit-event-start-date").on("input autocomplete", function () {
+      startDateInputCallback.call(this, "edit");
+    });
+    $("#edit-event-end-date").on("input autocomplete", function () {
+      endDateInputCallback.call(this, "edit");
+    });
+    $("#edit-event-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // Share the event on clicking its share icon
     $("#app").on("click", ".event-share", function () {

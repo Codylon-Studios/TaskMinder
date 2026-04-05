@@ -20,16 +20,16 @@ import {
   $cloneTemplate,
   toCommaAndAnd,
   classInfo,
-  user
+  user,
+  checkSecurePassword,
+  tryAutocomplete,
+  autocomplete,
+  isStandalone
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel, AjaxError } from "../../global/types";
 
 function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
-}
-
-function checkSecurePassword(password: string): boolean {
-  return /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{6,128}$/.test(password);
 }
 
 async function updateColorTheme(): Promise<void> {
@@ -494,14 +494,10 @@ async function renderSubjectList(): Promise<void> {
     const newVal = $(this).val()?.toString() ?? "";
 
     const shortInput = $(this).closest(".subject").find(".subject-name-short-input");
-    if (shortInput.is(".autocomplete") || (shortInput.val()?.toString() ?? "").trim() === "") {
-      shortInput.addClass("autocomplete").val(newVal.substring(0, 3)).trigger("autoinput");
-    }
+    tryAutocomplete(shortInput, newVal.substring(0, 3));
 
     const substitutionInput = $(this).closest(".subject").find(".subject-name-substitution-input");
-    if (substitutionInput.is(".autocomplete") || (substitutionInput.val()?.toString() ?? "").trim() === "") {
-      substitutionInput.addClass("autocomplete").val(newVal).trigger("autoinput");
-    }
+    tryAutocomplete(substitutionInput, newVal);
 
     const id = $(this).data("id");
     if (id !== "") {
@@ -516,7 +512,7 @@ async function renderSubjectList(): Promise<void> {
     }
   });
 
-  $("#app").off("input autoinput", ".subject-name-short-input").on("input autoinput", ".subject-name-short-input", async function () {
+  $("#app").off("input autocomplete", ".subject-name-short-input").on("input autocomplete", ".subject-name-short-input", async function () {
     changedAnything();
 
     const newVal = $(this).val()?.toString() ?? "";
@@ -561,9 +557,7 @@ async function renderSubjectList(): Promise<void> {
     const newVal = $(this).val()?.toString() ?? "";
 
     const shortInput = $(this).closest(".subject").find(".subject-teacher-short-input");
-    if (shortInput.is(".autocomplete") || (shortInput.val()?.toString() ?? "").trim() === "") {
-      shortInput.addClass("autocomplete").val(newVal.substring(0, 3)).trigger("autoinput");
-    }
+    tryAutocomplete(shortInput, newVal.substring(0, 3));
 
     const id = $(this).data("id");
     if (id !== "") {
@@ -578,15 +572,13 @@ async function renderSubjectList(): Promise<void> {
     }
   });
 
-  $("#app").off("input autoinput", ".subject-teacher-short-input").on("input autoinput", ".subject-teacher-short-input", async function () {
+  $("#app").off("input autocomplete", ".subject-teacher-short-input").on("input autocomplete", ".subject-teacher-short-input", async function () {
     changedAnything();
 
     const newVal = $(this).val()?.toString() ?? "";
 
     const substitutionInput = $(this).closest(".subject").find(".subject-teacher-substitution-input");
-    if (substitutionInput.is(".autocomplete") || (substitutionInput.val()?.toString() ?? "").trim() === "") {
-      substitutionInput.addClass("autocomplete").val(newVal).trigger("autoinput");
-    }
+    tryAutocomplete(substitutionInput, newVal);
 
     const id = $(this).data("id");
     if (id !== "") {
@@ -601,8 +593,8 @@ async function renderSubjectList(): Promise<void> {
     }
   });
 
-  $("#app").off("input autoinput", ".subject-name-substitution-input")
-    .on("input autoinput", ".subject-name-substitution-input", async function () {
+  $("#app").off("input autocomplete", ".subject-name-substitution-input")
+    .on("input autocomplete", ".subject-name-substitution-input", async function () {
       changedAnything();
 
       const newVal = $(this).val()?.toString() ?? "";
@@ -620,8 +612,8 @@ async function renderSubjectList(): Promise<void> {
       }
     });
 
-  $("#app").off("input autoinput", ".subject-teacher-substitution-input")
-    .on("input autoinput", ".subject-teacher-substitution-input", async function () {
+  $("#app").off("input autocomplete", ".subject-teacher-substitution-input")
+    .on("input autocomplete", ".subject-teacher-substitution-input", async function () {
       changedAnything();
 
       const newVal = $(this).val()?.toString() ?? "";
@@ -696,7 +688,7 @@ async function renderTimetable(): Promise<void> {
       .html("<option value=\"\" disabled>Fach</option><option value=\"-1\">Pause</option>" + subjectOptions)
       .val(lesson.subjectId);
     t.find(".lesson-team-select")
-      .html("<option value=\"-1\">Alle</option>" + subjectOptions)
+      .html("<option value=\"-1\">Alle</option>" + teamOptions)
       .val(lesson.teamId);
 
     newTimetableContent.find(".timetable-lesson-list").eq(lesson.weekDay).append(t);
@@ -717,13 +709,9 @@ async function renderTimetable(): Promise<void> {
 
       if ($(this).find(".lesson-number").val() === lessonNumber) {
         const start = thisLesson.find(".lesson-start-time");
-        if (start.hasClass("autocomplete") || start.val() === "") {
-          start.val($(this).find(".lesson-start-time").val() ?? "--:--").addClass("autocomplete");
-        }
         const end = thisLesson.find(".lesson-end-time");
-        if (end.hasClass("autocomplete") || end.val() === "") {
-          end.val($(this).find(".lesson-end-time").val() ?? "--:--").addClass("autocomplete");
-        }
+        tryAutocomplete(start, $(this).find(".lesson-start-time").val() ?? "--:--");
+        tryAutocomplete(end, $(this).find(".lesson-end-time").val() ?? "--:--");
       }
     });
   });
@@ -744,8 +732,8 @@ async function renderTimetable(): Promise<void> {
     const prevLesson = lessonList.find(".lesson").last().prev();
 
     const prevLessonNumber = Number.parseInt(prevLesson.find(".lesson-number").val()?.toString() ?? "0") + 1;
-    t.find(".lesson-number").val(prevLessonNumber).addClass("autocomplete").trigger("autoinput");
-    t.find(".lesson-start-time").val(prevLesson.find(".lesson-end-time").val() ?? "--:--").addClass("autocomplete");
+    autocomplete(t.find(".lesson-number"), prevLessonNumber);
+    autocomplete(t.find(".lesson-start-time"), prevLesson.find(".lesson-end-time").val() ?? "--:--");
 
     const rooms = Array.from($("#timetable").find(".lesson-room"), r => $(r).val()?.toString() ?? "");
     const roomOccurences = rooms.reduce((acc, room) => {
@@ -754,7 +742,7 @@ async function renderTimetable(): Promise<void> {
       return acc;
     }, {} as Record<string, number>);
     const mostFrequentRoom = Object.entries(roomOccurences).reduce((a, b) => b[1] > a[1] ? b : a, ["", 0])[0];
-    t.find(".lesson-room").val(mostFrequentRoom).addClass("autocomplete");
+    autocomplete(t.find(".lesson-room"), mostFrequentRoom);
   });
 
   $("#app").off("click", ".lesson-delete").on("click", ".lesson-delete", function () {
@@ -887,13 +875,22 @@ export async function init(): Promise<void> {
 
     $(".cancel-btn").hide();
 
-    $("#pwa-notice").toggle(/iphone|ipad|ipod/i.test(navigator.userAgent) && !globalThis.matchMedia("(display-mode: standalone)").matches);
+    $("#pwa-notice").toggle(/iphone|ipad|ipod/i.test(navigator.userAgent) && !isStandalone);
 
     let animations = JSON.parse(localStorage.getItem("animations") ?? "true") ?? true;
     $("#animations-check").prop("checked", animations);
+    $("#animation-calendar-check").prop("disabled", !animations);
     $("#animations-check").on("click", function () {
       animations = $(this).prop("checked");
       localStorage.setItem("animations", animations);
+      $("#animation-calendar-check").prop("disabled", !animations).prop("checked", animations);
+    });
+
+    let animationCalendar = JSON.parse(localStorage.getItem("animation-calendar") ?? "null") ?? animations;
+    $("#animation-calendar-check").prop("checked", animationCalendar);
+    $("#animation-calendar-check").on("click", function () {
+      animationCalendar = $(this).prop("checked");
+      localStorage.setItem("animation-calendar", animationCalendar);
     });
 
     let fontSize = JSON.parse(localStorage.getItem("fontSize") ?? "0") ?? 0;
@@ -971,6 +968,7 @@ export async function init(): Promise<void> {
       $("#change-username-invalid-password").addClass("d-none");
       $("#change-username-invalid-username").addClass("d-none");
       $("#change-username-taken-username").addClass("d-none");
+      $("#change-username-username-in-password").addClass("d-none");
     });
 
     $("#change-username-cancel").on("click", () => {
@@ -985,11 +983,15 @@ export async function init(): Promise<void> {
     $("#change-username-new-username").on("input", () => {
       $("#change-username-invalid-username").addClass("d-none");
       $("#change-username-taken-username").addClass("d-none");
+      $("#change-username-username-in-password").addClass("d-none");
     });
 
     $("#change-username-new-username").on("change", () => {
       if (! checkUsername($("#change-username-new-username").val()?.toString() ?? "")) {
         $("#change-username-invalid-username").removeClass("d-none");
+      }
+      if (($("#change-username-password").val()?.toString() ?? "").includes($("#change-username-new-username").val()?.toString() ?? "")) {
+        $("#change-username-username-in-password").removeClass("d-none");
       }
     });
 
@@ -1003,6 +1005,7 @@ export async function init(): Promise<void> {
         || $("#change-username-invalid-password").is(":visible")
         || $("#change-username-invalid-username").is(":visible")
         || $("#change-username-taken-username").is(":visible")
+        || $("#change-username-username-in-password").is(":visible")
       );
     });
 
@@ -1072,14 +1075,14 @@ export async function init(): Promise<void> {
     });
 
     $("#change-password-new").on("change", () => {
-      if (! checkSecurePassword($("#change-password-new").val()?.toString() ?? "")) {
+      if (! checkSecurePassword(user.username, $("#change-password-new").val()?.toString() ?? "")) {
         $("#change-password-insecure-password").removeClass("d-none").addClass("d-flex");
         $("#change-password-confirm").prop("disabled", true);
       }
     });
 
     $("#change-password-new").on("input", () => {
-      if (checkSecurePassword($("#change-password-new").val()?.toString() ?? "")) {
+      if (checkSecurePassword(user.username, $("#change-password-new").val()?.toString() ?? "")) {
         $("#change-password-insecure-password").addClass("d-none").removeClass("d-flex");
       }
     });
@@ -1151,7 +1154,7 @@ export async function init(): Promise<void> {
 
     $("#delete-account-confirm").on("click", async () => {
       try {
-        await ajax("DELETE", "/api/account/ID", { // TODO: my id
+        await ajax("DELETE", "/api/account/me", {
           body: {
             password: $("#delete-account-password").val()
           },
@@ -1222,7 +1225,7 @@ export async function init(): Promise<void> {
 
     $("#leave-class-confirm").on("click", async () => {
       try {
-        await ajax("DELETE", "/api/classes/1/members/me", { // TODO: classID
+        await ajax("DELETE", `/api/classes/${user.classId}/members/me`, {
           expectedErrors: [409]
         });
         
@@ -1272,7 +1275,7 @@ export async function init(): Promise<void> {
     $("#change-class-name-confirm").on("click", async () => {
       const className = $("#change-class-name-new-class-name").val()?.toString() ?? "";
       
-      await ajax("PATCH", "/api/classes/1/name", { // TODO: my id
+      await ajax("PATCH", `/api/classes/${user.classId}/name`, {
         body: {
           classDisplayName: className
         },
@@ -1289,7 +1292,7 @@ export async function init(): Promise<void> {
 
     // Change classcode
     $("#change-class-code").on("click", async () => {
-      const res = await ajax("PATCH", "/api/classes/1/code", { // TODO: My Id
+      const res = await ajax("PATCH", `/api/classes/${user.classId}/code`, {
         queueable: true
       });
 
@@ -1301,7 +1304,7 @@ export async function init(): Promise<void> {
 
     // Upgrade test class
     $("#upgrade-test-class").on("click", async () => {
-      await ajax("POST", "/api/classes/1/upgrade-test-class", { // TODO: My Id
+      await ajax("POST", `/api/classes/${user.classId}/upgrade-test-class`, {
         queueable: true
       });
 
@@ -1322,7 +1325,7 @@ export async function init(): Promise<void> {
     });
 
     $("#delete-class-confirm").on("click", async () => {
-      await ajax("DELETE", "/api/classes/1"); // TODO: My Id
+      await ajax("DELETE", `/api/classes/${user.classId}`);
 
       $("#delete-class-success-toast").toast("show");
       // Force socket to reconnect so it picks up the new session.classId
@@ -1344,7 +1347,7 @@ export async function init(): Promise<void> {
     });
 
     $("#kick-logged-out-users-confirm").on("click", async () => {
-      await ajax("POST", "/api/classes/1/members/kick-logged-out"); // TODO: My Id
+      await ajax("POST", `/api/classes/${user.classId}/members/kick-logged-out`);
 
       $("#kick-logged-out-users-success-toast").toast("show");
       $("#kick-logged-out-users").hide();
@@ -1411,11 +1414,11 @@ export async function init(): Promise<void> {
         });
       });
       
-      await ajax("DELETE", "/api/classes/1/members", { // TODO: my id
+      await ajax("DELETE", `/api/classes/${user.classId}/members`, {
         body: { classMembers: classMembersKickData },
         queueable: true
       });
-      await ajax("PATCH", "/api/classes/1/members/permissions", { // TODO: my id
+      await ajax("PATCH", `/api/classes/${user.classId}/members/permissions`, {
         body: { classMembers: classMembersPermissionsData },
         queueable: true
       });

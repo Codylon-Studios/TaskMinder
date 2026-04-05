@@ -1,16 +1,11 @@
 import {
   ajax,
-  cutString,
-  escapeHTML,
-  eventData,
-  homeworkData,
   isSite,
-  openRequestQueueDB,
-  uploadData,
   bootstrap,
-  user
+  user,
+  checkSecurePassword
 } from "../../global/global.js";
-import { AjaxError, SerializedRequest } from "../../global/types.js";
+import { AjaxError } from "../../global/types.js";
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 async function registerAccount(username: string, password: string): Promise<void> {
@@ -79,10 +74,6 @@ export function resetLoginRegister(): void {
 
 function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
-}
-
-function checkSecurePassword(password: string): boolean {
-  return /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{6,128}$/.test(password);
 }
 
 $("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
@@ -160,7 +151,7 @@ export async function init(): Promise<void> {
     // Sync multiple instances of login possibilites
     $(".register-password").val($(this).val() ?? "");
 
-    if (checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
+    if (checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")) {
       $(".register-error-insecure-password").addClass("d-none");
       $(".register-error-insecure-password").removeClass("d-flex");
     }
@@ -170,13 +161,13 @@ export async function init(): Promise<void> {
       $(".register-button").prop("disabled", ! (
         $(".register-checkbox").prop("checked")
         && $(".register-password").val() !== ""
-        && checkSecurePassword($(".register-password").val()?.toString() ?? "")
+        && checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")
       ));
     }
   });
 
   $(".register-password").off("change").on("change", () => {
-    if (!checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
+    if (!checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")) {
       $(".register-error-insecure-password").removeClass("d-none");
       $(".register-error-insecure-password").addClass("d-flex");
       $("#change-password-confirm").prop("disabled", true);
@@ -195,7 +186,7 @@ export async function init(): Promise<void> {
     if ($(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== "") {
       $(".register-button").prop("disabled", ! (
         $(".register-checkbox").prop("checked")
-        && checkSecurePassword($(".register-password").val()?.toString() ?? "")
+        && checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")
       ));
       $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
     }
@@ -217,7 +208,7 @@ export async function init(): Promise<void> {
       $(this).prop("checked")
       && $(".register-password").val() === $(".register-password-repeat").val()
       && $(".register-password").val() !== ""
-      && checkSecurePassword($(".register-password").val()?.toString() ?? "")
+      && checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")
     ));
   });
 

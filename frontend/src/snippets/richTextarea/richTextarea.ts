@@ -1,5 +1,6 @@
-import { deepCompare, escapeHTML } from "../../global/global.js";
+import { deepCompare, escapeHTML, isStandalone } from "../../global/global.js";
 import { rgbToHex } from "../colorPicker/colorPicker.js";
+import { replaceSitePJAX } from "../loadingBar/loadingBar.js";
 
 export function richTextToHtml(
   val: string | null,
@@ -51,7 +52,12 @@ export function richTextToHtml(
               const absUrl = (/^[a-z]+:\/\//i.test(url) ? "" : "https://") + url;
               try {
                 if ((new URL(absUrl)).host === location.host) {
-                  globalThis.open(absUrl, "_blank", "noopener,noreferrer");
+                  if (isStandalone) {
+                    replaceSitePJAX(absUrl);
+                  }
+                  else {
+                    globalThis.open(absUrl, "_blank", "noopener,noreferrer");
+                  }
                   return;
                 }
                 else throw new Error("External");
@@ -77,9 +83,11 @@ export function richTextToHtml(
     targetElement?.empty().append(parsedText.children());
   }
   function insertShowMoreButton(targetElement: JQuery<HTMLElement>): void {
+    const MAX_HEIGHT = 96;
     const more = "<i class=\"far fa-square-plus\" aria-hidden=\"true\"></i>Mehr anzeigen";
     const less = "<i class=\"far fa-square-minus\" aria-hidden=\"true\"></i>Weniger anzeigen";
     let expanded = false;
+    let expandResize = false;
 
     const showMoreButton = $("<a href=\"#\">" + more + "</a>");
     if (options?.showMoreButtonChange) {
@@ -89,40 +97,37 @@ export function richTextToHtml(
       ev.preventDefault();
       if (expanded) {
         $(this).html(more);
-        targetElement.css({ maxHeight: "96px" });
+        targetElement.css({ maxHeight: MAX_HEIGHT });
         expanded = false;
       }
       else {
         $(this).html(less);
-        targetElement.css({ maxHeight: "none" });
+        targetElement.css({ maxHeight: targetElement[0].scrollHeight });
         expanded = true;
       }
+      expandResize = true;
     });
     targetElement.after(showMoreButton);
 
-    targetElement.css({ maxHeight: "96px", overflow: "hidden" });
+    targetElement.css({ maxHeight: MAX_HEIGHT, overflow: "hidden", transition: "0.35s ease" });
 
     function updateButton(): void {
+      if (expandResize) return;
       targetElement.css({ maxHeight: "none" });
       const naturalHeight = targetElement[0].getBoundingClientRect().height;
 
-      if (naturalHeight > 96) {
-        targetElement.css({ maxHeight: expanded ? "none" : "96px" });
+      if (naturalHeight > MAX_HEIGHT) {
+        targetElement.css({ maxHeight: expanded ? naturalHeight : MAX_HEIGHT, display: "block" });
         showMoreButton.show().html(expanded ? less : more);
       }
-      else if (naturalHeight === 0) {
-        targetElement.css({ maxHeight: "96px" });
-      }
       else {
-        targetElement.css({ maxHeight: "none" });
+        targetElement.css({ maxHeight: naturalHeight });
         showMoreButton.hide();
         expanded = false;
       }
     }
     
-    requestAnimationFrame(updateButton);
-    $(globalThis).on("resize", updateButton);
-    (new IntersectionObserver(updateButton)).observe(targetElement[0]);
+    (new ResizeObserver(updateButton)).observe(targetElement[0]);
   }
   function parseNormalChar(char: string): void {
     function handleStyleToggles(): void {

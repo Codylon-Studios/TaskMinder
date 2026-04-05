@@ -146,7 +146,7 @@
           <div class="modal-dialog">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title" id="add-upload-modal-label">Neue Anfrage</h5>
+                <h5 class="modal-title" id="add-upload-request-label">Neue Anfrage</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
               </div>
               <div class="modal-body">
@@ -160,6 +160,10 @@
                   <option value="-1" selected>Alle</option>
                   <!-- Gets filled -->
                 </select>
+                <!--prettier-ignore-->
+                <div class="suspicious-feedback">
+                  Bist du dir sicher? Du bist nicht im Team <b></b>!
+                </div>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
@@ -180,7 +184,7 @@
                 <div class="mb-3">
                   <label for="add-upload-name" class="form-label">Bennene die Dateien</label>
                   <input type="text" class="form-control add-upload-input" id="add-upload-name" placeholder='zum Beispiel "Mathe vom 30.11"' />
-                  <div class="autocomplete-feedback"></div>
+                  <div class="autocompleted-feedback"></div>
                 </div>
 
                 <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 mb-3" id="add-upload-max-files" style="display: none">
@@ -218,7 +222,11 @@
                   <option value="-1" selected>Alle</option>
                   <!-- Gets filled -->
                 </select>
-                <div class="autocomplete-feedback">Automatisch: Aus der Anfrage</div>
+                <!--prettier-ignore-->
+                <div class="suspicious-feedback">
+                  Bist du dir sicher? Du bist nicht im Team <b></b>!
+                </div>
+                <div class="autocompleted-feedback"></div>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
@@ -274,6 +282,10 @@
                   <option value="-1" selected>Alle</option>
                   <!-- Gets filled -->
                 </select>
+                <!--prettier-ignore-->
+                <div class="suspicious-feedback">
+                  Bist du dir sicher? Du bist nicht im Team <b></b>!
+                </div>
               </div>
               <div class="modal-footer">
                 <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
@@ -375,10 +387,38 @@
           <div id="size-limit-exceeded-toast" class="toast">
             <div class="toast-progress-bar bg-danger"></div>
             <div class="toast-header bg-danger text-body-bg">
-              <b class="me-auto">Zu große Datei</b>
+              <b class="me-auto">Datei ist zu groß</b>
               <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
             </div>
-            <div class="toast-body">Die Datei ist zu groß. Es ist nur möglich, Dateien von maximal 15MB hochzuladen.</div>
+            <div class="toast-body">
+              Eine der Dateien ist zu groß. Jede einzelne darf maximal
+              <b></b>
+              groß sein.
+            </div>
+          </div>
+          <div id="storage-limit-exceeded-toast" class="toast">
+            <div class="toast-progress-bar bg-danger"></div>
+            <div class="toast-header bg-danger text-body-bg">
+              <b class="me-auto">Speicherlimit überschritten</b>
+              <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+            </div>
+            <div class="toast-body">
+              Deine Klasse hat das Speicherlimit von
+              <b></b>
+              erreicht. Bitte lösche ältere Dateien.
+            </div>
+          </div>
+          <div id="file-limit-exceeded-toast" class="toast">
+            <div class="toast-progress-bar bg-danger"></div>
+            <div class="toast-header bg-danger text-body-bg">
+              <b class="me-auto">Zu viele Dateien hochgeladen</b>
+              <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+            </div>
+            <div class="toast-body">
+              Deine Klasse hat das Limit von
+              <b></b>
+              Dateien erreicht. Bitte lösche ältere Dateien.
+            </div>
           </div>
           <div id="edit-upload-success-toast" class="toast">
             <div class="toast-progress-bar bg-success"></div>

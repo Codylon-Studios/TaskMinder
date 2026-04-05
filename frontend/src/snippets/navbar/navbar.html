@@ -53,7 +53,11 @@
       <div id="unavailable-popup">
         <div class="text-center text-danger fw-bold text-nowrap unavailable-offline">Du bist offline</div>
         <div class="text-center text-danger fw-bold text-nowrap unavailable-maintenance">Wartungsarbeiten</div>
-        <div class="form-text unavailable-maintenance">Wir versuchen, möglichst bald wieder da zu sein. Versuche bald, die Seite neu zu öffnen.</div>
+        <!-- prettier-ignore -->
+        <div class="form-text unavailable-maintenance">
+          Wir versuchen, möglichst bald wieder da zu sein. Versuche bald, die Seite neu zu öffnen. Mehr Informationen findest du vielleicht auf
+          unserer <a href="status.taskminder.de" target="_blank">Statusseite</a>.
+        </div>
         <div class="form-text">
           Wir können dir nur einige Seiten anzeigen, die Daten können veraltet sein und du kannst nur manche Informationen ändern.
         </div>
@@ -163,7 +167,7 @@
             <span class="d-block">Das Passwort ist falsch!</span>
           </div>
           <label for="navbar-login-password" class="form-label">Gib dein Passwort ein</label>
-          <input type="password" class="form-control login-password" id="navbar-login-password" />
+          <password-input class="login-password" id="navbar-login-password"></password-input>
           <div class="form-text">Wolltest du dich registrieren? Dieser Nutzername ist leider schon vergeben. Aber es gibt noch genug andere!</div>
         </div>
         <div id="register-content" class="d-none register-element">
@@ -173,16 +177,22 @@
           </div>
           <div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-insecure-password">
             <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-            <span class="d-block">Das Passwort ist nicht sicher genug!</span>
+            <span class="d-block">
+              Das Passwort ist nicht sicher genug!
+              <ul class="mb-0">
+                <li>Länge: 6 bis 128 Zeichen</li>
+                <li>Benutze einen Buchstaben, eine Zahl und ein Sonderzeichen</li>
+                <li>Verwende nicht deinen Nutzernamen</li>
+              </ul>
+            </span>
           </div>
           <div class="mb-3">
-            <label for="navbar-register-password" class="form-label">Gib dein Passwort ein</label>
-            <input type="password" class="form-control register-password" id="navbar-register-password" />
-            <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
+            <label for="navbar-register-password" class="form-label">Wähle ein Passwort</label>
+            <password-input class="register-password" id="navbar-register-password"></password-input>
           </div>
           <div class="mb-3">
-            <input type="password" class="form-control register-password-repeat" />
-            <div class="form-text">Gib es noch mal ein</div>
+            <label for="navbar-register-password-repeat" class="form-label">Gib es noch mal ein</label>
+            <password-input class="register-password-repeat" id="navbar-register-password-repeat"></password-input>
           </div>
           <div class="form-check">
             <input class="form-check-input mt-2 register-checkbox" type="checkbox" id="navbar-register-checkbox" />
@@ -217,6 +227,14 @@
       <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
     </div>
     <div class="toast-body">Unser Server hat gerade Probleme. Bitte versuche es später erneut.</div>
+  </div>
+  <div id="nginx-size-limit-toast" class="toast">
+    <div class="toast-progress-bar bg-danger"></div>
+    <div class="toast-header bg-danger text-body-bg">
+      <b class="me-auto">Zu große Anfrage</b>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+    </div>
+    <div class="toast-body">Diese Anfrage ist zu groß für unseren Server. Bitte versuche, sie in kleinere Anfragen aufzuteilen.</div>
   </div>
   <div id="unknown-error-toast" class="toast">
     <div class="toast-progress-bar bg-danger"></div>

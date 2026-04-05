@@ -135,7 +135,7 @@
                   <span class="d-block">Das Passwort ist falsch!</span>
                 </div>
                 <label for="panel-login-password" class="form-label">Gib dein Passwort ein</label>
-                <input type="password" class="form-control login-password" id="panel-login-password" />
+                <password-input class="login-password" id="panel-login-password"></password-input>
                 <div class="form-text">
                   Wolltest du dich registrieren? Dieser Nutzername ist leider schon vergeben. Aber es gibt noch genug andere!
                 </div>
@@ -153,16 +153,22 @@
                 </div>
                 <div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-insecure-password">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-                  <span class="d-block">Das Passwort ist nicht sicher genug!</span>
+                  <span class="d-block">
+                    Das Passwort ist nicht sicher genug!
+                    <ul class="mb-0">
+                      <li>Länge: 6 bis 128 Zeichen</li>
+                      <li>Benutze einen Buchstaben, eine Zahl und ein Sonderzeichen</li>
+                      <li>Verwende nicht deinen Nutzernamen</li>
+                    </ul>
+                  </span>
                 </div>
                 <div class="mb-3">
-                  <label for="panel-register-password" class="form-label">Gib dein Passwort ein</label>
-                  <input type="password" class="form-control register-password" id="panel-register-password" />
-                  <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
+                  <label for="panel-register-password" class="form-label">Wähle ein Passwort</label>
+                  <password-input class="register-password" id="panel-register-password"></password-input>
                 </div>
                 <div class="mb-3">
-                  <input type="password" class="form-control register-password-repeat" />
-                  <div class="form-text">Gib es noch mal ein</div>
+                  <label for="panel-register-password-repeat" class="form-label">Gib es noch mal ein</label>
+                  <password-input class="register-password-repeat" id="panel-register-password-repeat"></password-input>
                 </div>
                 <div class="form-check">
                   <input class="form-check-input mt-2 register-checkbox" type="checkbox" id="panel-register-checkbox" />

@@ -46,7 +46,17 @@
                 <input class="form-check-input mt-0" id="animations-check" type="checkbox" />
               </div>
             </div>
-            <div class="form-text mb-4">Aktiviert / deaktiviert Animationen in der App wie zum Beispiel beim Kalender.</div>
+            <div class="form-text mb-3">Aktiviert / deaktiviert Animationen in der App wie zum Beispiel bei erledigten Hausaufgaben.</div>
+
+            <div class="ms-4">
+              <div class="d-flex align-items-center mb-2">
+                <label class="me-3" for="animation-calendar-check">Kalenderanimation</label>
+                <div class="form-check form-switch fs-5 mb-0" id="animation-calendar">
+                  <input class="form-check-input mt-0" id="animation-calendar-check" type="checkbox" />
+                </div>
+              </div>
+              <div class="form-text mb-4">Aktiviert / deaktiviert die Animation des Kalenders.</div>
+            </div>
 
             <div class="d-flex align-items-center mb-2">
               <label class="me-3" for="color-theme">Farbthema</label>
@@ -140,9 +150,13 @@
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                   <span class="d-block me-1">Dieser Nutzername ist schon vergeben. Bitte wähle einen anderen.</span>
                 </div>
+                <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content d-flex" id="change-username-username-in-password">
+                  <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+                  <span class="d-block me-1">Dein Passwort darf nicht deinen Nutzernamen enthalten!</span>
+                </div>
 
                 <div class="mb-2 d-flex flex-column flex-md-row gap-2">
-                  <input class="form-control w-fit-content" type="password" placeholder="Dein Passwort" id="change-username-password" />
+                  <password-input class="w-fit-content" placeholder="Dein Passwort" id="change-username-password"></password-input>
                   <input class="form-control w-fit-content" type="text" placeholder="Dein neuer Nutzername" id="change-username-new-username" />
                 </div>
                 <button class="btn btn-secondary fw-bold" id="change-username-cancel">
@@ -163,26 +177,28 @@
               <div id="change-password">
                 <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-invalid-password">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-                  <span class="d-block me-1">Das Passwort ist falsch!</span>
+                  <span class="d-block me-1">Das alte Passwort ist falsch!</span>
                 </div>
                 <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-not-matching-passwords">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-                  <span class="d-block me-1">Die Passwörter stimmen nicht überein!</span>
+                  <span class="d-block me-1">Die neuen Passwörter stimmen nicht überein!</span>
                 </div>
                 <div class="alert alert-danger p-2 d-none align-items-center gap-2 w-fit-content" id="change-password-insecure-password">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-                  <span class="d-block me-1">Das Passwort ist nicht sicher genug!</span>
+                  <span class="d-block me-1">
+                    Das neue Passwort ist nicht sicher genug!
+                    <ul class="mb-0">
+                      <li>Länge: 6 bis 128 Zeichen</li>
+                      <li>Benutze einen Buchstaben, eine Zahl und ein Sonderzeichen</li>
+                      <li>Verwende nicht deinen Nutzernamen</li>
+                    </ul>
+                  </span>
                 </div>
 
                 <div class="mb-2 d-flex flex-column flex-md-row gap-2">
-                  <input class="form-control w-fit-content" type="password" placeholder="Dein altes Passwort" id="change-password-old" />
-                  <input class="form-control w-fit-content" type="password" placeholder="Dein neues Passwort" id="change-password-new" />
-                  <input
-                    class="form-control w-fit-content"
-                    type="password"
-                    placeholder="Wiederhole dein neues Passwort"
-                    id="change-password-repeat"
-                  />
+                  <password-input class="w-fit-content" placeholder="Dein altes Passwort" id="change-password-old"></password-input>
+                  <password-input class="w-fit-content" placeholder="Dein neues Passwort" id="change-password-new"></password-input>
+                  <password-input class="w-fit-content" placeholder="Wiederhole dein neues Passwort" id="change-password-repeat"></password-input>
                 </div>
                 <button class="btn btn-secondary fw-bold" id="change-password-cancel">
                   <i class="fa-solid fa-xmark" aria-hidden="true"></i>
@@ -209,7 +225,7 @@
                   <span class="d-block me-1">Du bist noch in einer Klasse. Bitte verlasse sie zuerst unter "Schüler".</span>
                 </div>
                 <div class="mb-2">
-                  <input class="form-control w-fit-content" type="password" placeholder="Dein Passwort" id="delete-account-password" />
+                  <password-input class="w-fit-content" placeholder="Dein Passwort" id="delete-account-password"></password-input>
                 </div>
                 <button class="btn btn-secondary fw-bold" id="delete-account-cancel">
                   <i class="fa-solid fa-xmark" aria-hidden="true"></i>
@@ -331,9 +347,9 @@
                 </div>
                 <div class="col-12 col-lg" id="class-code-container">
                   <div class="d-flex gap-2 flex-column flex-lg-row mb-2">
-                    <input id="class-code" type="text" class="form-control user-select-all" value="" readonly />
+                    <copy-input class="w-50" id="class-code" readonly></copy-input>
                     <button
-                      class="btn btn-primary w-100 fw-bold"
+                      class="btn btn-primary w-50 fw-bold"
                       data-bs-toggle="modal"
                       data-bs-target="#change-classcode-confirm-modal"
                       id="show-change-classcode"
@@ -343,11 +359,11 @@
                     </button>
                   </div>
                   <div class="d-flex gap-2 flex-column flex-lg-row">
-                    <button class="btn btn-primary w-100 fw-bold" id="invite-copy-link">
+                    <button class="btn btn-primary w-50 fw-bold" id="invite-copy-link">
                       <i class="fa-solid fa-link" aria-hidden="true"></i>
                       Einladungslink kopieren
                     </button>
-                    <button class="btn btn-primary w-100 fw-bold" id="invite-qrcode" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
+                    <button class="btn btn-primary w-50 fw-bold" id="invite-qrcode" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
                       <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                       QR-Code anzeigen
                     </button>

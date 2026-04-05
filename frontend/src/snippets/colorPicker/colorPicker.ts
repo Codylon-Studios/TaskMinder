@@ -101,6 +101,7 @@ class ColorPicker extends HTMLElement {
   static get observedAttributes(): string[] {
     return ["auto-option", "disabled"]; 
   }
+  static formAssociated = true;
 
   private initialized = false;
   private _value = "";
@@ -126,6 +127,10 @@ class ColorPicker extends HTMLElement {
 
     popup.hide();
     trigger.css({ zIndex: 0 });
+    
+    $(this).on("click", () => {
+      trigger.trigger("click");
+    });
 
     trigger.on("click", ev => {
       ev.stopPropagation();
@@ -389,7 +394,7 @@ class ColorPicker extends HTMLElement {
     });
 
     $(document).on("click", ev => {
-      if (!$(ev.target).closest(".color-picker-popup").length && !suppressClick) {
+      if (!$(ev.target).closest("color-picker").length && !suppressClick) {
         popup.hide();
         trigger.css({ zIndex: 0 });
       }
@@ -461,14 +466,5 @@ class ColorPicker extends HTMLElement {
     }
   }
 }
-
-$(document).on("click", "label[for]", function (ev) {
-  const el = document.getElementById(this.htmlFor);
-
-  if (el?.tagName === "COLOR-PICKER") {
-    $(el).filter(":not([disabled])").find(".color-picker-trigger").trigger("click");
-    ev.stopPropagation();
-  }
-});
 
 customElements.define("color-picker", ColorPicker);

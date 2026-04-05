@@ -51,7 +51,7 @@ export const deleteUploadSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: strictObject({})
+  body: z.unknown()
 });
 
 export const pinUploadSchema = z.object({

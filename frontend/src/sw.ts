@@ -33,7 +33,7 @@ function openIndexedDB(): Promise<IDBDatabase> {
 const CORE_GLOBAL = ["/global/global.js", "/global/global.css"];
 const CORE_PAGES = ["main", "events", "homework", "uploads", "settings"]
   .flatMap(p => ["/" + p, `/pages/${p}/${p}.js`, `/pages/${p}/${p}.css`]);
-const CORE_SNIPPETS = ["navbar", "footer", "bottombar", "loadingBar", "colorPicker", "richTextarea", "searchBox"]
+const CORE_SNIPPETS = ["navbar", "footer", "bottombar", "loadingBar", "colorPicker", "richTextarea", "richInput"]
   .map(s => `/snippets/${s}/${s}.js`);
 const CORE_ASSETS = [
   "/static/manifest.json",
@@ -121,7 +121,7 @@ async function getBootstrap(): Promise<Bootstrap> {
   });
 }
 
-async function handleFetch(ev): Promise<Response> {
+async function handleFetch(ev: FetchEvent): Promise<Response> {
   const req = ev.request;
 
   const b = req.mode === "navigate" ? await fetchBootstrap() : await getBootstrap();
@@ -179,7 +179,8 @@ async function handleFetch(ev): Promise<Response> {
   return await fetch(req);
 }
 
-self.addEventListener("fetch", ev => {
+sw.addEventListener("fetch", (ev: FetchEvent) => {
+  console.log("Hello");
   ev.respondWith(handleFetch(ev));
 });
 

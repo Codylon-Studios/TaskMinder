@@ -55,7 +55,7 @@ export async function init(): Promise<void> {
 
     (async () => {
       if (! user.classJoined) return;
-      const res = await fetch("/api/classes/1"); // TODO: custom id
+      const res = await fetch(`/api/classes/${user.classId}`);
       if (!res.ok) throw new Error("HTTP error during fetch of classInfo: " + res.status + " " + await res.text());
       $("#decide-account-class-name").text((await res.json()).className);
     })();
