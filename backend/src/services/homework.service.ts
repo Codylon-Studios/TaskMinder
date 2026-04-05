@@ -1,7 +1,7 @@
 import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
 import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
 import { default as prisma } from "../config/prisma.js";
-import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache } from "../utils/validate.functions.js";
+import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache, dateChecker } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError.js";
 import logger from "../config/logger.js";
@@ -26,6 +26,7 @@ const homeworkService = {
     // always use classId instead of session.classId
     // since session.classId can change during concurrent requests
     const classId = parseInt(session.classId!, 10);
+    dateChecker(assignmentDate, submissionDate);
     await isValidSubjectId(subjectId, session);
     await isValidTeamId(teamId, session);
     try {
@@ -163,6 +164,7 @@ const homeworkService = {
     // always use classId instead of session.classId
     // since session.classId can change during concurrent requests
     const classId = parseInt(session.classId!, 10);
+    dateChecker(assignmentDate, submissionDate);
     await isValidSubjectId(subjectId, session);
     await isValidTeamId(teamId, session);
     try {

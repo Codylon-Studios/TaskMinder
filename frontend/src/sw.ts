@@ -180,7 +180,6 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
 }
 
 sw.addEventListener("fetch", (ev: FetchEvent) => {
-  console.log("Hello");
   ev.respondWith(handleFetch(ev));
 });
 

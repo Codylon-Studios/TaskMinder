@@ -1,7 +1,7 @@
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
 import { default as prisma } from "../config/prisma.js";
 import logger from "../config/logger.js";
-import { BigIntreplacer, updateCacheData, invalidateCache, isValidTeamId, isValidSubjectId } from "../utils/validate.functions.js";
+import { BigIntreplacer, updateCacheData, invalidateCache, isValidTeamId, isValidSubjectId, dateChecker } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lesson.schema.js";
 import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
@@ -13,6 +13,7 @@ const lessonService = {
   ) {
     const { lessons } = reqData;
     for (const lesson of lessons) {
+      dateChecker(lesson.startTime, lesson.endTime);
       await isValidTeamId(lesson.teamId, session);
       await isValidSubjectId(lesson.subjectId, session);
     }

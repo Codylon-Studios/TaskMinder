@@ -134,7 +134,8 @@ export async function cleanupOldHomework(): Promise<void> {
       where: {
         submissionDate: {
           lt: ninetyDaysAgo
-        }
+        },
+        isPinned: false
       },
       select: {
         classId: true
@@ -147,7 +148,8 @@ export async function cleanupOldHomework(): Promise<void> {
       where: {
         submissionDate: {
           lt: ninetyDaysAgo
-        }
+        },
+        isPinned: false
       }
     });
 
@@ -156,7 +158,8 @@ export async function cleanupOldHomework(): Promise<void> {
       where: {
         submissionDate: {
           lt: ninetyDaysAgo
-        }
+        },
+        isPinned: false
       }
     });
     // invalidate homework cache of classes
@@ -182,7 +185,8 @@ export async function cleanupOldEvents(): Promise<void> {
       where: {
         startDate: {
           lt: aYearAgo
-        }
+        },
+        isPinned: false
       },
       select: {
         classId: true
@@ -196,7 +200,8 @@ export async function cleanupOldEvents(): Promise<void> {
       where: {
         startDate: {
           lt: aYearAgo
-        }
+        },
+        isPinned: false
       }
     });
 
@@ -205,7 +210,8 @@ export async function cleanupOldEvents(): Promise<void> {
       where: {
         startDate: {
           lt: aYearAgo
-        }
+        },
+        isPinned: false
       }
     });
     // invalidate event cache of classes

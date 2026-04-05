@@ -18,7 +18,7 @@ function generateRandomBase62String(length = 20): string {
 
 async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   try {
-    await redisClient.set(key, JSON.stringify(data, BigIntreplacer), 
+    await redisClient.set(key, JSON.stringify(data, BigIntreplacer),
       { expiration: { type: "EX", value: cacheExpiration } });
   }
   catch (err) {
@@ -130,6 +130,19 @@ function isValidColor(color: string): void {
   }
 }
 
+// checks if submission date is after/equal to assignment date
+function dateChecker(startDate: number, endDate: number): void {
+  if (startDate > endDate) {
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "startDate/assignmentDate is after endDate/submissionDate",
+      expected: true
+    };
+    throw err;
+  }
+}
+
 function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | null): void {
   if (
     !(
@@ -156,5 +169,6 @@ export {
   lessonDateEventAtLeastOneNull,
   BigIntreplacer,
   updateCacheData,
-  invalidateCache
+  invalidateCache,
+  dateChecker
 };

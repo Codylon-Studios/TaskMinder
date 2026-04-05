@@ -81,7 +81,7 @@ const logger = winston.createLogger({
   transports: []
 });
 
-if (process.env.NODE_ENV !== "PRODUCTION") {
+if (process.env.NODE_ENV === "DEVELOPMENT") {
   logger.add(new winston.transports.Console({
     format: winston.format.combine(
       winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),

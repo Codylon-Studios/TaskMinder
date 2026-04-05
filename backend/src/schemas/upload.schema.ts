@@ -1,4 +1,4 @@
-import z, { strictObject } from "zod";
+import z from "zod";
 import { FileTypes } from "../config/upload.js";
 
 export const getUploadMetadataSchema = z.object({
@@ -20,7 +20,7 @@ export const getUploadFileSchema = z.object({
 export const uploadFileSchema = z.object({
   params: z.object({}),
   query: z.object({}),
-  body: strictObject({
+  body: z.strictObject({
     uploadName: z.string().trim().min(1).max(256),
     uploadDescription: z.string().trim().min(1).max(1024).nullable().or(z.literal("")),
     uploadType: z.enum(FileTypes),
@@ -33,7 +33,7 @@ export const editUploadSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: strictObject({
+  body: z.strictObject({
     uploadName: z.string().trim().min(1).max(256),
     uploadDescription: z.string().trim().min(1).max(1024).nullable().or(z.literal("")),
     uploadType: z.enum(FileTypes),
@@ -59,7 +59,7 @@ export const pinUploadSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: strictObject({
+  body: z.strictObject({
     pinStatus: z.boolean()
   })
 });
@@ -67,7 +67,7 @@ export const pinUploadSchema = z.object({
 export const addUploadRequestSchema = z.object({
   params: z.object({}),
   query: z.object({}),
-  body: strictObject({
+  body: z.strictObject({
     uploadRequestName: z.string().trim().min(1).max(255),
     teamId: z.coerce.number()
   })

@@ -10,7 +10,8 @@ import {
   updateCacheData,
   BigIntreplacer,
   invalidateCache,
-  isValidEventTypeId
+  isValidEventTypeId,
+  dateChecker
 } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError.js";
@@ -136,6 +137,9 @@ export const eventService = {
     // always use classId instead of session.classId
     // since session.classId can change during concurrent requests
     const classId = parseInt(session.classId!, 10);
+    if (endDate){
+      dateChecker(startDate, endDate);
+    }
     lessonDateEventAtLeastOneNull(endDate, lesson);
     await isValidTeamId(teamId, session);
     await isValidEventTypeId(eventTypeId, session);
@@ -197,6 +201,9 @@ export const eventService = {
     // always use classId instead of session.classId
     // since session.classId can change during concurrent requests
     const classId = parseInt(session.classId!, 10);
+    if (endDate){
+      dateChecker(startDate, endDate);
+    }
     lessonDateEventAtLeastOneNull(endDate, lesson);
     await isValidTeamId(teamId, session);
     await isValidEventTypeId(eventTypeId, session);

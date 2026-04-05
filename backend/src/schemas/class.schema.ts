@@ -38,7 +38,7 @@ export const deleteClassSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: z.strictObject({})
+  body: z.unknown()
 });
 
 export const changeDefaultPermissionSchema = z.object({
@@ -93,7 +93,7 @@ export const kickLoggedOutUsersSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: z.strictObject({})
+  body: z.unknown()
 });
 
 export const changeClassNameSchema = z.object({
@@ -111,7 +111,7 @@ export const changeClassCodeSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: z.strictObject({})
+  body: z.unknown()
 });
 
 export const upgradeTestClassSchema = z.object({
@@ -119,7 +119,7 @@ export const upgradeTestClassSchema = z.object({
     id: z.coerce.number()
   }),
   query: z.object({}),
-  body: z.strictObject({})
+  body: z.unknown()
 });
 
 export type getClassInfoTypeParams = z.infer<typeof getClassInfoSchema>["params"];
