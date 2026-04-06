@@ -96,7 +96,7 @@ cd TaskMinder
 
 Follow **Step 7** of `DEPLOYMENT.md` to create the `docker_secrets/` folder and all required `.txt` files.
 
-//TODO: set unsafe_deactivate_csp.txt to true <- find out later how to fix this, so I can set it to false -> write in github next release
+For unsafe_deactivate_csp.txt, set it to true, since using a local IP can cause CSP errors. We are trying to fix this, in the meantime, please use this workaround.
 
 ### Staging Environment File
 

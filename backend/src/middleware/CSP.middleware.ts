@@ -16,7 +16,9 @@ export const CSPMiddleware = (): RequestHandler => {
         "font-src": ["'self'"],
         "img-src": ["'self'", "data:"],
         "object-src": ["'self'"],
-        "frame-ancestors": ["'self'"]
+        "frame-ancestors": ["'self'"],
+        // dont upgrade to HTTPS if in development or staging
+        "upgrade-insecure-requests": process.env.NODE_ENV === "PRODUCTION" ? [] : null
       }
     },
     referrerPolicy: {
