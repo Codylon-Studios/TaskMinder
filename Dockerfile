@@ -37,6 +37,8 @@ WORKDIR /usr/src/app
 # Copy production artifacts from the builder stage
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/package.json ./package.json
+COPY --from=builder /usr/src/app/backend/src/utils/encryption.rotate.ts ./backend/src/utils/encryption.rotate.ts
+COPY --from=builder /usr/src/app/backend/src/utils/encryption.migrate.ts ./backend/src/utils/encryption.migrate.ts
 COPY --from=builder /usr/src/app/backend/src/prisma ./backend/src/prisma
 COPY --from=builder /usr/src/app/backend/dist ./backend/dist
 COPY --from=builder /usr/src/app/frontend/dist ./frontend/dist
