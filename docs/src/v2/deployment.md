@@ -298,7 +298,7 @@ You should see the line you just added.
 
 ---
 
-## 7. Add Docker Secrets
+## 7. Add Docker Secrets and .env.production
 
 Navigate back to the TaskMinder folder and create directories for secrets and backups:
 
@@ -317,13 +317,19 @@ Before starting the application, create the following **text files inside the `d
 | `db_host.txt`                  | Host for the database, usually postgres when running in docker.                                                |
 | `db_user.txt`                  | PostgreSQL database username.                                                                                  |
 | `redis_port.txt`               | Redis port (default is `6379`).                                                                                |
-| `session_secret.txt`           | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                                         |
+| `session_secret.txt`           | Secure session secret (e.g., generate one with `openssl rand -base64 32`).                                     |
 | `unsafe_deactivate_csp.txt`    | Deactivates all csp headers when set to `true`, in production, always set to `false`.                          |
 | `database_url.txt`             | Provides the database URL for Prisma ORM: `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`  |
 | `encryption_key.txt`           | Encryption key for server-side encryption in the database, generated with `openssl rand -base64 32`            |
 | `encryption_key_secondary.txt` | Rotation key for server-side encryption, generated with `openssl rand -base64 32`                              |
 | `encryption_key_lookup.txt`    | Lookup key for hashes for server-side encryption, generated with `openssl rand -base64 32`                     |
-| `proxy_hop.txt`                | Proxy hop count for additional reverse proxies that are configured by the server provider. Add +1 for the NGINX reverse proxy you have configured in your local machine. |
+| `proxy_hop.txt`                | Proxy hop count for additional reverse proxies that are configured by the server provider. Add 1 to account for the NGINX config.|
+
+Add `.env.production` (also in .env.production.example):
+
+````bash
+NODE_ENV=PRODUCTION
+```
 
 ---
 
@@ -332,7 +338,7 @@ Before starting the application, create the following **text files inside the `d
 1. **Navigate to the directory** where the example file is located:
 
    ```bash
-   cd /path/to/project/frontend/src/snippets/personalData/
+   cd /opt/TaskMinder/frontend/src/snippets/personalData/
    ```
 
 2. **Copy the example file to create the production file:**
@@ -354,7 +360,7 @@ Navigate to the project root and build/start the containers:
 
 ```bash
 cd /opt/TaskMinder
-docker compose up -d --build
+docker compose --env-file .env.production up -d --build
 ```
 
 Reset git changes:
@@ -365,7 +371,7 @@ git reset --hard
 
 And build/start the containers again:
 ```bash
-docker compose up -d --build
+docker compose --env-file .env.production up -d --build
 ```
 
 ---
@@ -412,7 +418,7 @@ touch /etc/nginx/maintenance.flag
 3. Rebuild and restart the Docker containers:
 
    ```bash
-   docker compose up -d --build
+   docker compose up --env-file .env.production -d --build
    ```
 
 4. Disable maintenance mode:

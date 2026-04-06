@@ -13,11 +13,14 @@ All changes are grouped by type and the latest version appears first.
 ### Added
 * feat(frontend): add caching and offline mode
 * feat(maintenance): add maintenance mode
+* feat(animation): add animations, add specific calendar animation
+* feat(warnings): add suspicious settings warinings
 * feat(upload): add upload description and request new uploads
 * feat(upload): edit files
 * feat(homework/event/upload): add homework/event/upload pinning
 * chore(homework): add "later" section
 * chore(ui): show breaks in the timetable and correctly display them (respect events/substitutions)
+* chore(docs): add staging documentation and setup
 
 ### Fixed
 * fix(rate-limit): proxy setting and update nginx.config

@@ -1,12 +1,9 @@
-# Prometheus: 9090
-# Loki: 3100
-# Grafana: 3001
-# TaskMinder-app: 3000
-# redis: redis_port.txt
-# postgres: 5432
 services:
   app:
-    build: .
+    build: 
+      context: .
+      args:
+        - NODE_ENV=${NODE_ENV}
     container_name: taskminder-app
     restart: always
     expose:
@@ -14,7 +11,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=PRODUCTION
+      - NODE_ENV=${NODE_ENV}
       - REDIS_HOST=redis
     secrets:
       - db_user
@@ -62,7 +59,7 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_DB_FILE: /run/secrets/db_name
     volumes:
-      - postgres-data-18:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
 
   redis:
     image: redis:8
@@ -75,7 +72,7 @@ services:
       retries: 30
 
   prometheus:
-    image: prom/prometheus:v3.10.0
+    image: prom/prometheus:v3.11.0
     container_name: prometheus
     restart: always
     ports:
@@ -105,7 +102,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
   
   alloy:
-    image: grafana/alloy:v1.14.2
+    image: grafana/alloy:v1.15.0
     container_name: alloy
     restart: always
     volumes:
@@ -167,9 +164,7 @@ secrets:
     file: ./docker_secrets/proxy_hop.txt
 
 volumes:
-  # remove the following line once migrated (> v2.2.5)
   postgres-data:
-  postgres-data-18:
   prometheus-data:
   loki-data:
   alloy-data:

@@ -1,11 +1,16 @@
 # Ignore redis binary dump (dump.rdb) files
 *.rdb
+# Ignore .env files
+.env.staging
+.env.production
 # Ignore built /site after mkdocs build
 /site
 useful.md
 /data
 # Ignore database backups
 /db-backups
+# Ignore backup sqls
+backup.sql
 # Ignore sensitive data
 /src/subjects.json
 /src/timetable.json
