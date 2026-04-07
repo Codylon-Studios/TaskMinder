@@ -46,7 +46,6 @@ jobs:
           echo "${{ secrets.DB_USER }}" > docker_secrets/db_user.txt
           echo "${{ secrets.REDIS_PORT }}" > docker_secrets/redis_port.txt
           echo "${{ secrets.SESSION_SECRET }}" > docker_secrets/session_secret.txt
-          echo "${{ secrets.UNSAFE_DEACTIVATE_CSP }}" > docker_secrets/unsafe_deactivate_csp.txt
           echo "${{ secrets.DATABASE_URL }}" > docker_secrets/database_url.txt
           echo "${{ secrets.ENCRYPTION_KEY }}" > docker_secrets/encryption_key.txt
           echo "${{ secrets.ENCRYPTION_KEY_SECONDARY }}" > docker_secrets/encryption_key_secondary.txt

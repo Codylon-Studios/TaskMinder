@@ -72,13 +72,7 @@ const globalLimiter = rateLimit({
   message: { status: 429, message: "Too many requests, please slow down." }
 });
 app.use(globalLimiter);
-
-if (process.env.UNSAFE_DEACTIVATE_CSP === "true") {
-  logger.warn("Helmet and CSP is disabled! This is not recommended for production!");
-}
-else {
-  app.use(CSPMiddleware());
-}
+app.use(CSPMiddleware());
 
 app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));

@@ -36,6 +36,7 @@ All changes are grouped by type and the latest version appears first.
 * chore(logging): improve error logs on server
 * chore(ui): improve frontend class settings on mobile
 * chore(upload/loading): add upload loading animation
+* chore(csp): remove extra CSP header validation .env variable
 * chore(substitution): change DSBMobile fetch to weekday peak time prefetch
 * chore(api): rename and change method of API routes
 * chore(password): bump password requirements

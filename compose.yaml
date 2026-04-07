@@ -20,7 +20,6 @@ services:
       - db_host
       - redis_port
       - session_secret
-      - unsafe_deactivate_csp
       - database_url
       - encryption_key
       - encryption_key_secondary
@@ -150,8 +149,6 @@ secrets:
     file: ./docker_secrets/redis_port.txt
   session_secret:
     file: ./docker_secrets/session_secret.txt
-  unsafe_deactivate_csp:
-    file: ./docker_secrets/unsafe_deactivate_csp.txt
   database_url:
     file: ./docker_secrets/database_url.txt
   encryption_key:
