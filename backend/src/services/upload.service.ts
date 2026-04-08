@@ -334,7 +334,7 @@ const uploadService = {
     files: Express.Multer.File[],
     reservedBytes?: bigint
   ) {
-    const { uploadName, uploadDescription, uploadType, teamId, changeFiles } = body;
+    const { uploadName, uploadDescription, uploadType, teamId } = body;
     const { id: uploadId } = params;
     const classId = parseInt(session.classId!, 10);
     const tempFiles = Array.isArray(files) ? files : [];
@@ -359,65 +359,51 @@ const uploadService = {
 
     const hasFiles = tempFiles.length > 0;
 
-    if (!changeFiles && hasFiles) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Files cannot be uploaded when changeFiles is false.",
-        expected: true
-      };
-      throw err;
-    }
+    // update files first (if files were uploaded)
+    // if errors occur here, the update metadata is not affected
+    if (hasFiles) {
+      const oldFilesSize = uploadData.Files.reduce((sum, file) => sum + BigInt(file.size), 0n);
+      const newFilesSize = tempFiles.reduce((sum, file) => sum + BigInt(file.size), 0n);
 
-    if (!changeFiles) {
-      await prisma.upload.update({
-        where: { uploadId: uploadId, classId },
-        data: { uploadName, uploadDescription, uploadType, teamId }
-      });
+      const additionalBytesNeeded = newFilesSize > oldFilesSize ? newFilesSize - oldFilesSize : 0n;
+      const usePreReserved = typeof reservedBytes !== "undefined";
 
-      await invalidateCache("UPLOADMETADATA", session.classId!);
+      await prisma.$transaction(async tx => {
+        const classData = await tx.class.findUnique({
+          where: { classId },
+          select: { storageQuotaBytes: true, storageUsedBytes: true }
+        });
 
-      const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
-      logger.info(`Upload for class ${classId} was edited`);
-      return;
-    }
+        if (!classData) {
+          const err: RequestError = {
+            name: "Not Found",
+            status: 404,
+            message: "Class not found.",
+            expected: true
+          };
+          throw err;
+        }
 
-    if (!hasFiles) {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Files are required when changeFiles is true.",
-        expected: true
-      };
-      throw err;
-    }
+        if (!usePreReserved) {
+          const projectedUsage = classData.storageUsedBytes + additionalBytesNeeded;
+          if (projectedUsage > classData.storageQuotaBytes) {
+            const err: RequestError = {
+              name: "Content Too Large",
+              status: 413,
+              message: "Class storage quota will be exceeded",
+              expected: true
+            };
+            throw err;
+          }
 
-    const oldFilesSize = uploadData.Files.reduce((sum, file) => sum + BigInt(file.size), 0n);
-    const newFilesSize = tempFiles.reduce((sum, file) => sum + BigInt(file.size), 0n);
-
-    const additionalBytesNeeded = newFilesSize > oldFilesSize ? newFilesSize - oldFilesSize : 0n;
-    const usePreReserved = typeof reservedBytes !== "undefined";
-
-    await prisma.$transaction(async tx => {
-      const classData = await tx.class.findUnique({
-        where: { classId },
-        select: { storageQuotaBytes: true, storageUsedBytes: true }
-      });
-
-      if (!classData) {
-        const err: RequestError = {
-          name: "Not Found",
-          status: 404,
-          message: "Class not found.",
-          expected: true
-        };
-        throw err;
-      }
-
-      if (!usePreReserved) {
-        const projectedUsage = classData.storageUsedBytes + additionalBytesNeeded;
-        if (projectedUsage > classData.storageQuotaBytes) {
+          if (additionalBytesNeeded > 0n) {
+            await tx.class.update({
+              where: { classId },
+              data: { storageUsedBytes: { increment: additionalBytesNeeded } }
+            });
+          }
+        }
+        else if (classData.storageUsedBytes > classData.storageQuotaBytes) {
           const err: RequestError = {
             name: "Content Too Large",
             status: 413,
@@ -427,85 +413,73 @@ const uploadService = {
           throw err;
         }
 
-        if (additionalBytesNeeded > 0n) {
-          await tx.class.update({
-            where: { classId },
-            data: { storageUsedBytes: { increment: additionalBytesNeeded } }
-          });
-        }
-      }
-      else if (classData.storageUsedBytes > classData.storageQuotaBytes) {
-        const err: RequestError = {
-          name: "Content Too Large",
-          status: 413,
-          message: "Class storage quota will be exceeded",
-          expected: true
-        };
-        throw err;
-      }
-
-      await tx.upload.update({
-        where: { uploadId },
-        data: {
-          uploadName,
-          uploadDescription,
-          uploadType,
-          accountId,
-          teamId,
-          status: "queued",
-          errorReason: null,
-          reservedBytes: usePreReserved ? (reservedBytes ?? 0n) : additionalBytesNeeded
-        }
-      });
-    });
-
-    const jobData = {
-      uploadId,
-      classId,
-      tempFiles: tempFiles.map(file => ({
-        path: file.path,
-        originalName: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size
-      })),
-      replaceUpload: {
-        oldStoredFiles: uploadData.Files.map(file => file.storedFileName),
-        oldTotalBytes: oldFilesSize.toString()
-      }
-    };
-
-    try {
-      await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
-    }
-    catch (error) {
-      const bytesToRelease = usePreReserved ? (reservedBytes ?? 0n) : additionalBytesNeeded;
-      await prisma.$transaction(async tx => {
-        if (bytesToRelease > 0n) {
-          await tx.class.update({
-            where: { classId },
-            data: { storageUsedBytes: { decrement: bytesToRelease } }
-          });
-        }
         await tx.upload.update({
           where: { uploadId },
           data: {
-            status: "failed",
-            errorReason: error instanceof Error ? error.message : "queue_failed",
-            reservedBytes: 0n
+            accountId,
+            status: "queued",
+            errorReason: null,
+            reservedBytes: usePreReserved ? (reservedBytes ?? 0n) : additionalBytesNeeded
           }
         });
       });
-      if (bytesToRelease > 0n && typeof error === "object" && error !== null) {
-        (error as Record<string, unknown>).reservationRolledBack = true;
+
+      const jobData = {
+        uploadId,
+        classId,
+        tempFiles: tempFiles.map(file => ({
+          path: file.path,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size
+        })),
+        replaceUpload: {
+          oldStoredFiles: uploadData.Files.map(file => file.storedFileName),
+          oldTotalBytes: oldFilesSize.toString()
+        }
+      };
+
+      try {
+        await queueJob(QUEUE_KEYS.FILE_PROCESSING, jobData);
       }
-      throw error;
+      catch (error) {
+        const bytesToRelease = usePreReserved ? (reservedBytes ?? 0n) : additionalBytesNeeded;
+        await prisma.$transaction(async tx => {
+          if (bytesToRelease > 0n) {
+            await tx.class.update({
+              where: { classId },
+              data: { storageUsedBytes: { decrement: bytesToRelease } }
+            });
+          }
+          await tx.upload.update({
+            where: { uploadId },
+            data: {
+              status: "failed",
+              errorReason: error instanceof Error ? error.message : "queue_failed",
+              reservedBytes: 0n
+            }
+          });
+        });
+        // remove the physical files on the system
+        await removeTempFiles(files);
+        if (bytesToRelease > 0n && typeof error === "object" && error !== null) {
+          (error as Record<string, unknown>).reservationRolledBack = true;
+        }
+        throw error;
+      }
     }
+
+    // update non-file related data later
+    await prisma.upload.update({
+      where: { uploadId: uploadId, classId },
+      data: { uploadName, uploadDescription, uploadType, teamId }
+    });
 
     await invalidateCache("UPLOADMETADATA", session.classId!);
 
     const io = socketIO.getIO();
     io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
-    logger.info(`Upload was edited for class: ${classId} with file change(s)`);
+    logger.info(`Upload for class ${classId} was edited ${hasFiles ? "with" : "without"} files`);
   },
 
   async deleteUpload(
@@ -532,18 +506,9 @@ const uploadService = {
 
     await isValidTeamId(uploadData.teamId, session);
 
-    // Delete all physical files from disk
-    const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
-    for (const file of uploadData.Files) {
-      const filePath = path.join(classDir, file.storedFileName);
-      await fs.unlink(filePath).catch(() => {
-        logger.error(`Failed to delete file for classId: ${classId}, filePath: ${filePath} during upload deletion`);
-      });
-    }
-
     // Calculate actual size (for completed uploads) or reserved size (for failed/queued)
     const sizeToRelease = uploadData.status === "completed"
-      ? BigInt(uploadData.Files.reduce((sum, file) => sum + file.size, 0))
+      ? BigInt(uploadData.Files.reduce((sum, file) => sum + BigInt(file.size), 0n))
       : uploadData.reservedBytes;
 
     await prisma.$transaction(async tx => {
@@ -560,6 +525,15 @@ const uploadService = {
         });
       }
     });
+
+    // Delete all physical files from disk
+    const classDir = path.join(FINAL_UPLOADS_DIR, classId.toString());
+    for (const file of uploadData.Files) {
+      const filePath = path.join(classDir, file.storedFileName);
+      await fs.unlink(filePath).catch(() => {
+        logger.error(`Failed to delete file for classId: ${classId}, filePath: ${filePath} during upload deletion`);
+      });
+    }
 
     // Invalidate cache after delete
     await invalidateCache("UPLOADMETADATA", session.classId!);

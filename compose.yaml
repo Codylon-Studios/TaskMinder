@@ -59,6 +59,7 @@ services:
       POSTGRES_DB_FILE: /run/secrets/db_name
     volumes:
       - postgres-data:/var/lib/postgresql
+      - ./db-backups:/backups 
 
   redis:
     image: redis:8

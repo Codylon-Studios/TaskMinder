@@ -48,6 +48,7 @@ router.patch(
   "/:id",
   writeUploadLimiter,
   checkAccess(["CLASS", "EDITOR"]),
+  uploadMiddleware.checkClassFileCountLimit,
   uploadMiddleware.attachUploadCleanupOnFail,
   uploadMiddleware.handleFileUpload,
   validate(editUploadSchema),

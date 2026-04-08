@@ -96,26 +96,26 @@ export const preflightStorageQuotaCheck = async (
 };
 
 //
-// preflight quota check for edit uploads (only when changeFiles=true)
+// preflight quota check for edit uploads
 //
 export const preflightEditStorageQuotaCheck = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const changeFiles = req.body?.changeFiles === true || req.body?.changeFiles === "true";
-  if (!changeFiles) {
+  const files = (res.locals.allFiles as Express.Multer.File[]) ?? [];
+  // if there are no files, skip this middleware
+  if (files.length === 0){
+    res.locals.filesChanged = false;
     return next();
   }
-
-  const files = (res.locals.allFiles as Express.Multer.File[]) ?? [];
   const totalUploadSize = files.reduce((sum, file) => sum + BigInt(file.size ?? 0), 0n);
 
   if (totalUploadSize <= 0n) {
     const err: RequestError = {
       name: "Bad Request",
       status: 400,
-      message: "Files are required when changeFiles is true.",
+      message: "This request indicates that files were uploaded, but their size is <= 0",
       expected: true
     };
     return next(err);
@@ -192,7 +192,9 @@ export const checkClassFileCountLimit = async (
     }
   });
 
-  if (fileCount > MAX_FILES_PER_CLASS) {
+  // TODO @Mingqi: is does not count the files that are being uploaded, 
+  // since this would be computationally more expensive, consider to move after other middleware, where filesCount is available.
+  if (fileCount >= MAX_FILES_PER_CLASS) {
     const err: RequestError = {
       name: "Content Too Large",
       status: 413,
