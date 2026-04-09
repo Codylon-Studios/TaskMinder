@@ -55,130 +55,94 @@ $(".bottombar-link").on("click", function() {
 
 let startX = 0;
 let startY = 0;
-let aborted = false;
-let overlayShowsMore = false;
+let startTime = 0
+let dragging = false;
+let startSide: "left" | "right";
+let endSide: "left" | "right";
 
-$(document).on("touchstart", ev => {
-  aborted = false;
-  if (screen.width / window.innerWidth !== 1) {
-    aborted = true;
+$(document).on("pointerdown", ev => {
+  if (ev.pointerType !== "touch") return
+  if (screen.width / window.innerWidth !== 1) return
+  if ($(".modal, .offcanvas").is(".show")) return;
+
+  startTime = Date.now()
+  startX = ev.clientX ?? 0
+  startY = ev.clientY ?? 0
+
+  if (startX < window.innerWidth * 0.2) {
+    startSide = "left"
+    endSide = "right"
   }
-
-  if ($(".modal").is(":visible")) return;
-
-  if (overlayShowsMore) {
-    overlayShowsMore = false;
-    return;
-  }
-
-  ({ x: startX, y: startY } = getTouchPosition(ev));
-
-  let $nextLink;
-  if (startX < 75) {
-    $nextLink = $(".row:visible > .bottombar-current-link").prevAll().first();
-  }
-  else if (startX > globalThis.innerWidth - 75) {
-    $nextLink = $(".row:visible > .bottombar-current-link").nextAll().first();
+  else if (startX > window.innerWidth * 0.8) {
+    startSide = "right"
+    endSide = "left"
   }
   else return;
 
-  $(".bottombar-overlay i").attr("class", ($nextLink.find("i").attr("class") ?? "fa-solid fa-xmark text-danger") + " fs-1");
-  $(".bottombar-overlay span").text($nextLink.find("span").text() || "Keine Seite mehr");
-  $(".bottombar-overlay div").hide();
-});
+  const $currentLink = $(".bottombar .row:visible .bottombar-current-link")
+  const $navigatedToLink = { left: $currentLink.prev(), right: $currentLink.next()}[startSide]
 
-$(document).on("touchmove", ev => {
-  if ($(".modal").is(":visible")) return;
+  if ($navigatedToLink.length === 0) return
 
-  if (ev.touches.length !== 1 || false) {
-    aborted = true;
-    return;
-  }
+  dragging = true;
 
-  const { x: posX, y: posY } = getChangedTouchPosition(ev);
-  
+  $(".bottombar-overlay").css("transition", "")
+  $(".bottombar-overlay i").attr("class", $navigatedToLink.find("i").attr("class") + " fs-1");
+  $(".bottombar-overlay span").text($navigatedToLink.find("span").text());
+})
+
+$(document).on("pointermove", ev => {
+  if (!dragging) return
+
+  const posX = ev.clientX ?? 0
+  const posY = ev.clientY ?? 0
   const diffX = posX - startX;
   const diffY = posY - startY;
-  
-  if (Math.abs(diffX) > Math.abs(diffY) && (startX < 75 || startX > globalThis.innerWidth - 75)) {
+
+  if (Math.abs(diffX) > Math.abs(diffY)) {
     $(".bottombar-overlay").css({
-      "--progress": Math.abs(diffX) / globalThis.innerWidth,
-      left: diffX > 0 ? 0 : posX,
-      right: diffX < 0 ? 0 : globalThis.innerWidth - posX
+      opacity: Math.abs(diffX) / globalThis.innerWidth * 2,
+      [startSide]: 0,
+      [endSide]: endSide === "left" ? posX : (globalThis.innerWidth - posX)
     }).show();
   }
-  else {
-    $(".bottombar-overlay").css("--progress", "0").hide();
-  }
-});
+})
 
-$(document).on("touchend", ev => {
-  if ($(".modal").is(":visible")) return;
-  
-  function hideOverlay(endP: number, complete?: () => unknown): void {
-    const startP = Number.parseFloat($(".bottombar-overlay").css("--progress"));
-    $({ p: startP }).animate(
-      { p: endP },
-      {
-        duration: startP * (endP === 0 ? 500 : 200),
-        step: p => {
-          $(".bottombar-overlay").css("--progress", p);
-        },
-        complete: complete
-      }
-    );
-  }
+$(document).on("pointerup pointercancel", async ev => {
+  if (!dragging) return
+  dragging = false;
+
   async function changeSite(): Promise<void> {
-    if (diffX > 0) {
-      const prev = $(".row:visible > .bottombar-current-link").prevAll().first();
-      if (prev.length === 0) hideOverlay(0, $(".bottombar-overlay").hide);
-      else {
-        const loadingBarMod = await import("../loadingBar/loadingBar.js");
-        await loadingBarMod.replaceSitePJAX(prev.attr("href") ?? siteName);
-        $(".bottombar-overlay").css("--progress", "0").hide();
-      }
-    }
-    else {
-      const next = $(".row:visible > .bottombar-current-link").nextAll().first();
-      if (next.length === 0) hideOverlay(0, $(".bottombar-overlay").hide);
-      else {
-        const loadingBarMod = await import("../loadingBar/loadingBar.js");
-        await loadingBarMod.replaceSitePJAX(next.attr("href") ?? siteName);
-        $(".bottombar-overlay").css("--progress", "0").hide();
-      }
-    }
+    const $currentLink = $(".bottombar .row:visible .bottombar-current-link")
+    const $navigatedToLink = { left: $currentLink.prev(), right: $currentLink.next()}[startSide]
+    const loadingBarMod = await import("../loadingBar/loadingBar.js");
+    await loadingBarMod.replaceSitePJAX($navigatedToLink.attr("href") ?? siteName);
   }
   function hasBeenDraggedEnough(): boolean {
-    return Math.abs(diffX) > Math.abs(diffY)
-    && Math.abs(diffX) > globalThis.innerWidth * 0.75
-    && (startX < 75 || startX > globalThis.innerWidth - 75);
+    return Math.abs(diffX) > (window.innerWidth * 0.4) || (Math.abs(diffX) > (window.innerWidth * 0.2) && timePassed < 500);
   }
-
-
-  if (aborted) {
-    return;
-  }
-
-  const { x: endX, y: endY } = getChangedTouchPosition(ev);
   
-  const diffX = endX - startX;
-  const diffY = endY - startY;
+  const timePassed = Date.now() - startTime
+  const diffX = (ev.clientX ?? 0) - startX;
 
-  let endProgress;
-
+  $(".bottombar-overlay").css("transition", "0.3s ease-in-out")
   if (hasBeenDraggedEnough()) {
-    endProgress = 1;
+    $(".bottombar-overlay").css({
+      opacity: 1,
+      [endSide]: 0
+    })
+
+    await changeSite()
+
+    $(".bottombar-overlay").css({ opacity: 0 });
+    setTimeout(() => {
+      $(".bottombar-overlay").hide();
+    }, 300)
   }
   else {
-    endProgress = 0;
+    $(".bottombar-overlay").css({
+      opacity: 0,
+      [endSide]: "100%"
+    })
   }
-
-  const getTargetLeft = (): number => diffX > 0 || endProgress === 1 ? 0 : globalThis.innerWidth;
-  const getTargetRight = (): number => diffX < 0 || endProgress === 1 ? 0 : globalThis.innerWidth;
-  
-  $(".bottombar-overlay").animate({
-    left: getTargetLeft(),
-    right: getTargetRight()
-  }, endProgress === 0 ? 500 : 200, $(".bottombar-overlay").hide);
-  hideOverlay(endProgress, endProgress === 1 ? changeSite : undefined);
-});
+})

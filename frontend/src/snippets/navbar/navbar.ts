@@ -31,7 +31,9 @@ async function loginAccount(username: string, password: string): Promise<void> {
         username,
         password
       },
-      expectedErrors: [401]
+      expectedErrors: [
+        { status: 401, responseText: "Invalid credentials" }
+      ]
     });
     
     $("#login-success-toast .username").text(username);

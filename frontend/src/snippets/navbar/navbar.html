@@ -228,6 +228,17 @@
     </div>
     <div class="toast-body">Unser Server hat gerade Probleme. Bitte versuche es später erneut.</div>
   </div>
+  <div id="error-request-timeout-toast" class="toast">
+    <div class="toast-progress-bar bg-danger"></div>
+    <div class="toast-header bg-danger text-body-bg">
+      <b class="me-auto">Verbindungsproblem</b>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+    </div>
+    <div class="toast-body">
+      Es ist noch keine Antwort vom Server gekommen. Vielleicht ist deine Internetverbindung etwas langsam.
+      Hab bitte noch etwas Geduld und schicke die Anfrage nicht noch einmal.
+    </div>
+  </div>
   <div id="nginx-size-limit-toast" class="toast">
     <div class="toast-progress-bar bg-danger"></div>
     <div class="toast-header bg-danger text-body-bg">
@@ -236,13 +247,23 @@
     </div>
     <div class="toast-body">Diese Anfrage ist zu groß für unseren Server. Bitte versuche, sie in kleinere Anfragen aufzuteilen.</div>
   </div>
-  <div id="unknown-error-toast" class="toast">
-    <div class="toast-progress-bar bg-danger"></div>
+  <div id="unknown-error-toast" class="toast" data-bs-autohide="false">
     <div class="toast-header bg-danger text-body-bg">
       <b class="me-auto">Unerwarteter Fehler</b>
       <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
     </div>
-    <div class="toast-body">Ein unbekannter Fehler ist aufgetreten.</div>
+    <div class="toast-body">
+      Ein unbekannter Fehler ist aufgetreten.
+      <div class="mt-2 pt-2 border-top d-flex justify-content-end align-items-start gap-2">
+        <button type="button" class="btn btn-secondary btn-sm fw-semibold" data-bs-dismiss="toast">Schließen</button>
+        <div>
+          <button type="button" class="btn btn-danger btn-sm fw-semibold" id="unknown-error-toast-copy">
+            Serverantwort kopieren
+          </button>
+          <div class="form-text">Füge die Serverantwort z.B. in einer Fehlermeldung an uns hinzu!</div>
+        </div>
+      </div>
+    </div>
   </div>
   <div id="not-logged-in-toast" class="toast">
     <div class="toast-progress-bar bg-danger"></div>

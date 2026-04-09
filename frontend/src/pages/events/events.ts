@@ -771,6 +771,36 @@ export async function init(): Promise<void> {
       renderEventList();
     });
 
+    const $filterOffcanvas = $("#filter-offcanvas")
+    const $filterOffcanvasHeader = $("#filter-offcanvas .offcanvas-header")
+
+    let startY = 0;
+    let dragging = false;
+
+    $filterOffcanvasHeader.on("pointerdown", ev => {
+      if (ev.pointerType !== "touch") return
+      startY = ev.clientY ?? 0
+      dragging = true
+      $filterOffcanvas.css("transition", "none")
+    })
+    $filterOffcanvasHeader.on("pointermove", ev => {
+      if (!dragging) return
+      const diff = (ev.clientY ?? 0) - startY
+      if (diff > 0) {
+        $filterOffcanvas.css("transform", `translateY(${diff}px)`)
+      }
+    })
+    $filterOffcanvasHeader.on("pointerup pointercancel", ev => {
+      if (!dragging) return
+      dragging = false;
+      const diff = (ev.clientY ?? 0) - startY
+
+      $filterOffcanvas.css({transition: "transform 0.3s ease-in-out", transform: ""})
+      if (diff > 100) {
+        $filterOffcanvas.offcanvas("hide")
+      }
+    })
+
     $("#app").on("click", "#show-add-event-button", () => {
       addEvent();
     });

@@ -138,6 +138,15 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
   }
 
   if (req.method === "GET") {
+    if (/\/api\/uploads\/\d+/.exec(path)) {
+      try {
+        return await fetch(req);
+      }
+      catch {
+        return new Response(`Fetch failed for ${req.method} ${url}`, { status: 503 })
+      }
+    }
+
     if (CORE_APP.has(path)) {
       const cache = await caches.open(CORE_CACHE);
       const cached = await cache.match(req);
@@ -152,7 +161,7 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
         return res;
       }
       catch {
-        return cached || new Response("Offline or fetch failed", { status: 503 });
+        return cached || new Response(`Fetch failed for ${req.method} ${url}`, { status: 503 });
       }
     }
 
@@ -172,7 +181,7 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
       }
       catch {
         const cached = await cache.match(req);
-        return cached || new Response("Didn't cache API: " + req.url, { status: 503 });
+        return cached || new Response(`Fetch failed for ${req.method} ${url}`, { status: 503 })
       }
     }
   }

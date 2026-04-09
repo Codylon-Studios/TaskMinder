@@ -36,6 +36,7 @@ export const lastCommaRegex = /,(?!.*,)/;
 export const weekDaysSo = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 export const weekDaysMo = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 export const isStandalone = globalThis.matchMedia("(display-mode: standalone)").matches;
+export const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
 
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
@@ -294,12 +295,11 @@ export function $cloneTemplate(selector: string, settings?: {id?: string, dataId
   const fragment = template.content.cloneNode(true) as DocumentFragment;
   const children = $(fragment).children();
 
-  children.find('[id*="{{ID}}"]').addBack('[id*="{{ID}}"]').each(function () {
-    $(this).attr("id", $(this).attr("id")?.replaceAll("{{ID}}", id) ?? "");
-  });
-  children.find('[for*="{{ID}}"]').addBack('[for*="{{ID}}"]').each(function () {
-    $(this).attr("for", $(this).attr("for")?.replaceAll("{{ID}}", id ) ?? "");
-  });
+  for (const attr of ["id", "for", "data-bs-target"]) {
+    children.find(`[${attr}*="{{ID}}"]`).addBack(`[${attr}*="{{ID}}"]`).each(function () {
+      $(this).attr(attr, $(this).attr(attr)?.replaceAll("{{ID}}", id) ?? "");
+    });
+  }
 
   if (dataId) {
     children.find("[data-id]").addBack("[data-id]").attr("data-id", dataId);
@@ -309,6 +309,18 @@ export function $cloneTemplate(selector: string, settings?: {id?: string, dataId
     children.find("[disabled]").addBack("[disabled]").attr("disabled", disabled ? "" : null);
   }
   return children;
+}
+
+export function makeButtonShowCheck(btn: JQuery<HTMLElement>, duration: number): void {
+  const html = btn.html()
+
+  btn.css({ width: btn.css("width"), height: btn.css("height") })
+  btn.html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
+
+  setTimeout(() => {
+    btn.html(html).prop("disabled", false);
+    btn.css({ width: "", height: "" })
+  }, duration);
 }
 
 export function cutString(str: string, maxLength: number): string {
@@ -328,13 +340,13 @@ export function canAutocomplete(element: JQuery<HTMLElement>, unsetVal?: string)
   return element.hasClass("is-autocompleted") || getInputValue(element).trim() === (unsetVal ?? "");
 }
 
-export function autocomplete(element: JQuery<HTMLElement>, val: string | string[] | number): void {
+export function forceAutocomplete(element: JQuery<HTMLElement>, val: string | string[] | number): void {
   element.val(val).addClass("is-autocompleted").trigger("autocomplete");
 }
 
-export function tryAutocomplete(element: JQuery<HTMLElement>, val: string | string[] | number, unsetVal?: string): boolean {
+export function autocomplete(element: JQuery<HTMLElement>, val: string | string[] | number, unsetVal?: string): boolean {
   if (canAutocomplete(element, unsetVal)) { // The user hasn't decided for a specific value
-    autocomplete(element, val);
+    forceAutocomplete(element, val);
     return true;
   }
   return false;
@@ -363,17 +375,22 @@ export function getCirclePath(cx: number, cy: number, r: number, a: number, full
 }
 
 export function bytesToText(b: number): string {
-  b /= 1024;
   if (b < 100) {
-    return Math.round(b * 10) / 10 + "KB";
+    return Math.round(b * 10) / 10 + "B";
   }
   else {
     b /= 1024;
     if (b < 100) {
-      return Math.round(b * 10) / 10 + "MB";
+      return Math.round(b * 10) / 10 + "KB";
     }
     else {
-      return Math.round(b / 1024 * 10) / 10 + "GB";
+      b /= 1024;
+      if (b < 100) {
+        return Math.round(b * 10) / 10 + "MB";
+      }
+      else {
+        return Math.round(b / 1024 * 10) / 10 + "GB";
+      }
     }
   }
 };
@@ -441,9 +458,13 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
             matchesLessonNumber(l.lessonNumber, substitution.lesson)
             && (l.teacherNameSubstitution.includes(substitution.teacherOld) || l.subjectId === -1)
           ) {
+            const substitutionSubjectId = currentSubjectData.find(s => s.subjectNameSubstitution?.includes(substitution.subject))?.subjectId ?? null
             return {
               ...l,
-              substitution
+              substitution: {
+                ...substitution,
+                subjectId: substitutionSubjectId
+              }
             };
           }
           return l;
@@ -669,17 +690,18 @@ export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolea
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
 }
 
-export async function tryForceReloadEventTypeStyles(): Promise<void> {
+export async function checkReloadEventTypeStyles(): Promise<void> {
   if (! user.classJoined) return;
-  const currentEventTypeData = (await eventTypeData());
-  currentEventTypeData.sort((a, b) => a.eventTypeId - b.eventTypeId);
-  const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? "{}");
+  let currentEventTypeData = (await eventTypeData());
+  currentEventTypeData = currentEventTypeData.sort((a, b) => a.eventTypeId - b.eventTypeId);
+  const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? '{"data":"", "css": undefined}');
   const eventTypeString = JSON.stringify(Object.fromEntries(currentEventTypeData.map(e => [e.eventTypeId, e.color])));
-  if (eventTypeString !== cache.data) {
+
+  if (eventTypeString !== cache.data || cache.css === undefined) {
     cache.data = eventTypeString;
-    cache.date = Date.now();
+    cache.css = await (await fetch("/api/events/types/styles")).text();
   }
-  $("#event-type-styles").attr("href", "/api/events/types/styles?v=" + cache.date);
+  $("#event-type-styles").text(cache.css);
   localStorage.setItem("eventTypeDataCache", JSON.stringify(cache));
 }
 
@@ -700,25 +722,6 @@ export function highlightUnavailable(): void {
   $("#unavailable-hint").addClass("fa-beat");
   setTimeout(() => $("#unavailable-hint").removeClass("fa-beat"), 1500);
   $("#unavailable-popup").show();
-}
-
-export async function handleStatusCodes(xhr: JQueryXHR, actions?: Record<number, () => unknown>): Promise<void> {
-  if (xhr.status === 500) {
-    $("#error-server-toast").toast("show");
-  }
-  else if (xhr.status === 503) {
-    highlightUnavailable();
-  }
-  else if (actions?.[xhr.status] === undefined) {
-    $("#unknown-error-toast").toast("show");
-  }
-
-  const fn = actions?.[xhr.status];
-  if (fn !== undefined) fn();
-}
-
-export function handleBasicStatusCodes(xhr: JQueryXHR): void {
-  handleStatusCodes(xhr);
 }
 
 export function openRequestQueueDB(): Promise<IDBDatabase> {
@@ -1001,9 +1004,6 @@ function getResponseFailReason(req: SerializedRequest, res: Response): string {
       else if (textResBody === "Class storage quota will be exceeded") {
         return $("#storage-limit-exceeded-toast .toast-body").text();
       }
-      else if (textResBody === "File size limit exceeded") {
-        return $("#size-limit-exceeded-toast .toast-body").text();
-      }
     }
   }
   if (res.status === 400) {
@@ -1074,15 +1074,15 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
   const b = await bootstrap();
   if ((b.online && !b.maintenance) || forceOffline) {
     const timeout = setTimeout(() => {
-      $("#error-server-toast").toast("show");
+      $("#error-request-timeout-toast").toast("show");
     }, 5000);
 
-    const res = await fetch(req);
+    const res = await fetch(req.clone());
     
     clearTimeout(timeout);
 
     if (!res.ok && !passFailedRequests) {
-      const text = await res.text();
+      const text = await res.clone().text();
 
       const error: AjaxError = {
         status: res.status,
@@ -1100,11 +1100,29 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
       else if (res.status === 503) {
         highlightUnavailable();
       }
-      else if (expectedErrors.includes(res.status)) {
+      else if (expectedErrors.some(exp => exp.status === error.status && exp.responseText === error.responseText)) {
         throw error;
       }
       else {
         $("#unknown-error-toast").toast("show");
+        $("#unknown-error-toast-copy").off("click").on("click", async function () {
+          let textToCopy = 
+            `Fetching ${method} ${url} returned an unexpected error: ${res.status} ${res.statusText}\n\n` +
+            `Request body:\n` +
+            await req.clone().text() + "\n\n" +
+            `Response body:\n` +
+            await res.clone().text() + "\n\n"
+            
+          try {
+            await navigator.clipboard.writeText(textToCopy);
+            
+            makeButtonShowCheck($(this), 1000)
+            setTimeout(() => {
+              $("#unknown-error-toast").toast("hide");
+            }, 1000)
+          }
+          catch {}
+        })
         throw error;
       }
     }
@@ -1497,7 +1515,7 @@ catch (error) {
   console.error("Error fetching bootstrap:", error);
 }
 
-eventTypeData.on("change", tryForceReloadEventTypeStyles);
+eventTypeData.on("change", checkReloadEventTypeStyles);
 
 $(document).on("visibilitychange", async () => {
   if (document.visibilityState === "visible") {
@@ -1549,6 +1567,8 @@ else {
 }
 
 document.head.appendChild(themeColor);
+
+$("body").attr("data-animations", localStorage.getItem("animations") ?? "true");
 
 $('[data-bs-toggle="tooltip"]').tooltip();
 new MutationObserver(mutationsList => {

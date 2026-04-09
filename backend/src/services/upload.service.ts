@@ -296,7 +296,7 @@ const uploadService = {
     const headers = {
       "Content-Type": fileData.mimeType,
       "Content-Disposition": `${disposition}; filename="${safeOriginalName}"; filename*=UTF-8''${encodedFileName}`,
-      "Cache-Control": "private, no-store"
+      "Cache-Control": "private, max-age=31536000, immutable"
     };
 
     const finalFilePath = path.join(

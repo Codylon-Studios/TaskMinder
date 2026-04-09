@@ -13,14 +13,15 @@ import {
   uploadRequestsData,
   bootstrap,
   user,
-  autocomplete,
+  forceAutocomplete,
   bytesToText,
   getCurrentLesson,
-  checkTeamInputForSuspicious
+  checkTeamInputForSuspicious,
+  isIOS
 } from "../../global/global.js";
 import { AjaxError, SingleUploadData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
-import { SearchBox } from "../../snippets/richInput/richInput.js";
+import { FileInput, SearchBox } from "../../snippets/richInput/richInput.js";
 
 async function renderUploadList(): Promise<void> {
   async function getFilteredData(): Promise<SingleUploadData[]> {
@@ -75,7 +76,7 @@ async function renderUploadList(): Promise<void> {
   $("#storage-description b").eq(0).text(bytesToText(usedStorage)).end().eq(1).text(bytesToText(totalStorage));
   
   $("#storage-limit-exceeded-toast .toast-body b").text(bytesToText(totalStorage));
-  $("#size-limit-exceeded-toast .toast-body b").text(bytesToText(currentUploadData.sizeLimitPerFile));
+  $("file-input").attr("max-size", currentUploadData.sizeLimitPerFile);
   $("#file-limit-exceeded-toast .toast-body b").text(currentUploadData.maxFilesPerClass);
 
   for (const upload of data) {
@@ -136,7 +137,8 @@ async function renderUploadList(): Promise<void> {
         <div class="upload-failed">
           <span class="form-text text-danger">
             <i class="fas fa-circle-xmark" aria-hidden="true"></i>
-            Hochladen fehlgeschlagen!
+            <b>Hochladen fehlgeschlagen!</b>
+            <span class="upload-failed-reason"></span>
           </span>
           <br>
           <button class="btn btn-sm btn-danger fw-bold mt-1 upload-failed-delete" data-id="${uploadId}">Löschen</button>
@@ -169,6 +171,9 @@ async function renderUploadList(): Promise<void> {
     galleryTemplate.find(".upload-pin").toggle(upload.isPinned || user.permissionLevel >= 1);
     galleryTemplate.find(".edit-option").toggle(editEnabled);
     galleryTemplate.find(".upload-failed").toggle(upload.status === "failed");
+    galleryTemplate.find(".upload-failed-reason").text({
+      "MIME-Type is not supported": "Einer der Dateitypen wird nicht unterstützt!"
+    }[upload.errorReason ?? ""] ?? "Ein unbekannter Fehler ist aufgetreten.");
     galleryTemplate.find(".upload-processing").toggle(["processing", "queued"].includes(upload.status));
     galleryTemplate.find(".view-upload").prop("disabled", upload.status !== "completed");
 
@@ -187,7 +192,8 @@ async function renderUploadList(): Promise<void> {
           <div class="upload-failed">
             <span class="form-text text-danger">
               <i class="fas fa-circle-xmark" aria-hidden="true"></i>
-              Hochladen fehlgeschlagen!
+              <b>Hochladen fehlgeschlagen!</b>
+              <span class="upload-failed-reason"></span>
             </span>
             <br>
             <button class="btn btn-sm btn-danger fw-bold mt-1 upload-failed-delete" data-id="${uploadId}">Löschen</button>
@@ -226,6 +232,9 @@ async function renderUploadList(): Promise<void> {
     tableTemplate.find(".upload-pin").toggle(upload.isPinned || user.permissionLevel >= 1);
     tableTemplate.find(".edit-option").toggle(editAllowed);
     tableTemplate.find(".upload-failed").toggle(upload.status === "failed");
+    tableTemplate.find(".upload-failed-reason").text({
+      "MIME-Type is not supported": "Einer der Dateitypen wird nicht unterstützt!"
+    }[upload.errorReason ?? ""] ?? "Ein unbekannter Fehler ist aufgetreten.");
     tableTemplate.find(".upload-processing").toggle(["processing", "queued"].includes(upload.status));
     tableTemplate.find(".view-upload").prop("disabled", upload.status !== "completed");
 
@@ -360,28 +369,28 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
   
   $("#add-upload-name").val("").removeClass("is-autocompleted");
   $("#add-upload-team").val("-1").removeClass("is-autocompleted is-suspicious");
+  $("#add-upload-description").val("");
+  ($("#add-upload-files")[0] as FileInput).files = [];
+  $("#add-upload-type").val("");
 
   if (uploadRequestId) {
     const uploadRequest = (await uploadRequestsData()).find(r => r.uploadRequestId === uploadRequestId);
     if (uploadRequest) {
-      autocomplete($("#add-upload-name"), uploadRequest.uploadRequestName);
-      autocomplete($("#add-upload-team"), uploadRequest.teamId);
+      forceAutocomplete($("#add-upload-name"), uploadRequest.uploadRequestName);
+      forceAutocomplete($("#add-upload-team"), uploadRequest.teamId);
       $("#add-upload-name, #add-upload-team").find("~ .autocompleted-feedback").text("Automatisch: Aus der Anfrage");
     }
   }
   else if (currentLesson !== undefined) {
-    const subjectName = currentLesson.lessons[0].subjectNameLong;
-    autocomplete($("#add-upload-name"), subjectName + " vom " + getSimpleDisplayDate(new Date()));
+    const subjectName = currentLesson.lessons[0].substitution?.subject ?? currentLesson.lessons[0].subjectNameLong;
+    forceAutocomplete($("#add-upload-name"), subjectName + " vom " + getSimpleDisplayDate(new Date()));
     $("#add-upload-name ~ .autocompleted-feedback").text("Automatisch: Das aktuelle Fach");
     const teamId = currentLesson.lessons[0].teamId;
     if (teamId !== -1) {
-      autocomplete($("#add-upload-team"), teamId);
+      forceAutocomplete($("#add-upload-team"), teamId);
       $("#add-upload-team ~ .autocompleted-feedback").html(`Automatisch: Das Team, das <b>${escapeHTML(subjectName)}</b> hat`);
     }
   }
-  $("#add-upload-description").val("");
-  $("#add-upload-files").val("");
-  $("#add-upload-type").val("");
 
   // Disable the actual "add" button, because not all information is given
   $("#add-upload-button").prop("disabled", true);
@@ -396,7 +405,7 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
     .on("click", async () => {
       // Save the given information in variables
       const name = $("#add-upload-name").val()?.toString().trim() ?? "";
-      const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
+      const files = ($("#add-upload-files")[0] as FileInput).files;
       const description = $("#add-upload-description").val()?.toString().trim() ?? "";
       const type = $("#add-upload-type").val()?.toString() ?? "";
       const teamId = $("#add-upload-team").val()?.toString() ?? "-1";
@@ -415,7 +424,10 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
         await ajax("POST", "/api/uploads", {
           body: data,
           queueable: true,
-          expectedErrors: [400, 413]
+          expectedErrors: [
+            { status: 413, responseText: "Upload limit reached: this class already has the maximum number of files allowed." },
+            { status: 413, responseText: "Class storage quota will be exceeded" },
+          ]
         });
         
         $("#add-upload-success-toast").toast("show");
@@ -439,73 +451,97 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
           else if (err.responseText === "Class storage quota will be exceeded") {
             $("#storage-limit-exceeded-toast").toast("show");
           }
-          else if (err.responseText === "File size limit exceeded") {
-            $("#size-limit-exceeded-toast").toast("show");
-          }
         }
       }
     });
 }
 
-async function viewUpload(uploadId: number): Promise<void> {
-  async function showFile(fileId: number): Promise<void> {
-    function getFilenameFromContentDisposition(header: string): string | null {
-      if (!header) return null;
+function getFilenameFromContentDisposition(header: string): string | null {
+  if (!header) return null;
 
-      const filenameStarMatch = new RegExp(/filename\*\s*=\s*([^;]+)/i).exec(header);
-      if (!filenameStarMatch) return null;
-      const value = filenameStarMatch[1].trim();
+  const filenameStarMatch = new RegExp(/filename\*\s*=\s*([^;]+)/i).exec(header);
+  if (!filenameStarMatch) return null;
+  const value = filenameStarMatch[1].trim();
 
-      const parts = value.split("''");
-      if (parts.length === 2) {
-        return decodeURIComponent(parts[1]);
-      }
+  const parts = value.split("''");
+  if (parts.length === 2) {
+    return decodeURIComponent(parts[1]);
+  }
 
-      return decodeURIComponent(value);
-    }
+  return decodeURIComponent(value);
+}
 
-    if (!upload) return;
-
-    $("#view-upload-nav-info").text(fileId + 1 + "/" + upload.filesCount);
-    $("#view-upload-nav-back").prop("disabled", fileId === 0);
-    $("#view-upload-nav-next").prop("disabled", upload.filesCount === fileId + 1);
-
-    const route = `/api/uploads/${upload.files[fileId].fileMetaDataId}`;
-
-    $("#view-upload-loading").show();
-    $("#view-upload-object").hide();
-    $("#view-upload-error").hide();
-
-    const response = await fetch(route + "?action=preview", { cache: "force-cache" });
-
+async function getFileAndUrl(fileMetaDataId: number): Promise<{file: File, blobUrl: string} | null> {
+  const route = `/api/uploads/${fileMetaDataId}`;
+  try {
+    const response = await fetch(route + "?action=preview");
     if (response.ok) {
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const filename = getFilenameFromContentDisposition(response.headers.get("content-disposition") ?? "Datei") ?? "Datei";
       const file = new File([blob], filename, { type: blob.type });
+      return {file, blobUrl}
+    }
+    else {
+      return null
+    }
+  }
+  catch {
+    return null;
+  }
+}
 
+async function viewUpload(uploadId: number): Promise<void> {
+  async function showFile(fileNumber: number): Promise<void> {
+    if (!upload) return;
+
+    $("#view-upload-nav-info").text(fileNumber + 1 + "/" + upload.filesCount);
+    $("#view-upload-nav-back").prop("disabled", fileNumber === 0);
+    $("#view-upload-nav-next").prop("disabled", upload.filesCount === fileNumber + 1);
+
+    $("#view-upload-download").off("click").addClass("disabled")
+    $("#view-upload-open").attr("href", null).addClass("disabled")
+
+    $("#view-upload-loading").show();
+    $("#view-upload-object").hide();
+    $("#view-upload-error").hide();
+
+    const fileMetaDataId = upload.files[fileNumber].fileMetaDataId
+    const route = `/api/uploads/${fileMetaDataId}`;
+    const fileAndUrl = await getFileAndUrl(fileMetaDataId)
+
+    if (fileAndUrl === null) {
       $("#view-upload-loading").hide();
-      $("#view-upload-error").hide();
-
-      const mime = upload.files[fileId].mimeType;
-      $("#view-upload-first-page-note").toggle(mime === "application/pdf");
-      
-      $("#view-upload-object").attr("data", blobUrl).attr("type", mime).toggleClass("ios", /iPhone/.test(navigator.userAgent)).show();
-
-      $("#view-upload-download").off("click").on("click", () => {
-        if (navigator.canShare?.({ files: [file] })) {
-          navigator.share({ files: [file] });
-        }
-        else {
-          location.href = route + "?action=download";
-        }
-      });
-
-      $("#view-upload-open").attr("href", route + "?action=preview");
+      const b = await bootstrap();
+      const unavailable = (! b.online) || b.maintenance;
+      $("#view-upload-object").hide();
+      $("#view-upload-error").toggle(!unavailable);
+      $("#view-upload-unavailable").toggle(unavailable);
     }
     else {
       $("#view-upload-loading").hide();
-      $("#view-upload-error").show();
+      $("#view-upload-error").hide();
+      $("#view-upload-unavailable").hide();
+
+      const mime = upload.files[fileNumber].mimeType;
+      $("#view-upload-first-page-note").toggle(mime === "application/pdf");
+      
+      const $obj = $("#view-upload-object");
+      const $newObj = $obj.clone().attr("data", fileAndUrl.blobUrl).attr("type", mime).toggleClass("ios", isIOS);
+      $obj.replaceWith($newObj);
+      $newObj.show();
+
+      $("#view-upload-unavailable").hide();
+
+      $("#view-upload-download").removeClass("disabled").on("click", ev => {
+        if (navigator.canShare?.({ files: [fileAndUrl.file] })) {
+          ev.preventDefault()
+          navigator.share({ files: [fileAndUrl.file] });
+        }
+      });
+      $("#view-upload-download").attr("href", fileAndUrl.blobUrl).attr("download", fileAndUrl.file.name)
+
+      $("#view-upload-open").removeClass("disabled").attr("href", route + "?action=preview");
     }
   }
 
@@ -522,19 +558,11 @@ async function viewUpload(uploadId: number): Promise<void> {
     merge: true
   });
 
-  const b = await bootstrap();
-  const unavailable = (! b.online) || b.maintenance;
-  $("#view-upload-object").toggle(!unavailable);
-  $("#view-upload-unavailable").toggle(unavailable);
-  $("#view-upload-nav-back, #view-upload-nav-next").prop("disabled", unavailable);
+  let shownFileNumber = 0;
+  showFile(shownFileNumber);
 
-  if (unavailable) return;
-
-  let shownFileId = 0;
-  showFile(shownFileId);
-
-  $("#view-upload-nav-back").off("click").on("click", () => showFile(--shownFileId));
-  $("#view-upload-nav-next").off("click").on("click", () => showFile(++shownFileId));
+  $("#view-upload-nav-back").off("click").on("click", () => showFile(--shownFileNumber));
+  $("#view-upload-nav-next").off("click").on("click", () => showFile(++shownFileNumber));
 }
 
 async function copyLinkUpload(uploadId: number) : Promise<void> {
@@ -585,9 +613,13 @@ async function editUpload(uploadId: number): Promise<void> {
 
   // Set the inputs on the already saved information
   $("#edit-upload-name").val(upload.uploadName);
-  $("#edit-upload-change-files").prop("checked", false);
-  $("#edit-upload-files, #edit-upload-files + .form-text").hide();
-  $("#edit-upload-files").val("");
+
+  const files: File[] = [];
+  for (const f of upload.files) {
+    const fileAndUrl = await getFileAndUrl(f.fileMetaDataId)
+    if (fileAndUrl !== null) files.push(fileAndUrl.file)
+  }
+  ($("#edit-upload-files")[0] as FileInput).files = files;
   $("#edit-upload-description").val(upload.uploadDescription ?? "").trigger("change");
   $("#edit-upload-type").val(upload.uploadType);
   $("#edit-upload-team").val(upload.teamId);
@@ -605,8 +637,7 @@ async function editUpload(uploadId: number): Promise<void> {
     .on("click", async () => {
       // Save the given information in variables
       const name = $("#edit-upload-name").val()?.toString().trim() ?? "";
-      const changeFiles = $("#edit-upload-change-files").prop("checked");
-      const files = ($("#edit-upload-files")[0] as HTMLInputElement).files ?? [];
+      const files = ($("#edit-upload-files")[0] as FileInput).files;
       const description = $("#edit-upload-description").val()?.toString().trim() ?? "";;
       const type = $("#edit-upload-type").val()?.toString() ?? "";
       const teamId = $("#edit-upload-team").val()?.toString() ?? "-1";
@@ -617,18 +648,18 @@ async function editUpload(uploadId: number): Promise<void> {
       data.append("uploadDescription", description);
       data.append("uploadType", type);
       data.append("teamId", teamId);
-      data.append("changeFiles", changeFiles);
-      if (changeFiles) {
-        for (const f of files) {
-          data.append("files", f);
-        }
+      for (const f of files) {
+        data.append("files", f);
       }
 
       try {
         await ajax("PATCH", `/api/uploads/${uploadId}`, {
           body: data,
           queueable: true,
-          expectedErrors: [400, 413]
+          expectedErrors: [
+            { status: 413, responseText: "Upload limit reached: this class already has the maximum number of files allowed." },
+            { status: 413, responseText: "Class storage quota will be exceeded" },
+          ]
         });
         
         $("#edit-upload-success-toast").toast("show");
@@ -645,9 +676,6 @@ async function editUpload(uploadId: number): Promise<void> {
           }
           else if (err.responseText === "Class storage quota will be exceeded") {
             $("#storage-limit-exceeded-toast").toast("show");
-          }
-          else if (err.responseText === "File size limit exceeded") {
-            $("#size-limit-exceeded-toast").toast("show");
           }
         }
       }
@@ -737,7 +765,7 @@ export async function init(): Promise<void> {
       viewUpload(Number.parseInt(urlParams.get("view-upload") ?? ""));
     }
 
-    if (!/iPhone/.test(navigator.userAgent)) {
+    if (!isIOS) {
       $("#view-upload-first-page-note").remove();
     }
 
@@ -784,10 +812,9 @@ export async function init(): Promise<void> {
     $(".add-upload-input").on("input", function () {
       const name = $("#add-upload-name").val()?.toString().trim();
       const type = $("#add-upload-type").val();
-      const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
+      const fileInput = $("#add-upload-files")[0] as FileInput
 
-      $("#add-upload-max-files").toggle(files.length > 20);
-      $("#add-upload-button").prop("disabled", name === "" || type === null || files.length === 0 || files.length > 20);
+      $("#add-upload-button").prop("disabled", name === "" || type === null || !fileInput.isValid());
     });
 
     $("#add-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
@@ -796,17 +823,12 @@ export async function init(): Promise<void> {
     $(".edit-upload-input").on("input", function () {
       const name = $("#edit-upload-name").val()?.toString().trim();
       const type = $("#edit-upload-type").val();
-      const changeFiles = $("#edit-upload-change-files").prop("checked");
-      const files = ($("#edit-upload-files")[0] as HTMLInputElement).files ?? [];
+      const fileInput = $("#edit-upload-files")[0] as FileInput
 
-      $("#edit-upload-button").prop("disabled", name === "" || type === null || (changeFiles && (files.length === 0 || files.length > 20)));
+      $("#edit-upload-button").prop("disabled", name === "" || type === null || !fileInput.isValid());
     });
 
     $("#edit-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
-
-    $("#edit-upload-change-files").on("change", function () {
-      $("#edit-upload-files, #edit-upload-files + .form-text").toggle($(this).prop("checked"));
-    }).prop("checked", false).trigger("change");
 
     // View the upload on clicking it
     $("#app").on("click", ".view-upload", function () {
@@ -936,6 +958,36 @@ export async function init(): Promise<void> {
       updateFilters();
       renderUploadList();
     });
+    
+    const $filterOffcanvas = $("#filter-offcanvas")
+    const $filterOffcanvasHeader = $("#filter-offcanvas .offcanvas-header")
+
+    let startY = 0;
+    let dragging = false;
+
+    $filterOffcanvasHeader.on("pointerdown", ev => {
+      if (ev.pointerType !== "touch") return
+      startY = ev.clientY ?? 0
+      dragging = true
+      $filterOffcanvas.css("transition", "none")
+    })
+    $filterOffcanvasHeader.on("pointermove", ev => {
+      if (!dragging) return
+      const diff = (ev.clientY ?? 0) - startY
+      if (diff > 0) {
+        $filterOffcanvas.css("transform", `translateY(${diff}px)`)
+      }
+    })
+    $filterOffcanvasHeader.on("pointerup pointercancel", ev => {
+      if (!dragging) return
+      dragging = false;
+      const diff = (ev.clientY ?? 0) - startY
+
+      $filterOffcanvas.css({transition: "transform 0.3s ease-in-out", transform: ""})
+      if (diff > 100) {
+        $filterOffcanvas.offcanvas("hide")
+      }
+    })
 
     $("#app").on("click", "#show-add-upload-button", () => {
       addUpload();

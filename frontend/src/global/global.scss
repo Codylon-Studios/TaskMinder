@@ -76,6 +76,8 @@ body {
     --btn-tertiary-hover: #{$tertiary-hover-light};
     --btn-tertiary-active: #{$tertiary-active-light};
 
+    --bs-danger-text-emphasis: #8c000f;
+
     & .btn-close-invert {
       filter: invert(1);
     }
@@ -88,6 +90,8 @@ body {
     --btn-tertiary-normal: #{$tertiary-normal-dark};
     --btn-tertiary-hover: #{$tertiary-hover-dark};
     --btn-tertiary-active: #{$tertiary-active-dark};
+
+    --bs-danger-text-emphasis: #ff727f;
 
     & .btn-close-invert {
       filter: invert(0);

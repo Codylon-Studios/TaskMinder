@@ -40,3 +40,24 @@ copy-input {
     padding-right: 2rem !important;
   }
 }
+
+file-input {
+  display: block;
+
+  .file-input-label:hover, .file-input-label-focus, .file-input-label:focus-within {
+    @extend :focus;
+  }
+
+  .file-input-preview {
+    overflow-y: scroll;
+    max-height: 15rem;
+  }
+
+  .file-input-preview-title i {
+    transition: transform 0.2s ease;
+  }
+
+  .file-input-preview-title[aria-expanded="true"] i {
+    transform: rotate(90deg);
+  }
+}

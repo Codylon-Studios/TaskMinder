@@ -11,7 +11,7 @@ type AjaxOptions = {
   queueable?: boolean;
   forceOffline?: boolean;
   passFailedRequests?: boolean;
-  expectedErrors?: number[];
+  expectedErrors?: AjaxError[];
 }
 
 type SerializedRequest = {
@@ -177,7 +177,7 @@ type LessonWithSubject = {
   teamId: number;
 };
 type LessonWithSubstitution = LessonWithSubject & {
-  substitution?: SubstitutionEntry
+  substitution?: SubstitutionEntry & { subjectId: number | null }
 };
 type LessonGroup = {
   lessonNumber: number;
@@ -205,7 +205,7 @@ type SingleUploadData = {
   uploadType: string;
   teamId: number;
   status: string;
-  errorReason: null;
+  errorReason: string | null;
   accountName: string | null;
   filesCount: number;
   createdAt: string;

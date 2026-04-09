@@ -527,12 +527,12 @@ async function renderTimetable(): Promise<void> {
   const timetableData = await loadTimetableData(selectedDate);
 
   for (const multiLesson of timetableData) {
-    const isBreak = multiLesson.lessons.every(l => l.subjectId === -1 && l.substitution === undefined);
+    const isBreak = multiLesson.lessons.every(l => l.subjectId === -1 && (l.substitution === undefined || l.substitution.type === "Entfall"));
     const isNormalBreak = isBreak && multiLesson.events === undefined;
 
     const templateModeLess = `
       <div class="card ${isNormalBreak ? "flex-grow-0 border-dashed" : "flex-grow-1"}">
-        <div class="card-body d-flex align-items-center justify-content-center flex-column">
+        <div class="card-body d-flex align-items-center justify-content-center flex-column ${isNormalBreak ? "pt-1 py-1" : "pt-4"}"">
           <div class="d-flex align-items-center flex-column">
             <span>
               ${/* eslint-disable indent */
@@ -540,7 +540,7 @@ async function renderTimetable(): Promise<void> {
                   .map(l => {
                     let cssClass = "";
                     let append = "";
-                    if (l.substitution !== undefined) {
+                    if (l.substitution !== undefined && !isBreak) {
                       if (l.substitution.type === "Entfall") cssClass = "line-through-red";
                       else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
                       else {
@@ -555,7 +555,7 @@ async function renderTimetable(): Promise<void> {
             ${/* eslint-disable indent */
               multiLesson.lessons
                 .map(l => {
-                  if (l.substitution !== undefined) {
+                  if (l.substitution !== undefined && !isBreak) {
                     const color = (l.substitution.type === "Entfall") ? "red" : "yellow";
                     return `<div class="text-${color} fw-bold mt-2">${escapeHTML(l.substitution.type)}</div>`;
                   }
@@ -581,12 +581,12 @@ async function renderTimetable(): Promise<void> {
       <div class="card ${isNormalBreak ? "border-dashed" : ""}">
         <div class="card-body text-center ${isNormalBreak ? "pt-1 py-1" : "pt-4"}">
           <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start
-              ${multiLesson.lessons.every(l =>l.substitution?.type === "Entfall") ? "line-through-red" : ""}
+              ${multiLesson.lessons.every(l =>l.substitution?.type === "Entfall") && !isBreak ? "line-through-red" : ""}
             ">
             ${msToTime(multiLesson.startTime)}
           </div>
           <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end
-              ${multiLesson.lessons.every(l => l.substitution?.type === "Entfall") ? "line-through-red" : ""}
+              ${multiLesson.lessons.every(l => l.substitution?.type === "Entfall") && !isBreak ? "line-through-red" : ""}
             ">
             ${msToTime(multiLesson.endTime)}
           </div>
@@ -597,7 +597,7 @@ async function renderTimetable(): Promise<void> {
                   .map(l => {
                     let cssClass = "";
                     let append = "";
-                    if (l.substitution !== undefined) {
+                    if (l.substitution !== undefined && !isBreak) {
                       if (l.substitution.type === "Entfall") cssClass = "line-through-red";
                       else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
                       else {
@@ -618,7 +618,7 @@ async function renderTimetable(): Promise<void> {
                       let cssClass = "";
                       let append = "";
                       let room = l.room;
-                      if (l.substitution !== undefined) {
+                      if (l.substitution !== undefined && !isBreak) {
                         if (l.substitution.type === "Entfall") {
                           cssClass = "line-through-red";
                           if (l.subjectId === -1) room = "----";
@@ -640,7 +640,7 @@ async function renderTimetable(): Promise<void> {
                       let cssClass = "";
                       let append = "";
                       let teacher = l.teacherName;
-                      if (l.substitution !== undefined) {
+                      if (l.substitution !== undefined && !isBreak) {
                         if (l.substitution.type === "Entfall") {
                           cssClass = "line-through-red";
                           if (l.subjectId === -1) teacher = "----";
@@ -659,11 +659,11 @@ async function renderTimetable(): Promise<void> {
             ${/* eslint-disable indent */
               multiLesson.lessons
                 .map(l => {
-                  if (l.substitution !== undefined) {
+                  if (l.substitution !== undefined && !isBreak) {
                     const color = (l.substitution.type === "Entfall") ? "red" : "yellow";
                     return `
                       <div class="text-${color} fw-bold mt-2">${escapeHTML(l.substitution.type)}</div>
-                      <div class="text-${color}">${escapeHTML(["EVA", "-"].includes(l.substitution.text) ? "" : l.substitution.text)}</div>
+                      <div class="text-${color}">${escapeHTML(l.substitution.text)}</div>
                     `;
                   }
                 }).join("")

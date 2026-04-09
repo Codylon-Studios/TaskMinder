@@ -1,4 +1,4 @@
-import { getSite, isValidSite, renderAll, unsavedChanges, highlightUnavailable } from "../../global/global.js";
+import { getSite, isValidSite, renderAll, unsavedChanges, highlightUnavailable, isStandalone } from "../../global/global.js";
 import { init as initBottombar } from "../bottombar/bottombar.js";
 import { init as initNavbar } from "../navbar/navbar.js";
 
@@ -102,7 +102,14 @@ export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promi
     }
 
     if (pushHistory ?? true) {
-      globalThis.history.pushState({}, "", resUrl + hash);
+      if (isStandalone) {
+         // Simulate app in pwa because now the user can swipe from the complete side
+         // to navigate with the bottombar (instead of history navigation)
+        globalThis.history.replaceState({}, "", resUrl + hash);
+      }
+      else {
+        globalThis.history.pushState({}, "", resUrl + hash);
+      }
       $(globalThis).trigger("pushstate");
     }
 

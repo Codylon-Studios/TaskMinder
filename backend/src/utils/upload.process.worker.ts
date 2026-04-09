@@ -437,7 +437,10 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     );
 
     // Mark upload as failed and release reserved storage
-    const errorReason = error instanceof Error ? error.message : "unknown_error";
+    const errorReason =
+      error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : "unknown_error";
 
     await prisma.$transaction(async tx => {
       if (!job.replaceUpload || metadataReplaced) {

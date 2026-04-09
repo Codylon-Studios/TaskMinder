@@ -22,9 +22,11 @@ import {
   classInfo,
   user,
   checkSecurePassword,
-  tryAutocomplete,
   autocomplete,
-  isStandalone
+  forceAutocomplete,
+  isStandalone,
+  isIOS,
+  makeButtonShowCheck
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel, AjaxError } from "../../global/types";
 
@@ -233,7 +235,7 @@ async function renderTeamList(): Promise<void> {
     changedAnything();
     
     $(this).toggleClass("is-invalid", $(this).val().trim() === "");
-    $("#teams-save").prop("disabled", $(".team-name-input").hasClass("is-invalid"));
+    $("#teams-save").prop("disabled", $(".team:not(.is-deleted) .team-name-input").hasClass("is-invalid"));
 
     const id = $(this).data("id");
     if (id !== "") {
@@ -272,6 +274,7 @@ async function renderTeamList(): Promise<void> {
       
       team.addClass("is-deleted");
     }
+    $("#teams-save").prop("disabled", $(".team:not(.is-deleted) .team-name-input").hasClass("is-invalid"));
     toggleChangesContainer(id);
   });
 }
@@ -337,7 +340,7 @@ async function renderEventTypeList(): Promise<void> {
     changedAnything();
     
     $(this).toggleClass("is-invalid", $(this).val().trim() === "");
-    $("#event-types-save").prop("disabled", $(".event-type-name-input").hasClass("is-invalid"));
+    $("#event-types-save").prop("disabled", $(".event-type:not(.is-deleted) .event-type-name-input").hasClass("is-invalid"));
 
     const id = $(this).data("id");
     if (id !== "") {
@@ -393,6 +396,7 @@ async function renderEventTypeList(): Promise<void> {
       
       eventType.addClass("is-deleted");
     }
+    $("#event-types-save").prop("disabled", $(".event-type:not(.is-deleted) .event-type-name-input").hasClass("is-invalid"));
     toggleChangesContainer(id);
   });
 }
@@ -489,15 +493,17 @@ async function renderSubjectList(): Promise<void> {
     changedAnything();
     
     $(this).toggleClass("is-invalid", $(this).val().trim() === "");
-    $("#subjects-save").prop("disabled", $(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid"));
+    $("#subjects-save").prop("disabled",
+      $(".subject:not(.is-deleted)").find(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")
+    );
 
     const newVal = $(this).val()?.toString() ?? "";
 
     const shortInput = $(this).closest(".subject").find(".subject-name-short-input");
-    tryAutocomplete(shortInput, newVal.substring(0, 3));
+    autocomplete(shortInput, newVal.substring(0, 3));
 
     const substitutionInput = $(this).closest(".subject").find(".subject-name-substitution-input");
-    tryAutocomplete(substitutionInput, newVal);
+    autocomplete(substitutionInput, newVal);
 
     const id = $(this).data("id");
     if (id !== "") {
@@ -552,12 +558,14 @@ async function renderSubjectList(): Promise<void> {
     changedAnything();
     
     $(this).toggleClass("is-invalid", $(this).val().trim() === "");
-    $("#subjects-save").prop("disabled", $(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid"));
+    $("#subjects-save").prop("disabled",
+      $(".subject:not(.is-deleted)").find(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")
+    );
 
     const newVal = $(this).val()?.toString() ?? "";
 
     const shortInput = $(this).closest(".subject").find(".subject-teacher-short-input");
-    tryAutocomplete(shortInput, newVal.substring(0, 3));
+    autocomplete(shortInput, newVal.substring(0, 3));
 
     const id = $(this).data("id");
     if (id !== "") {
@@ -578,7 +586,7 @@ async function renderSubjectList(): Promise<void> {
     const newVal = $(this).val()?.toString() ?? "";
 
     const substitutionInput = $(this).closest(".subject").find(".subject-teacher-substitution-input");
-    tryAutocomplete(substitutionInput, newVal);
+    autocomplete(substitutionInput, newVal);
 
     const id = $(this).data("id");
     if (id !== "") {
@@ -601,7 +609,7 @@ async function renderSubjectList(): Promise<void> {
 
       const id = $(this).data("id");
       if (id !== "") {
-        const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameShort;
+        const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameSubstitution?.toString();
         if (newVal === oldVal) {
           $changedNameSubstitution(id).hide();
         }
@@ -620,7 +628,7 @@ async function renderSubjectList(): Promise<void> {
 
       const id = $(this).data("id");
       if (id !== "") {
-        const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameShort;
+        const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.teacherNameSubstitution?.toString();
         if (newVal === oldVal) {
           $changedTeacherSubstitution(id).hide();
         }
@@ -641,7 +649,7 @@ async function renderSubjectList(): Promise<void> {
       $(".subject-name-long-input, .subject-teacher-gender-input, .subject-teacher-long-input")
         .filter(`[data-id="${id}"]`).trigger("input").trigger("change");
       $(".subject-name-short-input, .subject-teacher-short-input, .subject-name-substitution-input, .subject-teacher-substitution-input")
-        .filter(`[data-id="${id}"]`).trigger("autoinput");
+        .filter(`[data-id="${id}"]`).trigger("autocomplete");
 
       $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash" aria-hidden="true"></i>')
         .attr("aria-label", "Fach entfernen");
@@ -657,6 +665,9 @@ async function renderSubjectList(): Promise<void> {
       
       subject.addClass("is-deleted");
     }
+    $("#subjects-save").prop("disabled",
+      $(".subject:not(.is-deleted)").find(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")
+    );
     toggleChangesContainer(id);
   });
 }
@@ -701,7 +712,7 @@ async function renderTimetable(): Promise<void> {
     unsavedChanges(true);
   });
 
-  $("#app").off("input autoinput", ".lesson-number").on("input autoinput", ".lesson-number", function () {
+  $("#app").off("input autocomplete", ".lesson-number").on("input autocomplete", ".lesson-number", function () {
     const thisLesson = $(this).closest(".lesson");
     const lessonNumber = $(this).val()?.toString() ?? "1";
     $("#timetable").find(".lesson").each(function () {
@@ -710,10 +721,18 @@ async function renderTimetable(): Promise<void> {
       if ($(this).find(".lesson-number").val() === lessonNumber) {
         const start = thisLesson.find(".lesson-start-time");
         const end = thisLesson.find(".lesson-end-time");
-        tryAutocomplete(start, $(this).find(".lesson-start-time").val() ?? "--:--");
-        tryAutocomplete(end, $(this).find(".lesson-end-time").val() ?? "--:--");
+        autocomplete(start, $(this).find(".lesson-start-time").val() ?? "--:--");
+        autocomplete(end, $(this).find(".lesson-end-time").val() ?? "--:--");
       }
     });
+  });
+
+  $("#app").off("input autocomplete", ".lesson-time").on("input autocomplete", ".lesson-time", function () {
+    const thisLesson = $(this).closest(".lesson");
+    const startTime = timeToMs(getInputValue(thisLesson.find(".lesson-start-time")))
+    const endTime = timeToMs(getInputValue(thisLesson.find(".lesson-end-time")))
+    thisLesson.find(".lesson-end-time").toggleClass("is-invalid", startTime > endTime)
+    $("#timetable-save").prop("disabled", $(".lesson-end-time").hasClass("is-invalid"));
   });
 
   $("#app").off("click", ".timetable-new-lesson").on("click", ".timetable-new-lesson", function () {
@@ -749,6 +768,7 @@ async function renderTimetable(): Promise<void> {
     $("#timetable-cancel").show();
     unsavedChanges(true);
     $(this).closest(".lesson").remove();
+    $("#timetable-save").prop("disabled", $(".lesson-end-time").hasClass("is-invalid"));
   });
 }
 
@@ -875,7 +895,7 @@ export async function init(): Promise<void> {
 
     $(".cancel-btn").hide();
 
-    $("#pwa-notice").toggle(/iphone|ipad|ipod/i.test(navigator.userAgent) && !isStandalone);
+    $("#pwa-notice").toggle(isIOS && !isStandalone);
 
     let animations = JSON.parse(localStorage.getItem("animations") ?? "true") ?? true;
     $("#animations-check").prop("checked", animations);
@@ -884,6 +904,7 @@ export async function init(): Promise<void> {
       animations = $(this).prop("checked");
       localStorage.setItem("animations", animations);
       $("#animation-calendar-check").prop("disabled", !animations).prop("checked", animations);
+      $("body").attr("data-animations", JSON.stringify(animations));
     });
 
     let animationCalendar = JSON.parse(localStorage.getItem("animation-calendar") ?? "null") ?? animations;
@@ -1016,7 +1037,10 @@ export async function init(): Promise<void> {
             password: $("#change-username-password").val(),
             newUsername: $("#change-username-new-username").val()
           },
-          expectedErrors: [401, 409]
+          expectedErrors: [
+            { status: 401, responseText: "Invalid credentials" },
+            { status: 409, responseText: "Username already exists, please choose another username." }
+          ]
         });
 
         $("#change-username-success-toast").toast("show");
@@ -1108,7 +1132,9 @@ export async function init(): Promise<void> {
             oldPassword: $("#change-password-old").val(),
             newPassword: $("#change-password-new").val()
           },
-          expectedErrors: [401]
+          expectedErrors: [
+            { status: 401, responseText: "Invalid credentials" },
+          ]
         });
         
         $("#change-password-success-toast").toast("show");
@@ -1158,7 +1184,10 @@ export async function init(): Promise<void> {
           body: {
             password: $("#delete-account-password").val()
           },
-          expectedErrors: [401, 409]
+          expectedErrors: [
+            { status: 401, responseText: "Invalid credentials" },
+            { status: 409, responseText: "The account is still an admin in a class, leave the class first" },
+          ]
         });
         
         $("#delete-account-success-toast").toast("show");
@@ -1194,19 +1223,12 @@ export async function init(): Promise<void> {
           },
           queueable: true
         });
-
-        $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-        setTimeout(() => {
-          $("#team-selection-save").text("Speichern").prop("disabled", false);
-        }, 1000);
       }
       else {
         localStorage.setItem("joinedTeamsData", JSON.stringify(newJoinedTeamsData));
-        $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-        setTimeout(() => {
-          $("#team-selection-save").text("Speichern").prop("disabled", false);
-        }, 1000);
       }
+
+      makeButtonShowCheck($("#team-selection-save"), 1000)
     });
 
     // Leave class
@@ -1226,7 +1248,9 @@ export async function init(): Promise<void> {
     $("#leave-class-confirm").on("click", async () => {
       try {
         await ajax("DELETE", `/api/classes/${user.classId}/members/me`, {
-          expectedErrors: [409]
+          expectedErrors: [
+            { status: 409, responseText: "You are the only admin. Please promote another member before leaving or delete the class." }
+          ]
         });
         
         $("#leave-class-success-toast").toast("show");
@@ -1424,10 +1448,7 @@ export async function init(): Promise<void> {
       });
 
       $("#class-members-save-confirm-container, #class-members-save-confirm").hide();
-      $("#class-members-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-      setTimeout(() => {
-        $("#class-members-save").text("Speichern").prop("disabled", false);
-      }, 1000);
+      makeButtonShowCheck($("#class-members-save"), 1000)
     }
 
     $("#class-members-save").on("click", () => {
@@ -1510,10 +1531,7 @@ export async function init(): Promise<void> {
       });
 
       $("#teams-save-confirm-container, #teams-save-confirm").hide();
-      $("#teams-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-      setTimeout(() => {
-        $("#teams-save").text("Speichern").prop("disabled", false);
-      }, 1000);
+      makeButtonShowCheck($("#teams-save"), 1000)
     }
 
     $("#teams-save").on("click", () => {
@@ -1602,10 +1620,7 @@ export async function init(): Promise<void> {
       });
 
       $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
-      $("#event-types-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-      setTimeout(() => {
-        $("#event-types-save").text("Speichern").prop("disabled", false);
-      }, 1000);
+      makeButtonShowCheck($("#event-types-save"), 1000)
     }
 
     $("#app").on("click", "#event-types-example", async () => {
@@ -1674,7 +1689,6 @@ export async function init(): Promise<void> {
         .on("focusout", function () {
           if ($(this).val()?.toString().trim() === "") {
             $(this).addClass("is-invalid");
-            $("#subjects-save").prop("disabled", true);
           }
         });
         
@@ -1723,10 +1737,7 @@ export async function init(): Promise<void> {
       });
 
       $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
-      $("#subjects-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-      setTimeout(() => {
-        $("#subjects-save").text("Speichern").prop("disabled", false);
-      }, 1000);
+      makeButtonShowCheck($("#subjects-save"), 1000)
     }
 
     $("#subjects-save").on("click", () => {
@@ -1783,10 +1794,7 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      $("#timetable-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-      setTimeout(() => {
-        $("#timetable-save").text("Speichern").prop("disabled", false);
-      }, 1000);
+      makeButtonShowCheck($("#timetable-save"), 1000)
     });
 
     res();

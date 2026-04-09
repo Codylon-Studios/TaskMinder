@@ -535,7 +535,7 @@ export const eventService = {
           }
         }
       }`;
-      const css = sass.compileString(scss).css;
+      const css = (await sass.compileStringAsync(scss, {style: "compressed"})).css;
 
       const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, classId.toString());
 

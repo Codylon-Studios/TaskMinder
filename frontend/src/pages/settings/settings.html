@@ -347,9 +347,9 @@
                 </div>
                 <div class="col-12 col-lg" id="class-code-container">
                   <div class="d-flex gap-2 flex-column flex-lg-row mb-2">
-                    <copy-input class="w-50" id="class-code" readonly></copy-input>
+                    <copy-input class="w-100 w-lg-50" id="class-code" readonly></copy-input>
                     <button
-                      class="btn btn-primary w-50 fw-bold"
+                      class="btn btn-primary w-lg-50 fw-bold"
                       data-bs-toggle="modal"
                       data-bs-target="#change-classcode-confirm-modal"
                       id="show-change-classcode"
@@ -359,11 +359,11 @@
                     </button>
                   </div>
                   <div class="d-flex gap-2 flex-column flex-lg-row">
-                    <button class="btn btn-primary w-50 fw-bold" id="invite-copy-link">
+                    <button class="btn btn-primary w-lg-50 fw-bold" id="invite-copy-link">
                       <i class="fa-solid fa-link" aria-hidden="true"></i>
                       Einladungslink kopieren
                     </button>
-                    <button class="btn btn-primary w-50 fw-bold" id="invite-qrcode" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
+                    <button class="btn btn-primary w-lg-50 fw-bold" id="invite-qrcode" data-bs-toggle="modal" data-bs-target="#show-qrcode-modal">
                       <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                       QR-Code anzeigen
                     </button>
@@ -936,11 +936,12 @@
                       </div>
                       <label class="d-flex align-items-center gap-1 justify-content-between">
                         Von
-                        <input class="lesson-start-time form-control form-control-sm w-75" type="time" />
+                        <input class="lesson-time lesson-start-time form-control form-control-sm w-75" type="time" />
                       </label>
-                      <label class="d-flex align-items-center gap-1 justify-content-between">
+                      <label class="d-flex align-items-center gap-1 justify-content-between flex-wrap">
                         Bis
-                        <input class="lesson-end-time form-control form-control-sm w-75" type="time" />
+                        <input class="lesson-time lesson-end-time form-control form-control-sm w-75" type="time" />
+                        <div class="invalid-feedback">Die Endzeit muss nach der Startzeit liegen!</div>
                       </label>
                       <label class="d-flex align-items-center gap-1 justify-content-between">
                         Fach

@@ -17,8 +17,8 @@ import {
   ajax,
   user,
   getInputValue,
-  tryAutocomplete,
   autocomplete,
+  forceAutocomplete,
   getCurrentLesson,
   getNextLessonWithDate,
   checkTeamInputForSuspicious
@@ -499,17 +499,17 @@ async function addHomework(): Promise<void> {
   $("#add-homework-team").val("-1").removeClass("is-autocompleted is-suspicious");
   $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious");
 
-  const currentLesson = await getCurrentLesson();
+  const currentLesson = (await getCurrentLesson())?.lessons[0];
 
   if (currentLesson) {
-    autocomplete($("#add-homework-subject"), currentLesson.lessons[0].subjectId);
+    forceAutocomplete($("#add-homework-subject"), currentLesson.substitution?.subjectId ?? currentLesson.subjectId);
   }
   else {
     $("#add-homework-subject").val("").removeClass("is-autocompleted");
     $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious");
   }
   $("#add-homework-content").val("").trigger("change");
-  autocomplete($("#add-homework-date-assignment"), msToInputDate(Date.now()));
+  forceAutocomplete($("#add-homework-date-assignment"), msToInputDate(Date.now()));
 
   // Disable the actual "add" button, because not all information is given
   $("#add-homework-button").prop("disabled", true);
@@ -754,7 +754,7 @@ export async function init(): Promise<void> {
 
       if (nextLessonWithDate === null) { // "Other" or never in timetable
         $(`#${addOrEdit}-homework-team`).val("-1").removeClass("is-autocompleted is-suspicious");
-        tryAutocomplete($(`#${addOrEdit}-homework-date-submission`), msToInputDate(now.setDate(now.getDate() + 7)));
+        autocomplete($(`#${addOrEdit}-homework-date-submission`), msToInputDate(now.setDate(now.getDate() + 7)));
         $(`#${addOrEdit}-homework-date-submission`).removeClass("is-suspicious").find("~ .autocompleted-feedback")
           .html("Automatisch: Eine Woche");
         return;
@@ -763,7 +763,7 @@ export async function init(): Promise<void> {
       $(`#${addOrEdit}-homework-date-submission ~ .autocompleted-feedback`).html("Automatisch: Die nächste Stunde in <b></b>");
 
       const $submissionDate = $(`#${addOrEdit}-homework-date-submission`);
-      if (tryAutocomplete($submissionDate, msToInputDate(nextLessonWithDate.date.getTime()))) {
+      if (autocomplete($submissionDate, msToInputDate(nextLessonWithDate.date.getTime()))) {
         // The user hasn't decided for a specific submission date
         $submissionDate.find("~ .autocompleted-feedback b").text(selectedSubjectName);
       }
@@ -772,7 +772,7 @@ export async function init(): Promise<void> {
       }
 
       const teamId = nextLessonWithDate.lesson.teamId;
-      tryAutocomplete($(`#${addOrEdit}-homework-team`), nextLessonWithDate.lesson.teamId, "-1");
+      autocomplete($(`#${addOrEdit}-homework-team`), nextLessonWithDate.lesson.teamId, "-1");
       $(`#${addOrEdit}-homework-team`).find("~ .autocompleted-feedback b").text(selectedSubjectName);
       if (teamId === -1) {
         $(`#${addOrEdit}-homework-team`).removeClass("is-autocompleted");
@@ -993,6 +993,36 @@ export async function init(): Promise<void> {
       updateFilters();
       renderHomeworkList();
     });
+    
+    const $filterOffcanvas = $("#filter-offcanvas")
+    const $filterOffcanvasHeader = $("#filter-offcanvas .offcanvas-header")
+
+    let startY = 0;
+    let dragging = false;
+
+    $filterOffcanvasHeader.on("pointerdown", ev => {
+      if (ev.pointerType !== "touch") return
+      startY = ev.clientY ?? 0
+      dragging = true
+      $filterOffcanvas.css("transition", "none")
+    })
+    $filterOffcanvasHeader.on("pointermove", ev => {
+      if (!dragging) return
+      const diff = (ev.clientY ?? 0) - startY
+      if (diff > 0) {
+        $filterOffcanvas.css("transform", `translateY(${diff}px)`)
+      }
+    })
+    $filterOffcanvasHeader.on("pointerup pointercancel", ev => {
+      if (!dragging) return
+      dragging = false;
+      const diff = (ev.clientY ?? 0) - startY
+
+      $filterOffcanvas.css({transition: "transform 0.3s ease-in-out", transform: ""})
+      if (diff > 100) {
+        $filterOffcanvas.offcanvas("hide")
+      }
+    })
 
     res();
   });

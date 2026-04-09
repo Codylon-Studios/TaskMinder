@@ -76,7 +76,7 @@ export async function init(): Promise<void> {
       try {
         const res = await ajax("POST", "/api/classes/join", {
           body: { classCode },
-          expectedErrors: [404]
+          expectedErrors: [{ status: 404, responseText: "Invalid class code" }]
         });
 
         if (user.loggedIn) {

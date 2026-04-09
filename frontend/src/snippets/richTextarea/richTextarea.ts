@@ -695,16 +695,6 @@ function replaceRichTextareas(): void {
     textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
     textarea.toggleClass("rich-textarea-empty", textarea.html() === "");
 
-    const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        if ((entry.contentRect.height ?? 0) >= 120) {
-          textarea.css("height", "auto");
-          textarea.css("height", textarea[0].scrollHeight + 2 + "px");
-        }
-      }
-    });
-    resizeObserver.observe(textarea[0]);
-
     const currentStyles = {
       bold: false,
       underline: false,
