@@ -15,7 +15,8 @@ export const CSPMiddleware = (): RequestHandler => {
         "style-src": ["'self'", "'unsafe-inline'"],
         "font-src": ["'self'"],
         "img-src": ["'self'", "data:"],
-        "object-src": ["'self'"],
+        "object-src": ["'self'", "blob:"],
+        "frame-src": ["'self'", "blob:"],
         "frame-ancestors": ["'self'"],
         // dont upgrade to HTTPS if in development or staging
         "upgrade-insecure-requests": process.env.NODE_ENV === "PRODUCTION" ? [] : null
