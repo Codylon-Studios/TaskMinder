@@ -426,7 +426,7 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
           queueable: true,
           expectedErrors: [
             { status: 413, responseText: "Upload limit reached: this class already has the maximum number of files allowed." },
-            { status: 413, responseText: "Class storage quota will be exceeded" }
+            { status: 413, responseText: "Class storage quota will be exceeded" },
           ]
         });
         
@@ -441,10 +441,7 @@ async function addUpload(uploadRequestId?: number): Promise<void> {
       }
       catch (e) {
         const err = e as AjaxError;
-        if (err.status === 400 && err.responseText === "MIME-Type not supported") {
-          $("#unsupported-mime-type-toast").toast("show");
-        }
-        else if (err.status === 413) {
+        if (err.status === 413) {
           if (err.responseText === "Upload limit reached: this class already has the maximum number of files allowed.") {
             $("#file-limit-exceeded-toast").toast("show");
           }
@@ -480,10 +477,10 @@ async function getFileAndUrl(fileMetaDataId: number): Promise<{file: File, blobU
       const blobUrl = URL.createObjectURL(blob);
       const filename = getFilenameFromContentDisposition(response.headers.get("content-disposition") ?? "Datei") ?? "Datei";
       const file = new File([blob], filename, { type: blob.type });
-      return {file, blobUrl};
+      return {file, blobUrl}
     }
     else {
-      return null;
+      return null
     }
   }
   catch {
@@ -499,16 +496,17 @@ async function viewUpload(uploadId: number): Promise<void> {
     $("#view-upload-nav-back").prop("disabled", fileNumber === 0);
     $("#view-upload-nav-next").prop("disabled", upload.filesCount === fileNumber + 1);
 
-    $("#view-upload-download").off("click").addClass("disabled");
-    $("#view-upload-open").attr("href", null).addClass("disabled");
+    $("#view-upload-download").off("click").addClass("disabled")
+    $("#view-upload-open").attr("href", null).addClass("disabled")
 
     $("#view-upload-loading").show();
     $("#view-upload-object").hide();
     $("#view-upload-error").hide();
+    $("#view-upload-unavailable").hide();
 
-    const fileMetaDataId = upload.files[fileNumber].fileMetaDataId;
+    const fileMetaDataId = upload.files[fileNumber].fileMetaDataId
     const route = `/api/uploads/${fileMetaDataId}`;
-    const fileAndUrl = await getFileAndUrl(fileMetaDataId);
+    const fileAndUrl = await getFileAndUrl(fileMetaDataId)
 
     if (fileAndUrl === null) {
       $("#view-upload-loading").hide();
@@ -535,11 +533,11 @@ async function viewUpload(uploadId: number): Promise<void> {
 
       $("#view-upload-download").removeClass("disabled").on("click", ev => {
         if (navigator.canShare?.({ files: [fileAndUrl.file] })) {
-          ev.preventDefault();
+          ev.preventDefault()
           navigator.share({ files: [fileAndUrl.file] });
         }
       });
-      $("#view-upload-download").attr("href", fileAndUrl.blobUrl).attr("download", fileAndUrl.file.name);
+      $("#view-upload-download").attr("href", fileAndUrl.blobUrl).attr("download", fileAndUrl.file.name)
 
       $("#view-upload-open").removeClass("disabled").attr("href", route + "?action=preview");
     }
@@ -616,8 +614,8 @@ async function editUpload(uploadId: number): Promise<void> {
 
   const files: File[] = [];
   for (const f of upload.files) {
-    const fileAndUrl = await getFileAndUrl(f.fileMetaDataId);
-    if (fileAndUrl !== null) files.push(fileAndUrl.file);
+    const fileAndUrl = await getFileAndUrl(f.fileMetaDataId)
+    if (fileAndUrl !== null) files.push(fileAndUrl.file)
   }
   ($("#edit-upload-files")[0] as FileInput).files = files;
   $("#edit-upload-description").val(upload.uploadDescription ?? "").trigger("change");
@@ -658,7 +656,7 @@ async function editUpload(uploadId: number): Promise<void> {
           queueable: true,
           expectedErrors: [
             { status: 413, responseText: "Upload limit reached: this class already has the maximum number of files allowed." },
-            { status: 413, responseText: "Class storage quota will be exceeded" }
+            { status: 413, responseText: "Class storage quota will be exceeded" },
           ]
         });
         
@@ -667,10 +665,7 @@ async function editUpload(uploadId: number): Promise<void> {
       }
       catch (e) {
         const err = e as AjaxError;
-        if (err.status === 400 && err.responseText === "MIME-Type not supported") {
-          $("#unsupported-mime-type-toast").toast("show");
-        }
-        else if (err.status === 413) {
+        if (err.status === 413) {
           if (err.responseText === "Upload limit reached: this class already has the maximum number of files allowed.") {
             $("#file-limit-exceeded-toast").toast("show");
           }
@@ -812,7 +807,7 @@ export async function init(): Promise<void> {
     $(".add-upload-input").on("input", function () {
       const name = $("#add-upload-name").val()?.toString().trim();
       const type = $("#add-upload-type").val();
-      const fileInput = $("#add-upload-files")[0] as FileInput;
+      const fileInput = $("#add-upload-files")[0] as FileInput
 
       $("#add-upload-button").prop("disabled", name === "" || type === null || !fileInput.isValid());
     });
@@ -823,7 +818,7 @@ export async function init(): Promise<void> {
     $(".edit-upload-input").on("input", function () {
       const name = $("#edit-upload-name").val()?.toString().trim();
       const type = $("#edit-upload-type").val();
-      const fileInput = $("#edit-upload-files")[0] as FileInput;
+      const fileInput = $("#edit-upload-files")[0] as FileInput
 
       $("#edit-upload-button").prop("disabled", name === "" || type === null || !fileInput.isValid());
     });
@@ -959,35 +954,35 @@ export async function init(): Promise<void> {
       renderUploadList();
     });
     
-    const $filterOffcanvas = $("#filter-offcanvas");
-    const $filterOffcanvasHeader = $("#filter-offcanvas .offcanvas-header");
+    const $filterOffcanvas = $("#filter-offcanvas")
+    const $filterOffcanvasHeader = $("#filter-offcanvas .offcanvas-header")
 
     let startY = 0;
     let dragging = false;
 
     $filterOffcanvasHeader.on("pointerdown", ev => {
-      if (ev.pointerType !== "touch") return;
-      startY = ev.clientY ?? 0;
-      dragging = true;
-      $filterOffcanvas.css("transition", "none");
-    });
+      if (ev.pointerType !== "touch") return
+      startY = ev.clientY ?? 0
+      dragging = true
+      $filterOffcanvas.css("transition", "none")
+    })
     $filterOffcanvasHeader.on("pointermove", ev => {
-      if (!dragging) return;
-      const diff = (ev.clientY ?? 0) - startY;
+      if (!dragging) return
+      const diff = (ev.clientY ?? 0) - startY
       if (diff > 0) {
-        $filterOffcanvas.css("transform", `translateY(${diff}px)`);
+        $filterOffcanvas.css("transform", `translateY(${diff}px)`)
       }
-    });
+    })
     $filterOffcanvasHeader.on("pointerup pointercancel", ev => {
-      if (!dragging) return;
+      if (!dragging) return
       dragging = false;
-      const diff = (ev.clientY ?? 0) - startY;
+      const diff = (ev.clientY ?? 0) - startY
 
-      $filterOffcanvas.css({transition: "transform 0.3s ease-in-out", transform: ""});
+      $filterOffcanvas.css({transition: "transform 0.3s ease-in-out", transform: ""})
       if (diff > 100) {
-        $filterOffcanvas.offcanvas("hide");
+        $filterOffcanvas.offcanvas("hide")
       }
-    });
+    })
 
     $("#app").on("click", "#show-add-upload-button", () => {
       addUpload();

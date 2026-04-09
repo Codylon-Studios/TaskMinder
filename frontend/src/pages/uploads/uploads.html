@@ -190,13 +190,9 @@
 
                 <div class="mb-3">
                   <label for="add-upload-files" class="form-label">Wähle Dateien zum Hochladen aus</label>
-                  <file-input
-                    id="add-upload-files"
-                    class="add-upload-input"
-                    accept="application/pdf, image/jpeg, image/png, text/plain"
-                    accept-string="PDF, JPG, PNG, TXT"
-                    max-number="20"
-                  ></file-input>
+                  <file-input id="add-upload-files" class="add-upload-input"
+                    accept="application/pdf, image/jpeg, image/png, text/plain" accept-string="PDF, JPG, PNG, TXT" max-number="20">
+                  </file-input>
                 </div>
 
                 <div class="mb-3">
@@ -246,13 +242,9 @@
 
                 <div class="mb-3">
                   <label for="edit-upload-files" class="form-label">Wähle Dateien zum Hochladen aus</label>
-                  <file-input
-                    id="edit-upload-files"
-                    class="edit-upload-input mt-2"
-                    accept="application/pdf, image/jpeg, image/png, text/plain"
-                    accept-string="PDF, JPG, PNG, TXT"
-                    max-number="20"
-                  ></file-input>
+                  <file-input id="edit-upload-files" class="edit-upload-input mt-2"
+                    accept="application/pdf, image/jpeg, image/png, text/plain" accept-string="PDF, JPG, PNG, TXT" max-number="20">
+                  </file-input>
                 </div>
 
                 <div class="mb-3">
@@ -313,7 +305,7 @@
 
                 <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 m-2" id="view-upload-unavailable">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-                  <span class="d-block">Du bist offline oder es finden Wartungsarbeiten statt, du kannst währenddessen keine Dateien ansehen.</span>
+                  <span class="d-block">Die Datei kann nicht angezeigt werden, da du offline bist oder Wartungsarbeiten stattfinden.</span>
                 </div>
                 <div class="form-text" id="view-upload-first-page-note">Eventuell wird nur die erste Seite des PDFs angezeigt.</div>
 
@@ -358,14 +350,6 @@
               <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
             </div>
             <div class="toast-body">Die Dateien wurden hochgeladen. Es kann kurz dauern, bis sie sichtbar sind.</div>
-          </div>
-          <div id="unsupported-mime-type-toast" class="toast">
-            <div class="toast-progress-bar bg-danger"></div>
-            <div class="toast-header bg-danger text-body-bg">
-              <b class="me-auto">Nicht unterstütztes Format</b>
-              <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-            </div>
-            <div class="toast-body">Das Dateiformat ist nicht unterstützt. Kontaktiere uns, wenn dir eine Unterstützung wichtig ist.</div>
           </div>
           <div id="storage-limit-exceeded-toast" class="toast">
             <div class="toast-progress-bar bg-danger"></div>
