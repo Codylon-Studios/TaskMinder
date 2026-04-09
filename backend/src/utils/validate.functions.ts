@@ -3,15 +3,14 @@ import { CACHE_KEY_PREFIXES, cacheExpiration, generateCacheKey, redisClient } fr
 import prisma from "../config/prisma.js";
 import logger from "../config/logger.js";
 import { Session, SessionData } from "express-session";
-import { randomBytes } from "crypto";
+import { randomInt } from "crypto";
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 function generateRandomBase62String(length = 20): string {
-  const bytes = randomBytes(length);
   let result = "";
   for (let i = 0; i < length; i++) {
-    result += BASE62.charAt(bytes[i] % BASE62.length);
+    result += BASE62[randomInt(0, BASE62.length)];
   }
   return result;
 }
