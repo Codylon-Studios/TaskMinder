@@ -12,7 +12,7 @@ Follow the instructions in the [TaskMinder Docs Development Section](docs.taskmi
 
 ## How to Contribute
 
-**Reporting Bugs** — Search [existing issues](https://github.com/taskminder/taskminder/issues) before opening a new one. Include a clear title, steps to reproduce, expected vs. actual behavior, your environment, and any relevant screenshots or logs.
+**Reporting Bugs** — Search [existing issues](https://github.com/TaskMinder/TaskMinder/issues) before opening a new one. Include a clear title, steps to reproduce, expected vs. actual behavior, your environment, and any relevant screenshots or logs.
 
 **Suggesting Features** — Check the issue tracker and pinned Roadmap issue first. Describe the problem, your proposed solution, and any alternatives. For larger changes, open an issue before writing code.
 

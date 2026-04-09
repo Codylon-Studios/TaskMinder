@@ -4,7 +4,7 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.5] - 2026-04-05
+## \[v2.2.5] - 2026-04-11
 
 ### Breaking Changes
 * chore(db): migrate postgresql@14 to postgresql@18
@@ -33,7 +33,7 @@ All changes are grouped by type and the latest version appears first.
 * fix(search): search in plaintext not styled rich textarea text
 
 ### Changed
-* feat(upload): <file-input> as pretty wrapper for drag&drop and browse file input with preview list
+* feat(upload): file-input as pretty wrapper for drag&drop and browse file input with preview list
 * chore(scss): compressed scss for event type styles
 * chore(frontend/cache): better caching for event type styles and files
 * chore(frontend/logic): guess new subjectId for substitution
@@ -42,7 +42,6 @@ All changes are grouped by type and the latest version appears first.
 * chore(logging): improve error logs on server
 * chore(ui): improve frontend class settings on mobile
 * chore(upload/loading): add upload loading animation
-* chore(csp): remove extra CSP header validation .env variable
 * chore(substitution): change DSBMobile fetch to weekday peak time prefetch
 * chore(api): rename and change method of API routes
 * chore(password): bump password requirements

@@ -49,6 +49,7 @@ const __dirname = path.dirname(__filename);
 
 const sessionSecret = process.env.SESSION_SECRET;
 const proxyHopRaw = process.env.PROXY_HOP;
+const deactivateCSP = process.env.DEACTIVATE_CSP;
 
 if (!sessionSecret) {
   logger.error("SESSION_SECRET is undefined! Please define in the .env file.");
@@ -57,6 +58,11 @@ if (!sessionSecret) {
 
 if (!proxyHopRaw || !Number.isInteger(Number(proxyHopRaw)) || Number(proxyHopRaw) < 0) {
   logger.error("PROXY_HOP is undefined or/and must be an positive integer. Please define in the .env file.");
+  process.exit(1);
+}
+
+if (!deactivateCSP) {
+  logger.error("DEACTIVATE_CSP is undefined! Please define in the .env file.");
   process.exit(1);
 }
 
@@ -72,7 +78,10 @@ const globalLimiter = rateLimit({
   message: { status: 429, message: "Too many requests, please slow down." }
 });
 app.use(globalLimiter);
-app.use(CSPMiddleware());
+
+if(!deactivateCSP){
+  app.use(CSPMiddleware());
+}
 
 app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));

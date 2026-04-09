@@ -46,6 +46,7 @@ export class RichInput extends HTMLElement {
   }
 
   set value(val: string) {
+    if (!this.finalInitialized) return;
     this.$input.val(val);
   }
 

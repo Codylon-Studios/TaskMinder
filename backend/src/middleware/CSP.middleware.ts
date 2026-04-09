@@ -6,20 +6,18 @@ export const CSPMiddleware = (): RequestHandler => {
     contentSecurityPolicy: {
       directives: {
         "default-src": ["'self'"],
-        "script-src": process.env.NODE_ENV === "PRODUCTION" ? [
+        "script-src": [
           "'self'",
           "'sha256-QFw+QUzHJldIS6KPHm5fwXGah0NptK7NyfaX02zG9nc='",
           "'sha256-3fZXNfKWLWGx+X4+QnkmeW5Tkw85iCAvVLYdxv26qD4='"
-        ] : ["'self'", "'unsafe-inline'"],
+        ],
         "connect-src": ["'self'", "wss://*"],
         "style-src": ["'self'", "'unsafe-inline'"],
         "font-src": ["'self'"],
         "img-src": ["'self'", "data:"],
         "object-src": ["'self'", "blob:"],
         "frame-src": ["'self'", "blob:"],
-        "frame-ancestors": ["'self'"],
-        // dont upgrade to HTTPS if in development or staging
-        "upgrade-insecure-requests": process.env.NODE_ENV === "PRODUCTION" ? [] : null
+        "frame-ancestors": ["'self'"]
       }
     },
     referrerPolicy: {

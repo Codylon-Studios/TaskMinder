@@ -96,6 +96,8 @@ cd TaskMinder
 
 Follow **Step 7** of `DEPLOYMENT.md` to create the `docker_secrets/` folder and all required `.txt` files.
 
+Set `deactivate_csp.txt` to the value of true.
+
 ### Staging Environment File
 
 Create `.env.staging` in the project root:

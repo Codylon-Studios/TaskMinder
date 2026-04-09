@@ -22,6 +22,9 @@ export REDIS_PORT
 SESSION_SECRET="$(cat /run/secrets/session_secret)"
 export SESSION_SECRET
 
+DEACTIVATE_CSP=="$(cat /run/secrets/deactivate_csp)"
+export DEACTIVATE_CSP
+
 DATABASE_URL="$(cat /run/secrets/database_url)"
 export DATABASE_URL
 
