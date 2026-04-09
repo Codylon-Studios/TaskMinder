@@ -17,7 +17,7 @@ Whether you are setting up TaskMinder for local development, self-hosting it for
 
 - **Production deployment**: Deploy TaskMinder in production with the [deployment guide](./v2/deployment.md).
 
-You can explore the project on GitHub: [https://github.com/Taskminder/TaskMinder](https://github.com/Taskminder/TaskMinder)
+You can explore the project on GitHub: [https://github.com/Taskminder/TaskMinder](https://github.com/TaskMinder/TaskMinder)
 
 If you want a quick preview, visit: [https://taskminder.de](https://taskminder.de)
 

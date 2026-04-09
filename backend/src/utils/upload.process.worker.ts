@@ -66,6 +66,7 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
   ]);
 
   try {
+    // check if clamdscan (ClamAV) is installed on the system
     await execFileAsync("which", ["clamdscan"]);
   }
   catch {
@@ -74,6 +75,8 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
   }
 
   try {
+    // this checks if clamdscan is really running on at least development machines
+    // in production, this app is executed in docker compose which installs and starts clamAV
     await execFileAsync("clamdscan", ["--ping", "5"]);
     logger.info("ClamAV (clamdscan) enabled for worker");
     clamavEnabled = true;

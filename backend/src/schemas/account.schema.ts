@@ -83,7 +83,11 @@ export const checkUsernameSchema = z.object({
   // omit body due to GET request
   params: z.object({}),
   query: z.object({
-    username: z.string().trim().min(4)
+    // old usernames were always checked with checkUsername at login/register
+    // so adding checkUsername check here does not hurt anything
+    username: z.string().refine(checkUsername, {
+      message: "Username must be 4-20 characters, letters, digits, or underscore only"
+    })
   })
 });
 

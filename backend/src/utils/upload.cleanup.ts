@@ -217,37 +217,34 @@ export async function performUploadCleanup(
 }
 
 const cleanupStaleFilesInDir = async (dirPath: string, maxAgeMs: number): Promise<number> => {
-  let removedCount = 0;
-
   let entries: string[];
   try {
     entries = await fs.readdir(dirPath);
-  }
+  } 
   catch (error) {
     logger.warn(`Failed to read stale upload directory ${dirPath}: ${error}`);
-    return removedCount;
+    return 0;
   }
 
   const now = Date.now();
 
-  await Promise.all(entries.map(async entry => {
+  const results = await Promise.all(entries.map(async (entry): Promise<number> => {
     const fullPath = path.join(dirPath, entry);
     try {
       const stats = await fs.stat(fullPath);
-      if (!stats.isFile()) {
-        return;
-      }
-      if (now - stats.mtimeMs > maxAgeMs) {
+      if (stats.isFile() && (now - stats.mtimeMs > maxAgeMs)) {
         await fs.rm(fullPath, { force: true });
-        removedCount += 1;
+        return 1; // Success
       }
-    }
+    } 
     catch (error) {
       logger.warn(`Failed to cleanup stale upload file ${fullPath}: ${error}`);
     }
+    return 0; // Did not remove
   }));
 
-  return removedCount;
+  // Sum the array of 1s and 0s
+  return results.reduce((acc, val) => acc + val, 0);
 };
 
 export const cleanupStaleUploadFiles = async (maxAgeMs = STALE_UPLOAD_FILE_MAX_AGE_MS): Promise<void> => {

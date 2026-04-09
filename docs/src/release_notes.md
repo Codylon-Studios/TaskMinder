@@ -14,7 +14,7 @@ All changes are grouped by type and the latest version appears first.
 * feat(frontend): add caching and offline mode
 * feat(maintenance): add maintenance mode
 * feat(animation): add animations, add specific calendar animation
-* feat(warnings): add suspicious settings warinings
+* feat(warnings): add suspicious settings warnings
 * feat(upload): add upload description and request new uploads
 * feat(upload): edit files
 * feat(homework/event/upload): add homework/event/upload pinning
@@ -33,6 +33,12 @@ All changes are grouped by type and the latest version appears first.
 * fix(search): search in plaintext not styled rich textarea text
 
 ### Changed
+* feat(upload): <file-input> as pretty wrapper for drag&drop and browse file input with preview list
+* chore(scss): compressed scss for event type styles
+* chore(frontend/cache): better caching for event type styles and files
+* chore(frontend/logic): guess new subjectId for substitution
+* chore(ux): copy unknown error server response & better request timeout error toast
+* chore(ui): better appearance of substituted breaks
 * chore(logging): improve error logs on server
 * chore(ui): improve frontend class settings on mobile
 * chore(upload/loading): add upload loading animation
@@ -52,6 +58,8 @@ All changes are grouped by type and the latest version appears first.
 * chore(sitemap): update sitemap values
 * chore(migration): add migrate upload metadata date script
 * chore(package): update package.json version to v2.2.5, bump packages, update CI
+* chore(frontend): several bugfixes and smaller improvements
+* chore(backend): several bugfixes and smaller improvements
 
 ---
 

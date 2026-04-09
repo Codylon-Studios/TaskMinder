@@ -203,7 +203,7 @@ gzip_types
 	text/xml 
 	application/xml 
 	application/xml+rss 
-	text/javascript
+	text/javascript;
 
 
 ##

@@ -58,6 +58,11 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_DB_FILE: /run/secrets/db_name
     volumes:
+      # postgres 18+, mounts to /var/lib/postgresql (NOT ..../data).
+      # official PG18 image changed its internal PGDATA to /var/lib/postgresql/18/docker.
+      # mounting the parent directory allows for version-specific subdirectories, 
+      # which enables easier major-version upgrades using 'pg_upgrade --link'.
+      # for more information, see https://hub.docker.com/_/postgres#pgdata
       - postgres-data:/var/lib/postgresql
       - ./db-backups:/backups 
 
