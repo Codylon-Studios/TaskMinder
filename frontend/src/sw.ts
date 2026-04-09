@@ -143,7 +143,7 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
         return await fetch(req);
       }
       catch {
-        return new Response(`Fetch failed for ${req.method} ${url}`, { status: 503 })
+        return new Response(`Fetch failed for ${req.method} ${url}`, { status: 503 });
       }
     }
 
@@ -181,7 +181,7 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
       }
       catch {
         const cached = await cache.match(req);
-        return cached || new Response(`Fetch failed for ${req.method} ${url}`, { status: 503 })
+        return cached || new Response(`Fetch failed for ${req.method} ${url}`, { status: 503 });
       }
     }
   }

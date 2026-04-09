@@ -103,8 +103,8 @@ export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promi
 
     if (pushHistory ?? true) {
       if (isStandalone) {
-         // Simulate app in pwa because now the user can swipe from the complete side
-         // to navigate with the bottombar (instead of history navigation)
+        // Simulate app in pwa because now the user can swipe from the complete side
+        // to navigate with the bottombar (instead of history navigation)
         globalThis.history.replaceState({}, "", resUrl + hash);
       }
       else {

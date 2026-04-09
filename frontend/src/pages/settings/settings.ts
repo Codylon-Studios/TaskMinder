@@ -729,9 +729,9 @@ async function renderTimetable(): Promise<void> {
 
   $("#app").off("input autocomplete", ".lesson-time").on("input autocomplete", ".lesson-time", function () {
     const thisLesson = $(this).closest(".lesson");
-    const startTime = timeToMs(getInputValue(thisLesson.find(".lesson-start-time")))
-    const endTime = timeToMs(getInputValue(thisLesson.find(".lesson-end-time")))
-    thisLesson.find(".lesson-end-time").toggleClass("is-invalid", startTime > endTime)
+    const startTime = timeToMs(getInputValue(thisLesson.find(".lesson-start-time")));
+    const endTime = timeToMs(getInputValue(thisLesson.find(".lesson-end-time")));
+    thisLesson.find(".lesson-end-time").toggleClass("is-invalid", startTime > endTime);
     $("#timetable-save").prop("disabled", $(".lesson-end-time").hasClass("is-invalid"));
   });
 
@@ -1133,7 +1133,7 @@ export async function init(): Promise<void> {
             newPassword: $("#change-password-new").val()
           },
           expectedErrors: [
-            { status: 401, responseText: "Invalid credentials" },
+            { status: 401, responseText: "Invalid credentials" }
           ]
         });
         
@@ -1186,7 +1186,7 @@ export async function init(): Promise<void> {
           },
           expectedErrors: [
             { status: 401, responseText: "Invalid credentials" },
-            { status: 409, responseText: "The account is still an admin in a class, leave the class first" },
+            { status: 409, responseText: "The account is still an admin in a class, leave the class first" }
           ]
         });
         
@@ -1228,7 +1228,7 @@ export async function init(): Promise<void> {
         localStorage.setItem("joinedTeamsData", JSON.stringify(newJoinedTeamsData));
       }
 
-      makeButtonShowCheck($("#team-selection-save"), 1000)
+      makeButtonShowCheck($("#team-selection-save"), 1000);
     });
 
     // Leave class
@@ -1448,7 +1448,7 @@ export async function init(): Promise<void> {
       });
 
       $("#class-members-save-confirm-container, #class-members-save-confirm").hide();
-      makeButtonShowCheck($("#class-members-save"), 1000)
+      makeButtonShowCheck($("#class-members-save"), 1000);
     }
 
     $("#class-members-save").on("click", () => {
@@ -1531,7 +1531,7 @@ export async function init(): Promise<void> {
       });
 
       $("#teams-save-confirm-container, #teams-save-confirm").hide();
-      makeButtonShowCheck($("#teams-save"), 1000)
+      makeButtonShowCheck($("#teams-save"), 1000);
     }
 
     $("#teams-save").on("click", () => {
@@ -1620,7 +1620,7 @@ export async function init(): Promise<void> {
       });
 
       $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
-      makeButtonShowCheck($("#event-types-save"), 1000)
+      makeButtonShowCheck($("#event-types-save"), 1000);
     }
 
     $("#app").on("click", "#event-types-example", async () => {
@@ -1737,7 +1737,7 @@ export async function init(): Promise<void> {
       });
 
       $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
-      makeButtonShowCheck($("#subjects-save"), 1000)
+      makeButtonShowCheck($("#subjects-save"), 1000);
     }
 
     $("#subjects-save").on("click", () => {
@@ -1794,7 +1794,7 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      makeButtonShowCheck($("#timetable-save"), 1000)
+      makeButtonShowCheck($("#timetable-save"), 1000);
     });
 
     res();

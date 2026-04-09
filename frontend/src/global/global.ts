@@ -36,7 +36,7 @@ export const lastCommaRegex = /,(?!.*,)/;
 export const weekDaysSo = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 export const weekDaysMo = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 export const isStandalone = globalThis.matchMedia("(display-mode: standalone)").matches;
-export const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+export const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
@@ -312,14 +312,14 @@ export function $cloneTemplate(selector: string, settings?: {id?: string, dataId
 }
 
 export function makeButtonShowCheck(btn: JQuery<HTMLElement>, duration: number): void {
-  const html = btn.html()
+  const html = btn.html();
 
-  btn.css({ width: btn.css("width"), height: btn.css("height") })
+  btn.css({ width: btn.css("width"), height: btn.css("height") });
   btn.html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
 
   setTimeout(() => {
     btn.html(html).prop("disabled", false);
-    btn.css({ width: "", height: "" })
+    btn.css({ width: "", height: "" });
   }, duration);
 }
 
@@ -458,7 +458,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
             matchesLessonNumber(l.lessonNumber, substitution.lesson)
             && (l.teacherNameSubstitution.includes(substitution.teacherOld) || l.subjectId === -1)
           ) {
-            const substitutionSubjectId = currentSubjectData.find(s => s.subjectNameSubstitution?.includes(substitution.subject))?.subjectId ?? null
+            const substitutionSubjectId = currentSubjectData.find(s => s.subjectNameSubstitution?.includes(substitution.subject))?.subjectId ?? null;
             return {
               ...l,
               substitution: {
@@ -1106,23 +1106,23 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
       else {
         $("#unknown-error-toast").toast("show");
         $("#unknown-error-toast-copy").off("click").on("click", async function () {
-          let textToCopy = 
+          const textToCopy = 
             `Fetching ${method} ${url} returned an unexpected error: ${res.status} ${res.statusText}\n\n` +
-            `Request body:\n` +
+            "Request body:\n" +
             await req.clone().text() + "\n\n" +
-            `Response body:\n` +
-            await res.clone().text() + "\n\n"
+            "Response body:\n" +
+            await res.clone().text() + "\n\n";
             
           try {
             await navigator.clipboard.writeText(textToCopy);
             
-            makeButtonShowCheck($(this), 1000)
+            makeButtonShowCheck($(this), 1000);
             setTimeout(() => {
               $("#unknown-error-toast").toast("hide");
-            }, 1000)
+            }, 1000);
           }
           catch {}
-        })
+        });
         throw error;
       }
     }

@@ -55,47 +55,47 @@ $(".bottombar-link").on("click", function() {
 
 let startX = 0;
 let startY = 0;
-let startTime = 0
+let startTime = 0;
 let dragging = false;
 let startSide: "left" | "right";
 let endSide: "left" | "right";
 
 $(document).on("pointerdown", ev => {
-  if (ev.pointerType !== "touch") return
-  if (screen.width / window.innerWidth !== 1) return
+  if (ev.pointerType !== "touch") return;
+  if (screen.width / window.innerWidth !== 1) return;
   if ($(".modal, .offcanvas").is(".show")) return;
 
-  startTime = Date.now()
-  startX = ev.clientX ?? 0
-  startY = ev.clientY ?? 0
+  startTime = Date.now();
+  startX = ev.clientX ?? 0;
+  startY = ev.clientY ?? 0;
 
   if (startX < window.innerWidth * 0.2) {
-    startSide = "left"
-    endSide = "right"
+    startSide = "left";
+    endSide = "right";
   }
   else if (startX > window.innerWidth * 0.8) {
-    startSide = "right"
-    endSide = "left"
+    startSide = "right";
+    endSide = "left";
   }
   else return;
 
-  const $currentLink = $(".bottombar .row:visible .bottombar-current-link")
-  const $navigatedToLink = { left: $currentLink.prev(), right: $currentLink.next()}[startSide]
+  const $currentLink = $(".bottombar .row:visible .bottombar-current-link");
+  const $navigatedToLink = { left: $currentLink.prev(), right: $currentLink.next()}[startSide];
 
-  if ($navigatedToLink.length === 0) return
+  if ($navigatedToLink.length === 0) return;
 
   dragging = true;
 
-  $(".bottombar-overlay").css("transition", "")
+  $(".bottombar-overlay").css("transition", "");
   $(".bottombar-overlay i").attr("class", $navigatedToLink.find("i").attr("class") + " fs-1");
   $(".bottombar-overlay span").text($navigatedToLink.find("span").text());
-})
+});
 
 $(document).on("pointermove", ev => {
-  if (!dragging) return
+  if (!dragging) return;
 
-  const posX = ev.clientX ?? 0
-  const posY = ev.clientY ?? 0
+  const posX = ev.clientX ?? 0;
+  const posY = ev.clientY ?? 0;
   const diffX = posX - startX;
   const diffY = posY - startY;
 
@@ -106,15 +106,15 @@ $(document).on("pointermove", ev => {
       [endSide]: endSide === "left" ? posX : (globalThis.innerWidth - posX)
     }).show();
   }
-})
+});
 
 $(document).on("pointerup pointercancel", async ev => {
-  if (!dragging) return
+  if (!dragging) return;
   dragging = false;
 
   async function changeSite(): Promise<void> {
-    const $currentLink = $(".bottombar .row:visible .bottombar-current-link")
-    const $navigatedToLink = { left: $currentLink.prev(), right: $currentLink.next()}[startSide]
+    const $currentLink = $(".bottombar .row:visible .bottombar-current-link");
+    const $navigatedToLink = { left: $currentLink.prev(), right: $currentLink.next()}[startSide];
     const loadingBarMod = await import("../loadingBar/loadingBar.js");
     await loadingBarMod.replaceSitePJAX($navigatedToLink.attr("href") ?? siteName);
   }
@@ -122,27 +122,27 @@ $(document).on("pointerup pointercancel", async ev => {
     return Math.abs(diffX) > (window.innerWidth * 0.4) || (Math.abs(diffX) > (window.innerWidth * 0.2) && timePassed < 500);
   }
   
-  const timePassed = Date.now() - startTime
+  const timePassed = Date.now() - startTime;
   const diffX = (ev.clientX ?? 0) - startX;
 
-  $(".bottombar-overlay").css("transition", "0.3s ease-in-out")
+  $(".bottombar-overlay").css("transition", "0.3s ease-in-out");
   if (hasBeenDraggedEnough()) {
     $(".bottombar-overlay").css({
       opacity: 1,
       [endSide]: 0
-    })
+    });
 
-    await changeSite()
+    await changeSite();
 
     $(".bottombar-overlay").css({ opacity: 0 });
     setTimeout(() => {
       $(".bottombar-overlay").hide();
-    }, 300)
+    }, 300);
   }
   else {
     $(".bottombar-overlay").css({
       opacity: 0,
       [endSide]: "100%"
-    })
+    });
   }
-})
+});
