@@ -20,7 +20,6 @@ All changes are grouped by type and the latest version appears first.
 * feat(homework/event/upload): add homework/event/upload pinning
 * chore(homework): add "later" section
 * chore(ui): show breaks in the timetable and correctly display them (respect events/substitutions)
-* chore(docs): add staging documentation and setup
 
 ### Fixed
 * fix(rate-limit): proxy setting and update nginx.config

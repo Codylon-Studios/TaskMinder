@@ -153,8 +153,6 @@ or
 nano nginx.config
 ```
 
-Next, remove all `server` blocks that use `listen 443`—this is necessary to let Certbot handle SSL configuration properly. Keep only the `listen 80` block for now.
-
 ### Install Certbot and Obtain SSL Certificates
 
 Install Certbot and its NGINX plugin:
@@ -169,7 +167,7 @@ Run Certbot to obtain SSL certificates (replace `example.com` and subdomains wit
 sudo certbot -d example.com -d www.example.com -d monitoring.example.com
 ```
 
-Certbot will automatically update the configuration file at `/etc/nginx/sites-available/taskminder`. **Delete this file**, as you’ll be using your custom config instead.
+Certbot will automatically update the configuration file at `/etc/nginx/sites-available/default`. Delete this file, as you’ll be using your custom config instead. Also, delete the symlink: `sudo rm /etc/nginx/sites-enabled/default`
 
 Now that you know the location and filenames of the generated certificates, update your original `nginx.config` at `/opt/TaskMinder/nginx.config`. Replace the certificate paths with the correct ones provided by Certbot.
 
@@ -181,31 +179,9 @@ Open the main nginx configuration file:
 sudo nano /etc/nginx/nginx.conf
 ```
 
-Inside the `http { } block`, delete the (eventually commented out gzip block) and replace it with the following lines:
+Inside the `http { } block`, comment out all related gzip lines, as we will be using it for compression work. Furthermore, add this line in the http block:
 
 ```bash
-##
-# Gzip Settings
-##
-
-gzip on;
-
-gzip_vary on;
-gzip_proxied any;
-gzip_comp_level 6;
-gzip_buffers 16 8k;
-gzip_http_version 1.1;
-gzip_types 
-	text/plain 
-	text/css 
-	application/json 
-	application/javascript 
-	text/xml 
-	application/xml 
-	application/xml+rss 
-	text/javascript;
-
-
 ##
 # Lua Maintenance Flag Setting
 ##
@@ -308,13 +284,13 @@ mkdir docker_secrets
 mkdir db-backups
 ```
 
-Before starting the application, create the following **text files inside the `docker_secrets/` folder**. These files are used as Docker secrets for configuration:
+Before starting the application, create the following text files inside the `docker_secrets/` folder. These files are used as Docker secrets for configuration:
 
 | **Filename**                   | **Description**                                                                                                |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `db_name.txt`                  | Name of the PostgreSQL database.                                                                               |
 | `db_password.txt`              | Password for the PostgreSQL database user.                                                                     |
-| `db_host.txt`                  | Host for the database, usually postgres when running in docker.                                                |
+| `db_host.txt`                  | Host for the database, usually `postgres` when running in docker.                                              |
 | `db_user.txt`                  | PostgreSQL database username.                                                                                  |
 | `redis_port.txt`               | Redis port (default is `6379`).                                                                                |
 | `session_secret.txt`           | Secure session secret (e.g., generate one with `openssl rand -base64 32`).                                     |
@@ -324,12 +300,6 @@ Before starting the application, create the following **text files inside the `d
 | `encryption_key_secondary.txt` | Rotation key for server-side encryption, generated with `openssl rand -base64 32`                              |
 | `encryption_key_lookup.txt`    | Lookup key for hashes for server-side encryption, generated with `openssl rand -base64 32`                     |
 | `proxy_hop.txt`                | Proxy hop count for additional reverse proxies that are configured by the server provider. Add 1 to account for the NGINX config.|
-
-Add `.env.production` (also in .env.production.example):
-
-````bash
-NODE_ENV=PRODUCTION
-```
 
 ---
 
@@ -360,7 +330,7 @@ Navigate to the project root and build/start the containers:
 
 ```bash
 cd /opt/TaskMinder
-docker compose --env-file .env.production up -d --build
+docker compose up -d --build
 ```
 
 Reset git changes:
@@ -371,7 +341,7 @@ git reset --hard
 
 And build/start the containers again:
 ```bash
-docker compose --env-file .env.production up -d --build
+docker compose up -d --build
 ```
 
 ---
@@ -418,7 +388,7 @@ touch /etc/nginx/maintenance.flag
 3. Rebuild and restart the Docker containers:
 
    ```bash
-   docker compose up --env-file .env.production -d --build
+   docker compose up -d --build
    ```
 
 4. Disable maintenance mode:

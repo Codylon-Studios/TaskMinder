@@ -1,9 +1,6 @@
 services:
   app:
-    build: 
-      context: .
-      args:
-        - NODE_ENV=${NODE_ENV}
+    build: .
     container_name: taskminder-app
     restart: always
     expose:
@@ -11,7 +8,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=PRODUCTION
       - REDIS_HOST=redis
     secrets:
       - db_user
