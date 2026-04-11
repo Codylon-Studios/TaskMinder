@@ -99,21 +99,6 @@ sudo ufw allow 'Nginx Full'
 sudo ufw enable
 ```
 
-### Secure SSH access
-
-Edit `/etc/ssh/sshd_config`:
-
-```bash
-PermitRootLogin no
-PasswordAuthentication no
-```
-
-Then restart SSH:
-
-```bash
-sudo systemctl restart ssh
-```
-
 ### Configure Fail2Ban
 
 ```bash
@@ -145,11 +130,7 @@ First, modify the `nginx.config` file to replace `taskminder.de` with your actua
 
 ```bash
 vi nginx.config
-```
-
-or
-
-```bash
+# or
 nano nginx.config
 ```
 
@@ -234,6 +215,21 @@ exit
 ssh ubuntu@<your-ip-address>
 ```
 
+For enhanced security, use SSH key-based authentication instead of password-based logins to reduce the risk of unauthorized access. After adding your SSH key and verifying the connection, disable both root logins and password authentication:
+
+Edit and/or uncomment the following lines in `/etc/ssh/sshd_config`:
+
+```bash
+PermitRootLogin no
+PasswordAuthentication no
+```
+
+Then restart SSH:
+
+```bash
+sudo systemctl restart ssh
+```
+
 ---
 
 ## 6. Automated Backup Setup (via Cron)
@@ -302,28 +298,7 @@ Before starting the application, create the following text files inside the `doc
 
 ---
 
-## 8. Setup `personalData.html`
-
-1. **Navigate to the directory** where the example file is located:
-
-   ```bash
-   cd /opt/TaskMinder/frontend/src/snippets/personalData/
-   ```
-
-2. **Copy the example file to create the production file:**
-
-   ```bash
-   sudo cp personalData.html.example personalData.html
-   ```
-
-3. **Edit the new file with `vi` to update the personal data:**
-
-   ```bash
-   sudo vi personalData.html
-   ```
----
-
-## 9. Run Docker Compose and reset git changes
+## 8. Run Docker Compose and reset git changes
 
 Navigate to the project root and build/start the containers:
 
@@ -345,7 +320,7 @@ docker compose up -d --build
 
 ---
 
-## 10. TaskMinder Deployment Complete
+## 9. TaskMinder Deployment Complete
 
 Your TaskMinder server should now be running at:
 
@@ -355,14 +330,14 @@ Your TaskMinder server should now be running at:
 
 ---
 
-## 11. What's Next?
+## 10. What's Next?
 
 - Create an account to set up a class and add your subjects, teams, and timetable.
 - Visit [https://monitoring.example.com](https://monitoring.example.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
 
 ---
 
-## 12. Subsequent Updates
+## 11. Subsequent Updates
 
 This guide covers minor version upgrades.
 For **major version upgrades**, please refer to the relevant migration guides to check for any breaking changes.

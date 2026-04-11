@@ -333,14 +333,6 @@ Follow the official guide: [Installation mdbook](https://rust-lang.github.io/mdB
 
 ---
 
-### Set Up `personalData.html` File
-
-From the project root, navigate to `frontend/src/snippets/personalData/personalData.html.example`. This file provides a template for personal data that will be dynamically injected into frontend pages like the privacy policy or imprint.
-
-Create a new file in the same directory named `personalData.html` (i.e., `frontend/src/snippets/personalData/personalData.html`). Copy the contents of the `.example` file into it, and modify the data as needed. Accurate data isn't required during development, but it's recommended to keep it roughly aligned with production.
-
----
-
 ### Applying database changes
 
 Run `bunx prisma migrate dev` to apply schema changes from previously pulled commits to your local database.
