@@ -855,7 +855,7 @@ export async function init(): Promise<void> {
 
     $("#show-add-upload-request-button").on("click", () => {
       $("#add-upload-request-name").val("");
-      $("#add-upload-request-team").val("-1");
+      $("#add-upload-request-team").val("-1").removeClass("is-suspicious");
       $("#add-upload-request-button").prop("disabled", true);
       $("#add-upload-request-modal").modal("show");
     });
