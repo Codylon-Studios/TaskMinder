@@ -261,6 +261,23 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
+### 12. UploadRequest Table
+
+**Purpose**: Manages requests for file uploads, allowing users to specify what files or types of content are needed from class members or teams.
+
+| Field                  | Data Type | Intentionally Stored                     | Potentially Unintentional                                      |
+| :--------------------- | :-------- | :--------------------------------------- | :------------------------------------------------------------- |
+| uploadRequestId        | Integer   | Unique upload request identifier         | -                                                              |
+| uploadRequestName      | String    | User-provided title/description of request | **May contain personal or sensitive context**                  |
+| classId                | Integer   | Links request to a specific class        | Reveals class involvement and collaboration needs              |
+| teamId                 | Integer   | Links request to a specific team         | Maps request to social/working groups; may reveal group dynamics |
+
+**Privacy Concerns**:
+- **Contextual Data**: The `uploadRequestName` field may inadvertently include personal or sensitive information if users describe the request in detail (e.g., "Upload your medical certificates here").
+- **Group Dynamics**: Linking requests to specific teams (`teamId`) or classes (`classId`) can expose collaboration patterns and group-specific activities.
+
+---
+
 ## Cross-Table Privacy Risks
 
 The `Class` schema as a central entity increases cross-table risks.
@@ -307,5 +324,5 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 - **Document Version:** 2.3
 - **Stable Version Alignment:** v2.2.5
 - **Last Updated:** February 1st, 2026
-- **Next Scheduled Review:** Quarterly – April 10th, 2026
+- **Next Scheduled Review:** Quarterly – April 11th, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

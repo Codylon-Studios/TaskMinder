@@ -18,6 +18,7 @@ All changes are grouped by type and the latest version appears first.
 * feat(upload): add upload description and request new uploads
 * feat(upload): edit files
 * feat(homework/event/upload): add homework/event/upload pinning
+* feat(upload): file-input as pretty wrapper for drag&drop and browse file input with preview list
 * chore(homework): add "later" section
 * chore(ui): show breaks in the timetable and correctly display them (respect events/substitutions)
 
@@ -32,7 +33,6 @@ All changes are grouped by type and the latest version appears first.
 * fix(search): search in plaintext not styled rich textarea text
 
 ### Changed
-* feat(upload): file-input as pretty wrapper for drag&drop and browse file input with preview list
 * chore(scss): compressed scss for event type styles
 * chore(frontend/cache): better caching for event type styles and files
 * chore(frontend/logic): guess new subjectId for substitution
@@ -47,7 +47,7 @@ All changes are grouped by type and the latest version appears first.
 * chore(ui): make bottombar icons pop on click
 * chore(ui): scroll to top on site change
 * chore(substitution): replace axios with node fetch
-* chore(substitution): use shared cache key per school, avoiding redundant DSB API fetches for classes within the same school
+* chore(substitution): use shared cache key per school, avoid redundant DSB API fetches for classes within the same school
 * chore(frontend/logic): remove $.get and replace with modern fetch
 * chore(ui): change filter interface to modal and offcanvas (mobile)
 * chore(tableview): improve table layouts for events & uploads
