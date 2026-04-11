@@ -71,8 +71,9 @@ sw.addEventListener("install", () => {
   sw.skipWaiting();
 });
 
-sw.addEventListener("activate", () => {
+sw.addEventListener("activate", async () => {
   sw.clients.claim();
+  await fetchBootstrap();
 });
 
 async function removeOutdatedCaches(version: string): Promise<void> {

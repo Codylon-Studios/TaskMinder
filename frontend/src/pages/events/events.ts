@@ -639,9 +639,18 @@ export async function init(): Promise<void> {
 
       $(this).toggleClass("is-suspicious", date.getTime() < now.getTime() && !isSameDay(date, now));
     }
+    
+    $("#add-event-start-date").on("input autocomplete", function () {
+      startDateInputCallback.call(this, "add");
+    });
+    $("#add-event-end-date").on("input autocomplete", function () {
+      endDateInputCallback.call(this, "add");
+    });
+    $("#add-event-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // On changing any information in the add event modal, disable the add button if any information is empty
     $(".add-event-input").on("input", function () {
+      console.log("Input");
       const type = $("#add-event-type").val();
       const name = $("#add-event-name").val()?.toString().trim();
       const startDate = $("#add-event-start-date").val();
@@ -656,16 +665,16 @@ export async function init(): Promise<void> {
       }
     });
     
-    $("#add-event-start-date").on("input autocomplete", function () {
-      startDateInputCallback.call(this, "add");
+    $("#edit-event-start-date").on("input autocomplete", function () {
+      startDateInputCallback.call(this, "edit");
     });
-    $("#add-event-end-date").on("input autocomplete", function () {
-      endDateInputCallback.call(this, "add");
+    $("#edit-event-end-date").on("input autocomplete", function () {
+      endDateInputCallback.call(this, "edit");
     });
-    $("#add-event-team").on("input autocomplete", checkTeamInputForSuspicious);
+    $("#edit-event-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // On changing any information in the edit event modal, disable the edit button if any information is empty
-    $(".edit-event-input").on("input", function () {
+    $(".edit-event-input").on("input change", function () {
       const type = $("#edit-event-type").val();
       const name = $("#edit-event-name").val()?.toString().trim();
       const startDate = $("#edit-event-start-date").val();
@@ -679,14 +688,6 @@ export async function init(): Promise<void> {
         $("#edit-event-end-date").val("");
       }
     });
-    
-    $("#edit-event-start-date").on("input autocomplete", function () {
-      startDateInputCallback.call(this, "edit");
-    });
-    $("#edit-event-end-date").on("input autocomplete", function () {
-      endDateInputCallback.call(this, "edit");
-    });
-    $("#edit-event-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // Share the event on clicking its share icon
     $("#app").on("click", ".event-share", function () {

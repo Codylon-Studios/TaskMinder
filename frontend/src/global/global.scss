@@ -500,7 +500,9 @@ $unimportant-display-values: (
   box-shadow: var(--bs-box-shadow);
   top: 100%;
   right: 0.75rem;
-  width: 13rem;
+  width: 16rem;
+  max-height: calc(100vh - 7.25rem);
+  overflow: auto;
 }
 
 #unavailable-queue-circle {

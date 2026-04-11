@@ -506,7 +506,7 @@ async function addHomework(): Promise<void> {
   }
   else {
     $("#add-homework-subject").val("").removeClass("is-autocompleted");
-    $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious");
+    $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious is-invalid");
   }
   $("#add-homework-content").val("").trigger("change");
   forceAutocomplete($("#add-homework-date-assignment"), msToInputDate(Date.now()));
@@ -834,23 +834,6 @@ export async function init(): Promise<void> {
       $(this).removeClass("is-suspicious");
     }
 
-    // On changing any information in the add homework modal, disable the add button if any information is empty
-    $(".add-homework-input").on("input", () => {
-      // Required so the autocompleted submission date gets updated first if the subject is changed
-      requestAnimationFrame(() => {
-        const subject = $("#add-homework-subject").val();
-        const content = $("#add-homework-content").val()?.toString().trim();
-        const assignmentDate = $("#add-homework-date-assignment").val();
-        const submissionDate = $("#add-homework-date-submission").val();
-
-        $("#add-homework-button").prop("disabled",
-          [content, assignmentDate, submissionDate].includes("")
-          || subject === null
-          || $("#add-homework-date-submission").hasClass("is-invalid")
-        );
-      });
-    });
-
     $("#add-homework-subject").on("input autocomplete", function () {
       subjectInputCallback.call(this, "add");
     });
@@ -861,6 +844,31 @@ export async function init(): Promise<void> {
       dateSubmissionInputCallback.call(this, "add");
     });
     $("#add-homework-team").on("input autocomplete", checkTeamInputForSuspicious);
+
+    // On changing any information in the add homework modal, disable the add button if any information is empty
+    $(".add-homework-input").on("input", () => {
+      const subject = $("#add-homework-subject").val();
+      const content = $("#add-homework-content").val()?.toString().trim();
+      const assignmentDate = $("#add-homework-date-assignment").val();
+      const submissionDate = $("#add-homework-date-submission").val();
+
+      $("#add-homework-button").prop("disabled",
+        [content, assignmentDate, submissionDate].includes("")
+        || subject === null
+        || $("#add-homework-date-submission").hasClass("is-invalid")
+      );
+    });
+
+    $("#edit-homework-subject").on("input autocomplete", function () {
+      subjectInputCallback.call(this, "edit");
+    });
+    $("#edit-homework-date-assignment").on("input autocomplete", function () {
+      dateAssignmentInputCallback.call(this, "edit");
+    });
+    $("#edit-homework-date-submission").on("input autocomplete", function () {
+      dateSubmissionInputCallback.call(this, "edit");
+    });
+    $("#edit-homework-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // On changing any information in the edit homework modal, disable the edit button if any information is empty
     $(".edit-homework-input").on("input", () => {
@@ -875,17 +883,6 @@ export async function init(): Promise<void> {
         || $("#edit-homework-date-submission").hasClass("is-invalid")
       );
     });
-
-    $("#edit-homework-subject").on("input autocomplete", function () {
-      subjectInputCallback.call(this, "edit");
-    });
-    $("#edit-homework-date-assignment").on("input autocomplete", function () {
-      dateAssignmentInputCallback.call(this, "edit");
-    });
-    $("#edit-homework-date-submission").on("input autocomplete", function () {
-      dateSubmissionInputCallback.call(this, "edit");
-    });
-    $("#edit-homework-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     $("#app").on("click", "#homework-feedback-random", prepareRandomHomework);
 

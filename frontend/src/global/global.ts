@@ -772,6 +772,11 @@ async function queueRequest(request: Request): Promise<void> {
 }
 
 async function getRequestDescription(req: SerializedRequest): Promise<string> {
+  const richTextareaMod = await import("../snippets/richTextarea/richTextarea.js");
+  function getText(text: string, isRich?: boolean): string {
+    return cutString(escapeHTML((isRich ?? false) ? richTextareaMod.richTextToPlainText(text) : text), 40);
+  }
+
   const rawBody = req.body;
   const textBody = rawBody instanceof ArrayBuffer ? new TextDecoder().decode(rawBody) : rawBody;
   let jsonBody;
@@ -791,68 +796,76 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
 
   switch (req.method + " " + path) {
   case "POST /events": {
-    return `Ereignis "${cutString(escapeHTML(jsonBody.name), 40)}" hinzufügen`;
+    return `Ereignis "${getText(jsonBody.name)}" hinzufügen`;
   }
   case "PATCH /events/:id": {
-    return `Ereignis zu "${cutString(escapeHTML(jsonBody.name), 40)}" bearbeiten`;
+    return `Ereignis zu "${getText(jsonBody.name)}" bearbeiten`;
   }
   case "DELETE /events/:id": {
     await eventData.init();
     const name = (await eventData()).find(e => e.eventId === ids[0])?.name ?? "?";
-    return `Ereignis "${cutString(escapeHTML(name), 40)}" löschen`;
+    return `Ereignis "${getText(name)}" löschen`;
   }
   case "PATCH /events/:id/pin": {
     await eventData.init();
     const name = (await eventData()).find(e => e.eventId === ids[0])?.name ?? "?";
-    return `Ereignis "${cutString(escapeHTML(name), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+    return `Ereignis "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
   }
   case "POST /homework": {
-    return `Hausaufgabe "${cutString(escapeHTML(jsonBody.content), 40)}" hinzufügen`;
+    return `Hausaufgabe "${getText(jsonBody.content, true)}" hinzufügen`;
   }
   case "PATCH /homework/:id": {
-    return `Hausaufgabe zu "${cutString(escapeHTML(jsonBody.content), 40)}" bearbeiten`;
+    return `Hausaufgabe zu "${getText(jsonBody.content, true)}" bearbeiten`;
   }
   case "DELETE /homework/:id": {
     await homeworkData.init();
     const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
-    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" löschen`;
+    return `Hausaufgabe "${getText(content, true)}" löschen`;
   }
   case "PATCH /homework/:id/check": {
     await homeworkData.init();
     const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
-    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.checkStatus === true ? "erledigt" : "nicht erledigt"}`;
+    return `Hausaufgabe "${getText(content, true)}" ${jsonBody.checkStatus === true ? "erledigt" : "nicht erledigt"}`;
   }
   case "PATCH /homework/:id/pin": {
     await homeworkData.init();
     const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
-    return `Hausaufgabe "${cutString(escapeHTML(content), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+    return `Hausaufgabe "${getText(content, true)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
   }
   case "POST /uploads": {
     const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
     const name = match ? match[1].trim() : "?";
-    return `Datei "${cutString(escapeHTML(name), 40)}" hochladen`;
+    return `Datei "${getText(name)}" hochladen`;
   }
   case "PATCH /uploads/:id": {
     const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
     const name = match ? match[1].trim() : "?";
-    return `Datei zu "${cutString(escapeHTML(name), 40)}" bearbeiten`;
+    return `Datei zu "${getText(name)}" bearbeiten`;
   }
   case "DELETE /uploads/:id": {
     await uploadData.init();
     const name = (await uploadData()).uploads.find(u => u.uploadId === ids[0])?.uploadName ?? "?";
-    return `Datei "${cutString(escapeHTML(name), 40)}" löschen`;
+    return `Datei "${getText(name)}" löschen`;
   }
   case "PATCH /uploads/:id/pin": {
     await uploadData.init();
     const name = (await uploadData()).uploads.find(u => u.uploadId === ids[0])?.uploadName ?? "?";
-    return `Datei "${cutString(escapeHTML(name), 40)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+    return `Datei "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+  }
+  case "POST /uploads/requests": {
+    return `Anfrage für Datei "${getText(jsonBody.uploadRequestName)}" hinzufügen`;
+  }
+  case "DELETE /uploads/requests/:id": {
+    await uploadRequestsData.init();
+    const name = (await uploadRequestsData()).find(u => u.uploadRequestId === ids[0])?.uploadRequestName ?? "?";
+    return `Anfrage für Datei "${getText(name)}" löschen`;
   }
 
   case "PUT /teams/joined": {
     return "Beigetretene Teams auswählen";
   }
   case "PATCH /classes/:id/name": {
-    return `Klassennamen zu ${escapeHTML(jsonBody.classDisplayName)} ändern`;
+    return `Klassennamen zu ${getText(jsonBody.classDisplayName)} ändern`;
   }
   case "PATCH /classes/:id/code": {
     return "Neuen Klassencode anfordern";
@@ -928,13 +941,16 @@ function getDirtyDataAccessor(req: SerializedRequest): DataAccessor<unknown> | n
   if (path.startsWith("/homework")) {
     return homeworkData as DataAccessor<unknown>;
   }
+  if (path.startsWith("/uploads/requests")) {
+    return uploadRequestsData as DataAccessor<unknown>;
+  }
   if (path.startsWith("/uploads")) {
     return uploadData as DataAccessor<unknown>;
   }
   if (/\/classes\/\d+\/members/.exec(path)) {
     return classInfo as DataAccessor<unknown>;
   }
-  if (path.startsWith("/classes")) { // TODO: too broad?
+  if (path.startsWith("/classes")) {
     return classInfo as DataAccessor<unknown>;
   }
   if (path === "/teams/joined") {
@@ -979,7 +995,7 @@ async function clearRequestQueue(): Promise<void> {
   const clearDb = await openRequestQueueDB();
   clearDb.transaction("queue", "readwrite").objectStore("queue").clear();
 
-  clearedRequestQueue(reqAndRes);
+  await clearedRequestQueue(reqAndRes);
 
   if (user.classJoined) {
     for (const d of dirtyData) d.reload();
@@ -1131,7 +1147,7 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
             }, 1000);
           }
           catch (err) {
-            console.error("Error copying unknown error to clipboard: ", err)
+            console.error("Error copying unknown error to clipboard: ", err);
           }
         });
         throw error;

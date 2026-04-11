@@ -25,7 +25,8 @@ import {
   autocomplete,
   isStandalone,
   isIOS,
-  makeButtonShowCheck
+  makeButtonShowCheck,
+  bootstrap
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel, AjaxError } from "../../global/types";
 
@@ -866,12 +867,19 @@ async function updateOnUserChange(): Promise<void> {
     $(`#show-change-classcode,
       #delete-class-button, #delete-class ~ .form-text,
       #kick-logged-out-users-button, #kick-logged-out-users ~ .form-text`).toggle(permissionLevel === 3);
-    $(`#change-class-code,
-      #upgrade-test-class,
-      #set-logged-out-users-role-select`).prop("disabled", permissionLevel !== 3);
+    $("#class-code").toggleClass("w-lg-50", permissionLevel === 3);
+    $("#upgrade-test-class, #set-logged-out-users-role-select").prop("disabled", permissionLevel !== 3);
 
     $(".is-current-user").prop("disabled", true);
   }
+}
+
+async function updateUnavailable(): Promise<void> {
+  const b = await bootstrap();
+  $(`
+    #logout-button, #change-password-button, #change-username-button, #delete-account-button,
+    #leave-class-button, #delete-class-button
+  `).prop("disabled", (! b.online) || b.maintenance);
 }
 
 export async function init(): Promise<void> {
@@ -1837,3 +1845,6 @@ export async function renderAllFn(): Promise<void> {
 
   await updateOnUserChange();
 };
+
+updateUnavailable();
+bootstrap.on("update", updateUnavailable);

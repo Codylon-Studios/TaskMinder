@@ -255,7 +255,7 @@ export class FileInput extends HTMLElement {
       this._files.push(...inputEl.files ?? []);
       this.renderFileList();
       this.triggerEvents();
-      inputEl.files = null;
+      inputEl.value = "";
     });
 
     this.$preview.on("click", ".file-input-remove-file", ev => {

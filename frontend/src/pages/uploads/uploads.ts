@@ -803,6 +803,8 @@ export async function init(): Promise<void> {
 
     $("#search-uploads").on("input", renderUploadList);
 
+    $("#add-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
+
     // On changing any information in the add upload modal, disable the add button if any information is empty
     $(".add-upload-input").on("input", function () {
       const name = $("#add-upload-name").val()?.toString().trim();
@@ -812,7 +814,7 @@ export async function init(): Promise<void> {
       $("#add-upload-button").prop("disabled", name === "" || type === null || !fileInput.isValid());
     });
 
-    $("#add-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
+    $("#edit-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // On changing any information in the edit upload modal, disable the add button if any information is empty
     $(".edit-upload-input").on("input", function () {
@@ -822,8 +824,6 @@ export async function init(): Promise<void> {
 
       $("#edit-upload-button").prop("disabled", name === "" || type === null || !fileInput.isValid());
     });
-
-    $("#edit-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // View the upload on clicking it
     $("#app").on("click", ".view-upload", function () {
