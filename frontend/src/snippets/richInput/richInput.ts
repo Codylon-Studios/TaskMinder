@@ -3,19 +3,12 @@ import { $cloneTemplate, bytesToText, escapeHTML, isIOS } from "../../global/glo
 export class RichInput extends HTMLElement {
   static readonly observedAttributes = ["placeholder", "type", "value", "readonly"];
   static readonly formAssociated = true;
-  private _internals: ElementInternals;
   protected $input!: JQuery<HTMLElement>;
   private initialized = false;
   private finalInitialized = false;
 
   protected getTemplateId(): string {
     return "#rich-input-template";
-  }
-
-  constructor() {
-    super();
-    this._internals = this.attachInternals();
-    this._internals.role = "";
   }
 
   connectedCallback(): void {
@@ -46,7 +39,7 @@ export class RichInput extends HTMLElement {
   }
 
   set value(val: string) {
-    if (!this.finalInitialized) return;
+    if (! this.finalInitialized) return;
     this.$input.val(val);
   }
 
@@ -80,9 +73,19 @@ export class SearchBox extends RichInput {
       $wrapper.toggleClass("search-box-not-empty", this.$input.val() !== "");
     });
 
-    $clear.on("mousedown", ev => {
+    const handleClick = (ev: JQuery.TriggeredEvent): void => {
       ev.preventDefault();
       this.$input.val("").trigger("input");
+    };
+    let pointerDown = false;
+    $clear.on("pointerdown", ev => { // We don't want the element to lose focus
+      pointerDown = true;
+      handleClick(ev);
+    });
+    $clear.on("click", ev => {
+      if (pointerDown) return; 
+      handleClick(ev);
+      pointerDown = false;
     });
   }
 
@@ -114,10 +117,21 @@ export class PasswordInput extends RichInput {
     });
 
     let visible = false;
-    this.$toggle.on("mousedown", ev => {
+    
+    const handleClick = (ev: JQuery.TriggeredEvent): void => {
       ev.preventDefault();
       visible = !visible;
       this.updateVisibility(visible);
+    };
+    let pointerDown = false;
+    this.$toggle.on("pointerdown", ev => {
+      pointerDown = true;
+      handleClick(ev);
+    });
+    this.$toggle.on("click", ev => {
+      if (pointerDown) return; 
+      handleClick(ev);
+      pointerDown = false;
     });
   }
 
@@ -137,7 +151,7 @@ export class CopyInput extends RichInput {
   onConnect(): void {
     this.$copyBtn = $(this).find(".copy-input-btn");
 
-    this.$copyBtn.on("mousedown", async ev => {
+    const handleClick = async (ev: JQuery.TriggeredEvent): Promise<void> => {
       ev.preventDefault();
       try {
         await navigator.clipboard.writeText(this.value);
@@ -152,6 +166,16 @@ export class CopyInput extends RichInput {
         this.$copyBtn.prop("disabled", false).removeClass("text-success text-danger")
           .find("i").removeClass("fas fa-check fa-xmark").addClass("far fa-copy");
       }, 2000);
+    };
+    let pointerDown = false;
+    this.$copyBtn.on("pointerdown", ev => {
+      pointerDown = true;
+      handleClick(ev);
+    });
+    this.$copyBtn.on("click", ev => {
+      if (pointerDown) return; 
+      handleClick(ev);
+      pointerDown = false;
     });
   }
 }
@@ -182,10 +206,10 @@ export class FileInput extends HTMLElement {
     this.$input = $(this).find(".file-input-element");
     this.$preview = $(this).find(".file-input-preview");
 
-    const overLabel = (ev: DragEvent) => $(ev.target as Node).closest(".file-input-label").length !== 0;
-    const dataTransferHasFile = (ev: DragEvent) => [...ev.dataTransfer?.items ?? []].some(i => i.kind === "file");
+    const overLabel = (ev: DragEvent): boolean => $(ev.target as Node).closest(".file-input-label").length !== 0;
+    const dataTransferHasFile = (ev: DragEvent): boolean => [...ev.dataTransfer?.items ?? []].some(i => i.kind === "file");
 
-    const globalThisHandler = (ev: DragEvent) => {
+    const globalThisHandler = (ev: DragEvent): void => {
       if (overLabel(ev) && (isIOS || dataTransferHasFile(ev))) {  // ios does weird stuff again
         ev.preventDefault();
       }
@@ -217,6 +241,15 @@ export class FileInput extends HTMLElement {
       this.triggerEvents();
     });
 
+    globalThis.addEventListener("paste", ev => {
+      if (this.$label.is(":visible")) {
+        const newFiles = ((ev as ClipboardEvent).clipboardData)?.files ?? [];
+        this._files.push(...newFiles);
+        this.renderFileList();
+        ev.preventDefault();
+      }
+    });
+
     this.$input.on("change", () => {
       const inputEl = this.$input[0] as HTMLInputElement;
       this._files.push(...inputEl.files ?? []);
@@ -231,10 +264,6 @@ export class FileInput extends HTMLElement {
       this.triggerEvents();
     });
 
-    this.$label.on("click", () => {
-      this.$input[0].click();
-    });
-
     this.finalInitialized = true;
 
     for (const a of FileInput.observedAttributes) {
@@ -245,8 +274,8 @@ export class FileInput extends HTMLElement {
   }
 
   async renderFileList(): Promise<void> {
-    async function filesAreEqual(file1: File, file2: File) {
-      async function hashFile(file: File) {
+    async function filesAreEqual(file1: File, file2: File): Promise<boolean> {
+      async function hashFile(file: File): Promise<string> {
         const buffer = await file.arrayBuffer();
         const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
         return Array.from(new Uint8Array(hashBuffer))
@@ -326,7 +355,7 @@ export class FileInput extends HTMLElement {
     this.$preview.scrollTop(this.$preview[0].scrollHeight);
   }
 
-  get files() {
+  get files(): File[] {
     return this._files;
   }
 

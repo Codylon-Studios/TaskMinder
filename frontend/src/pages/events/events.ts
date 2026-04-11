@@ -823,8 +823,6 @@ $(globalThis).on("resize", toggleView);
   renderEventList(); 
 }));
 
-await user.awaitAuthed();
-
 (await joinedTeamsData.init()).on("update", onlyThisSite(renderEventList));
 
 export async function renderAllFn(): Promise<void> {

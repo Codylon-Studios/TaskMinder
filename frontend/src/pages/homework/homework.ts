@@ -1042,8 +1042,6 @@ await lessonData.init();
   renderHomeworkList(); 
 }));
 
-await user.awaitAuthed();
-
 (await joinedTeamsData.init()).on("update", onlyThisSite(renderHomeworkList));
 
 export async function renderAllFn(): Promise<void> {

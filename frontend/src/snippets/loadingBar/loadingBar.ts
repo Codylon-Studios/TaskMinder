@@ -1,4 +1,4 @@
-import { getSite, isValidSite, renderAll, unsavedChanges, highlightUnavailable, isStandalone } from "../../global/global.js";
+import { init as initGlobal, getSite, isValidSite, renderAll, unsavedChanges, highlightUnavailable, isStandalone } from "../../global/global.js";
 import { init as initBottombar } from "../bottombar/bottombar.js";
 import { init as initNavbar } from "../navbar/navbar.js";
 
@@ -147,6 +147,7 @@ const titleMap = {
 let loadingBarProgress = 0;
 let internalPopstateEvent = false;
 
+await initGlobal();
 init();
 $("body").prepend("<div id='app-prepend' class='d-none'>");
 

@@ -1007,8 +1007,6 @@ $(globalThis).on("resize", toggleView);
   renderUploadList(); 
 }));
 
-await user.awaitAuthed();
-
 (await joinedTeamsData.init()).on("update", onlyThisSite(renderUploadList));
 
 export async function renderAllFn(): Promise<void> {

@@ -1,19 +1,5 @@
 import { getSite, user } from "../../global/global.js";
 
-function getTouchPosition(ev: JQuery.TouchStartEvent): {x: number, y: number} {
-  return {
-    x: ev.originalEvent?.touches[0]?.clientX ?? 0,
-    y: ev.originalEvent?.touches[0]?.clientY ?? 0
-  };
-}
-
-function getChangedTouchPosition(ev: JQuery.TouchMoveEvent | JQuery.TouchEndEvent): {x: number, y: number} {
-  return {
-    x: ev.originalEvent?.changedTouches[0]?.clientX ?? 0,
-    y: ev.originalEvent?.changedTouches[0]?.clientY ?? 0
-  };
-}
-
 function calculateHeight(): void {
   let height = 38 + Math.max(8, globalThis.innerWidth / 100 * 1.5) * 1.5;
   if (/OS (18|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {

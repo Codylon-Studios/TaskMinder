@@ -1202,8 +1202,6 @@ const monthDates = createDataAccessor<MonthDates>("monthDates", { reload: loadMo
   renderTimetable();
 }));
 
-await user.awaitAuthed();
-
 (await joinedTeamsData.init()).on("update", onlyThisSite(() => {
   renderHomeworkList();
   renderEventList();

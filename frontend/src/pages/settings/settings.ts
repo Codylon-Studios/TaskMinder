@@ -23,7 +23,6 @@ import {
   user,
   checkSecurePassword,
   autocomplete,
-  forceAutocomplete,
   isStandalone,
   isIOS,
   makeButtonShowCheck
@@ -1817,8 +1816,6 @@ let qrCode: QRCode;
 (await eventTypeData.init()).on("update", onlyThisSite(renderEventTypeList));
 (await lessonData.init()).on("update", onlyThisSite(renderTimetable));
 (await substitutionsData.init()).on("update", onlyThisSite(renderSubjectList));
-
-await user.awaitAuthed();
 
 (await joinedTeamsData.init()).on("update", onlyThisSite(renderTeamSelectionList));
 

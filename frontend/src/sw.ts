@@ -83,7 +83,7 @@ async function removeOutdatedCaches(version: string): Promise<void> {
     .forEach(name => caches.delete(name));
 }
 
-type Bootstrap = { maintenance: boolean, online: boolean, version: string, cacheEnabled: boolean, maintenanceHtml: string }
+type Bootstrap = { maintenance: boolean, online: boolean, version: string, cacheEnabled: boolean, maintenanceHtml: string, classJoined: boolean }
 
 async function fetchBootstrap(): Promise<Bootstrap> {
   const db = await openIndexedDB();
@@ -138,6 +138,10 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
   }
 
   if (req.method === "GET") {
+    if (path === "/" && req.mode === "navigate") {
+      return Response.redirect(b.classJoined ? "/main" : "/join");
+    }
+
     if (/\/api\/uploads\/\d+/.exec(path)) {
       try {
         return await fetch(req);

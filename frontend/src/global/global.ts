@@ -706,7 +706,7 @@ export async function checkReloadEventTypeStyles(): Promise<void> {
   if (! user.classJoined) return;
   let currentEventTypeData = (await eventTypeData());
   currentEventTypeData = currentEventTypeData.sort((a, b) => a.eventTypeId - b.eventTypeId);
-  const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? '{"data":"", "css": undefined}');
+  const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? '{"data":""}');
   const eventTypeString = JSON.stringify(Object.fromEntries(currentEventTypeData.map(e => [e.eventTypeId, e.color])));
 
   if (eventTypeString !== cache.data || cache.css === undefined) {
@@ -1037,7 +1037,7 @@ export async function clearedRequestQueue(requestsAndResponses: {request: Serial
           role="img" aria-label="${res.ok ? "Erfolgreich" : "Fehler"}"></i>
         <div>
           ${await getRequestDescription(req)}
-          <div class="form-text text-danger mt-0">${getResponseFailReason(req, res)}</div>
+          <div class="form-text text-danger mt-0">${await getResponseFailReason(req, res)}</div>
         </div>
       </li>
     `);
@@ -1130,7 +1130,9 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
               $("#unknown-error-toast").toast("hide");
             }, 1000);
           }
-          catch {}
+          catch (err) {
+            console.error("Error copying unknown error to clipboard: ", err)
+          }
         });
         throw error;
       }
@@ -1150,7 +1152,6 @@ export async function ajax(method: string, url: string, options?: AjaxOptions): 
 
 export async function renderAll(): Promise<void> {
   if (!setRenderOnUserChangeListener) {
-    user.on("change", reloadAll);
     setRenderOnUserChangeListener = true;
   }
   const s = getSite();
@@ -1441,7 +1442,8 @@ export const uploadRequestsData = createSocketDataAccessor<UploadRequestsData>("
 async function onUnavailable(): Promise<void> {
   $("#unavailable-hint").show();
   $("#unavailable-popup").show();
-  $("#navbar-reload-button").hide();
+  const b = await bootstrap();
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
   socket.disconnect();
 
   const db = await openIndexedDB();
@@ -1475,220 +1477,222 @@ async function onOnline(): Promise<void> {
 
   $("#unavailable-hint").hide();
   $("#unavailable-popup").hide();
-  $("#navbar-reload-button").show();
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
   if (! user.classJoined && isSite("main", "events", "homework", "uploads")) {
     document.location.href = document.location.origin + "/join";
   }
   clearRequestQueue();
 }
 
-try {
-  const res = await fetch("/csrf-token");
-  if (!res.ok) {
-    console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
+export async function init(): Promise<void> {
+  try {
+    const res = await fetch("/csrf-token");
+    if (!res.ok) {
+      console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
+    }
+    const data = await res.json();
+    csrfToken(data.csrfToken);
   }
-  const data = await res.json();
-  csrfToken(data.csrfToken);
-}
-catch (error) {
-  console.error("initCSRF: Error fetching token:", error);
-}
-
-try {
-  const res = await fetch("/bootstrap");
-
-  if (!res.ok) {
-    console.error(`bootstrap: Failed to fetch - status: ${res.status}`);
-  }
-  const data = await res.json();
-  data.online ??= true;
-  bootstrap(data);
-
-  if (data.maintenance) {
-    $(".unavailable-offline").hide();
-    $(".unavailable-maintenance").show();
-    renderRequestQueue();
-    onUnavailable();
+  catch (error) {
+    console.error("initCSRF: Error fetching token:", error);
   }
 
-  await user.auth();
-  if (data.online) {
-    onOnline();
+  try {
+    const res = await fetch("/bootstrap");
+
+    if (!res.ok) {
+      console.error(`bootstrap: Failed to fetch - status: ${res.status}`);
+    }
+    const data = await res.json();
+    data.online ??= true;
+    bootstrap(data);
+
+    if (data.maintenance) {
+      $(".unavailable-offline").hide();
+      $(".unavailable-maintenance").show();
+      renderRequestQueue();
+      onUnavailable();
+    }
+
+    await user.auth();
+    user.on("change", reloadAll);
+    if (data.online) {
+      onOnline();
+    }
+    else {
+      renderRequestQueue();
+      onOffline();
+    }
+  }
+  catch (error) {
+    console.error("Error fetching bootstrap:", error);
+  }
+
+  eventTypeData.on("change", checkReloadEventTypeStyles);
+
+  $(document).on("visibilitychange", async () => {
+    if (document.visibilityState === "visible") {
+      if ((await bootstrap()).online) reloadAll();
+    }
+  });
+
+  $(globalThis).on("offline", onOffline);
+  $(globalThis).on("online", onOnline);
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js");
+    window.addEventListener("load", async () => {
+      navigator.serviceWorker.register("/sw.js");
+    });
+    navigator.serviceWorker.addEventListener("message", ev => {
+      console.log("Received msg", ev.data);
+    });
+  }
+
+  const themeColor = document.createElement("meta");
+  themeColor.name = "theme-color";
+  if (localStorage.getItem("colorTheme") === ColorTheme.DARK) {
+    colorTheme(ColorTheme.DARK);
+  }
+  else if (localStorage.getItem("colorTheme") === ColorTheme.LIGHT) {
+    colorTheme(ColorTheme.LIGHT);
+  }
+  else if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
+    colorTheme(ColorTheme.DARK);
   }
   else {
-    renderRequestQueue();
-    onOffline();
+    colorTheme(ColorTheme.LIGHT);
   }
-}
-catch (error) {
-  console.error("Error fetching bootstrap:", error);
-}
-
-eventTypeData.on("change", checkReloadEventTypeStyles);
-
-$(document).on("visibilitychange", async () => {
-  if (document.visibilityState === "visible") {
-    if ((await bootstrap()).online) reloadAll();
+  if ((await colorTheme()) === ColorTheme.LIGHT) {
+    themeColor.content = "#f8f9fa";
   }
-});
+  else {
+    document.getElementsByTagName("html")[0].style.background = "#212529";
+    themeColor.content = "#2b3035";
+  }
 
-$(globalThis).on("offline", onOffline);
-$(globalThis).on("online", onOnline);
+  document.head.appendChild(themeColor);
 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
-  window.addEventListener("load", async () => {
-    navigator.serviceWorker.register("/sw.js");
+  $("body").attr("data-animations", localStorage.getItem("animations") ?? "true");
+
+  $('[data-bs-toggle="tooltip"]').tooltip();
+  new MutationObserver(mutationsList => {
+    for (const mutation of mutationsList) {
+      $(mutation.addedNodes).each(function () {
+        $(this).find('[data-bs-toggle="tooltip"]').tooltip();
+        $(this).filter('[data-bs-toggle="tooltip"]').tooltip();
+      });
+    };
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
   });
-  navigator.serviceWorker.addEventListener("message", ev => {
-    console.log("Received msg", ev.data);
-  });
-}
 
-const themeColor = document.createElement("meta");
-themeColor.name = "theme-color";
-if (localStorage.getItem("colorTheme") === ColorTheme.DARK) {
-  colorTheme(ColorTheme.DARK);
-}
-else if (localStorage.getItem("colorTheme") === ColorTheme.LIGHT) {
-  colorTheme(ColorTheme.LIGHT);
-}
-else if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
-  colorTheme(ColorTheme.DARK);
-}
-else {
-  colorTheme(ColorTheme.LIGHT);
-}
-if ((await colorTheme()) === ColorTheme.LIGHT) {
-  themeColor.content = "#f8f9fa";
-}
-else {
-  document.getElementsByTagName("html")[0].style.background = "#212529";
-  themeColor.content = "#2b3035";
-}
+  $(document).on("shown.bs.toast", ev => {
+    const $toast = $(ev.target);
+    if ($toast.attr("data-bs-autohide") === "false") {
+      return;
+    }
 
-document.head.appendChild(themeColor);
+    const $bar = $toast.find(".toast-progress-bar");
+    if (!$bar.length) return;
 
-$("body").attr("data-animations", localStorage.getItem("animations") ?? "true");
+    $bar.addClass("playing");
 
-$('[data-bs-toggle="tooltip"]').tooltip();
-new MutationObserver(mutationsList => {
-  for (const mutation of mutationsList) {
-    $(mutation.addedNodes).each(function () {
-      $(this).find('[data-bs-toggle="tooltip"]').tooltip();
-      $(this).filter('[data-bs-toggle="tooltip"]').tooltip();
+    $toast.on("mouseenter.toastProgress", () => {
+      $bar.removeClass("playing");
     });
-  };
-}).observe(document.body, {
-  childList: true,
-  subtree: true
-});
 
-$(document).on("shown.bs.toast", ev => {
-  const $toast = $(ev.target);
-  if ($toast.attr("data-bs-autohide") === "false") {
-    return;
-  }
+    $toast.on("mouseleave.toastProgress", () => {
+      setTimeout(() => {
+        $bar.addClass("playing");
+      }, 1000);
+    });
 
-  const $bar = $toast.find(".toast-progress-bar");
-  if (!$bar.length) return;
-
-  $bar.addClass("playing");
-
-  $toast.on("mouseenter.toastProgress", () => {
-    $bar.removeClass("playing");
+    $toast.one("hidden.bs.toast", () => $toast.off(".toastProgress"));
   });
 
-  $toast.on("mouseleave.toastProgress", () => {
+  // Update everything on clicking the reload button
+  $(document).on("click", "#navbar-reload-button", async function () {
+    $(this).find("i").addClass("fa-spin");
+    await reloadAll();
+    $(this).find("i").removeClass("fa-spin fa-rotate").addClass("fa-check text-success");
+    $(this).prop("disabled", true);
     setTimeout(() => {
-      $bar.addClass("playing");
+      $(this).find("i").addClass("fa-rotate").removeClass("fa-check text-success");
+      $(this).prop("disabled", false);
     }, 1000);
   });
 
-  $toast.one("hidden.bs.toast", () => $toast.off(".toastProgress"));
-});
+  // Change btn group selections to vertical / horizontal
+  const smallScreenQuery = globalThis.matchMedia("(max-width: 575px)");
 
-// Update everything on clicking the reload button
-$(document).on("click", "#navbar-reload-button", async function () {
-  $(this).find("i").addClass("fa-spin");
-  await reloadAll();
-  await renderAll();
-  $(this).find("i").removeClass("fa-spin fa-rotate").addClass("fa-check text-success");
-  $(this).prop("disabled", true);
-  setTimeout(() => {
-    $(this).find("i").addClass("fa-rotate").removeClass("fa-check text-success");
-    $(this).prop("disabled", false);
-  }, 1000);
-});
-
-// Change btn group selections to vertical / horizontal
-const smallScreenQuery = globalThis.matchMedia("(max-width: 575px)");
-
-function handleSmallScreenQueryChange(): void {
-  if (smallScreenQuery.matches) {
-    $(".btn-group-dynamic").removeClass("btn-group").addClass("btn-group-vertical");
-  }
-  else {
-    $(".btn-group-dynamic").addClass("btn-group").removeClass("btn-group-vertical");
-  }
-}
-
-smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
-$(globalThis).on("pushstate", handleSmallScreenQueryChange);
-
-handleSmallScreenQueryChange();
-
-(async () => {
-  if ((await colorTheme()) === ColorTheme.LIGHT) {
-    $("body").attr("data-bs-theme", ColorTheme.LIGHT);
-  }
-  else {
-    $("body").attr("data-bs-theme", ColorTheme.DARK);
+  function handleSmallScreenQueryChange(): void {
+    if (smallScreenQuery.matches) {
+      $(".btn-group-dynamic").removeClass("btn-group").addClass("btn-group-vertical");
+    }
+    else {
+      $(".btn-group-dynamic").addClass("btn-group").removeClass("btn-group-vertical");
+    }
   }
 
-  if (localStorage.getItem("fontSize") === "1") {
-    $("html").css("font-size", "19px");
-  }
-  else if (localStorage.getItem("fontSize") === "2") {
-    $("html").css("font-size", "22px");
-  }
+  smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
+  $(globalThis).on("pushstate", handleSmallScreenQueryChange);
 
-  $("body").attr("data-high-contrast", localStorage.getItem("highContrast"));
-})();
+  handleSmallScreenQueryChange();
 
-if (!isSite("settings")) {
-  const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
-
-  if (colorThemeSetting === "auto") {
-    async function updateColorTheme(): Promise<void> {
-      if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
-        colorTheme(ColorTheme.DARK);
-      }
-      else {
-        colorTheme(ColorTheme.LIGHT);
-      }
-
-      if ((await colorTheme()) === ColorTheme.LIGHT) {
-        document.getElementsByTagName("html")[0].style.background = "#ffffff";
-        document.body.dataset.bsTheme = ColorTheme.LIGHT;
-        $('meta[name="theme-color"]').attr("content", "#f8f9fa");
-      }
-      else {
-        document.getElementsByTagName("html")[0].style.background = "#212529";
-        document.body.dataset.bsTheme = ColorTheme.DARK;
-        $('meta[name="theme-color"]').attr("content", "#2b3035");
-      }
+  (async () => {
+    if ((await colorTheme()) === ColorTheme.LIGHT) {
+      $("body").attr("data-bs-theme", ColorTheme.LIGHT);
+    }
+    else {
+      $("body").attr("data-bs-theme", ColorTheme.DARK);
     }
 
-    globalThis.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
-    globalThis.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
+    if (localStorage.getItem("fontSize") === "1") {
+      $("html").css("font-size", "19px");
+    }
+    else if (localStorage.getItem("fontSize") === "2") {
+      $("html").css("font-size", "22px");
+    }
+
+    $("body").attr("data-high-contrast", localStorage.getItem("highContrast"));
+  })();
+
+  if (!isSite("settings")) {
+    const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
+
+    if (colorThemeSetting === "auto") {
+      async function updateColorTheme(): Promise<void> {
+        if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
+          colorTheme(ColorTheme.DARK);
+        }
+        else {
+          colorTheme(ColorTheme.LIGHT);
+        }
+
+        if ((await colorTheme()) === ColorTheme.LIGHT) {
+          document.getElementsByTagName("html")[0].style.background = "#ffffff";
+          document.body.dataset.bsTheme = ColorTheme.LIGHT;
+          $('meta[name="theme-color"]').attr("content", "#f8f9fa");
+        }
+        else {
+          document.getElementsByTagName("html")[0].style.background = "#212529";
+          document.body.dataset.bsTheme = ColorTheme.DARK;
+          $('meta[name="theme-color"]').attr("content", "#2b3035");
+        }
+      }
+
+      globalThis.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
+      globalThis.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
+    }
   }
+
+  $(document).on("input", ".is-autocompleted", function () {
+    $(this).removeClass("is-autocompleted");
+  });
+
+  $(document).on("focus", 'input[type="text"].is-autocompleted', function () {
+    $(this).val("").removeClass("is-autocompleted");
+  });
 }
-
-$(document).on("input", ".is-autocompleted", function () {
-  $(this).removeClass("is-autocompleted");
-});
-
-$(document).on("focus", 'input[type="text"].is-autocompleted', function () {
-  $(this).val("").removeClass("is-autocompleted");
-});
