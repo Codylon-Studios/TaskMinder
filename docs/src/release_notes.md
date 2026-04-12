@@ -51,6 +51,7 @@ All changes are grouped by type and the latest version appears first.
 * chore(frontend/logic): remove $.get and replace with modern fetch
 * chore(ui): change filter interface to modal and offcanvas (mobile)
 * chore(tableview): improve table layouts for events & uploads
+* chore(csp): remove csp .env variable
 * chore(getdata): event, homework and upload metadata order by more values
 * chore(docs): migrate to mdbook and github actions/pages for deployment
 * chore(sitemap): update sitemap values
