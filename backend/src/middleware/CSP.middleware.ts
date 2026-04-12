@@ -15,7 +15,8 @@ export const CSPMiddleware = (): RequestHandler => {
         "connect-src": ["'self'"],
         "font-src": ["'self'"],
         "object-src": ["'self'", "blob:"],
-        "img-src": ["'self'", "data:", "blob:"]
+        "img-src": ["'self'", "data:", "blob:"],
+        "frame-src": ["'self'", "blob:"]
       }
     },
     referrerPolicy: {
