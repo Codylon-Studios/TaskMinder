@@ -1,6 +1,6 @@
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError.js";
-import { default as prisma } from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import logger from "../config/logger.js";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
 import { BigIntreplacer, invalidateCache, isValidTeamId, updateCacheData } from "../utils/validate.functions.js";

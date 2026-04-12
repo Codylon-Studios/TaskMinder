@@ -4,6 +4,17 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.6] - 2026-04-19
+
+### Breaking Changes
+* chore(codebase): migrate to typescript 6
+* chore(prisma): migrate to prisma 7
+
+### Fixed
+* fix(middleware): pdf view fails on safari due to missing blob: for frame-src
+
+---
+
 ## \[v2.2.5] - 2026-04-12
 
 ### Breaking Changes

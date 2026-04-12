@@ -12,8 +12,8 @@ import { Request, Response, NextFunction } from "express";
 import mime from "mime-types";
 import { RequestError } from "../@types/requestError.js";
 import { randomUUID } from "crypto";
-import prisma from "../config/prisma.js";
-import type { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma.js";
+import { Prisma } from "../prisma/generated/prisma/client.js";
 import { getUploadedFiles, performUploadCleanup, registerReservedBytes, registerTempFiles } from "../utils/upload.cleanup.js";
 
 //

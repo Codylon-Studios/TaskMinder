@@ -8,7 +8,7 @@ import cron from "node-cron";
 import express, { Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
-import prisma from "./config/prisma.js";
+import { prisma } from "./config/prisma.js";
 import socketIO from "./config/socket.js";
 import logger from "./config/logger.js";
 import { connectRedis } from "./config/redis.js";

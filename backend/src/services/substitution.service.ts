@@ -3,7 +3,7 @@ import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
 import logger from "../config/logger.js";
 import { Session, SessionData } from "express-session";
-import { default as prisma } from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 
 type SubstitutionData = {
   plan1: { substitutions: unknown; date: string };

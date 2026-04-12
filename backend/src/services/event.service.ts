@@ -2,7 +2,7 @@ import logger from "../config/logger.js";
 import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
 import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
 import * as sass from "sass";
-import { default as prisma } from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import {
   isValidColor,
   isValidTeamId,
@@ -24,7 +24,7 @@ import {
   setEventTypesTypeBody, 
   pinEventTypeBody 
 } from "../schemas/event.schema.js";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../prisma/generated/prisma/client.js";
 
 const inFlightStyleBuild = new Map<number, Promise<string>>();
 

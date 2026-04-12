@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import logger from "../config/logger.js";
-import prisma from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import { Request, Response } from "express";
 import { TEMP_DIR } from "../config/upload.js";
 

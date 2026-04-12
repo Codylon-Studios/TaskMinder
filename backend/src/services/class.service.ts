@@ -1,7 +1,7 @@
 import { RequestError } from "../@types/requestError.js";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../prisma/generated/prisma/client.js";
 import { Session, SessionData } from "express-session";
-import { default as prisma } from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import { BigIntreplacer, generateRandomBase62String, invalidateCache } from "../utils/validate.functions.js";
 import { sessionPool } from "../config/pg.js";
 import logger from "../config/logger.js";

@@ -1,7 +1,7 @@
 import { dequeueJob, QUEUE_KEYS } from "../config/redis.js";
 import { invalidateCache } from "./validate.functions.js";
 import logger from "../config/logger.js";
-import prisma from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import fs from "fs/promises";
 import path from "path";
 import {

@@ -1,4 +1,4 @@
-import prisma from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import { redisClient } from "../config/redis.js";
 import logger from "../config/logger.js";
 import fs from "fs/promises";

@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "./generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Account {
@@ -21,7 +21,7 @@ model Account {
 
   // FIXME: account_username_unique_active_key partial index for
   // deletedAt and username; manual migration in: improve_schema 20251121
-  // prisma v7 implemented this, however it is not stable enough
+  // prisma v7 implemented this as a preview feature, wait until it's stable
   @@index([deletedAt])
   @@map("account")
 }

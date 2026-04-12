@@ -3,8 +3,8 @@ import path from "path";
 import { FINAL_UPLOADS_DIR, MAX_FILE_SIZE, MAX_FILES_PER_CLASS } from "../config/upload.js";
 import fs from "fs/promises";
 import { ReadStream, createReadStream } from "fs";
-import prisma from "../config/prisma.js";
-import type { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma.js";
+import { Prisma } from "../prisma/generated/prisma/client.js";
 import logger from "../config/logger.js";
 import { RequestError } from "../@types/requestError.js";
 import {

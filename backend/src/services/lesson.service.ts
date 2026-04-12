@@ -1,5 +1,5 @@
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
-import { default as prisma } from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import logger from "../config/logger.js";
 import { BigIntreplacer, updateCacheData, invalidateCache, isValidTeamId, isValidSubjectId, dateChecker } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
