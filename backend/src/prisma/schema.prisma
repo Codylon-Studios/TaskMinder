@@ -77,7 +77,7 @@ model Class {
   classId                 Int           @id @default(autoincrement()) @map("classId")
   className               String
   classCode               String        @unique
-  classCodeHash           String?       @unique // this will be made non-nullable after migration
+  classCodeHash           String        @unique
   createdAt               BigInt
   isTestClass             Boolean
   defaultPermissionLevel  Int
@@ -98,7 +98,7 @@ model Class {
   Subjects                Subjects[]
   Team                    Team[]
   Files                   Upload[]
-  UploadRequest           uploadRequest[]
+  UploadRequest           UploadRequest[]
 
   @@index([isTestClass, createdAt])
   @@map("class")
@@ -263,7 +263,7 @@ model Upload {
   @@map("upload")
 }
 
-model uploadRequest {
+model UploadRequest {
   uploadRequestId     Int        @id @default(autoincrement())
   uploadRequestName   String
   classId             Int

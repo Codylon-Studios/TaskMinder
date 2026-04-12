@@ -1,6 +1,6 @@
 {
   "name": "taskminder",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "",
   "main": "backend/dist/server.js",
   "scripts": {
@@ -33,7 +33,6 @@
     "dev:start": "concurrently -n 'backend,frontend,server' \"bun run dev:be\" \"bun run dev:fe\" \"bun run dev:server\"",
     "dev": "bun run dev:start",
     "dev-build": "bun run build && bun run dev:start",
-    "encrypt:migrate": "bun backend/dist/utils/encryption.migrate.js",
     "encrypt:rotate": "bun backend/dist/utils/encryption.rotate.js"
   },
   "keywords": [],
