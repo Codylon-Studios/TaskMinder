@@ -1,129 +1,54 @@
-import { csrfToken, isSite } from "../../global/global.js";
-import { UserEventCallback, UserEventName } from "./types.js";
+import {
+  ajax,
+  isSite,
+  bootstrap,
+  user,
+  checkSecurePassword
+} from "../../global/global.js";
+import { AjaxError } from "../../global/types.js";
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 async function registerAccount(username: string, password: string): Promise<void> {
-  const data = {
-    username: username,
-    password: password
-  };
-  let hasResponded = false;
-
-  $.ajax({
-    url: "/account/register",
-    type: "POST",
-    data: data,
-    headers: {
-      "X-CSRF-Token": await csrfToken()
-    },
-    success: () => {
-      $("#register-success-toast .username").text(username);
-      $("#register-success-toast").toast("show");
-      $("#login-register-modal").modal("hide");
-      
-      user.auth();
-    },
-    error: xhr => {
-      if (xhr.status === 500) {
-        $navbarToasts.serverError.toast("show");
-      }
-      else {
-        $navbarToasts.unknownError.toast("show");
-      }
-    },
-    complete: () => {
-      hasResponded = true;
+  await ajax("POST", "/api/account/register", {
+    body: {
+      username: username,
+      password: password
     }
   });
 
-  setTimeout(() => {
-    if (!hasResponded) {
-      $navbarToasts.serverError.toast("show");
-    }
-  }, 5000);
+  $("#register-success-toast .username").text(username);
+  $("#register-success-toast").toast("show");
+  $("#login-register-modal").modal("hide");
+  
+  user.auth();
 }
 
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
 async function loginAccount(username: string, password: string): Promise<void> {
-  const data = {
-    username: username,
-    password: password
-  };
-  let hasResponded = false;
-
-  $.ajax({
-    url: "/account/login",
-    type: "POST",
-    data: data,
-    headers: {
-      "X-CSRF-Token": await csrfToken()
-    },
-    success: () => {
-      $("#login-success-toast .username").text(username);
-      $("#login-success-toast").toast("show");
-      $("#login-register-modal").modal("hide");
-
-      user.auth();
-    },
-    error: xhr => {
-      if (xhr.status === 401) {
-        $(".login-error-invalid-password").removeClass("d-none").addClass("d-flex");
-        $(".login-button").prop("disabled", true);
-      }
-      else if (xhr.status === 500) {
-        $navbarToasts.serverError.toast("show");
-      }
-      else {
-        $navbarToasts.unknownError.toast("show");
-      }
-    },
-    complete: () => {
-      hasResponded = true;
-    }
-  });
-
-  setTimeout(() => {
-    if (!hasResponded) {
-      $navbarToasts.serverError.toast("show");
-    }
-  }, 5000);
-}
-
-async function checkExistingUsername(username: string): Promise<boolean> {
-  const data = { username: username };
-  const token = await csrfToken();
-  let hasResponded = false;
-
-  return new Promise(resolve => {
-    $.ajax({
-      url: "/account/checkusername",
-      type: "POST",
-      data: data,
-      headers: {
-        "X-CSRF-Token": token
+  try {
+    await ajax("POST", "/api/account/login", {
+      body: {
+        username,
+        password
       },
-      success: res => {
-        resolve(res);
-      },
-      error: xhr => {
-        if (xhr.status === 500) {
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        hasResponded = true;
-      }
+      expectedErrors: [
+        { status: 401, responseText: "Invalid credentials" }
+      ]
     });
+    
+    $("#login-success-toast .username").text(username);
+    $("#login-success-toast").toast("show");
+    $("#login-register-modal").modal("hide");
 
-    setTimeout(() => {
-      if (!hasResponded) {
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 5000);
-  });
+    user.auth();
+  }
+  catch (e) {
+    const err = e as AjaxError;
+    if (err.status === 401) {
+      $(".login-error-invalid-password").removeClass("d-none").addClass("d-flex");
+      $(".login-button").prop("disabled", true);
+    }
+  }
 }
 
 export function resetLoginRegister(): void {
@@ -153,42 +78,12 @@ function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
 }
 
-function checkSecurePassword(password: string): boolean {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
-}
-
 $("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
-  let hasResponded = false;
+  await ajax("POST", "/api/account/logout");
 
-  $.ajax({
-    url: "/account/logout",
-    type: "POST",
-    headers: {
-      "X-CSRF-Token": await csrfToken()
-    },
-    success: () => {
-      $("#logout-success-toast").toast("show");
-        
-      user.auth();
-    },
-    error: xhr => {
-      if (xhr.status === 500) {
-        $navbarToasts.serverError.toast("show");
-      }
-      else {
-        $navbarToasts.unknownError.toast("show");
-      }
-    },
-    complete: () => {
-      hasResponded = true;
-    }
-  });
-
-  setTimeout(() => {
-    if (!hasResponded) {
-      $navbarToasts.serverError.toast("show");
-    }
-  }, 1000);
+  $("#logout-success-toast").toast("show");
+    
+  user.auth();
 });
 
 $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
@@ -196,8 +91,9 @@ $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
 });
 
 export async function init(): Promise<void> {
-  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings"));
-  $("#login-register-button").toggleClass("d-none", isSite("join"));
+  const b = await bootstrap();
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
+  $("#login-register-button").toggle(!user.loggedIn && !isSite("join"));
 
   //
   //LOGIN -- REGISTER
@@ -257,21 +153,26 @@ export async function init(): Promise<void> {
     // Sync multiple instances of login possibilites
     $(".register-password").val($(this).val() ?? "");
 
-    if (checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
+    if (checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")) {
       $(".register-error-insecure-password").addClass("d-none");
       $(".register-error-insecure-password").removeClass("d-flex");
     }
 
     if ($(".register-password").val() === $(".register-password-repeat").val()) {
       $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
-      $(".register-button").prop("disabled", ! ($(".register-checkbox").prop("checked") && $(".register-password").val() !== ""));
+      $(".register-button").prop("disabled", ! (
+        $(".register-checkbox").prop("checked")
+        && $(".register-password").val() !== ""
+        && checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")
+      ));
     }
   });
 
   $(".register-password").off("change").on("change", () => {
-    if (!checkSecurePassword($(".register-password").val()?.toString() ?? "")) {
+    if (!checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")) {
       $(".register-error-insecure-password").removeClass("d-none");
       $(".register-error-insecure-password").addClass("d-flex");
+      $("#change-password-confirm").prop("disabled", true);
     }
 
     if ($(".register-password").val() !== $(".register-password-repeat").val() && $(".register-password-repeat").val() !== "") {
@@ -285,7 +186,10 @@ export async function init(): Promise<void> {
     $(".register-password-repeat").val($(this).val() ?? "");
 
     if ($(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== "") {
-      $(".register-button").prop("disabled", ! $(".register-checkbox").prop("checked"));
+      $(".register-button").prop("disabled", ! (
+        $(".register-checkbox").prop("checked")
+        && checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")
+      ));
       $(".register-error-no-matching-passwords").addClass("d-none").removeClass("d-flex");
     }
   });
@@ -303,7 +207,10 @@ export async function init(): Promise<void> {
   $(".register-checkbox").off("change").on("change", function () {
     $(".register-checkbox").prop("checked", $(this).prop("checked"));
     $(".register-button").prop("disabled", !(
-      $(this).prop("checked") && $(".register-password").val() === $(".register-password-repeat").val() && $(".register-password").val() !== ""
+      $(this).prop("checked")
+      && $(".register-password").val() === $(".register-password-repeat").val()
+      && $(".register-password").val() !== ""
+      && checkSecurePassword($(".login-register-username").val()?.toString() ?? "", $(".register-password").val()?.toString() ?? "")
     ));
   });
 
@@ -312,15 +219,15 @@ export async function init(): Promise<void> {
 
     $(".login-register-element, .login-register-next-button").addClass("d-none");
 
-    checkExistingUsername($(".login-register-username").val()?.toString() ?? "").then(response => {
-      const isTaken = response;
-      if (isTaken) {
-        $(".login-element").removeClass("d-none");
-      }
-      else {
-        $(".register-element").removeClass("d-none");
-      }
-    });
+    const res = await ajax("GET", "/api/account/check-username?username=" + ($(".login-register-username").val()?.toString() ?? ""));
+
+    const isTaken = await res.json();
+    if (isTaken) {
+      $(".login-element").removeClass("d-none");
+    }
+    else {
+      $(".register-element").removeClass("d-none");
+    }
   });
 
   $(".login-register-back-button").off("click").on("click", resetLoginRegister);
@@ -330,7 +237,7 @@ $(() => {
   user.on("change", (function _() {
     $(".class-joined-content").toggle(user.classJoined ?? false);
     $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
-    $("#login-register-button").toggle(!user.loggedIn && !isSite("join"))
+    $("#login-register-button").toggle(!user.loggedIn && !isSite("join"));
     $("#nav-logout-button").toggle(user.loggedIn ?? false);
     $("#offcanvas-account").toggle(user.loggedIn ?? false);
     $("#offcanvas-account-name").text(user.username ?? "");
@@ -338,76 +245,13 @@ $(() => {
   })());
 });
 
+$("#unavailable-hint").on("click", () => $("#unavailable-popup").toggle());
+$(document).on("click", ev => {
+  if ($(ev.target).closest("#unavailable-wrapper").length === 0) $("#unavailable-popup").hide();
+});
+
 export const $navbarToasts = {
   serverError: $("#error-server-toast"),
   unknownError: $("#unknown-error-toast"),
   notLoggedIn: $("#not-logged-in-toast")
-};
-
-export const user = {
-  isAuthed: false as boolean,
-  loggedIn: null as boolean | null,
-  username: null as string | null,
-  classJoined: null as boolean | null,
-  permissionLevel: 0 as number,
-  changeEvents: 0,
-
-  _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
-
-  async auth(settings?: {silent?: boolean}) {
-    const response = await $.get("/account/auth");
-    user.isAuthed = true;
-
-    if (response.loggedIn) {
-      user.loggedIn = true;
-      user.username = response.account.username;
-    }
-    else {
-      user.loggedIn = false;
-      user.username = null;
-    }
-  
-    user.classJoined = response.classJoined;
-    user.permissionLevel = response.permissionLevel ?? 0;
-  
-    if (response.loggedIn) {
-      user.loggedIn = true;
-    }
-    else {
-      user.loggedIn = false;
-      user.username = null;
-    }
-
-    user.changeEvents++;
-    user.trigger("change", settings);
-  },
-
-  async awaitAuthed() {
-    if (this.isAuthed) return;
-    return new Promise<void>(res => {
-      this.on("change", () => {
-        if (this.isAuthed) res();
-      });
-    });
-  },
-
-  on(event: UserEventName, callback: UserEventCallback) {
-    if (!this._eventListeners[event]) {
-      this._eventListeners[event] = [];
-    }
-    this._eventListeners[event].push(callback);
-    return this;
-  },
-
-  off(event: UserEventName) {
-    this._eventListeners[event] = [];
-    return this;
-  },
-
-  trigger(event: UserEventName, ...args: unknown[]) {
-    for (const cb of this._eventListeners[event]) {
-      cb(...args);
-    }
-    return this;
-  }
 };

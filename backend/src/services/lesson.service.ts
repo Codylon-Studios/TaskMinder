@@ -1,11 +1,10 @@
-import { RequestError } from "../@types/requestError";
-import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
-import { default as prisma } from "../config/prisma";
-import logger from "../config/logger";
-import { isValidweekDay, BigIntreplacer, updateCacheData, invalidateCache } from "../utils/validate.functions";
+import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
+import { default as prisma } from "../config/prisma.js";
+import logger from "../config/logger.js";
+import { BigIntreplacer, updateCacheData, invalidateCache, isValidTeamId, isValidSubjectId, dateChecker } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
-import { setLessonDataTypeBody } from "../schemas/lesson.schema";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
+import { setLessonDataTypeBody } from "../schemas/lesson.schema.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
 
 const lessonService = {
   async setLessonData(
@@ -14,14 +13,16 @@ const lessonService = {
   ) {
     const { lessons } = reqData;
     for (const lesson of lessons) {
-      await isValidweekDay(lesson.weekDay);
+      dateChecker(lesson.startTime, lesson.endTime);
+      await isValidTeamId(lesson.teamId, session);
+      await isValidSubjectId(lesson.subjectId, session);
     }
 
     const classId = parseInt(session.classId!, 10);
 
     // Check if data actually changed
     const existingLessons = await prisma.lesson.findMany({
-      where: { classId: classId }
+      where: { classId }
     });
 
     // Compare existing and new lessons
@@ -42,46 +43,36 @@ const lessonService = {
     await prisma.$transaction(async tx => {
       await tx.lesson.deleteMany({
         where: {
-          classId: classId
+          classId
         }
       });
 
       for (const lesson of lessons) {
-        try {
-          await tx.lesson.create({
-            data: {
-              classId: classId,
-              lessonNumber: lesson.lessonNumber,
-              weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
-              teamId: lesson.teamId,
-              subjectId: lesson.subjectId,
-              room: lesson.room,
-              startTime: lesson.startTime,
-              endTime: lesson.endTime,
-              createdAt: Date.now()
-            }
-          });
-        }
-        catch {
-          const err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data format",
-            expected: true
-          };
-          throw err;
-        }
+        await tx.lesson.create({
+          data: {
+            classId,
+            lessonNumber: lesson.lessonNumber,
+            weekDay: lesson.weekDay as 0 | 1 | 2 | 3 | 4,
+            teamId: lesson.teamId,
+            subjectId: lesson.subjectId,
+            room: lesson.room,
+            startTime: lesson.startTime,
+            endTime: lesson.endTime,
+            createdAt: BigInt(Date.now())
+          }
+        });
       }
     });
 
     if (dataChanged) {
-      await invalidateCache("LESSON", session.classId!);
+      await invalidateCache("LESSON", classId.toString());
       const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
-
+      io.to(`class:${classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+      logger.info(`Lesson data changed for class: ${classId}`);
     }
   },
   async getLessonData(session: Session & Partial<SessionData>) {
+    const classId = parseInt(session.classId!, 10);
     const getLessonDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.LESSON, session.classId!);
     const cachedLessonData = await redisClient.get(getLessonDataCacheKey);
 
@@ -91,13 +82,13 @@ const lessonService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis cache: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
     const lessonData = await prisma.lesson.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId
       },
       orderBy: {
         lessonNumber: "asc"
@@ -110,7 +101,7 @@ const lessonService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     const stringified = JSON.stringify(lessonData, BigIntreplacer);

@@ -1,4 +1,4 @@
-# Data Processing Documentation
+# Data Processing
 
 ## Introduction
 
@@ -44,7 +44,7 @@ This documentation describes all database tables defined in the current Prisma s
 | Field  | Data Type | Intentionally Stored                    | Potentially Unintentional                                               |
 | :----- | :-------- | :-------------------------------------- | :---------------------------------------------------------------------- |
 | sid    | String    | Session identifier for state management | Could enable session tracking across requests                           |
-| sess   | JSON      | **Session data and user context**       | **High risk**: May contain browsing patterns, IP addresses, device info |
+| sess   | JSON      | **Session data and user context**       | **Risk**: May contain browsing patterns, IP addresses, device info |
 | expire | DateTime  | Session timeout management              | Could reveal usage patterns (login/logout times)                        |
 
 **Privacy Concerns**:
@@ -68,8 +68,9 @@ This documentation describes all database tables defined in the current Prisma s
 | :--------------------- | :-------- | :--------------------------------------------- | :----------------------------------------------------------- |
 | classId                | Integer   | Unique class identifier                        | -                                                            |
 | className              | String    | The name of the class                          | May identify a specific group of students                    |
-| classCode              | String    | Unique code for students to join the class     | Could lead to abusive joins if class code is breached        |
-| classCreated           | BigInt    | Timestamp of class creation                    | -                                                            |
+| classCode              | String    | Unique encrypted code for students to join the class     | Could lead to abusive joins if class code is breached        |
+| classCodeHash          | String    | Unique hashed code for students to join the class (fast lookup)    | Could lead to abusive joins if class code is breached        |
+| createdAt              | BigInt    | Timestamp of class creation                    | -                                                            |
 | isTestClass            | Boolean   | Flag to identify test/demo classes             | -                                                            |
 | defaultPermissionLevel | Integer   | Default user permission level for new members  | -                                                            |
 | storageUsedBytes       | BigInt    | Current storage usage by the class             | May reveal class activity level and content volume           |
@@ -86,7 +87,7 @@ This documentation describes all database tables defined in the current Prisma s
 **Solutions**:
 - Implemented change class code function/button for class members.
 - Implemented strict access controls for rows containing third-party credentials.
-- Move to only store server-encrypted authId, no user or password
+- Implemented secure (aes-256-gcm) server-side encryption for class codes, 3rd-party (DSB Mobile) migration coming soon
 
 ---
 
@@ -97,7 +98,8 @@ This documentation describes all database tables defined in the current Prisma s
 | Table.Field             | Data Type | Intentionally Stored                       | Potentially Unintentional                                                  |
 | :---------------------- | :-------- | :----------------------------------------- | :------------------------------------------------------------------------- |
 | Event.eventId           | Integer   | Unique event identifier                    | -                                                                          |
-| Event.name / desc.      | String    | Event title and details                    | **High risk**: May contain personal info (student names, sensitive topics) |
+| Event.name / desc.      | String    | Event title and details                    | **Risk**: May contain personal info (student names, sensitive topics)      |
+| Event.isPinned          | Boolean   | Event pinning                              | -                                                                          |
 | Event.startDate/endDate | BigInt    | Event scheduling                           | Reveals attendance/activity patterns                                       |
 | Event.createdAt         | BigInt    | Record creation timestamp                  | -                                                                          |
 | EventType.name          | String    | Category name (e.g., "Exam", "Field Trip") | Adds context that could have privacy implications (e.g., "Detention")      |
@@ -123,6 +125,7 @@ This documentation describes all database tables defined in the current Prisma s
 | Table.Field              | Data Type | Intentionally Stored   | Potentially Unintentional                                            |
 | :----------------------- | :-------- | :--------------------- | :------------------------------------------------------------------- |
 | Homework.homeworkId      | Integer   | Assignment identifier  | -                                                                    |
+| Homework.isPinned        | Boolean   | Homework pinning       | -                                                                    |
 | Homework.content         | String    | Assignment details     | May contain student-specific instructions or references              |
 | Homework.submissionDate  | BigInt    | Deadline management    | Reveals individual work patterns                                     |
 | Homework.createdAt       | BigInt    | Record creation timestamp | -                                                                 |
@@ -215,13 +218,15 @@ This documentation describes all database tables defined in the current Prisma s
 
 ### 11. Upload & FileMetadata Tables
 
-**Purpose**: Management of file uploads and their metadata. An upload can contain one or multiple files.
+**Purpose**: Management of file uploads, upload requests and their metadata. An upload can contain one or multiple files.
 
 | Table.Field             | Data Type | Intentionally Stored                         | Potentially Unintentional                                           |
 | :---------------------- | :-------- | :------------------------------------------- | :------------------------------------------------------------------ |
 | Upload.uploadId         | Integer   | Unique upload job identifier                 | -                                                                   |
 | Upload.uploadName       | String    | User-provided name for the upload            | **May contain personal info or sensitive content descriptions**     |
+| Upload.uploadDescription| String    | User-provided description for the upload     | **May contain personal info or sensitive content descriptions**     |
 | Upload.uploadType       | String    | Category/type of upload                      | Could reveal the nature of shared content                           |
+| Upload.isPinned         | Boolean   | Upload pinning                               | -                                                                   |
 | Upload.status           | String    | Processing state of upload                   | Reveals system usage patterns                                       |
 | Upload.errorReason      | String    | Error details if upload failed               | **May leak technical details or file content information**          |
 | Upload.reservedBytes    | BigInt    | Storage space reserved for upload            | Indicates size/scope of content being shared                        |
@@ -229,19 +234,22 @@ This documentation describes all database tables defined in the current Prisma s
 | Upload.teamId           | Integer   | Links upload to a specific team              | **Creates connection between users and shared content**             |
 | Upload.accountId        | Integer   | Identifier of user who uploaded              | **Direct link to user and their shared content**                    |
 | Upload.classId          | Integer   | Links upload to a specific class             | -                                                                   |
-| FileMetadata.fileMetaDataId | Integer | Unique file metadata identifier          | -                                                                   |
+| UploadRequest.uploadRequestId   | Integer   | Unique upload request identifier             | -                                                         |
+| UploadRequest.uploadRequestName | String    | User-provided title of the upload request    | **May contain personal or sensitive descriptions**        |
+| UploadRequest.classId           | Integer   | Links request to a specific class            | Reveals class involvement                                 |
+| UploadRequest.teamId            | Integer   | Links request to a specific team             | Maps request to social/working groups                     |
+| FileMetadata.fileMetaDataId | Integer | Unique file metadata identifier            | -                                                                   |
 | FileMetadata.uploadId   | Integer   | Links file to its upload job                 | -                                                                   |
-| FileMetadata.storedFileName | String | UUID-based filename on disk                  | Prevents direct file access but enables file tracking               |
+| FileMetadata.storedFileName | String | UUID-based filename on disk                 | Prevents direct file access but enables file tracking               |
 | FileMetadata.mimeType   | String    | File type information                        | **Reveals nature of content** (documents, images, videos, etc.)     |
 | FileMetadata.size       | Integer   | File size in bytes                           | Combined with mime type, may identify specific content              |
 | FileMetadata.createdAt  | BigInt    | File creation timestamp                      | Enables detailed activity tracking                                  |
 
 **Privacy Concerns**:
 
-- **Content Profiling**: The combination of `uploadName`, `uploadType`, `mimeType`, and `size` can create detailed profiles of what type of content users and teams are sharing.
+- **Content Profiling**: The combination of `uploadName`, `uploadDescription`, `uploadType`, `mimeType`, and `size` can create detailed profiles of what type of content users and teams are sharing.
 - **User Attribution**: The `accountId` field directly links uploaded content to specific users, creating a permanent record of who shared what.
 - **Team Dynamics**: Upload patterns (frequency, size, type) can reveal team collaboration dynamics and potentially identify active vs. inactive members.
-- **Error Exposure**: The `errorReason` field may inadvertently store sensitive information about file contents or system vulnerabilities.
 - **Temporal Tracking**: Timestamps enable detailed analysis of when users are active and how they collaborate over time.
 
 **Solutions**:
@@ -250,6 +258,23 @@ This documentation describes all database tables defined in the current Prisma s
 - Ensure `errorReason` messages are sanitized and do not expose sensitive details.
 - Implement retention policies for old uploads and automatic cleanup.
 - Monitor storage usage patterns to detect potential abuse.
+
+---
+
+### 12. UploadRequest Table
+
+**Purpose**: Manages requests for file uploads, allowing users to specify what files or types of content are needed from class members or teams.
+
+| Field                  | Data Type | Intentionally Stored                     | Potentially Unintentional                                      |
+| :--------------------- | :-------- | :--------------------------------------- | :------------------------------------------------------------- |
+| uploadRequestId        | Integer   | Unique upload request identifier         | -                                                              |
+| uploadRequestName      | String    | User-provided title/description of request | **May contain personal or sensitive context**                  |
+| classId                | Integer   | Links request to a specific class        | Reveals class involvement and collaboration needs              |
+| teamId                 | Integer   | Links request to a specific team         | Maps request to social/working groups; may reveal group dynamics |
+
+**Privacy Concerns**:
+- **Contextual Data**: The `uploadRequestName` field may inadvertently include personal or sensitive information if users describe the request in detail (e.g., "Upload your medical certificates here").
+- **Group Dynamics**: Linking requests to specific teams (`teamId`) or classes (`classId`) can expose collaboration patterns and group-specific activities.
 
 ---
 
@@ -296,8 +321,8 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 
 ---
 
-- **Document Version:** 2.1
-- **Stable Version Alignment:** v2.2.4
-- **Last Updated:** January 11th, 2026
-- **Next Scheduled Review:** Quarterly – March 10th, 2026
+- **Document Version:** 2.3
+- **Stable Version Alignment:** v2.2.5
+- **Last Updated:** February 1st, 2026
+- **Next Scheduled Review:** Quarterly – April 11th, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

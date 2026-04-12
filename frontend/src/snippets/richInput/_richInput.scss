@@ -1,0 +1,63 @@
+@use "../../../../node_modules/bootstrap/scss/bootstrap" as bs;
+
+search-box, password-input, copy-input {
+  position: relative;
+  display: block;
+}
+
+search-box {
+  width: 7rem;
+  transition: flex-grow 0.3s ease, width 0.3s ease;
+
+  .rich-input-element {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+
+  &:not(.search-box-not-empty) .search-box-clear {
+    display: none;
+  }
+
+  &:focus-within, &.search-box-not-empty {
+    flex-grow: 1;
+  }
+
+  @include bs.media-breakpoint-down(md) {
+    &:focus-within, &.search-box-not-empty {
+      width: 100%;
+    }
+  }
+}
+
+password-input {
+  .rich-input-element {
+    padding-right: 2rem !important;
+  }
+}
+
+copy-input {
+  .rich-input-element {
+    padding-right: 2rem !important;
+  }
+}
+
+file-input {
+  display: block;
+
+  .file-input-label:hover, .file-input-label-focus, .file-input-label:focus-within {
+    @extend :focus;
+  }
+
+  .file-input-preview {
+    overflow-y: scroll;
+    max-height: 15rem;
+  }
+
+  .file-input-preview-title i {
+    transition: transform 0.2s ease;
+  }
+
+  .file-input-preview-title[aria-expanded="true"] i {
+    transform: rotate(90deg);
+  }
+}

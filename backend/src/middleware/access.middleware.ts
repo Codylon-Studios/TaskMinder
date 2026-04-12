@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import prisma from "../config/prisma";
-import { RequestError } from "../@types/requestError";
-import { redisClient } from "../config/redis";
+import prisma from "../config/prisma.js";
+import { RequestError } from "../@types/requestError.js";
+import { redisClient } from "../config/redis.js";
 
 const ROLES = {
   MEMBER: 0,
@@ -71,7 +71,9 @@ async function checkAccountAccess(req: Request): Promise<void> {
         "Account not found. You have been logged out"
       );
     }
-    await redisClient.set(`auth_user:${req.session.account.accountId}`, "true");
+    await redisClient.set(`auth_user:${req.session.account.accountId}`, "true", {
+      expiration: {type: "EX", value: 15 * 60} // 15min
+    });
   }
 }
 
@@ -94,7 +96,9 @@ async function checkClassAccess(req: Request, res: Response): Promise<void> {
         "The selected class no longer exists. Please select another class"
       );
     }
-    await redisClient.set(`auth_class:${req.session.classId}`, "true");
+    await redisClient.set(`auth_class:${req.session.classId}`, "true", {
+      expiration: {type: "EX", value: 15 * 60} // 15min
+    });
   }
 }
 

@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+
+    "lib": ["es2022", "webworker"],
+
+    "strict": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    "types": [],
+    "skipLibCheck": true
+  },
+  "include": ["src/sw.ts"]
+}

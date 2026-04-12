@@ -9,16 +9,23 @@ import {
   msToInputDate,
   subjectData,
   teamsData,
-  csrfToken,
   lessonData,
   escapeHTML,
   getCirclePath,
   dateDaysDifference,
-  onlyThisSite
+  onlyThisSite,
+  ajax,
+  user,
+  getInputValue,
+  autocomplete,
+  forceAutocomplete,
+  getCurrentLesson,
+  getNextLessonWithDate,
+  checkTeamInputForSuspicious
 } from "../../global/global.js";
 import { HomeworkData } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
-import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
+import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
+import { SearchBox } from "../../snippets/richInput/richInput.js";
 
 async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { checked: boolean })[]> {
   // Add the check value to each homework
@@ -28,6 +35,10 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
       checked: await getHomeworkCheckStatus(h.homeworkId)
     }))
   );
+    
+  const pinned = data.filter(h => h.isPinned);
+  data = data.filter(h => ! h.isPinned);
+
   // Filter by min. date
   const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
   if (! Number.isNaN(filterDateMin)) {
@@ -40,7 +51,7 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
   }
   // Filter by search
   const sb = ($("#search-homework")[0] as SearchBox);
-  data = data.filter(h => sb.searchMatches(h.content));
+  data = data.filter(h => sb.searchMatches(richTextToPlainText(h.content)));
   // Filter by checked status
   if (! $("#filter-status-checked").prop("checked")) {
     data = data.filter(h => !h.checked);
@@ -54,6 +65,8 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
   // Filter by team
   const currentJoinedTeamsData = await joinedTeamsData();
   data = data.filter(h => currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1);
+
+  data = pinned.concat(data);
   
   return data;
 }
@@ -67,7 +80,9 @@ async function renderHomeworkList(): Promise<void> {
 
   const data = await getFilteredHomeworkData();
 
-  let nextWeek = false;
+  let foundNextWeek = false;
+  let foundLater = false;
+  let foundPinned = false;
 
   for (const homework of data) {
     function showCheckAnimation(): void {
@@ -83,19 +98,40 @@ async function renderHomeworkList(): Promise<void> {
         ));
       }
     }
-    function showNextWeek(): void {
-      if (!nextWeek && Number.parseInt(homework.submissionDate) > today.getTime()) {
-        nextWeek = true;
-        newContent.append(`
-          <hr class="border-2 text-primary mb-0 mt-2">
-          <div class="form-text text-primary opacity-50 mt-0">Nächste Woche</div>
-        `);
+    function showSections(): void {
+      if (homework.isPinned) {
+        foundPinned = true;
+      }
+      else {
+        if (foundPinned) {
+          foundPinned = false;
+          newContent.append(`
+            <hr class="border-2 text-primary mb-0 mt-2">
+            <div class="form-text text-primary opacity-75 mt-0 section-divider">Diese Woche</div>
+          `);
+        }
+        if (!foundNextWeek && Number.parseInt(homework.submissionDate) > nextWeekDate.getTime()) {
+          foundNextWeek = true;
+          newContent.append(`
+            <hr class="border-2 text-primary mb-0 mt-2">
+            <div class="form-text text-primary opacity-75 mt-0 section-divider">Nächste Woche</div>
+          `);
+        }
+        if (!foundLater && Number.parseInt(homework.submissionDate) > laterDate.getTime()) {
+          foundLater = true;
+          newContent.append(`
+            <hr class="border-2 text-primary mb-0 mt-2">
+            <div class="form-text text-primary opacity-75 mt-0 section-divider">Später</div>
+          `);
+        }
       }
     }
 
-    const today = new Date();
-    today.setDate(today.getDate() + 7 - today.getDay());
-    showNextWeek();
+    const nextWeekDate = new Date();
+    nextWeekDate.setDate(nextWeekDate.getDate() + 7 - nextWeekDate.getDay());
+    const laterDate = new Date();
+    laterDate.setDate(laterDate.getDate() + 14 - laterDate.getDay());
+    showSections();
 
     const homeworkId = homework.homeworkId;
 
@@ -108,7 +144,7 @@ async function renderHomeworkList(): Promise<void> {
     // The template for a homework with checkbox and edit options
     const template = $(`
       <div class="mb-1 mt-2 d-flex">
-        <div class="form-check">
+        <div class="form-check flex-grow-1">
           <div class="homework-check-wrapper form-check-input invisible">
             <input type="checkbox" class="form-check-input homework-check visible" id="homework-check-${homeworkId}"
               data-id="${homeworkId}" ${homework.checked ? "checked" : ""}>
@@ -127,9 +163,13 @@ async function renderHomeworkList(): Promise<void> {
           <button class="edit-option btn btn-sm btn-semivisible homework-delete" data-id="${homeworkId}" aria-label="Löschen">
             <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
           </button>
+          <button class="btn btn-sm btn-semivisible homework-pin" data-id="${homeworkId}" aria-label="Anheften">
+            <i class="fa-solid fa-thumbtack${homework.isPinned ? "-slash" : ""} opacity-75" aria-hidden="true"></i>
+          </button>
         </div>
       </div>
     `);
+    template.find(".homework-pin").toggle(homework.isPinned || user.permissionLevel >= 1);
     template.find(".edit-option").toggle(editEnabled);
     
     showCheckAnimation();
@@ -145,6 +185,12 @@ async function renderHomeworkList(): Promise<void> {
     });
     showMoreButtonElements = showMoreButtonElements.add(template.find(".homework-content"));
   }
+
+  newContent.find(".section-divider").each(function () {
+    if (!$(this).next().length || $(this).next().is("hr")) {
+      $(this).prev().addBack().remove();
+    }
+  });
 
   // If no homeworks match, add an explanation text
   $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || user.permissionLevel === 0);
@@ -382,6 +428,9 @@ async function prepareRandomHomework(): Promise<void> {
 }
 
 async function renderSubjectList(): Promise<void> {
+  const addHomeworkSubjectVal = $("#add-homework-subject").val() ?? "";
+  const editHomeworkSubjectVal = $("#edit-homework-subject").val() ?? "";
+
   // Clear the select element in the add & edit homework modal
   $("#add-homework-subject, #edit-homework-subject").html('<option value="" disabled selected>Fach</option>');
   // Clear the list for filtering by subject
@@ -390,7 +439,7 @@ async function renderSubjectList(): Promise<void> {
   const filterData = JSON.parse(localStorage.getItem("homeworkFilter") ?? "{}") ?? {};
   filterData.subject ??= {};
 
-  for (const subject of await subjectData()) {
+  for (const subject of [...await subjectData(), {subjectId: -1, subjectNameLong: "Sonstiges"}]) {
     // Get the subject data
     const subjectId = subject.subjectId;
     const subjectName = subject.subjectNameLong;
@@ -400,13 +449,12 @@ async function renderSubjectList(): Promise<void> {
     if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by subject
-    const templateFilterSubject = `<div class="form-check">
-        <input type="checkbox" class="form-check-input filter-subject-option"
+    const templateFilterSubject = `
+      <label class="form-check flex-grow-1 text-center mb-0 ps-2rem pe-2 py-1 border rounded bg-body-tertiary">
+        <input type="checkbox" class="form-check-input filter-subject-option me-2"
           id="filter-subject-${subjectId}" data-id="${subjectId}" ${checkedStatus}>
-        <label class="form-check-label" for="filter-subject-${subjectId}">
-          ${escapeHTML(subjectName)}
-        </label>
-      </div>`;
+        ${escapeHTML(subjectName)}
+      </label>`;
     $("#filter-subject-list").append(templateFilterSubject);
 
     // Add the template for the select elements
@@ -414,7 +462,8 @@ async function renderSubjectList(): Promise<void> {
     $("#add-homework-subject, #edit-homework-subject").append(templateFormSelect);
   };
 
-  $("#add-homework-subject, #edit-homework-subject").append('<option value="-1">Sonstiges</option>');
+  if (addHomeworkSubjectVal !== "") $("#add-homework-subject").val(addHomeworkSubjectVal);
+  if (editHomeworkSubjectVal !== "") $("#edit-homework-subject").val(editHomeworkSubjectVal);
 
   localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
 
@@ -426,6 +475,9 @@ async function renderSubjectList(): Promise<void> {
 };
 
 async function renderTeamList(): Promise<void> {
+  const addHomeworkTeamVal = $("#add-homework-team").val() ?? "-1";
+  const editHomeworkTeamVal = $("#edit-homework-team").val() ?? "-1";
+
   // Clear the select element in the add & edit homework modal
   $("#add-homework-team, #edit-homework-team").empty().append('<option value="-1" selected>Alle</option>');
 
@@ -433,6 +485,9 @@ async function renderTeamList(): Promise<void> {
     // Add the template for the select elements
     $("#add-homework-team, #edit-homework-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   };
+
+  $("#add-homework-team").val(addHomeworkTeamVal);
+  $("#edit-homework-team").val(editHomeworkTeamVal);
 };
 
 async function addHomework(): Promise<void> {
@@ -441,48 +496,20 @@ async function addHomework(): Promise<void> {
   //
 
   // Set the data inputs in the add homework modal
-  const now = new Date();
-  const currentJoinedTeamsData = (await joinedTeamsData());
-  const timeNow = (now.getHours() * 60 + now.getMinutes() - 5) * 60 * 1000; // Pretend it's 5min earlier, in case the lesson was just over
-  const currentLessonData = await lessonData();
-  const currentLesson = currentLessonData.find(lesson => // Find the current lesson
-    (lesson.teamId === -1 || currentJoinedTeamsData.includes(lesson.teamId)) // The user is in the team
-    && lesson.weekDay === now.getDay() - 1 // The lesson is today
-    && Number.parseInt(lesson.startTime) < timeNow && Number.parseInt(lesson.endTime) > timeNow // The lesson is now
-  );
+  $("#add-homework-team").val("-1").removeClass("is-autocompleted is-suspicious");
+  $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious");
+
+  const currentLesson = (await getCurrentLesson())?.lessons[0];
+
   if (currentLesson) {
-    $("#add-homework-subject").val(currentLesson.subjectId).addClass("autocomplete");
-    const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === currentLesson.subjectId); // The next lessons of the subject
-
-    const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
-    const minDiff = nextLessonsWeekdays.reduce((previous, current) => {
-      let diff = (current - (now.getDay() - 1) + 7) % 7; // The difference in days
-      if (diff === 0) diff = 7;
-      return Math.min(diff, previous);
-    }, 7);
-    
-    const nextLessonDate = (new Date());
-    nextLessonDate.setDate(nextLessonDate.getDate() + minDiff);
-
-    $("#add-homework-date-submission").val(msToInputDate(nextLessonDate.getTime())).addClass("autocomplete")
-      .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
-    
-    if (currentLesson.teamId === -1) {
-      $("#add-homework-team").val("-1").removeClass("autocomplete");
-    }
-    else {
-      $("#add-homework-team").val(currentLesson.teamId).addClass("autocomplete")
-        .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
-    }
+    forceAutocomplete($("#add-homework-subject"), currentLesson.substitution?.subjectId ?? currentLesson.subjectId);
   }
   else {
-    $("#add-homework-subject").val("").removeClass("autocomplete");
-    $("#add-homework-date-submission").val("").removeClass("autocomplete");
-    $("#add-homework-team").val("-1").removeClass("autocomplete");
+    $("#add-homework-subject").val("").removeClass("is-autocompleted");
+    $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious is-invalid");
   }
-  $("#add-homework-content").val("");
-  $("#add-homework-content").trigger("change");
-  $("#add-homework-date-assignment").val(msToInputDate(Date.now())).addClass("autocomplete");
+  $("#add-homework-content").val("").trigger("change");
+  forceAutocomplete($("#add-homework-date-assignment"), msToInputDate(Date.now()));
 
   // Disable the actual "add" button, because not all information is given
   $("#add-homework-button").prop("disabled", true);
@@ -496,64 +523,43 @@ async function addHomework(): Promise<void> {
     .off("click")
     .on("click", async () => {
       // Save the given information in variables
-      const subject = $("#add-homework-subject").val();
+      const subjectId = $("#add-homework-subject").val();
       const content = $("#add-homework-content").val()?.toString().trim();
       const assignmentDate = $("#add-homework-date-assignment").val()?.toString() ?? "";
       const submissionDate = $("#add-homework-date-submission").val()?.toString() ?? "";
-      const team = $("#add-homework-team").val();
+      const teamId = $("#add-homework-team").val();
 
-      // Prepare the POST request
-      const data = {
-        subjectId: subject,
-        content: content,
-        assignmentDate: dateToMs(assignmentDate),
-        submissionDate: dateToMs(submissionDate),
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/homework/add_homework",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
+      await ajax("POST", "/api/homework", {
+        body: {
+          subjectId,
+          content,
+          assignmentDate: dateToMs(assignmentDate),
+          submissionDate: dateToMs(submissionDate),
+          teamId
         },
-        success: () => {
-          // Show a success notification and update the shown homework
-          $("#add-homework-success-toast").toast("show");
-          // Hide the add homework modal
-          $("#add-homework-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+
+      $("#add-homework-success-toast").toast("show");
+      $("#add-homework-modal").modal("hide");
     });
+}
+
+async function pinHomework(homeworkId: number): Promise<void> {
+  const homework = (await homeworkData()).find(h => h.homeworkId === homeworkId);
+  if (!homework) return;
+
+  await ajax("PATCH", `/api/homework/${homeworkId}/pin`, {
+    body: {
+      pinStatus: !homework.isPinned
+    },
+    queueable: true
+  });
+
+  const actionText = homework.isPinned ? "losgelöst" : "angeheftet";
+  $("#pin-homework-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
+  $("#pin-homework-success-toast .toast-body").text(`Die Hausaufgabe wurde erfolgreich ${actionText}.`);
+  $("#pin-homework-success-toast").toast("show");
 }
 
 async function editHomework(homeworkId: number): Promise<void> {
@@ -567,9 +573,9 @@ async function editHomework(homeworkId: number): Promise<void> {
   // Set the inputs on the already saved information
   $("#edit-homework-subject").val(homework.subjectId);
   $("#edit-homework-content").val(homework.content).trigger("change");
-  $("#edit-homework-date-assignment").val(msToInputDate(homework.assignmentDate));
-  $("#edit-homework-date-submission").val(msToInputDate(homework.submissionDate));
-  $("#edit-homework-team").val(homework.teamId);
+  $("#edit-homework-date-assignment").val(msToInputDate(homework.assignmentDate)).removeClass("is-suspicious");
+  $("#edit-homework-date-submission").val(msToInputDate(homework.submissionDate)).removeClass("is-autocompleted is-suspicious is-invalid");
+  $("#edit-homework-team").val(homework.teamId).removeClass("is-autocompleted is-suspicious");
 
   // Enable the actual "edit" button, because all information is given
   $("#edit-homework-button").prop("disabled", false);
@@ -583,62 +589,25 @@ async function editHomework(homeworkId: number): Promise<void> {
     .off("click")
     .on("click", async () => {
       // Save the given information in variables
-      const subject = $("#edit-homework-subject").val();
+      const subjectId = $("#edit-homework-subject").val();
       const content = $("#edit-homework-content").val()?.toString().trim();
       const assignmentDate = $("#edit-homework-date-assignment").val()?.toString() ?? "";
       const submissionDate = $("#edit-homework-date-submission").val()?.toString() ?? "";
-      const team = $("#edit-homework-team").val();
+      const teamId = $("#edit-homework-team").val();
 
-      const data = {
-        homeworkId: homeworkId,
-        subjectId: subject,
-        content: content,
-        assignmentDate: dateToMs(assignmentDate),
-        submissionDate: dateToMs(submissionDate),
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/homework/edit_homework",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
+      await ajax("PATCH", `/api/homework/${homeworkId}`, {
+        body: {
+          subjectId,
+          content,
+          assignmentDate: dateToMs(assignmentDate),
+          submissionDate: dateToMs(submissionDate),
+          teamId
         },
-        success: () => {
-          // Show a success notification and update the shown homework
-          $("#edit-homework-success-toast").toast("show");
-          $("#edit-homework-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+
+      $("#edit-homework-success-toast").toast("show");
+      $("#edit-homework-modal").modal("hide");
     });
 }
 
@@ -658,52 +627,11 @@ function deleteHomework(homeworkId: number): void {
       // Hide the confirmation toast
       $("#delete-homework-confirm-toast").toast("hide");
 
-      const data = {
-        homeworkId: homeworkId
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/homework/delete_homework",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification and update the shown homework
-          $("#delete-homework-success-toast").toast("show");
-          homeworkData.reload();
-          renderHomeworkList();
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+      await ajax("DELETE", `/api/homework/${homeworkId}`, {
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+
+      $("#delete-homework-success-toast").toast("show");
     });
 }
 
@@ -714,49 +642,10 @@ async function checkHomework(homeworkId: number, checkStatus?: boolean): Promise
 
   // Check whether the user is logged in
   if (user.loggedIn) {
-    // The user is logged in
-    // Save whether the server has responed
-    let hasResponded = false;
-
-    // Post the request
-    $.ajax({
-      url: "/homework/check_homework",
-      type: "POST",
-      contentType: "application/json",
-      data: JSON.stringify({
-        homeworkId: homeworkId,
-        checkStatus: checkStatus
-      }),
-      processData: false,
-      headers: {
-        "X-CSRF-Token": await csrfToken()
-      },
-      error: xhr => {
-        if (xhr.status === 401) {
-          // The user has to be logged in but isn't
-          // Show an error notification
-          $navbarToasts.notLoggedIn.toast("show");
-        }
-        else if (xhr.status === 500) {
-          // An internal server error occurred
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        // The server has responded
-        hasResponded = true;
-      }
+    await ajax("PATCH", `/api/homework/${homeworkId}/check`, {
+      body: { checkStatus: checkStatus },
+      queueable: true
     });
-    setTimeout(() => {
-      // Wait for 1s
-      if (!hasResponded) {
-        // If the server hasn't answered, show the internal server error notification
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 1000);
   }
   else {
     // The user is not logged in
@@ -813,10 +702,9 @@ function updateFilters(ignoreSubjects?: boolean): void {
 }
 
 function toggleShownButtons(): void {
-  const loggedIn = user.loggedIn;
   $("#edit-toggle, #edit-toggle-label").toggle(user.permissionLevel >= 1);
   $("#show-add-homework-button").toggle(user.permissionLevel >= 1);
-  if (!loggedIn) {
+  if (user.permissionLevel < 1) {
     $(".edit-option").addClass("d-none");
   }
 }
@@ -831,12 +719,26 @@ export async function init(): Promise<void> {
       $(".edit-option").toggle($(this).is(":checked"));
     }).prop("checked", false);
 
+    function appendFilterContent(): void {
+      $("#filter-content").appendTo(`#filter-${window.innerWidth >= 768 ? "modal" : "offcanvas"}-body`);
+    }
+
     $("#filter-toggle").on("click", function () {
-      $("#filter-content, #filter-reset").toggle($(this).is(":checked"));
-    }).prop("checked", true).trigger("click");
+      appendFilterContent();
+      if (window.innerWidth >= 768) $("#filter-modal").modal("show");
+      else $("#filter-offcanvas").offcanvas("show");
+    });
+    appendFilterContent();
+
+    $("#search-toggle").on("change", function () {
+      const checked = $(this).is(":checked");
+      $("#search-homework").toggle(checked);
+      if (checked) $("#search-homework input").trigger("focus");
+      else $("#search-homework").val("");
+    }).prop("checked", false).trigger("change");
 
     updateFilters(true);
-    $("#filter-reset").on("click", () => {
+    $(".filter-reset").on("click", () => {
       localStorage.setItem("homeworkFilter", "{}");
       updateFilters();
       renderHomeworkList();
@@ -844,74 +746,134 @@ export async function init(): Promise<void> {
 
     $("#search-homework").on("input", renderHomeworkList);
 
-    // On changing any information in the add homework modal, disable the add button if any information is empty
-    $(".add-homework-input").on("input", () => {
-      // Required so the autocompleted submission date gets updated first if the subject is changed
-      requestAnimationFrame(() => {
-        const subject = $("#add-homework-subject").val();
-        const content = $("#add-homework-content").val()?.toString().trim();
-        const assignmentDate = $("#add-homework-date-assignment").val();
-        const submissionDate = $("#add-homework-date-submission").val();
-
-        $("#add-homework-button").prop("disabled", [content, assignmentDate, submissionDate].includes("") || subject === null);
-      });
-    });
-
-    $("#add-homework-subject").on("input", async function () {
-      const currentLessonData = await lessonData();
+    async function subjectInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): Promise<void> {
       const now = new Date();
 
       const selectedSubjectId = $(this).val()?.toString();
+      const selectedSubjectName = $(this).find("option:selected").text();
       if (selectedSubjectId === undefined) {
         return;
       }
-      if (selectedSubjectId === "-1") {
-        $("#add-homework-date-submission").val(msToInputDate(now.setDate(now.getDate() + 7))).addClass("autocomplete")
-          .find("~ .autocomplete-feedback").html("Automatisch: Eine Woche");
+
+      const nextLessonWithDate = await getNextLessonWithDate(Number.parseInt(selectedSubjectId));
+
+      if (nextLessonWithDate === null) { // "Other" or never in timetable
+        $(`#${addOrEdit}-homework-team`).val("-1").removeClass("is-autocompleted is-suspicious");
+        autocomplete($(`#${addOrEdit}-homework-date-submission`), msToInputDate(now.setDate(now.getDate() + 7)));
+        $(`#${addOrEdit}-homework-date-submission`).removeClass("is-suspicious").find("~ .autocompleted-feedback")
+          .html("Automatisch: Eine Woche");
         return;
       }
-      $("#add-homework-date-submission").find("~ .autocomplete-feedback").html("Automatisch: Die nächste Stunde in <b></b>");
 
-      // The next lessons of the new selected subject
-      const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === Number.parseInt(selectedSubjectId));
+      $(`#${addOrEdit}-homework-date-submission ~ .autocompleted-feedback`).html("Automatisch: Die nächste Stunde in <b></b>");
 
-      const nextLessonsWeekdays = [...new Set(nextLessons.map(e => e.weekDay))]; // Get the unique weekdays
-      const minDiff = nextLessonsWeekdays.reduce((previous, current) => {
-        let diff = (current - (now.getDay() - 1) + 7) % 7; // The difference in days
-        if (diff === 0) diff = 7;
-        return Math.min(diff, previous);
-      }, 7);
+      const $submissionDate = $(`#${addOrEdit}-homework-date-submission`);
+      if (autocomplete($submissionDate, msToInputDate(nextLessonWithDate.date.getTime()))) {
+        // The user hasn't decided for a specific submission date
+        $submissionDate.find("~ .autocompleted-feedback b").text(selectedSubjectName);
+      }
+      else {
+        $submissionDate.trigger("autocomplete");
+      }
+
+      const teamId = nextLessonWithDate.lesson.teamId;
+      autocomplete($(`#${addOrEdit}-homework-team`), nextLessonWithDate.lesson.teamId, "-1");
+      $(`#${addOrEdit}-homework-team`).find("~ .autocompleted-feedback b").text(selectedSubjectName);
+      if (teamId === -1) {
+        $(`#${addOrEdit}-homework-team`).removeClass("is-autocompleted");
+      }
+    }
+
+    const checkSubmissionAfterAssignment = (addOrEdit: "add" | "edit"): void => {
+      const assignment = getInputValue($(`#${addOrEdit}-homework-date-assignment`));
+      const submission = getInputValue($(`#${addOrEdit}-homework-date-submission`));
+      if (assignment === "" || submission === "") return;
+      $(`#${addOrEdit}-homework-date-submission`).toggleClass("is-invalid", new Date(assignment).getTime() > new Date(submission).getTime());
+    };
+
+    async function dateAssignmentInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): Promise<void> {
+      const val = getInputValue($(this));
+      if (val === "") {
+        $(this).removeClass("is-suspicious");
+        return;
+      }
+
+      checkSubmissionAfterAssignment(addOrEdit);
+
+      const date = new Date(val);
+      const now = new Date();
+
+      $(this).toggleClass("is-suspicious", date.getTime() > now.getTime() && !isSameDay(date, now));
+    }
+
+    async function dateSubmissionInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): Promise<void> {
+      const val = getInputValue($(this));
+      if (val === "") {
+        $(this).removeClass("is-suspicious is-invalid");
+        return;
+      }
+
+      checkSubmissionAfterAssignment(addOrEdit);
       
-      const nextLessonDate = (new Date());
-      nextLessonDate.setDate(nextLessonDate.getDate() + minDiff);
-
-      // Only overwrite if the user hasn't decided for a specific date
-      const $submissionDate = $("#add-homework-date-submission");
-      if (nextLessonsWeekdays.length > 0) {
-        if ($submissionDate.is(".autocomplete") || $submissionDate.val() === "") {
-          $submissionDate.val(msToInputDate(nextLessonDate.getTime())).addClass("autocomplete")
-            .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
-        }
-      }
-      else {
-        $submissionDate.val("").removeClass("autocomplete");
+      const date = new Date(val);
+      const now = new Date();
+      if (date.getTime() < now.getTime() && !isSameDay(date, now)) {
+        $(this).addClass("is-suspicious").find("~ .suspicious-feedback")
+          .html("Bist du dir sicher? Dieses Datum liegt in der Vergangenheit!");
+        return;
       }
 
-      if (nextLessons.length > 0) {
-        if ($("#add-homework-team").is(".autocomplete") || $("#add-homework-team").val() === "-1") {
-          if (nextLessons[0].teamId === -1) {
-            $("#add-homework-team").val("-1").removeClass("autocomplete");
-          }
-          else {
-            $("#add-homework-team").val(nextLessons[0].teamId).addClass("autocomplete")
-              .find("~ .autocomplete-feedback b").text($("#add-homework-subject option:selected").text());
-          }
+      const selectedSubjectId = $(`#${addOrEdit}-homework-subject`).val()?.toString() ?? "";
+      const selectedSubjectName = $(`#${addOrEdit}-homework-subject option:selected`).text();
+
+      const nextLessonWithDate = await getNextLessonWithDate(Number.parseInt(selectedSubjectId));
+
+      if (nextLessonWithDate !== null) {
+        if (!nextLessonWithDate.otherWeekDays.includes(new Date(val).getDay() - 1)) {
+          $(this).addClass("is-suspicious").find("~ .suspicious-feedback")
+            .html(`Bist du dir sicher? An diesem Tag gibt es im Fach <b>${escapeHTML(selectedSubjectName)}</b> keinen Unterricht!`);
+          return;
         }
       }
-      else {
-        $("#add-homework-team").val("-1").removeClass("autocomplete");
-      }
+
+      $(this).removeClass("is-suspicious");
+    }
+
+    $("#add-homework-subject").on("input autocomplete", function () {
+      subjectInputCallback.call(this, "add");
     });
+    $("#add-homework-date-assignment").on("input autocomplete", function () {
+      dateAssignmentInputCallback.call(this, "add");
+    });
+    $("#add-homework-date-submission").on("input autocomplete", function () {
+      dateSubmissionInputCallback.call(this, "add");
+    });
+    $("#add-homework-team").on("input autocomplete", checkTeamInputForSuspicious);
+
+    // On changing any information in the add homework modal, disable the add button if any information is empty
+    $(".add-homework-input").on("input", () => {
+      const subject = $("#add-homework-subject").val();
+      const content = $("#add-homework-content").val()?.toString().trim();
+      const assignmentDate = $("#add-homework-date-assignment").val();
+      const submissionDate = $("#add-homework-date-submission").val();
+
+      $("#add-homework-button").prop("disabled",
+        [content, assignmentDate, submissionDate].includes("")
+        || subject === null
+        || $("#add-homework-date-submission").hasClass("is-invalid")
+      );
+    });
+
+    $("#edit-homework-subject").on("input autocomplete", function () {
+      subjectInputCallback.call(this, "edit");
+    });
+    $("#edit-homework-date-assignment").on("input autocomplete", function () {
+      dateAssignmentInputCallback.call(this, "edit");
+    });
+    $("#edit-homework-date-submission").on("input autocomplete", function () {
+      dateSubmissionInputCallback.call(this, "edit");
+    });
+    $("#edit-homework-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // On changing any information in the edit homework modal, disable the edit button if any information is empty
     $(".edit-homework-input").on("input", () => {
@@ -920,12 +882,21 @@ export async function init(): Promise<void> {
       const assignmentDate = $("#edit-homework-date-assignment").val();
       const submissionDate = $("#edit-homework-date-submission").val();
 
-      $("#edit-homework-button").prop("disabled", [content, assignmentDate, submissionDate].includes("") || subject === null);
+      $("#edit-homework-button").prop(
+        "disabled", [content, assignmentDate, submissionDate].includes("")
+        || subject === null
+        || $("#edit-homework-date-submission").hasClass("is-invalid")
+      );
     });
 
     $("#app").on("click", "#homework-feedback-random", prepareRandomHomework);
 
     $("#show-add-homework-button").on("click", addHomework);
+
+    // Pin the homework on clicking its pin icon
+    $("#app").on("click", ".homework-pin", function () {
+      pinHomework($(this).data("id"));
+    });
 
     // Request deleting the homework on clicking its delete icon
     $("#app").on("click", ".homework-delete", function () {
@@ -1024,6 +995,36 @@ export async function init(): Promise<void> {
       updateFilters();
       renderHomeworkList();
     });
+    
+    const $filterOffcanvas = $("#filter-offcanvas");
+    const $filterOffcanvasHeader = $("#filter-offcanvas .offcanvas-header");
+
+    let startY = 0;
+    let dragging = false;
+
+    $filterOffcanvasHeader.on("pointerdown", ev => {
+      if (ev.pointerType !== "touch") return;
+      startY = ev.clientY ?? 0;
+      dragging = true;
+      $filterOffcanvas.css("transition", "none");
+    });
+    $filterOffcanvasHeader.on("pointermove", ev => {
+      if (!dragging) return;
+      const diff = (ev.clientY ?? 0) - startY;
+      if (diff > 0) {
+        $filterOffcanvas.css("transform", `translateY(${diff}px)`);
+      }
+    });
+    $filterOffcanvasHeader.on("pointerup pointercancel", ev => {
+      if (!dragging) return;
+      dragging = false;
+      const diff = (ev.clientY ?? 0) - startY;
+
+      $filterOffcanvas.css({transition: "transform 0.3s ease-in-out", transform: ""});
+      if (diff > 100) {
+        $filterOffcanvas.offcanvas("hide");
+      }
+    });
 
     res();
   });
@@ -1036,21 +1037,18 @@ let randomHomeworkDeactivated: number[] = [];
 
 await lessonData.init();
 (await homeworkData.init()).on("update", onlyThisSite(renderHomeworkList));
-(await homeworkCheckedData.init());
+(await homeworkCheckedData.init()).on("update", onlyThisSite(renderHomeworkList));
 (await subjectData.init()).on("update", onlyThisSite(renderSubjectList));
 (await teamsData.init()).on("update", onlyThisSite(() => {
   renderTeamList(); 
   renderHomeworkList(); 
 }));
 
-await user.awaitAuthed();
-
 (await joinedTeamsData.init()).on("update", onlyThisSite(renderHomeworkList));
 
 export async function renderAllFn(): Promise<void> {
   await renderSubjectList();
   await renderHomeworkList();
-  await renderHomeworkFeedback();
   await renderTeamList();
 
   toggleShownButtons();

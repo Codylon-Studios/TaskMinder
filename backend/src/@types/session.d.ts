@@ -9,12 +9,12 @@ declare module "express-session" {
     };
     classId: string;
     csrfToken?: string;
-    generatedClassCode?: string;
   }
 }
 declare module "express" {
   interface Request {
     file?: Multer.File;
     allFiles?: Multer.File[];
+    apiVersion?: string;
   }
 }

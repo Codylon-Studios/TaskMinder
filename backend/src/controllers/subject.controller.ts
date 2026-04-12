@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import subjectService from "../services/subject.service";
+import subjectService from "../services/subject.service.js";
 
-export const getSubjectData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getSubjects = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const timetableData = await subjectService.getSubjectData(req.session);
     res.status(200).json(timetableData);
@@ -11,7 +11,7 @@ export const getSubjectData = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-export const setSubjectData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const setSubjects = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await subjectService.setSubjectData(req.body, req.session);
     res.sendStatus(200);
@@ -22,6 +22,6 @@ export const setSubjectData = async (req: Request, res: Response, next: NextFunc
 };
 
 export default {
-  getSubjectData,
-  setSubjectData
+  getSubjects,
+  setSubjects
 };

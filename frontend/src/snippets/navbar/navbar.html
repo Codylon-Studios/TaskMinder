@@ -1,6 +1,6 @@
 <nav class="navbar bg-body-tertiary fixed-top">
   <div class="container-fluid position-relative">
-    <button class="btn btn-semivisible me-2" data-bs-toggle="offcanvas" data-bs-target="#navbar-offcanvas" aria-label="Mehr Links anzeigen">
+    <button class="btn btn-semivisible" data-bs-toggle="offcanvas" data-bs-target="#navbar-offcanvas" aria-label="Mehr Links anzeigen">
       <i class="fas fa-bars" aria-hidden="true"></i>
     </button>
 
@@ -10,7 +10,7 @@
           TaskMinder
         </a>
       </div>
-      <a class="d-none d-lg-block navbar-text fs-5 text-decoration-none ms-0 me-4 navbar-home-link" href="/" data-pjax>TaskMinder</a>
+      <a class="d-none d-lg-block navbar-text fs-5 text-decoration-none ms-2 me-4 navbar-home-link" href="/" data-pjax>TaskMinder</a>
       <ul class="navbar-nav d-none d-lg-flex flex-row me-auto">
         <li class="nav-item me-3 class-joined-content">
           <a class="nav-link" href="/homework" data-pjax>Hausaufgaben</a>
@@ -40,6 +40,39 @@
     <button class="btn btn-semivisible" id="nav-logout-button" aria-label="Abmelden">
       <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
     </button>
+
+    <div class="position-relative" id="unavailable-wrapper">
+      <button class="btn btn-semivisible" aria-label="Keine Verbindung" id="unavailable-hint">
+        <span class="fa-stack fa-stack-normal unavailable-offline">
+          <i class="fas fa-wifi text-danger fa-stack-1x" aria-hidden="true"></i>
+          <i class="fas fa-slash text-danger fa-stack-1x" aria-hidden="true"></i>
+        </span>
+        <i class="fas fa-screwdriver-wrench text-danger unavailable-maintenance" aria-hidden="true"></i>
+        <span class="unavailable-queue-length" id="unavailable-queue-circle">3</span>
+      </button>
+      <div id="unavailable-popup">
+        <div class="text-center text-danger fw-bold text-nowrap unavailable-offline">Du bist offline</div>
+        <div class="text-center text-danger fw-bold text-nowrap unavailable-maintenance">Wartungsarbeiten</div>
+        <!-- prettier-ignore -->
+        <div class="form-text unavailable-maintenance">
+          Wir versuchen, möglichst bald wieder da zu sein. Versuche bald, die Seite neu zu öffnen. Mehr Informationen findest du vielleicht auf
+          unserer <a href="https://status.taskminder.de" target="_blank">Statusseite</a>.
+        </div>
+        <div class="form-text">
+          Wir können dir nur einige Seiten anzeigen, die Daten können veraltet sein und du kannst nur manche Informationen ändern.
+        </div>
+        <div class="form-text" id="unavailable-popup-last-updated"></div>
+        <div class="text-center text-danger fw-bold text-nowrap" id="unavailable-queue-title">
+          Warteschlange (
+          <span class="unavailable-queue-length">0</span>
+          )
+        </div>
+        <div class="form-text" id="unavailable-queue-description">
+          Diese Änderungen werden durchgeführt, wenn die Verbindung wiederhergestellt ist:
+          <ul class="mb-0 ps-3 word-wrap-break" id="unavailable-queue-list"></ul>
+        </div>
+      </div>
+    </div>
     <button class="btn btn-semivisible" id="navbar-reload-button" aria-label="Daten neu laden">
       <i class="fas fa-rotate" aria-hidden="true"></i>
     </button>
@@ -53,10 +86,9 @@
   </div>
   <div class="offcanvas-body">
     <div class="mb-3 text-center" id="offcanvas-account">
+      <!-- prettier-ignore -->
       <h5>
-        Willkommen,
-        <b id="offcanvas-account-name">a26b25c24</b>
-        !
+        Willkommen, <b id="offcanvas-account-name"></b>!
       </h5>
       <button class="btn btn-primary fw-bold" id="offcanvas-account-logout-button">
         <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
@@ -68,6 +100,9 @@
     <a href="/about" data-pjax>Über TaskMinder</a>
     <div class="form-text mb-3">Rechtliche Hinweise & allgemeine Infos</div>
 
+    <hr class="border-2 mb-0 mt-2" />
+    <div class="form-text opacity-75 mt-0 mb-2">Externe Links</div>
+
     <i class="fab fa-discord fs-5 text-secondary" aria-hidden="true"></i>
     <a href="https://discord.gg/kZGs92aMae" target="_blank">Discord</a>
     <div class="form-text mb-3">Wichtige Updates, direkter Support & Community</div>
@@ -76,9 +111,27 @@
     <a href="https://whatsapp.com/channel/0029VbAtPJCDOQIS6Ge1ph3I" target="_blank">WhatsApp-Kanal</a>
     <div class="form-text mb-3">Wichtige Updates direkt auf deinem Handy</div>
 
-    <i class="fas fa-mug-hot fs-5 text-secondary" aria-hidden="true"></i>
+    <i class="fab fa-ko-fi fs-5 text-secondary" aria-hidden="true"></i>
     <a href="https://ko-fi.com/taskminder" target="_blank">Ko-Fi</a>
     <div class="form-text">Unterstütze TaskMinder finanziell!</div>
+  </div>
+</div>
+
+<div class="modal fade" id="request-queue-cleared-modal" tabindex="-1" aria-labelledby="request-queue-cleared-modal-title">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="request-queue-cleared-modal-title">Änderungen, während du offline warst</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">Du hast diese Änderungen gemacht, während du offline warst. Hier siehst du, ob sie erfolgreich waren.</div>
+        <ul class="list-group" id="request-queue-cleared-modal-list"></ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary fw-bold flex-fill" data-bs-dismiss="modal">Fertig</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -114,7 +167,7 @@
             <span class="d-block">Das Passwort ist falsch!</span>
           </div>
           <label for="navbar-login-password" class="form-label">Gib dein Passwort ein</label>
-          <input type="password" class="form-control login-password" id="navbar-login-password" />
+          <password-input class="login-password" id="navbar-login-password"></password-input>
           <div class="form-text">Wolltest du dich registrieren? Dieser Nutzername ist leider schon vergeben. Aber es gibt noch genug andere!</div>
         </div>
         <div id="register-content" class="d-none register-element">
@@ -122,18 +175,24 @@
             <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
             <span class="d-block">Die Passwörter stimmen nicht überein!</span>
           </div>
-          <div class="alert alert-warning p-2 d-none align-items-center gap-2 register-error-insecure-password">
-            <i class="fa-solid fa-triangle-exclamation mx-1" aria-hidden="true"></i>
-            <span class="d-block">Das Passwort ist nicht sehr sicher!</span>
+          <div class="alert alert-danger p-2 d-none align-items-center gap-2 register-error-insecure-password">
+            <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+            <span class="d-block">
+              Das Passwort ist nicht sicher genug!
+              <ul class="mb-0">
+                <li>Länge: 6 bis 128 Zeichen</li>
+                <li>Benutze einen Buchstaben, eine Zahl und ein Sonderzeichen</li>
+                <li>Verwende nicht deinen Nutzernamen</li>
+              </ul>
+            </span>
           </div>
           <div class="mb-3">
-            <label for="navbar-register-password" class="form-label">Gib dein Passwort ein</label>
-            <input type="password" class="form-control register-password" id="navbar-register-password" />
-            <div class="form-text">Denk daran, ein sicheres Passwort zu nehmen</div>
+            <label for="navbar-register-password" class="form-label">Wähle ein Passwort</label>
+            <password-input class="register-password" id="navbar-register-password"></password-input>
           </div>
           <div class="mb-3">
-            <input type="password" class="form-control register-password-repeat" />
-            <div class="form-text">Gib es noch mal ein</div>
+            <label for="navbar-register-password-repeat" class="form-label">Gib es noch mal ein</label>
+            <password-input class="register-password-repeat" id="navbar-register-password-repeat"></password-input>
           </div>
           <div class="form-check">
             <input class="form-check-input mt-2 register-checkbox" type="checkbox" id="navbar-register-checkbox" />
@@ -169,13 +228,40 @@
     </div>
     <div class="toast-body">Unser Server hat gerade Probleme. Bitte versuche es später erneut.</div>
   </div>
-  <div id="unknown-error-toast" class="toast">
+  <div id="error-request-timeout-toast" class="toast">
     <div class="toast-progress-bar bg-danger"></div>
+    <div class="toast-header bg-danger text-body-bg">
+      <b class="me-auto">Verbindungsproblem</b>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+    </div>
+    <div class="toast-body">
+      Es ist noch keine Antwort vom Server gekommen. Vielleicht ist deine Internetverbindung etwas langsam. Hab bitte noch etwas Geduld und schicke
+      die Anfrage nicht noch einmal.
+    </div>
+  </div>
+  <div id="nginx-size-limit-toast" class="toast">
+    <div class="toast-progress-bar bg-danger"></div>
+    <div class="toast-header bg-danger text-body-bg">
+      <b class="me-auto">Zu große Anfrage</b>
+      <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+    </div>
+    <div class="toast-body">Diese Anfrage ist zu groß für unseren Server. Bitte versuche, sie in kleinere Anfragen aufzuteilen.</div>
+  </div>
+  <div id="unknown-error-toast" class="toast" data-bs-autohide="false">
     <div class="toast-header bg-danger text-body-bg">
       <b class="me-auto">Unerwarteter Fehler</b>
       <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
     </div>
-    <div class="toast-body">Ein unbekannter Fehler ist aufgetreten.</div>
+    <div class="toast-body">
+      Ein unbekannter Fehler ist aufgetreten.
+      <div class="mt-2 pt-2 border-top d-flex justify-content-end align-items-start gap-2">
+        <button type="button" class="btn btn-secondary btn-sm fw-semibold" data-bs-dismiss="toast">Schließen</button>
+        <div>
+          <button type="button" class="btn btn-danger btn-sm fw-semibold" id="unknown-error-toast-copy">Serverantwort kopieren</button>
+          <div class="form-text">Füge die Serverantwort z.B. in einer Fehlermeldung an uns hinzu!</div>
+        </div>
+      </div>
+    </div>
   </div>
   <div id="not-logged-in-toast" class="toast">
     <div class="toast-progress-bar bg-danger"></div>

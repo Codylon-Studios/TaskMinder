@@ -2,21 +2,29 @@ import multer, { FileFilterCallback } from "multer";
 import {
   ALLOWED_MIMES,
   ALLOWED_EXTENSIONS,
-  TEMP_DIR
-} from "../config/upload";
+  TEMP_DIR,
+  MAX_FILE_SIZE,
+  MAX_FILES_PER_UPLOAD,
+  MAX_FILES_PER_CLASS
+} from "../config/upload.js";
 import path from "path";
 import { Request, Response, NextFunction } from "express";
 import mime from "mime-types";
-import { RequestError } from "../@types/requestError";
+import { RequestError } from "../@types/requestError.js";
 import { randomUUID } from "crypto";
-import prisma from "../config/prisma";
+import prisma from "../config/prisma.js";
+import type { Prisma } from "@prisma/client";
+import { getUploadedFiles, performUploadCleanup, registerReservedBytes, registerTempFiles } from "../utils/upload.cleanup.js";
 
+//
 // normalizes file requests into one consistent format
-export const normalizeFiles = async (req: Request,
+//
+export const normalizeFiles = (req: Request,
   res: Response,
-  next: NextFunction): Promise<void> => {
-
-  if (!req.file && !req.files) {
+  next: NextFunction): void => {
+  // getUploadedFiles normalizes the files or returns [] if invalid
+  const files = getUploadedFiles(req, res);
+  if (files.length === 0) {
     const err: RequestError = {
       name: "Bad Request",
       status: 400,
@@ -25,98 +33,242 @@ export const normalizeFiles = async (req: Request,
     };
     return next(err);
   }
-
-  if (req.file) {
-    req.allFiles = [req.file];
-  }
-  else if (req.files) {
-    // Multer array() or fields() could give different shapes
-    if (Array.isArray(req.files)) {
-      req.allFiles = req.files;
-    }
-    else {
-      // If fields() was used: { field1: [..], field2: [..] }
-      req.allFiles = Object.values(req.files).flat();
-    }
-  }
-  else {
-    req.allFiles = [];
-  }
-  res.locals.allFiles = req.allFiles;
+  req.allFiles = files;
+  res.locals.allFiles = files;
+  registerTempFiles(res, files);
   next();
 };
 
+//
+// normalizes file requests but allows empty uploads (used for edit metadata-only)
+//
+export const normalizeFilesOptional = (req: Request,
+  res: Response,
+  next: NextFunction): void => {
+  const files = getUploadedFiles(req, res);
+  if (files.length === 0) {
+    req.allFiles = [];
+    res.locals.allFiles = [];
+    return next();
+  }
+  req.allFiles = files;
+  res.locals.allFiles = files;
+  registerTempFiles(res, files);
+  next();
+};
+
+//
 // preflight quota check with atomic reservation
+//
 export const preflightStorageQuotaCheck = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const contentLengthStr = req.headers["content-length"];
-  if (!contentLengthStr) {
+  const files = (res.locals.allFiles as Express.Multer.File[]) ?? [];
+  const totalUploadSize = files.reduce((sum, file) => sum + BigInt(file.size), 0n);
+
+  if (totalUploadSize <= 0n) {
     const err: RequestError = {
       name: "Bad Request",
       status: 400,
-      message: "Missing content-length header",
+      message: "No files were uploaded",
       expected: true
     };
     return next(err);
   }
-
-  const totalUploadSize = BigInt(contentLengthStr);
-  const session = req.session;
-  const classIdNum = parseInt(session.classId!, 10);
+  const classIdNum = parseInt(req.session.classId!, 10);
 
   try {
-    // Atomically check and reserve storage in a transaction
     await prisma.$transaction(async tx => {
-      const classQuota = await tx.class.findUnique({
-        where: { classId: classIdNum },
-        select: {
-          storageQuotaBytes: true,
-          storageUsedBytes: true
-        }
-      });
-
-      if (!classQuota) {
-        const err: RequestError = {
-          name: "Not Found",
-          status: 404,
-          message: "Class not found",
-          expected: true
-        };
-        throw err;
-      }
-
-      // Check if upload would exceed quota
-      if (classQuota.storageUsedBytes + totalUploadSize > classQuota.storageQuotaBytes) {
-        const err: RequestError = {
-          name: "Insufficient Storage",
-          status: 507,
-          message: "Class storage quota would be exceeded",
-          expected: true
-        };
-        throw err;
-      }
-
-      // Reserve the storage immediately
-      await tx.class.update({
-        where: { classId: classIdNum },
-        data: {
-          storageUsedBytes: {
-            increment: totalUploadSize
-          }
-        }
-      });
+      await reserveStorage(tx, classIdNum, totalUploadSize);
     });
 
     // Store reserved amount in res.locals for service layer
     res.locals.reservedBytes = totalUploadSize;
+    // reserves the storage in res.locals.uploadCleanupState
+    registerReservedBytes(res, totalUploadSize);
     next();
   }
   catch (error) {
     next(error);
   }
+};
+
+//
+// preflight quota check for edit uploads
+//
+export const preflightEditStorageQuotaCheck = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const files = (res.locals.allFiles as Express.Multer.File[]) ?? [];
+  // if there are no files, skip this middleware
+  if (files.length === 0){
+    res.locals.filesChanged = false;
+    return next();
+  }
+  const totalUploadSize = files.reduce((sum, file) => sum + BigInt(file.size ?? 0), 0n);
+
+  if (totalUploadSize <= 0n) {
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "This request indicates that files were uploaded, but their size is <= 0",
+      expected: true
+    };
+    return next(err);
+  }
+
+  const classIdNum = parseInt(req.session.classId!, 10);
+  const uploadId = Number.parseInt(req.params.id, 10);
+
+  if (Number.isNaN(uploadId)) {
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "Invalid upload id.",
+      expected: true
+    };
+    return next(err);
+  }
+
+  try {
+    await prisma.$transaction(async tx => {
+      const uploadData = await tx.upload.findUnique({
+        where: { uploadId },
+        include: { Files: true }
+      });
+
+      if (!uploadData || uploadData.classId !== classIdNum) {
+        const err: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Upload not found.",
+          expected: true
+        };
+        throw err;
+      }
+
+      const oldFilesSize = uploadData.Files.reduce((sum, file) => sum + BigInt(file.size), 0n);
+      const additionalBytesNeeded = totalUploadSize > oldFilesSize ? totalUploadSize - oldFilesSize : 0n;
+
+      if (additionalBytesNeeded <= 0n) {
+        res.locals.reservedBytes = 0n;
+        registerReservedBytes(res, 0n);
+        return;
+      }
+
+      await reserveStorage(tx, classIdNum, additionalBytesNeeded);
+
+      res.locals.reservedBytes = additionalBytesNeeded;
+      registerReservedBytes(res, additionalBytesNeeded);
+    });
+
+    next();
+  }
+  catch (error) {
+    next(error);
+  }
+};
+
+//
+// check if current upload would exceed the max file upload limit per class
+//
+export const checkClassFileCountLimit = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  // session.classId sertainly exists here because the access check ran before it
+  const classId = parseInt(req.session.classId!, 10);
+
+  const fileCount = await prisma.fileMetadata.count({
+    where: {
+      Upload: {
+        classId: classId
+      }
+    }
+  });
+
+  // TODO @Mingqi: is does not count the files that are being uploaded, 
+  // since this would be computationally more expensive, consider to move after other middleware, where filesCount is available.
+  if (fileCount >= MAX_FILES_PER_CLASS) {
+    const err: RequestError = {
+      name: "Content Too Large",
+      status: 413,
+      message: "Upload limit reached: this class already has the maximum number of files allowed.",
+      expected: true
+    };
+    return next(err);
+  }
+
+  next();
+};
+
+//
+// Attach cleanup/rollback hooks for non-error responses or aborted connections
+//
+export const attachUploadCleanupOnFail = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // avoid double cleanup
+  let finalized = false;
+
+  const detachListeners = (): void => {
+    // remove all listeners
+    res.off("finish", onFinish);
+    res.off("close", onClose);
+    res.off("error", onError);
+    if (res.locals.uploadCleanupListeners) {
+      delete res.locals.uploadCleanupListeners;
+    }
+  };
+
+  const cleanup = async (reason: string): Promise<void> => {
+    // if already finalized, return
+    if (finalized) return;
+    finalized = true;
+
+    await performUploadCleanup(req, res, reason);
+    // remove listeners
+    detachListeners();
+  };
+
+  // Run cleanup on aborted connections or non-2xx/3xx responses
+  const onFinish = (): void => {
+    if (res.statusCode >= 400) {
+      void cleanup("non-success response");
+    }
+    else {
+      detachListeners();
+    }
+  };
+  // Treat as an abort and cleanup
+  const onClose = (): void => {
+    // connection closed before the response was fully sent
+    if (!res.writableEnded) {
+      void cleanup("aborted connection");
+    }
+    else {
+      detachListeners();
+    }
+  };
+  // Always cleanup at error
+  const onError = (): void => {
+    void cleanup("response error");
+  };
+
+  // listener functions
+  res.on("finish", onFinish);
+  res.on("close", onClose);
+  res.on("error", onError);
+
+  res.locals.uploadCleanupListeners = { onFinish, onClose, onError };
+  next();
 };
 
 //
@@ -186,21 +338,24 @@ export const secureUpload = multer({
   storage: tempStorage,
   fileFilter: secureFileFilter,
   limits: {
-    fileSize: 15 * 1024 * 1024 // 15MB limit
+    fileSize: MAX_FILE_SIZE,
+    files: MAX_FILES_PER_UPLOAD
   }
 });
 
+//
 // Wrapper to catch Multer errors (specifically file size limit)
+//
 export const handleFileUpload = (req: Request, res: Response, next: NextFunction): void => {
-  const upload = secureUpload.array("files", 20);
+  const upload = secureUpload.array("files", MAX_FILES_PER_UPLOAD);
 
   upload(req, res, err => {
     if (err instanceof multer.MulterError) {
       if (err.code === "LIMIT_FILE_SIZE") {
         const error: RequestError = {
-          name: "Bad Request",
-          status: 400,
-          message: "File size limit exceeded (Max 15MB)",
+          name: "Content Too Large",
+          status: 413,
+          message: "File size limit exceeded",
           expected: true
         };
         return next(error);
@@ -208,8 +363,8 @@ export const handleFileUpload = (req: Request, res: Response, next: NextFunction
       if (err.code === "LIMIT_UNEXPECTED_FILE") {
         const error: RequestError = {
           name: "Bad Request",
-          status: 400,
-          message: "Too many files uploaded (Max 20 files)",
+          status: 413,
+          message: "Too many files uploaded",
           expected: true
         };
         return next(error);
@@ -230,10 +385,56 @@ export const handleFileUpload = (req: Request, res: Response, next: NextFunction
   });
 };
 
+//
+// sums the file sizes and reserves the storage
+//
+const reserveStorage = async (
+  tx: Prisma.TransactionClient,
+  classIdNum: number,
+  bytesToReserve: bigint
+): Promise<void> => {
+  const classQuota = await tx.class.findUnique({
+    where: { classId: classIdNum },
+    select: {
+      storageQuotaBytes: true,
+      storageUsedBytes: true
+    }
+  });
+  if (!classQuota) {
+    const err: RequestError = {
+      name: "Not Found",
+      status: 404,
+      message: "Class not found",
+      expected: true
+    };
+    throw err;
+  }
+  if (classQuota.storageUsedBytes + bytesToReserve > classQuota.storageQuotaBytes) {
+    const err: RequestError = {
+      name: "Content Too Large",
+      status: 413,
+      message: "Class storage quota will be exceeded",
+      expected: true
+    };
+    throw err;
+  }
+  await tx.class.update({
+    where: { classId: classIdNum },
+    data: {
+      storageUsedBytes: {
+        increment: bytesToReserve
+      }
+    }
+  });
+};
 
 export default {
   secureUpload,
   handleFileUpload,
+  attachUploadCleanupOnFail,
   preflightStorageQuotaCheck,
-  normalizeFiles
+  preflightEditStorageQuotaCheck,
+  checkClassFileCountLimit,
+  normalizeFiles,
+  normalizeFilesOptional
 };

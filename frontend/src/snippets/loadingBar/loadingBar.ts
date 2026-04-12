@@ -1,26 +1,6 @@
-import { getSite, isValidSite, renderAll, unsavedChanges } from "../../global/global.js";
+import { init as initGlobal, getSite, isValidSite, renderAll, unsavedChanges, highlightUnavailable, isStandalone } from "../../global/global.js";
 import { init as initBottombar } from "../bottombar/bottombar.js";
-import { init as initNavbar, user } from "../navbar/navbar.js";
-
-function cacheHtml(url: string, html: string): void {
-  if (htmlCache.has(url)) {
-    htmlCache.delete(url);
-  }
-  else if (htmlCache.size >= CACHE_SIZE) {
-    const firstKey = htmlCache.keys().next().value as string;
-    htmlCache.delete(firstKey);
-  }
-  htmlCache.set(url, html);
-}
-
-function getCachedHtml(url: string): string | undefined {
-  const html = htmlCache.get(url);
-  if (html) {
-    htmlCache.delete(url);
-    htmlCache.set(url, html);
-  }
-  return html;
-}
+import { init as initNavbar } from "../navbar/navbar.js";
 
 async function init(): Promise<void> {
   let s = getSite();
@@ -35,9 +15,6 @@ async function init(): Promise<void> {
     $("head").append(`<link rel="stylesheet" href="/pages/${s}/${s}.css" data-site="${s}">`);
   }
   
-  if (! user.isAuthed) {
-    await user.auth({ silent: true });
-  }
   const mod = await import(`../../pages/${s}/${s}.js`);
   await new Promise(res => {
     $(res);
@@ -48,6 +25,7 @@ async function init(): Promise<void> {
   await initBottombar();
   await initNavbar();
   await renderAll();
+  $("#app-scroll").scrollTop(0);
 
   setTimeout(() => {
     const hash = globalThis.location.hash;
@@ -98,31 +76,40 @@ export async function replaceSitePJAX(url: string, pushHistory?: boolean): Promi
   }
 
   const interval = startLoadingBar();
-  const urlPathname = (new URL(url, globalThis.location.origin)).pathname;
   const hash = (new URL(url, globalThis.location.origin)).hash;
 
   try {
-    const cachedHtml = getCachedHtml(urlPathname);
     let app;
     let resUrl;
     let toasts;
 
-    if (cachedHtml) {
-      app =  cachedHtml;
-      resUrl = (new URL(url, globalThis.location.origin)).pathname;
-    }
-    else {
+    try {
       const res = await fetch(url);
+
+      if (res.status === 503) {
+        throw new Error("Unavailable");
+      }
+
       const doc = await res.text();
-      app = $(doc).filter("#app").html();
+      app = $(doc).find("#app").html();
       toasts = $(doc).filter(".toast-container").children();
       resUrl = res.url;
     }
-    
-    cacheHtml((new URL(resUrl, globalThis.location.origin)).pathname, app);
+    catch {
+      clearInterval(interval);
+      highlightUnavailable();
+      return;
+    }
 
     if (pushHistory ?? true) {
-      globalThis.history.pushState({}, "", resUrl + hash);
+      if (isStandalone) {
+        // Simulate app in pwa because now the user can swipe from the complete side
+        // to navigate with the bottombar (instead of history navigation)
+        globalThis.history.replaceState({}, "", resUrl + hash);
+      }
+      else {
+        globalThis.history.pushState({}, "", resUrl + hash);
+      }
       $(globalThis).trigger("pushstate");
     }
 
@@ -157,15 +144,12 @@ const titleMap = {
   uploads: "Dateien"
 };
 
-const htmlCache: Map<string, string> = new Map();
-const CACHE_SIZE = 5;
-
 let loadingBarProgress = 0;
 let internalPopstateEvent = false;
 
+await initGlobal();
 init();
 $("body").prepend("<div id='app-prepend' class='d-none'>");
-cacheHtml(location.pathname, $("#app").html());
 
 $(document).on("click", "a[data-pjax]", async function (e) {
   e.preventDefault();

@@ -1,5 +1,4 @@
 import { io } from "../vendor/socket/socket.io.esm.min.js";
-import { user } from "../snippets/navbar/navbar.js";
 import {
   ClassMemberData,
   DataAccessor,
@@ -12,7 +11,6 @@ import {
   JoinedTeamsData,
   LessonData,
   LessonGroup,
-  LessonWithEvent,
   LessonWithSubject,
   LessonWithSubstitution,
   TimetableData,
@@ -21,18 +19,24 @@ import {
   TeamsData,
   UploadData,
   SocketDataAccessor,
-  RawDate
+  RawDate,
+  AjaxOptions,
+  AjaxError,
+  SerializedRequest,
+  LessonGroupWithEvent,
+  UploadRequestsData,
+  ClassInfo,
+  Bootstrap,
+  UserEventName,
+  UserEventCallback,
+  SingleLessonData
 } from "./types";
 
 export const lastCommaRegex = /,(?!.*,)/;
-
-crypto.randomUUID ??= (): `${string}-${string}-${string}-${string}-${string}` => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
-    const r = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
-    const v = c === "x" ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  }) as `${string}-${string}-${string}-${string}-${string}`;
-};
+export const weekDaysSo = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+export const weekDaysMo = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+export const isStandalone = globalThis.matchMedia("(display-mode: standalone)").matches;
+export const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
 export function getSite(): string {
   return location.pathname.replace(/(^\/)|(\/$)/g, "") || "/";
@@ -79,6 +83,41 @@ export function registerSocketListeners(listeners: Record<string, () => unknown>
   }, 0);
 }
 
+function openIndexedDB(): Promise<IDBDatabase> {
+  return new Promise((res, rej) => {
+    const request = indexedDB.open("app", 1);
+
+    request.onupgradeneeded = event => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains("meta")) {
+        db.createObjectStore("meta");
+      }
+    };
+
+    request.onsuccess = event => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (db.objectStoreNames.contains("meta")) {
+        res(db);
+      }
+      else {
+        db.close();
+        indexedDB.deleteDatabase("app");
+        openIndexedDB().then(res => res);
+      }
+    };
+
+    request.onsuccess = event => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      res(db);
+    };
+
+    request.onerror = event => {
+      const error = (event.target as IDBOpenDBRequest).error;
+      rej(error!);
+    };
+  });
+}
+
 export function toDate(raw: RawDate): Date {
   return new Date(raw instanceof Date ? raw : (typeof raw === "number" ? raw : Number.parseInt(raw)));
 }
@@ -91,30 +130,37 @@ export function getSimpleDisplayDate(raw: RawDate): string {
   return `${day}.${month}`;
 }
 
-export function getDisplayDate(raw: RawDate): string {
+export enum RelativeDirection {
+  PAST,
+  FUTURE
+}
+export function getDisplayDate(raw: RawDate, settings?: { relativeDirection?: RelativeDirection, alwaysDate?: boolean, withTime?: boolean }): string {
+  const {
+    relativeDirection: weekDaysDirection = RelativeDirection.PAST,
+    alwaysDate = true,
+    withTime = false
+  } = settings ?? {};
+
   const date = toDate(raw);
 
-  const dateStr = getSimpleDisplayDate(raw);
+  const simpleDateStr = getSimpleDisplayDate(raw);
 
-  const msDate = date.setHours(0, 0, 0, 0);
+  const msDate = (new Date(date)).setHours(0, 0, 0, 0);
   const msToday = new Date().setHours(0, 0, 0, 0);
-  const diff = (msDate - msToday) / (1000 * 60 * 60 * 24);
+  const daysDiff = (msDate - msToday) / (1000 * 60 * 60 * 24);
 
-  const weekDays = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  const dateInRange = weekDaysDirection === RelativeDirection.FUTURE ? (daysDiff >= -1 && daysDiff <= 6) : (daysDiff >= -6 && daysDiff <= 2);
+  const withDayStr = dateInRange ?
+    `<b>${
+      {"-1": "gestern", "0": "heute", "1": "morgen", "2": "übermorgen"}[daysDiff] ?? weekDaysSo[date.getDay()]
+    }</b>${alwaysDate ? ", " + simpleDateStr : ""}` :
 
-  switch (diff) {
-  case -1: return `<b>gestern</b>, ${dateStr}`;
-  case 0:  return `<b>heute</b>, ${dateStr}`;
-  case 1:  return `<b>morgen</b>, ${dateStr}`;
-  case 2:  return `<b>übermorgen</b>, ${dateStr}`;
-  default: 
-    if (diff < -1 || diff > 6) {
-      return `<b>${dateStr}</b>`;
-    }
-    else {
-      return `<b>${weekDays[date.getDay()]}</b>, ${dateStr}`;
-    }
-  }
+    `<b>${simpleDateStr}</b>`;
+  
+  const pad = (x: number): string => String(x).padStart(2, "0");
+  const withTimeStr = withDayStr + (withTime ? `, um <b>${pad(date.getHours())}:${pad(date.getMinutes())}</b> Uhr` : "");
+  
+  return withTimeStr;
 }
 
 export function msToInputDate(raw: RawDate): string {
@@ -237,8 +283,98 @@ export function escapeHTML(str: string): string {
   });
 }
 
+export function randomUUID(): `${string}-${string}-${string}-${string}-${string}` {
+  if (crypto.randomUUID !== undefined) {
+    return crypto.randomUUID() as `${string}-${string}-${string}-${string}-${string}`;
+  }
+
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+    const r = crypto.getRandomValues(new Uint8Array(1))[0] % 16;
+    const v = c === "x" ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  }) as `${string}-${string}-${string}-${string}-${string}`;
+}
+
+export function $cloneTemplate(selector: string, settings?: {id?: string, dataId?: string, disabled?: boolean}): JQuery<HTMLElement> {
+  const { id = randomUUID(), dataId, disabled } = settings ?? {};
+
+  const t = $(selector);
+  if (t.length === null) {
+    console.warn(`No <template> with selector "${selector}"!`);
+    return $();
+  }
+  const template = $(selector)[0] as HTMLTemplateElement;
+  const fragment = template.content.cloneNode(true) as DocumentFragment;
+  const children = $(fragment).children();
+
+  for (const attr of ["id", "for", "data-bs-target"]) {
+    children.find(`[${attr}*="{{ID}}"]`).addBack(`[${attr}*="{{ID}}"]`).each(function () {
+      $(this).attr(attr, $(this).attr(attr)?.replaceAll("{{ID}}", id) ?? "");
+    });
+  }
+
+  if (dataId) {
+    children.find("[data-id]").addBack("[data-id]").attr("data-id", dataId);
+  }
+
+  if (disabled !== undefined) {
+    children.find("[disabled]").addBack("[disabled]").attr("disabled", disabled ? "" : null);
+  }
+  return children;
+}
+
+export function makeButtonShowCheck(btn: JQuery<HTMLElement>, duration: number): void {
+  const html = btn.html();
+
+  btn.css({ width: btn.css("width"), height: btn.css("height") });
+  btn.html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
+
+  setTimeout(() => {
+    btn.html(html).prop("disabled", false);
+    btn.css({ width: "", height: "" });
+  }, duration);
+}
+
+export function cutString(str: string, maxLength: number): string {
+  if (str.length < maxLength) return str;
+  return str.substring(0, maxLength - 1) + "…";
+}
+
+export function toCommaAndAnd(strings: string[]): string {
+  return strings.join(", ").replace(/,(?!.*,)/, " und");
+}
+
 export function getInputValue(element: JQuery<HTMLElement>, fallback?: string): string {
   return element.val()?.toString() ?? (fallback ?? "");
+}
+
+export function canAutocomplete(element: JQuery<HTMLElement>, unsetVal?: string): boolean {
+  return element.hasClass("is-autocompleted") || getInputValue(element).trim() === (unsetVal ?? "");
+}
+
+export function forceAutocomplete(element: JQuery<HTMLElement>, val: string | string[] | number): void {
+  element.val(val).addClass("is-autocompleted").trigger("autocomplete");
+}
+
+export function autocomplete(element: JQuery<HTMLElement>, val: string | string[] | number, unsetVal?: string): boolean {
+  if (canAutocomplete(element, unsetVal)) { // The user hasn't decided for a specific value
+    forceAutocomplete(element, val);
+    return true;
+  }
+  return false;
+}
+
+export async function checkTeamInputForSuspicious(this: HTMLElement): Promise<void> {
+  const teamId = Number.parseInt(getInputValue($(this)));
+  if (teamId === -1) {
+    $(this).removeClass("is-suspicious");
+  }
+  else {
+    const currentJoinedTeamsData = await joinedTeamsData();
+    const selectedTeamName = $(this).find("option:selected").text();
+    $(this).val(teamId).find("~ .suspicious-feedback b").text(selectedTeamName);
+    $(this).toggleClass("is-suspicious", !currentJoinedTeamsData.includes(teamId));
+  }
 }
 
 export function getCirclePath(cx: number, cy: number, r: number, a: number, full?: boolean): string {
@@ -250,6 +386,31 @@ export function getCirclePath(cx: number, cy: number, r: number, a: number, full
   return `M${cx} ${cy} l0 ${-r} A${r} ${r} 0 ${a % 360 > 180 ? 1 : 0} 1 ${x} ${y} Z`;
 }
 
+export function bytesToText(b: number): string {
+  if (b < 100) {
+    return Math.round(b * 10) / 10 + "B";
+  }
+  else {
+    b /= 1024;
+    if (b < 100) {
+      return Math.round(b * 10) / 10 + "KB";
+    }
+    else {
+      b /= 1024;
+      if (b < 100) {
+        return Math.round(b * 10) / 10 + "MB";
+      }
+      else {
+        return Math.round(b / 1024 * 10) / 10 + "GB";
+      }
+    }
+  }
+};
+
+export function checkSecurePassword(username: string, password: string): boolean {
+  return !password.toLowerCase().includes(username.toLowerCase()) && /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{6,128}$/.test(password);
+}
+
 export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   await joinedTeamsData.init(); await subjectData.init(); await lessonData.init(); await classSubstitutionsData.init(); await eventData.init();
 
@@ -257,7 +418,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   const currentSubjectData = await subjectData();
   const currentLessonData = await lessonData();
   const currentSubstitutionsData = await classSubstitutionsData();
-  const currentEventData = (await eventData());
+  const currentEventData = await eventData();
 
   const lessonsWithSubject: LessonWithSubject[] = currentLessonData.filter(l => l.weekDay === date.getDay() - 1)
     .filter(l => (currentJoinedTeamsData.includes(l.teamId) || l.teamId === -1))
@@ -268,7 +429,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
         subjectNameShort: "Pause",
         subjectNameSubstitution: [],
         teacherGender: "d",
-        teacherNameLong: "",
+        teacherNameLong: "-",
         teacherNameSubstitution: []
       };
 
@@ -276,7 +437,8 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
         lessonNumber: l.lessonNumber,
         startTime: Number.parseInt(l.startTime),
         endTime: Number.parseInt(l.endTime),
-        room: l.room,
+        room: l.subjectId === -1 ? "-" : l.room,
+        teamId: l.teamId,
 
         subjectId: l.subjectId,
         subjectNameLong: subject.subjectNameLong,
@@ -308,9 +470,13 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
             matchesLessonNumber(l.lessonNumber, substitution.lesson)
             && (l.teacherNameSubstitution.includes(substitution.teacherOld) || l.subjectId === -1)
           ) {
+            const substitutionSubjectId = currentSubjectData.find(s => s.subjectNameSubstitution?.includes(substitution.subject))?.subjectId ?? null;
             return {
               ...l,
-              substitution
+              substitution: {
+                ...substitution,
+                subjectId: substitutionSubjectId
+              }
             };
           }
           return l;
@@ -319,21 +485,7 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
     }
   }
 
-  let lessonsWithEvents: LessonWithEvent[] = lessonsWithSubstitutions;
-  
-  currentEventData.filter(e =>
-    (currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1)
-    && isSameDay(e.startDate, date)
-  ).forEach(e => {
-    lessonsWithEvents = lessonsWithEvents.map(l => {
-      if (matchesLessonNumber(l.lessonNumber, e.lesson ?? "")) {
-        l.events = [...l.events ?? [], e].sort((e1, e2) => e1.eventId - e2.eventId);
-      }
-      return l;
-    });
-  });
-
-  const groupedLessonData = lessonsWithEvents
+  const groupedLessonData = lessonsWithSubstitutions
     .reduce((acc: LessonGroup[], curr) => {
       const group = acc.find(l => l.lessonNumber === curr.lessonNumber);
       if (group) {
@@ -351,6 +503,19 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
     }, [])
     .sort((group1, group2) => group1.lessonNumber - group2.lessonNumber);
 
+  let lessonGroupsWithEvent: LessonGroupWithEvent[] = groupedLessonData;
+    
+  currentEventData.filter(e =>
+    (currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1) && isSameDay(e.startDate, date)
+  ).forEach(e => {
+    lessonGroupsWithEvent = lessonGroupsWithEvent.map(l => {
+      if (matchesLessonNumber(l.lessonNumber, e.lesson ?? "")) {
+        l.events = [...l.events ?? [], e].sort((e1, e2) => e1.eventId - e2.eventId);
+      }
+      return l;
+    });
+  });
+
   function isDoubleLesson(lg1: LessonGroup | TimetableData, lg2?: LessonGroup | TimetableData): boolean {
     function checkForSubstitutions(l1: LessonWithSubstitution, l2: LessonWithSubstitution): boolean {
       if (!(l1.substitution === undefined && l2.substitution === undefined)) {
@@ -360,12 +525,13 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
       return true;
     }
 
-    function checkForEvents(l1: LessonWithEvent, l2: LessonWithEvent): boolean {
+    function checkForEvents(l1: LessonGroupWithEvent, l2: LessonGroupWithEvent): boolean {
       if (!(l1.events === undefined && l2.events === undefined)) {
         if (l1.events === undefined || l2.events === undefined) return false;
         else {
-          for (const event in l1.events) {
-            if (!checkKeys(l1.events[event], l2.events[event], ["eventId"])) return false;
+          if (l1.events.length !== l2.events.length) return false;
+          for (const i in l1.events) {
+            if (l1.events[i].eventId !== l2.events[i].eventId) return false;
           }
         };
       }
@@ -378,15 +544,14 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
 
     if (! (lg1 && lg2)) return false;
     if (lg1.lessons.length !== lg2?.lessons.length) return false;
+    if (!checkForEvents(lg1, lg2)) return false;
 
     for (const lessonId in lg1.lessons) {
       const l1 = lg1.lessons[lessonId];
       const l2 = lg2.lessons[lessonId];
 
       if (!checkKeys(l1, l2, ["subjectId", "room"])) return false;
-
       if (!checkForSubstitutions(l1, l2)) return false;
-      if (!checkForEvents(l1, l2)) return false;
     }
     return true;
   }
@@ -415,12 +580,51 @@ export async function loadTimetableData(date: Date): Promise<TimetableData[]> {
   return multiLessonGroups;
 }
 
+export async function getCurrentLesson(): Promise<TimetableData | undefined> {
+  const now = new Date();
+  const timeNow = (now.getHours() * 60 + now.getMinutes() - 5) * 60 * 1000; // Pretend it's 5min earlier, in case the lesson was just over
+  const currentTimetableData = await loadTimetableData(new Date());
+  return currentTimetableData.find(l => l.startTime < timeNow && l.endTime > timeNow);
+}
+
+export async function getNextLessonWithDate(subjectId: number): Promise<{lesson: SingleLessonData, date: Date, otherWeekDays: number[]} | null> {
+  const currentLessonData = await lessonData();
+  // The next lessons of the new selected subject
+  const nextLessons = currentLessonData.filter(lesson => lesson.subjectId === subjectId);
+
+  const now = new Date();
+  let minDiff = 7;
+  let minLesson: SingleLessonData | null = null;
+  const otherWeekDays: number[] = [];
+  for (const l of nextLessons) {
+    otherWeekDays.push(l.weekDay);
+    let diff = (l.weekDay - (now.getDay() - 1) + 7) % 7; // The difference in days
+    if (diff === 0) diff = 7;
+    if (diff <= minDiff) {
+      minDiff = diff;
+      minLesson = l;
+    }
+  }
+
+  if (minLesson === null) return null;
+
+  const nextLessonDate = now;
+  nextLessonDate.setDate(nextLessonDate.getDate() + minDiff);
+  return {
+    otherWeekDays,
+    lesson: minLesson,
+    date: nextLessonDate
+  };
+}
+
 async function loadJoinedTeamsData(settings?: {silent?: boolean}): Promise<void> {
-  if (!user.isAuthed) await new Promise(res => {user.on("change", res)})
+  await user.awaitAuthed();
+  if (!user.classJoined) return;
 
   if (user.loggedIn) {
-    const data = await $.get("/teams/get_joined_teams_data");
-    joinedTeamsData.set(data, settings);
+    const res = await ajax("GET", "/api/teams/joined", { forceOffline: true });
+    if (!res.ok) throw new Error("HTTP error during fetch of joinedTeams: " + res.status + " " + await res.text());
+    joinedTeamsData.set(await res.json(), settings);
   }
   else {
     return new Promise<void>(res => {
@@ -454,13 +658,31 @@ async function loadClassSubstitutionsData(): Promise<void> {
   classSubstitutionsData({data: data, classFilterRegex: currentSubstitutionsData.classFilterRegex});
 }
 
+async function loadClassInfo(settings?: {silent?: boolean}): Promise<void> {
+  await user.awaitAuthed();
+  if (!user.classJoined) return;
+
+  const res = await ajax("GET", `/api/classes/${user.classId}`, { forceOffline: true });
+  classInfo.set(await res.json(), settings);
+}
+
+async function loadClassMemberData(settings?: {silent?: boolean}): Promise<void> {
+  await user.awaitAuthed();
+  if (!user.classJoined) return;
+  
+  const res = await ajax("GET",  `/api/classes/${user.classId}/members`, { forceOffline: true });
+  classMemberData.set(await res.json(), settings);
+}
+
 async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<void> {
-  if (!user.isAuthed) await new Promise(res => {user.on("change", res)})
+  await user.awaitAuthed();
+  if (!user.classJoined) return;
 
   if (user.loggedIn) {
     // If the user is logged in, get the data from the server
-    const data = await $.get("/homework/get_homework_checked_data");
-    homeworkCheckedData.set(data, settings);
+    const res = await ajax("GET", "/api/homework/checked", { forceOffline: true });
+    if (!res.ok) throw new Error("HTTP error during fetch of homeworkCheckedData: " + res.status + " " + await res.text());
+    homeworkCheckedData.set(await res.json(), settings);
   }
   else {
     return new Promise<void>(res => {
@@ -476,31 +698,22 @@ async function loadHomeworkCheckedData(settings?: {silent?: boolean}): Promise<v
   }
 }
 
-async function loadUploadData(): Promise<void> {
-  const _showAllUploads = await showAllUploads();
-  return new Promise<void>(res => {
-    $.get("/uploads/metadata?all=" + _showAllUploads, data => {
-      uploadData(data);
-      res();
-    });
-  });
-}
-
 export async function getHomeworkCheckStatus(homeworkId: number): Promise<boolean> {
   return ((await homeworkCheckedData()) ?? []).includes(homeworkId);
 }
 
-export async function tryForceReloadEventTypeStyles(): Promise<void> {
+export async function checkReloadEventTypeStyles(): Promise<void> {
   if (! user.classJoined) return;
-  const currentEventTypeData = (await eventTypeData());
-  currentEventTypeData.sort((a, b) => a.eventTypeId - b.eventTypeId);
-  const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? "{}");
+  let currentEventTypeData = (await eventTypeData());
+  currentEventTypeData = currentEventTypeData.sort((a, b) => a.eventTypeId - b.eventTypeId);
+  const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? '{"data":""}');
   const eventTypeString = JSON.stringify(Object.fromEntries(currentEventTypeData.map(e => [e.eventTypeId, e.color])));
-  if (eventTypeString !== cache.data) {
+
+  if (eventTypeString !== cache.data || cache.css === undefined) {
     cache.data = eventTypeString;
-    cache.date = Date.now();
+    cache.css = await (await fetch("/api/events/types/styles")).text();
   }
-  $("#event-type-styles").attr("href", "/events/event_type_styles?v=" + cache.date);
+  $("#event-type-styles").text(cache.css);
   localStorage.setItem("eventTypeDataCache", JSON.stringify(cache));
 }
 
@@ -517,12 +730,444 @@ export function matchesLessonNumber(lessonNumber: number, testForLessonNumbers: 
   return true;
 }
 
+export function highlightUnavailable(): void {
+  $("#unavailable-hint").addClass("fa-beat");
+  setTimeout(() => $("#unavailable-hint").removeClass("fa-beat"), 1500);
+  $("#unavailable-popup").show();
+}
+
+export function openRequestQueueDB(): Promise<IDBDatabase> {
+  return new Promise(res => {
+    const db = indexedDB.open("request-queue", 1);
+
+    db.addEventListener("upgradeneeded", () => {
+      db.result.createObjectStore("queue", {
+        keyPath: "id",
+        autoIncrement: true
+      });
+    });
+
+    db.addEventListener("success", () => {
+      res(db.result);
+    });
+  });
+}
+
+async function queueRequest(request: Request): Promise<void> {
+  const headers = Object.fromEntries(request.headers.entries());
+
+  const serializedReq = {
+    url: request.url,
+    method: request.method,
+    headers,
+    body: await request.clone().arrayBuffer()
+  };
+
+  const db = await openRequestQueueDB();
+  const tx = db.transaction("queue", "readwrite");
+  const store = tx.objectStore("queue");
+  store.add(serializedReq);
+  
+  renderRequestQueue();
+}
+
+async function getRequestDescription(req: SerializedRequest): Promise<string> {
+  const richTextareaMod = await import("../snippets/richTextarea/richTextarea.js");
+  function getText(text: string, isRich?: boolean): string {
+    return cutString(escapeHTML((isRich ?? false) ? richTextareaMod.richTextToPlainText(text) : text), 40);
+  }
+
+  const rawBody = req.body;
+  const textBody = rawBody instanceof ArrayBuffer ? new TextDecoder().decode(rawBody) : rawBody;
+  let jsonBody;
+  try {
+    jsonBody = JSON.parse(textBody);
+  }
+  catch {
+    jsonBody = null;
+  }
+  const url = new URL(req.url, globalThis.location.origin);
+  let path = url.pathname.replace(/^\/api/, "");
+  const ids = Array.from(
+    path.matchAll(/\/(\d+)/g),
+    m => Number.parseInt(m[1])
+  );
+  path = path.replaceAll(/\/\d+/g, "/:id");
+
+  switch (req.method + " " + path) {
+  case "POST /events": {
+    return `Ereignis "${getText(jsonBody.name)}" hinzufügen`;
+  }
+  case "PATCH /events/:id": {
+    return `Ereignis zu "${getText(jsonBody.name)}" bearbeiten`;
+  }
+  case "DELETE /events/:id": {
+    await eventData.init();
+    const name = (await eventData()).find(e => e.eventId === ids[0])?.name ?? "?";
+    return `Ereignis "${getText(name)}" löschen`;
+  }
+  case "PATCH /events/:id/pin": {
+    await eventData.init();
+    const name = (await eventData()).find(e => e.eventId === ids[0])?.name ?? "?";
+    return `Ereignis "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+  }
+  case "POST /homework": {
+    return `Hausaufgabe "${getText(jsonBody.content, true)}" hinzufügen`;
+  }
+  case "PATCH /homework/:id": {
+    return `Hausaufgabe zu "${getText(jsonBody.content, true)}" bearbeiten`;
+  }
+  case "DELETE /homework/:id": {
+    await homeworkData.init();
+    const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
+    return `Hausaufgabe "${getText(content, true)}" löschen`;
+  }
+  case "PATCH /homework/:id/check": {
+    await homeworkData.init();
+    const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
+    return `Hausaufgabe "${getText(content, true)}" ${jsonBody.checkStatus === true ? "erledigt" : "nicht erledigt"}`;
+  }
+  case "PATCH /homework/:id/pin": {
+    await homeworkData.init();
+    const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
+    return `Hausaufgabe "${getText(content, true)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+  }
+  case "POST /uploads": {
+    const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
+    const name = match ? match[1].trim() : "?";
+    return `Datei "${getText(name)}" hochladen`;
+  }
+  case "PATCH /uploads/:id": {
+    const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
+    const name = match ? match[1].trim() : "?";
+    return `Datei zu "${getText(name)}" bearbeiten`;
+  }
+  case "DELETE /uploads/:id": {
+    await uploadData.init();
+    const name = (await uploadData()).uploads.find(u => u.uploadId === ids[0])?.uploadName ?? "?";
+    return `Datei "${getText(name)}" löschen`;
+  }
+  case "PATCH /uploads/:id/pin": {
+    await uploadData.init();
+    const name = (await uploadData()).uploads.find(u => u.uploadId === ids[0])?.uploadName ?? "?";
+    return `Datei "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+  }
+  case "POST /uploads/requests": {
+    return `Anfrage für Datei "${getText(jsonBody.uploadRequestName)}" hinzufügen`;
+  }
+  case "DELETE /uploads/requests/:id": {
+    await uploadRequestsData.init();
+    const name = (await uploadRequestsData()).find(u => u.uploadRequestId === ids[0])?.uploadRequestName ?? "?";
+    return `Anfrage für Datei "${getText(name)}" löschen`;
+  }
+
+  case "PUT /teams/joined": {
+    return "Beigetretene Teams auswählen";
+  }
+  case "PATCH /classes/:id/name": {
+    return `Klassennamen zu ${getText(jsonBody.classDisplayName)} ändern`;
+  }
+  case "PATCH /classes/:id/code": {
+    return "Neuen Klassencode anfordern";
+  }
+  case "POST /classes/:id/upgrade-test-class": {
+    return "Testklasse zu normaler Klasse machen";
+  }
+  case "PATCH /classes/:id/default-permission": {
+    return "Standardrolle der Klasse ändern";
+  }
+  case "DELETE /classes/:id/members": {
+    return "Einige Klassenmitglieder entfernen";
+  }
+  case "PATCH /classes/:id/members/permissions": {
+    return "Berechtigungen einiger Klassenmitglieder ändern";
+  }
+  case "PUT /teams": {
+    return "Verfügbare Teams bearbeiten";
+  }
+  case "PUT /events/types": {
+    return "Verfügbare Ereignisarten bearbeiten";
+  }
+  case "PUT /subjects": {
+    return "Verfügbare Fächer bearbeiten";
+  }
+  case "PUT /lessons": {
+    return "Stundenplan bearbeiten";
+  }
+
+  default:
+    return "?";
+  }
+}
+
+export async function renderRequestQueue(): Promise<void> {
+  const db = await openRequestQueueDB();
+  const tx = db.transaction("queue", "readwrite");
+  const store = tx.objectStore("queue");
+  
+  const allRequest = store.getAll();
+  const requests = await new Promise<({id: number} & SerializedRequest)[]>(res => {
+    allRequest.addEventListener("success", () => {
+      res(allRequest.result);
+    });
+  });
+  if ($("#unavailable-queue-circle").text() === "0" && requests.length > 0) highlightUnavailable();
+  $("#unavailable-queue-title, #unavailable-queue-description, #unavailable-queue-circle").toggle(requests.length > 0);
+  $(".unavailable-queue-length").text(requests.length);
+
+  const newList = $("<div></div>");
+  
+  for (const req of requests) {
+    newList.append(`
+      <li>${await getRequestDescription(req)}</li>
+    `);
+  }
+
+  $("#unavailable-queue-list").empty().append(newList.children());
+}
+
+function getDirtyDataAccessor(req: SerializedRequest): DataAccessor<unknown> | null {
+  const path = (new URL(req.url, globalThis.location.origin)).pathname.replace("/api", "");
+
+  if (path === "/events/types") {
+    return eventTypeData as DataAccessor<unknown>;
+  }
+  if (path.startsWith("/events")) {
+    return eventData as DataAccessor<unknown>;
+  }
+  if (/\/homework\/\d+\/check/.exec(path)) {
+    return homeworkCheckedData as DataAccessor<unknown>;
+  }
+  if (path.startsWith("/homework")) {
+    return homeworkData as DataAccessor<unknown>;
+  }
+  if (path.startsWith("/uploads/requests")) {
+    return uploadRequestsData as DataAccessor<unknown>;
+  }
+  if (path.startsWith("/uploads")) {
+    return uploadData as DataAccessor<unknown>;
+  }
+  if (/\/classes\/\d+\/members/.exec(path)) {
+    return classInfo as DataAccessor<unknown>;
+  }
+  if (path.startsWith("/classes")) {
+    return classInfo as DataAccessor<unknown>;
+  }
+  if (path === "/teams/joined") {
+    return joinedTeamsData as DataAccessor<unknown>;
+  }
+  if (path === "/teams") {
+    return teamsData as DataAccessor<unknown>;
+  }
+  if (path === "/subjects") {
+    return subjectData as DataAccessor<unknown>;
+  }
+  if (path === "/lessons") {
+    return lessonData as DataAccessor<unknown>;
+  }
+  return null;
+}
+
+async function clearRequestQueue(): Promise<void> {
+  const db = await openRequestQueueDB();
+  const tx = db.transaction("queue", "readwrite");
+  const store = tx.objectStore("queue");
+
+  const allRequest = store.getAll();
+  const all = await new Promise<({id: number} & SerializedRequest)[]>(res => {
+    allRequest.onsuccess = () => res(allRequest.result);
+  });
+
+  const reqAndRes: {request: SerializedRequest, response: Response}[] = [];
+  const dirtyData: Set<DataAccessor<unknown>> = new Set();
+
+  for (const item of all) {
+    const res = await ajax(item.method, item.url, { headers: item.headers, body: item.body, passFailedRequests: true });
+    reqAndRes.push({
+      request: item,
+      response: res
+    });
+    const dirtyDataAccessor = getDirtyDataAccessor(item);
+    if (dirtyDataAccessor !== null) dirtyData.add(dirtyDataAccessor);
+    await new Promise<void>(res => setTimeout(res, 75));
+  }
+
+  const clearDb = await openRequestQueueDB();
+  clearDb.transaction("queue", "readwrite").objectStore("queue").clear();
+
+  await clearedRequestQueue(reqAndRes);
+
+  if (user.classJoined) {
+    for (const d of dirtyData) d.reload();
+    if (! (await bootstrap()).maintenance) {
+      socket.connect();
+    }
+  }
+}
+
+async function getResponseFailReason(req: SerializedRequest, res: Response): Promise<string> {
+  const rawResBody = res.body;
+  const textResBody = rawResBody instanceof ArrayBuffer ? new TextDecoder().decode(rawResBody) : rawResBody;
+  const path = (new URL(req.url, globalThis.location.origin)).pathname.replace("/api", "");
+  if (res.ok) return "";
+  if (res.status === 401)
+    return "Du hast nicht mehr die Berechtigung, diese Änderung auszuführen. "
+      + "Entweder deine Rolle wurde aktualisiert oder du musst dich erneut anmelden";
+  if (res.status === 500) return "Auf unserem Server ist ein Problem aufgetreten.";
+  if (res.status === 404) {
+    let type = "";
+    if (path.startsWith("/homework")) type = "Die Hausaufgabe";
+    if (path.startsWith("/events")) type = "Das Ereignis";
+    if (path.startsWith("/uploads")) type = "Die Datei";
+    return type + " wurde in der Zwischenzeit gelöscht.";
+  }
+  if (res.status === 413) {
+    if (textResBody === "NGINX request size limit exceeded") {
+      return "Diese Anfrage ist zu groß für unseren Server. Bitte versuche, sie in kleinere Anfragen aufzuteilen.";
+    }
+    if (path === "/uploads") {
+      const currentUploadData = await uploadData();
+      if (textResBody === "Upload limit reached: this class already has the maximum number of files allowed.") {
+        return `Deine Klasse hat das Limit von ${currentUploadData.maxFilesPerClass} Dateien erreicht. Bitte lösche ältere Dateien.`;
+      }
+      else if (textResBody === "Class storage quota will be exceeded") {
+        const totalStorage = Number.parseInt(currentUploadData.totalStorage);
+        return `Deine Klasse hat das Speicherlimit von ${bytesToText(totalStorage)} erreicht. Bitte lösche ältere Dateien.`;
+      }
+    }
+  }
+  return "Ein unbekannter Fehler ist aufgetreten.";
+}
+
+export async function clearedRequestQueue(requestsAndResponses: {request: SerializedRequest, response: Response}[]): Promise<void> {
+  renderRequestQueue();
+
+  const newList = $("<div></div>");
+  
+  for (const reqAndRes of requestsAndResponses) {
+    const req = reqAndRes.request;
+    const res = reqAndRes.response;
+    newList.append(`
+      <li class="list-group-item d-flex align-items-center gap-2">
+        <i class="fas ${res.ok ? "fa-circle-check text-success" : "fa-circle-xmark text-danger"} ms-n1"
+          role="img" aria-label="${res.ok ? "Erfolgreich" : "Fehler"}"></i>
+        <div>
+          ${await getRequestDescription(req)}
+          <div class="form-text text-danger mt-0">${await getResponseFailReason(req, res)}</div>
+        </div>
+      </li>
+    `);
+  }
+
+  $("#request-queue-cleared-modal-list").empty().append(newList.children());
+
+  if (requestsAndResponses.length > 0) $("#request-queue-cleared-modal").modal("show");
+}
+
+export async function ajax(method: string, url: string, options?: AjaxOptions): Promise<Response> {
+  const {
+    body,
+    headers = {},
+    queueable = false,
+    forceOffline = false,
+    passFailedRequests = false,
+    expectedErrors = []
+  } = options ?? {};
+  
+  const mergedHeaders = new Headers(headers);
+  mergedHeaders.set("Accept", "application/json");
+  mergedHeaders.set("X-CSRF-Token", await csrfToken());
+  mergedHeaders.set("X-API-Version", (await bootstrap()).version);
+
+  const fetchOptions: RequestInit = {
+    method,
+    headers: mergedHeaders
+  };
+
+  if (body) {
+    if (Object.getPrototypeOf(body) === Object.prototype) {
+      mergedHeaders.set("Content-Type", "application/json");
+      fetchOptions.body = JSON.stringify(body);
+    }
+    else if (body instanceof FormData || body instanceof ArrayBuffer) {
+      fetchOptions.body = body;
+    }
+  }
+
+  const req = new Request(url, fetchOptions);
+
+  const b = await bootstrap();
+  if ((b.online && !b.maintenance) || forceOffline) {
+    const timeout = setTimeout(() => {
+      $("#error-request-timeout-toast").toast("show");
+    }, 5000);
+
+    const res = await fetch(req.clone());
+    
+    clearTimeout(timeout);
+
+    if (!res.ok && !passFailedRequests) {
+      const text = await res.clone().text();
+
+      const error: AjaxError = {
+        status: res.status,
+        responseText: text
+      };
+
+      if (res.status === 500) {
+        $("#error-server-toast").toast("show");
+        throw error;
+      }
+      else if (res.status === 413 && text === "NGINX request size limit exceeded") {
+        $("#nginx-size-limit-toast").toast("show");
+        throw error;
+      }
+      else if (res.status === 503) {
+        highlightUnavailable();
+      }
+      else if (expectedErrors.some(exp => exp.status === error.status && exp.responseText === error.responseText)) {
+        throw error;
+      }
+      else {
+        $("#unknown-error-toast").toast("show");
+        $("#unknown-error-toast-copy").off("click").on("click", async function () {
+          const textToCopy = 
+            `Fetching ${method} ${url} returned an unexpected error: ${res.status} ${res.statusText}\n\n` +
+            "Request body:\n" +
+            await req.clone().text() + "\n\n" +
+            "Response body:\n" +
+            await res.clone().text() + "\n\n";
+            
+          try {
+            await navigator.clipboard.writeText(textToCopy);
+            
+            makeButtonShowCheck($(this), 1000);
+            setTimeout(() => {
+              $("#unknown-error-toast").toast("hide");
+            }, 1000);
+          }
+          catch (err) {
+            console.error("Error copying unknown error to clipboard: ", err);
+          }
+        });
+        throw error;
+      }
+    }
+
+    return res;
+  }
+  else if (queueable === true) {
+    await queueRequest(req);
+    return new Response("Request queued, waiting for the network to become available", { status: 202 });
+  }
+  else {
+    highlightUnavailable();
+    return new Response("Request cannot be queued and no network available", { status: 503 });
+  }
+}
+
 export async function renderAll(): Promise<void> {
   if (!setRenderOnUserChangeListener) {
-    user.on("change", async () => {
-      for (const d of socketDataAccessors) d.reload({ silent: true });
-      renderAll();
-    });
     setRenderOnUserChangeListener = true;
   }
   const s = getSite();
@@ -534,38 +1179,21 @@ export async function renderAll(): Promise<void> {
 }
 let setRenderOnUserChangeListener = false;
 
+export async function reloadAll(): Promise<void> {
+  for (const d of socketDataAccessors) await d.reload({ silent: true });
+  await renderAll();
+}
+
 // Global socket variable that can be accessed from any script
-export const socket = io();
+export const socket = io({
+  autoConnect: false
+});
 
 export enum ColorTheme {
   DARK = "dark",
   LIGHT = "light"
 };
 export const colorTheme = createDataAccessor<ColorTheme>("colorTheme");
-
-const themeColor = document.createElement("meta");
-themeColor.name = "theme-color";
-if (localStorage.getItem("colorTheme") === ColorTheme.DARK) {
-  colorTheme(ColorTheme.DARK);
-}
-else if (localStorage.getItem("colorTheme") === ColorTheme.LIGHT) {
-  colorTheme(ColorTheme.LIGHT);
-}
-else if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
-  colorTheme(ColorTheme.DARK);
-}
-else {
-  colorTheme(ColorTheme.LIGHT);
-}
-if ((await colorTheme()) === ColorTheme.LIGHT) {
-  themeColor.content = "#f8f9fa";
-}
-else {
-  document.getElementsByTagName("html")[0].style.background = "#212529";
-  themeColor.content = "#2b3035";
-}
-
-document.head.appendChild(themeColor);
 
 // Data accessors
 export function createDataAccessor<DataType>(name: string, config?: {
@@ -578,12 +1206,22 @@ export function createDataAccessor<DataType>(name: string, config?: {
   const reload = config?.reload;
 
   const reloadFunction = typeof reload === "string" ? async (settings?: {silent?: boolean}) => {
-    return new Promise<void>(res => {
-      $.get(reload, data => {
-        accessor.set(data, settings);
-        res();
-      });
-    });
+    const res = await ajax("GET", reload, { forceOffline: true });
+    if (res.redirected) {
+      accessor.set(null, settings);
+      return;
+    }
+    try {
+      accessor.set(await res.clone().json(), settings); 
+    }
+    catch {
+      console.warn(
+        `Getting the value for the data accessor %c${name}%c produced invalid JSON: `,
+        "font-weight: bold",
+        "font-weight: normal",
+        res.clone()
+      );
+    }
   } : reload ?? null;
 
   const accessor = async (value?: DataType | null): Promise<DataType> => {
@@ -702,222 +1340,375 @@ export function createSocketDataAccessor<DataType>(name: string, socketEv: strin
   return accessor;
 }
 
+// User
+export const user = {
+  isAuthed: false as boolean,
+  loggedIn: null as boolean | null,
+  username: "" as string,
+  classJoined: null as boolean | null,
+  permissionLevel: 0 as number,
+  classId: 0 as number,
+  accountId: 0 as number,
+  changeEvents: 0,
+
+  _eventListeners: {} as Record<UserEventName, UserEventCallback[]>,
+  _authAwaits: [] as ((value: void) => void)[],
+
+  async auth(settings?: {silent?: boolean}) {
+    const res = await ajax("GET", "/api/account/auth", { forceOffline: true });
+    if (!res.ok) throw new Error("HTTP error during auth: " + res.status + " " + await res.text());
+    const json = await res.json();
+
+    user.isAuthed = true;
+  
+    user.loggedIn = json.loggedIn;
+    user.username = json.account?.username ?? "";
+    user.classJoined = json.classJoined;
+    user.permissionLevel = json.permissionLevel ?? 0;
+    user.classId = json.classId;
+    user.accountId = json.account?.accountId ?? "";
+
+    user.changeEvents++;
+    this._authAwaits.forEach(res => res());
+    user.trigger("change", settings);
+  },
+
+  async awaitAuthed() {
+    if (this.isAuthed) return;
+    return new Promise<void>(res => {
+      this._authAwaits.push(res);
+    });
+  },
+
+  on(event: UserEventName, callback: UserEventCallback) {
+    if (!this._eventListeners[event]) {
+      this._eventListeners[event] = [];
+    }
+    this._eventListeners[event].push(callback);
+    return this;
+  },
+
+  off(event: UserEventName) {
+    this._eventListeners[event] = [];
+    return this;
+  },
+
+  trigger(event: UserEventName, ...args: unknown[]) {
+    for (const cb of this._eventListeners[event] ?? []) {
+      cb(...args);
+    }
+    return this;
+  }
+};
+
+// CSRF token
+export const csrfToken = createDataAccessor<string>("csrfToken");
+
+// Bootstrap
+export const bootstrap = createDataAccessor<Bootstrap>("bootstrap");
+
+// Show all uploads
+export const unsavedChanges = createDataAccessor<boolean>("unsavedChanges");
+unsavedChanges(false);
+
 // Resources
+export const classInfo = createSocketDataAccessor<ClassInfo>("classInfo", "updateClassInfo", {
+  reload: loadClassInfo
+});
 export const classMemberData = createSocketDataAccessor<ClassMemberData>("classMemberData", "updateMembers", {
-  reload: "/class/get_class_members"
+  reload: loadClassMemberData
 });
 export const classSubstitutionsData = createDataAccessor<SubstitutionsData>("classSubstitutionsData", {
   reload: loadClassSubstitutionsData
 });
 export const eventData = createSocketDataAccessor<EventData>("eventData", "updateEvents", {
-  reload: "/events/get_event_data"
+  reload: "/api/events"
 });
 export const eventTypeData = createSocketDataAccessor<EventTypeData>("eventTypeData", "updateEventTypes", {
-  reload: "/events/get_event_type_data"
+  reload: "/api/events/types"
 });
 export const homeworkData = createSocketDataAccessor<HomeworkData>("homeworkData", "updateHomework", {
-  reload: "/homework/get_homework_data"
+  reload: "/api/homework"
 });
-export const homeworkCheckedData = createSocketDataAccessor<HomeworkCheckedData>("homeworkCheckedData", "updateHomework", {
+export const homeworkCheckedData = createSocketDataAccessor<HomeworkCheckedData>("homeworkCheckedData", "updateCheckedHomework", {
   reload: loadHomeworkCheckedData
 });
 export const joinedTeamsData = createSocketDataAccessor<JoinedTeamsData>("joinedTeamsData", "updateJoinedTeams", {
   reload: loadJoinedTeamsData
 });
 export const lessonData = createSocketDataAccessor<LessonData>("lessonData", "updateTimetables", {
-  reload: "/lessons/get_lesson_data"
+  reload: "/api/lessons"
 });
 export const subjectData = createSocketDataAccessor<SubjectData>("subjectData", "updateSubjects", {
-  reload: "/subjects/get_subject_data"
+  reload: "/api/subjects"
 });
 export const substitutionsData = createDataAccessor<SubstitutionsData>("substitutionsData", {
-  reload: "/substitutions/get_substitutions_data"
+  reload: "/api/substitutions"
 });
 export const teamsData = createSocketDataAccessor<TeamsData>("teamsData", "updateTeams", {
-  reload: "/teams/get_teams_data"
+  reload: "/api/teams"
 });
 export const uploadData = createSocketDataAccessor<UploadData>("uploadData", "updateUploads", {
-  reload: loadUploadData
+  reload: "/api/uploads"
+});
+export const uploadRequestsData = createSocketDataAccessor<UploadRequestsData>("uploadRequestsData", "updateUploadRequests", {
+  reload: "/api/uploads/requests"
 });
 
-eventTypeData.on("change", tryForceReloadEventTypeStyles);
+async function onUnavailable(): Promise<void> {
+  $("#unavailable-hint").show();
+  $("#unavailable-popup").show();
+  const b = await bootstrap();
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
+  socket.disconnect();
 
-$(document).on("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    for (const d of socketDataAccessors) d.reload({ silent: true });
-    renderAll();
-  }
-});
+  const db = await openIndexedDB();
+  const lastUpdatedReq = db.transaction("meta", "readwrite").objectStore("meta").get("lastUpdated");
+  const lastUpdated: number = await new Promise(res => {
+    lastUpdatedReq.onsuccess = () => res(lastUpdatedReq.result);
+  });
+  $("#unavailable-popup-last-updated").html("<b>Stand: </b>" + getDisplayDate(lastUpdated, {
+    relativeDirection: RelativeDirection.PAST, alwaysDate: false, withTime: true
+  }));
+}
 
-// CSRF token
-export const csrfToken = createDataAccessor<string>("csrfToken");
+async function onOffline(): Promise<void> {
+  const b = await bootstrap();
+  b.online = false;
+  await bootstrap(b);
+  $(".unavailable-offline").show();
+  $(".unavailable-maintenance").hide();
+  onUnavailable();
+}
 
-// Show all uploads
-export const showAllUploads = createDataAccessor<boolean>("showAllUploads");
-showAllUploads(false);
-
-// Show all uploads
-export const unsavedChanges = createDataAccessor<boolean>("unsavedChanges");
-unsavedChanges(false);
-
-$('[data-bs-toggle="tooltip"]').tooltip();
-new MutationObserver(mutationsList => {
-  for (const mutation of mutationsList) {
-    $(mutation.addedNodes).each(function () {
-      $(this).find('[data-bs-toggle="tooltip"]').tooltip();
-      $(this).filter('[data-bs-toggle="tooltip"]').tooltip();
-    });
-  };
-}).observe(document.body, {
-  childList: true,
-  subtree: true
-});
-
-$(document).on("shown.bs.toast", ev => {
-  const $toast = $(ev.target);
-  if ($toast.attr("data-bs-autohide") === "false") {
+async function onOnline(): Promise<void> {
+  const b = await bootstrap();
+  b.online = true;
+  await bootstrap(b);
+  if (b.maintenance) {
+    $(".unavailable-offline").hide();
+    $(".unavailable-maintenance").show();
     return;
   }
 
-  const $bar = $toast.find(".toast-progress-bar");
-  if (!$bar.length) return;
+  $("#unavailable-hint").hide();
+  $("#unavailable-popup").hide();
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
+  if (! user.classJoined && isSite("main", "events", "homework", "uploads")) {
+    document.location.href = document.location.origin + "/join";
+  }
+  clearRequestQueue();
+}
 
-  $bar.addClass("playing");
+export async function init(): Promise<void> {
+  try {
+    const res = await fetch("/csrf-token");
+    if (!res.ok) {
+      console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
+    }
+    const data = await res.json();
+    csrfToken(data.csrfToken);
+  }
+  catch (error) {
+    console.error("initCSRF: Error fetching token:", error);
+  }
 
-  $toast.on("mouseenter.toastProgress", () => {
-    $bar.removeClass("playing");
+  try {
+    const res = await fetch("/bootstrap");
+
+    if (!res.ok) {
+      console.error(`bootstrap: Failed to fetch - status: ${res.status}`);
+    }
+    const data = await res.json();
+    data.online ??= true;
+    bootstrap(data);
+
+    if (data.maintenance) {
+      $(".unavailable-offline").hide();
+      $(".unavailable-maintenance").show();
+      renderRequestQueue();
+      onUnavailable();
+    }
+
+    await user.auth();
+    user.on("change", reloadAll);
+    if (data.online) {
+      onOnline();
+    }
+    else {
+      renderRequestQueue();
+      onOffline();
+    }
+  }
+  catch (error) {
+    console.error("Error fetching bootstrap:", error);
+  }
+
+  eventTypeData.on("change", checkReloadEventTypeStyles);
+
+  $(document).on("visibilitychange", async () => {
+    if (document.visibilityState === "visible") {
+      if ((await bootstrap()).online) reloadAll();
+    }
   });
 
-  $toast.on("mouseleave.toastProgress", () => {
+  $(globalThis).on("offline", onOffline);
+  $(globalThis).on("online", onOnline);
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js");
+    window.addEventListener("load", async () => {
+      navigator.serviceWorker.register("/sw.js");
+    });
+    navigator.serviceWorker.addEventListener("message", ev => {
+      console.log("Received msg", ev.data);
+    });
+  }
+
+  const themeColor = document.createElement("meta");
+  themeColor.name = "theme-color";
+  if (localStorage.getItem("colorTheme") === ColorTheme.DARK) {
+    colorTheme(ColorTheme.DARK);
+  }
+  else if (localStorage.getItem("colorTheme") === ColorTheme.LIGHT) {
+    colorTheme(ColorTheme.LIGHT);
+  }
+  else if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
+    colorTheme(ColorTheme.DARK);
+  }
+  else {
+    colorTheme(ColorTheme.LIGHT);
+  }
+  if ((await colorTheme()) === ColorTheme.LIGHT) {
+    themeColor.content = "#f8f9fa";
+  }
+  else {
+    document.getElementsByTagName("html")[0].style.background = "#212529";
+    themeColor.content = "#2b3035";
+  }
+
+  document.head.appendChild(themeColor);
+
+  $("body").attr("data-animations", localStorage.getItem("animations") ?? "true");
+
+  $('[data-bs-toggle="tooltip"]').tooltip();
+  new MutationObserver(mutationsList => {
+    for (const mutation of mutationsList) {
+      $(mutation.addedNodes).each(function () {
+        $(this).find('[data-bs-toggle="tooltip"]').tooltip();
+        $(this).filter('[data-bs-toggle="tooltip"]').tooltip();
+      });
+    };
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  $(document).on("shown.bs.toast", ev => {
+    const $toast = $(ev.target);
+    if ($toast.attr("data-bs-autohide") === "false") {
+      return;
+    }
+
+    const $bar = $toast.find(".toast-progress-bar");
+    if (!$bar.length) return;
+
+    $bar.addClass("playing");
+
+    $toast.on("mouseenter.toastProgress", () => {
+      $bar.removeClass("playing");
+    });
+
+    $toast.on("mouseleave.toastProgress", () => {
+      setTimeout(() => {
+        $bar.addClass("playing");
+      }, 1000);
+    });
+
+    $toast.one("hidden.bs.toast", () => $toast.off(".toastProgress"));
+  });
+
+  // Update everything on clicking the reload button
+  $(document).on("click", "#navbar-reload-button", async function () {
+    $(this).find("i").addClass("fa-spin");
+    await reloadAll();
+    $(this).find("i").removeClass("fa-spin fa-rotate").addClass("fa-check text-success");
+    $(this).prop("disabled", true);
     setTimeout(() => {
-      $bar.addClass("playing");
+      $(this).find("i").addClass("fa-rotate").removeClass("fa-check text-success");
+      $(this).prop("disabled", false);
     }, 1000);
   });
 
-  $toast.one("hidden.bs.toast", () => $toast.off(".toastProgress"));
-});
+  // Change btn group selections to vertical / horizontal
+  const smallScreenQuery = globalThis.matchMedia("(max-width: 575px)");
 
-
-try {
-  const res = await fetch("/csrf-token");
-  if (!res.ok) {
-    console.error(`initCSRF: Failed to fetch token - status: ${res.status}`);
-  }
-  const data = await res.json();
-  csrfToken(data.csrfToken);
-}
-catch (error) {
-  console.error("initCSRF: Error fetching token:", error);
-}
-
-setTimeout(() => {
-  const fillRow = (): void => {
-    styles.push(...Array.from({ length: 16 }, (_, i) => `margin: 0 0.25rem; color: ${colors[i % 2]};`));
-  };
-  const fillBorder = (type: number, emphasize?: boolean): void => {
-    styles.push(
-      `margin: 0 0.25rem; color: ${colors[type]};`,
-      emphasize ? "font-weight: bold; color: #dc3545;" : "",
-      `margin: 0 0.25rem; color: ${colors[(type + 1) % 2]};`
-    );
-  };
-  const colors = ["#3bb9ca", "#70d8e6"];
-  const styles: string[] = [];
-
-  const fullRow = "⬤".repeat(16);
-  const line1 = "⬤%c       Hello curious person!       ⬤";
-  const line2 = "⬤%c      Please don't hack us ;)      ⬤";
-  const line3 = "⬤%c  You can leave feedback / bugs !  ⬤";
-  const line4 = "⬤%c  https://taskminder.de/feedback#  ⬤";
-  const line5 = "⬤%c Please be precise, fellow dev! :D ⬤";
-  const line6 = "⬤%c Don't know what this is? Bye Bye! ⬤";
-  const line7 = "⬤%c (Evil people can steal your data) ⬤";
-
-  fillRow();
-  fillBorder(1);
-  fillBorder(0);
-  fillBorder(1);
-  fillBorder(0);
-  fillBorder(1);
-  fillBorder(0, true);
-  fillBorder(1, true);
-  fillRow();
-
-  const text = [fullRow, line1, line2, line3, line4, line5, line6, line7, fullRow].join("\n").replaceAll("⬤", "%c⬤");
-
-  console.info(text, ...styles);
-}, 1);
-
-// Update everything on clicking the reload button
-$(document).on("click", "#navbar-reload-button", () => {
-  for (const d of socketDataAccessors) d.reload({ silent: true });
-  renderAll();
-});
-
-// Change btn group selections to vertical / horizontal
-const smallScreenQuery = globalThis.matchMedia("(max-width: 575px)");
-
-function handleSmallScreenQueryChange(): void {
-  if (smallScreenQuery.matches) {
-    $(".btn-group-dynamic").removeClass("btn-group").addClass("btn-group-vertical");
-  }
-  else {
-    $(".btn-group-dynamic").addClass("btn-group").removeClass("btn-group-vertical");
-  }
-}
-
-smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
-$(globalThis).on("pushstate", handleSmallScreenQueryChange);
-
-handleSmallScreenQueryChange();
-
-(async () => {
-  if ((await colorTheme()) === ColorTheme.LIGHT) {
-    $("body").attr("data-bs-theme", ColorTheme.LIGHT);
-  }
-  else {
-    $("body").attr("data-bs-theme", ColorTheme.DARK);
+  function handleSmallScreenQueryChange(): void {
+    if (smallScreenQuery.matches) {
+      $(".btn-group-dynamic").removeClass("btn-group").addClass("btn-group-vertical");
+    }
+    else {
+      $(".btn-group-dynamic").addClass("btn-group").removeClass("btn-group-vertical");
+    }
   }
 
-  if (localStorage.getItem("fontSize") === "1") {
-    $("html").css("font-size", "19px");
-  }
-  else if (localStorage.getItem("fontSize") === "2") {
-    $("html").css("font-size", "22px");
-  }
+  smallScreenQuery.addEventListener("change", handleSmallScreenQueryChange);
+  $(globalThis).on("pushstate", handleSmallScreenQueryChange);
 
-  $("body").attr("data-high-contrast", localStorage.getItem("highContrast"));
-})();
+  handleSmallScreenQueryChange();
 
-if (!isSite("settings")) {
-  const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
-
-  if (colorThemeSetting === "auto") {
-    async function updateColorTheme(): Promise<void> {
-      if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
-        colorTheme(ColorTheme.DARK);
-      }
-      else {
-        colorTheme(ColorTheme.LIGHT);
-      }
-
-      if ((await colorTheme()) === ColorTheme.LIGHT) {
-        document.getElementsByTagName("html")[0].style.background = "#ffffff";
-        document.body.dataset.bsTheme = ColorTheme.LIGHT;
-        $('meta[name="theme-color"]').attr("content", "#f8f9fa");
-      }
-      else {
-        document.getElementsByTagName("html")[0].style.background = "#212529";
-        document.body.dataset.bsTheme = ColorTheme.DARK;
-        $('meta[name="theme-color"]').attr("content", "#2b3035");
-      }
+  (async () => {
+    if ((await colorTheme()) === ColorTheme.LIGHT) {
+      $("body").attr("data-bs-theme", ColorTheme.LIGHT);
+    }
+    else {
+      $("body").attr("data-bs-theme", ColorTheme.DARK);
     }
 
-    globalThis.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
-    globalThis.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
-  }
-}
+    if (localStorage.getItem("fontSize") === "1") {
+      $("html").css("font-size", "19px");
+    }
+    else if (localStorage.getItem("fontSize") === "2") {
+      $("html").css("font-size", "22px");
+    }
 
-$(document).on("input", ".autocomplete", function () {
-  $(this).removeClass("autocomplete");
-});
+    $("body").attr("data-high-contrast", localStorage.getItem("highContrast"));
+  })();
+
+  if (!isSite("settings")) {
+    const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
+
+    if (colorThemeSetting === "auto") {
+      async function updateColorTheme(): Promise<void> {
+        if (globalThis.matchMedia("(prefers-color-scheme: dark)").matches) {
+          colorTheme(ColorTheme.DARK);
+        }
+        else {
+          colorTheme(ColorTheme.LIGHT);
+        }
+
+        if ((await colorTheme()) === ColorTheme.LIGHT) {
+          document.getElementsByTagName("html")[0].style.background = "#ffffff";
+          document.body.dataset.bsTheme = ColorTheme.LIGHT;
+          $('meta[name="theme-color"]').attr("content", "#f8f9fa");
+        }
+        else {
+          document.getElementsByTagName("html")[0].style.background = "#212529";
+          document.body.dataset.bsTheme = ColorTheme.DARK;
+          $('meta[name="theme-color"]').attr("content", "#2b3035");
+        }
+      }
+
+      globalThis.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
+      globalThis.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
+    }
+  }
+
+  $(document).on("input", ".is-autocompleted", function () {
+    $(this).removeClass("is-autocompleted");
+  });
+
+  $(document).on("focus", 'input[type="text"].is-autocompleted', function () {
+    $(this).val("").removeClass("is-autocompleted");
+  });
+}

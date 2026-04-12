@@ -1,15 +1,24 @@
-import { RequestError } from "../@types/requestError";
-import { CACHE_KEY_PREFIXES, cacheExpiration, generateCacheKey, redisClient } from "../config/redis";
-import prisma from "../config/prisma";
-import logger from "../config/logger";
+import { RequestError } from "../@types/requestError.js";
+import { CACHE_KEY_PREFIXES, cacheExpiration, generateCacheKey, redisClient } from "../config/redis.js";
+import prisma from "../config/prisma.js";
+import logger from "../config/logger.js";
 import { Session, SessionData } from "express-session";
-import { FileTypes } from "../config/upload";
+import { randomInt } from "crypto";
+
+const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+function generateRandomBase62String(length = 20): string {
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += BASE62[randomInt(0, BASE62.length)];
+  }
+  return result;
+}
 
 async function updateCacheData<T>(data: T[], key: string): Promise<void> {
   try {
-    await redisClient.set(key, JSON.stringify(data, BigIntreplacer), {
-      EX: cacheExpiration
-    });
+    await redisClient.set(key, JSON.stringify(data, BigIntreplacer),
+      { expiration: { type: "EX", value: cacheExpiration } });
   }
   catch (err) {
     logger.error(`Error updating Redis ${key} cache: ${err}`);
@@ -35,18 +44,6 @@ export function checkUsername(username: string): boolean {
 
 function BigIntreplacer(key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
-}
-
-async function isValidUploadInput(uploadName: string, uploadType: string): Promise<void> {
-  if (!(uploadName !== "" && Object.values(FileTypes).includes(uploadType as FileTypes))) {
-    const err: RequestError = {
-      name: "Bad Request",
-      status: 400,
-      message: "Please provide a valid name, teamId (int) and valid file type (INFO_SHEET,LESSON_NOTE,WORKSHEET,IMAGE,FILE,TEXT)",
-      expected: true
-    };
-    throw err;
-  }
 }
 
 async function isValidEventTypeId(eventTypeId: number, session: Session & Partial<SessionData>): Promise<void> {
@@ -90,6 +87,8 @@ async function isValidTeamId(teamId: number, session: Session & Partial<SessionD
   }
 }
 
+// @codescene(disable:"Code Duplication")
+// see explaination for isValidTeamId
 async function isValidSubjectId(subjectId: number, session: Session & Partial<SessionData>): Promise<void> {
   if (subjectId !== -1) {
     const subjectExists = await prisma.subjects.findUnique({
@@ -113,28 +112,6 @@ async function isValidSubjectId(subjectId: number, session: Session & Partial<Se
   }
 }
 
-async function isValidweekDay(weekDay: number): Promise<void> {
-  if ([0, 1, 2, 3, 4].includes(weekDay)) return;
-  const err: RequestError = {
-    name: "Not Found",
-    status: 404,
-    message: "Invalid weekday: " + weekDay,
-    expected: true
-  };
-  throw err;
-}
-
-async function isValidGender(gender: string): Promise<void> {
-  if (["d", "w", "m"].includes(gender)) return;
-  const err: RequestError = {
-    name: "Not Found",
-    status: 404,
-    message: "The provided gender is not valid: " + gender,
-    expected: true
-  };
-  throw err;
-}
-
 function isValidColor(color: string): void {
   const hexColorRegex = /^#[0-9a-f]{6}$/i;
   const colorValid = hexColorRegex.test(color);
@@ -149,6 +126,19 @@ function isValidColor(color: string): void {
   }
   else {
     return;
+  }
+}
+
+// checks if submission date is after/equal to assignment date
+function dateChecker(startDate: number, endDate: number): void {
+  if (startDate > endDate) {
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "startDate/assignmentDate is after endDate/submissionDate",
+      expected: true
+    };
+    throw err;
   }
 }
 
@@ -170,15 +160,14 @@ function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | 
 }
 
 export {
-  isValidUploadInput,
+  generateRandomBase62String,
   isValidColor,
   isValidSubjectId,
   isValidTeamId,
   isValidEventTypeId,
-  isValidweekDay,
   lessonDateEventAtLeastOneNull,
-  isValidGender,
   BigIntreplacer,
   updateCacheData,
-  invalidateCache
+  invalidateCache,
+  dateChecker
 };

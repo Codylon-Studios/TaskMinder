@@ -1,7 +1,19 @@
 import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
-import { RequestError } from "../@types/requestError";
-import logger from "../config/logger";
+import { RequestError } from "../@types/requestError.js";
+import logger from "../config/logger.js";
+
+function throwCsrfUnauthorized(): never {
+  const err: RequestError = {
+    name: "Unauthorized",
+    status: 401,
+    message: "CSRF Check failed: Missing or invalid CSRF token. " +
+      "This API is currently intended for browser-based usage only. " +
+      "Please use the application via a web browser instead of calling the API directly.",
+    expected: true
+  };
+  throw err;
+}
 
 function generateCSRFToken(): string {
   return crypto.randomBytes(32).toString("hex");
@@ -37,62 +49,36 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     || typeof tokenFromSession !== "string"
   ) {
     logger.warn("CSRF Check: Validation failed - Token missing or invalid type");
-    const err: RequestError = {
-      name: "Unauthorized",
-      status: 401,
-      message: "CSRF Check failed: Missing or invalid CSRF token. " +
-      "This API is currently intended for browser-based usage only. " +
-      "Please use the application via a web browser instead of calling the API directly.",
-      expected: true
-    };
-    throw err;
+    throwCsrfUnauthorized();
   }
 
-  // --- Timing-attack safe comparison ---
+  const providedTokenBuffer = Buffer.from(providedToken, "utf8");
+  const sessionTokenBuffer = Buffer.from(tokenFromSession, "utf8");
+
+  if (providedTokenBuffer.length !== sessionTokenBuffer.length) {
+    logger.warn("CSRF Check: Validation failed - Token length mismatch");
+    throwCsrfUnauthorized();
+  }
+
+  let tokensMatch: boolean;
   try {
-    const providedTokenBuffer = Buffer.from(providedToken, "utf8");
-    const sessionTokenBuffer = Buffer.from(tokenFromSession, "utf8");
-
-    if (providedTokenBuffer.length !== sessionTokenBuffer.length) {
-      logger.warn("CSRF Check: Validation failed - Token length mismatch");
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "CSRF Check failed: Missing or invalid CSRF token. " +
-        "This API is currently intended for browser-based usage only. " +
-        "Please use the application via a web browser instead of calling the API directly.",
-        expected: true
-      };
-      throw err;
-    }
-
-    if (crypto.timingSafeEqual(providedTokenBuffer, sessionTokenBuffer)) {
-      next(); // Tokens match, proceed
-    }
-    else {
-      logger.warn("CSRF Check: Validation failed - Tokens do not match");
-      const err: RequestError = {
-        name: "Unauthorized",
-        status: 401,
-        message: "CSRF Check failed: Missing or invalid CSRF token. " +
-        "This API is currently intended for browser-based usage only. " +
-        "Please use the application via a web browser instead of calling the API directly.",
-        expected: true
-      };
-      throw err;
-    }
+    tokensMatch = crypto.timingSafeEqual(providedTokenBuffer, sessionTokenBuffer);
   }
-  catch (e) {
-    logger.error(`CSRF Check: Error during comparison: ${e}`);
+  catch (error) {
+    logger.error(`CSRF Check: Unexpected error during token comparison: ${error}`);
     const err: RequestError = {
-      name: "Unauthorized",
-      status: 401,
-      message: "CSRF Check failed: Missing or invalid CSRF token. " +
-      "This API is currently intended for browser-based usage only. " +
-      "Please use the application via a web browser instead of calling the API directly.",
-      expected: true
+      name: "Internal Server Error",
+      status: 500,
+      message: "Internal Server Error",
+      expected: false
     };
     throw err;
   }
-  // --- End timing-attack safe comparison ---
+
+  if (!tokensMatch) {
+    logger.warn("CSRF Check: Validation failed - Tokens do not match");
+    throwCsrfUnauthorized();
+  }
+
+  next();
 }

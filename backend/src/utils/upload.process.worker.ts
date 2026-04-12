@@ -1,7 +1,7 @@
-import { dequeueJob, QUEUE_KEYS } from "../config/redis";
-import { invalidateCache } from "./validate.functions";
-import logger from "../config/logger";
-import prisma from "../config/prisma";
+import { dequeueJob, QUEUE_KEYS } from "../config/redis.js";
+import { invalidateCache } from "./validate.functions.js";
+import logger from "../config/logger.js";
+import prisma from "../config/prisma.js";
 import fs from "fs/promises";
 import path from "path";
 import {
@@ -12,15 +12,15 @@ import {
   GHOSTSCRIPT_TIMEOUT,
   MAX_IMAGE_PIXELS,
   TEMP_DIR
-} from "../config/upload";
+} from "../config/upload.js";
 import { execFile, ExecException } from "child_process";
 import { promisify } from "util";
 import sharp from "sharp";
 import mime from "mime-types";
 import { randomUUID } from "crypto";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
-import { RequestError } from "../@types/requestError";
-import { fileTypeFromFile } from "../../../node_modules/file-type";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { RequestError } from "../@types/requestError.js";
+import { fileTypeFromFile } from "file-type";
 
 const execFileAsync = promisify(execFile);
 
@@ -46,6 +46,10 @@ type FileProcessingJob = {
     mimetype: string;
     size: number;
   }>;
+  replaceUpload?: {
+    oldStoredFiles: string[];
+    oldTotalBytes: string;
+  };
 };
 
 //
@@ -62,12 +66,24 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
   ]);
 
   try {
+    // check if clamdscan (ClamAV) is installed on the system
     await execFileAsync("which", ["clamdscan"]);
-    clamavEnabled = true;
-    logger.info("ClamAV (clamdscan) enabled for worker");
   }
   catch {
-    logger.warn("ClamAV (clamdscan) not found in worker. Antivirus scanning is DISABLED. Server security degraded.");
+    logger.warn("ClamAV (clamdscan) not found in worker. Please install it..");
+    process.exit(1);
+  }
+
+  try {
+    // this checks if clamdscan is really running on at least development machines
+    // in production, this app is executed in docker compose which installs and starts clamAV
+    await execFileAsync("clamdscan", ["--ping", "5"]);
+    logger.info("ClamAV (clamdscan) enabled for worker");
+    clamavEnabled = true;
+  }
+  catch {
+    clamavEnabled = true;
+    logger.error("clamdscan is not reachable with --ping 5. In production, this app should be running with docker compose, skipping for now");
   }
 
   try {
@@ -76,7 +92,8 @@ export const initializeUploadWorkerServices = async (): Promise<void> => {
     logger.info("Ghostscript enabled for worker");
   }
   catch {
-    logger.warn("Ghostscript not found in worker. PDF sanitization is DISABLED. Server security degraded.");
+    logger.warn("Ghostscript not found in worker. Please install it.");
+    process.exit(1);
   }
 };
 
@@ -94,7 +111,7 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
     const scanError = error as ExecException & { stdout?: string; stderr?: string };
     if (scanError.code === 1 && scanError.stdout?.includes("FOUND")) {
       const quarantinePath = path.join(QUARANTINE_DIR, `${Date.now()}-${path.basename(originalName)}`);
-      await fs.rename(filePath, quarantinePath).catch(() => {});
+      await fs.rename(filePath, quarantinePath).catch(() => { });
       logger.warn(`File quarantined: ${quarantinePath}`);
       const err: RequestError = {
         name: "Bad Request",
@@ -120,12 +137,23 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
 const verifyFileType = async (filePath: string, claimedMime: string): Promise<void> => {
   // Special case for text files - file-type cannot detect them
   if (claimedMime === "text/plain") {
-    // Optionally verify it's actually text by reading a sample
+    // Verify it's actually text by reading a bounded sample
     try {
-      const buffer = await fs.readFile(filePath);
-      // Check if file is valid UTF-8 or ASCII
-      buffer.toString("utf-8");
-      return;
+      const fileHandle = await fs.open(filePath, "r");
+      try {
+        const sampleSize = 8192;
+        const buffer = Buffer.alloc(sampleSize);
+        const { bytesRead } = await fileHandle.read(buffer, 0, sampleSize, 0);
+        const slice = buffer.subarray(0, bytesRead);
+        // Check if file is valid UTF-8 or ASCII
+        slice.toString("utf-8");
+        return;
+      }
+      finally {
+        await fileHandle.close().catch(() => {
+          logger.error("Failed to open file during text/plain sample checking");
+        });
+      }
     }
     catch {
       const err: RequestError = {
@@ -287,6 +315,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
 
   // Declare processedFiles outside try block so it's accessible in catch
   const processedFiles: Array<{ storedFileName: string; originalName: string; mimeType: string; size: number }> = [];
+  let metadataReplaced = false;
 
   try {
     // Update status to processing
@@ -331,6 +360,10 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
 
     // Store metadata and adjust storage atomically
     await prisma.$transaction(async tx => {
+      if (job.replaceUpload) {
+        await tx.fileMetadata.deleteMany({ where: { uploadId } });
+      }
+
       for (const file of processedFiles) {
         await tx.fileMetadata.create({
           data: {
@@ -343,8 +376,12 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
         });
       }
 
-      // Calculate storage adjustment (actual - reserved)
-      const storageAdjustment = totalBytes - upload.reservedBytes;
+      const baselineBytes = job.replaceUpload
+        ? BigInt(job.replaceUpload.oldTotalBytes) + upload.reservedBytes
+        : upload.reservedBytes;
+
+      // Calculate storage adjustment
+      const storageAdjustment = totalBytes - baselineBytes;
 
       // Adjust class storage (can be positive or negative)
       await tx.class.update({
@@ -365,6 +402,19 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
         }
       });
     });
+
+    if (job.replaceUpload) {
+      metadataReplaced = true;
+    }
+
+    if (job.replaceUpload) {
+      await Promise.all(
+        job.replaceUpload.oldStoredFiles.map(storedFileName => {
+          const filePath = path.join(FINAL_UPLOADS_DIR, classId.toString(), storedFileName);
+          return fs.unlink(filePath).catch(() => { });
+        })
+      );
+    }
 
     // Invalidate cache when status changes to completed
     await invalidateCache("UPLOADMETADATA", classId.toString());
@@ -390,34 +440,41 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     );
 
     // Mark upload as failed and release reserved storage
-    const errorReason = error instanceof Error ? error.message : "unknown_error";
+    const errorReason =
+      error && typeof error === "object" && "message" in error
+        ? String(error.message)
+        : "unknown_error";
 
     await prisma.$transaction(async tx => {
-      // Delete any file metadata that was created
-      await tx.fileMetadata.deleteMany({
-        where: { uploadId }
-      });
+      if (!job.replaceUpload || metadataReplaced) {
+        // Delete any file metadata that was created
+        await tx.fileMetadata.deleteMany({
+          where: { uploadId }
+        });
+      }
       const upload = await tx.upload.findUnique({
         where: { uploadId },
         select: { reservedBytes: true }
       });
 
-      if (upload && upload.reservedBytes > 0n) {
-        // Release reserved storage
-        await tx.class.update({
-          where: { classId },
-          data: { storageUsedBytes: { decrement: upload.reservedBytes } }
+      if (upload) {
+        if (upload.reservedBytes > 0n) {
+          // Release reserved storage
+          await tx.class.update({
+            where: { classId },
+            data: { storageUsedBytes: { decrement: upload.reservedBytes } }
+          });
+        }
+
+        await tx.upload.update({
+          where: { uploadId },
+          data: {
+            status: "failed",
+            errorReason,
+            reservedBytes: 0n
+          }
         });
       }
-
-      await tx.upload.update({
-        where: { uploadId },
-        data: {
-          status: "failed",
-          errorReason,
-          reservedBytes: 0n
-        }
-      });
     });
 
     await invalidateCache("UPLOADMETADATA", classId.toString());

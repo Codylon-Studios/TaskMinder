@@ -1,4 +1,4 @@
-import z, { strictObject } from "zod";
+import z from "zod";
 
 export const setTeamsSchema = z.object({
   params: z.object({}),
@@ -7,7 +7,7 @@ export const setTeamsSchema = z.object({
     teams: z.array(
       z.object({
         teamId: z.union([z.literal(""), z.coerce.number()]),
-        name: z.string().trim().min(1)
+        name: z.string().trim().min(1).max(256)
       })
     )
   })
@@ -16,13 +16,10 @@ export const setTeamsSchema = z.object({
 export const setJoinedTeamsSchema = z.object({
   params: z.object({}),
   query: z.object({}),
-  body: strictObject({
+  body: z.strictObject({
     teams: z.array(z.number())
   })
 });
-
-export type setJoinedTeamsType = z.infer<typeof setJoinedTeamsSchema>;
-export type setTeamsType = z.infer<typeof setTeamsSchema>;
 
 export type setJoinedTeamsTypeBody = z.infer<typeof setJoinedTeamsSchema>["body"];
 export type setTeamsTypeBody = z.infer<typeof setTeamsSchema>["body"];

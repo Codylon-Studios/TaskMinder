@@ -1,8 +1,18 @@
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // allowed mimes and file types (extensions)
 export const ALLOWED_MIMES = ["application/pdf", "image/jpeg", "image/png", "text/plain"];
 export const ALLOWED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".txt"];
+
+// upload limits
+export const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB // max file size of upload (each)
+// that's roughly 2.43 MB storage per class for 5000 upload entries
+export const MAX_FILES_PER_CLASS = 5000; // Maximum files per class
+export const MAX_FILES_PER_UPLOAD = 20;
 
 // directories for file storage
 export const TEMP_DIR = path.join(__dirname, "../../../data/temp");

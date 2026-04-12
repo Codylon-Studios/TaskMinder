@@ -6,7 +6,7 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-export default tseslint.config(
+export default [
   {
     ignores: [
       "frontend/dist/",
@@ -25,7 +25,7 @@ export default tseslint.config(
   },
 
   eslint.configs.recommended,
-  tseslint.configs.recommended,
+  ...tseslint.configs.recommended,
 
   {
     languageOptions: {
@@ -70,4 +70,4 @@ export default tseslint.config(
       "@typescript-eslint/explicit-function-return-type": "off"
     }
   }
-);
+];

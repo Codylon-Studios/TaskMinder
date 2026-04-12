@@ -1,0 +1,45 @@
+<template id="search-box-template">
+  <i class="fas fa-magnifying-glass ms-2 position-absolute top-50 translate-middle-y text-secondary rich-input-icon"></i>
+  <input type="text" class="form-control rich-input-element" placeholder="Suchen..." />
+  <button class="btn btn-link p-0 me-2 position-absolute end-0 top-50 translate-middle-y text-secondary search-box-clear">
+    <i class="far fa-circle-xmark"></i>
+  </button>
+</template>
+
+<template id="password-input-template">
+  <input type="password" class="form-control rich-input-element" />
+  <button class="btn btn-link p-0 me-2 position-absolute end-0 top-50 translate-middle-y text-secondary password-input-toggle">
+    <i class="far fa-eye"></i>
+  </button>
+</template>
+
+<template id="copy-input-template">
+  <input type="text" class="form-control rich-input-element" />
+  <button class="btn btn-link p-0 me-2 position-absolute end-0 top-50 translate-middle-y text-secondary copy-input-btn">
+    <i class="far fa-copy"></i>
+  </button>
+</template>
+
+<template id="file-input-template">
+  <label class="form-control file-input-label p-3 cursor-pointer">
+    <div class="d-flex flex-column align-items-center gap-2">
+      <i class="fas fa-file-arrow-up fs-1 text-secondary mb-2" aria-hidden="true"></i>
+      <span class="text-center">Dateien hierher ziehen, einfügen oder auswählen!</span>
+    </div>
+    <input class="visually-hidden file-input-element" type="file" multiple />
+  </label>
+  <div class="form-text">
+    Unterstütze Formate:
+    <span class="file-input-accept-string"></span>
+  </div>
+  <div class="file-input-max-number-exceeded-alert alert alert-danger p-2 ds-flex align-items-center gap-2 mb-3">
+    <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
+    <span class="d-block">
+      Du hast die maximale Anzahl von
+      <b></b>
+      erlaubten Dateien überschritten!
+    </span>
+  </div>
+  <div data-bs-toggle="collapse" data-bs-target="#{{ID}}" class="file-input-preview-title my-2" aria-expanded="true"></div>
+  <div class="file-input-preview ds-flex flex-column gap-2 ms-2 ps-3 border-start border-2 collapse show" id="{{ID}}"></div>
+</template>

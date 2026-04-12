@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import substitutionService from "../services/substitution.service";
+import substitutionService from "../services/substitution.service.js";
 
-export const getSubstitutionData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getSubstitutions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const substitutionData = await substitutionService.getSubstitutionData(req.session);
     res.status(200).json(substitutionData);
@@ -12,5 +12,5 @@ export const getSubstitutionData = async (req: Request, res: Response, next: Nex
 };
 
 export default {
-  getSubstitutionData
+  getSubstitutions
 };

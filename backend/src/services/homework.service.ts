@@ -1,59 +1,90 @@
-import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
-import { default as prisma } from "../config/prisma";
-import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache } from "../utils/validate.functions";
+import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { default as prisma } from "../config/prisma.js";
+import { isValidTeamId, BigIntreplacer, updateCacheData, isValidSubjectId, invalidateCache, dateChecker } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
-import { RequestError } from "../@types/requestError";
-import logger from "../config/logger";
-import { addHomeworkTypeBody, checkHomeworkTypeBody, deleteHomeworkTypeBody, editHomeworkTypeBody } from "../schemas/homework.schema";
+import { RequestError } from "../@types/requestError.js";
+import logger from "../config/logger.js";
+import { 
+  editHomeworkTypeParams,
+  deleteHomeworkTypeParams,
+  checkHomeworkTypeParams,
+  pinHomeworkTypeParams,
+  addHomeworkTypeBody, 
+  editHomeworkTypeBody, 
+  checkHomeworkTypeBody, 
+  pinHomeworkTypeBody
+} from "../schemas/homework.schema.js";
+import { Prisma } from "@prisma/client";
 
 const homeworkService = {
   async addHomework(
-    reqData: addHomeworkTypeBody,
+    reqBody: addHomeworkTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
+    const { subjectId, content, assignmentDate, submissionDate, teamId } = reqBody;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
+    dateChecker(assignmentDate, submissionDate);
     await isValidSubjectId(subjectId, session);
     await isValidTeamId(teamId, session);
     try {
       await prisma.homework.create({
         data: {
-          classId: parseInt(session.classId!),
+          classId,
+          isPinned: false,
           content: content,
           subjectId: subjectId,
           assignmentDate: assignmentDate,
           submissionDate: submissionDate,
           teamId: teamId,
-          createdAt: Date.now()
+          createdAt: BigInt(Date.now())
         }
       });
     }
-    catch {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
-        expected: true
-      };
+    catch (err) {
+      if (err instanceof Prisma.PrismaClientValidationError) {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid data format",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid relation reference",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      logger.error(`addHomework failed with unexpected database error: ${err}`);
       throw err;
     }
 
     // invalidate cache
-    await invalidateCache("HOMEWORK", session.classId!);
+    await invalidateCache("HOMEWORK", classId.toString());
     // send socket update
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
-  async checkHomework(reqData: checkHomeworkTypeBody, session: Session & Partial<SessionData>) {
-    const { homeworkId, checkStatus } = reqData;
+  async checkHomework(reqParams: checkHomeworkTypeParams, reqBody: checkHomeworkTypeBody, session: Session & Partial<SessionData>) {
+    const { checkStatus } = reqBody;
+    const { id: homeworkId } = reqParams;
 
     const accountId = session.account!.accountId;
     const classId = parseInt(session.classId!, 10);
 
     const homework = await prisma.homework.findFirst({
       where: { homeworkId, classId },
-      select: { homeworkId: true }
+      select: { homeworkId: true, teamId: true }
     });
 
     if (!homework) {
@@ -66,11 +97,20 @@ const homeworkService = {
       throw err;
     }
 
+    await isValidTeamId(homework.teamId, session);
+
     await prisma.$transaction(async tx => {
-      if (checkStatus === true) {
-        await tx.homeworkCheck.createMany({
-          data: [{ accountId, homeworkId, createdAt: Date.now() }],
-          skipDuplicates: true // prevents race condition P2002 errors
+      if (checkStatus) {
+        await tx.homeworkCheck.upsert({
+          where: {
+            accountId_homeworkId: { accountId, homeworkId }
+          },
+          create: {
+            accountId,
+            homeworkId,
+            createdAt: BigInt(Date.now())
+          },
+          update: {} // no-op update
         });
       } 
       else {
@@ -81,16 +121,19 @@ const homeworkService = {
     });
 
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK_CHECK);
   },
 
-  async deleteHomework(reqData: deleteHomeworkTypeBody, session: Session & Partial<SessionData>) {
-    const { homeworkId } = reqData;
+  async deleteHomework(reqParams: deleteHomeworkTypeParams, session: Session & Partial<SessionData>) {
+    const { id: homeworkId } = reqParams;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
 
     const deleted = await prisma.homework.deleteMany({
       where: {
         homeworkId: homeworkId,
-        classId: parseInt(session.classId!, 10)
+        classId
       }
     });
 
@@ -105,24 +148,30 @@ const homeworkService = {
     }
 
     // invalidate cache
-    await invalidateCache("HOMEWORK", session.classId!);
+    await invalidateCache("HOMEWORK", classId.toString());
     // send socket update
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async editHomework(
-    reqData: editHomeworkTypeBody,
+    reqParams: editHomeworkTypeParams,
+    reqBody: editHomeworkTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { homeworkId, subjectId, content, assignmentDate, submissionDate, teamId } = reqData;
+    const { subjectId, content, assignmentDate, submissionDate, teamId } = reqBody;
+    const { id: homeworkId } = reqParams;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
+    dateChecker(assignmentDate, submissionDate);
     await isValidSubjectId(subjectId, session);
     await isValidTeamId(teamId, session);
     try {
       const updated = await prisma.homework.updateMany({
-        where: { 
+        where: {
           homeworkId: homeworkId,
-          classId: parseInt(session.classId!, 10)
+          classId
         },
         data: {
           content: content,
@@ -144,26 +193,44 @@ const homeworkService = {
         throw err;
       }
     }
-    catch (e) {
-      if ((e as RequestError)?.expected) throw e;
+    catch (err) {
+      if ((err as RequestError)?.expected) throw err;
 
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
-        expected: true
-      };
+      if (err instanceof Prisma.PrismaClientValidationError) {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid data format",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid relation reference",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      logger.error(`editHomework failed with unexpected database error: ${err}`);
       throw err;
     }
 
     // invalidate cache
-    await invalidateCache("HOMEWORK", session.classId!);
+    await invalidateCache("HOMEWORK", classId.toString());
     // send socket update
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async getHomeworkData(session: Session & Partial<SessionData>) {
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
     const getHomeworkDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.HOMEWORK, session.classId!);
     const cachedHomeworkData = await redisClient.get(getHomeworkDataCacheKey);
 
@@ -173,23 +240,84 @@ const homeworkService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
     const data = await prisma.homework.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId
       },
-      orderBy: {
-        submissionDate: "asc"
-      }
+      orderBy: [
+        { isPinned: "desc" },
+        { submissionDate: "asc" },
+        { assignmentDate: "asc" },
+        { subjectId: "asc" },
+        { content: "asc" }
+      ]
     });
 
     await updateCacheData(data, getHomeworkDataCacheKey);
 
     const stringified = JSON.stringify(data, BigIntreplacer);
     return JSON.parse(stringified);
+  },
+
+  async pinHomework(reqParams: pinHomeworkTypeParams, reqBody: pinHomeworkTypeBody, session: Session & Partial<SessionData>) {
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
+    const { pinStatus } = reqBody;
+    const { id: homeworkId } = reqParams;
+
+    const existingHomework = await prisma.homework.findFirst({
+      where: {
+        homeworkId: homeworkId,
+        classId
+      },
+      select: {
+        teamId: true
+      }
+    });
+
+    if (!existingHomework) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Homework not found",
+        expected: true
+      };
+      throw err;
+    }
+
+    await isValidTeamId(existingHomework.teamId, session);
+
+    try {
+      await prisma.homework.update({
+        where: {
+          homeworkId: homeworkId
+        },
+        data: {
+          isPinned: pinStatus
+        }
+      });
+    }
+    catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+        const reqErr: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Homework not found",
+          expected: true
+        };
+        throw reqErr;
+      }
+      throw err;
+    }
+
+    await invalidateCache("HOMEWORK", classId.toString());
+    const io = socketIO.getIO();
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
   },
 
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {

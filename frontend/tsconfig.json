@@ -7,9 +7,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "typeRoots": ["../node_modules/@types", "src/**/*"],
+    "typeRoots": ["../node_modules/@types"],
     "moduleResolution": "Node",
-    "allowJs": true,
+    "allowJs": true
   },
   "include": ["src/**/*"],
+  "exclude": ["src/sw.ts"]
 }

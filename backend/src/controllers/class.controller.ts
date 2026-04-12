@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import classService from "../services/class.service";
+import classService from "../services/class.service.js";
 
-export const getClassInfo = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getClassInfo = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const classInfo = await classService.getClassInfo(req.session);
+    const classInfo = await classService.getClassInfo({ id: Number(req.params.id) }, req.session);
     res.status(200).json(classInfo);
   }
   catch (error) {
@@ -31,9 +31,9 @@ export const joinClass = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
-export const leaveClass = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const leaveClass = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await classService.leaveClass(req.session);
+    await classService.leaveClass({ id: Number(req.params.id) }, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -41,9 +41,9 @@ export const leaveClass = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-export const deleteClass = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const deleteClass = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await classService.deleteClass(req.session);
+    await classService.deleteClass({ id: Number(req.params.id) }, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -51,9 +51,9 @@ export const deleteClass = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const changeDefaultPermission = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const changeDefaultPermission = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await classService.changeDefaultPermission(req.body, req.session);
+    await classService.changeDefaultPermission({ id: Number(req.params.id) }, req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -61,9 +61,9 @@ export const changeDefaultPermission = async (req: Request, res: Response, next:
   }
 };
 
-export const setClassMembersPermissions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const setClassMembersPermissions = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await classService.setClassMembersPermissions(req.body, req.session);
+    await classService.setClassMembersPermissions({ id: Number(req.params.id) }, req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -71,9 +71,9 @@ export const setClassMembersPermissions = async (req: Request, res: Response, ne
   }
 };
 
-export const getClassMembers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getClassMembers = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const classMembers = await classService.getClassMembers(req.session);
+    const classMembers = await classService.getClassMembers({ id: Number(req.params.id) }, req.session);
     res.status(200).json(classMembers);
   }
   catch (error) {
@@ -81,9 +81,9 @@ export const getClassMembers = async (req: Request, res: Response, next: NextFun
   }
 };
 
-export const kickClassMembers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const kickClassMembers = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await classService.kickClassMember(req.body, req.session);
+    await classService.kickClassMember({ id: Number(req.params.id) }, req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -91,9 +91,9 @@ export const kickClassMembers = async (req: Request, res: Response, next: NextFu
   }
 };
 
-export const updateDSBMobileData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const kickLoggedOutUsers = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await classService.updateDSBMobileData(req.body, req.session);
+    await classService.kickLoggedOutUsers({ id: Number(req.params.id) }, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -101,19 +101,9 @@ export const updateDSBMobileData = async (req: Request, res: Response, next: Nex
   }
 };
 
-export const getUsersLoggedOutRole = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const changeClassName = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const usersLoggedOutRole = await classService.getUsersLoggedOutRole(req.session);
-    res.status(200).json(usersLoggedOutRole);
-  }
-  catch (error) {
-    next(error);
-  }
-};
-
-export const kickLoggedOutUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    await classService.kickLoggedOutUsers(req.session);
+    await classService.changeClassName({ id: Number(req.params.id) }, req.body, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -121,19 +111,9 @@ export const kickLoggedOutUsers = async (req: Request, res: Response, next: Next
   }
 };
 
-export const changeClassName = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const changeClassCode = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await classService.changeClassName(req.body, req.session);
-    res.sendStatus(200);
-  }
-  catch (error) {
-    next(error);
-  }
-};
-
-export const changeClassCode = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const code = await classService.changeClassCode(req.session);
+    const code = await classService.changeClassCode({ id: Number(req.params.id) }, req.session);
     res.status(200).json(code);
   }
   catch (error) {
@@ -141,9 +121,9 @@ export const changeClassCode = async (req: Request, res: Response, next: NextFun
   }
 };
 
-export const upgradeTestClass = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const upgradeTestClass = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> => {
   try {
-    await classService.upgradeTestClass(req.session);
+    await classService.upgradeTestClass({ id: Number(req.params.id) }, req.session);
     res.sendStatus(200);
   }
   catch (error) {
@@ -161,8 +141,6 @@ export default {
   getClassMembers,
   setClassMembersPermissions,
   kickClassMembers,
-  updateDSBMobileData,
-  getUsersLoggedOutRole,
   kickLoggedOutUsers,
   changeClassName,
   changeClassCode,

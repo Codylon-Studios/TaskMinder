@@ -4,6 +4,64 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.5] - 2026-04-12
+
+### Breaking Changes
+* chore(db): migrate postgresql@14 to postgresql@18
+* feat(encryption): add server-side encryption
+
+### Added
+* feat(frontend): add caching and offline mode
+* feat(maintenance): add maintenance mode
+* feat(animation): add animations, add specific calendar animation
+* feat(warnings): add suspicious settings warnings
+* feat(upload): add upload description and request new uploads
+* feat(upload): edit files
+* feat(homework/event/upload): add homework/event/upload pinning
+* feat(upload): file-input as pretty wrapper for drag&drop and browse file input with preview list
+* chore(homework): add "later" section
+* chore(ui): show breaks in the timetable and correctly display them (respect events/substitutions)
+
+### Fixed
+* fix(rate-limit): proxy setting and update nginx.config
+* fix(subject): subject data not stringified correctly
+* fix(account): send 201 instead of 200 at /register
+* fix(links): /main links to events/homework do not use pjax
+* fix(homework/check): homework check on /main does not work
+* fix(navbar/login): login button in navbar does not always show up 
+* fix(richtextarea): allow multiple spaces in rich textarea
+* fix(search): search in plaintext not styled rich textarea text
+
+### Changed
+* chore(scss): compressed scss for event type styles
+* chore(frontend/cache): better caching for event type styles and files
+* chore(frontend/logic): guess new subjectId for substitution
+* chore(ux): copy unknown error server response & better request timeout error toast
+* chore(ui): better appearance of substituted breaks
+* chore(logging): improve error logs on server
+* chore(ui): improve frontend class settings on mobile
+* chore(upload/loading): add upload loading animation
+* chore(substitution): change DSBMobile fetch to weekday peak time prefetch
+* chore(api): rename and change method of API routes
+* chore(password): bump password requirements
+* chore(ui): make bottombar icons pop on click
+* chore(ui): scroll to top on site change
+* chore(substitution): replace axios with node fetch
+* chore(substitution): use shared cache key per school, avoid redundant DSB API fetches for classes within the same school
+* chore(frontend/logic): remove $.get and replace with modern fetch
+* chore(ui): change filter interface to modal and offcanvas (mobile)
+* chore(tableview): improve table layouts for events & uploads
+* chore(csp): remove csp .env variable
+* chore(getdata): event, homework and upload metadata order by more values
+* chore(docs): migrate to mdbook and github actions/pages for deployment
+* chore(sitemap): update sitemap values
+* chore(migration): add migrate upload metadata date script
+* chore(package): update package.json version to v2.2.5, bump packages, update CI
+* chore(frontend): several bugfixes and smaller improvements
+* chore(backend): several bugfixes and smaller improvements
+
+---
+
 ## \[v2.2.4] - 2026-01-11
 
 🎉 Happy New Year! This release kicks off the year with improvements and fixes to make TaskMinder smoother, faster, and more reliable. Thanks for your support—here’s to a productive year ahead!

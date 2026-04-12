@@ -22,11 +22,20 @@ export REDIS_PORT
 SESSION_SECRET="$(cat /run/secrets/session_secret)"
 export SESSION_SECRET
 
-UNSAFE_DEACTIVATE_CSP="$(cat /run/secrets/unsafe_deactivate_csp)"
-export UNSAFE_DEACTIVATE_CSP
-
 DATABASE_URL="$(cat /run/secrets/database_url)"
 export DATABASE_URL
+
+ENCRYPTION_KEY="$(cat /run/secrets/encryption_key)"
+export ENCRYPTION_KEY
+
+ENCRYPTION_KEY_SECONDARY="$(cat /run/secrets/encryption_key_secondary)"
+export ENCRYPTION_KEY_SECONDARY
+
+ENCRYPTION_KEY_LOOKUP="$(cat /run/secrets/encryption_key_lookup)"
+export ENCRYPTION_KEY_LOOKUP
+
+PROXY_HOP="$(cat /run/secrets/proxy_hop)"
+export PROXY_HOP
 
 # ==============================================================================
 # Ensure permissions for data are returned to bun user
@@ -47,12 +56,16 @@ echo "Running database migrations..."
 su-exec bun:bun bunx prisma migrate deploy
 
 # ==============================================================================
-# One time v2 migration cmds (as bun)
-# Do not uncomment if this is the first time setting up the server,
-# only when migrating from v1 to v2
+# One time migration cmd for server encryption (v2.2.5)
+# Ignore if first time setting up server or your current version is >= v2.2.5
 # ==============================================================================
-# su-exec bun:bun bunx prisma migrate resolve --applied 0_init
-# su-exec bun:bun bunx prisma migrate resolve --applied 20250804114621_migrate_to_multiple_classes
+# su-exec bun:bun bun run encrypt:migrate
+
+# ==============================================================================
+# Regular migration cmds for server encryption key rotation (>= v2.2.5)
+# Ignore if first time setting up server or your current version is < v2.2.5
+# ==============================================================================
+# su-exec bun:bun bun run encrypt:rotate
 
 # ======================================================================
 # Update ClamDB (as clamav)

@@ -2,24 +2,34 @@ import {
   joinedTeamsData,
   msToInputDate,
   teamsData,
-  csrfToken,
   escapeHTML,
   dateDaysDifference,
   uploadData,
   getDisplayDate,
-  loadTimetableData,
   getSimpleDisplayDate,
-  showAllUploads,
   onlyThisSite,
-  isSameDay
+  isSameDay,
+  ajax,
+  uploadRequestsData,
+  bootstrap,
+  user,
+  forceAutocomplete,
+  bytesToText,
+  getCurrentLesson,
+  checkTeamInputForSuspicious,
+  isIOS
 } from "../../global/global.js";
-import { SingleUploadData } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { AjaxError, SingleUploadData } from "../../global/types";
+import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
+import { FileInput, SearchBox } from "../../snippets/richInput/richInput.js";
 
 async function renderUploadList(): Promise<void> {
   async function getFilteredData(): Promise<SingleUploadData[]> {
     // Get the upload data
     let data = (await uploadData()).uploads;
+
+    const pinned = data.filter(u => u.isPinned);
+    data = data.filter(u => ! u.isPinned);
     // Filter by min. date
     const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMin)) {
@@ -32,12 +42,15 @@ async function renderUploadList(): Promise<void> {
     }
     // Filter by search
     const sb = ($("#search-uploads")[0] as SearchBox);
-    data = data.filter(u => sb.searchMatches(u.accountName ?? "", u.uploadName));
+    data = data.filter(u => sb.searchMatches(u.accountName ?? "", u.uploadName, richTextToPlainText(u.uploadDescription ?? "")));
     // Filter by type
     data = data.filter(u => $(`#filter-type-${u.uploadType}`).prop("checked"));
     // Filter by team
     const currentJoinedTeamsData = await joinedTeamsData();
     data = data.filter(u => currentJoinedTeamsData.includes(u.teamId) || u.teamId === -1);
+
+    data = pinned.concat(data);
+
     return data;
   }
 
@@ -60,22 +73,11 @@ async function renderUploadList(): Promise<void> {
     .toggleClass("text-bg-danger", storageUsed >= 90)
     .end().find("span").text(storageUsed + "%").toggle(storageUsed < 5);
   
-  const byteToText = (b: number): string => {
-    b /= 1024;
-    if (b < 100) {
-      return Math.round(b * 10) / 10 + "KB";
-    }
-    else {
-      b /= 1024;
-      if (b < 100) {
-        return Math.round(b * 10) / 10 + "MB";
-      }
-      else {
-        return Math.round(b / 1024 * 10) / 10 + "GB";
-      }
-    }
-  };
-  $("#storage-description b").eq(0).text(byteToText(usedStorage)).end().eq(1).text(byteToText(totalStorage));
+  $("#storage-description b").eq(0).text(bytesToText(usedStorage)).end().eq(1).text(bytesToText(totalStorage));
+  
+  $("#storage-limit-exceeded-toast .toast-body b").text(bytesToText(totalStorage));
+  $("file-input").attr("max-size", currentUploadData.sizeLimitPerFile);
+  $("#file-limit-exceeded-toast .toast-body b").text(currentUploadData.maxFilesPerClass);
 
   for (const upload of data) {
     const uploadId = upload.uploadId;
@@ -127,12 +129,16 @@ async function renderUploadList(): Promise<void> {
           <button class="btn btn-sm btn-semivisible upload-copy-link" aria-label="Link kopieren" data-id="${uploadId}">
             <i class="fa-solid fa-copy opacity-75" aria-hidden="true"></i>
           </button>
+          <button class="btn btn-sm btn-semivisible upload-pin" data-id="${uploadId}" aria-label="Anheften">
+            <i class="fa-solid fa-thumbtack${upload.isPinned ? "-slash" : ""} opacity-75" aria-hidden="true"></i>
+          </button>
         </div>
 
         <div class="upload-failed">
           <span class="form-text text-danger">
             <i class="fas fa-circle-xmark" aria-hidden="true"></i>
-            Hochladen fehlgeschlagen!
+            <b>Hochladen fehlgeschlagen!</b>
+            <span class="upload-failed-reason"></span>
           </span>
           <br>
           <button class="btn btn-sm btn-danger fw-bold mt-1 upload-failed-delete" data-id="${uploadId}">Löschen</button>
@@ -150,29 +156,44 @@ async function renderUploadList(): Promise<void> {
           <br>
           <span class="fw-bold word-wrap-break">${escapeHTML(name)}</span>
           <br>
-          <span class="badge badge-tertiary rounded-pill"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
-          <span class="badge badge-tertiary rounded-pill"><i class="far fa-file me-1" aria-hidden="true"></i>${numberFiles}</span>
-          <span class="badge badge-tertiary rounded-pill">
+          <span class="badge badge-tertiary rounded-pill border"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
+          <span class="badge badge-tertiary rounded-pill border"><i class="far fa-file me-1" aria-hidden="true"></i>${numberFiles}</span>
+          <span class="badge badge-tertiary rounded-pill border">
             <i class="far fa-calendar me-1" aria-hidden="true"></i>${getDisplayDate(upload.createdAt)}
           </span>
+          ${upload.uploadDescription === "" || upload.uploadDescription === null ? ""
+    : '<span class="badge badge-tertiary rounded-pill border"><i class="far fa-message me-1" aria-hidden="true"></i>Beschreibung</span>'
+}
           </div>
         </button>
       </div>
       `);
+    galleryTemplate.find(".upload-pin").toggle(upload.isPinned || user.permissionLevel >= 1);
     galleryTemplate.find(".edit-option").toggle(editEnabled);
     galleryTemplate.find(".upload-failed").toggle(upload.status === "failed");
+    galleryTemplate.find(".upload-failed-reason").text({
+      "MIME-Type is not supported": "Einer der Dateitypen wird nicht unterstützt!"
+    }[upload.errorReason ?? ""] ?? "Ein unbekannter Fehler ist aufgetreten.");
     galleryTemplate.find(".upload-processing").toggle(["processing", "queued"].includes(upload.status));
     galleryTemplate.find(".view-upload").prop("disabled", upload.status !== "completed");
 
     const tableTemplate = $(`
       <tr>
-        <td class="text-nowrap text-center">${fileIconSmall}</td>
+        <td class="text-nowrap text-center align-middle">
+          ${$(fileIconSmall).addClass("cursor-pointer view-upload").attr("data-id", uploadId).prop("outerHTML")}
+        </td>
         <td class="text-break">
-          <span class="fw-bold">${escapeHTML(name)}</span><br>@${author}
+          <span class="fw-bold cursor-pointer view-upload" data-id="${uploadId}">${escapeHTML(name)}</span>
+          <br>
+          <span class="badge badge-tertiary rounded-pill border"><i class="fas fa-at me-1" aria-hidden="true"></i>${author}</span>
+          ${upload.uploadDescription === "" || upload.uploadDescription === null ? ""
+    : '<span class="badge badge-tertiary rounded-pill border"><i class="far fa-message me-1" aria-hidden="true"></i>Beschreibung</span>'
+}
           <div class="upload-failed">
             <span class="form-text text-danger">
               <i class="fas fa-circle-xmark" aria-hidden="true"></i>
-              Hochladen fehlgeschlagen!
+              <b>Hochladen fehlgeschlagen!</b>
+              <span class="upload-failed-reason"></span>
             </span>
             <br>
             <button class="btn btn-sm btn-danger fw-bold mt-1 upload-failed-delete" data-id="${uploadId}">Löschen</button>
@@ -200,16 +221,20 @@ async function renderUploadList(): Promise<void> {
               <button class="btn btn-sm btn-semivisible upload-copy-link" aria-label="Link kopieren" data-id="${uploadId}">
                 <i class="fa-solid fa-copy opacity-75" aria-hidden="true"></i>
               </button>
-              <button class="btn btn-sm btn-semivisible view-upload" aria-label="Ansehen" data-id="${uploadId}">
-                <i class="fa-solid fa-eye opacity-75" aria-hidden="true"></i>
+              <button class="btn btn-sm btn-semivisible upload-pin" data-id="${uploadId}" aria-label="Anheften">
+                <i class="fa-solid fa-thumbtack${upload.isPinned ? "-slash" : ""} opacity-75" aria-hidden="true"></i>
               </button>
             </div>
           </div>
         </td>
       </tr>
     `);
+    tableTemplate.find(".upload-pin").toggle(upload.isPinned || user.permissionLevel >= 1);
     tableTemplate.find(".edit-option").toggle(editAllowed);
     tableTemplate.find(".upload-failed").toggle(upload.status === "failed");
+    tableTemplate.find(".upload-failed-reason").text({
+      "MIME-Type is not supported": "Einer der Dateitypen wird nicht unterstützt!"
+    }[upload.errorReason ?? ""] ?? "Ein unbekannter Fehler ist aufgetreten.");
     tableTemplate.find(".upload-processing").toggle(["processing", "queued"].includes(upload.status));
     tableTemplate.find(".view-upload").prop("disabled", upload.status !== "completed");
 
@@ -226,8 +251,46 @@ async function renderUploadList(): Promise<void> {
   $("#upload-gallery").empty().append(newGalleryContent.children()).toggleClass("d-none", data.length === 0);
   $("#upload-table-body").empty().append(newTableContent.children());
   $("#upload-table").toggleClass("d-none", data.length === 0);
-  $("#upload-load-more").toggle((await uploadData()).hasMore);
+
+  renderUploadRequests();
 };
+
+async function renderUploadRequests(): Promise<void> {
+  const currentUploadRequestsData = await uploadRequestsData();
+  const currentJoinedTeamsData = await joinedTeamsData();
+  const data = currentUploadRequestsData.filter(u => currentJoinedTeamsData.includes(u.teamId) || u.teamId === -1);
+
+  const length = data.length;
+  if (length === 0) {
+    $("#upload-requests-done").show();
+    $("#upload-requests-todo").hide();
+    $("#upload-requests-body").text("Keine Anfragen für Dateien vorhanden.");
+  }
+  else {
+    $("#upload-requests-done").hide();
+    $("#upload-requests-todo").show();
+    const newContent = $("<div></div>");
+    newContent.append(`<div><b>${length}</b> Anfrage${length === 1 ? "" : "n"} für Dateien vorhanden. Sei nett und lade das Gewünschte hoch!</div>`);
+
+    const ul = $("<ul class='mb-0'></ul>");
+    for (const r of data) {
+      const template = $(`
+        <li><span class="d-flex">
+          <span class="flex-grow-1">${escapeHTML(r.uploadRequestName)}</span>
+          <button class="btn btn-sm btn-semivisible upload-request-delete" data-id="${r.uploadRequestId}" aria-label="Löschen">
+            <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
+          </button>
+          <button class="btn btn-sm btn-semivisible upload-request-add" data-id="${r.uploadRequestId}" aria-label="Hinzufügen">
+            <i class="fa-solid fa-circle-plus opacity-75" aria-hidden="true"></i>
+          </button>
+        </span></li>
+      `);
+      ul.append(template);
+    }
+    newContent.append(ul);
+    $("#upload-requests-body").empty().append(newContent.children());
+  }
+}
 
 async function renderUploadTypeList(): Promise<void> {
   const uploadTypes = [
@@ -239,12 +302,11 @@ async function renderUploadTypeList(): Promise<void> {
     {uploadTypeId: "IMAGE", name: "Anderes Bild"}
   ];
 
-  // Clear the select element in the add upload modal
-  $("#add-upload-type").empty();
-  $("#add-upload-type").append('<option value="" disabled selected>Art</option>');
-  // Clear the select element in the edit upload modal
-  $("#edit-upload-type").empty();
-  $("#edit-upload-type").append('<option value="" disabled selected>Art</option>');
+  const addUploadTypeVal = $("#add-upload-type").val() ?? "";
+  const editUploadTypeVal = $("#edit-upload-type").val() ?? "";
+
+  // Clear the select element in the add & edit upload modal
+  $("#add-upload-type, #edit-upload-type").html('<option value="" disabled selected>Art</option>');
   // Clear the list for filtering by type
   $("#filter-type-list").empty();
 
@@ -257,82 +319,78 @@ async function renderUploadTypeList(): Promise<void> {
     const uploadTypeName = uploadType.name;
 
     filterData.type[uploadTypeId] ??= true;
-    const isChecked = filterData.type[uploadTypeId] ? "checked" : "";
-    if (isChecked !== "checked") $("#filter-changed").show();
+    const checkedStatus = filterData.type[uploadTypeId] ? "checked" : "";
+    if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by type
     const templateFilterType = `
-      <div class="form-check">
-        <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${uploadTypeId}" data-id="${uploadTypeId}" ${isChecked}>
-        <label class="form-check-label" for="filter-type-${uploadTypeId}">
-          ${escapeHTML(uploadTypeName)}
-        </label>
-      </div>`;
+      <label class="form-check flex-grow-1 text-center mb-0 ps-2rem pe-2 py-1 border rounded bg-body-tertiary">
+        <input type="checkbox" class="form-check-input filter-type-option me-2"
+          id="filter-type-${uploadTypeId}" data-id="${uploadTypeId}" ${checkedStatus}>
+        ${uploadTypeName}
+      </label>`;
     $("#filter-type-list").append(templateFilterType);
 
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${uploadTypeId}">${escapeHTML(uploadTypeName)}</option>`;
-    $("#add-upload-type").append(templateFormSelect);
-    $("#edit-upload-type").append(templateFormSelect);
+    $("#add-upload-type, #edit-upload-type").append(`<option value="${uploadTypeId}">${uploadTypeName}</option>`);
   };
 
-  // If any type filter gets changed, update the shown uploads
-  $(".filter-type-option").on("change", function () {
-    renderUploadList();
-    const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
-    filterData.type ??= {};
-    filterData.type[$(this).data("id")] = $(this).prop("checked");
-    localStorage.setItem("uploadFilter", JSON.stringify(filterData));
-    updateFilters();
-  });
+  if (addUploadTypeVal !== "") $("#add-upload-type").val(addUploadTypeVal);
+  if (editUploadTypeVal !== "") $("#edit-upload-type").val(editUploadTypeVal);
 
   localStorage.setItem("uploadFilter", JSON.stringify(filterData));
 };
 
 async function renderTeamList(): Promise<void> {
-  // Clear the select element in the add upload modal
-  $("#add-upload-team").empty();
-  $("#add-upload-team").append('<option value="-1" selected>Alle</option>');
-  // Clear the select element in the edit upload modal
-  $("#edit-upload-team").empty();
-  $("#edit-upload-team").append('<option value="-1" selected>Alle</option>');
+  const addUploadTeamVal = $("#add-upload-team").val() ?? "-1";
+  const editUploadTeamVal = $("#edit-homework-team").val() ?? "-1";
+  const addUploadRequestTeamVal = $("#add-upload-request-team").val() ?? "-1";
+
+  // Clear the select element in the add & edit upload modal
+  $("#add-upload-team, #edit-upload-team, #add-upload-request-team").html('<option value="-1" selected>Alle</option>');
 
   for (const team of (await teamsData())) {
-    // Get the team data
-    const teamName = team.name;
-
     // Add the template for the select elements
-    const templateFormSelect = `<option value="${team.teamId}">${escapeHTML(teamName)}</option>`;
-    $("#add-upload-team").append(templateFormSelect);
-    $("#edit-upload-team").append(templateFormSelect);
+    $("#add-upload-team, #edit-upload-team, #add-upload-request-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   }
+
+  $("#add-upload-team").val(addUploadTeamVal);
+  $("#edit-homework-team").val(editUploadTeamVal);
+  $("#add-upload-request-team").val(addUploadRequestTeamVal);
 };
 
-async function addUpload(): Promise<void> {
+async function addUpload(uploadRequestId?: number): Promise<void> {
   //
   // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS AN UPLOAD
   //
 
   // Reset the data inputs in the add upload modal
-  const now = new Date();
-  const timeNow = (now.getHours() * 60 + now.getMinutes() - 5) * 60 * 1000; // Pretend it's 5min earlier, in case the lesson was just over
-  const currentTimetableData = await loadTimetableData(new Date());
-  const currentLesson = currentTimetableData.find(l => l.startTime < timeNow && l.endTime > timeNow);
+  const currentLesson = await getCurrentLesson();
   
-  if (currentLesson === undefined) {
-    $("#add-upload-name").val("").removeClass("autocomplete");
-  }
-  else {
-    $("#add-upload-name")
-      .val(currentLesson?.lessons[0].subjectNameLong + " vom " + getSimpleDisplayDate(now))
-      .addClass("autocomplete")
-      .off("focus").on("focus", function () {
-        $(this).val("").removeClass("autocomplete");
-      });
-  }
-  $("#add-upload-files").val("");
+  $("#add-upload-name").val("").removeClass("is-autocompleted");
+  $("#add-upload-team").val("-1").removeClass("is-autocompleted is-suspicious");
+  $("#add-upload-description").val("");
+  ($("#add-upload-files")[0] as FileInput).files = [];
   $("#add-upload-type").val("");
-  $("#add-upload-team").val("-1");
+
+  if (uploadRequestId) {
+    const uploadRequest = (await uploadRequestsData()).find(r => r.uploadRequestId === uploadRequestId);
+    if (uploadRequest) {
+      forceAutocomplete($("#add-upload-name"), uploadRequest.uploadRequestName);
+      forceAutocomplete($("#add-upload-team"), uploadRequest.teamId);
+      $("#add-upload-name, #add-upload-team").find("~ .autocompleted-feedback").text("Automatisch: Aus der Anfrage");
+    }
+  }
+  else if (currentLesson !== undefined) {
+    const subjectName = currentLesson.lessons[0].substitution?.subject ?? currentLesson.lessons[0].subjectNameLong;
+    forceAutocomplete($("#add-upload-name"), subjectName + " vom " + getSimpleDisplayDate(new Date()));
+    $("#add-upload-name ~ .autocompleted-feedback").text("Automatisch: Das aktuelle Fach");
+    const teamId = currentLesson.lessons[0].teamId;
+    if (teamId !== -1) {
+      forceAutocomplete($("#add-upload-team"), teamId);
+      $("#add-upload-team ~ .autocompleted-feedback").html(`Automatisch: Das Team, das <b>${escapeHTML(subjectName)}</b> hat`);
+    }
+  }
 
   // Disable the actual "add" button, because not all information is given
   $("#add-upload-button").prop("disabled", true);
@@ -347,115 +405,142 @@ async function addUpload(): Promise<void> {
     .on("click", async () => {
       // Save the given information in variables
       const name = $("#add-upload-name").val()?.toString().trim() ?? "";
+      const files = ($("#add-upload-files")[0] as FileInput).files;
+      const description = $("#add-upload-description").val()?.toString().trim() ?? "";
       const type = $("#add-upload-type").val()?.toString() ?? "";
-      const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
-      const team = $("#add-upload-team").val()?.toString() ?? "-1";
+      const teamId = $("#add-upload-team").val()?.toString() ?? "-1";
 
       // Prepare the POST request
       const data = new FormData();
       data.append("uploadName", name);
+      data.append("uploadDescription", description);
       data.append("uploadType", type);
-      data.append("teamId", team);
+      data.append("teamId", teamId);
       for (const f of files) {
         data.append("files", f);
       }
 
-      // Save whether the server has responed
-      let hasResponded = false;
+      try {
+        await ajax("POST", "/api/uploads", {
+          body: data,
+          queueable: true,
+          expectedErrors: [
+            { status: 413, responseText: "Upload limit reached: this class already has the maximum number of files allowed." },
+            { status: 413, responseText: "Class storage quota will be exceeded" }
+          ]
+        });
+        
+        $("#add-upload-success-toast").toast("show");
+        $("#add-upload-modal").modal("hide");
 
-      // Post the request
-      $.ajax({
-        url: "/uploads/upload",
-        type: "POST",
-        data: data,
-        processData: false,
-        contentType: false,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification and update the shown uploads
-          $("#add-upload-success-toast").toast("show");
-          // Hide the add upload modal
-          $("#add-upload-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 400) {
-            if (xhr.responseText === "MIME-Type not supported") {
-              $("#add-upload-unsupported-mime-type-toast").toast("show");
-            }
-            else if (xhr.responseText === "File size limit exceeded (Max 15MB)") {
-              $("#add-upload-size-limit-exceeded-toast").toast("show");
-            }
-            else {
-              console.log(xhr.responseText);
-            }
-          }
-          else if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
+        if (uploadRequestId) {
+          await ajax("DELETE", `/api/uploads/requests/${uploadRequestId}`, {
+            queueable: true
+          });
         }
-      });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 413) {
+          if (err.responseText === "Upload limit reached: this class already has the maximum number of files allowed.") {
+            $("#file-limit-exceeded-toast").toast("show");
+          }
+          else if (err.responseText === "Class storage quota will be exceeded") {
+            $("#storage-limit-exceeded-toast").toast("show");
+          }
         }
-      }, 5000);
+      }
     });
 }
 
+function getFilenameFromContentDisposition(header: string): string | null {
+  if (!header) return null;
+
+  const filenameStarMatch = new RegExp(/filename\*\s*=\s*([^;]+)/i).exec(header);
+  if (!filenameStarMatch) return null;
+  const value = filenameStarMatch[1].trim();
+
+  const parts = value.split("''");
+  if (parts.length === 2) {
+    return decodeURIComponent(parts[1]);
+  }
+
+  return decodeURIComponent(value);
+}
+
+async function getFileAndUrl(fileMetaDataId: number): Promise<{file: File, blobUrl: string} | null> {
+  const route = `/api/uploads/${fileMetaDataId}`;
+  try {
+    const response = await fetch(route + "?action=preview");
+    if (response.ok) {
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const filename = getFilenameFromContentDisposition(response.headers.get("content-disposition") ?? "Datei") ?? "Datei";
+      const file = new File([blob], filename, { type: blob.type });
+      return {file, blobUrl};
+    }
+    else {
+      return null;
+    }
+  }
+  catch {
+    return null;
+  }
+}
+
 async function viewUpload(uploadId: number): Promise<void> {
-  function showFile(fileId: number): void {
+  async function showFile(fileNumber: number): Promise<void> {
     if (!upload) return;
 
-    const route = `/uploads/${upload.files[fileId].fileMetaDataId}`;
-    const mime = upload.files[fileId].mimeType;
-    $("#view-upload-first-page-note").toggle(mime === "application/pdf");
-    
-    const $object = $("#view-upload-object");
-    const $newObject = $(`
-      <object id="view-upload-object" class="d-block mb-2 w-100 border border-secondary
-        ${/iPhone/.test(navigator.userAgent) ? "ios" : ""}">
-        <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 m-2">
-          <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-          <span class="d-block">
-            Die Datei kann nicht angezeigt werden. Entweder
-            <ul>
-              <li>Die Datei lädt noch oder</li>
-              <li>Die Datei ist nicht mehr verfügbar oder</li>
-              <li>Wir haben einen Fehler gemacht - Kontaktiere uns, wenn du den Rest ausschließen kannst.</li>
-            </ul>
-            Vielleicht kannst du die Datei unten herunterladen oder in einem neuem Tab öffnen.
-          </span>
-        </div>
-      </object>
-    `);
-    $newObject.attr("data", route + "?action=preview").attr("type", mime).find("a").attr("href", route + "?action=preview");
-    $object.replaceWith($newObject);
+    $("#view-upload-nav-info").text(fileNumber + 1 + "/" + upload.filesCount);
+    $("#view-upload-nav-back").prop("disabled", fileNumber === 0);
+    $("#view-upload-nav-next").prop("disabled", upload.filesCount === fileNumber + 1);
 
-    $("#view-upload-nav-info").text(fileId + 1 + "/" + upload.filesCount);
-    $("#view-upload-nav-back").prop("disabled", fileId === 0);
-    $("#view-upload-nav-next").prop("disabled", upload.filesCount === fileId + 1);
+    $("#view-upload-download").off("click").addClass("disabled");
+    $("#view-upload-open").attr("href", null).addClass("disabled");
 
-    $("#view-upload-download").attr("href", route + "?action=download");
-    $("#view-upload-open").attr("href", route + "?action=preview");
+    $("#view-upload-loading").show();
+    $("#view-upload-object").hide();
+    $("#view-upload-error").hide();
+    $("#view-upload-unavailable").hide();
 
-    $("#view-upload-download-impossible").toggle(isIOS && isStandalone && (mime === "application/pdf"));
+    const fileMetaDataId = upload.files[fileNumber].fileMetaDataId;
+    const route = `/api/uploads/${fileMetaDataId}`;
+    const fileAndUrl = await getFileAndUrl(fileMetaDataId);
+
+    if (fileAndUrl === null) {
+      $("#view-upload-loading").hide();
+      const b = await bootstrap();
+      const unavailable = (! b.online) || b.maintenance;
+      $("#view-upload-object").hide();
+      $("#view-upload-error").toggle(!unavailable);
+      $("#view-upload-unavailable").toggle(unavailable);
+    }
+    else {
+      $("#view-upload-loading").hide();
+      $("#view-upload-error").hide();
+      $("#view-upload-unavailable").hide();
+
+      const mime = upload.files[fileNumber].mimeType;
+      $("#view-upload-first-page-note").toggle(mime === "application/pdf");
+      
+      const $obj = $("#view-upload-object");
+      const $newObj = $obj.clone().attr("data", fileAndUrl.blobUrl).attr("type", mime).toggleClass("ios", isIOS);
+      $obj.replaceWith($newObj);
+      $newObj.show();
+
+      $("#view-upload-unavailable").hide();
+
+      $("#view-upload-download").removeClass("disabled").on("click", ev => {
+        if (navigator.canShare?.({ files: [fileAndUrl.file] })) {
+          ev.preventDefault();
+          navigator.share({ files: [fileAndUrl.file] });
+        }
+      });
+      $("#view-upload-download").attr("href", fileAndUrl.blobUrl).attr("download", fileAndUrl.file.name);
+
+      $("#view-upload-open").removeClass("disabled").attr("href", route + "?action=preview");
+    }
   }
 
   const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
@@ -464,17 +549,33 @@ async function viewUpload(uploadId: number): Promise<void> {
   $("#view-upload-modal-label b").text(upload.uploadName);
   $("#view-upload-modal").modal("show");
 
-  let shownFileId = 0;
-  showFile(shownFileId);
+  $("#view-upload-description-wrapper").toggle((upload.uploadDescription ?? "") !== "");
+  richTextToHtml(upload.uploadDescription, $("#view-upload-description"), {
+    showMoreButton: true,
+    parseLinks: true,
+    merge: true
+  });
 
-  $("#view-upload-nav-back").off("click").on("click", () => showFile(--shownFileId));
-  $("#view-upload-nav-next").off("click").on("click", () => showFile(++shownFileId));
+  let shownFileNumber = 0;
+  showFile(shownFileNumber);
+
+  $("#view-upload-nav-back").off("click").on("click", () => showFile(--shownFileNumber));
+  $("#view-upload-nav-next").off("click").on("click", () => showFile(++shownFileNumber));
 }
 
 async function copyLinkUpload(uploadId: number) : Promise<void> {
+  const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
+  if (!upload) return;
+
   const $el = $(`.upload-copy-link[data-id=${uploadId}]`);
   try {
-    await navigator.clipboard.writeText(`${location.protocol}//${location.host}/uploads?view-upload=${uploadId}`);
+    const url = `${location.protocol}//${location.host}/uploads?view-upload=${uploadId}`;
+    const html = `<a href="${url}" class="taskminder-link">${upload.uploadName}</a>`;
+
+    await navigator.clipboard.write([new ClipboardItem({
+      "text/plain": new Blob([url], { type: "text/plain" }),
+      "text/html": new Blob([html], { type: "text/html" })
+    })]);
 
     $el.prop("disabled", true).html("<i class=\"fas fa-check opacity-75\" aria-hidden=\"true\"></i>");
 
@@ -485,6 +586,23 @@ async function copyLinkUpload(uploadId: number) : Promise<void> {
   catch (err) {
     console.error("Error copying upload link to clipboard:", err);
   }
+}
+
+async function pinUpload(uploadId: number): Promise<void> {
+  const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
+  if (!upload) return;
+
+  await ajax("PATCH", `/api/uploads/${uploadId}/pin`, {
+    body: {
+      pinStatus: !upload.isPinned
+    },
+    queueable: true
+  });
+  
+  const actionText = upload.isPinned ? "losgelöst" : "angeheftet";
+  $("#pin-upload-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
+  $("#pin-upload-success-toast .toast-body").text(`Die Datei wurde erfolgreich ${actionText}.`);
+  $("#pin-upload-success-toast").toast("show");
 }
 
 async function editUpload(uploadId: number): Promise<void> {
@@ -498,6 +616,14 @@ async function editUpload(uploadId: number): Promise<void> {
 
   // Set the inputs on the already saved information
   $("#edit-upload-name").val(upload.uploadName);
+
+  const files: File[] = [];
+  for (const f of upload.files) {
+    const fileAndUrl = await getFileAndUrl(f.fileMetaDataId);
+    if (fileAndUrl !== null) files.push(fileAndUrl.file);
+  }
+  ($("#edit-upload-files")[0] as FileInput).files = files;
+  $("#edit-upload-description").val(upload.uploadDescription ?? "").trigger("change");
   $("#edit-upload-type").val(upload.uploadType);
   $("#edit-upload-team").val(upload.teamId);
 
@@ -513,59 +639,46 @@ async function editUpload(uploadId: number): Promise<void> {
     .off("click")
     .on("click", async () => {
       // Save the given information in variables
-      const name = $("#edit-upload-name").val();
-      const type = $("#edit-upload-type").val();
-      const team = $("#edit-upload-team").val();
+      const name = $("#edit-upload-name").val()?.toString().trim() ?? "";
+      const files = ($("#edit-upload-files")[0] as FileInput).files;
+      const description = $("#edit-upload-description").val()?.toString().trim() ?? "";;
+      const type = $("#edit-upload-type").val()?.toString() ?? "";
+      const teamId = $("#edit-upload-team").val()?.toString() ?? "-1";
 
-      const data = {
-        uploadId,
-        uploadName: name,
-        uploadType: type,
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
+      // Prepare the POST request
+      const data = new FormData();
+      data.append("uploadName", name);
+      data.append("uploadDescription", description);
+      data.append("uploadType", type);
+      data.append("teamId", teamId);
+      for (const f of files) {
+        data.append("files", f);
+      }
 
-      // Post the request
-      $.ajax({
-        url: "/uploads/edit",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(data),
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification
-          $("#edit-upload-success-toast").toast("show");
-          $("#edit-upload-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
+      try {
+        await ajax("PATCH", `/api/uploads/${uploadId}`, {
+          body: data,
+          queueable: true,
+          expectedErrors: [
+            { status: 413, responseText: "Upload limit reached: this class already has the maximum number of files allowed." },
+            { status: 413, responseText: "Class storage quota will be exceeded" }
+          ]
+        });
+        
+        $("#edit-upload-success-toast").toast("show");
+        $("#edit-upload-modal").modal("hide");
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 413) {
+          if (err.responseText === "Upload limit reached: this class already has the maximum number of files allowed.") {
+            $("#file-limit-exceeded-toast").toast("show");
           }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
+          else if (err.responseText === "Class storage quota will be exceeded") {
+            $("#storage-limit-exceeded-toast").toast("show");
           }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
         }
-      });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+      }
     });
 }
 
@@ -574,50 +687,11 @@ function deleteUpload(uploadId: number, force?: boolean): void {
     // Hide the confirmation toast
     $("#delete-upload-confirm-toast").toast("hide");
 
-    const data = {
-      uploadId: uploadId
-    };
-    // Save whether the server has responed
-    let hasResponded = false;
-
-    // Post the request
-    $.ajax({
-      url: "/uploads/delete",
-      type: "POST",
-      data: data,
-      headers: {
-        "X-CSRF-Token": await csrfToken()
-      },
-      success: () => {
-        // Show a success notification
-        $("#delete-upload-success-toast").toast("show");
-      },
-      error: xhr => {
-        if (xhr.status === 401) {
-          // The user has to be logged in but isn't
-          // Show an error notification
-          $navbarToasts.notLoggedIn.toast("show");
-        }
-        else if (xhr.status === 500) {
-          // An internal server error occurred
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        // The server has responded
-        hasResponded = true;
-      }
+    await ajax("DELETE", `/api/uploads/${uploadId}`, {
+      queueable: true
     });
-    setTimeout(() => {
-      // Wait for 1s
-      if (!hasResponded) {
-        // If the server hasn't answered, show the internal server error notification
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 5000);
+
+    $("#delete-upload-success-toast").toast("show");
   }
 
   //
@@ -680,7 +754,7 @@ function toggleView(): void {
     $("#upload-gallery").hide();
     $("#upload-table").show();
   }
-  localStorage.setItem("uploads/view", view);
+  localStorage.setItem("uploadView", view);
 }
 
 export async function init(): Promise<void> {
@@ -691,40 +765,42 @@ export async function init(): Promise<void> {
       viewUpload(Number.parseInt(urlParams.get("view-upload") ?? ""));
     }
 
-    if (!/iPhone/.test(navigator.userAgent)) {
+    if (!isIOS) {
       $("#view-upload-first-page-note").remove();
     }
 
-    $("#upload-load-more-btn").on("click", () => {
-      showAllUploads(true);
-      uploadData.reload();
-      renderUploadList();
-    });
-
     $("#edit-toggle").on("click", function () {
-      $(".edit-option").toggle($("#edit-toggle").is(":checked"));
-    });
-    $("#edit-toggle").prop("checked", false);
-    $(".edit-option").hide();
+      $("#upload-gallery .edit-option").toggle($(this).is(":checked"));
+    }).prop("checked", false);
+    $("#upload-gallery .edit-option").hide();
+
+    function appendFilterContent(): void {
+      $("#filter-content").appendTo(`#filter-${window.innerWidth >= 768 ? "modal" : "offcanvas"}-body`);
+    }
 
     $("#filter-toggle").on("click", function () {
-      $("#filter-content, #filter-reset").toggle($("#filter-toggle").is(":checked"));
+      appendFilterContent();
+      if (window.innerWidth >= 768) $("#filter-modal").modal("show");
+      else $("#filter-offcanvas").offcanvas("show");
     });
-    $("#filter-toggle").prop("checked", false);
-    $("#filter-content, #filter-reset").hide();
+    appendFilterContent();
 
-    view = localStorage.getItem("uploads/view") as View ?? View.Gallery;
+    $("#search-toggle").on("change", function () {
+      const checked = $(this).is(":checked");
+      $("#search-uploads").toggle(checked);
+      if (checked) $("#search-uploads input").trigger("focus");
+      else $("#search-uploads").val("");
+    }).prop("checked", false).trigger("change");
+
+    view = localStorage.getItem("uploadView") as View ?? View.Gallery;
     toggleView();
     $("#view-toggle").on("click", () => {
       view = view === View.Gallery ? View.Table : View.Gallery;
       toggleView();
     });
 
-    if (!localStorage.getItem("uploadFilter")) {
-      localStorage.setItem("uploadFilter", "{}");
-    }
     updateFilters(true);
-    $("#filter-reset").on("click", () => {
+    $(".filter-reset").on("click", () => {
       localStorage.setItem("uploadFilter", "{}");
       updateFilters();
       renderUploadList();
@@ -732,39 +808,26 @@ export async function init(): Promise<void> {
 
     $("#search-uploads").on("input", renderUploadList);
 
+    $("#add-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
+
     // On changing any information in the add upload modal, disable the add button if any information is empty
     $(".add-upload-input").on("input", function () {
       const name = $("#add-upload-name").val()?.toString().trim();
       const type = $("#add-upload-type").val();
-      const files = ($("#add-upload-files")[0] as HTMLInputElement).files ?? [];
+      const fileInput = $("#add-upload-files")[0] as FileInput;
 
-      $("#add-upload-max-files").toggle(files.length > 20);
-      if (name === "" || type === null || files.length === 0 || files.length > 20) {
-        $("#add-upload-button").prop("disabled", true);
-      }
-      else {
-        $("#add-upload-button").prop("disabled", false);
-      }
+      $("#add-upload-button").prop("disabled", name === "" || type === null || !fileInput.isValid());
     });
+
+    $("#edit-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // On changing any information in the edit upload modal, disable the add button if any information is empty
     $(".edit-upload-input").on("input", function () {
       const name = $("#edit-upload-name").val()?.toString().trim();
       const type = $("#edit-upload-type").val();
+      const fileInput = $("#edit-upload-files")[0] as FileInput;
 
-      if (name === "" || type === null) {
-        $("#edit-upload-button").prop("disabled", true);
-      }
-      else {
-        $("#edit-upload-button").prop("disabled", false);
-      }
-    });
-
-    // Don't close the dropdown when the user clicked inside of it
-    $(".dropdown-menu").each(function () {
-      $(this).on("click", ev => {
-        ev.stopPropagation();
-      });
+      $("#edit-upload-button").prop("disabled", name === "" || type === null || !fileInput.isValid());
     });
 
     // View the upload on clicking it
@@ -775,6 +838,11 @@ export async function init(): Promise<void> {
     // Copy the upload link on clicking its copy link icon
     $("#app").on("click", ".upload-copy-link", function () {
       copyLinkUpload($(this).data("id"));
+    });
+
+    // Pin the upload on clicking its pin icon
+    $("#app").on("click", ".upload-pin", function () {
+      pinUpload($(this).data("id"));
     });
 
     // Request deleting the upload on clicking its delete icon
@@ -788,6 +856,43 @@ export async function init(): Promise<void> {
     // Request editing the upload on clicking its edit icon
     $("#app").on("click", ".upload-edit", function () {
       editUpload($(this).data("id"));
+    });
+
+    $("#show-add-upload-request-button").on("click", () => {
+      $("#add-upload-request-name").val("");
+      $("#add-upload-request-team").val("-1").removeClass("is-suspicious");
+      $("#add-upload-request-button").prop("disabled", true);
+      $("#add-upload-request-modal").modal("show");
+    });
+
+    $("#add-upload-request-name").on("input", function () {
+      $("#add-upload-request-button").prop("disabled", $(this).val()?.toString().trim() === "");
+    });
+
+    $("#add-upload-request-team").on("input autocomplete", checkTeamInputForSuspicious);
+
+    $("#add-upload-request-button").on("click", async () => {
+      const uploadRequestName = $("#add-upload-request-name").val()?.toString().trim();
+      const teamId = $("#add-upload-request-team").val();
+      await ajax("POST", "/api/uploads/requests", {
+        body: {
+          uploadRequestName,
+          teamId
+        },
+        queueable: true
+      });
+
+      $("#add-upload-request-modal").modal("hide");
+    });
+
+    $("#app").on("click", ".upload-request-delete", async function () {
+      await ajax("DELETE", `/api/uploads/requests/${$(this).data("id")}`, {
+        queueable: true
+      });
+    });
+
+    $("#app").on("click", ".upload-request-add", async function () {
+      await addUpload($(this).data("id"));
     });
 
     // On clicking the all types option, check all and update the upload list
@@ -813,6 +918,16 @@ export async function init(): Promise<void> {
       localStorage.setItem("uploadFilter", JSON.stringify(filterData));
       updateFilters();
       renderUploadList();
+    });
+
+    // If any type filter gets changed, update the shown uploads
+    $("#app").on("change", ".filter-type-option", function () {
+      renderUploadList();
+      const filterData = JSON.parse(localStorage.getItem("uploadFilter") ?? "{}") ?? {};
+      filterData.type ??= {};
+      filterData.type[$(this).data("id")] = $(this).prop("checked");
+      localStorage.setItem("uploadFilter", JSON.stringify(filterData));
+      updateFilters();
     });
 
     // On changing any filter date option, update the upload list
@@ -843,8 +958,40 @@ export async function init(): Promise<void> {
       updateFilters();
       renderUploadList();
     });
+    
+    const $filterOffcanvas = $("#filter-offcanvas");
+    const $filterOffcanvasHeader = $("#filter-offcanvas .offcanvas-header");
 
-    $("#app").on("click", "#show-add-upload-button", addUpload);
+    let startY = 0;
+    let dragging = false;
+
+    $filterOffcanvasHeader.on("pointerdown", ev => {
+      if (ev.pointerType !== "touch") return;
+      startY = ev.clientY ?? 0;
+      dragging = true;
+      $filterOffcanvas.css("transition", "none");
+    });
+    $filterOffcanvasHeader.on("pointermove", ev => {
+      if (!dragging) return;
+      const diff = (ev.clientY ?? 0) - startY;
+      if (diff > 0) {
+        $filterOffcanvas.css("transform", `translateY(${diff}px)`);
+      }
+    });
+    $filterOffcanvasHeader.on("pointerup pointercancel", ev => {
+      if (!dragging) return;
+      dragging = false;
+      const diff = (ev.clientY ?? 0) - startY;
+
+      $filterOffcanvas.css({transition: "transform 0.3s ease-in-out", transform: ""});
+      if (diff > 100) {
+        $filterOffcanvas.offcanvas("hide");
+      }
+    });
+
+    $("#app").on("click", "#show-add-upload-button", () => {
+      addUpload();
+    });
 
     res();
   });
@@ -858,16 +1005,12 @@ let view: View;
 
 $(globalThis).on("resize", toggleView);
 
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-const isStandalone = ("standalone" in navigator && navigator.standalone) as boolean;
-
 (await uploadData.init()).on("update", onlyThisSite(renderUploadList));
+(await uploadRequestsData.init()).on("update", onlyThisSite(renderUploadRequests));
 (await teamsData.init()).on("update", onlyThisSite(() => {
   renderTeamList(); 
   renderUploadList(); 
 }));
-
-await user.awaitAuthed();
 
 (await joinedTeamsData.init()).on("update", onlyThisSite(renderUploadList));
 

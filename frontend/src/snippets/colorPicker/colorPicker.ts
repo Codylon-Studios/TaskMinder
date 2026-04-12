@@ -1,4 +1,4 @@
-import { escapeHTML } from "../../global/global.js";
+import { $cloneTemplate, escapeHTML } from "../../global/global.js";
 import { ColorRGB, ColorHSV } from "./types";
 
 function hsvToRgb({ hue: h, saturation: s, value: v }: ColorHSV): ColorRGB {
@@ -73,32 +73,67 @@ function hexToCSS(hexValue: string): string {
   return [r, g, b].toString();
 }
 
-function replaceColorPickers(): void {
-  $(".color-picker:not(.color-picker-replaced)").each(function () {
-    const input = $(this);
-    const startColor = input.val()?.toString() ?? "#3bb9ca";
+const suggestedColors: Record<string, string> = {
+  Gelb: "#ffee33",
+  Orange: "#ff9955",
+  Rot: "#ff4433",
+  Pink: "#ff55aa",
+  Lila: "#9955ff",
+  Blau: "#5599ff",
+  Hellblau: "#44ddee",
+  Hellgrün: "#44dd33",
+  Grün: "#449933",
+  Grau: "#888888"
+};
+const suggestedColorsHtml = Object.entries(suggestedColors).map(e =>
+  `<button class="color-picker-option fa-solid" data-color="${e[1]}" aria-label="${e[0]}"></button>`
+).join("");
 
-    const trigger = $('<button class="rounded cursor-pointer color-picker-trigger" tabindex="0">').css("--selected-color", hexToCSS(startColor));
-    input.after(trigger).addClass("color-picker-replaced");
+const savedColors: string[] = JSON.parse(localStorage.getItem("savedColors") ?? "[]") ?? [];
+let savedColorsHtml = `
+  <button class="btn btn-tertiary color-picker-save" aria-label="Speichern">
+    <i class="fas far fa-bookmark" aria-hidden="true"></i>
+  </button>` + savedColors.map(c =>`
+    <button class="color-picker-option fa-solid" data-color="${c}" aria-label="${c}" style="background:${c}"></button>
+  `).join("");
 
-    const popup = $($("#color-picker-template").html());
+class ColorPicker extends HTMLElement {
+  static get observedAttributes(): string[] {
+    return ["auto-option", "disabled"]; 
+  }
+  static formAssociated = true;
+
+  private initialized = false;
+  private _value = "";
+  private selectedHsvColor!: ColorHSV;
+
+  connectedCallback(): void {
+    if (this.initialized) return;
+    this.initialized = true;
+    $(this).append($cloneTemplate("#color-picker-template"));
+
+    this.attributeChangedCallback("auto-option", null, this.getAttribute("auto-option"));
+    this.attributeChangedCallback("disabled", null, this.getAttribute("disabled"));
+
+    const popup = $(this).find(".color-picker-popup");
 
     popup.find(".color-picker-suggestions").html(suggestedColorsHtml);
     popup.find(".color-picker-saved").html(savedColorsHtml);
-    popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(startColor));
 
-    popup.find(`.color-picker-option[data-color="${escapeHTML(startColor)}"]`).addClass("selected");
-    popup.find(".color-picker-hex").val(startColor === "auto" ? "Automatisch" : startColor);
+    this.setValue(this.getAttribute("value") ?? "#3bb9ca", false);
+    this.setHsvSelection(this.value);
 
-    if ($(this).attr("data-show-auto-option") === "true") {
-      popup.find(".color-picker-auto-option-wrapper").addClass("d-flex").removeClass("d-none");
-    }
+    const trigger = $(this).find(".color-picker-trigger").css("--selected-color", hexToCSS(this.value));
 
     popup.hide();
     trigger.css({ zIndex: 0 });
-    trigger.append(popup);
+    
+    $(this).on("click", () => {
+      trigger.trigger("click");
+    });
 
-    trigger.on("click", function (ev) {
+    trigger.on("click", ev => {
+      ev.stopPropagation();
       function getOptimalXPosition(): "left" | "right" {
         return (
           // Not enough space on the right
@@ -120,7 +155,6 @@ function replaceColorPickers(): void {
         ) ? "above" : "below";
       }
       
-      ev.stopPropagation();
       $(".color-picker-popup").not(popup).hide();
       const offset = trigger.offset() ?? { left: 0, top: 0 };
       const yBelow = (trigger.outerHeight() ?? 0) + 4;
@@ -136,31 +170,7 @@ function replaceColorPickers(): void {
           top: getOptimalYPosition() === "below" ? yBelow : yAbove
         })
         .toggle();
-
-      setHsvSelection(input.val() as string);
     });
-
-    function setHsvSelection(hexColor: string): void {
-      if (hexColor === "auto") return;
-      const hsvColor = rgbToHsv(hexToRgb(hexColor));
-      selectedHsvColor = hsvColor;
-      markerHue.css({
-        top: Math.round((hsvColor.hue / 360) * (hueContainer.outerHeight() ?? 0))
-      });
-      markerSaturationValue.css({
-        left: Math.round(hsvColor.saturation * (saturationValueContainer.outerWidth() ?? 0)),
-        top: Math.round((1 - hsvColor.value) * (saturationValueContainer.outerHeight() ?? 0))
-      });
-      const gradientColor = `hsl(${hsvColor.hue}, 100%, 50%)`;
-      saturationValueContainer.css({
-        background: `
-        linear-gradient(transparent 0%, black 100%),
-        linear-gradient(90deg, white 0%, transparent 100%),
-        linear-gradient(${gradientColor} 0%, ${gradientColor} 100%)`
-      });
-    }
-
-    let selectedHsvColor = rgbToHsv(hexToRgb(startColor));
 
     let suppressClick = false;
 
@@ -168,7 +178,7 @@ function replaceColorPickers(): void {
     const markerSaturationValue = popup.find(".color-picker-marker-saturation-value");
     const saturationValueContainer = popup.find(".color-picker-saturation-value");
 
-    function moveMarkerSaturationValue(x: number, y: number, isAlreadyRelative?: boolean): void {
+    const moveMarkerSaturationValue = (x: number, y: number, isAlreadyRelative?: boolean): void => {
       const containerOffset = saturationValueContainer.offset() ?? {
         left: 0,
         top: 0
@@ -184,17 +194,11 @@ function replaceColorPickers(): void {
 
       markerSaturationValue.css({ left: newX, top: newY });
 
-      selectedHsvColor.saturation = newX / containerWidth;
-      selectedHsvColor.value = 1 - newY / containerHeight;
+      this.selectedHsvColor.saturation = newX / containerWidth;
+      this.selectedHsvColor.value = 1 - newY / containerHeight;
 
-      const hexColor = rgbToHex(hsvToRgb(selectedHsvColor));
-      popup.find(".color-picker-option").removeClass("selected");
-      input.val(hexColor).trigger("change");
-      trigger.css("--selected-color", hexToCSS(hexColor));
-      popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
-      popup.find(`.color-picker-option[data-color="${escapeHTML(hexColor)}"]`).addClass("selected");
-      popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(hexColor));
-    }
+      this.value = rgbToHex(hsvToRgb(this.selectedHsvColor));
+    };
 
     saturationValueContainer
       .on("click", function (ev) {
@@ -261,7 +265,7 @@ function replaceColorPickers(): void {
     const markerHue = popup.find(".color-picker-marker-hue");
     const hueContainer = popup.find(".color-picker-hue");
 
-    function moveMarkerHue(y: number, isAlreadyRelative?: boolean): void {
+    const moveMarkerHue = (y: number, isAlreadyRelative?: boolean): void => {
       const containerOffset = hueContainer.offset()?.top ?? 0;
       const containerHeight = hueContainer.outerHeight() ?? 0;
 
@@ -269,27 +273,18 @@ function replaceColorPickers(): void {
       newY = Math.max(0, Math.min(newY, containerHeight));
 
       markerHue.css({ top: newY });
+      
+      this.selectedHsvColor.hue = (newY / containerHeight) * 360;
+      this.value = rgbToHex(hsvToRgb(this.selectedHsvColor));
 
-      selectedHsvColor.hue = (newY / containerHeight) * 360;
-
-      const hue = selectedHsvColor.hue;
-      const color = `hsl(${hue}, 100%, 50%)`;
-
+      const gradientColor = `hsl(${this.selectedHsvColor.hue}, 100%, 50%)`;
       saturationValueContainer.css({
         background: `
         linear-gradient(transparent 0%, black 100%),
         linear-gradient(90deg, white 0%, transparent 100%),
-        linear-gradient(${color} 0%, ${color} 100%)`
+        linear-gradient(${gradientColor} 0%, ${gradientColor} 100%)`
       });
-
-      const hexColor = rgbToHex(hsvToRgb(selectedHsvColor));
-      popup.find(".color-picker-option").removeClass("selected");
-      input.val(hexColor).trigger("change");
-      trigger.css("--selected-color", hexToCSS(hexColor));
-      popup.find(".color-picker-hex").val(hexColor).removeClass("is-invalid");
-      popup.find(`.color-picker-option[data-color="${escapeHTML(hexColor)}"]`).addClass("selected");
-      popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(hexColor));
-    }
+    };
 
     hueContainer
       .on("mousedown", function (ev) {
@@ -338,47 +333,38 @@ function replaceColorPickers(): void {
       moveMarkerHue(top, true);
     });
 
-    popup.find(".color-picker-hex").on("change", function () {
-      let color = $(this).val()?.toLocaleString() ?? "#3bb9ca";
+    popup.find(".color-picker-hex").on("change", () => {
+      let color = popup.find(".color-picker-hex").val()?.toString() ?? "#3bb9ca";
       if (
         /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color) ||
-        ((color === "auto" || color === "Automatisch") && input.attr("data-show-auto-option") === "true")
+        ((color === "auto" || color === "Automatisch") && this.getAttribute("auto-option") === "true")
       ) {
-        $(this).removeClass("is-invalid");
-        if (/^([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(color)) {
+        popup.find(".color-picker-hex").removeClass("is-invalid");
+        if (!color.startsWith("#")) {
           color = "#" + color;
-          color = color.toLowerCase();
         }
-        if (/^#[0-9a-fA-F]{3}$/.test(color)) {
+        if (color.length === 4) {
           color = "#" + color[1] + color[1] + color[2] + color[2] + color[3] + color[3];
-          color = color.toLowerCase();
         }
-        $(this).val(color === "auto" ? "Automatisch" : color);
-        popup.find(".color-picker-option").removeClass("selected");
-        trigger.css("--selected-color", hexToCSS(color));
-        input.val(color).trigger("change");
-        popup.find(`.color-picker-option[data-color="${color}"]`).addClass("selected");
-        setHsvSelection(color);
-        popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(color));
+        color = color.toLowerCase();
+        this.value = color;
+        this.setHsvSelection(color);
       }
       else {
-        $(this).addClass("is-invalid");
+        popup.find(".color-picker-hex").addClass("is-invalid");
       }
     });
 
-    popup.on("click", ".color-picker-option", function () {
-      const color = $(this).data("color");
-      popup.find(".color-picker-option").removeClass("selected");
-      popup.find(`.color-picker-option[data-color="${color}"]`).addClass("selected");
-      input.val(color).trigger("change");
-      trigger.css("--selected-color", hexToCSS(color));
-      popup.find(".color-picker-hex").val(color === "auto" ? "Automatisch" : color).removeClass("is-invalid");
-      setHsvSelection(color);
-      popup.find(".color-picker-save i").toggleClass("far", !savedColors.includes(color));
+    popup.on("click", ".color-picker-option", ev => {
+      const color = $(ev.target).data("color");
+      this.value = color;
+      this.setHsvSelection(color);
     });
 
-    $(popup).on("click", ".color-picker-save", function (ev) {
-      const color = escapeHTML(input.val()?.toString() ?? "auto");
+    $(this).on("click", ".color-picker-save", ev => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      const color = escapeHTML(this.value ?? "auto");
       if (color === "auto") return;
       if (savedColors.includes(color)) {
         savedColors.splice(savedColors.indexOf(color), 1);
@@ -389,7 +375,7 @@ function replaceColorPickers(): void {
       localStorage.setItem("savedColors", JSON.stringify(savedColors));
       savedColorsHtml = `
         <button class="btn btn-tertiary color-picker-save" aria-label="Speichern">
-          <i class="fas ${popup.find(`.color-picker-saved [data-color="${input.val()}"]`).length > 0 ? "far" : ""} fa-bookmark" aria-hidden="true">
+          <i class="fas ${popup.find(`.color-picker-saved [data-color="${this.value}"]`).length > 0 ? "far" : ""} fa-bookmark" aria-hidden="true">
           </i>
         </button>` + savedColors.map(c =>`
           <button class="color-picker-option fa-solid" data-color="${c}" style="background:${c}" aria-label="${c}"></button>
@@ -397,10 +383,9 @@ function replaceColorPickers(): void {
       $(".color-picker-saved").html(savedColorsHtml);
       $(".color-picker").each(function () {
         $(this).next()
-          .find(`[data-color="${$(this).val()}"]`).addClass("selected")
+          .find(`[data-color="${$(this).val()}"]`).addClass("selected").end()
           .find(".color-picker-save i").toggleClass("far", !savedColors.includes($(this).val()?.toString() ?? ""));
       });
-      ev.preventDefault();
     });
 
     popup.on("click", ev => {
@@ -409,60 +394,77 @@ function replaceColorPickers(): void {
     });
 
     $(document).on("click", ev => {
-      if (!$(ev.target).closest(".color-picker-popup").length && !suppressClick) {
+      if (!$(ev.target).closest("color-picker").length && !suppressClick) {
         popup.hide();
         trigger.css({ zIndex: 0 });
       }
       suppressClick = false;
     });
-  });
+  }
+  
+  private setHsvSelection(color: string): void {
+    this.selectedHsvColor = rgbToHsv(hexToRgb(color));
+
+    const rem = Number.parseInt($("html").css("font-size"));
+
+    $(this).find(".color-picker-marker-hue").css({
+      top: Math.round((this.selectedHsvColor.hue / 360) * 6 * rem) // container is 6rem high
+    });
+
+    const saturationValueContainer = $(this).find(".color-picker-saturation-value");
+    $(this).find(".color-picker-marker-saturation-value").css({
+      left: Math.round(this.selectedHsvColor.saturation * 8.5 * rem), // container is 8.5rem wide
+      top: Math.round((1 - this.selectedHsvColor.value) * 6 * rem) // container is 6rem high
+    });
+
+    const gradientColor = `hsl(${this.selectedHsvColor.hue}, 100%, 50%)`;
+    saturationValueContainer.css({
+      background: `
+      linear-gradient(transparent 0%, black 100%),
+      linear-gradient(90deg, white 0%, transparent 100%),
+      linear-gradient(${gradientColor} 0%, ${gradientColor} 100%)`
+    });
+  }
+
+  private setValue(val: string, triggerChange: boolean): void {
+    this._value = val;
+    $(this).find(".color-picker-trigger").css("--selected-color", hexToCSS(val));
+    $(this).find(".color-picker-hex").val(val).removeClass("is-invalid");
+    $(this).find(".color-picker-option").removeClass("selected");
+    $(this).find(`.color-picker-option[data-color="${escapeHTML(val)}"]`).addClass("selected");
+    $(this).find(".color-picker-save i").toggleClass("far", !savedColors.includes(val));
+    if (triggerChange) $(this).trigger("change");
+  }
+
+  get value(): string {
+    return this._value;
+  }
+
+  set value(val: string) {
+    this.setValue(val, true);
+  }
+  
+  get disabled(): boolean {
+    return this.hasAttribute("disabled");
+  }
+
+  set disabled(val) {
+    if (val) {
+      this.setAttribute("disabled", "");
+    }
+    else {
+      this.removeAttribute("disabled");
+    }
+  }
+
+  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (name === "auto-option") {
+      $(this).find(".color-picker-auto-option-wrapper").toggle(newValue === "true");
+    }
+    else if (name === "disabled") {
+      $(this).find(".color-picker-trigger").prop("disabled", this.hasAttribute("disabled"));
+    }
+  }
 }
 
-const suggestedColors = [
-  {color: "#ffee33", label: "Gelb"},
-  {color: "#ff9955", label: "Orange"},
-  {color: "#ff4433", label: "Rot"},
-  {color: "#ff55aa", label: "Pink"},
-  {color: "#9955ff", label: "Lila"},
-  {color: "#5599ff", label: "Blau"},
-  {color: "#44ddee", label: "Hellblau"},
-  {color: "#44dd33", label: "Hellgrün"},
-  {color: "#449933", label: "Grün"},
-  {color: "#888888", label: "Grau"}
-];
-const suggestedColorsHtml = suggestedColors.map(o =>
-  `<button class="color-picker-option fa-solid" data-color="${o.color}" aria-label="${o.label}"></button>`
-).join("");
-
-const savedColors: string[] = JSON.parse(localStorage.getItem("savedColors") ?? "[]") ?? [];
-let savedColorsHtml = `
-  <button class="btn btn-tertiary color-picker-save" aria-label="Speichern">
-    <i class="fas far fa-bookmark" aria-hidden="true"></i>
-  </button>` + savedColors.map(c =>`
-    <button class="color-picker-option fa-solid" data-color="${c}" aria-label="${c}" style="background:${c}"></button>
-  `).join("");
-
-$(() => {
-  new MutationObserver(mutationsList => {
-    for (const mutation of mutationsList) {
-      $(mutation.addedNodes).each(function () {
-        if ($(this).find(".color-picker").length > 0) {
-          replaceColorPickers();
-          $(this).find(".color-picker").each(function () {
-            $(this).next().prop("disabled", $(this).prop("disabled"));
-          });
-        }
-      });
-      if (mutation.type === "attributes" && mutation.attributeName === "disabled" && $(mutation.target).is(".color-picker")) {
-        $(mutation.target).next().prop("disabled", $(mutation.target).prop("disabled"));
-      }
-    };
-  }).observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["disabled"]
-  });
-
-  replaceColorPickers();
-});
+customElements.define("color-picker", ColorPicker);

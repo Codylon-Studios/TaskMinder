@@ -1,25 +1,24 @@
 import * as http from "http";
 import * as socketIo from "socket.io";
 
-import logger from "../config/logger";
-import prisma from "./prisma";
+import logger from "../config/logger.js";
+import prisma from "./prisma.js";
 
 let io: socketIo.Server;
 
 export const SOCKET_EVENTS = {
   EVENTS: "updateEvents",
   HOMEWORK: "updateHomework",
+  HOMEWORK_CHECK: "updateCheckedHomework",
   UPLOADS: "updateUploads",
+  UPLOAD_REQUESTS: "updateUploadRequests",
   MEMBERS: "updateMembers",
   SUBJECTS: "updateSubjects",
   TEAMS: "updateTeams",
   JOINED_TEAMS: "updateJoinedTeams",
   EVENT_TYPES: "updateEventTypes",
   TIMETABLES: "updateTimetables",
-  CLASS_CODES: "updateClassCodes",
-  CLASS_NAMES: "updateClassNames",
-  UPGRADE_TEST_CLASS: "updateUpgradeTestClass",
-  DEFAULT_PERMISSION: "updateDefaultPermission"
+  CLASS_INFO: "updateClassInfo"
 };
 
 // Initialize the Socket.IO instance

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import teamService from "../services/team.service";
+import teamService from "../services/team.service.js";
 
 export const getTeams = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

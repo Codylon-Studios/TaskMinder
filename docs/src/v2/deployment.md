@@ -1,10 +1,10 @@
-# Server Setup in Production v2
+# Deployment
 
 ## What you'll need
 
 * A valid domain (e.g. `taskminder.de`)
-* A server running Ubuntu (≥ 24.04 LTS) with sudo or root access
-* The codebase of TaskMinder from [https://github.com/Codylon-Studios/TaskMinder](https://github.com/Codylon-Studios/TaskMinder)
+* A server (minimum 2GB RAM and 20GB storage) running Ubuntu (≥ 24.04 LTS) with sudo or root access
+* The codebase of TaskMinder from [https://github.com/TaskMinder/TaskMinder](https://github.com/TaskMinder/TaskMinder)
 
 ---
 
@@ -28,7 +28,7 @@ Copy the returned IP (e.g., `203.0.113.42`). Make sure the server is not behind 
 
 Go to your domain registrar’s DNS management page (e.g., Namecheap, GoDaddy, Cloudflare etc.) and add the following records:
 
-| **Type** | **Name** | **Value**      | **TTL**          |
+| **Type** | **Name** | **Value (replace)**      | **TTL**          |
 | -------- | -------- | -------------- | ---------------- |
 | A        | @        | `203.0.113.42` | Automatic / 3600 |
 | A        | www      | `203.0.113.42` | Automatic / 3600 |
@@ -41,7 +41,7 @@ We use [https://betterstack.com/](https://betterstack.com/) as it offers custom 
 
 For the monitoring page (`monitoring.example.com`), add the following record:
 
-| **Type** | **Name**   | **Value**      |
+| **Type** | **Name**   | **Value (replace)**      |
 | -------- | ---------- | -------------- |
 | A        | monitoring | `203.0.113.42` |
 
@@ -61,11 +61,19 @@ Once your domain resolves to your server’s IP, proceed to the next step.
 
 ### Update and install dependencies:
 
-This installs (if not already installed) Git, curl, NGINX, UFW, and Fail2Ban:
+This installs (if not already installed) Git, curl, NGINX, libnginx-mod-http-lua (for Lua in NGINX), lua-cjson (for NGINX), UFW, and Fail2Ban:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl nginx ufw fail2ban
+sudo apt install -y git curl nginx ufw fail2ban libnginx-mod-http-lua lua-cjson
+```
+
+### Verify lua was installed and is enabled:
+
+See if the module was auto-enabled, if not, enable it first before proceeding:
+
+```bash
+ls /etc/nginx/modules-enabled/ | grep lua
 ```
 
 ### Install Docker and Docker Compose:
@@ -91,21 +99,6 @@ sudo ufw allow 'Nginx Full'
 sudo ufw enable
 ```
 
-### Secure SSH access
-
-Edit `/etc/ssh/sshd_config`:
-
-```bash
-PermitRootLogin no
-PasswordAuthentication no
-```
-
-Then restart SSH:
-
-```bash
-sudo systemctl restart ssh
-```
-
 ### Configure Fail2Ban
 
 ```bash
@@ -125,7 +118,7 @@ sudo fail2ban-client status
 
 ```bash
 cd /opt
-sudo git clone https://github.com/Codylon-Studios/TaskMinder.git
+sudo git clone https://github.com/TaskMinder/TaskMinder.git
 cd TaskMinder
 ```
 
@@ -137,15 +130,9 @@ First, modify the `nginx.config` file to replace `taskminder.de` with your actua
 
 ```bash
 vi nginx.config
-```
-
-or
-
-```bash
+# or
 nano nginx.config
 ```
-
-Next, remove all `server` blocks that use `listen 443`—this is necessary to let Certbot handle SSL configuration properly. Keep only the `listen 80` block for now.
 
 ### Install Certbot and Obtain SSL Certificates
 
@@ -161,9 +148,27 @@ Run Certbot to obtain SSL certificates (replace `example.com` and subdomains wit
 sudo certbot -d example.com -d www.example.com -d monitoring.example.com
 ```
 
-Certbot will automatically update the configuration file at `/etc/nginx/sites-available/taskminder`. **Delete this file**, as you’ll be using your custom config instead.
+Certbot will automatically update the configuration file at `/etc/nginx/sites-available/default`. Delete this file, as you’ll be using your custom config instead. Also, delete the symlink: `sudo rm /etc/nginx/sites-enabled/default`
 
 Now that you know the location and filenames of the generated certificates, update your original `nginx.config` at `/opt/TaskMinder/nginx.config`. Replace the certificate paths with the correct ones provided by Certbot.
+
+### Add Gzip and Lua settings in general nginx.config
+
+Open the main nginx configuration file:
+
+```bash
+sudo nano /etc/nginx/nginx.conf
+```
+
+Inside the `http { } block`, comment out all related gzip lines, as we will be using it for compression work. Furthermore, add this line in the http block:
+
+```bash
+##
+# Lua Maintenance Flag Setting
+##
+lua_shared_dict maintenance_flag 1m;
+```
+
 
 ### Deploy Your Final NGINX Configuration
 
@@ -210,6 +215,21 @@ exit
 ssh ubuntu@<your-ip-address>
 ```
 
+For enhanced security, use SSH key-based authentication instead of password-based logins to reduce the risk of unauthorized access. After adding your SSH key and verifying the connection, disable both root logins and password authentication:
+
+Edit and/or uncomment the following lines in `/etc/ssh/sshd_config`:
+
+```bash
+PermitRootLogin no
+PasswordAuthentication no
+```
+
+Then restart SSH:
+
+```bash
+sudo systemctl restart ssh
+```
+
 ---
 
 ## 6. Automated Backup Setup (via Cron)
@@ -250,7 +270,7 @@ You should see the line you just added.
 
 ---
 
-## 7. Add Docker Secrets
+## 7. Add Docker Secrets and .env.production
 
 Navigate back to the TaskMinder folder and create directories for secrets and backups:
 
@@ -260,43 +280,25 @@ mkdir docker_secrets
 mkdir db-backups
 ```
 
-Before starting the application, create the following **text files inside the `docker_secrets/` folder**. These files are used as Docker secrets for configuration:
+Before starting the application, create the following text files inside the `docker_secrets/` folder. These files are used as Docker secrets for configuration:
 
-| **Filename**                | **Description**                                                                                                |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `db_name.txt`               | Name of the PostgreSQL database.                                                                               |
-| `db_password.txt`           | Password for the PostgreSQL database user.                                                                     |
-| `db_host.txt`               | Host for the database, usually postgres when running in docker.                                                |
-| `db_user.txt`               | PostgreSQL database username.                                                                                  |
-| `redis_port.txt`            | Redis port (default is `6379`).                                                                                |
-| `session_secret.txt`        | Secure session secret (e.g., `ez829ebqhjui2638sbajk`).                                                         |
-| `unsafe_deactivate_csp.txt` | Deactivates all csp headers when set to `true`, in production, set to `false`.                                 |
-| `database_url.txt`          | Provides the database URL for Prisma ORM: `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`. |
+| **Filename**                   | **Description**                                                                                                |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `db_name.txt`                  | Name of the PostgreSQL database.                                                                               |
+| `db_password.txt`              | Password for the PostgreSQL database user.                                                                     |
+| `db_host.txt`                  | Host for the database, usually `postgres` when running in docker.                                              |
+| `db_user.txt`                  | PostgreSQL database username.                                                                                  |
+| `redis_port.txt`               | Redis port (default is `6379`).                                                                                |
+| `session_secret.txt`           | Secure session secret (e.g., generate one with `openssl rand -base64 32`).                                     |
+| `database_url.txt`             | Provides the database URL for Prisma ORM: `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`  |
+| `encryption_key.txt`           | Encryption key for server-side encryption in the database, generated with `openssl rand -base64 32`            |
+| `encryption_key_secondary.txt` | Rotation key for server-side encryption, generated with `openssl rand -base64 32`                              |
+| `encryption_key_lookup.txt`    | Lookup key for hashes for server-side encryption, generated with `openssl rand -base64 32`                     |
+| `proxy_hop.txt`                | Proxy hop count for additional reverse proxies that are configured by the server provider. Add 1 to account for the NGINX config.|
 
 ---
 
-## 8. Setup `personalData.html`
-
-1. **Navigate to the directory** where the example file is located:
-
-   ```bash
-   cd /path/to/project/frontend/src/snippets/personalData/
-   ```
-
-2. **Copy the example file to create the production file:**
-
-   ```bash
-   sudo cp personalData.html.example personalData.html
-   ```
-
-3. **Edit the new file with `vi` to update the personal data:**
-
-   ```bash
-   sudo vi personalData.html
-   ```
----
-
-## 9. Run Docker Compose and reset git changes
+## 8. Run Docker Compose and reset git changes
 
 Navigate to the project root and build/start the containers:
 
@@ -318,7 +320,7 @@ docker compose up -d --build
 
 ---
 
-## 10. TaskMinder Deployment Complete
+## 9. TaskMinder Deployment Complete
 
 Your TaskMinder server should now be running at:
 
@@ -328,18 +330,22 @@ Your TaskMinder server should now be running at:
 
 ---
 
-## 11. What's Next?
+## 10. What's Next?
 
 - Create an account to set up a class and add your subjects, teams, and timetable.
 - Visit [https://monitoring.example.com](https://monitoring.example.com) to change the default password **"admin"** to a secure one. You’ll be prompted to do this upon your first login.
 
 ---
 
-## 12. Subsequent Updates
+## 11. Subsequent Updates
 
 This guide covers minor version upgrades.
 For **major version upgrades**, please refer to the relevant migration guides to check for any breaking changes.
-Before upgrading, inform users about the upcoming server maintenance, as the server will be temporarily unavailable during the update (HTTP 503 status).
+Before upgrading, enable maintenance mode by adding a file flag with:
+
+```bash
+touch /etc/nginx/maintenance.flag
+```
 
 1. Navigate to the root folder of the project and stop the Docker Compose process:
 
@@ -357,5 +363,11 @@ Before upgrading, inform users about the upcoming server maintenance, as the ser
 
    ```bash
    docker compose up -d --build
+   ```
+
+4. Disable maintenance mode:
+
+   ```bash
+   rm /etc/nginx/maintenance.flag
    ```
 ---

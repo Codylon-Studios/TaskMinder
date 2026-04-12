@@ -9,25 +9,29 @@ import {
   teamsData,
   lessonData,
   timeToMs,
-  csrfToken,
   classMemberData,
   getTimeLeftString,
   escapeHTML,
   getInputValue,
   socket,
-  registerSocketListeners,
   onlyThisSite,
-  unsavedChanges
+  unsavedChanges,
+  ajax,
+  $cloneTemplate,
+  toCommaAndAnd,
+  classInfo,
+  user,
+  checkSecurePassword,
+  autocomplete,
+  isStandalone,
+  isIOS,
+  makeButtonShowCheck,
+  bootstrap
 } from "../../global/global.js";
-import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
+import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel, AjaxError } from "../../global/types";
 
 function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
-}
-
-function checkSecurePassword(password: string): boolean {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+={}[\]:;"<>,.?/-]).{8,}$/.test(password);
 }
 
 async function updateColorTheme(): Promise<void> {
@@ -62,934 +66,726 @@ async function updateColorTheme(): Promise<void> {
 }
 
 async function renderClassMemberList(): Promise<void> {
-  const roles = ["Mitglied", "Bearbeiter:in", "Manager:in", "Admin"];
-  let newClassMembersContent = "";
-
-  for (const classMember of await classMemberData()) {
-    const classMemberId = classMember.accountId;
-    const isCurrentUser = classMember.username === user.username;
-    const isDisabled = canEditMemberSettings && !isCurrentUser ? "" : "disabled";
-
-    const roleOptionsHtml = roles.map((opt, index) =>
-      `<option value="${index}" ${(classMember.permissionLevel ?? 0) === index ? "selected" : ""}>${opt}</option>`
-    ).join("");
-
-    const template = `
-      <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${classMemberId}">
-        <div class="d-flex flex-column flex-lg-row align-items-lg-center flex-grow-1">
-          <div class="d-flex w-lg-50 pe-3 align-items-center">
-            <span class="w-100">${escapeHTML(classMember.username) + (isCurrentUser ? " <b>(Du)</b>" : "")}</span>
-            <label class="form-text mt-0 d-flex align-items-center">
-              Rolle:
-              <select class="form-control form-control-sm class-member-role-input ms-2 w-fit-content${isCurrentUser ? " is-current-user" : ""}"
-                data-id="${classMemberId}" ${isDisabled}>
-                ${roleOptionsHtml}
-              </select>
-            </label>
-          </div>
-          <span class="text-warning fw-bold mt-2 mt-lg-0 d-none me-2 class-member-changed" data-id="${classMemberId}">
-            Rolle geändert
-            <span class="text-secondary fw-normal class-member-changed-role" data-id="${classMemberId}">
-              (${roles[classMember.permissionLevel ?? 0]} zu <b></b>)
-            </span>
-          </span>
-          <span class="text-danger fw-bold mt-2 mt-lg-0 d-none class-member-kicked" data-id="${classMemberId}">Entfernt</span>
-          <span class="form-text mt-2 mt-lg-0 pe-2 w-lg-50${isCurrentUser ? "" : " d-none"}">
-            Du kannst deine eigenen Berechtigungen nicht ändern. Du kannst die Klasse unter "Schüler:in" verlassen.
-          </span>
-        </div>
-        <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end class-member-kick${isCurrentUser ? " is-current-user" : ""}"
-            data-id="${classMemberId}" ${isDisabled} aria-label="Nutzer entfernen">
-            <i class="fa-solid fa-user-minus" aria-hidden="true"></i>
-          </button>
-        </div>
-      </div>
-    `;
-    newClassMembersContent += template;
+  function $changes(id: number): JQuery<HTMLElement> {
+    return $(`.class-member-changes[data-id="${id}"]`);
+  }
+  function $changedRole(id: number): JQuery<HTMLElement> {
+    return $(`.class-member-changed-role[data-id="${id}"]`);
+  }
+  function $kicked(id: number): JQuery<HTMLElement> {
+    return $(`.class-member-kicked[data-id="${id}"]`);
   }
 
-  $("#class-members-list").html(newClassMembersContent);
+  function toggleChangesContainer(id: number): void {
+    const $el = $changes(id);
+    $el.show().toggle($el.children().is(":visible"));
+  }
 
-  $("#app").off("change", ".class-member-role-input").on("change", ".class-member-role-input", async function () {
-    $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
+  function changedAnything(): void {
     $("#class-members-cancel").show();
     unsavedChanges(true);
-    unsavedChanges(true);
+    $("#class-members-save-confirm-container, #class-members-save-confirm").hide();
+  }
 
-    const classMemberId = $(this).data("id");
-    const newRole = Number.parseInt($(this).val()) as ClassMemberPermissionLevel;
-    const oldRole = (await classMemberData()).find(classMember => classMember.accountId === classMemberId)?.permissionLevel ?? 0;
-    if (newRole === oldRole) {
-      $(`.class-member-changed[data-id="${classMemberId}"]`).addClass("d-none");
-      $(`.class-member-changed-role[data-id="${classMemberId}"]`).addClass("d-none");
+  const currentClassMemberData = await classMemberData();
+
+  const roles = ["Mitglied", "Bearbeiter:in", "Manager:in", "Admin"];
+  const newClassMembersContent = $("<div></div>");
+
+  for (const classMember of currentClassMemberData) {
+    const classMemberId = classMember.accountId;
+    const isCurrentUser = classMember.username === user.username;
+    const isMe = user.username === classMember.username;
+
+    const t = $cloneTemplate("#class-member-template", { dataId: classMemberId.toString(), disabled: !canEditClassSettings });
+    t.find(".class-member-name").html(escapeHTML(classMember.username) + (isCurrentUser ? " <b>(Du)</b>" : ""));
+    t.find(".class-member-role-input").val(classMember.permissionLevel ?? 0);
+    t.find(".class-member-is-current-user").toggle(isMe);
+    t.find(".class-member-changes").hide();
+    t.find(".class-member-changed-role-old").text(roles[classMember.permissionLevel ?? 0]);
+    if (isMe) {
+      t.find(".class-member-role-input, .class-member-kick").attr("disabled", "").addClass("is-current-user");
     }
-    else if ($(`.class-member-kicked[data-id="${classMemberId}"]`).hasClass("d-none")) {
-      $(`.class-member-changed[data-id="${classMemberId}"]`).removeClass("d-none");
-      $(`.class-member-changed-role[data-id="${classMemberId}"]`)
-        .removeClass("d-none")
-        .find("b")
-        .removeClass("d-none")
-        .text(roles[newRole]);
+    newClassMembersContent.append(t);
+  }
+
+  $("#class-members-list").empty().append(newClassMembersContent.children());
+
+  $(".class-member-changes > div").hide();
+  $("#class-members-cancel").hide();
+  $("#class-members-save-confirm-container, #class-members-save-confirm").hide();
+
+  $("#app").off("input", ".class-member-role-input").on("change", ".class-member-role-input", async function () {
+    changedAnything();
+
+    const id = $(this).data("id");
+    if (id !== "") {
+      const newRole = Number.parseInt($(this).val()) as ClassMemberPermissionLevel;
+      const oldRole = currentClassMemberData.find(classMember => classMember.accountId === id)?.permissionLevel;
+      if (newRole === oldRole) {
+        $changedRole(id).hide();
+      }
+      else if (! $kicked(id).is(":visible")) {
+        $changedRole(id).show().find("b").text(roles[newRole]);
+      }
+      toggleChangesContainer(id);
     }
   });
 
   $(".class-member-kick").on("click", function () {
-    $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
-    $("#class-members-cancel").show();
-    unsavedChanges(true);
-    unsavedChanges(true);
+    changedAnything();
 
-    const classMemberId = $(this).data("id");
-    if ($(this).hasClass("btn-danger")) {
-      $(`.class-member-kicked[data-id="${classMemberId}"]`).removeClass("d-none");
-      $(`.class-member-changed[data-id="${classMemberId}"]`).addClass("d-none").find("*").addClass("d-none");
-
-      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
-        .attr("aria-label", "Nutzer doch nicht entfernen");
-    }
-    else {
-      $(`.class-member-kicked[data-id="${classMemberId}"]`).addClass("d-none");
-      $(`.class-member-role-input[data-id="${classMemberId}"]`).trigger("change");
+    const classMember = $(this).closest(".class-member");
+    const id = $(this).data("id");
+    if (classMember.hasClass("is-kicked")) {
+      $kicked(id).hide();
+      $(".class-member-role-input").filter(`[data-id="${id}"]`).trigger("input").trigger("change");
 
       $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-user-minus" aria-hidden="true"></i>')
         .attr("aria-label", "Nutzer entfernen");
+
+      classMember.removeClass("is-kicked");
     }
+    else {
+      $changes(id).find("> div").hide();
+      $kicked(id).show();
+
+      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
+        .attr("aria-label", "Nutzer doch nicht entfernen");
+      
+      classMember.addClass("is-kicked");
+    }
+    toggleChangesContainer(id);
   });
 }
 
-async function renderTeamLists(): Promise<void> {
-  let newTeamSelectionContent = "";
-  let newTeamsContent = "";
+async function renderTeamSelectionList(): Promise<void> {
+  let newTeamSelectionContent = $("<div></div>");
 
   const currentTeamsData = await teamsData();
 
   for (const team of currentTeamsData) {
     const teamId = team.teamId;
+    const name = team.name;
     const selected = (await joinedTeamsData()).includes(teamId);
-    let template = `
+    newTeamSelectionContent.append(`
       <div class="form-check">
         <input type="checkbox" class="form-check-input" data-id="${teamId}" id="team-selection-team-${teamId}" ${selected ? "checked" : ""}>
         <label class="form-check-label" for="team-selection-team-${teamId}">
-          ${escapeHTML(team.name)}
+          ${escapeHTML(name)}
         </label>
-      </div>`;
-    newTeamSelectionContent += template;
-
-    template = `
-      <div class="card m-2 p-2 flex-row justify-content-between align-items-center">
-        <div class="d-flex flex-column flex-md-row align-items-md-center">
-        <div>
-          <label>
-            Name
-            <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 team-name-input" type="text"
-              value="${escapeHTML(team.name)}" placeholder="${escapeHTML(team.name)}"
-              data-id="${teamId}" ${canEditClassSettings ? "" : "disabled"}>
-            <div class="invalid-feedback">Teamnamen dürfen nicht leer sein!</div>
-          </label>
-        </div>
-          <span class="text-warning fw-bold mt-2 mt-md-0 d-none team-renamed" data-id="${teamId}">
-            Umbenannt
-            <span class="text-secondary fw-normal team-renamed-name" data-id="${teamId}">(${escapeHTML(team.name)} zu <b></b>)</span>
-          </span>
-          <span class="text-danger fw-bold mt-2 mt-md-0 d-none team-deleted" data-id="${teamId}">Gelöscht</span>
-        </div
-        <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end team-delete" data-id="${teamId}"
-            ${canEditClassSettings ? "" : "disabled"} aria-label="Team entfernen">
-            <i class="fa-solid fa-trash" aria-hidden="true"></i>
-          </button>
-        </div>
-      </div>`;
-    newTeamsContent += template;
+      </div>`);
   }
 
   if (currentTeamsData.length === 0) {
-    newTeamSelectionContent = newTeamsContent = '<span class="text-secondary no-teams">Keine Teams vorhanden</span>';
+    newTeamSelectionContent = $('<div><span class="text-secondary no-teams">Keine Teams vorhanden</span></div>');
   }
 
-  $("#team-selection-list").html(newTeamSelectionContent);
-  $("#teams-list").html(newTeamsContent);
+  $("#team-selection-list").empty().append(newTeamSelectionContent.children());
+}
 
-  $("#app").off("change", ".team-name-input").on("change", ".team-name-input", async function () {
-    $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
+async function renderTeamList(): Promise<void> {
+  function $changes(id: number): JQuery<HTMLElement> {
+    return $(`.team-changes[data-id="${id}"]`);
+  }
+  function $renamed(id: number): JQuery<HTMLElement> {
+    return $(`.team-renamed[data-id="${id}"]`);
+  }
+  function $deleted(id: number): JQuery<HTMLElement> {
+    return $(`.team-deleted[data-id="${id}"]`);
+  }
 
-    if ($(this).val().trim() === "") {
-      $(this).addClass("is-invalid");
-      $("#teams-save").prop("disabled", true);
-    }
+  function toggleChangesContainer(id: number): void {
+    const $el = $changes(id);
+    $el.show().toggle($el.children().is(":visible"));
+  }
 
-    const teamId = $(this).data("id");
-    if (teamId !== "") {
-      const newName = $(this).val();
-      const oldName = (await teamsData()).find(team => team.teamId === teamId)?.name;
-      if (newName === oldName) {
-        $(`.team-renamed[data-id="${teamId}"]`).addClass("d-none").find("*").addClass("d-none");
-      }
-      else if ($(`.team-deleted[data-id="${teamId}"]`).hasClass("d-none")) {
-        $(`.team-renamed[data-id="${teamId}"]`)
-          .removeClass("d-none")
-          .find("*")
-          .removeClass("d-none")
-          .find("b")
-          .text(newName);
-      }
-    }
-  });
-
-  $("#app").off("input", ".team-name-input").on("input", ".team-name-input", function () {
+  function changedAnything(): void {
     $("#teams-cancel").show();
     unsavedChanges(true);
-    unsavedChanges(true);
-    $(this).removeClass("is-invalid");
-    if (!$(".team-name-input").hasClass("is-invalid")) {
-      $("#teams-save").prop("disabled", false);
+    $("#teams-save-confirm-container, #teams-save-confirm").hide();
+  }
+
+  const currentTeamsData = await teamsData();
+
+  let newTeamsContent = $("<div></div>");
+
+  for (const team of currentTeamsData) {
+    const teamId = team.teamId;
+    const name = team.name;
+
+    const t = $cloneTemplate("#team-template", { dataId: teamId.toString(), disabled: !canEditClassSettings });
+    t.find(".team-name-input").val(name).attr("placeholder", name);
+    t.find(".team-changes").hide();
+    t.find(".team-renamed-name-old").text(name);
+    newTeamsContent.append(t);
+  }
+
+  if (currentTeamsData.length === 0) {
+    newTeamsContent = $('<div><span class="text-secondary no-teams">Keine Teams vorhanden</span></div>');
+  }
+
+  $("#teams-list").empty().append(newTeamsContent.children());
+
+  $(".team-changes > div").hide();
+  $("#teams-cancel").hide();
+  $("#teams-save-confirm-container, #teams-save-confirm").hide();
+
+  $("#app").off("input", ".team-name-input").on("input", ".team-name-input", async function () {
+    changedAnything();
+    
+    $(this).toggleClass("is-invalid", $(this).val().trim() === "");
+    $("#teams-save").prop("disabled", $(".team:not(.is-deleted) .team-name-input").hasClass("is-invalid"));
+
+    const id = $(this).data("id");
+    if (id !== "") {
+      const newName = $(this).val();
+      const oldName = currentTeamsData.find(team => team.teamId === id)?.name;
+      if (newName === oldName) {
+        $renamed(id).hide();
+      }
+      else if (! $deleted(id).is(":visible")) {
+        $renamed(id).show().find("b").text(newName);
+      }
+      toggleChangesContainer(id);
     }
   });
 
   $(".team-delete").on("click", function () {
-    $("#teams-cancel").show();
-    unsavedChanges(true);
-    unsavedChanges(true);
-    $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
+    changedAnything();
 
-    const teamId = $(this).data("id");
-    if ($(this).hasClass("btn-danger")) {
-      $(`.team-deleted[data-id="${teamId}"]`).removeClass("d-none");
-      $(`.team-renamed[data-id="${teamId}"]`).addClass("d-none").find("*").addClass("d-none");
-
-      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
-        .attr("aria-label", "Team doch nicht entfernen");
-    }
-    else {
-      $(`.team-deleted[data-id="${teamId}"]`).addClass("d-none");
-      $(`.team-name-input[data-id="${teamId}"]`).trigger("change");
+    const team = $(this).closest(".team");
+    const id = $(this).data("id");
+    if (team.hasClass("is-deleted")) {
+      $deleted(id).hide();
+      $(".team-name-input, .team-color-input").filter(`[data-id="${id}"]`).trigger("input").trigger("change");
 
       $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash" aria-hidden="true"></i>')
         .attr("aria-label", "Team entfernen");
+
+      team.removeClass("is-deleted");
     }
+    else {
+      $changes(id).find("> div").hide();
+      $deleted(id).show();
+
+      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
+        .attr("aria-label", "Team doch nicht entfernen");
+      
+      team.addClass("is-deleted");
+    }
+    $("#teams-save").prop("disabled", $(".team:not(.is-deleted) .team-name-input").hasClass("is-invalid"));
+    toggleChangesContainer(id);
   });
 }
 
 async function renderEventTypeList(): Promise<void> {
-  let newEventTypesContent = "";
-
-  for (const eventType of await eventTypeData()) {
-    const eventTypeId = eventType.eventTypeId;
-
-    const template = `
-      <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${eventTypeId}">
-        <div class="d-flex flex-column flex-lg-row align-items-lg-center">
-          <div class="d-flex">
-            <div>
-              <label>
-                Name
-                <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 event-type-name-input" type="text"
-                  value="${escapeHTML(eventType.name)}" placeholder="${escapeHTML(eventType.name)}"
-                  data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
-                <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
-              </label>
-            </div>
-            <label class="d-flex align-items-center">
-              <div class="me-2">Farbe</div>
-              <input type="text" value="${escapeHTML(eventType.color)}" class="color-picker event-type-color-input"
-                data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"}>
-            </label>
-          </div>
-          <span class="text-warning fw-bold mt-2 mt-md-0 d-none me-2 event-type-renamed" data-id="${eventTypeId}">
-            Umbenannt
-            <span class="text-secondary fw-normal event-type-renamed-name" data-id="${eventTypeId}">
-              (${escapeHTML(eventType.name)} zu <b></b>)
-            </span>
-          </span>
-          <span class="text-warning fw-bold mt-2 mt-md-0 d-none event-type-recolored" data-id="${eventTypeId}">
-            Farbe gändert
-            <span class="text-secondary fw-normal event-type-recolored-color" data-id="${eventTypeId}">
-              (<div class="color-display"></div>
-              zu
-              <div class="color-display"></div>)
-            </span>
-          </span>
-          <span class="text-danger fw-bold mt-2 mt-md-0 d-none event-type-deleted" data-id="${eventTypeId}">Gelöscht</span>
-        </div
-        <div>
-          <button class="btn btn-sm btn-sm-square btn-danger float-end event-type-delete"
-            data-id="${eventTypeId}" ${canEditClassSettings ? "" : "disabled"} aria-label="Ereignisart entfernen">
-            <i class="fa-solid fa-trash" aria-hidden="true"></i>
-          </button>
-        </div>
-      </div>`;
-    newEventTypesContent += template;
+  function $changes(id: number): JQuery<HTMLElement> {
+    return $(`.event-type-changes[data-id="${id}"]`);
+  }
+  function $renamed(id: number): JQuery<HTMLElement> {
+    return $(`.event-type-renamed[data-id="${id}"]`);
+  }
+  function $recolored(id: number): JQuery<HTMLElement> {
+    return $(`.event-type-recolored[data-id="${id}"]`);
+  }
+  function $deleted(id: number): JQuery<HTMLElement> {
+    return $(`.event-type-deleted[data-id="${id}"]`);
   }
 
-  if ((await eventTypeData()).length === 0) {
-    newEventTypesContent = `<span class="text-secondary no-event-types">
-      Keine Ereignisarten vorhanden
-      <button class="btn btn-primary btn-sm fw-semibold" id="event-types-example">Beispiele erstellen</button>
-    </span>`;
+  function toggleChangesContainer(id: number): void {
+    const $el = $changes(id);
+    $el.show().toggle($el.children().is(":visible"));
   }
-  $("#event-types-list").html(newEventTypesContent);
 
-  $("#app").off("change", ".event-type-name-input").on("change", ".event-type-name-input", async function () {
-    $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
-
-    if ($(this).val().trim() === "") {
-      $(this).addClass("is-invalid");
-      $("#event-types-save").prop("disabled", true);
-    }
-
-    const eventTypeId = $(this).data("id");
-    if (eventTypeId !== "") {
-      const newName = $(this).val();
-      const oldName = (await eventTypeData()).find(eventType => eventType.eventTypeId === eventTypeId)?.name;
-      if (newName === oldName) {
-        $(`.event-type-renamed[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
-      }
-      else if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
-        $(`.event-type-renamed[data-id="${eventTypeId}"]`)
-          .removeClass("d-none")
-          .find("*")
-          .removeClass("d-none")
-          .find("b")
-          .text(newName);
-      }
-    }
-  });
-
-  $("#app").off("input", ".event-type-name-input").on("input", ".event-type-name-input", function () {
+  function changedAnything(): void {
     $("#event-types-cancel").show();
     unsavedChanges(true);
-    unsavedChanges(true);
-    $(this).removeClass("is-invalid");
-    if (!$(".event-type-name-input").hasClass("is-invalid")) {
-      $("#event-types-save").prop("disabled", false);
+    $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
+  }
+
+  const currentEventTypeData = await eventTypeData();
+
+  let newEventTypesContent = $("<div></div>");
+
+  for (const eventType of currentEventTypeData) {
+    const eventTypeId = eventType.eventTypeId;
+    const name = escapeHTML(eventType.name);
+    const color = eventType.color;
+
+    const t = $cloneTemplate("#event-type-template", { dataId: eventTypeId.toString(), disabled: !canEditClassSettings });
+    t.find(".event-type-name-input").val(name).attr("placeholder", name);
+    t.find(".event-type-color-input").attr("value", escapeHTML(color));
+    t.find(".event-type-changes").hide();
+    t.find(".event-type-renamed-name-old").text(name);
+    t.find(".event-type-recolored-color-old").css("background-color", color);
+    newEventTypesContent.append(t);
+  }
+
+  if (currentEventTypeData.length === 0) {
+    newEventTypesContent = $(`<div>
+      <span class="text-secondary no-event-types d-flex align-items-center">
+        Keine Ereignisarten vorhanden
+        <button class="btn btn-primary btn-sm fw-semibold ms-2" id="event-types-example">Beispiele erstellen</button>
+      </span>
+    </div>`);
+  }
+  $("#event-types-list").empty().append(newEventTypesContent.children());
+
+  $(".event-type-changes > div").hide();
+  $("#event-types-cancel").hide();
+  $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
+
+  $("#app").off("input", ".event-type-name-input").on("input", ".event-type-name-input", async function () {
+    changedAnything();
+    
+    $(this).toggleClass("is-invalid", $(this).val().trim() === "");
+    $("#event-types-save").prop("disabled", $(".event-type:not(.is-deleted) .event-type-name-input").hasClass("is-invalid"));
+
+    const id = $(this).data("id");
+    if (id !== "") {
+      const newName = $(this).val();
+      const oldName = currentEventTypeData.find(eventType => eventType.eventTypeId === id)?.name;
+      if (newName === oldName) {
+        $renamed(id).hide();
+      }
+      else if (! $deleted(id).is(":visible")) {
+        $renamed(id).show().find("b").text(newName);
+      }
+      toggleChangesContainer(id);
     }
   });
 
   $("#app").off("change", ".event-type-color-input").on("change", ".event-type-color-input", async function () {
-    $("#event-types-cancel").show();
-    unsavedChanges(true);
-    unsavedChanges(true);
-    $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+    changedAnything();
 
-    const eventTypeId = $(this).data("id");
-    if (eventTypeId !== "") {
+    const id = $(this).data("id");
+    if (id !== "") {
       const newColor = $(this).val();
-      const oldColor = (await eventTypeData()).find(eventType => eventType.eventTypeId === eventTypeId)?.color ?? "";
+      const oldColor = currentEventTypeData.find(eventType => eventType.eventTypeId === id)?.color ?? "";
       if (newColor === oldColor) {
-        $(`.event-type-recolored[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
+        $recolored(id).hide();
       }
-      else if ($(`.event-type-deleted[data-id="${eventTypeId}"]`).hasClass("d-none")) {
-        const $recoloredElement = $(`.event-type-recolored[data-id="${eventTypeId}"]`);
-        $recoloredElement.removeClass("d-none").find("*").removeClass("d-none");
-        $recoloredElement.find(".color-display").first().css("background-color", oldColor);
-        $recoloredElement.find(".color-display").last().css("background-color", newColor);
+      else if (! $deleted(id).is(":visible")) {
+        $recolored(id).show().find(".event-type-recolored-color-new").css("background-color", newColor);
       }
+      toggleChangesContainer(id);
     }
   });
 
   $(".event-type-delete").on("click", function () {
-    $("#event-types-cancel").show();
-    unsavedChanges(true);
-    unsavedChanges(true);
-    $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+    changedAnything();
 
-    const eventTypeId = $(this).data("id");
-    if ($(this).hasClass("btn-danger")) {
-      $(`.event-type-deleted[data-id="${eventTypeId}"]`).removeClass("d-none");
-      $(`.event-type-renamed[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
-      $(`.event-type-recolored[data-id="${eventTypeId}"]`).addClass("d-none").find("*").addClass("d-none");
-
-      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
-        .attr("aria-label", "Ereginisart doch nicht entfernen");
-    }
-    else {
-      $(`.event-type-deleted[data-id="${eventTypeId}"]`).addClass("d-none");
-      $(`.event-type-name-input[data-id="${eventTypeId}"]`).trigger("change");
-      $(`.event-type-color-input[data-id="${eventTypeId}"]`).trigger("change");
+    const eventType = $(this).closest(".event-type");
+    const id = $(this).data("id");
+    if (eventType.hasClass("is-deleted")) {
+      $deleted(id).hide();
+      $(".event-type-name-input, .event-type-color-input").filter(`[data-id="${id}"]`).trigger("input").trigger("change");
 
       $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash" aria-hidden="true"></i>')
-        .attr("aria-label", "Ereginisart entfernen");
+        .attr("aria-label", "Ereignisart entfernen");
+
+      eventType.removeClass("is-deleted");
     }
+    else {
+      $changes(id).find("> div").hide();
+      $deleted(id).show();
+
+      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
+        .attr("aria-label", "Ereignisart doch nicht entfernen");
+      
+      eventType.addClass("is-deleted");
+    }
+    $("#event-types-save").prop("disabled", $(".event-type:not(.is-deleted) .event-type-name-input").hasClass("is-invalid"));
+    toggleChangesContainer(id);
   });
 }
 
 async function renderSubjectList(): Promise<void> {
-  if ((await substitutionsData()).data !== "No data") {
-    dsbActivated = true;
+  function $changes(id: number): JQuery<HTMLElement> {
+    return $(`.subject-changes[data-id="${id}"]`);
+  }
+  function $changedNameLong(id: number): JQuery<HTMLElement> {
+    return $(`.subject-changed-name-long[data-id="${id}"]`);
+  }
+  function $changedNameShort(id: number): JQuery<HTMLElement> {
+    return $(`.subject-changed-name-short[data-id="${id}"]`);
+  }
+  function $changedTeacherGender(id: number): JQuery<HTMLElement> {
+    return $(`.subject-changed-teacher-gender[data-id="${id}"]`);
+  }
+  function $changedTeacherLong(id: number): JQuery<HTMLElement> {
+    return $(`.subject-changed-teacher-long[data-id="${id}"]`);
+  }
+  function $changedTeacherShort(id: number): JQuery<HTMLElement> {
+    return $(`.subject-changed-teacher-short[data-id="${id}"]`);
+  }
+  function $changedNameSubstitution(id: number): JQuery<HTMLElement> {
+    return $(`.subject-changed-name-substitution[data-id="${id}"]`);
+  }
+  function $changedTeacherSubstitution(id: number): JQuery<HTMLElement> {
+    return $(`.subject-changed-teacher-substitution[data-id="${id}"]`);
+  }
+  function $deleted(id: number): JQuery<HTMLElement> {
+    return $(`.subject-deleted[data-id="${id}"]`);
   }
 
-  let newSubjectsContent = "";
+  function toggleChangesContainer(id: number): void {
+    const $el = $changes(id);
+    $el.show().toggle($el.children().is(":visible"));
+  }
 
-  let currentSubjectData = await subjectData();
-  currentSubjectData = currentSubjectData.sort((a, b) => a.subjectId - b.subjectId);
+  function changedAnything(): void {
+    $("#subjects-cancel").show();
+    unsavedChanges(true);
+    $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
+  }
+
+  const currentSubjectData = await subjectData();
+
+  let newSubjectsContent = $("<div></div>");
+
   for (const subject of currentSubjectData) {
-
-    function getTemplate(): JQuery<HTMLElement> {
-      function getHtmlFromValue(value: unknown, fallback: string): string {
-        return escapeHTML(value?.toString() ?? fallback);
-      }
-      const isDisabled = canEditClassSettings ? "" : "disabled";
-
-      const teacherGenderOptions = [
-        { value: "d", label: "-" },
-        { value: "w", label: "Frau" },
-        { value: "m", label: "Herr" }
-      ];
-      const teacherGenderOptionsHtml = teacherGenderOptions.map(opt => 
-        `<option value="${opt.value}" ${subject.teacherGender === opt.value ? "selected" : ""}>${opt.label}</option>`
-      ).join("");
-
-      const subjectNameSubstitution = getHtmlFromValue(subject.subjectNameSubstitution, "keine Angabe");
-      const teacherNameSubstitution = getHtmlFromValue(subject.teacherNameSubstitution, "keine Angabe");
-      return $(`
-        <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="${subjectId}">
-          <div class="d-flex flex-column w-100 me-3">
-            <div class="me-3">
-              <div class="d-flex align-items-center gap-3 mb-2">
-                <b>Fach</b>
-                <label for="subject-name-long-input-${subject.subjectId}">Name</label>
-                <div class="d-inline-block w-100">
-                  <input class="form-control form-control-sm subject-name-long-input" type="text" id="subject-name-long-input-${subject.subjectId}"
-                    value="${subjectNameLong}" placeholder="${subjectNameLong}" data-id="${subjectId}" ${isDisabled}>
-                  <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
-                </div>
-                <label for="subject-name-short-input-${subject.subjectId}">Abkürzung</label>
-                <input class="form-control form-control-sm d-inline-block subject-name-short-input w-25" type="text"
-                  id="subject-name-short-input-${subject.subjectId}" value="${subjectNameShort}" placeholder="${subjectNameShort}"
-                  data-id="${subjectId}" ${isDisabled}>
-              </div>
-              <div class="d-flex gap-3 align-items-center ${dsbActivated ? "mb-2" : ""}">
-                <b>Lehrkraft</b>
-                <label for="subject-teacher-gender-input-${subject.subjectId}">Anrede</label>
-                <div class="d-inline-block w-50">
-                  <select class="form-control form-control-sm subject-teacher-gender-input" data-id="${subjectId}" ${isDisabled}
-                    id="subject-teacher-gender-input-${subject.subjectId}">
-                    ${teacherGenderOptionsHtml}
-                  </select>
-                </div>
-                <label for="subject-teacher-long-input-${subject.subjectId}">Name</label>
-                <div class="d-inline-block w-100">
-                  <input class="form-control form-control-sm subject-teacher-long-input" type="text" value="${teacherNameLong}"
-                    placeholder="${teacherNameLong}" data-id="${subjectId}" ${isDisabled} id="subject-teacher-long-input-${subject.subjectId}">
-                  <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
-                </div>
-                <label for="subject-teacher-short-input-${subject.subjectId}">Kürzel</label>
-                <input class="form-control form-control-sm subject-teacher-short-input w-100" type="text" value="${teacherNameShort}"
-                  placeholder="${teacherNameShort}" data-id="${subjectId}" ${isDisabled} id="subject-teacher-short-input-${subject.subjectId}">
-              </div>
-              <div class="d-flex gap-3 align-items-center ${dsbActivated ? "" : "d-none"}">
-                <b>Vertretungen</b>
-                <label for="subject-name-substitution-input-${subject.subjectId}">Fachname</label>
-                <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id="${subjectId}"
-                  type="text" value="${escapeHTML(subject.subjectNameSubstitution?.toString() ?? "")}" ${isDisabled}
-                  placeholder="${subjectNameSubstitution}" id="subject-name-substitution-input-${subject.subjectId}">
-                <label for="subject-teacher-substitution-input-${subject.subjectId}">Lehrkraftname</label>
-                <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id="${subjectId}"
-                  type="text" value="${escapeHTML(subject.teacherNameSubstitution?.toString() ?? "")}" ${isDisabled}
-                  placeholder="${teacherNameSubstitution}" id="subject-teacher-substitution-input-${subject.subjectId}">
-              </div>
-            </div>
-            <div>
-              <div class="text-warning fw-bold mt-2 d-none subject-changed" data-id="${subjectId}">
-                Geändert
-                <span class="subject-changed-name-long">
-                  ${escapeHTML(subject.subjectNameLong)} zu <b></b>
-                </span>
-                <span class="subject-changed-name-short">
-                  ${escapeHTML(subject.subjectNameShort)} zu <b></b>
-                </span>
-                <span class="subject-changed-name-substitution">
-                  ${subjectNameSubstitution} zu <b></b>
-                </span>
-                <span class="subject-changed-teacher-gender">
-                  ${{ w: "Frau", m: "Herr", d: "Keine Anrede" }[subject.teacherGender]} zu <b></b>
-                </span>
-                <span class="subject-changed-teacher-long">
-                  ${escapeHTML(subject.teacherNameLong)} zu <b></b>
-                </span>
-                <span class="subject-changed-teacher-short">
-                  ${escapeHTML(subject.teacherNameShort)} zu <b></b>
-                </span>
-                <span class="subject-changed-teacher-substitution">
-                  ${teacherNameSubstitution} zu <b></b>
-                </span>
-              </div>
-              <div class="text-danger fw-bold mt-2 d-none subject-deleted" data-id="${subjectId}">Gelöscht</div>
-            </div>
-          </div
-          <div>
-            <button class="btn btn-sm btn-sm-square btn-danger float-end subject-delete"
-              data-id="${subjectId}" ${isDisabled} aria-label="Fach entfernen">
-              <i class="fa-solid fa-trash" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>
-      `);
-    }
-
     const subjectId = subject.subjectId;
     const subjectNameLong = escapeHTML(subject.subjectNameLong);
     const subjectNameShort = escapeHTML(subject.subjectNameShort);
     const teacherNameLong = escapeHTML(subject.teacherNameLong);
     const teacherNameShort = escapeHTML(subject.teacherNameShort);
-    const template = getTemplate();
-    template.find(".subject-changed").last().find("span").addClass("d-none").attr("data-id", subjectId);
-    newSubjectsContent += template[0].outerHTML;
+    const subjectNameSubstitution = subject.subjectNameSubstitution?.toString() ?? "";
+    const teacherNameSubstitution = subject.teacherNameSubstitution?.toString() ?? "";
+
+    const t = $cloneTemplate("#subject-template", { dataId: subjectId.toString(), disabled: !canEditClassSettings });
+
+    t.find(".subject-substitutions").toggle(dsbActivated);
+    t.find(".subject-changes").hide();
+
+    t.find(".subject-name-long-input").val(subjectNameLong).attr("placeholder", subjectNameLong);
+    t.find(".subject-name-short-input").val(subjectNameShort).attr("placeholder", subjectNameShort);
+    t.find(".subject-teacher-gender-input").val(subject.teacherGender);
+    t.find(".subject-teacher-long-input").val(teacherNameLong).attr("placeholder", teacherNameLong);
+    t.find(".subject-teacher-short-input").val(teacherNameShort).attr("placeholder", teacherNameShort);
+    t.find(".subject-name-substitution-input").val(subjectNameSubstitution).attr("placeholder", subjectNameSubstitution);
+    t.find(".subject-teacher-substitution-input").val(teacherNameSubstitution).attr("placeholder", teacherNameSubstitution);
+
+    t.find(".subject-changed-name-long-old").text(subjectNameLong);
+    t.find(".subject-changed-name-short-old").text(subjectNameShort);
+    t.find(".subject-changed-teacher-gender-old").text({ w: "Frau", m: "Herr", d: "Keine Anrede" }[subject.teacherGender]);
+    t.find(".subject-changed-teacher-long-old").text(teacherNameLong);
+    t.find(".subject-changed-teacher-short-old").text(teacherNameShort);
+    t.find(".subject-changed-name-substitution-old").text(subjectNameSubstitution);
+    t.find(".subject-changed-teacher-substitution-old").text(teacherNameSubstitution);
+
+    newSubjectsContent.append(t);
   }
 
-  if ((await subjectData()).length === 0) {
-    newSubjectsContent += '<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>';
+  if (currentSubjectData.length === 0) {
+    newSubjectsContent = $(`<div>
+      <span class="text-secondary no-subjects">Keine Fächer vorhanden</span>
+    </div>`);
   }
-  $("#subjects-list").html(newSubjectsContent);
+  $("#subjects-list").empty().append(newSubjectsContent.children());
 
-  $("#app").off("change", ".subject-name-long-input").on("change", ".subject-name-long-input", async function () {
-    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+  $(".subject-changes > div").hide();
+  $("#subjects-cancel").hide();
+  $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
 
-    if ($(this).val().trim() === "") {
-      $(this).addClass("is-invalid");
-      $("#subjects-save").prop("disabled", true);
-    }
+  $("#app").off("input", ".subject-name-long-input").on("input", ".subject-name-long-input", async function () {
+    changedAnything();
+    
+    $(this).toggleClass("is-invalid", $(this).val().trim() === "");
+    $("#subjects-save").prop("disabled",
+      $(".subject:not(.is-deleted)").find(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")
+    );
 
-    const subjectId = $(this).data("id");
-    if (subjectId !== "") {
-      const newName = $(this).val();
-      const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameLong;
-      if (newName === oldName) {
-        $(`.subject-changed-name-long[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
-          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
-        }
+    const newVal = $(this).val()?.toString() ?? "";
+
+    const shortInput = $(this).closest(".subject").find(".subject-name-short-input");
+    autocomplete(shortInput, newVal.substring(0, 3));
+
+    const substitutionInput = $(this).closest(".subject").find(".subject-name-substitution-input");
+    autocomplete(substitutionInput, newVal);
+
+    const id = $(this).data("id");
+    if (id !== "") {
+      const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameLong;
+      if (newVal === oldVal) {
+        $changedNameLong(id).hide();
       }
-      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-        $(`.subject-changed-name-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
+      else if (! $deleted(id).is(":visible")) {
+        $changedNameLong(id).show().find("b").text(newVal);
       }
-    }
-  });
-
-  $("#app").off("input", ".subject-name-long-input").on("input", ".subject-name-long-input", function () {
-    $("#subjects-cancel").show();
-    unsavedChanges(true);
-    $(this).removeClass("is-invalid");
-    if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
-      $("#subjects-save").prop("disabled", false);
-    }
-  });
-
-  $("#app").off("change", ".subject-name-short-input").on("change", ".subject-name-short-input", async function () {
-    $("#subjects-cancel").show();
-    unsavedChanges(true);
-    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
-
-    const subjectId = $(this).data("id");
-    if (subjectId !== "") {
-      const newName = $(this).val();
-      const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameShort;
-      if (newName === oldName) {
-        $(`.subject-changed-name-short[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
-          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
-        }
-      }
-      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-        $(`.subject-changed-name-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
-      }
+      toggleChangesContainer(id);
     }
   });
 
-  $("#app").off("change", ".subject-teacher-gender-input").on("change", ".subject-teacher-gender-input", async function () {
-    $("#subjects-cancel").show();
-    unsavedChanges(true);
-    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+  $("#app").off("input autocomplete", ".subject-name-short-input").on("input autocomplete", ".subject-name-short-input", async function () {
+    changedAnything();
 
-    const subjectId = $(this).data("id");
-    if (subjectId !== "") {
-      const newGender = $(this).val() as "d" | "w" | "m";
-      const oldGender = (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherGender;
-      if (newGender === oldGender) {
-        $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
-          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
-        }
+    const newVal = $(this).val()?.toString() ?? "";
+
+    const id = $(this).data("id");
+    if (id !== "") {
+      const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameShort;
+      if (newVal === oldVal) {
+        $changedNameShort(id).hide();
       }
-      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-        $(`.subject-changed-teacher-gender[data-id="${subjectId}"]`)
-          .removeClass("d-none")
-          .find("b")
-          .text({ d: "Keine Anrede", w: "Frau", m: "Herr" }[newGender]);
+      else if (! $deleted(id).is(":visible")) {
+        $changedNameShort(id).show().find("b").text(newVal);
       }
+      toggleChangesContainer(id);
     }
   });
 
-  $("#app").off("change", ".subject-teacher-long-input").on("change", ".subject-teacher-long-input", async function () {
-    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+  $("#app").off("input", ".subject-teacher-gender-input").on("change", ".subject-teacher-gender-input", async function () {
+    changedAnything();
 
-    if ($(this).val().trim() === "") {
-      $(this).addClass("is-invalid");
-      $("#subjects-save").prop("disabled", true);
-    }
+    const newVal = $(this).val()?.toString() ?? "";
 
-    const subjectId = $(this).data("id");
-    if (subjectId !== "") {
-      const newName = $(this).val();
-      const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameLong;
-      if (newName === oldName) {
-        $(`.subject-changed-teacher-long[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
-          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
-        }
+    const id = $(this).data("id");
+    if (id !== "") {
+      const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.teacherGender;
+      if (newVal === oldVal) {
+        $changedTeacherGender(id).hide();
       }
-      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-        $(`.subject-changed-teacher-long[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
+      else if (! $deleted(id).is(":visible")) {
+        $changedTeacherGender(id).show().find("b").text({ w: "Frau", m: "Herr", d: "Keine Anrede" }[newVal as "w" | "m" | "d"]);
       }
+      toggleChangesContainer(id);
     }
   });
 
-  $("#app").off("input", ".subject-teacher-long-input").on("input", ".subject-teacher-long-input", function () {
-    $("#subjects-cancel").show();
-    unsavedChanges(true);
-    $(this).removeClass("is-invalid");
-    if (!$(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")) {
-      $("#subjects-save").prop("disabled", false);
+  $("#app").off("input", ".subject-teacher-long-input").on("input", ".subject-teacher-long-input", async function () {
+    changedAnything();
+    
+    $(this).toggleClass("is-invalid", $(this).val().trim() === "");
+    $("#subjects-save").prop("disabled",
+      $(".subject:not(.is-deleted)").find(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")
+    );
+
+    const newVal = $(this).val()?.toString() ?? "";
+
+    const shortInput = $(this).closest(".subject").find(".subject-teacher-short-input");
+    autocomplete(shortInput, newVal.substring(0, 3));
+
+    const id = $(this).data("id");
+    if (id !== "") {
+      const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.teacherNameLong;
+      if (newVal === oldVal) {
+        $changedTeacherLong(id).hide();
+      }
+      else if (! $deleted(id).is(":visible")) {
+        $changedTeacherLong(id).show().find("b").text(newVal);
+      }
+      toggleChangesContainer(id);
     }
   });
 
-  $("#app").off("change", ".subject-teacher-short-input").on("change", ".subject-teacher-short-input", async function () {
-    $("#subjects-cancel").show();
-    unsavedChanges(true);
-    $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+  $("#app").off("input autocomplete", ".subject-teacher-short-input").on("input autocomplete", ".subject-teacher-short-input", async function () {
+    changedAnything();
 
-    const subjectId = $(this).data("id");
-    if (subjectId !== "") {
-      const newName = $(this).val();
-      const oldName = (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameShort;
-      if (newName === oldName) {
-        $(`.subject-changed-teacher-short[data-id="${subjectId}"]`).addClass("d-none");
-        if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
-          $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
-        }
+    const newVal = $(this).val()?.toString() ?? "";
+
+    const substitutionInput = $(this).closest(".subject").find(".subject-teacher-substitution-input");
+    autocomplete(substitutionInput, newVal);
+
+    const id = $(this).data("id");
+    if (id !== "") {
+      const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.teacherNameShort;
+      if (newVal === oldVal) {
+        $changedTeacherShort(id).hide();
       }
-      else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-        $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-        $(`.subject-changed-teacher-short[data-id="${subjectId}"]`).removeClass("d-none").find("b").text(newName);
+      else if (! $deleted(id).is(":visible")) {
+        $changedTeacherShort(id).show().find("b").text(newVal);
       }
+      toggleChangesContainer(id);
     }
   });
 
-  if (dsbActivated) {
-    $("#app").off("change", ".subject-name-substitution-input").on("change", ".subject-name-substitution-input", async function () {
-      $("#subjects-cancel").show();
-      unsavedChanges(true);
-      $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
-  
-      const subjectId = $(this).data("id");
-      if (subjectId !== "") {
-        const newName = $(this).val();
-        const oldName =
-            (await subjectData()).find(subject => subject.subjectId === subjectId)?.subjectNameSubstitution ??
-            "keine Angabe";
-        if (newName === oldName) {
-          $(`.subject-changed-name-substitution[data-id="${subjectId}"]`).addClass("d-none");
-          if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
-            $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
-          }
+  $("#app").off("input autocomplete", ".subject-name-substitution-input")
+    .on("input autocomplete", ".subject-name-substitution-input", async function () {
+      changedAnything();
+
+      const newVal = $(this).val()?.toString() ?? "";
+
+      const id = $(this).data("id");
+      if (id !== "") {
+        const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.subjectNameSubstitution?.toString();
+        if (newVal === oldVal) {
+          $changedNameSubstitution(id).hide();
         }
-        else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-          $(`.subject-changed-name-substitution[data-id="${subjectId}"]`)
-            .removeClass("d-none")
-            .find("b")
-            .text(newName);
+        else if (! $deleted(id).is(":visible")) {
+          $changedNameSubstitution(id).show().find("b").text(newVal);
         }
+        toggleChangesContainer(id);
       }
     });
-  
-    $("#app").off("change", ".subject-teacher-substitution-input").on("change", ".subject-teacher-substitution-input", async function () {
-      $("#subjects-cancel").show();
-      unsavedChanges(true);
-      $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
-  
-      const subjectId = $(this).data("id");
-      if (subjectId !== "") {
-        const newName = $(this).val();
-        const oldName =
-            (await subjectData()).find(subject => subject.subjectId === subjectId)?.teacherNameSubstitution ??
-            "keine Angabe";
-        if (newName === oldName) {
-          $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`).addClass("d-none");
-          if ($(`.subject-changed[data-id="${subjectId}"] span:not(.d-none)`).length === 0) {
-            $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
-          }
+
+  $("#app").off("input autocomplete", ".subject-teacher-substitution-input")
+    .on("input autocomplete", ".subject-teacher-substitution-input", async function () {
+      changedAnything();
+
+      const newVal = $(this).val()?.toString() ?? "";
+
+      const id = $(this).data("id");
+      if (id !== "") {
+        const oldVal = currentSubjectData.find(subject => subject.subjectId === id)?.teacherNameSubstitution?.toString();
+        if (newVal === oldVal) {
+          $changedTeacherSubstitution(id).hide();
         }
-        else if ($(`.subject-deleted[data-id="${subjectId}"]`).hasClass("d-none")) {
-          $(`.subject-changed[data-id="${subjectId}"]`).removeClass("d-none");
-          $(`.subject-changed-teacher-substitution[data-id="${subjectId}"]`)
-            .removeClass("d-none")
-            .find("b")
-            .text(newName);
+        else if (! $deleted(id).is(":visible")) {
+          $changedTeacherSubstitution(id).show().find("b").text(newVal);
         }
+        toggleChangesContainer(id);
       }
     });
-  }
 
   $(".subject-delete").on("click", function () {
-    $("#subjects-cancel").show();
-    unsavedChanges(true);
-    $("#subjects-save-confirm-container, #subjectss-save-confirm").addClass("d-none");
+    changedAnything();
 
-    const subjectId = $(this).data("id");
-    if ($(this).hasClass("btn-danger")) {
-      $(`.subject-deleted[data-id="${subjectId}"]`).removeClass("d-none");
-      $(`.subject-changed[data-id="${subjectId}"]`).addClass("d-none");
-
-      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
-        .attr("aria-label", "Fach doch nicht entfernen");
-    }
-    else {
-      $(`.subject-deleted[data-id="${subjectId}"]`).addClass("d-none");
-      $(`.subject-name-long-input[data-id="${subjectId}"]`).trigger("change");
-      $(`.subject-name-short-input[data-id="${subjectId}"]`).trigger("change");
-      $(`.subject-teacher-gender-input[data-id="${subjectId}"]`).trigger("change");
-      $(`.subject-teacher-long-input[data-id="${subjectId}"]`).trigger("change");
-      $(`.subject-teacher-short-input[data-id="${subjectId}"]`).trigger("change");
-      $(`.subject-name-substitution-input[data-id="${subjectId}"]`).trigger("change");
-      $(`.subject-teacher-substitution-input[data-id="${subjectId}"]`).trigger("change");
+    const subject = $(this).closest(".subject");
+    const id = $(this).data("id");
+    if (subject.hasClass("is-deleted")) {
+      $deleted(id).hide();
+      $(".subject-name-long-input, .subject-teacher-gender-input, .subject-teacher-long-input")
+        .filter(`[data-id="${id}"]`).trigger("input").trigger("change");
+      $(".subject-name-short-input, .subject-teacher-short-input, .subject-name-substitution-input, .subject-teacher-substitution-input")
+        .filter(`[data-id="${id}"]`).trigger("autocomplete");
 
       $(this).removeClass("btn-success").addClass("btn-danger").html('<i class="fa-solid fa-trash" aria-hidden="true"></i>')
         .attr("aria-label", "Fach entfernen");
+
+      subject.removeClass("is-deleted");
     }
+    else {
+      $changes(id).find("> div").hide();
+      $deleted(id).show();
+
+      $(this).removeClass("btn-danger").addClass("btn-success").html('<i class="fa-solid fa-undo" aria-hidden="true"></i>')
+        .attr("aria-label", "Fach doch nicht entfernen");
+      
+      subject.addClass("is-deleted");
+    }
+    $("#subjects-save").prop("disabled",
+      $(".subject:not(.is-deleted)").find(".subject-name-long-input, .subject-teacher-long-input").hasClass("is-invalid")
+    );
+    toggleChangesContainer(id);
   });
 }
 
 async function renderTimetable(): Promise<void> {
   const newTimetableContent = $("<div></div>");
 
-  let subjectOptions = "";
-  for (const subject of (await subjectData())) {
-    subjectOptions += `<option value="${subject.subjectId}">${escapeHTML(subject.subjectNameLong)}</option>`;
-  }
-
-  let teamOptions = "";
-
-  for (const team of (await teamsData())) {
-    teamOptions += `<option value="${team.teamId}">${escapeHTML(team.name)}</option>`;
-  };
+  const subjectOptions = (await subjectData()).map(s => `<option value="${s.subjectId}">${escapeHTML(s.subjectNameLong)}</option>`).join("");
+  $("#lesson-template .timetable-subject-select")
+    .html("<option value=\"\" disabled>Fach</option><option value=\"-1\">Pause</option>" + subjectOptions);
+  const teamOptions = (await teamsData()).map(t => `<option value="${t.teamId}">${escapeHTML(t.name)}</option>`).join("");
+  $("#lesson-template .timetable-team-select").html("<option value=\"-1\">Alle</option>" + teamOptions);
 
   for (let dayId = 0; dayId < 5; dayId++) {
-    const dayTemplate = $(`
-      <div class="col p-1">
-        <div class="card p-2">
-          <div>${["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"][dayId]}</div>
-          <hr class="mt-2">
-          <div class="timetable-lesson-list">
-          </div>
-        </div>
-      </div>
-    `);
-    dayTemplate
-      .find(".card")
-      .append(`
-        <button class="btn btn-sm btn-success fw-semibold timetable-new-lesson"${canEditClassSettings ? "" : "disabled"}>
-          Neue Stunde
-        </button>`
-      );
-    $("#timetable").append(dayTemplate);
-    newTimetableContent.append(dayTemplate);
+
+    const t = $cloneTemplate("#day-template", { disabled: !canEditClassSettings });
+    t.find(".timetable-day-name").text(["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"][dayId]);
+
+    newTimetableContent.append(t);
   }
 
   (await lessonData()).forEach(lesson => {
-    const lessonTemplate = $(`
-      <div class="timetable-lesson card p-2 mb-2">
-        <div class="d-flex mb-2 align-items-center">
+    const t = $cloneTemplate("#lesson-template", { disabled: !canEditClassSettings });
+    t.find(".lesson-number").val(lesson.lessonNumber);
+    t.find(".lesson-start-time").val(msToTime(lesson.startTime));
+    t.find(".lesson-end-time").val(msToTime(lesson.endTime));
+    t.find(".lesson-room").val(lesson.room);
+    t.find(".lesson-subject-select")
+      .html("<option value=\"\" disabled>Fach</option><option value=\"-1\">Pause</option>" + subjectOptions)
+      .val(lesson.subjectId);
+    t.find(".lesson-team-select")
+      .html("<option value=\"-1\">Alle</option>" + teamOptions)
+      .val(lesson.teamId);
 
-          <label class="d-flex align-items-center">
-            Stundennummer
-          <input class="timetable-lesson-number form-control form-control-sm mx-2" type="number" min="1"
-            value="${lesson.lessonNumber}" ${canEditClassSettings ? "" : "disabled"}>
-          </label>
-          <button class="btn btn-sm btn-danger timetable-lesson-delete" ${canEditClassSettings ? "" : "disabled"} aria-label="Stunde entfernen">
-            <i class="fa-solid fa-trash" aria-hidden="true"></i>
-          </button>
-        </div>
-        <div class="d-flex mb-2 align-items-center">
-          <label class="w-50 me-4">
-            Von
-            <input class="timetable-start-time form-control form-control-sm me-4" type="time"
-              value="${msToTime(lesson.startTime)}" ${canEditClassSettings ? "" : "disabled"}>
-          </label>
-          <label class="w-50">
-            Bis
-            <input class="timetable-end-time form-control form-control-sm" type="time"
-              value="${msToTime(lesson.endTime)}" ${canEditClassSettings ? "" : "disabled"}>
-          </label>
-        </div>
-        <div class="d-flex mb-2 align-items-center">
-          <label class="d-flex align-items-center w-100">
-            Fach
-            <select class="timetable-subject-select form-select form-select-sm ms-2" ${canEditClassSettings ? "" : "disabled"}>
-              <option value="" disabled>Fach</option>
-              <option value="-1">Pause</option>
-              ${subjectOptions}
-            </select>
-          </label>
-        </div>
-        <div class="d-flex mb-2 align-items-center">
-          <label class="d-flex align-items-center w-100">
-            Raum
-            <input class="timetable-room form-control form-control-sm ms-2" type="text" value="${escapeHTML(lesson.room)}"
-              ${canEditClassSettings ? "" : "disabled"}>
-          </label>
-        </div>
-        <div class="d-flex align-items-center">
-          <label class="d-flex align-items-center w-100">
-            Team
-            <select class="timetable-team-select form-select form-select-sm ms-2" ${canEditClassSettings ? "" : "disabled"}>
-              <option value="-1">Alle</option>
-              ${teamOptions}
-            </select>
-          </label>
-        </div>
-      </div>
-    `);
-    lessonTemplate.find(`.timetable-subject-select option[value=${lesson.subjectId}]`).attr("selected", "true");
-    lessonTemplate.find(`.timetable-team-select option[value=${lesson.teamId}]`).attr("selected", "true");
-    newTimetableContent.find(".timetable-lesson-list").eq(lesson.weekDay).append(lessonTemplate);
+    newTimetableContent.find(".timetable-lesson-list").eq(lesson.weekDay).append(t);
   });
 
-  $("#app")
-    .off("input", ".timetable-lesson input, .timetable-lesson select")
-    .on("input", ".timetable-lesson input, .timetable-lesson select", () => {
-      $("#timetable-cancel").show();
-      unsavedChanges(true);
+  $("#timetable").empty().append(newTimetableContent.children());
+
+  $("#app").off("input", ".lesson input, .lesson select").on("input", ".lesson input, .lesson select", () => {
+    $("#timetable-cancel").show();
+    unsavedChanges(true);
+  });
+
+  $("#app").off("input autocomplete", ".lesson-number").on("input autocomplete", ".lesson-number", function () {
+    const thisLesson = $(this).closest(".lesson");
+    const lessonNumber = $(this).val()?.toString() ?? "1";
+    $("#timetable").find(".lesson").each(function () {
+      if ($(this).is(thisLesson)) return;
+
+      if ($(this).find(".lesson-number").val() === lessonNumber) {
+        const start = thisLesson.find(".lesson-start-time");
+        const end = thisLesson.find(".lesson-end-time");
+        autocomplete(start, $(this).find(".lesson-start-time").val() ?? "--:--");
+        autocomplete(end, $(this).find(".lesson-end-time").val() ?? "--:--");
+      }
     });
+  });
+
+  $("#app").off("input autocomplete", ".lesson-time").on("input autocomplete", ".lesson-time", function () {
+    const thisLesson = $(this).closest(".lesson");
+    const startTime = timeToMs(getInputValue(thisLesson.find(".lesson-start-time")));
+    const endTime = timeToMs(getInputValue(thisLesson.find(".lesson-end-time")));
+    thisLesson.find(".lesson-end-time").toggleClass("is-invalid", startTime > endTime);
+    $("#timetable-save").prop("disabled", $(".lesson-end-time").hasClass("is-invalid"));
+  });
 
   $("#app").off("click", ".timetable-new-lesson").on("click", ".timetable-new-lesson", function () {
     $("#timetable-cancel").show();
     unsavedChanges(true);
-    const lessonTemplate = $(`
-      <div class="timetable-lesson card p-2 mb-2">
-        <div class="d-flex mb-2 align-items-center">
-          <label class="d-flex align-items-center">
-            Stundennummer
-            <input class="timetable-lesson-number form-control form-control-sm mx-2" type="number" min="1">
-          </label>
-          <button class="btn btn-sm btn-danger timetable-lesson-delete" aria-label="Stunde entfernen">
-            <i class="fa-solid fa-trash" aria-hidden="true"></i>
-          </button>
-        </div>
-        <div class="d-flex mb-2 align-items-center">
-          <label class="w-50 me-4">
-            Von
-            <input class="timetable-start-time form-control form-control-sm" type="time">
-          </label>
-          <label class="w-50">
-            Bis
-            <input class="timetable-end-time form-control form-control-sm" type="time">
-          </label>
-        </div>
-        <div class="d-flex mb-2 align-items-center">
-          <label class="d-flex align-items-center w-100">
-            Fach
-            <select class="timetable-subject-select form-select form-select-sm ms-2">
-              <option value="" disabled selected>Fach</option>
-              <option value="-1">Pause</option>
-              ${subjectOptions}
-            </select>
-          </label>
-        </div>
-        <div class="d-flex mb-2 align-items-center">
-          <label class="d-flex align-items-center w-100">
-            Raum
-            <input class="timetable-room form-control form-control-sm ms-2" type="text">
-          </label>
-        </div>
-        <div class="d-flex align-items-center">
-          <label class="d-flex align-items-center w-100">
-            Team
-            <select class="timetable-team-select form-select form-select-sm ms-2">
-              <option value="-1">Alle</option>
-              ${teamOptions}
-            </select>
-          </label>
-        </div>
-      </div>
-    `);
-    function updateTimeInputs(forceSet?: boolean): void {
-      $("#timetable").find(".timetable-lesson").each(function () {
-        if ($(this).find(".timetable-lesson-number").val() === lessonNumber.toString()) {
-          const start = lessonTemplate.find(".timetable-start-time");
-          if (start.hasClass("autocomplete") || start.val() === "" || forceSet) {
-            start.val($(this).find(".timetable-start-time").val() ?? "--:--").addClass("autocomplete");
-          }
-          const end = lessonTemplate.find(".timetable-end-time");
-          if (end.hasClass("autocomplete") || end.val() === "" || forceSet) {
-            end.val($(this).find(".timetable-end-time").val() ?? "--:--").addClass("autocomplete");
-          }
-        }
-      });
-    }
 
-    const lessonList = $(this).parent().find(".timetable-lesson-list");
-    const previousLesson = lessonList.find(".timetable-lesson").last();
-    let lessonNumber = Number.parseInt(previousLesson.find(".timetable-lesson-number").val()?.toString() ?? "0") + 1;
-    lessonTemplate.find(".timetable-lesson-number").val(lessonNumber).addClass("autocomplete");
-    lessonTemplate.find(".timetable-lesson-number").on("change", () => {
-      lessonNumber = Number.parseInt(lessonTemplate.find(".timetable-lesson-number").val()?.toString() ?? "1");
-      updateTimeInputs();
-    });
-    lessonTemplate.find(".timetable-start-time").val(previousLesson.find(".timetable-end-time").val() ?? "--:--");
-    updateTimeInputs(true);
+    const t = $cloneTemplate("#lesson-template", { disabled: false });
+    t.find(".lesson-subject-select")
+      .html("<option value=\"\" disabled>Fach</option><option value=\"-1\">Pause</option>" + subjectOptions);
+    t.find(".lesson-team-select")
+      .html("<option value=\"-1\">Alle</option>" + subjectOptions);
 
-    const rooms = Array.from($("#timetable").find(".timetable-room"), r => $(r).val()?.toString() ?? "");
+    const lessonList = $(this).prev();
+    lessonList.append(t);
+
+    const prevLesson = lessonList.find(".lesson").last().prev();
+
+    const prevLessonNumber = Number.parseInt(prevLesson.find(".lesson-number").val()?.toString() ?? "0") + 1;
+    autocomplete(t.find(".lesson-number"), prevLessonNumber);
+    autocomplete(t.find(".lesson-start-time"), prevLesson.find(".lesson-end-time").val() ?? "--:--");
+
+    const rooms = Array.from($("#timetable").find(".lesson-room"), r => $(r).val()?.toString() ?? "");
     const roomOccurences = rooms.reduce((acc, room) => {
       acc[room] ??= 0;
       acc[room]++;
       return acc;
     }, {} as Record<string, number>);
     const mostFrequentRoom = Object.entries(roomOccurences).reduce((a, b) => b[1] > a[1] ? b : a, ["", 0])[0];
-    lessonTemplate.find(".timetable-room").val(mostFrequentRoom).addClass("autocomplete").on("focus", function () {
-      $(this).val("").removeClass("autocomplete");
-    });
-
-    lessonList.append(lessonTemplate);
+    autocomplete(t.find(".lesson-room"), mostFrequentRoom);
   });
 
-  $("#timetable").html(newTimetableContent.html());
-
-  $("#app").off("click", ".timetable-lesson-delete").on("click", ".timetable-lesson-delete", function () {
+  $("#app").off("click", ".lesson-delete").on("click", ".lesson-delete", function () {
     $("#timetable-cancel").show();
     unsavedChanges(true);
-    $(this).parent().parent().remove();
+    $(this).closest(".lesson").remove();
+    $("#timetable-save").prop("disabled", $(".lesson-end-time").hasClass("is-invalid"));
   });
 }
 
-async function updateClassInfo(): Promise<void> {
-  let classCode = "";
+export async function updateClassInfo(): Promise<void> {
+  const currentClassInfo = await classInfo();
+  const classCode = currentClassInfo.classCode;
+  $("#class-code").val(classCode);
+  $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
 
-  $.get("/class/get_class_info")
-    .done(res => {
-      const resClassCode = res.classCode;
-      $("#class-code").val(resClassCode);
-      $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
-      classCode = resClassCode;
+  qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
+  $("#show-qrcode-modal-title b").text(currentClassInfo.className);
+  $("#class-settings-name").text(currentClassInfo.className);
 
-      qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
-      $("#show-qrcode-modal-title b").text(res.className);
-      $("#class-settings-name").text(res.className);
-
-      isTestClass = res.isTestClass;
-      $("#test-class-alert").toggleClass("d-none", !isTestClass);
-      testClassTimeCreated = Number.parseInt(res.classCreated);
-      updateTestClassTimeLeft();
-    })
-    .fail(() => {
-      $("#class-code").val("Fehler beim Laden");
-      $("#invite-copy-link, #invite-qrcode").prop("disabled", true);
-    });
+  isTestClass = currentClassInfo.isTestClass;
+  $("#test-class-alert").toggleClass("d-none", !isTestClass);
+  testClassTimeCreated = Number.parseInt(currentClassInfo.createdAt);
+  updateTestClassTimeLeft();
 
   $("#invite-copy-link").on("click", async () => {
     try {
@@ -1006,16 +802,7 @@ async function updateClassInfo(): Promise<void> {
     }
   });
 
-  let loggedOutUsersRole;
-  try {
-    loggedOutUsersRole = await $.get("/class/get_logged_out_users_role");
-  }
-  catch {
-    loggedOutUsersRole = 0;
-  }
-  finally {
-    $(`#set-logged-out-users-role-select option[value="${loggedOutUsersRole}"]`).attr("selected", "");
-  }
+  $(`#set-logged-out-users-role-select option[value="${currentClassInfo.defaultPermission}"]`).attr("selected", "");
 }
 
 function updateTestClassTimeLeft(): void {
@@ -1056,44 +843,53 @@ async function updateOnUserChange(): Promise<void> {
     if (permissionLevel < 2) {
       canEditClassSettings = false;
       $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
-        .find("input, button, select, .color-picker-trigger")
+        .find("input, button, select, color-picker")
         .prop("disabled", true);
     }
     else {
       canEditClassSettings = true;
       $("#class-members-wrapper, #teams-wrapper, #event-types-wrapper, #subjects-wrapper, #timetable-wrapper")
-        .find("input, button, select, .color-picker-trigger")
+        .find("input, button, select, color-picker")
         .prop("disabled", false);
     }
     if (permissionLevel < 3) {
-      canEditMemberSettings = false;
       $("#class-members-wrapper")
         .find("button, select")
         .prop("disabled", true);
     }
     else {
-      canEditMemberSettings = true;
       $("#class-members-wrapper")
         .find("button, select")
         .prop("disabled", false);
     }
     $("#change-class-name-button").toggle(permissionLevel >= 2);
-    $(`#change-class-code,
-      #upgrade-test-class,
-      #delete-class-button,
-      #kick-logged-out-users-button,
-      #set-logged-out-users-role-select`).prop("disabled", permissionLevel !== 3);
+
+    $(`#show-change-classcode,
+      #delete-class-button, #delete-class ~ .form-text,
+      #kick-logged-out-users-button, #kick-logged-out-users ~ .form-text`).toggle(permissionLevel === 3);
+    $("#class-code").toggleClass("w-lg-50", permissionLevel === 3);
+    $("#upgrade-test-class, #set-logged-out-users-role-select").prop("disabled", permissionLevel !== 3);
+
     $(".is-current-user").prop("disabled", true);
   }
+}
+
+async function updateUnavailable(): Promise<void> {
+  const b = await bootstrap();
+  $(`
+    #logout-button, #change-password-button, #change-username-button, #delete-account-button,
+    #leave-class-button, #delete-class-button
+  `).prop("disabled", (! b.online) || b.maintenance);
 }
 
 export async function init(): Promise<void> {
   return new Promise(res => {
     setInterval(updateTestClassTimeLeft, 1000);
 
+    $(`#settings-nav-tabs button[data-bs-target="#nav-settings-${location.hash.substring(1)}"]`).tab("show");
+
     dsbActivated = false;
     canEditClassSettings = false;
-    canEditMemberSettings = false;
     isTestClass = false;
     testClassTimeCreated = 0;
 
@@ -1106,11 +902,23 @@ export async function init(): Promise<void> {
 
     $(".cancel-btn").hide();
 
+    $("#pwa-notice").toggle(isIOS && !isStandalone);
+
     let animations = JSON.parse(localStorage.getItem("animations") ?? "true") ?? true;
     $("#animations-check").prop("checked", animations);
+    $("#animation-calendar-check").prop("disabled", !animations);
     $("#animations-check").on("click", function () {
       animations = $(this).prop("checked");
       localStorage.setItem("animations", animations);
+      $("#animation-calendar-check").prop("disabled", !animations).prop("checked", animations);
+      $("body").attr("data-animations", JSON.stringify(animations));
+    });
+
+    let animationCalendar = JSON.parse(localStorage.getItem("animation-calendar") ?? "null") ?? animations;
+    $("#animation-calendar-check").prop("checked", animationCalendar);
+    $("#animation-calendar-check").on("click", function () {
+      animationCalendar = $(this).prop("checked");
+      localStorage.setItem("animation-calendar", animationCalendar);
     });
 
     let fontSize = JSON.parse(localStorage.getItem("fontSize") ?? "0") ?? 0;
@@ -1128,8 +936,6 @@ export async function init(): Promise<void> {
         else if (fontSize === "2") {
           $("html").css("font-size", "22px");
         }
-
-        $("body").css({ paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + (displayFooter ? 0 : 70) + "px" });
       });
     });
 
@@ -1147,7 +953,7 @@ export async function init(): Promise<void> {
       displayFooter = $(this).prop("checked");
       localStorage.setItem("displayFooter", displayFooter);
       $("footer").toggle(displayFooter);
-      $("body").css({ paddingBottom: Math.max($(".bottombar").height() ?? 0, 0) + (displayFooter ? 0 : 70) + "px" });
+      $("#app-scroll").css({ paddingBottom: displayFooter ? "0" : "1rem" });
     });
 
     const colorThemeSetting = localStorage.getItem("colorTheme") ?? "auto";
@@ -1166,41 +972,19 @@ export async function init(): Promise<void> {
     globalThis.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColorTheme);
     globalThis.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColorTheme);
 
+    $(".section-toggle").on("click", function () {
+      $(this).next().toggle();
+      $(this).find("button").toggleClass("rotate-90");
+    });
+
     // ACCOUNT SETTINGS
 
     // Logout
     $("#logout-button").on("click", async () => {
-      let hasResponded = false;
+      await ajax("POST", "/api/account/logout");
 
-      $.ajax({
-        url: "/account/logout",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#logout-success-toast").toast("show");
-          
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#logout-success-toast").toast("show");
+      user.auth();
     });
 
     // Change username
@@ -1212,6 +996,7 @@ export async function init(): Promise<void> {
       $("#change-username-invalid-password").addClass("d-none");
       $("#change-username-invalid-username").addClass("d-none");
       $("#change-username-taken-username").addClass("d-none");
+      $("#change-username-username-in-password").addClass("d-none");
     });
 
     $("#change-username-cancel").on("click", () => {
@@ -1226,11 +1011,15 @@ export async function init(): Promise<void> {
     $("#change-username-new-username").on("input", () => {
       $("#change-username-invalid-username").addClass("d-none");
       $("#change-username-taken-username").addClass("d-none");
+      $("#change-username-username-in-password").addClass("d-none");
     });
 
     $("#change-username-new-username").on("change", () => {
       if (! checkUsername($("#change-username-new-username").val()?.toString() ?? "")) {
         $("#change-username-invalid-username").removeClass("d-none");
+      }
+      if (($("#change-username-password").val()?.toString() ?? "").includes($("#change-username-new-username").val()?.toString() ?? "")) {
+        $("#change-username-username-in-password").removeClass("d-none");
       }
     });
 
@@ -1244,56 +1033,40 @@ export async function init(): Promise<void> {
         || $("#change-username-invalid-password").is(":visible")
         || $("#change-username-invalid-username").is(":visible")
         || $("#change-username-taken-username").is(":visible")
+        || $("#change-username-username-in-password").is(":visible")
       );
     });
 
     $("#change-username-confirm").on("click", async () => {
-      const data = {
-        password: $("#change-username-password").val(),
-        newUsername: $("#change-username-new-username").val()
-      };
-      let hasResponded = false;
+      try {
+        await ajax("PATCH", "/api/account/username", {
+          body: {
+            password: $("#change-username-password").val(),
+            newUsername: $("#change-username-new-username").val()
+          },
+          expectedErrors: [
+            { status: 401, responseText: "Invalid credentials" },
+            { status: 409, responseText: "Username already exists, please choose another username." }
+          ]
+        });
 
-      $.ajax({
-        url: "/account/change_username",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#change-username-success-toast").toast("show");
-          $("#change-username-button").show();
-          $("#change-username").hide();
+        $("#change-username-success-toast").toast("show");
+        $("#change-username-button").show();
+        $("#change-username").hide();
 
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $("#change-username-invalid-password").removeClass("d-none");
-            $("#change-username-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 409) {
-            $("#change-username-taken-username").removeClass("d-none");
-            $("#change-username-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
+        user.auth();
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 401) {
+          $("#change-username-invalid-password").removeClass("d-none");
+          $("#change-username-confirm").prop("disabled", true);
         }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
+        else if (err.status === 409) {
+          $("#change-username-taken-username").removeClass("d-none");
+          $("#change-username-confirm").prop("disabled", true);
         }
-      }, 1000);
+      }
     });
 
     // Change password
@@ -1333,13 +1106,14 @@ export async function init(): Promise<void> {
     });
 
     $("#change-password-new").on("change", () => {
-      if (! checkSecurePassword($("#change-password-new").val()?.toString() ?? "")) {
+      if (! checkSecurePassword(user.username, $("#change-password-new").val()?.toString() ?? "")) {
         $("#change-password-insecure-password").removeClass("d-none").addClass("d-flex");
+        $("#change-password-confirm").prop("disabled", true);
       }
     });
 
     $("#change-password-new").on("input", () => {
-      if (checkSecurePassword($("#change-password-new").val()?.toString() ?? "")) {
+      if (checkSecurePassword(user.username, $("#change-password-new").val()?.toString() ?? "")) {
         $("#change-password-insecure-password").addClass("d-none").removeClass("d-flex");
       }
     });
@@ -1350,6 +1124,7 @@ export async function init(): Promise<void> {
           return $(this).val(); 
         }
       ).get().includes("")
+            || $("#change-password-insecure-password").hasClass("d-flex")
             || $("#change-password-invalid-password").hasClass("d-flex")
             || $("#change-password-not-matching-passwords").hasClass("d-flex"))
       ) {
@@ -1358,46 +1133,28 @@ export async function init(): Promise<void> {
     });
 
     $("#change-password-confirm").on("click", async () => {
-      const data = {
-        oldPassword: $("#change-password-old").val(),
-        newPassword: $("#change-password-new").val()
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/account/change_password",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#change-password-success-toast").toast("show");
-          $("#change-password-button").show();
-          $("#change-password").hide();
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $("#change-password-invalid-password").removeClass("d-none").addClass("d-flex");
-            $("#change-password-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
+      try {
+        await ajax("PATCH", "/api/account/password", {
+          body: {
+            oldPassword: $("#change-password-old").val(),
+            newPassword: $("#change-password-new").val()
+          },
+          expectedErrors: [
+            { status: 401, responseText: "Invalid credentials" }
+          ]
+        });
+        
+        $("#change-password-success-toast").toast("show");
+        $("#change-password-button").show();
+        $("#change-password").hide();
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 401) {
+          $("#change-password-invalid-password").removeClass("d-none").addClass("d-flex");
+          $("#change-password-confirm").prop("disabled", true);
         }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      }
     });
 
     // Delete account
@@ -1429,49 +1186,31 @@ export async function init(): Promise<void> {
     });
 
     $("#delete-account-confirm").on("click", async () => {
-      const data = {
-        password: $("#delete-account-password").val()
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/account/delete",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#delete-account-success-toast").toast("show");
-          
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $("#delete-account-invalid-password").removeClass("d-none").addClass("d-flex");
-            $("#delete-account-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 409) {
-            $("#delete-account-still-in-class").removeClass("d-none").addClass("d-flex");
-            $("#delete-account-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
+      try {
+        await ajax("DELETE", "/api/account/me", {
+          body: {
+            password: $("#delete-account-password").val()
+          },
+          expectedErrors: [
+            { status: 401, responseText: "Invalid credentials" },
+            { status: 409, responseText: "The account is still an admin in a class, leave the class first" }
+          ]
+        });
+        
+        $("#delete-account-success-toast").toast("show");
+        user.auth();
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 401) {
+          $("#delete-account-invalid-password").removeClass("d-none").addClass("d-flex");
+          $("#delete-account-confirm").prop("disabled", true);
         }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
+        else if (err.status === 409) {
+          $("#delete-account-still-in-class").removeClass("d-none").addClass("d-flex");
+          $("#delete-account-confirm").prop("disabled", true);
         }
-      }, 1000);
+      }
     });
 
     // TEAM SELECTION
@@ -1485,54 +1224,18 @@ export async function init(): Promise<void> {
       });
 
       if (user.loggedIn) {
-        const data = {
-          teams: newJoinedTeamsData
-        };
-        let hasResponded = false;
-
-        $.ajax({
-          url: "/teams/set_joined_teams_data",
-          type: "POST",
-          data: JSON.stringify(data),
-          contentType: "application/json",
-          headers: {
-            "X-CSRF-Token": await csrfToken()
+        await ajax("PUT", "/api/teams/joined", {
+          body: {
+            teams: newJoinedTeamsData
           },
-          success: () => {
-            $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-            setTimeout(() => {
-              $("#team-selection-save").text("Speichern").prop("disabled", false);
-            }, 1000);
-          },
-          error: xhr => {
-            if (xhr.status === 401) {
-              $navbarToasts.serverError.toast("show");
-            }
-            else if (xhr.status === 500) {
-              $navbarToasts.serverError.toast("show");
-            }
-            else {
-              $navbarToasts.unknownError.toast("show");
-            }
-          },
-          complete: () => {
-            hasResponded = true;
-          }
+          queueable: true
         });
-
-        setTimeout(() => {
-          if (!hasResponded) {
-            $navbarToasts.serverError.toast("show");
-          }
-        }, 1000);
       }
       else {
         localStorage.setItem("joinedTeamsData", JSON.stringify(newJoinedTeamsData));
-        $("#team-selection-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-        setTimeout(() => {
-          $("#team-selection-save").text("Speichern").prop("disabled", false);
-        }, 1000);
       }
+
+      makeButtonShowCheck($("#team-selection-save"), 1000);
     });
 
     // Leave class
@@ -1550,43 +1253,26 @@ export async function init(): Promise<void> {
     });
 
     $("#leave-class-confirm").on("click", async () => {
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/leave_class",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#leave-class-success-toast").toast("show");
-          // Force socket to reconnect so it picks up the new session.classId
-          socket.disconnect();
-          socket.connect();
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 409) {
-            $("#leave-class-last-admin").removeClass("d-none").addClass("d-flex");
-            $("#leave-class-confirm").prop("disabled", true);
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
+      try {
+        await ajax("DELETE", `/api/classes/${user.classId}/members/me`, {
+          expectedErrors: [
+            { status: 409, responseText: "You are the only admin. Please promote another member before leaving or delete the class." }
+          ]
+        });
+        
+        $("#leave-class-success-toast").toast("show");
+        // Force socket to reconnect so it picks up the new session.classId
+        socket.disconnect();
+        socket.connect();
+        user.auth();
+      }
+      catch (e) {
+        const err = e as AjaxError;
+        if (err.status === 409) {
+          $("#leave-class-last-admin").removeClass("d-none").addClass("d-flex");
+          $("#leave-class-confirm").prop("disabled", true);
         }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      }
     });
 
 
@@ -1619,112 +1305,41 @@ export async function init(): Promise<void> {
 
     $("#change-class-name-confirm").on("click", async () => {
       const className = $("#change-class-name-new-class-name").val()?.toString() ?? "";
-      const data = {
-        classDisplayName: className
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/change_class_name",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
+      
+      await ajax("PATCH", `/api/classes/${user.classId}/name`, {
+        body: {
+          classDisplayName: className
         },
-        success: () => {
-          $("#change-class-name-button").show();
-          $("#change-class-name").hide();
-
-          $("#show-qrcode-modal-title b").text(className);
-          $("#class-settings-name").text(className);
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#change-class-name-button").show();
+      $("#change-class-name").hide();
+
+      $("#show-qrcode-modal-title b").text(className);
+      $("#class-settings-name").text(className);
     });
 
 
     // Change classcode
     $("#change-class-code").on("click", async () => {
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/change_class_code",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: res => {
-          $("#class-code").val(res);
-          $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
-          qrCode.makeCode(location.host + `/join?class_code=${res}`);
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      const res = await ajax("PATCH", `/api/classes/${user.classId}/code`, {
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      const classCode = await res.json();
+      $("#class-code").val(classCode);
+      $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
+      qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
     });
 
     // Upgrade test class
     $("#upgrade-test-class").on("click", async () => {
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/upgrade_test_class",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#test-class-alert").addClass("d-none");
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("POST", `/api/classes/${user.classId}/upgrade-test-class`, {
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#test-class-alert").addClass("d-none");
     });
 
     // Delete class
@@ -1741,39 +1356,13 @@ export async function init(): Promise<void> {
     });
 
     $("#delete-class-confirm").on("click", async () => {
-      let hasResponded = false;
+      await ajax("DELETE", `/api/classes/${user.classId}`);
 
-      $.ajax({
-        url: "/class/delete_class",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#delete-class-success-toast").toast("show");
-          // Force socket to reconnect so it picks up the new session.classId
-          socket.disconnect();
-          socket.connect();
-          user.auth();
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#delete-class-success-toast").toast("show");
+      // Force socket to reconnect so it picks up the new session.classId
+      socket.disconnect();
+      socket.connect();
+      user.auth();
     });
 
     // Kick logged out users
@@ -1789,37 +1378,11 @@ export async function init(): Promise<void> {
     });
 
     $("#kick-logged-out-users-confirm").on("click", async () => {
-      let hasResponded = false;
+      await ajax("POST", `/api/classes/${user.classId}/members/kick-logged-out`);
 
-      $.ajax({
-        url: "/class/kick_logged_out_users",
-        type: "POST",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#kick-logged-out-users-success-toast").toast("show");
-          $("#kick-logged-out-users").hide();
-          $("#kick-logged-out-users-button").show();
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
-      });
-
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#kick-logged-out-users-success-toast").toast("show");
+      $("#kick-logged-out-users").hide();
+      $("#kick-logged-out-users-button").show();
     });
 
     // Set logged out users role
@@ -1839,57 +1402,27 @@ export async function init(): Promise<void> {
     });
 
     $("#set-logged-out-users-role-confirm").on("click", async () => {
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/class/change_default_permission",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({role: Number.parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0")}),
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#set-logged-out-users-role-success-toast").toast("show");
-          $("#set-logged-out-users-role").hide();
-          $("#set-logged-out-users-role-button").show();
-          const $newRole = $("#set-logged-out-users-role-select option:selected");
-          $("#set-logged-out-users-role-select option[selected]").removeAttr("selected");
-          $newRole.attr("selected", "");
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("PATCH", "/api/classes/1/default-permission", {
+        body: { role: Number.parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0") },
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#set-logged-out-users-role-success-toast").toast("show");
+      $("#set-logged-out-users-role").hide();
+      $("#set-logged-out-users-role-button").show();
+      const $newRole = $("#set-logged-out-users-role-select option:selected");
+      $("#set-logged-out-users-role-select option[selected]").removeAttr("selected");
+      $newRole.attr("selected", "");
     });
 
     // CLASS MEMBERS
 
     $("#class-members-wrapper").hide();
-    $("#class-members-toggle").on("click", function () {
-      $("#class-members-wrapper").toggle();
-      $(this).toggleClass("rotate-90");
-    });
 
     $("#class-members-cancel").on("click", () => {
-      $("#class-members-cancel").hide();
       unsavedChanges(false);
       renderClassMemberList();
-      $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
+      $("#class-members-save-confirm-container, #class-members-save-confirm").hide();
     });
 
     async function saveClassMembers(): Promise<void> {
@@ -1899,110 +1432,47 @@ export async function init(): Promise<void> {
       const classMembersKickData: { accountId: number }[] = [];
       const classMembersPermissionsData: {accountId: number, permissionLevel: ClassMemberPermissionLevel }[] = [];
 
-      $(".class-member-role-input").each(function () {
-        if ($(this).closest(".card").find(".class-member-kick.btn-success").length > 0) {
-          classMembersKickData.push({
-            accountId: $(this).data("id")
-          });
-        }
-        else {
-          classMembersPermissionsData.push({
-            accountId: $(this).data("id"),
-            permissionLevel: Number.parseInt($(this).val()?.toString() ?? "") as ClassMemberPermissionLevel
-          });
-        }
+      $(".class-member.is-kicked").each(function () {
+        classMembersKickData.push({
+          accountId: $(this).data("id")
+        });
       });
 
-      const kickData = {
-        classMembers: classMembersKickData
-      };
-      const permissionsData = {
-        classMembers: classMembersPermissionsData
-      };
-      let hasResponded = false;
-
-      const csrf = await csrfToken();
-
-      $.ajax({
-        url: "/class/kick_class_members",
-        type: "POST",
-        data: JSON.stringify(kickData),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": csrf
-        },
-        success: () => {
-          $.ajax({
-            url: "/class/set_class_members_permission",
-            type: "POST",
-            data: JSON.stringify(permissionsData),
-            contentType: "application/json",
-            headers: {
-              "X-CSRF-Token": csrf
-            },
-            success: () => {
-              $("#class-members-save-confirm-container, #class-members-save-confirm").addClass("d-none");
-              $("#class-members-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-              setTimeout(() => {
-                $("#class-members-save").text("Speichern").prop("disabled", false);
-              }, 1000);
-            },
-            error: xhr => {
-              if (xhr.status === 500) {
-                $navbarToasts.serverError.toast("show");
-              }
-              else {
-                $navbarToasts.unknownError.toast("show");
-              }
-            },
-            complete: () => {
-              hasResponded = true;
-            }
-          });
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      $(".class-member:not(.is-kicked)").each(function () {
+        classMembersPermissionsData.push({
+          accountId: $(this).data("id"),
+          permissionLevel: Number.parseInt($(this).find(".class-member-role-input").val()?.toString() ?? "") as ClassMemberPermissionLevel
+        });
+      });
+      
+      await ajax("DELETE", `/api/classes/${user.classId}/members`, {
+        body: { classMembers: classMembersKickData },
+        queueable: true
+      });
+      await ajax("PATCH", `/api/classes/${user.classId}/members/permissions`, {
+        body: { classMembers: classMembersPermissionsData },
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+      $("#class-members-save-confirm-container, #class-members-save-confirm").hide();
+      makeButtonShowCheck($("#class-members-save"), 1000);
     }
 
     $("#class-members-save").on("click", () => {
       const deleted: string[] = [];
-      $(".class-member-kicked:not(.d-none)").each(function () {
-        deleted.push($(this).parent().find("span").eq(0).text());
+      $(".class-member.is-kicked").each(function () {
+        deleted.push($(this).find(".class-member-name").text());
       });
 
       if (deleted.length === 0) {
         saveClassMembers();
       }
       else {
-        $("#class-members-save-confirm-container, #class-members-save-confirm").removeClass("d-none");
-        if (deleted.length === 1) {
-          $("#class-members-save-confirm-list").html(`wird der Schüler / die Schülerin <b>${escapeHTML(deleted[0])}</b>`);
-        }
-        else {
-          $("#class-members-save-confirm-list").html(
-            "werden die Schüler:innen " +
-              deleted
-                .map(s => `<b>${escapeHTML(s)}</b>`)
-                .join(", ")
-                .replace(/,(?!.*,)/, " und")
-          );
-        }
+        $("#class-members-save-confirm-container, #class-members-save-confirm").show();
+        $("#class-members-save-confirm-list").html(
+          (deleted.length === 1 ? "wird der Schüler / die Schülerin " : "werden die Schüler:innen ") +
+          toCommaAndAnd(deleted.map(c => `<b>${escapeHTML(c)}</b>`))
+        );
       }
     });
 
@@ -2011,38 +1481,19 @@ export async function init(): Promise<void> {
     // TEAMS
 
     $("#teams-wrapper").hide();
-    $("#teams-toggle").on("click", function () {
-      $("#teams-wrapper").toggle();
-      $(this).toggleClass("rotate-90");
-    });
 
     $("#new-team").on("click", () => {
       $("#teams-cancel").show();
       unsavedChanges(true);
-      $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
+      $("#teams-save-confirm-container, #teams-save-confirm").hide();
 
       $("#teams-list .no-teams").remove();
 
-      const template = `
-        <div class="card m-2 p-2 flex-row justify-content-between align-items-center">
-          <div class="d-flex flex-column flex-md-row align-items-md-center">
-            <div>
-              <label>
-                Name
-                <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 team-name-input"
-                  type="text" value="" placeholder="Neues Team" data-id="">
-                <div class="invalid-feedback">Teamnamen dürfen nicht leer sein!</div>
-              </label>
-            </div>
-            <span class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</span>
-          </div
-          <div>
-            <button class="btn btn-sm btn-sm-square btn-danger float-end new-team-delete" data-id="" aria-label="Team entfernen">
-              <i class="fa-solid fa-trash" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>`;
-      $("#teams-list").append(template);
+      const t = $cloneTemplate("#team-template", { disabled: false });
+      t.find(".team-name-input").prop("placeholder", "Neues Team");
+      t.find(".team-changes").html("<div class=\"text-success fw-bold\" data-id=\"\">Neu</div>");
+      t.find(".team-delete").removeClass("team-delete").addClass("team-type-delete");
+      $("#teams-list").append(t);
       $(".team-name-input").last().trigger("focus");
 
       $(".team-name-input")
@@ -2055,8 +1506,8 @@ export async function init(): Promise<void> {
         });
 
       $(".new-team-delete").off("click").on("click", function () {
-        $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
-        $(this).parent().remove();
+        $("#teams-save-confirm-container, #teams-save-confirm").hide();
+        $(this).closest(".team").remove();
         $(".team-name-input").first().trigger("input");
         if ($("#teams-list").children().length === 0) {
           $("#teams-list").append('<span class="text-secondary no-teams">Keine Teams vorhanden</span>');
@@ -2065,90 +1516,46 @@ export async function init(): Promise<void> {
     });
 
     $("#teams-cancel").on("click", () => {
-      $("#teams-cancel").hide();
       unsavedChanges(false);
-      renderTeamLists();
-      $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
+      renderTeamList();
+      $("#teams-save-confirm-container, #teams-save-confirm").hide();
     });
 
     async function saveTeams(): Promise<void> {
       $("#teams-cancel").hide();
       unsavedChanges(false);
       const newTeamsData: TeamsData = [];
-      $(".team-name-input").each(function () {
-        if ($(this).closest(".card").find(".btn-success").length > 0) return;
+      $(".team:not(.is-deleted)").each(function () {
         newTeamsData.push({
           teamId: $(this).data("id"),
-          name: $(this).val()?.toString() ?? ""
+          name: $(this).find(".team-name-input").val()?.toString() ?? ""
         });
       });
 
-      const data = {
-        teams: newTeamsData
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/teams/set_teams_data",
-        type: "POST",
-        data: JSON.stringify(data),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#teams-save-confirm-container, #teams-save-confirm").addClass("d-none");
-          $("#teams-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-          setTimeout(() => {
-            $("#teams-save").text("Speichern").prop("disabled", false);
-          }, 1000);
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("PUT", "/api/teams", {
+        body: { teams: newTeamsData },
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+      $("#teams-save-confirm-container, #teams-save-confirm").hide();
+      makeButtonShowCheck($("#teams-save"), 1000);
     }
 
     $("#teams-save").on("click", () => {
       const deleted: string[] = [];
-      $(".team-deleted:not(.d-none)").each(function () {
-        deleted.push($(this).parent().find("input").attr("placeholder") ?? "");
+      $(".team.is-deleted").each(function () {
+        deleted.push($(this).find(".team-name-input").attr("placeholder") ?? "");
       });
 
       if (deleted.length === 0) {
         saveTeams();
       }
       else {
-        $("#teams-save-confirm-container, #teams-save-confirm").removeClass("d-none");
-        if (deleted.length === 1) {
-          $("#teams-save-confirm-list").html(`des Teams <b>${escapeHTML(deleted[0])}</b>`);
-        }
-        else {
-          $("#teams-save-confirm-list").html(
-            "der Teams " +
-              deleted
-                .map(t => `<b>${escapeHTML(t)}</b>`)
-                .join(", ")
-                .replace(/,(?!.*,)/, " und")
-          );
-        }
+        $("#teams-save-confirm-container, #teams-save-confirm").show();
+        $("#teams-save-confirm-list").html(
+          (deleted.length === 1 ? "des" : "der") + " Teams " +
+          toCommaAndAnd(deleted.map(t => `<b>${escapeHTML(t)}</b>`))
+        );
       }
     });
 
@@ -2157,44 +1564,20 @@ export async function init(): Promise<void> {
     // EVENT TYPES
 
     $("#event-types-wrapper").hide();
-    $("#event-types-toggle").on("click", function () {
-      $("#event-types-wrapper").toggle();
-      $(this).toggleClass("rotate-90");
-    });
 
     $("#new-event-type").on("click", () => {
       $("#event-types-cancel").show();
       unsavedChanges(true);
-      $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+      $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
 
       $("#event-types-list .no-event-types").remove();
 
-      const template = `
-        <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="">
-          <div class="d-flex flex-column flex-md-row align-items-md-center">
-            <div class="d-flex">
-              <div>
-                <label>
-                  Name
-                  <input class="form-control form-control-sm d-inline w-fit-content ms-2 me-3 event-type-name-input"
-                    type="text" value="" placeholder="Neue Ereignisart" data-id="">
-                  <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
-                </label>
-              </div>
-              <label class="d-flex align-items-center">
-                <div class="me-2">Farbe</div>
-                <input type="text" value="#3bb9ca" class="color-picker event-type-color-input" data-id="">
-              </label>
-            </div>
-            <span class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</span>
-          </div
-          <div>
-            <button class="btn btn-sm btn-sm-square btn-danger float-end new-event-type-delete" data-id="" aria-label="Ereignisart entfernen">
-              <i class="fa-solid fa-trash" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>`;
-      $("#event-types-list").append(template);
+      const t = $cloneTemplate("#event-type-template", { disabled: false });
+      t.find(".event-type-name-input").prop("placeholder", "Neue Ereignisart");
+      t.find(".event-type-color-input").attr("value", "#3bb9ca");
+      t.find(".event-type-changes").html("<div class=\"text-success fw-bold\" data-id=\"\">Neu</div>");
+      t.find(".event-type-delete").removeClass("event-type-delete").addClass("new-event-type-delete");
+      $("#event-types-list").append(t);
       $(".event-type-name-input").last().trigger("focus");
 
       $(".event-type-name-input")
@@ -2207,9 +1590,9 @@ export async function init(): Promise<void> {
         });
 
       $(".new-event-type-delete").off("click").on("click", function () {
-        $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+        $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
+        $(this).closest(".event-type").remove();
         $(".event-type-name-input").first().trigger("input");
-        $(this).parent().remove();
         if ($("#event-types-list").children().length === 0) {
           $("#event-types-list").append(
             `<span class="text-secondary no-event-types">
@@ -2222,18 +1605,15 @@ export async function init(): Promise<void> {
     });
 
     $("#event-types-cancel").on("click", () => {
-      $("#event-types-cancel").hide();
       unsavedChanges(false);
       renderEventTypeList();
-      $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
+      $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
     });
 
     async function saveEventTypes(): Promise<void> {
-      $("#event-types-cancel").hide();
       unsavedChanges(false);
       const newEventTypesData: EventTypeData = [];
-      $("#event-types-list > div").each(function () {
-        if ($(this).find(".btn-success").length > 0) return;
+      $(".event-type:not(.is-deleted)").each(function () {
         newEventTypesData.push({
           eventTypeId: $(this).data("id"),
           name: $(this).find(".event-type-name-input").val()?.toString() ?? "",
@@ -2241,54 +1621,18 @@ export async function init(): Promise<void> {
         });
       });
 
-      const data = {
-        eventTypes: newEventTypesData
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/events/set_event_type_data",
-        type: "POST",
-        data: JSON.stringify(data),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
-          $("#event-types-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-          setTimeout(() => {
-            $("#event-types-save").text("Speichern").prop("disabled", false);
-          }, 1000);
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("PUT", "/api/events/types", {
+        body: { eventTypes: newEventTypesData },
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+      $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
+      makeButtonShowCheck($("#event-types-save"), 1000);
     }
 
     $("#app").on("click", "#event-types-example", async () => {
-      $.ajax({
-        url: "/events/set_event_type_data",
-        type: "POST",
-        data: JSON.stringify({
+      await ajax("PUT", "/api/events/types", {
+        body: {
           eventTypes: [
             { name: "Ausflug", color: "#ff9955" },
             { name: "Geburtstag", color: "#ff55aa" },
@@ -2296,49 +1640,26 @@ export async function init(): Promise<void> {
             { name: "Schulfrei", color: "#44dd33" },
             { name: "Sonstiges", color: "#9955ff" }
           ].map(e => ({ eventTypeId: "", ...e }))
-        }),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
         },
-        success: () => {
-          renderEventTypeList();
-          $("#event-types-save-confirm-container, #event-types-save-confirm").addClass("d-none");
-        },
-        error: xhr => {
-          if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        }
+        queueable: true
       });
     });
 
     $("#event-types-save").on("click", () => {
       const deleted: string[] = [];
-      $(".event-type-deleted:not(.d-none)").each(function () {
-        deleted.push($(this).parent().find("input").attr("placeholder") ?? "");
+      $(".event-type.is-deleted").each(function () {
+        deleted.push($(this).find(".event-type-name-input").attr("placeholder") ?? "");
       });
 
       if (deleted.length === 0) {
         saveEventTypes();
       }
       else {
-        $("#event-types-save-confirm-container, #event-types-save-confirm").removeClass("d-none");
-        if (deleted.length === 1) {
-          $("#event-types-save-confirm-list").html(`der Art <b>${escapeHTML(deleted[0])}</b>`);
-        }
-        else {
-          $("#event-types-save-confirm-list").html(
-            "der Arten " +
-              deleted
-                .map(e => `<b>${escapeHTML(e)}</b>`)
-                .join(", ")
-                .replace(/,(?!.*,)/, " und")
-          );
-        }
+        $("#event-types-save-confirm-container, #event-types-save-confirm").show();
+        $("#event-types-save-confirm-list").html(
+          "der Art" + (deleted.length === 1 ? " " : "en ") +
+          toCommaAndAnd(deleted.map(e => `<b>${escapeHTML(e)}</b>`))
+        );
       }
     });
 
@@ -2347,78 +1668,27 @@ export async function init(): Promise<void> {
     // SUBJECTS
 
     $("#subjects-wrapper").hide();
-    $("#subjects-toggle").on("click", function () {
-      $("#subjects-wrapper").toggle();
-      $(this).toggleClass("rotate-90");
-    });
 
     $("#new-subject").on("click", () => {
       $("#subjects-cancel").show();
       unsavedChanges(true);
-      $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+      $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
 
       $("#subjects-list .no-subjects").remove();
 
-      const uuid = crypto.randomUUID();
+      const t = $cloneTemplate("#subject-template", { disabled: false });
+      t.find(".subject-substitutions").toggle(dsbActivated);
 
-      const template = `
-        <div class="card m-2 p-2 flex-row justify-content-between align-items-center" data-id="">
-            <div class="d-flex flex-column w-100 me-3">
-              <div class="me-3">
-                <div class="d-flex align-items-center gap-3 mb-2">
-                  <b>Fach</b>
-                  <label for="subject-name-long-input-${uuid}">Name</label>
-                  <div class="d-inline-block w-100">
-                    <input class="form-control form-control-sm subject-name-long-input"
-                      type="text" placeholder="Fachname (lang)" data-id="" id="subject-name-long-input-${uuid}">
-                    <div class="invalid-feedback">Der Fachname darf nicht leer sein!</div>
-                  </div>
-                  <label for="subject-name-short-input-${uuid}">Abkürzung</label>
-                  <input class="form-control form-control-sm h-fit-content d-inline-block subject-name-short-input w-25"
-                    type="text" placeholder="kurz" data-id="" id="subject-name-short-input-${uuid}">
-                </div>
-                <div class="d-flex gap-3 ${dsbActivated ? "mb-2" : ""}">
-                  <b>Lehrkraft</b>
-                  <label for="subject-teacher-gender-input-${uuid}">Anrede</label>
-                  <div class="d-inline-block w-50">
-                    <select class="form-control form-control-sm subject-teacher-gender-input" data-id="" id="subject-teacher-gender-input-${uuid}">
-                      <option value="d" selected>-</option>
-                      <option value="w">Frau</option>
-                      <option value="m">Herr</option>
-                    </select>
-                  </div>
-                  <label for="subject-teacher-long-input-${uuid}">Anrede</label>
-                  <div class="d-inline-block w-100">
-                    <input class="form-control form-control-sm h-fit-content subject-teacher-long-input"
-                      type="text" placeholder="Lehrkraftname (lang)" data-id="" id="subject-teacher-long-input-${uuid}">
-                    <div class="invalid-feedback">Der Lehrkraftname darf nicht leer sein!</div>
-                  </div>
-                  <label for="subject-teacher-short-input-${uuid}">Kürzel</label>
-                  <input class="form-control form-control-sm h-fit-content subject-teacher-short-input w-100"
-                    type="text" placeholder="kurz" data-id="" id="subject-teacher-short-input-${uuid}">
-                </div>
-                <div class="d-flex gap-3 ${dsbActivated ? "" : "d-none"}">
-                  <b>Vertretungen</b>
-                  <label for="subject-name-substitution-input-${uuid}">Fachname</label>
-                  <input class="form-control form-control-sm d-inline-block subject-name-substitution-input" data-id=""
-                    type="text" placeholder="Fachname (Vertretung)" id="subject-name-substitution-input-${uuid}">
-                  <label for="subject-teacher-substitution-input-${uuid}">Lehrkraftname</label>
-                  <input class="form-control form-control-sm d-inline-block subject-teacher-substitution-input" data-id=""
-                    type="text" placeholder="Lehrkraftname (Vertretung)" id="subject-teacher-substitution-input-${uuid}">
-                </div>
-              </div>
-              <div>
-                <div class="text-success fw-bold mt-2 mt-md-0" data-id="">Neu</div>
-              </div>
-            </div
-            <div>
-              <button class="btn btn-sm btn-sm-square btn-danger float-end new-subject-delete" data-id="" aria-label="Fach entfernen">
-                <i class="fa-solid fa-trash" aria-hidden="true"></i>
-              </button>
-            </div>
-          </div>`;
-      $("#subjects-list").append(template);
-      $(".subject-teacher-long-input").last().addClass("is-invalid");
+      t.find(".subject-name-long-input").attr("placeholder", "Name");
+      t.find(".subject-name-short-input").attr("placeholder", "Abkürzung");
+      t.find(".subject-teacher-long-input").attr("placeholder", "Name");
+      t.find(".subject-teacher-short-input").attr("placeholder", "Kürzel");
+      t.find(".subject-name-substitution-input").attr("placeholder", "Vertr.-Fachname");
+      t.find(".subject-teacher-substitution-input").attr("placeholder", "Vertr.-Lehrkraftname");
+
+      t.find(".subject-changes").html("<div class=\"text-success fw-bold text-nowrap\" data-id=\"\">Neu</div>");
+      t.find(".subject-delete").removeClass("subject-delete").addClass("new-subject-delete");
+      $("#subjects-list").append(t);
       $(".subject-name-long-input").last().trigger("focus");
 
       $(".subject-name-long-input")
@@ -2426,132 +1696,72 @@ export async function init(): Promise<void> {
         .on("focusout", function () {
           if ($(this).val()?.toString().trim() === "") {
             $(this).addClass("is-invalid");
-            $("#subjects-save").prop("disabled", true);
           }
         });
+        
+      $(".subject-teacher-long-input").last().addClass("is-invalid");
+      $("#subjects-save").prop("disabled", true);
 
       $(".new-subject-delete").off("click").on("click", function () {
-        $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+        $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
+        $(this).closest(".subject").remove();
         $(".subject-name-long-input").first().trigger("input");
-        $(this).parent().remove();
         if ($("#subjects-list").children().length === 0) {
-          $("#subjects-list").append('<span class="text-secondary no-subjects">Keine Fächer vorhanden</span>');
+          $("#subjects-list").append(
+            `<span class="text-secondary no-subjects">
+              Keine Ereignisarten vorhanden
+            </span>`
+          );
         }
       });
     });
 
     $("#subjects-cancel").on("click", () => {
-      $("#subjects-cancel").hide();
       unsavedChanges(false);
       renderSubjectList();
-      $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
+      $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
     });
 
     async function saveSubjects(): Promise<void> {
-      $("#subjects-cancel").hide();
       unsavedChanges(false);
       const newSubjectData: SubjectData = [];
-      $("#subjects-list > div").each(function () {
-        function getInputValueSelectorFallback(element: HTMLElement, selector: string, fallbackSelector: string): string {
-          let res = $(element).find(selector).val()?.toString().trim();
-          if (res === "") res = undefined;
-          res ??= $(element).find(fallbackSelector).val()?.toString().trim().substring(0, 3) ?? "???";
-          return res;
-        }
-        function getInputValueStringFallback(element: HTMLElement, selector: string, fallback: string): string {
-          let res = $(element).find(selector).val()?.toString().trim();
-          if (res === "") res = undefined;
-          res ??= fallback;
-          return res;
-        }
-
-        if ($(this).find(".btn-success").length > 0) return;
-
-        const subjectNameLong = $(this).find(".subject-name-long-input").val()?.toString().trim() ?? "";
-
-        const subjectNameShort = getInputValueSelectorFallback(this, ".subject-name-short-input", ".subject-name-long-input");
-        const teacherNameShort = getInputValueSelectorFallback(this, ".subject-teacher-short-input", ".subject-teacher-long-input");
-        const subjectNameSubstitution = getInputValueStringFallback(this, ".subject-name-substitution-input", subjectNameLong);
-        const teacherNameSubstitution = getInputValueStringFallback(this, ".subject-teacher-substitution-input", teacherNameShort);
-
+      $(".subject:not(.is-deleted)").each(function () {
         newSubjectData.push({
           subjectId: $(this).data("id"),
-          subjectNameLong: subjectNameLong,
-          subjectNameShort: subjectNameShort ?? "???",
-          teacherGender: ($(this).find(".subject-teacher-gender-input").val()?.toString() as "d" | "w" | "m") ?? "d",
-          teacherNameLong: $(this).find(".subject-teacher-long-input").val()?.toString().trim() ?? "",
-          teacherNameShort: teacherNameShort ?? "???",
-          subjectNameSubstitution: subjectNameSubstitution.split(",").map(v => v.trim()),
-          teacherNameSubstitution: teacherNameSubstitution.split(",").map(v => v.trim())
+          subjectNameLong: $(this).find(".subject-name-long-input").val()?.toString() ?? "",
+          subjectNameShort: $(this).find(".subject-name-short-input").val()?.toString() ?? "",
+          teacherGender: ($(this).find(".subject-teacher-gender-input").val()?.toString() ?? "") as "m" | "w" | "d",
+          teacherNameLong: $(this).find(".subject-teacher-long-input").val()?.toString() ?? "",
+          teacherNameShort: $(this).find(".subject-teacher-short-input").val()?.toString() ?? "",
+          subjectNameSubstitution: $(this).find(".subject-name-substitution-input").val()?.toString()?.split(",").map(v => v.trim()) ?? [],
+          teacherNameSubstitution: $(this).find(".subject-teacher-substitution-input").val()?.toString()?.split(",").map(v => v.trim()) ?? []
         });
       });
 
-      const data = {
-        subjects: newSubjectData
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/subjects/set_subject_data",
-        type: "POST",
-        data: JSON.stringify(data),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#subjects-save-confirm-container, #subjects-save-confirm").addClass("d-none");
-          $("#subjects-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-          setTimeout(() => {
-            $("#subjects-save").text("Speichern").prop("disabled", false);
-          }, 1000);
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("PUT", "/api/subjects", {
+        body: { subjects: newSubjectData },
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+      $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
+      makeButtonShowCheck($("#subjects-save"), 1000);
     }
 
     $("#subjects-save").on("click", () => {
       const deleted: string[] = [];
-      $(".subjects-deleted:not(.d-none)").each(function () {
-        deleted.push($(this).parent().find("input").attr("placeholder") ?? "");
+      $(".subject.is-deleted").each(function () {
+        deleted.push($(this).find(".subject-name-long-input").attr("placeholder") ?? "");
       });
 
       if (deleted.length === 0) {
         saveSubjects();
       }
       else {
-        $("#subjects-save-confirm-container, #subjects-save-confirm").removeClass("d-none");
-        if (deleted.length === 1) {
-          $("#subjects-save-confirm-list").html(`des Fachs <b>${escapeHTML(deleted[0])}</b>`);
-        }
-        else {
-          $("#subjects-save-confirm-list").html(
-            "der Fächer " +
-              deleted
-                .map(s => `<b>${escapeHTML(s)}</b>`)
-                .join(", ")
-                .replace(/,(?!.*,)/, " und")
-          );
-        }
+        $("#subjects-save-confirm-container, #subjects-save-confirm").show();
+        $("#subjects-save-confirm-list").html(
+          (deleted.length === 1 ? "des Fachs " : "der Fächer ") +
+          toCommaAndAnd(deleted.map(s => `<b>${escapeHTML(s)}</b>`))
+        );
       }
     });
 
@@ -2560,79 +1770,38 @@ export async function init(): Promise<void> {
     // TIMETABLE
 
     $("#timetable-wrapper").hide();
-    $("#timetable-toggle").on("click", function () {
-      $("#timetable-wrapper").toggle();
-      $(this).toggleClass("rotate-90");
-    });
 
     $("#timetable-cancel").on("click", () => {
-      $("#timetable-cancel").hide();
       unsavedChanges(false);
       renderTimetable();
     });
 
     $("#timetable-save").on("click", async () => {
-      $("#timetable-cancel").hide();
       unsavedChanges(false);
       const newTimetableData: LessonData = [];
-      $("#timetable > div").each(function (weekDay) {
+      $(".timetable-lesson-list").each(function (weekDay) {
         $(this)
-          .find(".timetable-lesson")
+          .find(".lesson")
           .each(function () {
             newTimetableData.push({
               lessonId: -1,
-              lessonNumber: Number.parseInt(getInputValue($(this).find(".timetable-lesson-number"), "1")),
+              lessonNumber: Number.parseInt(getInputValue($(this).find(".lesson-number"), "1")),
               weekDay: weekDay as 0 | 1 | 2 | 3 | 4,
-              teamId: Number.parseInt(getInputValue($(this).find(".timetable-team-select"), "-1")),
-              subjectId: Number.parseInt(getInputValue($(this).find(".timetable-subject-select"), "-1")),
-              room: getInputValue($(this).find(".timetable-room"), ""),
-              startTime: timeToMs(getInputValue($(this).find(".timetable-start-time"), "0:0")) + "",
-              endTime: timeToMs(getInputValue($(this).find(".timetable-end-time"), "0:0")) + ""
+              teamId: Number.parseInt(getInputValue($(this).find(".lesson-team-select"), "-1")),
+              subjectId: Number.parseInt(getInputValue($(this).find(".lesson-subject-select"), "-1")),
+              room: getInputValue($(this).find(".lesson-room"), ""),
+              startTime: timeToMs(getInputValue($(this).find(".lesson-start-time"), "0:0")) + "",
+              endTime: timeToMs(getInputValue($(this).find(".lesson-end-time"), "0:0")) + ""
             });
           });
       });
 
-      const data = {
-        lessons: newTimetableData
-      };
-      let hasResponded = false;
-
-      $.ajax({
-        url: "/lessons/set_lesson_data",
-        type: "POST",
-        data: JSON.stringify(data),
-        contentType: "application/json",
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          $("#timetable-save-confirm-container, #timetable-save-confirm").addClass("d-none");
-          $("#timetable-save").html('<i class="fa-solid fa-circle-check" aria-hidden="true"></i>').prop("disabled", true);
-          setTimeout(() => {
-            $("#timetable-save").text("Speichern").prop("disabled", false);
-          }, 1000);
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else if (xhr.status === 500) {
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          hasResponded = true;
-        }
+      await ajax("PUT", "/api/lessons", {
+        body: { lessons: newTimetableData },
+        queueable: true
       });
 
-      setTimeout(() => {
-        if (!hasResponded) {
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+      makeButtonShowCheck($("#timetable-save"), 1000);
     });
 
     res();
@@ -2641,33 +1810,34 @@ export async function init(): Promise<void> {
 
 let dsbActivated: boolean;
 let canEditClassSettings: boolean;
-let canEditMemberSettings: boolean;
 let isTestClass: boolean;
 let testClassTimeCreated: number;
 let qrCode: QRCode;
 
-registerSocketListeners({
-  updateClassCodes: updateClassInfo,
-  updateClassNames: updateClassInfo,
-  updateUpgradeTestClass: updateClassInfo,
-  updateDefaultPermission: updateClassInfo
-});
-
+(await classInfo.init()).on("update", onlyThisSite(updateClassInfo));
 (await classMemberData.init()).on("update", onlyThisSite(renderClassMemberList));
 (await subjectData.init()).on("update", onlyThisSite(renderSubjectList));
-(await teamsData.init()).on("update", onlyThisSite(renderTeamLists));
+(await teamsData.init()).on("update", onlyThisSite(() => {
+  renderTeamList();
+  renderTeamSelectionList();
+}));
 (await eventTypeData.init()).on("update", onlyThisSite(renderEventTypeList));
 (await lessonData.init()).on("update", onlyThisSite(renderTimetable));
 (await substitutionsData.init()).on("update", onlyThisSite(renderSubjectList));
 
-await user.awaitAuthed();
-
-(await joinedTeamsData.init()).on("update", onlyThisSite(renderTeamLists));
+(await joinedTeamsData.init()).on("update", onlyThisSite(renderTeamSelectionList));
 
 export async function renderAllFn(): Promise<void> {
   if (user.classJoined) {
+    if ((await substitutionsData()).data !== "No data") {
+      dsbActivated = true;
+    }
+    $(".description-dsb").toggle(dsbActivated);
+
+    await renderTeamSelectionList();
+
     await renderClassMemberList();
-    await renderTeamLists();
+    await renderTeamList();
     await renderEventTypeList();
     await renderSubjectList();
     await renderTimetable();
@@ -2675,3 +1845,6 @@ export async function renderAllFn(): Promise<void> {
 
   await updateOnUserChange();
 };
+
+updateUnavailable();
+bootstrap.on("update", updateUnavailable);

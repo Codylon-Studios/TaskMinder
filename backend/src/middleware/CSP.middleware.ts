@@ -6,17 +6,16 @@ export const CSPMiddleware = (): RequestHandler => {
     contentSecurityPolicy: {
       directives: {
         "default-src": ["'self'"],
-        "script-src": [
+        "script-src": process.env.NODE_ENV === "PRODUCTION" ? [
           "'self'",
           "'sha256-QFw+QUzHJldIS6KPHm5fwXGah0NptK7NyfaX02zG9nc='",
           "'sha256-3fZXNfKWLWGx+X4+QnkmeW5Tkw85iCAvVLYdxv26qD4='"
-        ],
-        "connect-src": ["'self'", "wss://*"],
+        ] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         "style-src": ["'self'", "'unsafe-inline'"],
+        "connect-src": ["'self'"],
         "font-src": ["'self'"],
-        "img-src": ["'self'", "data:"],
-        "object-src": ["'self'"],
-        "frame-ancestors": ["'self'"]
+        "object-src": ["'self'", "blob:"],
+        "img-src": ["'self'", "data:", "blob:"]
       }
     },
     referrerPolicy: {

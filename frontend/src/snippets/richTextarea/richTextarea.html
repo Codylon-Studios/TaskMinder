@@ -41,7 +41,7 @@
           </button>
         </div>
 
-        <div class="btn-group">
+        <div class="btn-group rich-textarea-color-picker-btn-group">
           <button class="rich-textarea-color btn btn-tertiary d-flex align-items-center" aria-label="Textfarbe">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 676 612" stroke-width="50">
               <path
@@ -59,7 +59,7 @@
           <button class="btn btn-tertiary dropdown-toggle dropdown-toggle-split rich-textarea-color-picker-toggle">
             <span class="visually-hidden">Toggle Dropdown</span>
           </button>
-          <input type="text" value="#3bb9ca" class="color-picker rich-textarea-color-picker" data-show-auto-option="true" />
+          <color-picker value="Automatisch" class="color-picker rich-textarea-color-picker" auto-option="true"></color-picker>
         </div>
 
         <div class="btn-group dropdown">
@@ -98,7 +98,7 @@
       </button>
     </div>
   </div>
-  <div class="rich-textarea-paste-area">This is for pasting content (Elements have to be in the real DOM to have correct display of styles)</div>
+  <div class="rich-textarea-paste-area"></div>
   <div class="toast-container">
     <div id="rich-textarea-unsupported-input-type" class="toast">
       <div class="toast-progress-bar bg-warning"></div>
@@ -141,15 +141,11 @@
         <br />
         <br />
         Klicke nur auf öffnen, wenn du diese Website kennst.
-        <div class="mt-2 pt-2 border-top">
-          <div class="row g-2 justify-content-end">
-            <div class="col-auto">
-              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Abbrechen</button>
-            </div>
-            <div class="col-auto">
-              <button type="button" class="btn btn-warning btn-sm" data-bs-dismiss="toast" id="rich-textarea-unsafe-link-confirm">Öffnen</button>
-            </div>
-          </div>
+        <div class="mt-2 pt-2 border-top d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-secondary btn-sm fw-semibold" data-bs-dismiss="toast">Abbrechen</button>
+          <button type="button" class="btn btn-warning btn-sm fw-semibold" data-bs-dismiss="toast" id="rich-textarea-unsafe-link-confirm">
+            Öffnen
+          </button>
         </div>
       </div>
     </div>

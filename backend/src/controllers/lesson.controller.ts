@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import lessonService from "../services/lesson.service";
+import lessonService from "../services/lesson.service.js";
 
-export const getLessonData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getLessons = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const lessonData = await lessonService.getLessonData(req.session);
     res.status(200).json(lessonData);
@@ -11,7 +11,7 @@ export const getLessonData = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const setLessonData = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const setLessons = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await lessonService.setLessonData(req.body, req.session);
     res.sendStatus(200);
@@ -22,6 +22,6 @@ export const setLessonData = async (req: Request, res: Response, next: NextFunct
 };
 
 export default {
-  getLessonData,
-  setLessonData
+  getLessons,
+  setLessons
 };

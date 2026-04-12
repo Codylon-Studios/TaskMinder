@@ -1,6 +1,6 @@
 import express from "express";
-import { register } from "../config/prom.client";
-import logger from "../config/logger";
+import { register } from "../config/prom.client.js";
+import logger from "../config/logger.js";
 
 const metricsApp = express();
 const metricsPort = 9100;

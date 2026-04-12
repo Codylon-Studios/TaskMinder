@@ -12,18 +12,20 @@ import {
   dateToMs,
   homeworkCheckedData,
   msToTime,
-  csrfToken,
   escapeHTML,
   loadTimetableData,
   getTimeLeftString,
-  lastCommaRegex,
   lessonData,
   teamsData,
   eventTypeData,
-  onlyThisSite
+  onlyThisSite,
+  ajax,
+  weekDaysSo,
+  weekDaysMo,
+  toCommaAndAnd,
+  user
 } from "../../global/global.js";
 import { HomeworkData, MonthDates, TimetableData } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
 
 async function getCalendarDayHtml(date: Date, week: number, multiEventPositions: (number | null)[]): Promise<string> {
@@ -121,7 +123,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
 
   await applyEvents();
 
-  const weekday = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][date.getDay()];
+  const weekday = weekDaysSo[date.getDay()];
 
   // Append the days (All days will be added into an .calendar element)
   return `
@@ -159,7 +161,7 @@ async function getNewCalendarContent(): Promise<string> {
   }
   else {
     newCalendarWeekContent += '<div class="d-flex weekdays">';
-    newCalendarWeekContent += ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(e => `<div>${e}</div>`).join("");
+    newCalendarWeekContent += weekDaysMo.map(e => `<div>${e}</div>`).join("");
     newCalendarWeekContent += "</div>";
     for (const week in await monthDates()) {
       const weekDates = (await monthDates())[week];
@@ -207,49 +209,10 @@ async function checkHomework(homeworkId: number): Promise<void> {
 
   // Check whether the user is logged in
   if (user.loggedIn) {
-    // The user is logged in
-
-    const data = {
-      homeworkId: homeworkId,
-      checkStatus: checkStatus
-    };
-    // Save whether the server has responed
-    let hasResponded = false;
-
-    // Post the request
-    $.ajax({
-      url: "/homework/check_homework",
-      type: "POST",
-      data: data,
-      headers: {
-        "X-CSRF-Token": await csrfToken()
-      },
-      error: xhr => {
-        if (xhr.status === 401) {
-          // The user has to be logged in but isn't
-          // Show an error notification
-          $navbarToasts.notLoggedIn.toast("show");
-        }
-        else if (xhr.status === 500) {
-          // An internal server error occurred
-          $navbarToasts.serverError.toast("show");
-        }
-        else {
-          $navbarToasts.unknownError.toast("show");
-        }
-      },
-      complete: () => {
-        // The server has responded
-        hasResponded = true;
-      }
+    await ajax("PATCH", `/api/homework/${homeworkId}/check`, {
+      body: { checkStatus: checkStatus },
+      queueable: true
     });
-    setTimeout(() => {
-      // Wait for 1s
-      if (!hasResponded) {
-        // If the server hasn't answered, show the internal server error notification
-        $navbarToasts.serverError.toast("show");
-      }
-    }, 1000);
   }
   else {
     // The user is not logged in
@@ -339,7 +302,7 @@ async function renderHomeworkList(): Promise<void> {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const currentHomeworkData = (await homeworkData()).filter(h => currentJoinedTeams.includes(h.teamId) || h.teamId === -1);
 
-  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-50 mt-0\">Auf diesen Tag</div>");
+  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-75 mt-0\">Auf diesen Tag</div>");
   let foundToday = false;
   for (const homework of currentHomeworkData.filter(h => isSameDay(selectedDate, h.submissionDate))) {
     await insertHomework(homework);
@@ -347,7 +310,7 @@ async function renderHomeworkList(): Promise<void> {
   }
   if (!foundToday) newContent.append("<div class=\"text-secondary\">Keine Hausaufgaben auf diesen Tag!</div>");
 
-  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-50 mt-0\">Auf den nächsten Tag</div>");
+  newContent.append("<hr class=\"border-2 text-primary mb-0 mt-2\"><div class=\"form-text text-primary opacity-75 mt-0\">Auf den nächsten Tag</div>");
   let foundTomorrow = false;
   for (const homework of currentHomeworkData.filter(h => isSameDay(tomorrow, h.submissionDate))) {
     await insertHomework(homework);
@@ -474,7 +437,7 @@ async function renderSubstitutionList(): Promise<void> {
   }
 
   const updatedDate = new Date(dateToMs(data.updated.split(" ")[0]) ?? 0);
-  const updatedWeekDay = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][updatedDate.getDay()];
+  const updatedWeekDay = weekDaysSo[updatedDate.getDay()];
   $("#substitutions-updated").text(updatedWeekDay + ", " + data.updated.split(" ")[1]);
 
   if (substitutionsMode === "none") {
@@ -564,22 +527,20 @@ async function renderTimetable(): Promise<void> {
   const timetableData = await loadTimetableData(selectedDate);
 
   for (const multiLesson of timetableData) {
-    if (! multiLesson.lessons.some(l => l.subjectId !== -1 || l.substitution !== undefined || l.events !== undefined)) {
-      continue;
-    }
+    const isBreak = multiLesson.lessons.every(l => l.subjectId === -1 && (l.substitution === undefined || l.substitution.type === "Entfall"));
+    const isNormalBreak = isBreak && multiLesson.events === undefined;
 
     const templateModeLess = `
-      <div class="card flex-grow-1" data-start-lesson-number="${multiLesson.startLessonNumber}"
-        data-end-lesson-number="${multiLesson.endLessonNumber}">
-        <div class="card-body d-flex align-items-center justify-content-center flex-column">
-          <div class="d-flex align-items-center flex-column mx-4">
+      <div class="card ${isNormalBreak ? "flex-grow-0 border-dashed" : "flex-grow-1"}">
+        <div class="card-body d-flex align-items-center justify-content-center flex-column ${isNormalBreak ? "pt-1 py-1" : "pt-4"}"">
+          <div class="d-flex align-items-center flex-column">
             <span>
               ${/* eslint-disable indent */
                 multiLesson.lessons
                   .map(l => {
                     let cssClass = "";
                     let append = "";
-                    if (l.substitution !== undefined) {
+                    if (l.substitution !== undefined && !isBreak) {
                       if (l.substitution.type === "Entfall") cssClass = "line-through-red";
                       else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
                       else {
@@ -594,21 +555,16 @@ async function renderTimetable(): Promise<void> {
             ${/* eslint-disable indent */
               multiLesson.lessons
                 .map(l => {
-                  if (l.substitution !== undefined) {
+                  if (l.substitution !== undefined && !isBreak) {
                     const color = (l.substitution.type === "Entfall") ? "red" : "yellow";
                     return `<div class="text-${color} fw-bold mt-2">${escapeHTML(l.substitution.type)}</div>`;
                   }
                 }).join("")
               /* eslint-enable indent */}
             ${/* eslint-disable indent */
-              multiLesson.lessons
-                .map(l => {
-                  if (l.events !== undefined) {
-                    return l.events.map(e => {
-                      return `<span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>`;
-                    }).join("");
-                  }
-                }).join("")
+              (multiLesson.events ?? []).map(e => {
+                return `<span class="event-${e.eventTypeId} fw-bold mt-0 d-block text-center">${escapeHTML(e.name)}</span>`;
+              }).join("").replace("mt-0", "mt-2")
               /* eslint-enable indent */}
           </div>
 
@@ -622,15 +578,15 @@ async function renderTimetable(): Promise<void> {
     const thisLessLesson = $(templateModeLess);
 
     const templateModeMore = `
-      <div class="card" data-start-lesson-number="${multiLesson.startLessonNumber}" data-end-lesson-number="${multiLesson.endLessonNumber}">
-        <div class="card-body pt-4 text-center">
+      <div class="card ${isNormalBreak ? "border-dashed" : ""}">
+        <div class="card-body text-center ${isNormalBreak ? "pt-1 py-1" : "pt-4"}">
           <div class="timetable-more-time position-absolute start-0 top-0 mx-2 my-1 timetable-more-time-start
-              ${multiLesson.lessons.every(l =>l.substitution?.type === "Entfall") ? "line-through-red" : ""}
+              ${multiLesson.lessons.every(l =>l.substitution?.type === "Entfall") && !isBreak ? "line-through-red" : ""}
             ">
             ${msToTime(multiLesson.startTime)}
           </div>
           <div class="timetable-more-time position-absolute end-0 top-0 mx-2 my-1 timetable-more-time-end
-              ${multiLesson.lessons.every(l => l.substitution?.type === "Entfall") ? "line-through-red" : ""}
+              ${multiLesson.lessons.every(l => l.substitution?.type === "Entfall") && !isBreak ? "line-through-red" : ""}
             ">
             ${msToTime(multiLesson.endTime)}
           </div>
@@ -641,7 +597,7 @@ async function renderTimetable(): Promise<void> {
                   .map(l => {
                     let cssClass = "";
                     let append = "";
-                    if (l.substitution !== undefined) {
+                    if (l.substitution !== undefined && !isBreak) {
                       if (l.substitution.type === "Entfall") cssClass = "line-through-red";
                       else if (l.subjectNameSubstitution.includes(l.substitution.subject)) cssClass = "fst-italic";
                       else {
@@ -654,21 +610,26 @@ async function renderTimetable(): Promise<void> {
                   .join(" / ")
                 /* eslint-enable indent */}</span>
 
-            <span>
+            <span ${isBreak ? "class=\"d-none\"" : ""}>
               <span>
                 ${/* eslint-disable indent */
                   multiLesson.lessons
                     .map(l => {
                       let cssClass = "";
                       let append = "";
-                      if (l.substitution !== undefined) {
-                        if (l.substitution.type === "Entfall") cssClass = "line-through-red";
+                      let room = l.room;
+                      if (l.substitution !== undefined && !isBreak) {
+                        if (l.substitution.type === "Entfall") {
+                          cssClass = "line-through-red";
+                          if (l.subjectId === -1) room = "----";
+                        }
                         else if (l.substitution.room !== l.room) {
                           cssClass = "line-through-yellow";
                           append = ` <span class="text-yellow fw-bold">${l.substitution.room}</span>`;
+                          if (l.subjectId === -1) room = "";
                         }
                       }
-                      return `<span class="${cssClass}">${escapeHTML(l.room)}</span>${append}`;
+                      return `<span class="${cssClass}">${escapeHTML(room)}</span>${append}`;
                     })
                     .join(" / ")
                   /* eslint-enable indent */}</span>,
@@ -678,14 +639,19 @@ async function renderTimetable(): Promise<void> {
                     .map(l => {
                       let cssClass = "";
                       let append = "";
-                      if (l.substitution !== undefined) {
-                        if (l.substitution.type === "Entfall") cssClass = "line-through-red";
+                      let teacher = l.teacherName;
+                      if (l.substitution !== undefined && !isBreak) {
+                        if (l.substitution.type === "Entfall") {
+                          cssClass = "line-through-red";
+                          if (l.subjectId === -1) teacher = "----";
+                        }
                         else if (!(l.teacherNameSubstitution ?? []).includes(l.substitution.teacher)) {
                           cssClass = "line-through-yellow";
                           append = ` <span class="text-yellow fw-bold">${l.substitution.teacher}</span>`;
+                          if (l.subjectId === -1) teacher = "";
                         }
                       }
-                      return `<span class="${cssClass}">${escapeHTML(l.teacherName)}</span>${append}`;
+                      return `<span class="${cssClass}">${escapeHTML(teacher)}</span>${append}`;
                     })
                     .join(" / ")
                   /* eslint-enable indent */}</span>
@@ -693,28 +659,23 @@ async function renderTimetable(): Promise<void> {
             ${/* eslint-disable indent */
               multiLesson.lessons
                 .map(l => {
-                  if (l.substitution !== undefined) {
+                  if (l.substitution !== undefined && !isBreak) {
                     const color = (l.substitution.type === "Entfall") ? "red" : "yellow";
                     return `
                       <div class="text-${color} fw-bold mt-2">${escapeHTML(l.substitution.type)}</div>
-                      <div class="text-${color}">${escapeHTML(["EVA", "-"].includes(l.substitution.text) ? "" : l.substitution.text)}</div>
+                      <div class="text-${color}">${escapeHTML(l.substitution.text)}</div>
                     `;
                   }
                 }).join("")
               /* eslint-enable indent */}
             ${/* eslint-disable indent */
-              multiLesson.lessons
-                .map(l => {
-                  if (l.events !== undefined) {
-                    return l.events.map(e => {
-                      return `
-                        <span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>
-                        <span class="event-${e.eventTypeId} text-centered-block rich-text" data-event-type-id="${e.eventTypeId}"
-                          >${escapeHTML(e.description ?? "")}</span>
-                      `;
-                    }).join("");
-                  }
-                }).join("")
+              (multiLesson.events ?? []).map(e => {
+                return `
+                  <span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>
+                  <span class="event-${e.eventTypeId} text-centered-block rich-text" data-event-type-id="${e.eventTypeId}"
+                    >${escapeHTML(e.description ?? "")}</span>
+                `;
+              }).join("")
               /* eslint-enable indent */}
           </div>
 
@@ -791,9 +752,8 @@ async function updateTimetableFeedback(): Promise<void> {
   }
   function lessonToText(l: TimetableData, showMoreInfo: boolean): string {
     return (
-      (l.lessons[0].events
-        ? (l.lessons[0].events).map(e => `<span class="fw-bold event-${e.eventTypeId}">${e.name}</span>`)
-          .join(", ").replace(lastCommaRegex, " und") + " während "
+      (l.events
+        ? toCommaAndAnd((l.events).map(e => `<span class="fw-bold event-${e.eventTypeId}">${e.name}</span>`)) + " während "
         : "")
 
       + (showMoreInfo
@@ -905,7 +865,7 @@ async function renameCalendarMonthYear(): Promise<void> {
 function slideCalendar(direction: "l" | "r", transition: string, slideTime: number): Promise<void> {
   selectedNewDay = false;
   return new Promise<void>(resolve => {
-    if (!animations) {
+    if (!animationCalendar) {
       transition = "";
       slideTime = 0;
     }
@@ -953,6 +913,7 @@ export async function init(): Promise<void> {
   return new Promise(res => {
     justCheckedHomeworkId = -1;
     animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
+    animationCalendar = JSON.parse(localStorage.getItem("animation-calendar") ?? "null") ?? animations;
 
     $(".calendar-move-button").on("click", function () {
       // If the calendar is already moving, stop; else set it moving
@@ -1209,6 +1170,7 @@ export async function init(): Promise<void> {
 
 let justCheckedHomeworkId: number;
 let animations: boolean;
+let animationCalendar: boolean;
 let selectedDate: Date = new Date();
 let selectedNewDay: boolean;
 // Save whether the calendar is currently moving (It shouldn't be moved then, as bugs could appear)
@@ -1219,7 +1181,7 @@ let calendarMode: string;
 const monthDates = createDataAccessor<MonthDates>("monthDates", { reload: loadMonthDates });
 
 (await homeworkData.init()).on("update", onlyThisSite(renderHomeworkList));
-(await homeworkCheckedData.init());
+(await homeworkCheckedData.init()).on("update", onlyThisSite(renderHomeworkList));
 (await subjectData.init()).on("update", onlyThisSite(renderHomeworkList));
 (await eventData.init()).on("update", onlyThisSite(() => {
   renderEventList();
@@ -1239,8 +1201,6 @@ const monthDates = createDataAccessor<MonthDates>("monthDates", { reload: loadMo
   renderSubstitutionList();
   renderTimetable();
 }));
-
-await user.awaitAuthed();
 
 (await joinedTeamsData.init()).on("update", onlyThisSite(() => {
   renderHomeworkList();

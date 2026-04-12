@@ -1,67 +1,67 @@
+import * as dotenv from "dotenv";
+dotenv.config();
 import { createServer } from "http";
 import path from "path";
+import { fileURLToPath } from "url";
 import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
-import * as dotenv from "dotenv";
 import express, { Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
-import prisma from "./config/prisma";
-import socketIO from "./config/socket";
-import logger from "./config/logger";
-import { connectRedis } from "./config/redis";
-import { sessionPool } from "./config/pg";
-import { startMetricsServer } from "./utils/metrics.server";
+import prisma from "./config/prisma.js";
+import socketIO from "./config/socket.js";
+import logger from "./config/logger.js";
+import { connectRedis } from "./config/redis.js";
+import { startMetricsServer } from "./utils/metrics.server.js";
 import {
   cleanupDeletedAccounts,
   cleanupOldEvents,
   cleanupOldHomework,
   cleanupTestClasses,
   cleanupStuckUploads,
-  migrateEventAndHomeworkDates 
-} from "./utils/db.cleanup";
-import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker";
-import checkAccess from "./middleware/access.middleware";
-import { ErrorHandler } from "./middleware/error.middleware";
-import { loggerMiddleware } from "./middleware/logger.middleware";
-import { metricsMiddleware } from "./middleware/metrics.middleware";
-import { CSPMiddleware } from "./middleware/CSP.middleware";
-import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware";
-import account from "./routes/account.route";
-import events from "./routes/event.route";
-import homework from "./routes/homework.route";
-import lessons from "./routes/lesson.route";
-import substitutions from "./routes/substitution.route";
-import subjects from "./routes/subject.route";
-import teams from "./routes/team.route";
-import classes from "./routes/class.route";
-import uploads from "./routes/upload.route";
+  migrateEventAndHomeworkDates, 
+  migrateUploadMetadataDates
+} from "./utils/db.cleanup.js";
+import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker.js";
+import { cleanupStaleUploadFiles } from "./utils/upload.cleanup.js";
+import { prefetchSubstitutionDataForAllClasses } from "./services/substitution.service.js";
+import checkAccess from "./middleware/access.middleware.js";
+import { ErrorHandler } from "./middleware/error.middleware.js";
+import { loggerMiddleware } from "./middleware/logger.middleware.js";
+import { metricsMiddleware } from "./middleware/metrics.middleware.js";
+import { CSPMiddleware } from "./middleware/CSP.middleware.js";
+import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware.js";
+import apiVersionMiddleware, { MAX_VERSION } from "./middleware/version.middleware.js";
+import { authLimiter } from "./routes/account.route.js";
+import accountService from "./services/account.service.js";
+import account from "./routes/account.route.js";
+import events from "./routes/event.route.js";
+import homework from "./routes/homework.route.js";
+import lessons from "./routes/lesson.route.js";
+import substitutions from "./routes/substitution.route.js";
+import subjects from "./routes/subject.route.js";
+import teams from "./routes/team.route.js";
+import classes from "./routes/class.route.js";
+import uploads from "./routes/upload.route.js";
 
-dotenv.config();
-
-prisma
-  .$connect()
-  .then(() => {
-    logger.info("Connected to Database");
-  })
-  .catch(err => {
-    logger.error(`DB connection failed: ${err}`);
-    process.exit(1);
-  });
-
-connectRedis();
-initializeUploadWorkerServices();
-startUploadWorker();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const sessionSecret = process.env.SESSION_SECRET;
+const proxyHopRaw = process.env.PROXY_HOP;
 
 if (!sessionSecret) {
   logger.error("SESSION_SECRET is undefined! Please define in the .env file.");
   process.exit(1);
 }
 
+if (!proxyHopRaw || !Number.isInteger(Number(proxyHopRaw)) || Number(proxyHopRaw) < 0) {
+  logger.error("PROXY_HOP is undefined or/and must be an positive integer. Please define in the .env file.");
+  process.exit(1);
+}
+
 const app = express();
-app.set("trust proxy", 1);
+app.set("trust proxy", Number(proxyHopRaw));
 const server = createServer(app);
 
 const globalLimiter = rateLimit({
@@ -73,12 +73,7 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-if (process.env.UNSAFE_DEACTIVATE_CSP !== "true") {
-  app.use(CSPMiddleware());
-}
-else {
-  logger.warn("Helmet and CSP is disabled! This is not recommended for production!");
-}
+app.use(CSPMiddleware());
 
 app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));
@@ -88,7 +83,13 @@ const PgSession = connectPgSimple(session);
 
 const sessionMiddleware = session({
   store: new PgSession({
-    pool: sessionPool,
+    conObject: {
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASSWORD,
+      port: 5432
+    },
     tableName: "account_sessions",
     createTableIfMissing: true
   }),
@@ -100,7 +101,7 @@ const sessionMiddleware = session({
     sameSite: "lax",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     httpOnly: true,
-    secure: process.env.NODE_ENV !== "DEVELOPMENT"
+    secure: process.env.NODE_ENV === "PRODUCTION"
   },
   name: "UserLogin"
 });
@@ -113,8 +114,29 @@ socketIO.initialize(server, sessionMiddleware);
 
 app.use(sessionMiddleware);
 app.use(csrfSessionInit);
+
+app.get("/bootstrap", authLimiter, async (req, res, next) => {
+  try {
+    const auth = await accountService.getAuth(req.session);
+
+    const cacheEnabled =
+      process.env.NODE_ENV !== "DEVELOPMENT" ||
+      process.env.CACHE_ENABLED === "true";
+    
+    res.set("Cache-Control", "no-store");
+    res.status(200).json({ maintenance: false, classJoined: auth.classJoined, version: MAX_VERSION, cacheEnabled });
+  }
+  catch (error) {
+    next(error);
+  }
+});
+
 app.get("/csrf-token", (req, res) => {
-  res.json({ csrfToken: req.session.csrfToken });
+  res
+    .set("Cache-Control", "no-store, no-cache, must-revalidate, private")
+    .set("Pragma", "no-cache")  // HTTP/1.0 compat
+    .set("Surrogate-Control", "no-store") // CDN layer
+    .json({ csrfToken: req.session.csrfToken });
 });
 app.use(csrfProtection);
 app.use(metricsMiddleware);
@@ -152,15 +174,18 @@ app.get("/about", (req, res) => {
   res.sendFile(path.join(pagesPath, "about", "about.html"));
 });
 
-app.use("/account", account);
-app.use("/homework", homework);
-app.use("/substitutions", substitutions);
-app.use("/teams", teams);
-app.use("/events", events);
-app.use("/subjects", subjects);
-app.use("/lessons", lessons);
-app.use("/class", classes);
-app.use("/uploads", uploads);
+// Apply API version check only to API routes
+app.use("/api", apiVersionMiddleware);
+
+app.use("/api/account", account);
+app.use("/api/homework", homework);
+app.use("/api/substitutions", substitutions);
+app.use("/api/teams", teams);
+app.use("/api/events", events);
+app.use("/api/subjects", subjects);
+app.use("/api/lessons", lessons);
+app.use("/api/classes", classes);
+app.use("/api/uploads", uploads);
 
 //
 // Protected routes: Redirect to /join if not logged in
@@ -186,13 +211,13 @@ app.use((req, res) => {
 
   switch (ext) {
   case ".css":
-    res.sendFile(path.join(pagesPath, "404", "404.css"));
+    res.status(404).sendFile(path.join(pagesPath, "404", "404.css"));
     break;
   case ".js":
-    res.sendFile(path.join(pagesPath, "404", "404.js"));
+    res.status(404).sendFile(path.join(pagesPath, "404", "404.js"));
     break;
   default:
-    res.sendFile(path.join(pagesPath, "404", "404.html"));
+    res.status(404).sendFile(path.join(pagesPath, "404", "404.html"));
     break;
   }
 });
@@ -206,17 +231,28 @@ cron.schedule("0 0 * * *", () => {
   cleanupOldHomework();
   cleanupOldEvents();
   cleanupDeletedAccounts();
+  cleanupStaleUploadFiles();
 });
 
 // Run demo class script every week (once) - only for demo class
+// This is not relevant if you do not have a demo class set up
 cron.schedule("0 0 * * 0", () => {
   logger.info("Starting weekly demo class date migration");
   migrateEventAndHomeworkDates();
+  migrateUploadMetadataDates();
 });
 
 // Run test class deletion every 15mins
 cron.schedule("*/15 * * * *", () => {
   cleanupTestClasses();
+});
+
+// Prefetch substitutions every minute during weekday mornings (06:00-09:59)
+cron.schedule("*/1 6-9 * * 1-5", () => {
+  logger.info("Starting scheduled substitution prefetch");
+  prefetchSubstitutionDataForAllClasses().catch(err => {
+    logger.error(`Scheduled substitution prefetch failed: ${err}`);
+  });
 });
 
 // Run stuck upload cleanup every 10 minutes
@@ -227,7 +263,27 @@ setInterval(() => {
   });
 }, 10 * 60 * 1000); // 10 minutes
 
-server.listen(3000, () => {
-  logger.info("Server running at http://localhost:3000");
-  startMetricsServer();
-});
+const bootstrap = async (): Promise<void> => {
+  try {
+    await prisma.$connect();
+    logger.info("Connected to Database");
+
+    await connectRedis();
+    await initializeUploadWorkerServices();
+
+    void startUploadWorker().catch(err => {
+      logger.error(`Upload worker failed unexpectedly: ${err}`);
+    });
+
+    server.listen(3000, () => {
+      logger.info("Server running at http://localhost:3000");
+      startMetricsServer();
+    });
+  }
+  catch (err) {
+    logger.error(`Startup failed: ${err}`);
+    process.exit(1);
+  }
+};
+
+void bootstrap();

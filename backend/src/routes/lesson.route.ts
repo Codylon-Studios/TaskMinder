@@ -1,22 +1,17 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import lessonController from "../controllers/lesson.controller";
-import checkAccess from "../middleware/access.middleware";
-import { validate } from "../middleware/validation.middleware";
-import { setLessonDataSchema } from "../schemas/lesson.schema";
+import lessonController from "../controllers/lesson.controller.js";
+import checkAccess from "../middleware/access.middleware.js";
+import { validate } from "../middleware/validation.middleware.js";
+import { setLessonDataSchema } from "../schemas/lesson.schema.js";
 
-// rate limiter
-const lessonLimiter = rateLimit({
-  windowMs: 1000, // 1 second
-  limit: 15, // Max 15 requests per IP per second
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  message: { status: 429, message: "Too many requests, please slow down." }
-});
+// lesson rate limiters
+const readLessonLimiter = rateLimit({ windowMs: 1000, limit: 30 });
+const writeLessonLimiter = rateLimit({ windowMs: 1000, limit: 10 });
 
 const router = express.Router();
 
-router.get("/get_lesson_data", lessonLimiter, checkAccess(["CLASS"]), lessonController.getLessonData);
-router.post("/set_lesson_data", lessonLimiter, checkAccess(["CLASS", "MANAGER"]), validate(setLessonDataSchema), lessonController.setLessonData);
+router.get("/", readLessonLimiter, checkAccess(["CLASS"]), lessonController.getLessons);
+router.put("/", writeLessonLimiter, checkAccess(["CLASS", "MANAGER"]), validate(setLessonDataSchema), lessonController.setLessons);
 
 export default router;

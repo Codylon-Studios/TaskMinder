@@ -1,19 +1,12 @@
-import { getSite } from "../../global/global.js";
-import { replaceSitePJAX } from "../loadingBar/loadingBar.js";
-import { user } from "../navbar/navbar.js";
+import { getSite, user } from "../../global/global.js";
 
-function getTouchPosition(ev: JQuery.TouchStartEvent): {x: number, y: number} {
-  return {
-    x: ev.originalEvent?.touches[0]?.clientX ?? 0,
-    y: ev.originalEvent?.touches[0]?.clientY ?? 0
-  };
-}
-
-function getChangedTouchPosition(ev: JQuery.TouchMoveEvent | JQuery.TouchEndEvent): {x: number, y: number} {
-  return {
-    x: ev.originalEvent?.changedTouches[0]?.clientX ?? 0,
-    y: ev.originalEvent?.changedTouches[0]?.clientY ?? 0
-  };
+function calculateHeight(): void {
+  let height = 38 + Math.max(8, globalThis.innerWidth / 100 * 1.5) * 1.5;
+  if (/OS (18|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
+    height += 16;
+  }
+  if (globalThis.innerWidth >= 992) height = 0;
+  $("body").css("--bottombar-height", height + "px");
 }
 
 export async function init(): Promise<void> {
@@ -24,136 +17,120 @@ export async function init(): Promise<void> {
 if (/OS (18|19|26)(_\d+)* like Mac OS X/.test(navigator.userAgent)) {
   $(".bottombar").css("padding-bottom", "1rem");
 }
+calculateHeight();
+$(globalThis).on("resize", calculateHeight);
+
 let siteName: string;
 
-user.on("change", () => {
+function toggleShownLinks(): void {
   $(".bottombar-joined").toggle(user.classJoined ?? false);
   $(".bottombar-not-joined").toggle(! user.classJoined);
-});
+}
+
+user.on("change", toggleShownLinks);
+toggleShownLinks();
 
 $(".bottombar-overlay").hide();
 
+$(".bottombar-link").on("click", function() {
+  $(this).addClass("pop");
+  setTimeout(() => {
+    $(this).removeClass("pop");
+  }, 300);
+});
+
 let startX = 0;
 let startY = 0;
-let overlayShowsMore = false;
+let endX = 0;
+let endY = 0;
+let startTime = 0;
+let dragging = false;
+let startSide: "left" | "right";
+let endSide: "left" | "right";
 
-$(document).on("touchstart", ev => {
-  if ($(".modal").is(":visible")) return;
+$(document).on("pointerdown", ev => {
+  if (ev.pointerType !== "touch") return;
+  if (screen.width / window.innerWidth !== 1) return;
+  if ($(".modal, .offcanvas").is(".show")) return;
 
-  if (overlayShowsMore) {
-    overlayShowsMore = false;
-    return;
+  startTime = Date.now();
+  startX = endX = ev.clientX ?? 0;
+  startY = endY = ev.clientY ?? 0;
+
+  if (startX < window.innerWidth * 0.2) {
+    startSide = "left";
+    endSide = "right";
   }
-
-  ({ x: startX, y: startY } = getTouchPosition(ev));
-
-  let $nextLink;
-  if (startX < 75) {
-    $nextLink = $(".row:visible > .bottombar-current-link").prevAll().first();
-  }
-  else if (startX > globalThis.innerWidth - 75) {
-    $nextLink = $(".row:visible > .bottombar-current-link").nextAll().first();
+  else if (startX > window.innerWidth * 0.8) {
+    startSide = "right";
+    endSide = "left";
   }
   else return;
 
-  $(".bottombar-overlay i").attr("class", ($nextLink.find("i").attr("class") ?? "fa-solid fa-xmark text-danger") + " fs-1");
-  $(".bottombar-overlay span").text($nextLink.find("span").text() || "Keine Seite mehr");
-  $(".bottombar-overlay div").hide();
+  const $currentLink = $(".bottombar .row:visible .bottombar-current-link");
+  const $navigatedToLink = { left: $currentLink.prev(), right: $currentLink.next()}[startSide];
+
+  if ($navigatedToLink.length === 0) return;
+
+  dragging = true;
+
+  $(".bottombar-overlay").css("transition", "");
+  $(".bottombar-overlay i").attr("class", $navigatedToLink.find("i").attr("class") + " fs-1");
+  $(".bottombar-overlay span").text($navigatedToLink.find("span").text());
 });
 
-$(document).on("touchmove", ev => {
-  if ($(".modal").is(":visible")) return;
+$(document).on("pointermove", ev => {
+  if (!dragging) return;
 
-  if (ev.changedTouches.length !== 1 && ev.touches.length !== 0) {
-    return;
-  }
-
-  const { x: posX, y: posY } = getChangedTouchPosition(ev);
-  
-  const diffX = posX - startX;
-  const diffY = posY - startY;
-  
-  if (Math.abs(diffX) > Math.abs(diffY) && (startX < 75 || startX > globalThis.innerWidth - 75)) {
-    $(".bottombar-overlay").css({
-      "--progress": Math.abs(diffX) / globalThis.innerWidth,
-      left: diffX > 0 ? 0 : posX,
-      right: diffX < 0 ? 0 : globalThis.innerWidth - posX
-    }).show();
-  }
-  else {
-    $(".bottombar-overlay").css("--progress", "0").hide();
-  }
-});
-
-$(document).on("touchend", ev => {
-  if ($(".modal").is(":visible")) return;
-  
-  function hideOverlay(endP: number, complete?: () => unknown): void {
-    const startP = Number.parseFloat($(".bottombar-overlay").css("--progress"));
-    $({ p: startP }).animate(
-      { p: endP },
-      {
-        duration: startP * (endP === 0 ? 500 : 200),
-        step: p => {
-          $(".bottombar-overlay").css("--progress", p);
-        },
-        complete: complete
-      }
-    );
-  }
-  async function changeSite(): Promise<void> {
-    if (diffX > 0) {
-      const prev = $(".row:visible > .bottombar-current-link").prevAll().first();
-      if (prev.length === 0) hideOverlay(0, $(".bottombar-overlay").hide);
-      else {
-        await replaceSitePJAX(prev.attr("href") ?? siteName);
-        $(".bottombar-overlay").css("--progress", "0").hide();
-      }
-    }
-    else {
-      const next = $(".row:visible > .bottombar-current-link").nextAll().first();
-      if (next.length === 0) hideOverlay(0, $(".bottombar-overlay").hide);
-      else {
-        await replaceSitePJAX(next.attr("href") ?? siteName);
-        $(".bottombar-overlay").css("--progress", "0").hide();
-      }
-    }
-  }
-  function hasBeenDraggedEnough(): boolean {
-    return Math.abs(diffX) > Math.abs(diffY)
-    && Math.abs(diffX) > globalThis.innerWidth * 0.75
-    && (startX < 75 || startX > globalThis.innerWidth - 75);
-  }
-
-
-  if (ev.changedTouches.length !== 1 && ev.touches.length !== 0) {
-    return;
-  }
-
-  const { x: endX, y: endY } = getChangedTouchPosition(ev);
-  
+  endX = ev.clientX ?? 0;
+  endY = ev.clientY ?? 0;
   const diffX = endX - startX;
   const diffY = endY - startY;
 
-  let endProgress;
-
-  if (hasBeenDraggedEnough()) {
-    endProgress = 1;
+  if (Math.abs(diffX) > Math.abs(diffY)) {
+    $(".bottombar-overlay").css({
+      opacity: Math.abs(diffX) / globalThis.innerWidth * 2,
+      [startSide]: 0,
+      [endSide]: endSide === "left" ? endX : (globalThis.innerWidth - endX)
+    }).show();
   }
-  else {
-    endProgress = 0;
-  }
-
-  const getTargetLeft = (): number => diffX > 0 || endProgress === 1 ? 0 : globalThis.innerWidth;
-  const getTargetRight = (): number => diffX < 0 || endProgress === 1 ? 0 : globalThis.innerWidth;
-  
-  $(".bottombar-overlay").animate({
-    left: getTargetLeft(),
-    right: getTargetRight()
-  }, endProgress === 0 ? 500 : 200, $(".bottombar-overlay").hide);
-  hideOverlay(endProgress, endProgress === 1 ? changeSite : undefined);
 });
 
-$("#bottombar-more-cancel").on("click", ev => {
-  ev.preventDefault();
+$(document).on("pointerup pointercancel", async () => {
+  if (!dragging) return;
+  dragging = false;
+
+  async function changeSite(): Promise<void> {
+    const $currentLink = $(".bottombar .row:visible .bottombar-current-link");
+    const $navigatedToLink = { left: $currentLink.prev(), right: $currentLink.next()}[startSide];
+    const loadingBarMod = await import("../loadingBar/loadingBar.js");
+    await loadingBarMod.replaceSitePJAX($navigatedToLink.attr("href") ?? siteName);
+  }
+  function hasBeenDraggedEnough(): boolean {
+    return Math.abs(diffX) > (window.innerWidth * 0.4) || (Math.abs(diffX) > (window.innerWidth * 0.2) && timePassed < 500);
+  }
+  
+  const timePassed = Date.now() - startTime;
+  const diffX = endX - startX;
+
+  $(".bottombar-overlay").css("transition", "0.3s ease-in-out");
+  if (hasBeenDraggedEnough()) {
+    $(".bottombar-overlay").css({
+      opacity: 1,
+      [endSide]: 0
+    });
+
+    await changeSite();
+
+    $(".bottombar-overlay").css({ opacity: 0 });
+    setTimeout(() => {
+      $(".bottombar-overlay").hide();
+    }, 300);
+  }
+  else {
+    $(".bottombar-overlay").css({
+      opacity: 0,
+      [endSide]: "100%"
+    });
+  }
 });

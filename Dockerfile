@@ -3,6 +3,8 @@
 # ==============================================================================
 FROM oven/bun:1.3-alpine AS builder
 WORKDIR /usr/src/app
+ARG NODE_ENV=PRODUCTION
+ENV NODE_ENV=$NODE_ENV
 COPY package.json bun.lock ./
 RUN --mount=type=cache,target=/root/.bun bun install
 COPY . .

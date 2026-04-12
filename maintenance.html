@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wartungsarbeiten · TaskMinder</title>
+  <style>
+    html {
+      font-size: 20px;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100dvh;
+      margin: 0;
+      padding: 0 1rem;
+      font: 1rem Helvetica, sans-serif;
+      color: #212529;
+      overflow: hidden;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #212529;
+        color: #dee2e6;
+      }
+    }
+    h1 {
+      font-size: 2rem;
+    }
+    p {
+      text-align: center;
+      margin: 0.5rem 0;
+    }
+    a {
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-thickness: 0.1rem;
+      text-decoration-color: #3bb9ca;
+      transition: 0.1s ease;
+    }
+    a:hover {
+      color: #3bb9ca;
+    }
+    ::selection {
+      background-color: rgba(59, 185, 202, 0.6);
+    }
+    #matrix-wrapper {
+      flex-grow: 1;
+      position: relative;
+      width: 100%;
+    }
+    .matrix {
+      position: absolute;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+      transform: translate(-50%, -100%);
+      white-space: pre;
+    }
+    .matrix-changed {
+      color: #3bb9ca
+    }
+  </style>
+</head>
+<body>
+  <div id="matrix-wrapper"></div>
+  <h1 style="margin-top: 0;">Wartungsarbeiten</h1>
+  <p>Tut uns leid, wir führen gerade Wartungsarbeiten durch! Wir sind so bald wie möglich wieder für euch da!</p>
+  <p><b id="funny-text"></b></p>
+  <p>Mehr Infos auf unserer <a href="https://status.taskminder.de/" target="_blank">Statusseite</a></p>
+  <p style="font-size: 0.75rem;">
+    Brauchst du sehr dringend etwas? Schreib uns auf <a href="https://discord.gg/kZGs92aMae" target="_blank">Discord</a>
+  </p>
+  <div style="flex-grow: 1;"></div>
+
+  <script>
+    const normalFunnyTexts = [
+      "Server mit Kaffee gießen",
+      "Zahnräder einölen",
+      "Ein paar Bits sortieren",
+      "Ritscheratsche ritscheratsche",
+      "Quantenbeschleuniger neustarten",
+      "Quingolanz-Extrakt dekondensieren",
+      "In Dogecoins investieren",
+      "Avada Kedavra",
+      "Threads auffädeln",
+      "Programmierer im Keller füttern",
+      "Matrix verlassen",
+      "Letzte Kabel überzeugen",
+      "Einhornstaub nachfüllen",
+      "Rekursion beenden... Rekursion beenden... Rekursion beenden",
+      "UnderMaintenanceException",
+      "linguam corrigere",
+      "Bürokänguru einfangen",
+      "Trommelwirbel bitte",
+      "Docker andocken",
+      "Wir haben unsere Hausaufgaben nicht gemacht",
+      "Datenbank um Kredit bitten"
+    ].map(s => s + "...")
+    const specialFunnyTexts = [
+      "Berühre doch kurz Gras!",
+      "༻ 𝔇𝔢𝔰𝔦𝔤𝔫 𝔳𝔢𝔯𝔟𝔢𝔰𝔰𝔢𝔯𝔫 ༺",
+      "$ sudo maintenance end --force",
+      "U3VwZXIsIHVuZCBqZXR6dD8=",
+      "🔧🖥️🖱️⌨️🧑‍💻🛠️"
+    ]
+    const funnyTexts = normalFunnyTexts.concat(specialFunnyTexts)
+    let lastFunnyText = -1;
+    function funnyText() {
+      let index;
+      do { index = Math.floor(Math.random() * funnyTexts.length) } while ( index == lastFunnyText )
+      document.getElementById("funny-text").textContent = funnyTexts[index]
+      lastFunnyText = index
+    }
+    setInterval(funnyText, 10000)
+    funnyText()
+
+    const matrixWrapper = document.getElementById("matrix-wrapper")
+    const leftPositions = []
+    for (let i = 0; i < Math.round(window.innerWidth / 160) + 2; i++) {
+      const m = document.createElement("div")
+      m.classList.add("matrix")
+      m.style.top = 10 + Math.round(Math.random() * 80) + "%"
+      let left;
+      do {
+        left = Math.round(Math.random() * 100)
+      } while (leftPositions.some(p => Math.abs(p - left) / 100 * matrixWrapper.clientWidth < 40))
+      leftPositions.push(left)
+      m.style.left = left + "%"
+      matrixWrapper.appendChild(m)
+      m.innerHTML = "<div> </div>".repeat(Math.floor(Number.parseInt(getComputedStyle(m).top) / 23)) + '<div class="matrix-changed"> </div>'
+    }
+    setInterval(() => {
+      const changed = document.getElementsByClassName("matrix-changed")
+      for (const c of changed) {
+        c.style.transition = c.parentElement.childElementCount * 0.1 + "s ease"
+        c.classList.remove("matrix-changed")
+        const next = c.nextElementSibling ?? c.parentElement.firstChild
+        next.style.transition = ""
+        next.classList.add("matrix-changed")
+        next.textContent = Math.round(Math.random())
+      }
+    }, 200)
+  </script>
+</body>
+</html>

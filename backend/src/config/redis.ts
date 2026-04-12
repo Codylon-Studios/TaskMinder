@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import logger from "../config/logger";
+import logger from "../config/logger.js";
 
 export const CACHE_KEY_PREFIXES = {
   HOMEWORK: "homework_data",
@@ -10,7 +10,8 @@ export const CACHE_KEY_PREFIXES = {
   EVENTTYPESTYLE: "event_type_styles",
   SUBJECT: "subject_data",
   TEAMS: "teams_data",
-  UPLOADMETADATA: "upload_metadata"
+  UPLOADMETADATA: "upload_metadata",
+  UPLOADREQUESTS: "upload_requests"
 };
 
 export const QUEUE_KEYS = {
@@ -20,7 +21,7 @@ export const QUEUE_KEYS = {
 export const generateCacheKey = (baseKey: string, classId: string): string => {
   if (!baseKey || !classId) {
     logger.error("Base Key or/and ClassId missing to generate redis cache key");
-    throw new Error();
+    throw new Error("Missing baseKey or classId for cache key generation");
   }
   return `${baseKey}:${classId}`;
 };
@@ -49,10 +50,10 @@ export const connectRedis = async (): Promise<void> => {
   catch (err: unknown) {
     if (err instanceof Error) {
       logger.error(`Error connecting to Redis: ${err}`);
-      throw err;
+      throw new Error("Redis connection failed", { cause: err });
     }
     logger.error("Unknown error connecting to Redis!");
-    throw new Error();
+    throw new Error("Redis connection failed", { cause: err });
   }
 };
 
@@ -66,10 +67,10 @@ export const disconnectRedis = async (): Promise<void> => {
   catch (err: unknown) {
     if (err instanceof Error) {
       logger.error(`Error disconnecting from Redis: ${err}`);
-      throw err;
+      throw new Error("Redis disconnect failed", { cause: err });
     }
     logger.error("Unknown error disconnecting from Redis!");
-    throw new Error();
+    throw new Error("Redis disconnect failed", { cause: err });
   }
 };
 

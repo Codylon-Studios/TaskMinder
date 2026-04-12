@@ -1,19 +1,16 @@
-import prisma from "../config/prisma";
-import { redisClient } from "../config/redis";
-import logger from "../config/logger";
+import prisma from "../config/prisma.js";
+import { redisClient } from "../config/redis.js";
+import logger from "../config/logger.js";
 import fs from "fs/promises";
 import path from "path";
-import { FINAL_UPLOADS_DIR } from "../config/upload";
-import { invalidateCache } from "./validate.functions";
-import socketIO from "../config/socket";
+import { FINAL_UPLOADS_DIR } from "../config/upload.js";
+import { invalidateCache } from "./validate.functions.js";
+import socketIO from "../config/socket.js";
+import { encryptionManager } from "./encryption.manager.js";
 
 /**
  * Deletes class records that are older than 1 day and are TEST CLASSES
  */
-// @codescene(disable:"Large Method")
-// This is supressed as this function is for deleting test classes.
-// As a lot of data is connected to a class, many prisma functions need to be called,
-// thus increasing lines of code, but code is still logical
 export async function cleanupTestClasses(): Promise<void> {
   try {
     // Calculate the timestamp for 1 day ago (in milliseconds)
@@ -21,7 +18,7 @@ export async function cleanupTestClasses(): Promise<void> {
 
     const classesToDelete = await prisma.class.findMany({
       where: {
-        classCreated: {
+        createdAt: {
           lt: oneDayAgo
         },
         isTestClass: true
@@ -68,6 +65,7 @@ export async function cleanupTestClasses(): Promise<void> {
     await Promise.all(
       classIdsToDelete.map(async classId => {
         await invalidateCache("UPLOADMETADATA", classId.toString());
+        await invalidateCache("UPLOADREQUESTS", classId.toString());
         await invalidateCache("HOMEWORK", classId.toString());
         await invalidateCache("EVENT", classId.toString());
         await invalidateCache("LESSON", classId.toString());
@@ -136,7 +134,8 @@ export async function cleanupOldHomework(): Promise<void> {
       where: {
         submissionDate: {
           lt: ninetyDaysAgo
-        }
+        },
+        isPinned: false
       },
       select: {
         classId: true
@@ -149,7 +148,8 @@ export async function cleanupOldHomework(): Promise<void> {
       where: {
         submissionDate: {
           lt: ninetyDaysAgo
-        }
+        },
+        isPinned: false
       }
     });
 
@@ -158,7 +158,8 @@ export async function cleanupOldHomework(): Promise<void> {
       where: {
         submissionDate: {
           lt: ninetyDaysAgo
-        }
+        },
+        isPinned: false
       }
     });
     // invalidate homework cache of classes
@@ -184,7 +185,8 @@ export async function cleanupOldEvents(): Promise<void> {
       where: {
         startDate: {
           lt: aYearAgo
-        }
+        },
+        isPinned: false
       },
       select: {
         classId: true
@@ -198,7 +200,8 @@ export async function cleanupOldEvents(): Promise<void> {
       where: {
         startDate: {
           lt: aYearAgo
-        }
+        },
+        isPinned: false
       }
     });
 
@@ -207,7 +210,8 @@ export async function cleanupOldEvents(): Promise<void> {
       where: {
         startDate: {
           lt: aYearAgo
-        }
+        },
+        isPinned: false
       }
     });
     // invalidate event cache of classes
@@ -229,47 +233,64 @@ export async function cleanupStuckUploads(): Promise<void> {
     // 10 minutes ago
     const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
 
-    const stuckUploads = await prisma.upload.findMany({
-      where: {
-        status: "processing",
-        createdAt: {
-          lt: tenMinutesAgo
+    const cleanedCount = await prisma.$transaction(async tx => {
+      const stuckUploads = await tx.upload.findMany({
+        where: {
+          status: "processing",
+          createdAt: {
+            lt: tenMinutesAgo
+          }
+        },
+        select: {
+          uploadId: true,
+          classId: true,
+          reservedBytes: true
         }
-      },
-      select: {
-        uploadId: true,
-        classId: true,
-        reservedBytes: true
+      });
+
+      if (stuckUploads.length === 0) {
+        return 0;
       }
+
+      const reservedByClass = new Map<number, bigint>();
+      for (const upload of stuckUploads) {
+        if (upload.reservedBytes <= 0n) {
+          continue;
+        }
+        const current = reservedByClass.get(upload.classId) ?? 0n;
+        reservedByClass.set(upload.classId, current + upload.reservedBytes);
+      }
+
+      const uploadIds = stuckUploads.map(upload => upload.uploadId);
+
+      await tx.upload.updateMany({
+        where: {
+          uploadId: { in: uploadIds },
+          status: "processing"
+        },
+        data: {
+          status: "failed",
+          errorReason: "processing_timeout",
+          reservedBytes: 0n
+        }
+      });
+
+      for (const [classId, reservedBytes] of reservedByClass.entries()) {
+        await tx.class.update({
+          where: { classId },
+          data: { storageUsedBytes: { decrement: reservedBytes } }
+        });
+      }
+
+      return uploadIds.length;
     });
 
-    if (stuckUploads.length === 0) {
+    if (cleanedCount === 0) {
       logger.info("No stuck uploads found (10min)");
       return;
     }
 
-    // Release reserved storage and mark as failed
-    for (const upload of stuckUploads) {
-      await prisma.$transaction(async tx => {
-        if (upload.reservedBytes > 0n) {
-          await tx.class.update({
-            where: { classId: upload.classId },
-            data: { storageUsedBytes: { decrement: upload.reservedBytes } }
-          });
-        }
-
-        await tx.upload.update({
-          where: { uploadId: upload.uploadId },
-          data: {
-            status: "failed",
-            errorReason: "processing_timeout",
-            reservedBytes: 0n
-          }
-        });
-      });
-    }
-
-    logger.info(`Cleaned up ${stuckUploads.length} stuck uploads (10min)`);
+    logger.info(`Cleaned up ${cleanedCount} stuck uploads (10min)`);
   }
   catch (error) {
     logger.error(`Error during stuck upload cleanup: ${error}`);
@@ -278,16 +299,74 @@ export async function cleanupStuckUploads(): Promise<void> {
 
 
 /*
+// DEMO CLASS MIGRATIONS
+// The following functions are only invoked if a demo class is available (className = "Demo", classCode = "demo").
+*/
+
+/*
+  * Moves upload metadata 1 week further along for demo class
+*/
+export async function migrateUploadMetadataDates(): Promise<void> {
+  try {
+    const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
+
+    const demoCodeCandidates = ["demo", "Demo"].map(code =>
+      encryptionManager.hash(code)
+    );
+    const demoClass = await prisma.class.findFirst({
+      where: {
+        OR: [
+          { className: { equals: "Demo", mode: "insensitive" } },
+          { classCodeHash: { in: demoCodeCandidates } },
+          { classCode: { equals: "demo", mode: "insensitive" } }
+        ]
+      }
+    });
+
+    if (!demoClass) {
+      logger.info("Demo class not found. Migration of dates for upload metadata not needed.");
+      return;
+    }
+
+    const migratedUploadMetadata = await prisma.upload.updateMany({
+      where: {
+        classId: demoClass.classId
+      },
+      data: {
+        createdAt: {
+          increment: oneWeekInMs
+        }
+      }
+    });
+
+    // invalidate upload metadata cache of demo class
+    await invalidateCache("UPLOADMETADATA", demoClass.classId.toString());
+    logger.info(
+      `Migrated dates of ${migratedUploadMetadata.count} upload metadata entries for demo class. (1 week)`
+    );
+  }
+  catch (error) {
+    logger.error(`Error during upload metadata migration: ${error}`);
+  }
+}
+
+/*
   * Moves events and homework 1 week further along for demo class
 */
 export async function migrateEventAndHomeworkDates(): Promise<void> {
   try {
     const oneWeekInMs = 7 * 24 * 60 * 60 * 1000;
 
+    const demoCodeCandidates = ["demo", "Demo"].map(code =>
+      encryptionManager.hash(code)
+    );
     const demoClass = await prisma.class.findFirst({
       where: {
-        className: "Demo",
-        classCode: "demo"
+        OR: [
+          { className: { equals: "Demo", mode: "insensitive" } },
+          { classCodeHash: { in: demoCodeCandidates } },
+          { classCode: { equals: "demo", mode: "insensitive" } }
+        ]
       }
     });
 

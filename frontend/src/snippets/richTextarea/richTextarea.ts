@@ -1,5 +1,6 @@
-import { deepCompare, escapeHTML } from "../../global/global.js";
+import { deepCompare, escapeHTML, isStandalone } from "../../global/global.js";
 import { rgbToHex } from "../colorPicker/colorPicker.js";
+import { replaceSitePJAX } from "../loadingBar/loadingBar.js";
 
 export function richTextToHtml(
   val: string | null,
@@ -25,6 +26,7 @@ export function richTextToHtml(
       if (options?.displayBlockIfNewline && parsedText.html().includes("<br>")) {
         targetElement.addClass("d-block");
       }
+      targetElement.css("white-space", "pre-wrap");
     }
     if (options?.parseLinks) {
       parsedText.find("span[data-link-url]").each(function () {
@@ -50,7 +52,12 @@ export function richTextToHtml(
               const absUrl = (/^[a-z]+:\/\//i.test(url) ? "" : "https://") + url;
               try {
                 if ((new URL(absUrl)).host === location.host) {
-                  globalThis.open(absUrl, "_blank", "noopener,noreferrer");
+                  if (isStandalone) {
+                    replaceSitePJAX(absUrl);
+                  }
+                  else {
+                    globalThis.open(absUrl, "_blank", "noopener,noreferrer");
+                  }
                   return;
                 }
                 else throw new Error("External");
@@ -76,9 +83,11 @@ export function richTextToHtml(
     targetElement?.empty().append(parsedText.children());
   }
   function insertShowMoreButton(targetElement: JQuery<HTMLElement>): void {
+    const MAX_HEIGHT = 96;
     const more = "<i class=\"far fa-square-plus\" aria-hidden=\"true\"></i>Mehr anzeigen";
     const less = "<i class=\"far fa-square-minus\" aria-hidden=\"true\"></i>Weniger anzeigen";
     let expanded = false;
+    let expandResize = false;
 
     const showMoreButton = $("<a href=\"#\">" + more + "</a>");
     if (options?.showMoreButtonChange) {
@@ -88,40 +97,37 @@ export function richTextToHtml(
       ev.preventDefault();
       if (expanded) {
         $(this).html(more);
-        targetElement.css({ maxHeight: "96px" });
+        targetElement.css({ maxHeight: MAX_HEIGHT });
         expanded = false;
       }
       else {
         $(this).html(less);
-        targetElement.css({ maxHeight: "none" });
+        targetElement.css({ maxHeight: targetElement[0].scrollHeight });
         expanded = true;
       }
+      expandResize = true;
     });
     targetElement.after(showMoreButton);
 
-    targetElement.css({ maxHeight: "96px", overflow: "hidden" });
+    targetElement.css({ maxHeight: MAX_HEIGHT, overflow: "hidden", transition: "0.35s ease" });
 
     function updateButton(): void {
+      if (expandResize) return;
       targetElement.css({ maxHeight: "none" });
       const naturalHeight = targetElement[0].getBoundingClientRect().height;
 
-      if (naturalHeight > 96) {
-        targetElement.css({ maxHeight: expanded ? "none" : "96px" });
+      if (naturalHeight > MAX_HEIGHT) {
+        targetElement.css({ maxHeight: expanded ? naturalHeight : MAX_HEIGHT, display: "block" });
         showMoreButton.show().html(expanded ? less : more);
       }
-      else if (naturalHeight === 0) {
-        targetElement.css({ maxHeight: "96px" });
-      }
       else {
-        targetElement.css({ maxHeight: "none" });
+        targetElement.css({ maxHeight: naturalHeight });
         showMoreButton.hide();
         expanded = false;
       }
     }
     
-    requestAnimationFrame(updateButton);
-    $(globalThis).on("resize", updateButton);
-    (new IntersectionObserver(updateButton)).observe(targetElement[0]);
+    (new ResizeObserver(updateButton)).observe(targetElement[0]);
   }
   function parseNormalChar(char: string): void {
     function handleStyleToggles(): void {
@@ -354,11 +360,12 @@ function replaceRichTextareas(): void {
         newVal += singleValue;
       });
 
-      let previousVal = "";
-      do {
+      let previousVal;
+
+      while (newVal !== previousVal) {
         previousVal = newVal;
         newVal = newVal.replace(/<\/(.+)>((?:<[^<>]*?>)*?)<\1>/g, "$2");
-      } while (newVal !== previousVal);
+      }
 
       input.val(newVal);
     }
@@ -627,12 +634,11 @@ function replaceRichTextareas(): void {
         
           // Get all text nodes and <br> tags
           const nodes = getAllNodes(doc.body);
-          
-          pasteAreaShadowRoot.appendChild(doc.body);
+          const n = pasteAreaShadowRoot.appendChild(doc.body);
           for (const node of nodes) {
             handleNode(node);
           }
-          pasteAreaShadowRoot.innerHTML = "";
+          n.remove();
           return result.html();
         }
       
@@ -673,6 +679,14 @@ function replaceRichTextareas(): void {
       return;
     }
     const pasteAreaShadowRoot = pasteAreaElement.attachShadow({ mode: "open" });
+    $(pasteAreaShadowRoot).append(`
+      <style>
+        .taskminder-link {
+          color: #3bb9ca;
+          font-weight: bold;
+        }
+      </style>
+    `);
     const textarea = richTextarea.find(".rich-textarea-input");
     $(`label[for="${$(this).attr("id")}"]`).on("click", () => {
       textarea.trigger("focus");
@@ -680,16 +694,6 @@ function replaceRichTextareas(): void {
 
     textarea.html(richTextToHtml(input.val()?.toString() ?? ""));
     textarea.toggleClass("rich-textarea-empty", textarea.html() === "");
-
-    const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        if ((entry.contentRect.height ?? 0) >= 120) {
-          textarea.css("height", "auto");
-          textarea.css("height", textarea[0].scrollHeight + 2 + "px");
-        }
-      }
-    });
-    resizeObserver.observe(textarea[0]);
 
     const currentStyles = {
       bold: false,
@@ -949,13 +953,13 @@ function replaceRichTextareas(): void {
 
     richTextarea.find(".rich-textarea-color-picker-toggle").on("click", ev => {
       ev.stopPropagation();
-      richTextarea.find(".rich-textarea-color-picker ~ .color-picker-trigger").trigger("click");
+      richTextarea.find(".rich-textarea-color-picker .color-picker-trigger").trigger("click");
     });
 
     richTextarea.find(".rich-textarea-color-picker").on("change", function () {
       const color = $(this).val()?.toString() ?? "#3bb9ca";
       currentStyles.color.value = color;
-      if (color === "auto") {
+      if (color === "auto" || color === "Automatisch") {
         richTextarea.find(".rich-textarea-color svg").hide().find("~ span").show();
         richTextarea.find(".rich-textarea-color-enabled").hide();
       }

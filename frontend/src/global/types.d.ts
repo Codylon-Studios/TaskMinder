@@ -1,9 +1,35 @@
 export const __placeholder;
 
+type AjaxError = {
+  status: number;
+  responseText: string;
+}
+
+type AjaxOptions = {
+  body?: unknown;
+  headers?: Record<string, string>;
+  queueable?: boolean;
+  forceOffline?: boolean;
+  passFailedRequests?: boolean;
+  expectedErrors?: AjaxError[];
+}
+
+type SerializedRequest = {
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body: ArrayBuffer
+}
+
 type RawDate = number | string | Date
 
 // Month Dates
 type MonthDates = Date[][];
+
+export type UserEventName = "change";
+export type UserEventCallback = (...args: unknown[]) => void;
+
+type Bootstrap = { version: string, maintenance: boolean, online: boolean }
 
 // Data Accessors
 type DataAccessorEventName = "update" | "change";
@@ -25,6 +51,15 @@ type SocketDataAccessor<DataType> = DataAccessor<DataType>;
 //  │ RESOURCES │
 //  ╰───────────╯
 
+// Class Info
+type ClassInfo = {
+  classCode: string;
+  className: string;
+  isTestClass: boolean;
+  createdAt: string;
+  defaultPermission: number;
+}
+
 // Class Members
 type ClassMemberPermissionLevel = 0 | 1 | 2 | 3
 type ClassMemberData = {
@@ -43,6 +78,7 @@ type SingleEventData = {
   endDate: string | null;
   lesson: string | null;
   teamId: number;
+  isPinned: boolean;
 };
 type EventData = SingleEventData[];
 
@@ -61,6 +97,7 @@ type HomeworkData = {
   assignmentDate: string;
   submissionDate: string;
   teamId: number;
+  isPinned: boolean;
 }[];
 
 // Homework Checked
@@ -70,7 +107,7 @@ type HomeworkCheckedData = number[];
 type JoinedTeamsData = number[];
 
 // Lessons
-type LessonData = {
+type SingleLessonData = {
   lessonId: number;
   lessonNumber: number;
   weekDay: 0 | 1 | 2 | 3 | 4;
@@ -79,7 +116,8 @@ type LessonData = {
   room: string;
   startTime: string;
   endTime: string;
-}[];
+};
+type LessonData = SingleLessonData[];
 
 // Subjects
 type SubjectData = {
@@ -136,20 +174,21 @@ type LessonWithSubject = {
   room: string;
   startTime: number;
   endTime: number;
+  teamId: number;
 };
 type LessonWithSubstitution = LessonWithSubject & {
-  substitution?: SubstitutionEntry
-};
-type LessonWithEvent = LessonWithSubstitution & {
-  events?: SingleEventData[]
+  substitution?: SubstitutionEntry & { subjectId: number | null }
 };
 type LessonGroup = {
   lessonNumber: number;
   startTime: number;
   endTime: number;
-  lessons: LessonWithEvent[];
+  lessons: LessonWithSubstitution[];
 };
-type TimetableData = LessonGroup & {
+type LessonGroupWithEvent = LessonGroup & {
+  events?: SingleEventData[]
+};
+type TimetableData = LessonGroupWithEvent & {
   startLessonNumber: number;
   endLessonNumber: number;
   lessonTimes: {
@@ -162,13 +201,15 @@ type TimetableData = LessonGroup & {
 type SingleUploadData = {
   uploadId: number;
   uploadName: string;
+  uploadDescription: string | null;
   uploadType: string;
   teamId: number;
   status: string;
-  errorReason: null;
+  errorReason: string | null;
   accountName: string | null;
   filesCount: number;
   createdAt: string;
+  isPinned: boolean;
   files: {
     fileMetaDataId: 1;
     mimeType: string;
@@ -179,8 +220,16 @@ type SingleUploadData = {
 
 type UploadData = {
   totalUploads: number;
-  hasMore: boolean;
   totalStorage: string;
   usedStorage: string;
+  sizeLimitPerFile: number;
+  maxFilesPerClass: number;
   uploads: SingleUploadData[];
 }
+
+type UploadRequestsData = {
+  uploadRequestId: number;
+  uploadRequestName: string;
+  classId: number;
+  teamId: number;
+}[]

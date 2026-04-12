@@ -7,20 +7,26 @@ import {
   getDisplayDate,
   msToInputDate,
   teamsData,
-  csrfToken,
   lessonData,
   escapeHTML,
   dateDaysDifference,
-  onlyThisSite
+  onlyThisSite,
+  ajax,
+  user,
+  checkTeamInputForSuspicious,
+  getInputValue
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
-import { $navbarToasts, user } from "../../snippets/navbar/navbar.js";
-import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
+import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
+import { SearchBox } from "../../snippets/richInput/richInput.js";
 
 async function renderEventList(): Promise<void> {
   async function getFilteredData(): Promise<EventData> {
     // Get the event data
     let data = await eventData();
+    
+    const pinned = data.filter(e => e.isPinned);
+    data = data.filter(e => ! e.isPinned);
     // Filter by min. date
     const filterDateMin = Date.parse($("#filter-date-from").val()?.toString() ?? "");
     if (! Number.isNaN(filterDateMin)) {
@@ -33,12 +39,14 @@ async function renderEventList(): Promise<void> {
     }
     // Filter by search
     const sb = ($("#search-events")[0] as SearchBox);
-    data = data.filter(e => sb.searchMatches(e.name, e.description ?? ""));
+    data = data.filter(e => sb.searchMatches(e.name, richTextToPlainText(e.description ?? "")));
     // Filter by type
     data = data.filter(e => $(`#filter-type-${e.eventTypeId}`).prop("checked"));
     // Filter by team
     const currentJoinedTeamsData = await joinedTeamsData();
     data = data.filter(e => currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1);
+
+    data = pinned.concat(data);
     
     return data;
   }
@@ -103,6 +111,9 @@ async function renderEventList(): Promise<void> {
                   <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
                     <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
                   </button>
+                  <button class="btn btn-sm btn-semivisible event-pin" data-id="${eventId}" aria-label="Anheften">
+                    <i class="fa-solid fa-thumbtack${event.isPinned ? "-slash" : ""} event-${eventTypeId} opacity-75" aria-hidden="true"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -111,13 +122,17 @@ async function renderEventList(): Promise<void> {
         </div>
       </div>
       `);
+    galleryTemplate.find(".event-pin").toggle(event.isPinned || user.permissionLevel >= 1);
     galleryTemplate.find(".edit-option").toggle(editEnabled);
 
     const tableTemplate = $(`
       <tr>
         <td class="text-nowrap"><div class="color-display event-${eventTypeId}"></div></td>
-        <td class="text-break"><span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span></td>
-        <td class="text-nowrap">${timeSpan.html()}</td>
+        <td class="text-break">
+          <span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span>
+          <br>
+          <span class="badge badge-tertiary rounded-pill border"><i class="far fa-calendar me-1" aria-hidden="true"></i>${timeSpan.html()}</span>
+        </td>
         <td class="text-break"><div class="event-description"></div></td>
         <td class="text-nowrap">
           <div class="d-flex flex-nowrap">
@@ -130,10 +145,14 @@ async function renderEventList(): Promise<void> {
             <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
               <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
             </button>
+            <button class="btn btn-sm btn-semivisible event-pin" data-id="${eventId}" aria-label="Anheften">
+              <i class="fa-solid fa-thumbtack${event.isPinned ? "-slash" : ""} event-${eventTypeId} opacity-75" aria-hidden="true"></i>
+            </button>
           </div>
         </td>
       </tr>
     `);
+    tableTemplate.find(".event-pin").toggle(event.isPinned || user.permissionLevel >= 1);
     tableTemplate.find(".edit-option").toggle(editAllowed);
 
     const templates = galleryTemplate.add(tableTemplate);
@@ -173,6 +192,8 @@ async function renderEventList(): Promise<void> {
 async function renderEventTypeList(): Promise<void> {
   const currentEventTypeData = await eventTypeData();
 
+  const addEventTypeVal = $("#add-event-type").val() ?? "";
+  const editEventTypeVal = $("#edit-event-type").val() ?? "";
   // Clear the select element in the add & edit event modal
   $("#add-event-type, #edit-event-type").html('<option value="" disabled selected>Art</option>');
   // Clear the list for filtering by type
@@ -191,17 +212,21 @@ async function renderEventTypeList(): Promise<void> {
     if (checkedStatus !== "checked") $("#filter-changed").show();
 
     // Add the template for filtering by type
-    const templateFilterType = `<div class="form-check">
-        <input type="checkbox" class="form-check-input filter-type-option" id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
-        <label class="form-check-label" for="filter-type-${eventTypeId}">
-          ${eventTypeName}
-        </label>
-      </div>`;
+    const templateFilterType = `
+      <label class="form-check flex-grow-1 text-center mb-0 ps-2rem pe-2 py-1 border rounded bg-body-tertiary">
+        <input type="checkbox" class="form-check-input filter-type-option me-2"
+          id="filter-type-${eventTypeId}" data-id="${eventTypeId}" ${checkedStatus}>
+        ${eventTypeName}
+      </label>
+      `;
     $("#filter-type-list").append(templateFilterType);
 
     // Add the template for the select elements
     $("#add-event-type, #edit-event-type").append(`<option value="${eventTypeId}">${eventTypeName}</option>`);
   };
+
+  if (addEventTypeVal !== "") $("#add-event-type").val(addEventTypeVal);
+  if (editEventTypeVal !== "") $("#edit-event-type").val(editEventTypeVal);
 
   localStorage.setItem("eventFilter", JSON.stringify(filterData));
 
@@ -213,6 +238,9 @@ async function renderEventTypeList(): Promise<void> {
 };
 
 async function renderTeamList(): Promise<void> {
+  const addEventTeamVal = $("#add-event-team").val() ?? "-1";
+  const editEventTeamVal = $("#edit-event-team").val() ?? "-1";
+
   // Clear the select element in the add & edit event modal
   $("#add-event-team, #edit-event-team").html('<option value="-1" selected>Alle</option>');
 
@@ -220,6 +248,9 @@ async function renderTeamList(): Promise<void> {
     // Add the template for the select elements
     $("#add-event-team, #edit-event-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   }
+
+  $("#add-event-team").val(addEventTeamVal);
+  $("#edit-event-team").val(editEventTeamVal);
 };
 
 function addEvent(): void {
@@ -232,10 +263,10 @@ function addEvent(): void {
   $("#add-event-name").val("");
   $("#add-event-description").val("");
   $("#add-event-description").trigger("change");
-  $("#add-event-start-date").val("");
+  $("#add-event-start-date").val("").removeClass("is-suspicious");
   $("#add-event-lesson").val("");
-  $("#add-event-end-date").val("");
-  $("#add-event-team").val("-1");
+  $("#add-event-end-date").val("").removeClass("is-suspicious is-invalid");
+  $("#add-event-team").val("-1").removeClass("is-suspicious");
 
   // Disable the actual "add" button, because not all information is given
   $("#add-event-button").prop("disabled", true);
@@ -245,72 +276,32 @@ function addEvent(): void {
 
   // Called when the user clicks the "add" button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#add-event-button")
-    .off("click")
-    .on("click", async () => {
-      // Save the given information in variables
-      const eventTypeId = $("#add-event-type").val();
-      const name = $("#add-event-name").val()?.toString().trim();
-      const description = $("#add-event-description").val()?.toString().trim();
-      const startDate = $("#add-event-start-date").val()?.toString() ?? "";
-      const lesson = $("#add-event-lesson").val()?.toString().trim();
-      const endDate = $("#add-event-end-date").val()?.toString() ?? "";
-      const team = $("#add-event-team").val();
+  $("#add-event-button").off("click").on("click", async () => {
+    // Save the given information in variables
+    const eventTypeId = $("#add-event-type").val();
+    const name = $("#add-event-name").val()?.toString().trim();
+    const description = $("#add-event-description").val()?.toString().trim();
+    const startDate = $("#add-event-start-date").val()?.toString() ?? "";
+    const lesson = $("#add-event-lesson").val()?.toString().trim();
+    const endDate = $("#add-event-end-date").val()?.toString() ?? "";
+    const teamId = $("#add-event-team").val();
 
-      // Prepare the POST request
-      const data = {
-        eventTypeId: eventTypeId,
-        name: name,
-        description: description,
+    await ajax("POST", "/api/events", {
+      body: {
+        eventTypeId,
+        name,
+        description,
         startDate: dateToMs(startDate),
-        lesson: lesson,
+        lesson,
         endDate: dateToMs(endDate) ?? null,
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/events/add_event",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification and update the shown events
-          $("#add-event-success-toast").toast("show");
-          // Hide the add event modal
-          $("#add-event-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
-      });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 1000);
+        teamId
+      },
+      queueable: true
     });
+
+    $("#add-event-success-toast").toast("show");
+    $("#add-event-modal").modal("hide");
+  });
 }
 
 async function shareEvent(eventId: number): Promise<void> {
@@ -441,6 +432,23 @@ async function shareEvent(eventId: number): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+async function pinEvent(eventId: number): Promise<void> {
+  const event = (await eventData()).find(e => e.eventId === eventId);
+  if (!event) return;
+
+  await ajax("PATCH", `/api/events/${eventId}/pin`, {
+    body: {
+      pinStatus: !event.isPinned
+    },
+    queueable: true
+  });
+
+  const actionText = event.isPinned ? "losgelöst" : "angeheftet";
+  $("#pin-event-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
+  $("#pin-event-success-toast .toast-body").text(`Das Ereignis wurde erfolgreich ${actionText}.`);
+  $("#pin-event-success-toast").toast("show");
+}
+
 async function editEvent(eventId: number): Promise<void> {
   //
   // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY EDITS AN EVENT
@@ -455,10 +463,10 @@ async function editEvent(eventId: number): Promise<void> {
   $("#edit-event-name").val(event.name);
   $("#edit-event-description").val(event.description ?? "");
   $("#edit-event-description").trigger("change");
-  $("#edit-event-start-date").val(msToInputDate(event.startDate));
+  $("#edit-event-start-date").val(msToInputDate(event.startDate)).removeClass("is-suspicious");
   $("#edit-event-lesson").val(event.lesson ?? "");
-  $("#edit-event-end-date").val(msToInputDate(event.endDate ?? ""));
-  $("#edit-event-team").val(event.teamId);
+  $("#edit-event-end-date").val(msToInputDate(event.endDate ?? "")).removeClass("is-suspicious is-invalid");
+  $("#edit-event-team").val(event.teamId).removeClass("is-suspicious");
 
   // Enable the actual "edit" button, because all information is given
   $("#edit-event-button").prop("disabled", false);
@@ -478,61 +486,23 @@ async function editEvent(eventId: number): Promise<void> {
       const startDate = $("#edit-event-start-date").val()?.toString() ?? "";
       const lesson = $("#edit-event-lesson").val()?.toString().trim() ?? null;
       const endDate = $("#edit-event-end-date").val()?.toString() ?? "";
-      const team = $("#edit-event-team").val();
+      const teamId = $("#edit-event-team").val();
 
-      const data = {
-        eventId: eventId,
-        eventTypeId: eventTypeId,
-        name: name,
-        description: description,
-        startDate: dateToMs(startDate),
-        lesson: lesson,
-        endDate: dateToMs(endDate),
-        teamId: team
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/events/edit_event",
-        type: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(data),
-        headers: {
-          "X-CSRF-Token": await csrfToken()
+      await ajax("PATCH", `/api/events/${eventId}`, {
+        body: {
+          eventTypeId,
+          name,
+          description,
+          startDate: dateToMs(startDate),
+          lesson,
+          endDate: dateToMs(endDate),
+          teamId
         },
-        success: () => {
-          // Show a success notification and update the shown events
-          $("#edit-event-success-toast").toast("show");
-          $("#edit-event-modal").modal("hide");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+
+      $("#edit-event-success-toast").toast("show");
+      $("#edit-event-modal").modal("hide");
     });
 }
 
@@ -552,50 +522,11 @@ function deleteEvent(eventId: number): void {
       // Hide the confirmation toast
       $("#delete-event-confirm-toast").toast("hide");
 
-      const data = {
-        eventId: eventId
-      };
-      // Save whether the server has responed
-      let hasResponded = false;
-
-      // Post the request
-      $.ajax({
-        url: "/events/delete_event",
-        type: "POST",
-        data: data,
-        headers: {
-          "X-CSRF-Token": await csrfToken()
-        },
-        success: () => {
-          // Show a success notification and update the shown events
-          $("#delete-event-success-toast").toast("show");
-        },
-        error: xhr => {
-          if (xhr.status === 401) {
-            // The user has to be logged in but isn't
-            // Show an error notification
-            $navbarToasts.notLoggedIn.toast("show");
-          }
-          else if (xhr.status === 500) {
-            // An internal server error occurred
-            $navbarToasts.serverError.toast("show");
-          }
-          else {
-            $navbarToasts.unknownError.toast("show");
-          }
-        },
-        complete: () => {
-          // The server has responded
-          hasResponded = true;
-        }
+      await ajax("DELETE", `/api/events/${eventId}`, {
+        queueable: true
       });
-      setTimeout(() => {
-        // Wait for 1s
-        if (!hasResponded) {
-          // If the server hasn't answered, show the internal server error notification
-          $navbarToasts.serverError.toast("show");
-        }
-      }, 5000);
+      
+      $("#delete-event-success-toast").toast("show");
     });
 }
 
@@ -626,10 +557,9 @@ async function updateFilters(ingoreEventTypes?: boolean): Promise<void> {
 }
 
 function toggleShownButtons(): void {
-  const loggedIn = user.loggedIn;
   $("#edit-toggle-label").toggle(user.permissionLevel >= 1);
   $("#show-add-event-button").toggle(user.permissionLevel >= 1);
-  if (!loggedIn) {
+  if (user.permissionLevel < 1) {
     $(".edit-option").addClass("d-none");
   }
 }
@@ -645,21 +575,35 @@ function toggleView(): void {
     $("#event-gallery").hide();
     $("#event-table").show();
   }
-  localStorage.setItem("events/view", view);
+  localStorage.setItem("eventView", view);
 }
 
 export async function init(): Promise<void> {
   return new Promise(res => {
-    $("#edit-toggle").on("click", function () {
+    $("#edit-toggle").on("change", function () {
       $("#event-gallery .edit-option").toggle($(this).is(":checked"));
     }).prop("checked", false);
     $("#event-gallery .edit-option").hide();
 
-    $("#filter-toggle").on("click", function () {
-      $("#filter-content, #filter-reset").toggle($(this).is(":checked"));
-    }).prop("checked", true).trigger("click");
+    function appendFilterContent(): void {
+      $("#filter-content").appendTo(`#filter-${window.innerWidth >= 768 ? "modal" : "offcanvas"}-body`);
+    }
 
-    view = localStorage.getItem("events/view") as View ?? View.Gallery;
+    $("#filter-toggle").on("click", function () {
+      appendFilterContent();
+      if (window.innerWidth >= 768) $("#filter-modal").modal("show");
+      else $("#filter-offcanvas").offcanvas("show");
+    });
+    appendFilterContent();
+
+    $("#search-toggle").on("change", function () {
+      const checked = $(this).is(":checked");
+      $("#search-events").toggle(checked);
+      if (checked) $("#search-events input").trigger("focus");
+      else $("#search-events").val("");
+    }).prop("checked", false).trigger("change");
+
+    view = localStorage.getItem("eventView") as View ?? View.Gallery;
     toggleView();
     $("#view-toggle").on("click", () => {
       view = view === View.Gallery ? View.Table : View.Gallery;
@@ -667,7 +611,7 @@ export async function init(): Promise<void> {
     });
 
     updateFilters(true);
-    $("#filter-reset").on("click", () => {
+    $(".filter-reset").on("click", () => {
       localStorage.setItem("eventFilter", "{}");
       updateFilters();
       renderEventList();
@@ -675,13 +619,48 @@ export async function init(): Promise<void> {
 
     $("#search-events").on("input", renderEventList);
 
+    const checkEndDateAfterStartDate = (addOrEdit: "add" | "edit"): void => {
+      const start = getInputValue($(`#${addOrEdit}-event-start-date`));
+      const end = getInputValue($(`#${addOrEdit}-event-end-date`));
+      if (start === "" || end === "") return;
+      $(`#${addOrEdit}-event-end-date`).toggleClass("is-invalid", new Date(start).getTime() > new Date(end).getTime());
+    };
+
+    function startDateInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): void {
+      checkEndDateAfterStartDate(addOrEdit);
+    }
+
+    function endDateInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): void {
+      const val = getInputValue($(this));
+      if (val === "") {
+        $(this).removeClass("is-suspicious");
+        return;
+      }
+
+      checkEndDateAfterStartDate(addOrEdit);
+
+      const date = new Date(val);
+      const now = new Date();
+
+      $(this).toggleClass("is-suspicious", date.getTime() < now.getTime() && !isSameDay(date, now));
+    }
+    
+    $("#add-event-start-date").on("input autocomplete", function () {
+      startDateInputCallback.call(this, "add");
+    });
+    $("#add-event-end-date").on("input autocomplete", function () {
+      endDateInputCallback.call(this, "add");
+    });
+    $("#add-event-team").on("input autocomplete", checkTeamInputForSuspicious);
+
     // On changing any information in the add event modal, disable the add button if any information is empty
     $(".add-event-input").on("input", function () {
+      console.log("Input");
       const type = $("#add-event-type").val();
       const name = $("#add-event-name").val()?.toString().trim();
       const startDate = $("#add-event-start-date").val();
 
-      $("#add-event-button").prop("disabled", [name, startDate].includes("") || type === null);
+      $("#add-event-button").prop("disabled", [name, startDate].includes("") || type === null || $("#add-event-end-date").hasClass("is-invalid"));
 
       if ($(this).is("#add-event-end-date")) {
         $("#add-event-lesson").val("");
@@ -690,14 +669,22 @@ export async function init(): Promise<void> {
         $("#add-event-end-date").val("");
       }
     });
+    
+    $("#edit-event-start-date").on("input autocomplete", function () {
+      startDateInputCallback.call(this, "edit");
+    });
+    $("#edit-event-end-date").on("input autocomplete", function () {
+      endDateInputCallback.call(this, "edit");
+    });
+    $("#edit-event-team").on("input autocomplete", checkTeamInputForSuspicious);
 
     // On changing any information in the edit event modal, disable the edit button if any information is empty
-    $(".edit-event-input").on("input", function () {
+    $(".edit-event-input").on("input change", function () {
       const type = $("#edit-event-type").val();
       const name = $("#edit-event-name").val()?.toString().trim();
       const startDate = $("#edit-event-start-date").val();
 
-      $("#edit-event-button").prop("disabled", [name, startDate].includes("") || type === null);
+      $("#edit-event-button").prop("disabled", [name, startDate].includes("") || type === null || $("#edit-event-end-date").hasClass("is-invalid"));
 
       if ($(this).is("#edit-event-end-date")) {
         $("#edit-event-lesson").val("");
@@ -710,6 +697,11 @@ export async function init(): Promise<void> {
     // Share the event on clicking its share icon
     $("#app").on("click", ".event-share", function () {
       shareEvent($(this).data("id"));
+    });
+
+    // Pin the event on clicking its pin icon
+    $("#app").on("click", ".event-pin", function () {
+      pinEvent($(this).data("id"));
     });
 
     // Request deleting the event on clicking its delete icon
@@ -737,7 +729,6 @@ export async function init(): Promise<void> {
     // On clicking the none types option, uncheck all and update the event list
     $("#filter-type-none").on("click", () => {
       const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
-      filterData.type ??= {};
       $(".filter-type-option").prop("checked", false);
       $(".filter-type-option").each(function () {
         filterData.type[$(this).data("id")] = false;
@@ -748,7 +739,7 @@ export async function init(): Promise<void> {
     });
 
     // If any type filter gets changed, update the shown events
-    $(".filter-type-option").on("change", function () {
+    $("#app").on("change", ".filter-type-option", function () {
       renderEventList();
       const filterData = JSON.parse(localStorage.getItem("eventFilter") ?? "{}") ?? {};
       filterData.type ??= {};
@@ -786,6 +777,36 @@ export async function init(): Promise<void> {
       renderEventList();
     });
 
+    const $filterOffcanvas = $("#filter-offcanvas");
+    const $filterOffcanvasHeader = $("#filter-offcanvas .offcanvas-header");
+
+    let startY = 0;
+    let dragging = false;
+
+    $filterOffcanvasHeader.on("pointerdown", ev => {
+      if (ev.pointerType !== "touch") return;
+      startY = ev.clientY ?? 0;
+      dragging = true;
+      $filterOffcanvas.css("transition", "none");
+    });
+    $filterOffcanvasHeader.on("pointermove", ev => {
+      if (!dragging) return;
+      const diff = (ev.clientY ?? 0) - startY;
+      if (diff > 0) {
+        $filterOffcanvas.css("transform", `translateY(${diff}px)`);
+      }
+    });
+    $filterOffcanvasHeader.on("pointerup pointercancel", ev => {
+      if (!dragging) return;
+      dragging = false;
+      const diff = (ev.clientY ?? 0) - startY;
+
+      $filterOffcanvas.css({transition: "transform 0.3s ease-in-out", transform: ""});
+      if (diff > 100) {
+        $filterOffcanvas.offcanvas("hide");
+      }
+    });
+
     $("#app").on("click", "#show-add-event-button", () => {
       addEvent();
     });
@@ -807,8 +828,6 @@ $(globalThis).on("resize", toggleView);
   renderTeamList();
   renderEventList(); 
 }));
-
-await user.awaitAuthed();
 
 (await joinedTeamsData.init()).on("update", onlyThisSite(renderEventList));
 

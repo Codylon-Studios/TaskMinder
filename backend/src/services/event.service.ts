@@ -1,8 +1,8 @@
-import logger from "../config/logger";
-import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
-import sass from "sass";
-import { default as prisma } from "../config/prisma";
+import logger from "../config/logger.js";
+import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import * as sass from "sass";
+import { default as prisma } from "../config/prisma.js";
 import {
   isValidColor,
   isValidTeamId,
@@ -10,19 +10,31 @@ import {
   updateCacheData,
   BigIntreplacer,
   invalidateCache,
-  isValidEventTypeId
-} from "../utils/validate.functions";
+  isValidEventTypeId,
+  dateChecker
+} from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
-import { RequestError } from "../@types/requestError";
-import { addEventTypeBody, deleteEventTypeBody, editEventTypeBody, setEventTypesTypeBody } from "../schemas/event.schema";
+import { RequestError } from "../@types/requestError.js";
+import { 
+  editEventTypeParams,
+  deleteEventTypeParams,
+  pinEventTypeParams,
+  addEventTypeBody,
+  editEventTypeBody, 
+  setEventTypesTypeBody, 
+  pinEventTypeBody 
+} from "../schemas/event.schema.js";
+import { Prisma } from "@prisma/client";
 
 const inFlightStyleBuild = new Map<number, Promise<string>>();
 
 export const eventService = {
   async getEventData(session: Session & Partial<SessionData>) {
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
     // get cache key from class to fetch from cache
     const getEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
-
     const cachedEventData = await redisClient.get(getEventDataCacheKey);
 
     if (cachedEventData) {
@@ -31,17 +43,21 @@ export const eventService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
     // no cache data available, fetch from database and update cache
     const eventData = await prisma.event.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId
       },
-      orderBy: {
-        startDate: "asc"
-      }
+      orderBy: [
+        { isPinned: "desc" },
+        { startDate: "asc" },
+        { endDate: "asc" },
+        { name: "asc" },
+        { description: "asc" }
+      ]
     });
 
     try {
@@ -49,18 +65,81 @@ export const eventService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     const stringified = JSON.stringify(eventData, BigIntreplacer);
     return JSON.parse(stringified);
   },
 
+  async pinEvent(reqParams: pinEventTypeParams, reqBody: pinEventTypeBody, session: Session & Partial<SessionData>) {
+    const { pinStatus } = reqBody;
+    const { id: eventId } = reqParams;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
+    const existingEvent = await prisma.event.findFirst({
+      where: {
+        eventId,
+        classId
+      },
+      select: {
+        teamId: true
+      }
+    });
+
+    if (!existingEvent) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Event not found",
+        expected: true
+      };
+      throw err;
+    }
+
+
+    await isValidTeamId(existingEvent.teamId, session);
+
+    try {
+      await prisma.event.update({
+        where: {
+          eventId: eventId
+        },
+        data: {
+          isPinned: pinStatus
+        }
+      });
+    }
+    catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+        const reqErr: RequestError = {
+          name: "Not Found",
+          status: 404,
+          message: "Event not found",
+          expected: true
+        };
+        throw reqErr;
+      }
+      throw err;
+    }
+
+    await invalidateCache("EVENT", classId.toString());
+    const io = socketIO.getIO();
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
+  },
+
   async addEvent(
-    reqData: addEventTypeBody,
+    reqBody: addEventTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
+    const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqBody;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
+    if (endDate){
+      dateChecker(startDate, endDate);
+    }
     lessonDateEventAtLeastOneNull(endDate, lesson);
     await isValidTeamId(teamId, session);
     await isValidEventTypeId(eventTypeId, session);
@@ -68,39 +147,63 @@ export const eventService = {
       await prisma.event.create({
         data: {
           eventTypeId: eventTypeId,
-          classId: parseInt(session.classId!, 10),
+          classId,
+          isPinned: false,
           name: name,
           description: description,
           startDate: startDate,
           lesson: lesson,
           endDate: endDate,
           teamId: teamId,
-          createdAt: Date.now()
+          createdAt: BigInt(Date.now())
         }
       });
     }
-    catch {
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
-        expected: true
-      };
+    catch (err) {
+      if (err instanceof Prisma.PrismaClientValidationError) {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid data format",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid relation reference",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      logger.error(`addEvent failed with unexpected database error: ${err}`);
       throw err;
     }
 
     // invalidate cache
-    await invalidateCache("EVENT", session.classId!);
+    await invalidateCache("EVENT", classId.toString());
     // send socket event
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
   },
 
   async editEvent(
-    reqData: editEventTypeBody,
+    reqParams: editEventTypeParams,
+    reqBody: editEventTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { eventId, eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqData;
+    const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqBody;
+    const { id: eventId } = reqParams;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
+    if (endDate){
+      dateChecker(startDate, endDate);
+    }
     lessonDateEventAtLeastOneNull(endDate, lesson);
     await isValidTeamId(teamId, session);
     await isValidEventTypeId(eventTypeId, session);
@@ -108,7 +211,7 @@ export const eventService = {
       const updated = await prisma.event.updateMany({
         where: {
           eventId: eventId,
-          classId: parseInt(session.classId!, 10)
+          classId
         },
         data: {
           eventTypeId: eventTypeId,
@@ -131,32 +234,50 @@ export const eventService = {
         throw err;
       }
     }
-    catch (e) {
-      if ((e as RequestError)?.expected) throw e;
+    catch (err) {
+      if ((err as RequestError)?.expected) throw err;
 
-      const err: RequestError = {
-        name: "Bad Request",
-        status: 400,
-        message: "Invalid data format",
-        expected: true
-      };
+      if (err instanceof Prisma.PrismaClientValidationError) {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid data format",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2003") {
+        const reqErr: RequestError = {
+          name: "Bad Request",
+          status: 400,
+          message: "Invalid relation reference",
+          expected: true
+        };
+        throw reqErr;
+      }
+
+      logger.error(`editEvent failed with unexpected database error: ${err}`);
       throw err;
     }
 
     // invalidate cache
-    await invalidateCache("EVENT", session.classId!);
+    await invalidateCache("EVENT", classId.toString());
     // send socket event
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
   },
 
-  async deleteEvent(reqData: deleteEventTypeBody, session: Session & Partial<SessionData>) {
-    const { eventId } = reqData;
+  async deleteEvent(reqParams: deleteEventTypeParams, session: Session & Partial<SessionData>) {
+    const { id: eventId } = reqParams;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
 
     const deleted = await prisma.event.deleteMany({
       where: {
         eventId: eventId,
-        classId: parseInt(session.classId!, 10)
+        classId
       }
     });
 
@@ -171,13 +292,16 @@ export const eventService = {
     }
 
     // invalidate cache
-    await invalidateCache("EVENT", session.classId!);
+    await invalidateCache("EVENT", classId.toString());
     // send socket event
     const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENTS);
+    io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
   },
 
   async getEventTypeData(session: Session & Partial<SessionData>) {
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
+    const classId = parseInt(session.classId!, 10);
     const getEventTypeDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPE, session.classId!);
     const cachedEventTypeData = await redisClient.get(getEventTypeDataCacheKey);
 
@@ -187,13 +311,13 @@ export const eventService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
     const eventTypeData = await prisma.eventType.findMany({
       where: {
-        classId: parseInt(session.classId!, 10)
+        classId
       },
       orderBy: {
         name: "asc"
@@ -205,16 +329,18 @@ export const eventService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
     return eventTypeData;
   },
 
   async setEventTypeData(
-    reqData: setEventTypesTypeBody,
+    reqBody: setEventTypesTypeBody,
     session: Session & Partial<SessionData>) {
-    const { eventTypes } = reqData;
+    const { eventTypes } = reqBody;
+    // always use classId instead of session.classId
+    // since session.classId can change during concurrent requests
     const classId = parseInt(session.classId!, 10);
 
     await prisma.$transaction(async tx => {
@@ -253,7 +379,7 @@ export const eventService = {
               classId,
               name: eventType.name,
               color: eventType.color,
-              createdAt: Date.now()
+              createdAt: BigInt(Date.now())
             }
           });
         }
@@ -282,27 +408,27 @@ export const eventService = {
 
     const eventTypeData = await prisma.eventType.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId
       }
     });
 
-    const setEventTypeDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPE, session.classId!);
+    const setEventTypeDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPE, classId.toString());
 
     try {
       await updateCacheData(eventTypeData, setEventTypeDataCacheKey);
       const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.EVENT_TYPES);
+      io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENT_TYPES);
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
-    try { 
-      await this.updateEventTypeStyles(session); 
-    } 
-    catch (e) { 
-      logger.error(String(e)); 
+    try {
+      await this.updateEventTypeStyles(session);
+    }
+    catch (e) {
+      logger.error(String(e));
     }
   },
 
@@ -321,7 +447,7 @@ export const eventService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis data: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -409,16 +535,16 @@ export const eventService = {
           }
         }
       }`;
-      const css = sass.compileString(scss).css;
+      const css = (await sass.compileStringAsync(scss, {style: "compressed"})).css;
 
-      const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, session.classId!);
+      const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, classId.toString());
 
       try {
-        await redisClient.set(updateEventTypeStylesCacheKey, css, { EX: cacheExpiration });
+        await redisClient.set(updateEventTypeStylesCacheKey, css, { expiration: { type: "EX", value: cacheExpiration } });
       }
       catch (err) {
         logger.error(`Error updating Redis cache: ${err}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
 
       return css;

@@ -1,11 +1,11 @@
-import { RequestError } from "../@types/requestError";
-import logger from "../config/logger";
-import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis";
-import { default as prisma } from "../config/prisma";
-import { invalidateCache, isValidGender, updateCacheData } from "../utils/validate.functions";
+import logger from "../config/logger.js";
+import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
+import { default as prisma } from "../config/prisma.js";
+import { BigIntreplacer, invalidateCache, updateCacheData } from "../utils/validate.functions.js";
 import { Session, SessionData } from "express-session";
-import { setSubjectsTypeBody } from "../schemas/subject.schema";
-import socketIO, { SOCKET_EVENTS } from "../config/socket";
+import { setSubjectsTypeBody } from "../schemas/subject.schema.js";
+import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { RequestError } from "../@types/requestError.js";
 
 const subjectService = {
   async getSubjectData(session: Session & Partial<SessionData>) {
@@ -19,7 +19,7 @@ const subjectService = {
       }
       catch (error) {
         logger.error(`Error parsing Redis cache: ${error}`);
-        throw new Error();
+        // fall through to prevent crashes and rely on DB
       }
     }
 
@@ -37,31 +37,30 @@ const subjectService = {
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
-      throw new Error();
+      // fall through to prevent crashes and rely on DB
     }
 
-    return data;
+    const stringified = JSON.stringify(data, BigIntreplacer);
+    return JSON.parse(stringified);
   },
   async setSubjectData(
     reqData: setSubjectsTypeBody,
     session: Session & Partial<SessionData>
   ) {
     const { subjects } = reqData;
+    const classId = parseInt(session.classId!, 10);
+
     const existingSubjects = await prisma.subjects.findMany({
       where: {
-        classId: parseInt(session.classId!)
+        classId
       }
     });
-
-    const classId = parseInt(session.classId!);
 
     // variable to check if cache should be reloaded
     let dataChanged = false;
     // track if subjects were deleted (affects homework and lessons)
     let subjectsDeleted = false;
 
-    // disable complexity because process pretty straightforward
-    // eslint-disable-next-line complexity
     await prisma.$transaction(async tx => {
       // delete subjects that are no present in new request
       await Promise.all(
@@ -86,81 +85,70 @@ const subjectService = {
       );
 
       for (const subject of subjects) {
-        // check if subjectNames or/and teacherNames are empty
-        const subjectNameInvalid = subject.subjectNameLong.trim() === "" || subject.subjectNameShort.trim() === "";
-        const teacherNameInvalid = subject.teacherNameLong.trim() === "" || subject.teacherNameShort.trim() === "";
-        if (subjectNameInvalid || teacherNameInvalid) {
-          const err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data format",
-            expected: true
-          };
-          throw err;
+        // if subject has no Id yet -> new subject
+        if (subject.subjectId === "") {
+          dataChanged = true;
+          await tx.subjects.create({
+            data: {
+              classId: classId,
+              subjectNameLong: subject.subjectNameLong,
+              subjectNameShort: subject.subjectNameShort,
+              subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
+              teacherGender: subject.teacherGender,
+              teacherNameLong: subject.teacherNameLong,
+              teacherNameShort: subject.teacherNameShort,
+              teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
+              createdAt: BigInt(Date.now())
+            }
+          });
         }
-        // check if valid gender was given
-        await isValidGender(subject.teacherGender);
-        try {
-          // if subject has no Id yet -> new subject
-          if (subject.subjectId === "") {
-            dataChanged = true;
-            await tx.subjects.create({
-              data: {
-                classId: classId,
-                subjectNameLong: subject.subjectNameLong,
-                subjectNameShort: subject.subjectNameShort,
-                subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
-                teacherGender: subject.teacherGender,
-                teacherNameLong: subject.teacherNameLong,
-                teacherNameShort: subject.teacherNameShort,
-                teacherNameSubstitution: subject.teacherNameSubstitution ?? [],
-                createdAt: Date.now()
-              }
-            });
+        else {
+          dataChanged = true;
+          const updated = await tx.subjects.updateMany({
+            where: {
+              subjectId: subject.subjectId,
+              classId: classId
+            },
+            data: {
+              subjectNameLong: subject.subjectNameLong,
+              subjectNameShort: subject.subjectNameShort,
+              subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
+              teacherGender: subject.teacherGender,
+              teacherNameLong: subject.teacherNameLong,
+              teacherNameShort: subject.teacherNameShort,
+              teacherNameSubstitution: subject.teacherNameSubstitution ?? []
+            }
+          });
+
+          if (updated.count === 0) {
+            const err: RequestError = {
+              name: "Not Found",
+              status: 404,
+              message: "Subject not found for update",
+              expected: true
+            };
+            throw err;
           }
-          else {
-            dataChanged = true;
-            await tx.subjects.update({
-              where: { subjectId: subject.subjectId },
-              data: {
-                subjectNameLong: subject.subjectNameLong,
-                subjectNameShort: subject.subjectNameShort,
-                subjectNameSubstitution: subject.subjectNameSubstitution ?? [],
-                teacherGender: subject.teacherGender,
-                teacherNameLong: subject.teacherNameLong,
-                teacherNameShort: subject.teacherNameShort,
-                teacherNameSubstitution: subject.teacherNameSubstitution ?? []
-              }
-            });
-          }
-        }
-        catch {
-          const err: RequestError = {
-            name: "Bad Request",
-            status: 400,
-            message: "Invalid data format",
-            expected: true
-          };
-          throw err;
         }
       }
     });
 
     if (dataChanged) {
       // invalidate subject cache
-      await invalidateCache("SUBJECT", session.classId!);
+      await invalidateCache("SUBJECT", classId.toString());
       const io = socketIO.getIO();
-      io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.SUBJECTS);
+      io.to(`class:${classId}`).emit(SOCKET_EVENTS.SUBJECTS);
 
       // If subjects were deleted, also delete lessons and homework caches
       if (subjectsDeleted) {
-        await invalidateCache("LESSON", session.classId!);
-        await invalidateCache("HOMEWORK", session.classId!);
+        await invalidateCache("LESSON", classId.toString());
+        await invalidateCache("HOMEWORK", classId.toString());
 
-        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.TIMETABLES);
-        io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.HOMEWORK);
+        io.to(`class:${classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+        io.to(`class:${classId}`).emit(SOCKET_EVENTS.HOMEWORK);
       }
     }
+    logger.info(`Subject data set for class: ${classId}`);
   }
 };
 
