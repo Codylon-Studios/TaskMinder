@@ -598,6 +598,11 @@ async function pinUpload(uploadId: number): Promise<void> {
     },
     queueable: true
   });
+  
+  const actionText = upload.isPinned ? "losgelöst" : "angeheftet";
+  $("#pin-upload-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
+  $("#pin-upload-success-toast .toast-body").text(`Die Datei wurde erfolgreich ${actionText}.`);
+  $("#pin-upload-success-toast").toast("show");
 }
 
 async function editUpload(uploadId: number): Promise<void> {

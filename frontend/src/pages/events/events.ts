@@ -442,6 +442,11 @@ async function pinEvent(eventId: number): Promise<void> {
     },
     queueable: true
   });
+
+  const actionText = event.isPinned ? "losgelöst" : "angeheftet";
+  $("#pin-event-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
+  $("#pin-event-success-toast .toast-body").text(`Das Ereignis wurde erfolgreich ${actionText}.`);
+  $("#pin-event-success-toast").toast("show");
 }
 
 async function editEvent(eventId: number): Promise<void> {

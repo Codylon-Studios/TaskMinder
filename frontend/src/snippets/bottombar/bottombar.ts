@@ -41,6 +41,8 @@ $(".bottombar-link").on("click", function() {
 
 let startX = 0;
 let startY = 0;
+let endX = 0;
+let endY = 0;
 let startTime = 0;
 let dragging = false;
 let startSide: "left" | "right";
@@ -52,8 +54,8 @@ $(document).on("pointerdown", ev => {
   if ($(".modal, .offcanvas").is(".show")) return;
 
   startTime = Date.now();
-  startX = ev.clientX ?? 0;
-  startY = ev.clientY ?? 0;
+  startX = endX = ev.clientX ?? 0;
+  startY = endY = ev.clientY ?? 0;
 
   if (startX < window.innerWidth * 0.2) {
     startSide = "left";
@@ -80,21 +82,21 @@ $(document).on("pointerdown", ev => {
 $(document).on("pointermove", ev => {
   if (!dragging) return;
 
-  const posX = ev.clientX ?? 0;
-  const posY = ev.clientY ?? 0;
-  const diffX = posX - startX;
-  const diffY = posY - startY;
+  endX = ev.clientX ?? 0;
+  endY = ev.clientY ?? 0;
+  const diffX = endX - startX;
+  const diffY = endY - startY;
 
   if (Math.abs(diffX) > Math.abs(diffY)) {
     $(".bottombar-overlay").css({
       opacity: Math.abs(diffX) / globalThis.innerWidth * 2,
       [startSide]: 0,
-      [endSide]: endSide === "left" ? posX : (globalThis.innerWidth - posX)
+      [endSide]: endSide === "left" ? endX : (globalThis.innerWidth - endX)
     }).show();
   }
 });
 
-$(document).on("pointerup pointercancel", async ev => {
+$(document).on("pointerup pointercancel", async () => {
   if (!dragging) return;
   dragging = false;
 
@@ -109,7 +111,7 @@ $(document).on("pointerup pointercancel", async ev => {
   }
   
   const timePassed = Date.now() - startTime;
-  const diffX = (ev.clientX ?? 0) - startX;
+  const diffX = endX - startX;
 
   $(".bottombar-overlay").css("transition", "0.3s ease-in-out");
   if (hasBeenDraggedEnough()) {

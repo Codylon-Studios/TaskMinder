@@ -555,6 +555,11 @@ async function pinHomework(homeworkId: number): Promise<void> {
     },
     queueable: true
   });
+
+  const actionText = homework.isPinned ? "losgelöst" : "angeheftet";
+  $("#pin-homework-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
+  $("#pin-homework-success-toast .toast-body").text(`Die Hausaufgabe wurde erfolgreich ${actionText}.`);
+  $("#pin-homework-success-toast").toast("show");
 }
 
 async function editHomework(homeworkId: number): Promise<void> {

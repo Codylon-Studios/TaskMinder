@@ -11,13 +11,11 @@ export const CSPMiddleware = (): RequestHandler => {
           "'sha256-QFw+QUzHJldIS6KPHm5fwXGah0NptK7NyfaX02zG9nc='",
           "'sha256-3fZXNfKWLWGx+X4+QnkmeW5Tkw85iCAvVLYdxv26qD4='"
         ] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        "connect-src": ["'self'", "wss://*", "blob:"],
         "style-src": ["'self'", "'unsafe-inline'"],
+        "connect-src": ["'self'"],
         "font-src": ["'self'"],
-        "img-src": ["'self'", "data:"],
         "object-src": ["'self'", "blob:"],
-        "frame-src": ["'self'", "blob:"],
-        "frame-ancestors": ["'self'"]
+        "img-src": ["'self'", "data:", "blob:"]
       }
     },
     referrerPolicy: {

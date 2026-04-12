@@ -73,9 +73,7 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-if (process.env.NODE_ENV === "PRODUCTION") {
-  app.use(CSPMiddleware());
-}
+app.use(CSPMiddleware());
 
 app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));
