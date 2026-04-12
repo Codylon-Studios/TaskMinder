@@ -4,7 +4,7 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.5] - 2026-04-11
+## \[v2.2.5] - 2026-04-12
 
 ### Breaking Changes
 * chore(db): migrate postgresql@14 to postgresql@18
