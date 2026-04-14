@@ -12,7 +12,7 @@ export const CSPMiddleware = (): RequestHandler => {
           "'sha256-3fZXNfKWLWGx+X4+QnkmeW5Tkw85iCAvVLYdxv26qD4='"
         ] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
         "style-src": ["'self'", "'unsafe-inline'"],
-        "connect-src": ["'self'"],
+        "connect-src": ["'self'", "blob:"],
         "font-src": ["'self'"],
         "object-src": ["'self'", "blob:"],
         "img-src": ["'self'", "data:", "blob:"],

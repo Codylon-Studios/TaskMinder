@@ -11,7 +11,8 @@ All changes are grouped by type and the latest version appears first.
 * chore(prisma): migrate to prisma 7
 
 ### Fixed
-* fix(middleware): pdf view fails on safari due to missing blob: for frame-src
+* fix(middleware): pdf view fails on safari due to missing blob: for frame-src and connect-src
+* fix(substitution): reduce substitution prefetch cache from 60min to 1 min (peak times) and 10 min (off-peak times)
 
 ---
 
