@@ -4,15 +4,20 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.6] - 2026-04-19
+## \[v2.2.6] - 2026-04-26
 
 ### Breaking Changes
 * chore(codebase): migrate to typescript 6
 * chore(prisma): migrate to prisma 7
+* chore(session): migrate from connect-pg-simple to custom redis store
 
 ### Fixed
 * fix(middleware): pdf view fails on safari due to missing blob: for frame-src and connect-src
 * fix(substitution): reduce substitution prefetch cache from 60min to 1 min (peak times) and 10 min (off-peak times)
+* fix(csrfToken): do not issue csrfTokens eagerly, only when /csrf-token is requested
+
+### Changed
+* chore(env): add centralized .env variable loader and config
 
 ---
 

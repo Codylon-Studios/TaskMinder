@@ -286,9 +286,7 @@ Before starting the application, create the following text files inside the `doc
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `db_name.txt`                  | Name of the PostgreSQL database.                                                                               |
 | `db_password.txt`              | Password for the PostgreSQL database user.                                                                     |
-| `db_host.txt`                  | Host for the database, usually `postgres` when running in docker.                                              |
 | `db_user.txt`                  | PostgreSQL database username.                                                                                  |
-| `redis_port.txt`               | Redis port (default is `6379`).                                                                                |
 | `session_secret.txt`           | Secure session secret (e.g., generate one with `openssl rand -base64 32`).                                     |
 | `database_url.txt`             | Provides the database URL for Prisma ORM: `postgresql://db_user:db_password@taskminder-postgres:5432/db_name`  |
 | `encryption_key.txt`           | Encryption key for server-side encryption in the database, generated with `openssl rand -base64 32`            |

@@ -9,8 +9,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "types": ["node", "bun", "express", "express-session", "connect-pg-simple", "bcrypt", "multer", "node-cron", "pg", "mime-types"],
-    "typeRoots": ["../node_modules/@types", "./src/@types"]
+    "types": ["node", "bun", "express", "express-session", "bcrypt", "multer", "node-cron", "mime-types"],
   },
+  "files": ["./src/@types/session.d.ts"],
   "include": ["./src/**/*"]
 }

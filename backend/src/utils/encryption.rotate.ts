@@ -3,11 +3,12 @@ dotenv.config();
 import { prisma } from "../config/prisma.js";
 import logger from "../config/logger.js";
 import { encryptionManager } from "./encryption.manager.js";
+import { requireBase64Key } from "../config/env.js";
 
 async function rotateClassCodeKeys(): Promise<void> {
-  if (!process.env.ENCRYPTION_KEY_SECONDARY) {
-    throw new Error("ENCRYPTION_KEY_SECONDARY must be set to rotate keys.");
-  }
+  // still use requireBase64Key(..) here since rotation script can be called as standalone
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const secondaryKey = requireBase64Key("ENCRYPTION_KEY_SECONDARY");
 
   const classes = await prisma.class.findMany({
     select: {

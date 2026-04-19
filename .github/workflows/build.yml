@@ -31,11 +31,9 @@ jobs:
       - name: Write secrets to files for Docker Compose
         run: |
           mkdir -p docker_secrets
-          echo "${{ secrets.DB_HOST }}" > docker_secrets/db_host.txt
           echo "${{ secrets.DB_NAME }}" > docker_secrets/db_name.txt
           echo "${{ secrets.DB_PASSWORD }}" > docker_secrets/db_password.txt
           echo "${{ secrets.DB_USER }}" > docker_secrets/db_user.txt
-          echo "${{ secrets.REDIS_PORT }}" > docker_secrets/redis_port.txt
           echo "${{ secrets.SESSION_SECRET }}" > docker_secrets/session_secret.txt
           echo "${{ secrets.DATABASE_URL }}" > docker_secrets/database_url.txt
           echo "${{ secrets.ENCRYPTION_KEY }}" > docker_secrets/encryption_key.txt

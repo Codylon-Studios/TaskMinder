@@ -7,6 +7,7 @@ import {
   randomBytes
 } from "crypto";
 import logger from "../config/logger.js";
+import { requireBase64Key } from "../config/env.js";
 
 const ENCRYPTION_PREFIX = "enc:v1:";
 // Derive a fixed 32-byte salt from a descriptive string
@@ -47,21 +48,10 @@ export class EncryptionManager {
   }
 
   static fromEnv(): EncryptionManager {
-    const primaryKeyValue = process.env.ENCRYPTION_KEY;
-    if (!primaryKeyValue) {
-      throw new Error("ENCRYPTION_KEY is required.");
-    }
-
-    const secondaryKeyValue = process.env.ENCRYPTION_KEY_SECONDARY;
-    if (!secondaryKeyValue) {
-      throw new Error("ENCRYPTION_KEY_SECONDARY is required.");
-    }
-
-    const lookupKeyValue = process.env.ENCRYPTION_KEY_LOOKUP;
-
-    if (!lookupKeyValue) {
-      throw new Error("ENCRYPTION_KEY_LOOKUP is required.");
-    }
+    // still use requireBase64Key(..) instead of loading from config since manager can be called as standalone singleton
+    const primaryKeyValue = requireBase64Key("ENCRYPTION_KEY");
+    const secondaryKeyValue = requireBase64Key("ENCRYPTION_KEY_SECONDARY");
+    const lookupKeyValue = requireBase64Key("ENCRYPTION_KEY_LOOKUP");
 
     const primaryKey = parseBase64Key(primaryKeyValue, "ENCRYPTION_KEY");
     const lookupKey = parseBase64Key(lookupKeyValue, "ENCRYPTION_KEY_LOOKUP");

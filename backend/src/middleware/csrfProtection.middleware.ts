@@ -3,6 +3,9 @@ import { Request, Response, NextFunction } from "express";
 import { RequestError } from "../@types/requestError.js";
 import logger from "../config/logger.js";
 
+const CSRF_TOKEN_BYTES = 32;
+const CSRF_TOKEN_HEX_LENGTH = CSRF_TOKEN_BYTES * 2;
+
 function throwCsrfUnauthorized(): never {
   const err: RequestError = {
     name: "Unauthorized",
@@ -16,14 +19,19 @@ function throwCsrfUnauthorized(): never {
 }
 
 function generateCSRFToken(): string {
-  return crypto.randomBytes(32).toString("hex");
+  return crypto.randomBytes(CSRF_TOKEN_BYTES).toString("hex");
 }
 
-export function csrfSessionInit(req: Request, res: Response, next: NextFunction): void {
+function isValidCsrfTokenFormat(providedToken: string, tokenFromSession: string): boolean {
+  return providedToken.length === CSRF_TOKEN_HEX_LENGTH && /^[a-f0-9]+$/i.test(providedToken) || 
+  tokenFromSession.length === CSRF_TOKEN_HEX_LENGTH && /^[a-f0-9]+$/i.test(tokenFromSession);
+}
+
+export function ensureCsrfSessionToken(req: Request): string {
   if (!req.session.csrfToken) {
     req.session.csrfToken = generateCSRFToken();
   }
-  next();
+  return req.session.csrfToken;
 }
 
 export function csrfProtection(req: Request, res: Response, next: NextFunction): void {
@@ -47,6 +55,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     || typeof providedToken !== "string"
     || !tokenFromSession
     || typeof tokenFromSession !== "string"
+    || !isValidCsrfTokenFormat(providedToken, tokenFromSession)
   ) {
     logger.warn("CSRF Check: Validation failed - Token missing or invalid type");
     throwCsrfUnauthorized();

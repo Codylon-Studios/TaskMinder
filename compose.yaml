@@ -9,13 +9,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=PRODUCTION
-      - REDIS_HOST=redis
     secrets:
-      - db_user
-      - db_password
-      - db_name
-      - db_host
-      - redis_port
       - session_secret
       - database_url
       - encryption_key
@@ -74,7 +68,7 @@ services:
       retries: 30
 
   prometheus:
-    image: prom/prometheus:v3.11.1
+    image: prom/prometheus:v3.11.2
     container_name: prometheus
     restart: always
     ports:
@@ -104,7 +98,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
   
   alloy:
-    image: grafana/alloy:v1.15.0
+    image: grafana/alloy:v1.15.1
     container_name: alloy
     restart: always
     volumes:
@@ -122,7 +116,7 @@ services:
       - app
 
   grafana:
-    image: grafana/grafana:12.4.2
+    image: grafana/grafana:13.0.0
     container_name: grafana
     restart: always
     ports:
@@ -146,10 +140,6 @@ secrets:
     file: ./docker_secrets/db_password.txt
   db_name:
     file: ./docker_secrets/db_name.txt
-  db_host:
-    file: ./docker_secrets/db_host.txt
-  redis_port:
-    file: ./docker_secrets/redis_port.txt
   session_secret:
     file: ./docker_secrets/session_secret.txt
   database_url:

@@ -4,21 +4,6 @@ set -e
 # ==============================================================================
 # ----- Load Docker Secrets into Environment Variables -----
 # ==============================================================================
-DB_USER="$(cat /run/secrets/db_user)"
-export DB_USER
-
-DB_PASSWORD="$(cat /run/secrets/db_password)"
-export DB_PASSWORD
-
-DB_NAME="$(cat /run/secrets/db_name)"
-export DB_NAME
-
-DB_HOST="$(cat /run/secrets/db_host)"
-export DB_HOST
-
-REDIS_PORT="$(cat /run/secrets/redis_port)"
-export REDIS_PORT
-
 SESSION_SECRET="$(cat /run/secrets/session_secret)"
 export SESSION_SECRET
 
@@ -91,12 +76,20 @@ if ! su-exec clamav:clamav clamdscan --version >/dev/null 2>&1; then
 fi
 
 # ======================================================================
-# Flush Redis (as bun)
+# Flush Redis (as bun) - migration to v2.2.6 - REMOVE THIS after migration finished
 # ======================================================================
-echo "Flushing Redis..."
-su-exec bun:bun redis-cli -h redis FLUSHALL || echo "Redis flush failed"
+# su-exec bun:bun redis-cli -h redis FLUSHALL || echo "Redis flush failed"
 
-echo "Initialization complete. Starting application as 'bun'..."
+# ======================================================================
+# Flush specific Redis key prefixes (cache:, auth_user:, auth_class:)
+# ======================================================================
+echo "Flushing targeted Redis keys..."
+su-exec bun:bun sh -c '
+  for pattern in "cache:*" "auth_user:*" "auth_class:*"; do
+    redis-cli -h redis --scan --pattern "$pattern" | xargs -r redis-cli -h redis DEL
+  done
+' || echo "Redis targeted flush failed"
+echo "Initialization complete. Starting application as '"'"'bun'"'"'..."
 
 # ==============================================================================
 # ----- Start the Main Application -----

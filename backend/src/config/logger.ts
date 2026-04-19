@@ -76,11 +76,11 @@ const customFormat = winston.format.printf(({ message, timestamp, level, ...meta
 });
 
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
+  level: "info",
   defaultMeta: { service: "TaskMinder" },
   transports: []
 });
-
+// use process.env. and not envConfig. since the logger and envConfig would have a circular dependency
 if (process.env.NODE_ENV === "DEVELOPMENT") {
   logger.add(new winston.transports.Console({
     format: winston.format.combine(

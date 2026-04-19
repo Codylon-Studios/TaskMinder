@@ -7,14 +7,14 @@ declare module "express-session" {
       accountId: number;
       username: string;
     };
-    classId: string;
+    classId?: string;
     csrfToken?: string;
   }
 }
 declare module "express" {
   interface Request {
-    file?: Multer.File;
-    allFiles?: Multer.File[];
+    file?: Express.Multer.File;
+    allFiles?: Express.Multer.File[];
     apiVersion?: string;
   }
 }

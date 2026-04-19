@@ -26,15 +26,6 @@ model Account {
   @@map("account")
 }
 
-model AccountSessions {
-  sid    String   @id(map: "session_pkey") @db.VarChar
-  sess   Json     @db.Json
-  expire DateTime @db.Timestamp(6)
-
-  @@index([expire], map: "IDX_session_expire")
-  @@map("account_sessions")
-}
-
 model Event {
   eventId     Int       @id @default(autoincrement()) @map("eventId")
   classId     Int

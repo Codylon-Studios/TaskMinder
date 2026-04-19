@@ -3,9 +3,9 @@ import { Prisma } from "../prisma/generated/prisma/client.js";
 import { Session, SessionData } from "express-session";
 import { prisma } from "../config/prisma.js";
 import { BigIntreplacer, generateRandomBase62String, invalidateCache } from "../utils/validate.functions.js";
-import { sessionPool } from "../config/pg.js";
 import logger from "../config/logger.js";
 import { redisClient } from "../config/redis.js";
+import { redisStore } from "../config/redis.js";
 import fs from "fs/promises";
 import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload.js";
@@ -713,24 +713,31 @@ const classService = {
       throw err;
     }
     try {
-      const deleteQuery = {
-        text: `
-        DELETE FROM "account_sessions"
-        WHERE
-        (sess->>'classId')::integer = $1
-        AND (sess->'account') IS NULL;
-        `,
-        values: [classId]
-      };
-
-      const result = await sessionPool.query(deleteQuery);
-      logger.info(`Successfully deleted ${result.rowCount} unregistered user sessions for class ${classId}.`);
+      // Scan all sess: keys and delete those matching classId with no account (unregistered users)
+      let deletedCount = 0;
+      const keys = await redisStore.getClassSessionKeys(classId);
+      for (const key of keys) {
+        // Redis client typing uses deeply nested generics that cause assignment failures.
+        // Runtime calls are safe — casting to any is intentional.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = await (redisClient as any).get(key);
+        if (!raw) {
+          await redisStore.removeClassSessionKey(classId, key);
+          continue;
+        }
+        const sess = JSON.parse(raw) as SessionData;
+        if (!sess.account) {
+          await redisStore.destroyBySessionKey(key);
+          deletedCount++;
+        }
+      }
+      logger.info(`Successfully deleted ${deletedCount} unregistered user sessions for class ${classId}.`);
     }
     catch {
       const err: RequestError = {
         name: "Internal Server Error",
         status: 500,
-        message: "Error while cleaning unregistred users of class",
+        message: "Error while cleaning unregistered users of class",
         expected: true
       };
       throw err;
