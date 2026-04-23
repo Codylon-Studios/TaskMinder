@@ -11,6 +11,9 @@ All changes are grouped by type and the latest version appears first.
 * chore(prisma): migrate to prisma 7
 * chore(session): migrate from connect-pg-simple to custom redis store
 
+### Added
+* feat(upload): add .md, .csv and .mp3 file upload support
+
 ### Fixed
 * fix(middleware): pdf view fails on safari due to missing blob: for frame-src and connect-src
 * fix(substitution): reduce substitution prefetch cache from 60min to 1 min (peak times) and 10 min (off-peak times)
@@ -18,6 +21,7 @@ All changes are grouped by type and the latest version appears first.
 
 ### Changed
 * chore(env): add centralized .env variable loader and config
+* chore(packages): bump packages to close security issues
 
 ---
 

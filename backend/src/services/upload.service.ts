@@ -1,6 +1,6 @@
 import { Session, SessionData } from "express-session";
 import path from "path";
-import { FINAL_UPLOADS_DIR, MAX_FILE_SIZE, MAX_FILES_PER_CLASS } from "../config/upload.js";
+import { FINAL_UPLOADS_DIR, MAX_FILE_SIZE, MAX_FILES_PER_CLASS, MIME_CANONICAL_ALIASES } from "../config/upload.js";
 import fs from "fs/promises";
 import { ReadStream, createReadStream } from "fs";
 import { prisma } from "../config/prisma.js";
@@ -32,6 +32,8 @@ type GetUploadFileResult = {
     "Cache-Control": string;
   };
 };
+
+const normalizeMimeType = (mimeType: string): string => MIME_CANONICAL_ALIASES[mimeType] ?? mimeType;
 
 // Helper function to map upload data
 const mapUploadData = (uploads: Awaited<ReturnType<typeof prisma.upload.findMany<{
@@ -294,7 +296,7 @@ const uploadService = {
     const encodedFileName = encodeURIComponent(filenameForHeader);
 
     const headers = {
-      "Content-Type": fileData.mimeType,
+      "Content-Type": normalizeMimeType(fileData.mimeType),
       "Content-Disposition": `${disposition}; filename="${safeOriginalName}"; filename*=UTF-8''${encodedFileName}`,
       "Cache-Control": "private, max-age=31536000, immutable"
     };

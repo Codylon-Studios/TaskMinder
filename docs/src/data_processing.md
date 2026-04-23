@@ -37,29 +37,6 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 2. AccountSessions Table
-
-**Purpose**: Session management and user state tracking, provided by `express-session`.
-
-| Field  | Data Type | Intentionally Stored                    | Potentially Unintentional                                               |
-| :----- | :-------- | :-------------------------------------- | :---------------------------------------------------------------------- |
-| sid    | String    | Session identifier for state management | Could enable session tracking across requests                           |
-| sess   | JSON      | **Session data and user context**       | **Risk**: May contain browsing patterns, IP addresses, device info |
-| expire | DateTime  | Session timeout management              | Could reveal usage patterns (login/logout times)                        |
-
-**Privacy Concerns**:
-
-- The `sess` JSON blob could inadvertently store sensitive runtime information.
-- Long session retention periods could enable user behavior analysis.
-- Session hijacking risks if cookies are not properly secured.
-
-**Solutions**:
-
-- The `sess` JSON column intentionally stores: `accountId`, `username`, `classId` (if joined), and a `csrfToken`.
-- The session secret is cryptographically secure. Cookies are set with `httpOnly: true` and `secure: true` (in production) to prevent client-side script access and ensure transmission only over HTTPS.
-
----
-
 ### 4. Class Table
 
 **Purpose**: Defines a class, acting as a central hub for all related data like students, subjects, events, homework and upload data.
@@ -303,6 +280,7 @@ Our Redis architecture serves as a cache to temporarily store data, reducing dat
 
 * Homework, events, lessons, timetables, teams, substitutions and upload metadata (first 50 entries) for each class
 * Authenticated user and class information
+* User sessions
 
 ---
 
@@ -321,8 +299,8 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 
 ---
 
-- **Document Version:** 2.3
+- **Document Version:** 2.4
 - **Stable Version Alignment:** v2.2.6
-- **Last Updated:** February 1st, 2026
-- **Next Scheduled Review:** Quarterly – April 11th, 2026
+- **Last Updated:** April 20th, 2026
+- **Next Scheduled Review:** Quarterly – July 1st, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

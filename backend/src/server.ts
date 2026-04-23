@@ -238,8 +238,8 @@ cron.schedule("*/15 * * * *", () => {
   cleanupTestClasses();
 });
 
-// Prefetch substitutions every minute during weekday mornings (06:00-09:59)
-cron.schedule("*/1 6-9 * * 1-5", () => {
+// Prefetch substitutions every minute during weekday mornings (06:00-08:59)
+cron.schedule("*/1 6-8 * * 1-5", () => {
   logger.info("Starting scheduled substitution prefetch");
   prefetchSubstitutionDataForAllClasses().catch(err => {
     logger.error(`Scheduled substitution prefetch failed: ${err}`);

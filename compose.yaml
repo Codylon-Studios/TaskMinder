@@ -98,7 +98,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
   
   alloy:
-    image: grafana/alloy:v1.15.1
+    image: grafana/alloy:v1.16.0
     container_name: alloy
     restart: always
     volumes:
@@ -116,7 +116,7 @@ services:
       - app
 
   grafana:
-    image: grafana/grafana:13.0.0
+    image: grafana/grafana:13.0.1
     container_name: grafana
     restart: always
     ports:

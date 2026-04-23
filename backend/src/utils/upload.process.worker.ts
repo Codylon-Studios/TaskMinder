@@ -11,18 +11,26 @@ import {
   CLAMSCAN_TIMEOUT,
   GHOSTSCRIPT_TIMEOUT,
   MAX_IMAGE_PIXELS,
-  TEMP_DIR
+  TEMP_DIR,
+  EXPECTED_MIMES_BY_EXTENSION,
+  MIME_CANONICAL_ALIASES
 } from "../config/upload.js";
 import { execFile, ExecException } from "child_process";
 import { promisify } from "util";
 import sharp from "sharp";
-import mime from "mime-types";
 import { randomUUID } from "crypto";
 import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
 import { RequestError } from "../@types/requestError.js";
 import { fileTypeFromFile } from "file-type";
+import { StringDecoder } from "string_decoder";
 
 const execFileAsync = promisify(execFile);
+
+const TEXT_MIME_TYPES = new Set(["text/plain", "text/markdown", "text/csv"]);
+const normalizeMimeType = (mimeType: string): string => MIME_CANONICAL_ALIASES[mimeType] ?? mimeType;
+
+const SAMPLE_SIZE = 8192;
+const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
 
 const ensureDirExists = async (dirPath: string): Promise<void> => {
   try {
@@ -134,28 +142,34 @@ const scanFileClamAV = async (filePath: string, originalName: string): Promise<v
   }
 };
 
-const verifyFileType = async (filePath: string, claimedMime: string): Promise<void> => {
-  // Special case for text files - file-type cannot detect them
-  if (claimedMime === "text/plain") {
-    // Verify it's actually text by reading a bounded sample
-    try {
-      const fileHandle = await fs.open(filePath, "r");
-      try {
-        const sampleSize = 8192;
-        const buffer = Buffer.alloc(sampleSize);
-        const { bytesRead } = await fileHandle.read(buffer, 0, sampleSize, 0);
-        const slice = buffer.subarray(0, bytesRead);
-        // Check if file is valid UTF-8 or ASCII
-        slice.toString("utf-8");
-        return;
-      }
-      finally {
-        await fileHandle.close().catch(() => {
-          logger.error("Failed to open file during text/plain sample checking");
-        });
-      }
+const verifyTextFile = async (filePath: string): Promise<void> => {
+  const fileHandle = await fs.open(filePath, "r");
+  try {
+    const buffer = Buffer.alloc(SAMPLE_SIZE);
+    const { bytesRead } = await fileHandle.read(buffer, 0, SAMPLE_SIZE, 0);
+    const sample = buffer.subarray(0, bytesRead);
+
+    // Strip UTF-8 BOM if present (common in Excel-exported CSVs)
+    const payload = sample.subarray(0, 3).equals(UTF8_BOM)
+      ? sample.subarray(3)
+      : sample;
+
+    // NUL byte check is cheap and catches the most obvious case
+    // control-char-frequency check is overkill (ClamAV exists in the pipeline)
+    if (payload.includes(0x00)) {
+      const err: RequestError = {
+        name: "Bad Request",
+        status: 400,
+        message: "Invalid text file encoding",
+        expected: true
+      };
+      throw err;
     }
-    catch {
+
+    const decoder = new StringDecoder("utf-8");
+    const decoded = decoder.write(payload) + decoder.end();
+
+    if (decoded.includes("\uFFFD")) {
       const err: RequestError = {
         name: "Bad Request",
         status: 400,
@@ -165,10 +179,18 @@ const verifyFileType = async (filePath: string, claimedMime: string): Promise<vo
       throw err;
     }
   }
+  finally {
+    await fileHandle.close().catch(() => {
+      logger.error("Failed to close file handle during text file type check");
+    });
+  }
+};
 
-  const detectedType = await fileTypeFromFile(filePath);
+const verifyFileType = async (filePath: string, claimedMime: string, originalName: string): Promise<string> => {
+  const ext = path.extname(originalName).toLowerCase();
+  const allowedMimesForExtension = EXPECTED_MIMES_BY_EXTENSION[ext];
 
-  if (!detectedType || detectedType.mime !== claimedMime) {
+  if (!allowedMimesForExtension) {
     const err: RequestError = {
       name: "Bad Request",
       status: 400,
@@ -177,6 +199,38 @@ const verifyFileType = async (filePath: string, claimedMime: string): Promise<vo
     };
     throw err;
   }
+
+  const normalizedClaimedMime = normalizeMimeType(claimedMime);
+  const normalizedAllowedMimes = new Set(allowedMimesForExtension.map(normalizeMimeType));
+
+  if (!normalizedAllowedMimes.has(normalizedClaimedMime)) {
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "MIME-Type is not supported",
+      expected: true
+    };
+    throw err;
+  }
+
+  if (TEXT_MIME_TYPES.has(normalizedClaimedMime)) {
+    await verifyTextFile(filePath);
+    return normalizedClaimedMime;
+  }
+
+  const detectedType = await fileTypeFromFile(filePath);
+  const normalizedDetectedMime = detectedType ? normalizeMimeType(detectedType.mime) : null;
+  if (!normalizedDetectedMime || !normalizedAllowedMimes.has(normalizedDetectedMime)) {
+    const err: RequestError = {
+      name: "Bad Request",
+      status: 400,
+      message: "MIME-Type is not supported",
+      expected: true
+    };
+    throw err;
+  }
+
+  return normalizedDetectedMime;
 };
 
 const sanitizeImage = async (filePath: string, mimetype: string): Promise<number> => {
@@ -269,16 +323,19 @@ const sanitizePDF = async (filePath: string): Promise<number> => {
   }
 };
 
-const processFile = async (file: FileProcessingJob["tempFiles"][0], classId: number): Promise<{ storedFileName: string; finalSize: number }> => {
-  await verifyFileType(file.path, file.mimetype);
+const processFile = async (
+  file: FileProcessingJob["tempFiles"][0],
+  classId: number
+): Promise<{ storedFileName: string; finalSize: number; mimeType: string }> => {
+  const verifiedMimeType = await verifyFileType(file.path, file.mimetype, file.originalName);
   await scanFileClamAV(file.path, file.originalName);
 
   // Sanitize based on type
   let finalSize = file.size;
-  if (file.mimetype.startsWith("image/")) {
-    finalSize = await sanitizeImage(file.path, file.mimetype);
+  if (verifiedMimeType.startsWith("image/")) {
+    finalSize = await sanitizeImage(file.path, verifiedMimeType);
   }
-  else if (file.mimetype === "application/pdf") {
+  else if (verifiedMimeType === "application/pdf") {
     finalSize = await sanitizePDF(file.path);
   }
 
@@ -286,7 +343,7 @@ const processFile = async (file: FileProcessingJob["tempFiles"][0], classId: num
   const finalDirectory = path.join(FINAL_UPLOADS_DIR, classId.toString());
   await fs.mkdir(finalDirectory, { recursive: true });
 
-  const ext = mime.extension(file.mimetype);
+  const ext = path.extname(file.originalName).toLowerCase().slice(1);
   if (!ext) {
     const err: RequestError = {
       name: "Bad Request",
@@ -303,7 +360,7 @@ const processFile = async (file: FileProcessingJob["tempFiles"][0], classId: num
 
   await fs.rename(file.path, finalPath);
 
-  return { storedFileName, finalSize };
+  return { storedFileName, finalSize, mimeType: verifiedMimeType };
 };
 
 // @codescene(disable:"Complex Method", disable: "Large Method")
@@ -348,11 +405,11 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
 
     // Process each file
     for (const file of tempFiles) {
-      const { storedFileName, finalSize } = await processFile(file, classId);
+      const { storedFileName, finalSize, mimeType } = await processFile(file, classId);
       processedFiles.push({
         storedFileName,
         originalName: file.originalName,
-        mimeType: file.mimetype,
+        mimeType,
         size: finalSize
       });
       totalBytes += BigInt(finalSize);

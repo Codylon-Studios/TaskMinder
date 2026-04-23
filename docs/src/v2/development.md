@@ -90,7 +90,7 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.3.12 (last checked: April 10th, 2026).
+You should see at least Bun 1.3.13 (last checked: April 23th, 2026).
 
 If not installed, retrieve the download instructions from the [Bun Download Page]. For Github Codespaces, follow the `npm` instructions under the Mac/Linux Tab.
 
