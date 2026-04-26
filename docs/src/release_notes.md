@@ -24,9 +24,6 @@ All changes are grouped by type and the latest version appears first.
 * chore(env): add centralized .env variable loader and config
 * chore(packages): bump packages to close security issues
 
-### Known Issues
-* dev(prisma): type checking does not work for prisma models
-
 ---
 
 ## \[v2.2.5] - 2026-04-12

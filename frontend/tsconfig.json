@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2025",
+    "target": "ES2022",
     "module": "ESNext",
     "rootDir": "./src",
     "outDir": "./dist",
@@ -9,7 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "typeRoots": ["../node_modules/@types"],
-    "moduleResolution": "bundler",
+    "moduleResolution": "Node",
     "allowJs": true,
     "types": ["node", "jquery", "bootstrap"]
   },
