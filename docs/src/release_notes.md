@@ -4,7 +4,7 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.6] - 2026-04-26
+## \[v2.2.6] - 2026-05-10
 
 ### Breaking Changes
 * chore(codebase): migrate to typescript 6
@@ -15,6 +15,7 @@ All changes are grouped by type and the latest version appears first.
 * feat(upload): add .md, .csv and .mp3 file upload support
 
 ### Fixed
+* fix(class): admin can delete members of other classes
 * fix(middleware): pdf view fails on safari due to missing blob: for frame-src and connect-src
 * fix(substitution): reduce substitution prefetch cache from 60min to 1 min (peak times) and 10 min (off-peak times)
 * fix(csrfToken): do not issue csrfTokens eagerly, only when /csrf-token is requested
@@ -22,6 +23,9 @@ All changes are grouped by type and the latest version appears first.
 ### Changed
 * chore(env): add centralized .env variable loader and config
 * chore(packages): bump packages to close security issues
+
+### Known Issues
+* dev(prisma): type checking does not work for prisma models
 
 ---
 

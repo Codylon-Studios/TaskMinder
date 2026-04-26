@@ -23,8 +23,12 @@ function generateCSRFToken(): string {
 }
 
 function isValidCsrfTokenFormat(providedToken: string, tokenFromSession: string): boolean {
-  return providedToken.length === CSRF_TOKEN_HEX_LENGTH && /^[a-f0-9]+$/i.test(providedToken) || 
-  tokenFromSession.length === CSRF_TOKEN_HEX_LENGTH && /^[a-f0-9]+$/i.test(tokenFromSession);
+  const isValidHexToken = (token: string): boolean => (
+    token.length === CSRF_TOKEN_HEX_LENGTH
+    && /^[a-f0-9]+$/i.test(token)
+  );
+
+  return isValidHexToken(providedToken) && isValidHexToken(tokenFromSession);
 }
 
 export function ensureCsrfSessionToken(req: Request): string {
