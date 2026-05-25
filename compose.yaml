@@ -68,7 +68,7 @@ services:
       retries: 30
 
   prometheus:
-    image: prom/prometheus:v3.11.2
+    image: prom/prometheus:v3.11.3
     container_name: prometheus
     restart: always
     ports:
@@ -87,7 +87,7 @@ services:
       - app
 
   loki:
-    image: grafana/loki:3.7.1
+    image: grafana/loki:3.7.2
     container_name: loki
     restart: always
     ports:
@@ -98,7 +98,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
   
   alloy:
-    image: grafana/alloy:v1.16.0
+    image: grafana/alloy:v1.16.1
     container_name: alloy
     restart: always
     volumes:
@@ -116,7 +116,7 @@ services:
       - app
 
   grafana:
-    image: grafana/grafana:13.0.1
+    image: grafana/grafana:13.0.1-security-01
     container_name: grafana
     restart: always
     ports:

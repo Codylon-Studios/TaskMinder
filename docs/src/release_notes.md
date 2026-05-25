@@ -4,7 +4,7 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.6] - 2026-05-10
+## \[v2.2.6] - 2026-05-28
 
 ### Breaking Changes
 * chore(codebase): migrate to typescript 6
@@ -22,7 +22,8 @@ All changes are grouped by type and the latest version appears first.
 
 ### Changed
 * chore(env): add centralized .env variable loader and config
-* chore(packages): bump packages to close security issues
+* chore(packages): bump packages (npm, docker, gh-actions)
+* chore(docs): use built-in admonitions in mdbook
 
 ---
 
