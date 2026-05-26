@@ -11,7 +11,7 @@ import { prisma } from "./config/prisma.js";
 import socketIO from "./config/socket.js";
 import logger from "./config/logger.js";
 import { connectRedis, redisStore } from "./config/redis.js";
-import { sessionTTLSeconds } from "./config/redis.session.js" ;
+import { sessionTTLSeconds } from "./config/redis.session.js";
 import { startMetricsServer } from "./utils/metrics.server.js";
 import {
   cleanupDeletedAccounts,

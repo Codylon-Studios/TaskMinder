@@ -35,7 +35,7 @@ export function requireCacheEnabled(): string {
 export function requireProxyHop(): string {
   const proxyHop = process.env.PROXY_HOP;
   if (!proxyHop || !Number.isInteger(Number(proxyHop)) || Number(proxyHop) < 0) {
-    failEnv("PROXY_HOP is undefined or/and must be an positive integer. Please define in the .env file.");
+    failEnv("PROXY_HOP is undefined or/and must be a positive integer. Please define in the .env file.");
   }
   return proxyHop;
 }

@@ -62,7 +62,7 @@ export class RedisStore extends session.Store {
   }
   private formatStoreError(operation: string, err: unknown): Error {
     const error = err instanceof Error ? err : new Error("Unknown error");
-    logger.error(`An error happended in the redis session store function ${operation}: ${error}`);
+    logger.error(`An error happened in the redis session store function ${operation}: ${error}`);
     return error;
   }
   private complete<T>(callback: Callback<T> | undefined, err: Error | null, data?: T): void {
