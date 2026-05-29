@@ -3,11 +3,13 @@
 # ==============================================================================
 FROM oven/bun:1.3-alpine AS builder
 WORKDIR /usr/src/app
-ARG NODE_ENV=PRODUCTION
-ENV NODE_ENV=$NODE_ENV
 COPY package.json bun.lock ./
 RUN --mount=type=cache,target=/root/.bun bun install
 COPY . .
+# Add build-time dummy DATABASE_URL so bunx prisma generate can run during image builds, 
+# CI pass the same dummy build-arg for clarity
+ARG DATABASE_URL=postgresql://db_user:db_pwd@localhost:5432/db_name?schema=public
+ENV DATABASE_URL=$DATABASE_URL
 RUN bunx prisma generate && bun run build
 RUN bun install --production
 

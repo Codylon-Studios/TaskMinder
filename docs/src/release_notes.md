@@ -4,15 +4,15 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.2.6] - 2026-05-28
+## \[v2.2.6] - 2026-05-30
 
 ### Breaking Changes
-* chore(codebase): migrate to typescript 6
+* chore(codebase): migrate to typescript 6 (locking in on v5 due to prisma issues)
 * chore(prisma): migrate to prisma 7
 * chore(session): migrate from connect-pg-simple to custom redis store
 
 ### Added
-* feat(upload): add .md, .csv and .mp3 file upload support
+* feat(upload): add .md, .csv and .mp3 file upload support in backend
 
 ### Fixed
 * fix(class): admin can delete members of other classes
