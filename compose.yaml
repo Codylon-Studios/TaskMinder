@@ -66,6 +66,8 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
+    volumes:
+      - redis-data:/data
 
   prometheus:
     image: prom/prometheus:v3.12.0
@@ -155,6 +157,7 @@ secrets:
 
 volumes:
   postgres-data:
+  redis-data:
   prometheus-data:
   loki-data:
   alloy-data:
