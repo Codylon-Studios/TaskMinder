@@ -1,18 +1,15 @@
 # Development
 
-> ⚠️ **Warning: Docs for develop branch**
->
+> [!WARNING]
 > This guide outlines the current development process and is intended for contributing to the develop branch.  
 > It may differ from the steps used in the latest stable release.
 
 This guide outlines the steps necessary to set up your development environment for **TaskMinder**. This includes installing redis, PostgreSQL, bun with optional setup for ClamAV, Ghostscript and mdbook (requires rust and cargo).
 
-> ⚠️ **Warning: License Notice**
->
+> [!WARNING]
 > **Please make sure to review [our license](../license.md) before contributing to the project!**  
 
-> ℹ️ **Info**
->
+> [!NOTE]
 > Windows is currently not supported, as the primary development and testing of this tool are carried out on Linux and macOS platforms. This may result in compatibility issues or unexpected behavior when attempting to run the server on Windows.
 
 ---
@@ -90,7 +87,7 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.3.12 (last checked: April 10th, 2026).
+You should see at least Bun 1.3.14 (last checked: May 26th, 2026).
 
 If not installed, retrieve the download instructions from the [Bun Download Page]. For Github Codespaces, follow the `npm` instructions under the Mac/Linux Tab.
 

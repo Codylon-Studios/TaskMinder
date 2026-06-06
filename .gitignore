@@ -1,5 +1,7 @@
 # Ignore redis binary dump (dump.rdb) files
 *.rdb
+# Ignore prisma generated output
+/backend/src/prisma/generated/*
 # Ignore .env files
 .env.staging
 .env.production

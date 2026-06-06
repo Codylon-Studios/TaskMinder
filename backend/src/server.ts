@@ -3,15 +3,15 @@ dotenv.config();
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
-import connectPgSimple from "connect-pg-simple";
 import cron from "node-cron";
 import express, { Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import session from "express-session";
-import prisma from "./config/prisma.js";
+import { prisma } from "./config/prisma.js";
 import socketIO from "./config/socket.js";
 import logger from "./config/logger.js";
-import { connectRedis } from "./config/redis.js";
+import { connectRedis, redisStore } from "./config/redis.js";
+import { sessionTTLSeconds } from "./config/redis.session.js";
 import { startMetricsServer } from "./utils/metrics.server.js";
 import {
   cleanupDeletedAccounts,
@@ -19,18 +19,19 @@ import {
   cleanupOldHomework,
   cleanupTestClasses,
   cleanupStuckUploads,
-  migrateEventAndHomeworkDates, 
+  migrateEventAndHomeworkDates,
   migrateUploadMetadataDates
 } from "./utils/db.cleanup.js";
 import { initializeUploadWorkerServices, startUploadWorker } from "./utils/upload.process.worker.js";
 import { cleanupStaleUploadFiles } from "./utils/upload.cleanup.js";
+import { envConfig } from "./config/env.js";
 import { prefetchSubstitutionDataForAllClasses } from "./services/substitution.service.js";
 import checkAccess from "./middleware/access.middleware.js";
 import { ErrorHandler } from "./middleware/error.middleware.js";
 import { loggerMiddleware } from "./middleware/logger.middleware.js";
 import { metricsMiddleware } from "./middleware/metrics.middleware.js";
 import { CSPMiddleware } from "./middleware/CSP.middleware.js";
-import { csrfProtection, csrfSessionInit } from "./middleware/csrfProtection.middleware.js";
+import { csrfProtection, ensureCsrfSessionToken } from "./middleware/csrfProtection.middleware.js";
 import apiVersionMiddleware, { MAX_VERSION } from "./middleware/version.middleware.js";
 import { authLimiter } from "./routes/account.route.js";
 import accountService from "./services/account.service.js";
@@ -47,21 +48,11 @@ import uploads from "./routes/upload.route.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const sessionSecret = process.env.SESSION_SECRET;
-const proxyHopRaw = process.env.PROXY_HOP;
-
-if (!sessionSecret) {
-  logger.error("SESSION_SECRET is undefined! Please define in the .env file.");
-  process.exit(1);
-}
-
-if (!proxyHopRaw || !Number.isInteger(Number(proxyHopRaw)) || Number(proxyHopRaw) < 0) {
-  logger.error("PROXY_HOP is undefined or/and must be an positive integer. Please define in the .env file.");
-  process.exit(1);
-}
+const sessionSecret = envConfig.sessionSecret;
+const proxyHop = envConfig.proxyHop;
 
 const app = express();
-app.set("trust proxy", Number(proxyHopRaw));
+app.set("trust proxy", Number(proxyHop));
 const server = createServer(app);
 
 const globalLimiter = rateLimit({
@@ -73,35 +64,31 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
+const csrfTokenLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { status: 429, message: "Too many CSRF token requests, please slow down." }
+});
+
 app.use(CSPMiddleware());
 
 app.use(express.static("frontend/dist"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const PgSession = connectPgSimple(session);
-
 const sessionMiddleware = session({
-  store: new PgSession({
-    conObject: {
-      user: process.env.DB_USER,
-      host: process.env.DB_HOST,
-      database: process.env.DB_NAME,
-      password: process.env.DB_PASSWORD,
-      port: 5432
-    },
-    tableName: "account_sessions",
-    createTableIfMissing: true
-  }),
-  proxy: process.env.NODE_ENV !== "DEVELOPMENT",
+  store: redisStore,
+  proxy: envConfig.nodeEnv !== "DEVELOPMENT",
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
     sameSite: "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: sessionTTLSeconds * 1000, // 30 days
     httpOnly: true,
-    secure: process.env.NODE_ENV === "PRODUCTION"
+    secure: envConfig.nodeEnv === "PRODUCTION"
   },
   name: "UserLogin"
 });
@@ -113,15 +100,14 @@ app.get("/health", (req, res) => {
 socketIO.initialize(server, sessionMiddleware);
 
 app.use(sessionMiddleware);
-app.use(csrfSessionInit);
 
 app.get("/bootstrap", authLimiter, async (req, res, next) => {
   try {
     const auth = await accountService.getAuth(req.session);
 
     const cacheEnabled =
-      process.env.NODE_ENV !== "DEVELOPMENT" ||
-      process.env.CACHE_ENABLED === "true";
+      envConfig.nodeEnv !== "DEVELOPMENT" ||
+      envConfig.cacheEnabled;
     
     res.set("Cache-Control", "no-store");
     res.status(200).json({ maintenance: false, classJoined: auth.classJoined, version: MAX_VERSION, cacheEnabled });
@@ -131,12 +117,17 @@ app.get("/bootstrap", authLimiter, async (req, res, next) => {
   }
 });
 
-app.get("/csrf-token", (req, res) => {
+app.get("/csrf-token", csrfTokenLimiter, (req, res) => {
+  const secFetchSite = req.header("sec-fetch-site");
+  if (secFetchSite && !["same-origin", "same-site", "none"].includes(secFetchSite)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  const csrfToken = ensureCsrfSessionToken(req);
   res
     .set("Cache-Control", "no-store, no-cache, must-revalidate, private")
     .set("Pragma", "no-cache")  // HTTP/1.0 compat
     .set("Surrogate-Control", "no-store") // CDN layer
-    .json({ csrfToken: req.session.csrfToken });
+    .json({ csrfToken });
 });
 app.use(csrfProtection);
 app.use(metricsMiddleware);
@@ -247,8 +238,8 @@ cron.schedule("*/15 * * * *", () => {
   cleanupTestClasses();
 });
 
-// Prefetch substitutions every minute during weekday mornings (06:00-09:59)
-cron.schedule("*/1 6-9 * * 1-5", () => {
+// Prefetch substitutions every minute during weekday mornings (06:00-08:59)
+cron.schedule("*/1 6-8 * * 1-5", () => {
   logger.info("Starting scheduled substitution prefetch");
   prefetchSubstitutionDataForAllClasses().catch(err => {
     logger.error(`Scheduled substitution prefetch failed: ${err}`);

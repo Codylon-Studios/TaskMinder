@@ -4,6 +4,31 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.2.6] - 2026-06-04
+
+### Breaking Changes
+* chore(codebase): migrate to typescript 6 (locking in on v5 due to prisma issues)
+* chore(prisma): migrate to prisma 7
+* chore(session): migrate from connect-pg-simple to custom redis store
+
+### Added
+* feat(upload): add .md, .csv and .mp3 file upload support in backend
+* feat(info): add info box with link to info.taskminder.de at /join
+
+### Fixed
+* fix(class): admin can delete members of other classes
+* fix(middleware): pdf view fails on safari due to missing blob: for frame-src and connect-src
+* fix(substitution): reduce substitution prefetch cache from 60min to 1 min (peak times) and 10 min (off-peak times)
+* fix(csrfToken): do not issue csrfTokens eagerly, only when /csrf-token is requested
+
+### Changed
+* chore(env): add centralized .env variable loader and config
+* chore(packages): bump packages (npm, docker, gh-actions)
+* chore(docs): use built-in admonitions in mdbook
+* chore(impressum/dsgvo): update Impressum and DSGVO to distinguish more clearly between "Betreiber" and legal representative
+
+---
+
 ## \[v2.2.5] - 2026-04-12
 
 ### Breaking Changes

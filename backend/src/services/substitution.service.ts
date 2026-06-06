@@ -1,9 +1,9 @@
-import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
+import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
 import * as cheerio from "cheerio";
 import iconv from "iconv-lite";
 import logger from "../config/logger.js";
 import { Session, SessionData } from "express-session";
-import { default as prisma } from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 
 type SubstitutionData = {
   plan1: { substitutions: unknown; date: string };
@@ -11,20 +11,23 @@ type SubstitutionData = {
   updated: string;
 };
 
-// 5 min for offpeak cache expiration
-const SUBSTITUTION_OFFPEAK_TTL_SECONDS = 5 * 60;
-const SUBSTITUTION_PREFETCH_TTL_SECONDS = cacheExpiration;
-const SUBSTITUTION_PREFETCH_CONCURRENCY = 3;
+// 10 min for offpeak cache expiration
+const SUBSTITUTION_OFFPEAK_TTL_SECONDS = 10 * 60;
+// 1 min for peak time prefetch ttl cache expiration
+const SUBSTITUTION_PREFETCH_TTL_SECONDS = 1 * 60;
+// max 5 substitution fetches at the same time to DSBMobile server
+const SUBSTITUTION_PREFETCH_CONCURRENCY = 5;
 
+// peak time during workdays (monday - friday) between 6 and 9 am
 const isPeakSubstitutionWindow = (date: Date = new Date()): boolean => {
   const day = date.getDay();
   const hour = date.getHours();
   const isWeekday = day >= 1 && day <= 5;
-  const isMorningWindow = hour >= 6 && hour < 10;
+  const isMorningWindow = hour >= 6 && hour < 9;
   return isWeekday && isMorningWindow;
 };
 
-
+// get the DSBMobile server response and return the timetables
 async function fetchFromDSBMobileServer(authId: string): Promise<{
     plan1Url: string;
     plan2Url: string;
@@ -44,12 +47,11 @@ async function fetchFromDSBMobileServer(authId: string): Promise<{
   return { plan1Url, plan2Url };
 }
 
-// eslint-disable-next-line complexity
 export async function loadSubstitutionData(
   dsbMobileUser: string, 
   dsbMobilePassword: string, 
   cacheKey: string,
-  ttlSeconds: number = cacheExpiration
+  ttlSeconds: number
 ): Promise<SubstitutionData | "No data"> {
   try {
     const generalReqData = "appversion=&bundleid=&osversion=&pushid=";
@@ -130,7 +132,7 @@ export async function loadSubstitutionData(
 }
 
 // During weekday mornings, prefer cached data and rely on the scheduled prefetch to keep it fresh.
-// Outside the prefetch window, treat cached data as expired after 5 minutes and refresh on-demand.
+// Outside the prefetch window, treat cached data as expired after 10 minutes and refresh on-demand.
 // This keeps daytime requests fast while avoiding stale data off-peak.
 // eslint-disable-next-line complexity
 export async function getSubstitutionData(session: Session & Partial<SessionData>): Promise<{

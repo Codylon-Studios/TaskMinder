@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["node"]
+  },
+  "include": ["prisma.config.ts"]
+}

@@ -2,7 +2,7 @@ import * as http from "http";
 import * as socketIo from "socket.io";
 
 import logger from "../config/logger.js";
-import prisma from "./prisma.js";
+import { prisma } from "./prisma.js";
 
 let io: socketIo.Server;
 

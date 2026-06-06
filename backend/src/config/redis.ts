@@ -1,5 +1,7 @@
 import { createClient } from "redis";
 import logger from "../config/logger.js";
+import { RedisStore } from "./redis.session.js";
+import { envConfig } from "./env.js";
 
 export const CACHE_KEY_PREFIXES = {
   HOMEWORK: "homework_data",
@@ -23,15 +25,14 @@ export const generateCacheKey = (baseKey: string, classId: string): string => {
     logger.error("Base Key or/and ClassId missing to generate redis cache key");
     throw new Error("Missing baseKey or classId for cache key generation");
   }
-  return `${baseKey}:${classId}`;
+  return `cache:${baseKey}:${classId}`;
 };
 
+// standard cache expiration (60 min)
 export const cacheExpiration = 3600;
-export const STALE_THRESHOLD_MS = 5 * 60 * 1000;
 
-const redisHost = process.env.NODE_ENV === "DEVELOPMENT" ? "localhost" : "redis";
-const redisPort = process.env.REDIS_PORT || "6379";
-const redisUrl = `redis://${redisHost}:${redisPort}`;
+const redisHost = envConfig.nodeEnv === "DEVELOPMENT" ? "localhost" : "redis";
+const redisUrl = `redis://${redisHost}:6379`;
 
 export const redisClient = createClient({
   url: redisUrl
@@ -39,6 +40,13 @@ export const redisClient = createClient({
 redisClient.on("error", (err: unknown) =>
   err instanceof Error ? logger.error(`Redis error: ${err}`) : logger.error("Unknown Redis error!")
 );
+
+// session store for express-session
+export const redisStore = new RedisStore({
+  client: redisClient,
+  prefix: "sess:",
+  ttlSeconds: 30 * 24 * 60 * 60 // 30 days
+});
 
 export const connectRedis = async (): Promise<void> => {
   try {

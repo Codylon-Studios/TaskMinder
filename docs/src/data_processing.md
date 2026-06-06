@@ -37,30 +37,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 2. AccountSessions Table
-
-**Purpose**: Session management and user state tracking, provided by `express-session`.
-
-| Field  | Data Type | Intentionally Stored                    | Potentially Unintentional                                               |
-| :----- | :-------- | :-------------------------------------- | :---------------------------------------------------------------------- |
-| sid    | String    | Session identifier for state management | Could enable session tracking across requests                           |
-| sess   | JSON      | **Session data and user context**       | **Risk**: May contain browsing patterns, IP addresses, device info |
-| expire | DateTime  | Session timeout management              | Could reveal usage patterns (login/logout times)                        |
-
-**Privacy Concerns**:
-
-- The `sess` JSON blob could inadvertently store sensitive runtime information.
-- Long session retention periods could enable user behavior analysis.
-- Session hijacking risks if cookies are not properly secured.
-
-**Solutions**:
-
-- The `sess` JSON column intentionally stores: `accountId`, `username`, `classId` (if joined), and a `csrfToken`.
-- The session secret is cryptographically secure. Cookies are set with `httpOnly: true` and `secure: true` (in production) to prevent client-side script access and ensure transmission only over HTTPS.
-
----
-
-### 4. Class Table
+### 2. Class Table
 
 **Purpose**: Defines a class, acting as a central hub for all related data like students, subjects, events, homework and upload data.
 
@@ -91,20 +68,26 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 5. Event & EventType Tables
+### 3. Event & EventType Tables
 
 **Purpose**: Management of class-specific events (e.g., exams, holidays) and their categories.
 
 | Table.Field             | Data Type | Intentionally Stored                       | Potentially Unintentional                                                  |
 | :---------------------- | :-------- | :----------------------------------------- | :------------------------------------------------------------------------- |
 | Event.eventId           | Integer   | Unique event identifier                    | -                                                                          |
+| Event.classId           | Integer   | Links event to a specific class            | -                                                                          |
+| Event.eventTypeId       | Integer   | Links event to a specific event type       | -                                                                          |
 | Event.name / desc.      | String    | Event title and details                    | **Risk**: May contain personal info (student names, sensitive topics)      |
 | Event.isPinned          | Boolean   | Event pinning                              | -                                                                          |
 | Event.startDate/endDate | BigInt    | Event scheduling                           | Reveals attendance/activity patterns                                       |
+| Event.lesson            | String    | Specific lesson block reference            | -                                                                          |
+| Event.teamId            | Integer   | Links event to a specific team             | Reveals group-specific activities                                          |
 | Event.createdAt         | BigInt    | Record creation timestamp                  | -                                                                          |
+| EventType.eventTypeId   | Integer   | Unique event type identifier               | -                                                                          |
+| EventType.classId       | Integer   | Links type to a specific class             | -                                                                          |
 | EventType.name          | String    | Category name (e.g., "Exam", "Field Trip") | Adds context that could have privacy implications (e.g., "Detention")      |
+| EventType.color         | String    | Event type color configuration             | -                                                                          |
 | EventType.createdAt     | BigInt    | Record creation timestamp                  | -                                                                          |
-| Event.classId           | Integer   | Links event to a specific class            | -                                                                          |
 
 **Privacy Concerns**:
 
@@ -118,17 +101,22 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 6. Homework & HomeworkCheck Tables
+### 4. Homework & HomeworkCheck Tables
 
 **Purpose**: Management of homework assignments and tracking student completion.
 
 | Table.Field              | Data Type | Intentionally Stored   | Potentially Unintentional                                            |
 | :----------------------- | :-------- | :--------------------- | :------------------------------------------------------------------- |
 | Homework.homeworkId      | Integer   | Assignment identifier  | -                                                                    |
+| Homework.classId         | Integer   | Links homework to a specific class | -                                                        |
 | Homework.isPinned        | Boolean   | Homework pinning       | -                                                                    |
 | Homework.content         | String    | Assignment details     | May contain student-specific instructions or references              |
+| Homework.subjectId       | Integer   | Links homework to a specific subject | -                                                      |
+| Homework.assignmentDate  | BigInt    | Assignment date        | Reveals grading/teaching pacing                                      |
 | Homework.submissionDate  | BigInt    | Deadline management    | Reveals individual work patterns                                     |
+| Homework.teamId          | Integer   | Links homework to a specific team  | Reveals team-based assignments                           |
 | Homework.createdAt       | BigInt    | Record creation timestamp | -                                                                 |
+| HomeworkCheck.checkId    | Integer   | Unique check identifier| -                                                                    |
 | HomeworkCheck.accountId  | Integer   | Student identifier     | Direct link to student performance                                   |
 | HomeworkCheck.homeworkId | Integer   | Assignment reference   | Creates detailed academic profile when combined with `accountId`     |
 | HomeworkCheck.createdAt  | BigInt    | Record creation timestamp | -                                                                 |
@@ -140,16 +128,18 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 7. JoinedClass & JoinedTeams Tables
+### 5. JoinedClass & JoinedTeams Tables
 
 **Purpose**: Manage the relationship between `Account`s and the `Class` or `Team` they belong to.
 
 | Table.Field                 | Data Type | Intentionally Stored                 | Potentially Unintentional                              |
 | :-------------------------- | :-------- | :----------------------------------- | :----------------------------------------------------- |
+| JoinedClass.joinedClassId   | Integer   | Unique joined class identifier       | -                                                      |
 | JoinedClass.accountId       | Integer   | Student/user identifier              | Links a specific user to a class                       |
 | JoinedClass.classId         | Integer   | Class identifier                     | -                                                      |
 | JoinedClass.permissionLevel | Integer   | User's role/permissions in the class | -                                                      |
 | JoinedClass.createdAt       | BigInt    | Record creation timestamp            | -                                                      |
+| JoinedTeams.joinedTeamId    | Integer   | Unique joined team identifier        | -                                                      |
 | JoinedTeams.accountId       | Integer   | Student/user identifier              | Creates social network mapping within a class          |
 | JoinedTeams.teamId          | Integer   | Group association                    | Could reveal social connections and group dynamics     |
 | JoinedTeams.createdAt       | BigInt    | Record creation timestamp            | -                                                      |
@@ -161,14 +151,16 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 8. Lesson Table
+### 6. Lesson Table
 
 **Purpose**: Defines the weekly class schedule, including subjects, times, and locations.
 
 | Field                | Data Type | Intentionally Stored   | Potentially Unintentional                    |
 | :------------------- | :-------- | :--------------------- | :------------------------------------------- |
+| lessonId             | Integer   | Unique lesson identifier | -                                          |
 | lessonNumber/weekDay | Integer   | Schedule structure     | Reveals attendance patterns                  |
 | classId/teamId       | Integer   | Class/group assignment | Links schedule to specific groups            |
+| subjectId            | Integer   | Subject reference      | -                                            |
 | room                 | String    | Location management    | **May reveal physical presence patterns**    |
 | startTime/endTime    | BigInt    | Time management        | **Enables detailed daily schedule tracking** |
 | createdAt            | BigInt    | Record creation timestamp | -                                         |
@@ -179,7 +171,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 9. Subjects Table
+### 7. Subjects Table
 
 **Purpose**: Stores information about school subjects and their assigned teachers for a specific class.
 
@@ -199,7 +191,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 10. Team Table
+### 8. Team Table
 
 **Purpose**: Defines a specific group (team) within a class.
 
@@ -216,7 +208,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 11. Upload & FileMetadata Tables
+### 9. Upload & FileMetadata Tables
 
 **Purpose**: Management of file uploads, upload requests and their metadata. An upload can contain one or multiple files.
 
@@ -261,23 +253,6 @@ This documentation describes all database tables defined in the current Prisma s
 
 ---
 
-### 12. UploadRequest Table
-
-**Purpose**: Manages requests for file uploads, allowing users to specify what files or types of content are needed from class members or teams.
-
-| Field                  | Data Type | Intentionally Stored                     | Potentially Unintentional                                      |
-| :--------------------- | :-------- | :--------------------------------------- | :------------------------------------------------------------- |
-| uploadRequestId        | Integer   | Unique upload request identifier         | -                                                              |
-| uploadRequestName      | String    | User-provided title/description of request | **May contain personal or sensitive context**                  |
-| classId                | Integer   | Links request to a specific class        | Reveals class involvement and collaboration needs              |
-| teamId                 | Integer   | Links request to a specific team         | Maps request to social/working groups; may reveal group dynamics |
-
-**Privacy Concerns**:
-- **Contextual Data**: The `uploadRequestName` field may inadvertently include personal or sensitive information if users describe the request in detail (e.g., "Upload your medical certificates here").
-- **Group Dynamics**: Linking requests to specific teams (`teamId`) or classes (`classId`) can expose collaboration patterns and group-specific activities.
-
----
-
 ## Cross-Table Privacy Risks
 
 The `Class` schema as a central entity increases cross-table risks.
@@ -286,7 +261,7 @@ The `Class` schema as a central entity increases cross-table risks.
 
 Combining data across tables enables the creation of highly detailed user profiles:
 
-- Student Profile: Academic performance (`HomeworkCheck`) + social connections (`JoinedTeams`) + daily schedule and location (`Lesson`) + specific activities (`Event`). All data is correlated through `classId`.
+- Student Profile: Academic performance (`HomeworkCheck`) + social connections (`JoinedTeams`) + daily schedule and location (`Lesson`) + specific activities (`Event`). All this data can be correlated through a combination of `accountId` and `classId`.
 
 ### 2. Behavioral and Social Analytics
 
@@ -299,10 +274,11 @@ Combining data across tables enables the creation of highly detailed user profil
 
 ### Redis
 
-Our Redis architecture serves as a cache to temporarily store data, reducing database load and improving performance. Cached data is automatically cleared when a service restarts or when the corresponding data is deleted from the database. The following types of content are stored:
+Our Redis architecture serves as a cache to temporarily store data, reducing database load and improving performance. Cached data is automatically cleared when the corresponding data is deleted from the database. The following types of content are stored:
 
-* Homework, events, lessons, timetables, teams, substitutions and upload metadata (first 50 entries) for each class
+* Homework, events, lessons, timetables, teams, substitutions and upload metadata for each class
 * Authenticated user and class information
+* User sessions (from express-session)
 
 ---
 
@@ -311,7 +287,7 @@ Our Redis architecture serves as a cache to temporarily store data, reducing dat
 To maintain and improve our service quality, we collect certain telemetry data, which is stored in server logs:
 
 * Date and time of the request
-* Request content
+* Endpoint path and HTTP method
 * HTTP status code
 * Size of the returned data
 * Referrer information
@@ -321,8 +297,8 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 
 ---
 
-- **Document Version:** 2.3
-- **Stable Version Alignment:** v2.2.5
-- **Last Updated:** February 1st, 2026
-- **Next Scheduled Review:** Quarterly – April 11th, 2026
+- **Document Version:** 2.5
+- **Stable Version Alignment:** v2.2.6
+- **Last Updated:** May 26th, 2026
+- **Next Scheduled Review:** Quarterly – July 1st, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

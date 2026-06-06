@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import prisma from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import { RequestError } from "../@types/requestError.js";
 import { redisClient } from "../config/redis.js";
 

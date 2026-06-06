@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "esnext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "rootDir": "./src",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "typeRoots": ["../node_modules/@types", "./src/@types"]
+    "types": ["node", "bun", "express", "express-session", "bcrypt", "multer", "node-cron", "mime-types"],
   },
+  "files": ["./src/@types/session.d.ts"],
   "include": ["./src/**/*"]
 }

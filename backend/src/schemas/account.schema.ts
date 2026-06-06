@@ -1,7 +1,8 @@
 import z from "zod";
 import { checkUsername } from "../utils/validate.functions.js";
+import { envConfig } from "../config/env.js";
 
-const isDevelopment = process.env.NODE_ENV === "DEVELOPMENT";
+const isDevelopment = envConfig.nodeEnv === "DEVELOPMENT";
 
 export const passwordSchema = z
   .string()

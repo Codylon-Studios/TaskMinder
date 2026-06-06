@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "./generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Account {
@@ -21,18 +21,9 @@ model Account {
 
   // FIXME: account_username_unique_active_key partial index for
   // deletedAt and username; manual migration in: improve_schema 20251121
-  // prisma v7 implemented this, however it is not stable enough
+  // prisma v7 implemented this as a preview feature, wait until it's stable
   @@index([deletedAt])
   @@map("account")
-}
-
-model AccountSessions {
-  sid    String   @id(map: "session_pkey") @db.VarChar
-  sess   Json     @db.Json
-  expire DateTime @db.Timestamp(6)
-
-  @@index([expire], map: "IDX_session_expire")
-  @@map("account_sessions")
 }
 
 model Event {
@@ -77,7 +68,7 @@ model Class {
   classId                 Int           @id @default(autoincrement()) @map("classId")
   className               String
   classCode               String        @unique
-  classCodeHash           String?       @unique // this will be made non-nullable after migration
+  classCodeHash           String        @unique
   createdAt               BigInt
   isTestClass             Boolean
   defaultPermissionLevel  Int
@@ -98,7 +89,7 @@ model Class {
   Subjects                Subjects[]
   Team                    Team[]
   Files                   Upload[]
-  UploadRequest           uploadRequest[]
+  UploadRequest           UploadRequest[]
 
   @@index([isTestClass, createdAt])
   @@map("class")
@@ -263,7 +254,7 @@ model Upload {
   @@map("upload")
 }
 
-model uploadRequest {
+model UploadRequest {
   uploadRequestId     Int        @id @default(autoincrement())
   uploadRequestName   String
   classId             Int

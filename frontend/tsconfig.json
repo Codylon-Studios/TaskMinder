@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
+    "rootDir": "./src",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
@@ -9,7 +10,8 @@
     "skipLibCheck": true,
     "typeRoots": ["../node_modules/@types"],
     "moduleResolution": "Node",
-    "allowJs": true
+    "allowJs": true,
+    "types": ["node", "jquery", "bootstrap"]
   },
   "include": ["src/**/*"],
   "exclude": ["src/sw.ts"]

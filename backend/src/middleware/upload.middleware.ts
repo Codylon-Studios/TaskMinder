@@ -2,6 +2,8 @@ import multer, { FileFilterCallback } from "multer";
 import {
   ALLOWED_MIMES,
   ALLOWED_EXTENSIONS,
+  EXPECTED_MIMES_BY_EXTENSION,
+  MIME_CANONICAL_ALIASES,
   TEMP_DIR,
   MAX_FILE_SIZE,
   MAX_FILES_PER_UPLOAD,
@@ -12,9 +14,11 @@ import { Request, Response, NextFunction } from "express";
 import mime from "mime-types";
 import { RequestError } from "../@types/requestError.js";
 import { randomUUID } from "crypto";
-import prisma from "../config/prisma.js";
-import type { Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma.js";
+import { Prisma } from "../prisma/generated/prisma/client.js";
 import { getUploadedFiles, performUploadCleanup, registerReservedBytes, registerTempFiles } from "../utils/upload.cleanup.js";
+
+const normalizeMimeType = (mimeType: string): string => MIME_CANONICAL_ALIASES[mimeType] ?? mimeType;
 
 //
 // normalizes file requests into one consistent format
@@ -318,7 +322,15 @@ export const secureFileFilter = (
 
   // Check for obvious mismatches
   const expectedMime = mime.lookup(file.originalname);
-  if (expectedMime && expectedMime !== file.mimetype) {
+  const normalizedExpectedMime = expectedMime ? normalizeMimeType(expectedMime.toString()) : false;
+  const normalizedClaimedMime = normalizeMimeType(file.mimetype);
+  const allowedMimesForExtension = EXPECTED_MIMES_BY_EXTENSION[ext];
+
+  if (normalizedExpectedMime && normalizedExpectedMime !== normalizedClaimedMime) {
+    const extensionAllowsMime = allowedMimesForExtension?.includes(file.mimetype) ?? false;
+    if (extensionAllowsMime) {
+      return cb(null, true);
+    }
     const err: RequestError = {
       name: "Bad Request",
       status: 400,

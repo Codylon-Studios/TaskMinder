@@ -1,11 +1,11 @@
 import { RequestError } from "../@types/requestError.js";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../prisma/generated/prisma/client.js";
 import { Session, SessionData } from "express-session";
-import { default as prisma } from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import { BigIntreplacer, generateRandomBase62String, invalidateCache } from "../utils/validate.functions.js";
-import { sessionPool } from "../config/pg.js";
 import logger from "../config/logger.js";
 import { redisClient } from "../config/redis.js";
+import { redisStore } from "../config/redis.js";
 import fs from "fs/promises";
 import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload.js";
@@ -358,27 +358,51 @@ const classService = {
             throw err;
           }
         }
-        const classUserEntry = await tx.joinedClass.delete({
+        const removedMembership = await tx.joinedClass.deleteMany({
           where: {
-            accountId: session.account!.accountId
+            accountId: session.account!.accountId,
+            classId
           }
         });
+        if (removedMembership.count === 0) {
+          delete session.classId;
+          delete session.account;
+          const err: RequestError = {
+            name: "Unauthorized",
+            status: 401,
+            message:
+              "Session account not found in the class. Logging out of class",
+            expected: true
+          };
+          throw err;
+        }
         // delete cache of upload metadata as author may not be in class anymore
-        await invalidateCache("UPLOADMETADATA", classUserEntry.classId.toString());
+        await invalidateCache("UPLOADMETADATA", classId.toString());
         // delete joinedTeams, homeworkCheck and set relevant upload author to null
         await tx.joinedTeams.deleteMany({
           where: {
-            accountId: session.account!.accountId
+            accountId: session.account!.accountId,
+            Team: {
+              is: {
+                classId
+              }
+            }
           }
         });
         await tx.homeworkCheck.deleteMany({
           where: {
-            accountId: session.account!.accountId
+            accountId: session.account!.accountId,
+            Homework: {
+              is: {
+                classId
+              }
+            }
           }
         });
         await tx.upload.updateMany({
           where: {
-            accountId: session.account!.accountId
+            accountId: session.account!.accountId,
+            classId
           },
           data: {
             accountId: null
@@ -594,42 +618,52 @@ const classService = {
     }
     await prisma.$transaction(async tx => {
       for (const classMember of classMembers) {
-        try {
-          const classUserEntry = await tx.joinedClass.delete({
-            where: {
-              accountId: classMember.accountId
-            }
-          });
-          // delete cache of upload metadata to avoid null authors
-          await invalidateCache("UPLOADMETADATA", classUserEntry.classId.toString());
-          await tx.joinedTeams.deleteMany({
-            where: {
-              accountId: classMember.accountId
-            }
-          });
-          await tx.homeworkCheck.deleteMany({
-            where: {
-              accountId: classMember.accountId
-            }
-          });
-          await tx.upload.updateMany({
-            where: {
-              accountId: classMember.accountId
-            },
-            data: {
-              accountId: null
-            }
-          });
-        }
-        catch {
+        const removedMembership = await tx.joinedClass.deleteMany({
+          where: {
+            accountId: classMember.accountId,
+            classId
+          }
+        });
+        if (removedMembership.count === 0) {
           const err: RequestError = {
             name: "Bad Request",
             status: 400,
-            message: "Invalid data format",
+            message: "User does not exist in this class",
             expected: true
           };
           throw err;
         }
+        // delete cache of upload metadata to avoid null authors
+        await invalidateCache("UPLOADMETADATA", classId.toString());
+        await tx.joinedTeams.deleteMany({
+          where: {
+            accountId: classMember.accountId,
+            Team: {
+              is: {
+                classId
+              }
+            }
+          }
+        });
+        await tx.homeworkCheck.deleteMany({
+          where: {
+            accountId: classMember.accountId,
+            Homework: {
+              is: {
+                classId
+              }
+            }
+          }
+        });
+        await tx.upload.updateMany({
+          where: {
+            accountId: classMember.accountId,
+            classId
+          },
+          data: {
+            accountId: null
+          }
+        });
       }
       // Check if there is at least one admin left
       const adminExists = await tx.joinedClass.findFirst({
@@ -713,24 +747,31 @@ const classService = {
       throw err;
     }
     try {
-      const deleteQuery = {
-        text: `
-        DELETE FROM "account_sessions"
-        WHERE
-        (sess->>'classId')::integer = $1
-        AND (sess->'account') IS NULL;
-        `,
-        values: [classId]
-      };
-
-      const result = await sessionPool.query(deleteQuery);
-      logger.info(`Successfully deleted ${result.rowCount} unregistered user sessions for class ${classId}.`);
+      // Scan all sess: keys and delete those matching classId with no account (unregistered users)
+      let deletedCount = 0;
+      const keys = await redisStore.getClassSessionKeys(classId);
+      for (const key of keys) {
+        // Redis client typing uses deeply nested generics that cause assignment failures.
+        // Runtime calls are safe — casting to any is intentional.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = await (redisClient as any).get(key);
+        if (!raw) {
+          await redisStore.removeClassSessionKey(classId, key);
+          continue;
+        }
+        const sess = JSON.parse(raw) as SessionData;
+        if (!sess.account) {
+          await redisStore.destroyBySessionKey(key);
+          deletedCount++;
+        }
+      }
+      logger.info(`Successfully deleted ${deletedCount} unregistered user sessions for class ${classId}.`);
     }
     catch {
       const err: RequestError = {
         name: "Internal Server Error",
         status: 500,
-        message: "Error while cleaning unregistred users of class",
+        message: "Error while cleaning unregistered users of class",
         expected: true
       };
       throw err;

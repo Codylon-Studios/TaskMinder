@@ -4,9 +4,25 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// allowed mimes grouped by file extension
+export const EXPECTED_MIMES_BY_EXTENSION: Record<string, string[]> = {
+  ".pdf": ["application/pdf"],
+  ".jpg": ["image/jpeg"],
+  ".jpeg": ["image/jpeg"],
+  ".png": ["image/png"],
+  ".txt": ["text/plain"],
+  ".md": ["text/markdown", "text/plain"],
+  ".csv": ["text/csv"],
+  ".mp3": ["audio/mpeg", "audio/mp3"]
+};
+
+export const MIME_CANONICAL_ALIASES: Record<string, string> = {
+  "audio/mp3": "audio/mpeg"
+};
+
 // allowed mimes and file types (extensions)
-export const ALLOWED_MIMES = ["application/pdf", "image/jpeg", "image/png", "text/plain"];
-export const ALLOWED_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".txt"];
+export const ALLOWED_EXTENSIONS = Object.keys(EXPECTED_MIMES_BY_EXTENSION);
+export const ALLOWED_MIMES = [...new Set(Object.values(EXPECTED_MIMES_BY_EXTENSION).flat())];
 
 // upload limits
 export const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB // max file size of upload (each)
