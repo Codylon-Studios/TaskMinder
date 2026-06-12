@@ -4,6 +4,22 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
+## \[v2.3.0] - 2026-07-??
+
+### Breaking Changes
+
+
+### Added
+* chore(dev): add dev mode to /bootstrap to avoid caching issues in development
+
+### Fixed
+
+
+### Changed
+* chore(readme): add banner, social media and info page notice
+
+---
+
 ## \[v2.2.6] - 2026-06-04
 
 ### Breaking Changes

@@ -298,7 +298,7 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 ---
 
 - **Document Version:** 2.5
-- **Stable Version Alignment:** v2.2.6
+- **Stable Version Alignment:** v2.3.0
 - **Last Updated:** May 26th, 2026
 - **Next Scheduled Review:** Quarterly – July 1st, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

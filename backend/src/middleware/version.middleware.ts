@@ -8,7 +8,7 @@ import { RequestError } from "../@types/requestError.js";
 import logger from "../config/logger.js";
 
 export const MIN_VERSION = "2.2.5";
-export const MAX_VERSION = "2.2.6";
+export const MAX_VERSION = "2.3.0";
 
 const SEMVER_REGEX = /^\d+\.\d+\.\d+$/;
 const ACCEPTED_RANGE = `${MIN_VERSION} - ${MAX_VERSION}`;
