@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { prisma } from "../config/prisma.js";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError.js";
-import { redisClient } from "../config/redis.js";
+import { CACHE_KEY_PREFIXES, redisClient } from "../config/redis.js";
 import {
   changePasswordTypeBody,
   changeUsernameTypeBody,
@@ -11,7 +11,7 @@ import {
   loginAccountTypeBody,
   registerAccountTypeBody
 } from "../schemas/account.schema.js";
-import { invalidateCache } from "../utils/validate.functions.js";
+import { invalidateCache } from "../config/redis.js";
 
 const SALTROUNDS = 10;
 
@@ -329,7 +329,7 @@ export default {
       });
     });
     if (joinedClassAccount){
-      await invalidateCache("UPLOADMETADATA", joinedClassAccount.classId.toString());
+      await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, joinedClassAccount.classId.toString());
     }
     await redisClient.del(`auth_user:${account.accountId}`);
     delete session.account;
@@ -391,7 +391,7 @@ export default {
       }
     });
     if (joinedClassAccount){
-      await invalidateCache("UPLOADMETADATA", joinedClassAccount.classId.toString());
+      await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, joinedClassAccount.classId.toString());
     }
 
     session.account = { username: newUsername, accountId: session.account!.accountId };

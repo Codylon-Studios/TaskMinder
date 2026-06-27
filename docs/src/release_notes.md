@@ -11,12 +11,14 @@ All changes are grouped by type and the latest version appears first.
 
 ### Added
 * chore(dev): add dev mode to /bootstrap to avoid caching issues in development
+* feat(homework/events): add personal homework and events
 
 ### Fixed
 
 
 ### Changed
 * chore(readme): add banner, social media and info page notice
+* chore(packages): bump packages (npm)
 
 ---
 

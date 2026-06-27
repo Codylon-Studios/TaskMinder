@@ -15,11 +15,14 @@ router.get("/", readEventLimiter, checkAccess(["CLASS"]), eventController.getEve
 router.get("/types", readEventLimiter, checkAccess(["CLASS"]), eventController.getEventTypeData);
 router.get("/types/styles", readEventLimiter, eventController.getEventTypeStyles);
 
-router.post("/", writeEventLimiter, checkAccess(["CLASS", "EDITOR"]), validate(addEventSchema), eventController.addEvent);
-router.patch("/:id", writeEventLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editEventSchema), eventController.editEvent);
-router.delete("/:id", writeEventLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteEventSchema), eventController.deleteEvent);
+// write routes only require class access at the route level; the service decides
+// shared vs personal: shared items still require EDITOR, personal items only require
+// a logged-in account (enforced via assertPermissionLevel inside event.service)
+router.post("/", writeEventLimiter, checkAccess(["CLASS"]), validate(addEventSchema), eventController.addEvent);
+router.patch("/:id", writeEventLimiter, checkAccess(["CLASS"]), validate(editEventSchema), eventController.editEvent);
+router.delete("/:id", writeEventLimiter, checkAccess(["CLASS"]), validate(deleteEventSchema), eventController.deleteEvent);
 
-router.patch("/:id/pin", writeEventLimiter, checkAccess(["CLASS", "EDITOR"]), validate(pinEventSchema), eventController.pinEvent);
+router.patch("/:id/pin", writeEventLimiter, checkAccess(["CLASS"]), validate(pinEventSchema), eventController.pinEvent);
 router.put("/types", writeEventLimiter, checkAccess(["CLASS", "MANAGER"]), validate(setEventTypesSchema), eventController.setEventTypeData);
 
 export default router;

@@ -1,5 +1,12 @@
 import z from "zod";
 
+// optional flag: when true the item is personal (account-scoped) instead of shared/team-scoped.
+// accepts a real boolean or a form string ("true"/"false"); defaults to false (shared).
+const isPersonalField = z
+  .preprocess(val => (typeof val === "string" ? val === "true" : val), z.boolean())
+  .optional()
+  .default(false);
+
 export const addEventSchema = z.object({
   params: z.object({}),
   query: z.object({}),
@@ -13,7 +20,8 @@ export const addEventSchema = z.object({
       if (val === "") return null;
       return val;
     }, z.coerce.number().nullable()),
-    teamId: z.coerce.number()
+    teamId: z.coerce.number(),
+    isPersonal: isPersonalField
   })
 });
 
@@ -29,7 +37,8 @@ export const editEventSchema = z.object({
     startDate: z.coerce.number(),
     lesson: z.string().trim().min(1).nullable().or(z.literal("")),
     endDate: z.coerce.number().nullable(),
-    teamId: z.coerce.number()
+    teamId: z.coerce.number(),
+    isPersonal: isPersonalField
   })
 });
 

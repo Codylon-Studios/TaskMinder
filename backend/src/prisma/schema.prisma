@@ -18,6 +18,9 @@ model Account {
   JoinedClass   JoinedClass?
   JoinedTeams   JoinedTeams[]
   Files         Upload[]
+  // personal (account-scoped) homework and events; null accountId on these models means shared
+  Homework      Homework[]
+  Event         Event[]
 
   // FIXME: account_username_unique_active_key partial index for
   // deletedAt and username; manual migration in: improve_schema 20251121
@@ -37,15 +40,19 @@ model Event {
   endDate     BigInt?
   lesson      String?
   teamId      Int
-  createdAt   BigInt?    
+  // null = shared (team-scoped) event; set = personal event owned by this account
+  accountId   Int?
+  createdAt   BigInt?
 
   EventType   EventType @relation(fields: [eventTypeId], references: [eventTypeId], onDelete: Cascade, onUpdate: NoAction)
   Class       Class     @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+  Account     Account?  @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([classId])
   @@index([teamId])
   @@index([startDate, classId])
   @@index([classId, isPinned, startDate])
+  @@index([classId, accountId])
   @@map("event")
 }
 
@@ -104,16 +111,20 @@ model Homework {
   assignmentDate BigInt
   submissionDate BigInt
   teamId         Int
+  // null = shared (team-scoped) homework; set = personal homework owned by this account
+  accountId      Int?
   createdAt      BigInt?
 
   HomeworkCheck  HomeworkCheck[]
 
   Class          Class           @relation(fields: [classId], references: [classId], onDelete: Cascade, onUpdate: NoAction)
+  Account        Account?        @relation(fields: [accountId], references: [accountId], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([classId])
   @@index([teamId])
   @@index([submissionDate, classId])
   @@index([classId, isPinned, submissionDate])
+  @@index([classId, accountId])
   @@map("homework")
 }
 

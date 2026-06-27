@@ -14,11 +14,14 @@ const router = express.Router();
 router.get("/", readHomeworkLimiter, checkAccess(["CLASS"]), homeworkController.getHomeworkData);
 router.get("/checked", readHomeworkLimiter, checkAccess(["CLASS", "ACCOUNT"]), homeworkController.getHomeworkCheckedData);
 
-router.post("/", writeHomeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(addHomeworkSchema), homeworkController.addHomework);
-router.patch("/:id", writeHomeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(editHomeworkSchema), homeworkController.editHomework);
-router.delete("/:id", writeHomeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(deleteHomeworkSchema), homeworkController.deleteHomework);
+// write routes only require class access at the route level; the service decides
+// shared vs personal: shared items still require EDITOR, personal items only require
+// a logged-in account (enforced via assertPermissionLevel inside homework.service)
+router.post("/", writeHomeworkLimiter, checkAccess(["CLASS"]), validate(addHomeworkSchema), homeworkController.addHomework);
+router.patch("/:id", writeHomeworkLimiter, checkAccess(["CLASS"]), validate(editHomeworkSchema), homeworkController.editHomework);
+router.delete("/:id", writeHomeworkLimiter, checkAccess(["CLASS"]), validate(deleteHomeworkSchema), homeworkController.deleteHomework);
 
 router.patch("/:id/check", writeHomeworkLimiter, checkAccess(["CLASS", "ACCOUNT"]), validate(checkHomeworkSchema), homeworkController.checkHomework);
-router.patch("/:id/pin", writeHomeworkLimiter, checkAccess(["CLASS", "EDITOR"]), validate(pinHomeworkSchema), homeworkController.pinHomework);
+router.patch("/:id/pin", writeHomeworkLimiter, checkAccess(["CLASS"]), validate(pinHomeworkSchema), homeworkController.pinHomework);
 
 export default router;

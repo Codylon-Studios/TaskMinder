@@ -1,10 +1,10 @@
 import { prisma } from "../config/prisma.js";
-import { redisClient } from "../config/redis.js";
+import { CACHE_KEY_PREFIXES, redisClient } from "../config/redis.js";
 import logger from "../config/logger.js";
 import fs from "fs/promises";
 import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload.js";
-import { invalidateCache } from "./validate.functions.js";
+import { invalidateCache } from "../config/redis.js";
 import socketIO from "../config/socket.js";
 import { encryptionManager } from "./encryption.manager.js";
 
@@ -64,15 +64,15 @@ export async function cleanupTestClasses(): Promise<void> {
     // delete redis data of test classes and sockets (invalidate cache)
     await Promise.all(
       classIdsToDelete.map(async classId => {
-        await invalidateCache("UPLOADMETADATA", classId.toString());
-        await invalidateCache("UPLOADREQUESTS", classId.toString());
-        await invalidateCache("HOMEWORK", classId.toString());
-        await invalidateCache("EVENT", classId.toString());
-        await invalidateCache("LESSON", classId.toString());
-        await invalidateCache("EVENTTYPESTYLE", classId.toString());
-        await invalidateCache("SUBJECT", classId.toString());
-        await invalidateCache("EVENTTYPE", classId.toString());
-        await invalidateCache("TEAMS", classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.UPLOADREQUESTS, classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.LESSON, classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.SUBJECT, classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.EVENTTYPE, classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.TEAMS, classId.toString());
         // Make all sockets in the room leave it
         const room = `class:${classId}`;
         const io = socketIO.getIO();
@@ -163,7 +163,7 @@ export async function cleanupOldHomework(): Promise<void> {
       }
     });
     // invalidate homework cache of classes
-    await Promise.all(affectedClasses.map(c => invalidateCache("HOMEWORK", c.classId.toString())));
+    await Promise.all(affectedClasses.map(c => invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, c.classId.toString())));
     logger.info(`Homework cleanup completed: ${deleted.count} records deleted out of ${count} found (90d)`);
   }
   catch (error) {
@@ -215,7 +215,7 @@ export async function cleanupOldEvents(): Promise<void> {
       }
     });
     // invalidate event cache of classes
-    await Promise.all(affectedClasses.map(c => invalidateCache("EVENT", c.classId.toString())));
+    await Promise.all(affectedClasses.map(c => invalidateCache(CACHE_KEY_PREFIXES.EVENT, c.classId.toString())));
     logger.info(`Event cleanup completed: ${deleted.count} records deleted out of ${count} found (365d)`);
   }
   catch (error) {
@@ -340,7 +340,7 @@ export async function migrateUploadMetadataDates(): Promise<void> {
     });
 
     // invalidate upload metadata cache of demo class
-    await invalidateCache("UPLOADMETADATA", demoClass.classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, demoClass.classId.toString());
     logger.info(
       `Migrated dates of ${migratedUploadMetadata.count} upload metadata entries for demo class. (1 week)`
     );
@@ -411,8 +411,8 @@ export async function migrateEventAndHomeworkDates(): Promise<void> {
       })
     ]);
     // invalidate homework and event cache of demo class
-    await invalidateCache("EVENT", demoClass.classId.toString());
-    await invalidateCache("HOMEWORK", demoClass.classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.EVENT, demoClass.classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, demoClass.classId.toString());
     logger.info(
       `Migrated dates of ${migratedEvents.length} events and ${migratedHomework.count} homework entries for demo class. (1 week)`
     );
