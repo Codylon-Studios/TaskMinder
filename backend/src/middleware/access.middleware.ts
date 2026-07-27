@@ -83,6 +83,7 @@ async function checkClassAccess(req: Request, res: Response): Promise<void> {
     return res.redirect(302, "/join");
   }
 
+  // Verify class exists
   const authClassRedis = await redisClient.get(`auth_class:${req.session.classId}`);
   if (!authClassRedis) {
     const aClass = await prisma.class.findUnique({
@@ -100,6 +101,18 @@ async function checkClassAccess(req: Request, res: Response): Promise<void> {
     await redisClient.set(`auth_class:${req.session.classId}`, "true", {
       expiration: {type: "EX", value: 15 * 60} // 15min
     });
+  }
+
+  // If user is logged in, verify active membership
+  if (req.session.account) {
+    try {
+      await assertPermissionLevel(req.session, ROLES.MEMBER);
+    }
+    catch (err) {
+      // Membership check failed — session is stale or kicked
+      delete req.session.classId;
+      throw err;
+    }
   }
 }
 

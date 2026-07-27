@@ -16,7 +16,7 @@ This guide outlines the steps necessary to set up your development environment f
 
 ### Installing Redis and PostgreSQL
 
-**Recommended versions:** PostgreSQL 18.1+ and Redis v8.6+ (Redis Open Source).
+**Recommended versions:** PostgreSQL 18.4+ and Redis v8.8+ (Redis Open Source).
 
 <details open>
 <summary><strong>Linux (Ubuntu / Debian)</strong></summary>
@@ -87,7 +87,7 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.3.14 (last checked: May 26th, 2026).
+You should see at least Bun 1.3.14 (last checked: July 27th, 2026).
 
 If not installed, retrieve the download instructions from the [Bun Download Page]. For Github Codespaces, follow the `npm` instructions under the Mac/Linux Tab.
 

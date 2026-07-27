@@ -19,7 +19,7 @@ import { execFile, ExecException } from "child_process";
 import { promisify } from "util";
 import sharp from "sharp";
 import { randomUUID } from "crypto";
-import { emitToClass, SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 import { RequestError } from "../@types/requestError.js";
 import { fileTypeFromFile } from "file-type";
 import { StringDecoder } from "string_decoder";
@@ -477,7 +477,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
 
     // Call socket functions for client update
-    emitToClass(classId, SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
 
     logger.info(`Successfully processed upload ${uploadId} with ${processedFiles.length} file(s)`);
   }
@@ -536,7 +536,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
 
     // Send socket events
-    emitToClass(classId, SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
   }
 };
 

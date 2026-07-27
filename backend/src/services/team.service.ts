@@ -9,7 +9,7 @@ import { setJoinedTeamsTypeBody, setTeamsTypeBody } from "../schemas/team.schema
 import fs from "fs/promises";
 import path from "path";
 import { FINAL_UPLOADS_DIR } from "../config/upload.js";
-import { emitToClass, SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 
 const teamService = {
   async getTeamsData(session: Session & Partial<SessionData>) {
@@ -82,7 +82,7 @@ const teamService = {
           teamsDeleted = true;
           // Read uploads for size accounting and deferred filesystem cleanup
           const uploads = await tx.upload.findMany({
-            where: { teamId: team.teamId },
+            where: { teamId: team.teamId, classId: classId },
             include: { Files: true }
           });
 
@@ -105,25 +105,25 @@ const teamService = {
 
           // Delete upload records (FileMetadata rows cascade via FK)
           await tx.upload.deleteMany({
-            where: { teamId: team.teamId }
+            where: { teamId: team.teamId, classId: classId }
           });
 
           // Delete upload requests which were linked to team
           await tx.uploadRequest.deleteMany({
-            where: { teamId: team.teamId }
+            where: { teamId: team.teamId, classId: classId }
           });
 
           // delete homework which were linked to team
           await tx.homework.deleteMany({
-            where: { teamId: team.teamId }
+            where: { teamId: team.teamId, classId: classId }
           });
           // delete events which were linked to team
           await tx.event.deleteMany({
-            where: { teamId: team.teamId }
+            where: { teamId: team.teamId, classId: classId }
           });
           // delete lessons which were linked to team
           await tx.lesson.deleteMany({
-            where: { teamId: team.teamId }
+            where: { teamId: team.teamId, classId: classId }
           });
           // delete joined teams (team memberships) - already done with cascade, but here explicitly again
           await tx.joinedTeams.deleteMany({
@@ -131,7 +131,7 @@ const teamService = {
           });
           // delete team
           await tx.team.delete({
-            where: { teamId: team.teamId }
+            where: { teamId: team.teamId, classId: classId }
           });
         }
       }
@@ -153,12 +153,22 @@ const teamService = {
           if (!existingTeam || existingTeam.name !== team.name) {
             dataChanged = true;
           }
-          await tx.team.update({
-            where: { teamId: team.teamId },
+          const updated = await tx.team.updateMany({
+            where: { teamId: team.teamId, classId: classId },
             data: {
               name: team.name
             }
           });
+
+          if (updated.count === 0) {
+            const err: RequestError = {
+              name: "Not Found",
+              status: 404,
+              message: "Team not found for update",
+              expected: true
+            };
+            throw err;
+          }
         }
       }
     });
@@ -177,8 +187,8 @@ const teamService = {
     if (dataChanged) {
       // invalidate team cache and resend sockets
       await invalidateCache(CACHE_KEY_PREFIXES.TEAMS, classId.toString());
-      emitToClass(classId, SOCKET_EVENTS.TEAMS);
-      emitToClass(classId, SOCKET_EVENTS.JOINED_TEAMS);
+      emitSocketToClass(classId, SOCKET_EVENTS.TEAMS);
+      emitSocketToClass(classId, SOCKET_EVENTS.JOINED_TEAMS);
 
       // If teams were deleted, also update homework, events, lesson and upload (request) caches and resend sockets
       if (teamsDeleted) {
@@ -188,11 +198,11 @@ const teamService = {
         await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
         await invalidateCache(CACHE_KEY_PREFIXES.UPLOADREQUESTS, classId.toString());
 
-        emitToClass(classId, SOCKET_EVENTS.HOMEWORK);
-        emitToClass(classId, SOCKET_EVENTS.EVENTS);
-        emitToClass(classId, SOCKET_EVENTS.TIMETABLES);
-        emitToClass(classId, SOCKET_EVENTS.UPLOADS);
-        emitToClass(classId, SOCKET_EVENTS.UPLOAD_REQUESTS);
+        emitSocketToClass(classId, SOCKET_EVENTS.HOMEWORK);
+        emitSocketToClass(classId, SOCKET_EVENTS.EVENTS);
+        emitSocketToClass(classId, SOCKET_EVENTS.TIMETABLES);
+        emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
+        emitSocketToClass(classId, SOCKET_EVENTS.UPLOAD_REQUESTS);
       }
       logger.info(`teams data changed for class: ${classId}`);
     }
@@ -236,7 +246,7 @@ const teamService = {
       }
     });
     // send socket update to clients
-    emitToClass(classId, SOCKET_EVENTS.JOINED_TEAMS);
+    emitSocketToClass(classId, SOCKET_EVENTS.JOINED_TEAMS);
   }
 };
 

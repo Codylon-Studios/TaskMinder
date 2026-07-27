@@ -29,7 +29,7 @@ export type socketEvent =
 // -> other members get redundant refetch
 // Solution: per-account socket room emitting personal updates only
 // to owner would be more efficient (atm intentionally deferred)
-export const emitToClass = (classId: number, socketEvent: socketEvent): void => {
+export const emitSocketToClass = (classId: number, socketEvent: socketEvent): void => {
   const io = getIO();
   io.to(`class:${classId}`).emit(socketEvent);
 }

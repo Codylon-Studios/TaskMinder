@@ -7,18 +7,22 @@ All changes are grouped by type and the latest version appears first.
 ## \[v2.3.0] - 2026-07-??
 
 ### Breaking Changes
-
+* chore(codebase): migrate to typescript v7 (use oxlint workaround to satisfy prisma > v7)
 
 ### Added
 * chore(dev): add dev mode to /bootstrap to avoid caching issues in development
 * feat(homework/events): add personal homework and events
+* feat(uploads): add improved preview and support for more file types
 
 ### Fixed
-
+* fix(team): prevent authenticated users from modifying teams in arbitrary classes
+* fix(session): revoke session cookie when user is removed from class to prevent continued access
 
 ### Changed
+* chore(ui/upload): improve upload files UI
+* chore(ui/ux): combine icons into dot menu for homework and events
 * chore(readme): add banner, social media and info page notice
-* chore(packages): bump packages (npm)
+* chore(packages): bump packages (npm, docker, ci)
 
 ---
 

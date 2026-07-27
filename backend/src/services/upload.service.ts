@@ -23,7 +23,7 @@ import { removeTempFiles } from "../utils/upload.cleanup.js";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis.js";
 import { BigIntreplacer, isValidTeamId } from "../utils/validate.functions.js";
 import { invalidateCache, updateCacheData } from "../config/redis.js"
-import { emitToClass, SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 
 type GetUploadFileResult = {
   stream: ReadStream;
@@ -134,7 +134,7 @@ const uploadService = {
     // Invalidate cache after queueing new upload
     await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
     // send uploads socket event
-    emitToClass(classId, SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
 
     logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s) for class ${classId}`);
   },
@@ -479,7 +479,7 @@ const uploadService = {
 
     await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
 
-    emitToClass(classId, SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
     logger.info(`Upload for class ${classId} was edited ${hasFiles ? "with" : "without"} files`);
   },
 
@@ -539,7 +539,7 @@ const uploadService = {
     // Invalidate cache after delete
     await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
 
-    emitToClass(classId, SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
     logger.info(`upload deleted for class: ${classId}`);
   },
 
@@ -574,7 +574,7 @@ const uploadService = {
 
     await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
 
-    emitToClass(classId, SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
   },
 
   async addUploadRequest(
@@ -596,7 +596,7 @@ const uploadService = {
 
     await invalidateCache(CACHE_KEY_PREFIXES.UPLOADREQUESTS, classId.toString());
 
-    emitToClass(classId, SOCKET_EVENTS.UPLOAD_REQUESTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOAD_REQUESTS);
     logger.info(`Upload Request added for class: ${classId}`);
   },
 
@@ -661,7 +661,7 @@ const uploadService = {
 
     await invalidateCache(CACHE_KEY_PREFIXES.UPLOADREQUESTS, classId.toString());
 
-    emitToClass(classId, SOCKET_EVENTS.UPLOAD_REQUESTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOAD_REQUESTS);
   }
 };
 

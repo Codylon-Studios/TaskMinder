@@ -5,7 +5,7 @@ import { BigIntreplacer } from "../utils/validate.functions.js";
 import { invalidateCache, updateCacheData } from "../config/redis.js";
 import { Session, SessionData } from "express-session";
 import { setSubjectsTypeBody } from "../schemas/subject.schema.js";
-import { emitToClass, SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 import { RequestError } from "../@types/requestError.js";
 
 const subjectService = {
@@ -71,15 +71,15 @@ const subjectService = {
             subjectsDeleted = true;
             // delete lessons which where linked to subject
             await tx.lesson.deleteMany({
-              where: { subjectId: subject.subjectId }
+              where: { subjectId: subject.subjectId, classId: classId }
             });
             // delete homework which where linked to subject
             await tx.homework.deleteMany({
-              where: { subjectId: subject.subjectId }
+              where: { subjectId: subject.subjectId, classId: classId }
             });
             // delete subjects themselves
             await tx.subjects.delete({
-              where: { subjectId: subject.subjectId }
+              where: { subjectId: subject.subjectId, classId: classId }
             });
           }
         })
@@ -138,15 +138,15 @@ const subjectService = {
       // invalidate subject cache
       await invalidateCache(CACHE_KEY_PREFIXES.SUBJECT, classId.toString());
       // send socket updates to clients
-      emitToClass(classId, SOCKET_EVENTS.SUBJECTS);
+      emitSocketToClass(classId, SOCKET_EVENTS.SUBJECTS);
 
       // If subjects were deleted, also delete lessons and homework caches
       if (subjectsDeleted) {
         await invalidateCache(CACHE_KEY_PREFIXES.LESSON, classId.toString());
         await invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, classId.toString());
         // send socket updates to clients
-        emitToClass(classId, SOCKET_EVENTS.TIMETABLES);
-        emitToClass(classId, SOCKET_EVENTS.HOMEWORK);
+        emitSocketToClass(classId, SOCKET_EVENTS.TIMETABLES);
+        emitSocketToClass(classId, SOCKET_EVENTS.HOMEWORK);
       }
     }
     logger.info(`Subject data set for class: ${classId}`);

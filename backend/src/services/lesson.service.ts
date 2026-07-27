@@ -5,7 +5,7 @@ import { BigIntreplacer, isValidTeamId, isValidSubjectId, dateChecker } from "..
 import { updateCacheData, invalidateCache } from "../config/redis.js";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lesson.schema.js";
-import { emitToClass, SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 
 const lessonService = {
   async setLessonData(
@@ -67,7 +67,7 @@ const lessonService = {
 
     if (dataChanged) {
       await invalidateCache(CACHE_KEY_PREFIXES.LESSON, classId.toString());
-      emitToClass(classId, SOCKET_EVENTS.TIMETABLES);
+      emitSocketToClass(classId, SOCKET_EVENTS.TIMETABLES);
       logger.info(`Lesson data changed for class: ${classId}`);
     }
   },

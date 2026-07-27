@@ -19,9 +19,9 @@ jobs:
         with:
           fetch-depth: 0
         
-      - name: Install mdbook 0.5.3
+      - name: Install mdbook 0.5.4
         run: |
-          tag="v0.5.3"
+          tag="v0.5.4"
           url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
           mkdir mdbook
           curl -sSL $url | tar -xz --directory=./mdbook

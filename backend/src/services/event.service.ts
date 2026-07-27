@@ -1,6 +1,6 @@
 import logger from "../config/logger.js";
 import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
-import { emitToClass, SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 import * as sass from "sass";
 import { prisma } from "../config/prisma.js";
 import {
@@ -228,7 +228,7 @@ export const eventService = {
     }
 
     await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), existingEvent.accountId?.toString());
-    emitToClass(classId, SOCKET_EVENTS.EVENTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.EVENTS);
   },
 
   async addEvent(
@@ -291,7 +291,7 @@ export const eventService = {
     // invalidate cache
     await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), accountId?.toString());
     // send socket event
-    emitToClass(classId, SOCKET_EVENTS.EVENTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.EVENTS);
   },
 
   async editEvent(
@@ -390,7 +390,7 @@ export const eventService = {
     await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), existing.accountId?.toString());
     await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), newAccountId?.toString());
     // send socket event
-    emitToClass(classId, SOCKET_EVENTS.EVENTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.EVENTS);
   },
 
   async deleteEvent(reqParams: deleteEventTypeParams, session: Session & Partial<SessionData>) {
@@ -427,7 +427,7 @@ export const eventService = {
     // invalidate cache
     await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), existing.accountId?.toString());
     // send socket event
-    emitToClass(classId, SOCKET_EVENTS.EVENTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.EVENTS);
   },
 
   async getEventTypeData(session: Session & Partial<SessionData>) {
@@ -548,7 +548,7 @@ export const eventService = {
 
     try {
       await updateCacheData(eventTypeData, setEventTypeDataCacheKey);
-      emitToClass(classId, SOCKET_EVENTS.EVENT_TYPES);
+      emitSocketToClass(classId, SOCKET_EVENTS.EVENT_TYPES);
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);

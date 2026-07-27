@@ -1,5 +1,5 @@
 import { redisClient, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
-import { emitToClass, SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 import { prisma } from "../config/prisma.js";
 import { isValidTeamId, BigIntreplacer, isValidSubjectId, dateChecker } from "../utils/validate.functions.js";
 import { updateCacheData, invalidateCache } from "../config/redis.js";
@@ -182,7 +182,7 @@ const homeworkService = {
     // invalidate cache
     await invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, classId.toString(), accountId?.toString());
     // send socket update
-    emitToClass(classId, SOCKET_EVENTS.HOMEWORK);
+    emitSocketToClass(classId, SOCKET_EVENTS.HOMEWORK);
   },
 
   async checkHomework(reqParams: checkHomeworkTypeParams, reqBody: checkHomeworkTypeBody, session: Session & Partial<SessionData>) {
@@ -244,7 +244,7 @@ const homeworkService = {
       }
     });
 
-    emitToClass(classId, SOCKET_EVENTS.HOMEWORK_CHECK);
+    emitSocketToClass(classId, SOCKET_EVENTS.HOMEWORK_CHECK);
   },
 
   async deleteHomework(reqParams: deleteHomeworkTypeParams, session: Session & Partial<SessionData>) {
@@ -281,7 +281,7 @@ const homeworkService = {
     // invalidate cache
     await invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, classId.toString(), existing.accountId?.toString());
     // send socket update
-    emitToClass(classId, SOCKET_EVENTS.HOMEWORK);
+    emitSocketToClass(classId, SOCKET_EVENTS.HOMEWORK);
   },
 
   async editHomework(
@@ -376,7 +376,7 @@ const homeworkService = {
     await invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, classId.toString(), existing.accountId?.toString());
     await invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, classId.toString(), newAccountId?.toString());
     // send socket update
-    emitToClass(classId, SOCKET_EVENTS.HOMEWORK);
+    emitSocketToClass(classId, SOCKET_EVENTS.HOMEWORK);
   },
 
   async getHomeworkData(session: Session & Partial<SessionData>) {
@@ -460,7 +460,7 @@ const homeworkService = {
     }
 
     await invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, classId.toString(), existingHomework.accountId?.toString());
-    emitToClass(classId, SOCKET_EVENTS.HOMEWORK);
+    emitSocketToClass(classId, SOCKET_EVENTS.HOMEWORK);
   },
 
   async getHomeworkCheckedData(session: Session & Partial<SessionData>) {

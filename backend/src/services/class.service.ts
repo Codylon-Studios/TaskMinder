@@ -30,7 +30,7 @@ import {
   setClassMembersPermissionsTypeParams,
   upgradeTestClassTypeParams
 } from "../schemas/class.schema.js";
-import socketIO, { emitToClass, SOCKET_EVENTS } from "../config/socket.js";
+import socketIO, { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 
 const classService = {
   /*
@@ -278,7 +278,7 @@ const classService = {
       logger.info(`User (logged in): ${accountId} joined class ${targetClass.classId}`);
     }
     session.classId = targetClass.classId.toString();
-    emitToClass(targetClass.classId, SOCKET_EVENTS.MEMBERS);
+    emitSocketToClass(targetClass.classId, SOCKET_EVENTS.MEMBERS);
     return targetClass.className;
   },
   /*
@@ -409,11 +409,11 @@ const classService = {
           }
         });
         logger.info(`User ${session.account} left class: ${classId}`);
-        emitToClass(classId, SOCKET_EVENTS.UPLOADS);
+        emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
       });
     };
     delete session.classId;
-    emitToClass(classId, SOCKET_EVENTS.MEMBERS);
+    emitSocketToClass(classId, SOCKET_EVENTS.MEMBERS);
   },
   /*
   deleteClass(
@@ -543,7 +543,7 @@ const classService = {
         throw err;
       }
     });
-    emitToClass(classId, SOCKET_EVENTS.MEMBERS);
+    emitSocketToClass(classId, SOCKET_EVENTS.MEMBERS);
     logger.info(`class member permissions were updated for class ${classId}`);
   },
   /*
@@ -614,6 +614,8 @@ const classService = {
       };
       throw err;
     }
+    const kickedAccountIds = new Set(classMembers.map(m => m.accountId));
+
     await prisma.$transaction(async tx => {
       for (const classMember of classMembers) {
         const removedMembership = await tx.joinedClass.deleteMany({
@@ -681,7 +683,37 @@ const classService = {
         throw err;
       }
     });
-    emitToClass(classId, SOCKET_EVENTS.MEMBERS);
+
+    // Destroy sessions of kicked members
+    try {
+      const sessionKeys = await redisStore.getClassSessionKeys(classId);
+      for (const sessionKey of sessionKeys) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = await (redisClient as any).get(sessionKey);
+        if (!raw) {
+          await redisStore.removeClassSessionKey(classId, sessionKey);
+          continue;
+        }
+        const sess = JSON.parse(raw) as SessionData;
+        if (sess.account && kickedAccountIds.has(sess.account.accountId)) {
+          await redisStore.destroyBySessionKey(sessionKey);
+        }
+      }
+
+      // Clear class auth cache
+      await redisClient.del(`auth_class:${classId}`);
+
+      // Clear auth_user caches for kicked accounts
+      for (const accountId of kickedAccountIds) {
+        await redisClient.del(`auth_user:${accountId}`);
+      }
+    }
+    catch (err) {
+      logger.error(`Error destroying kicked member sessions for class ${classId}: ${err}`);
+      // Log error but continue — DB transaction already succeeded
+    }
+
+    emitSocketToClass(classId, SOCKET_EVENTS.MEMBERS);
     logger.info(`class members were kicked in class: ${classId}`);
   },
   /*
@@ -717,7 +749,7 @@ const classService = {
         defaultPermissionLevel: role
       }
     });
-    emitToClass(classId, SOCKET_EVENTS.CLASS_INFO);
+    emitSocketToClass(classId, SOCKET_EVENTS.CLASS_INFO);
     logger.info(`class ${classId} default permission was changed to: ${role}`);
   },
   /*
@@ -806,7 +838,7 @@ const classService = {
         className: classDisplayName
       }
     });
-    emitToClass(classId, SOCKET_EVENTS.CLASS_INFO);
+    emitSocketToClass(classId, SOCKET_EVENTS.CLASS_INFO);
     logger.info(`class name was changed in class: ${classId}`);
   },
   /*
@@ -854,7 +886,7 @@ const classService = {
             classCodeHash: classCodeHash
           }
         });
-        emitToClass(classId, SOCKET_EVENTS.CLASS_INFO);
+        emitSocketToClass(classId, SOCKET_EVENTS.CLASS_INFO);
         logger.info(`class code was changed for class: ${classId}`);
         return code;
       }
@@ -898,7 +930,7 @@ const classService = {
         isTestClass: false
       }
     });
-    emitToClass(classId, SOCKET_EVENTS.CLASS_INFO);
+    emitSocketToClass(classId, SOCKET_EVENTS.CLASS_INFO);
     logger.info(`class: ${classId} was upgraded to normal class`);
   }
 };
