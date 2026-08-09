@@ -9,7 +9,7 @@
 
 > **Looking for a quick overview?** Visit our landing page at [info.taskminder.de](https://info.taskminder.de).
 
-[TaskMinder](https://taskminder.de) is a web app for organizing school life in one place—homework, exams, excursions, timetables, substitutions, and shared files.
+[TaskMinder](https://taskminder.de) is an open-source web app for organizing school life in one place—homework, exams, excursions, timetables, substitutions, and shared files.
 It’s built for classes: when one student adds or updates an entry (for example homework), the change is synced for everyone, so the whole class stays consistent and up to date.
 
 TaskMinder is currently available in German only. We're considering expanding to more languages based on community interest!
@@ -53,10 +53,10 @@ You're all set - **Have fun!**
 - **Bootstrap** - Responsive UI component framework
 - **Sass** - CSS preprocessor for maintainable stylesheets
 
-## Source-Available
-TaskMinder is **source-available** for transparency and learning purposes. You can view, modify, and use the code for **non-commercial purposes only** (personal, educational, or research use). **Commercial use requires permission.** This includes selling the software, running ads, offering paid services, or deploying it in enterprise environments.<br>
-For commercial licensing inquiries: [info@taskminder.de](mailto:info@taskminder.de) <br>
-This project is licensed under the [TaskMinder License](https://github.com/TaskMinder/TaskMinder/blob/main/LICENSE).
+## License
+TaskMinder is licensed under the GNU Affero General Public License v3.0 only (AGPL-3.0-only).
+Copyright © 2024–2026 Mingqi Li and Fabian Leonardi.
+See [LICENSE](./LICENSE) for details.
 
 ## Links
 - Contact us! [info@taskminder.de](mailto:info@taskminder.de)

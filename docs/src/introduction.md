@@ -1,6 +1,6 @@
 # Introduction
 
-Welcome to **TaskMinder**: a platform built to simplify school organization and improve collaboration between students, teams, and classes.
+Welcome to **TaskMinder**: an open source platform built to simplify school organization and improve collaboration between students, teams, and classes.
 
 TaskMinder combines planning, communication, and file handling in one place, so you spend less time switching between tools and more time focusing on your actual work.
 
