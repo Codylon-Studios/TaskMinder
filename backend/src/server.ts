@@ -44,6 +44,7 @@ import subjects from "./routes/subject.route.js";
 import teams from "./routes/team.route.js";
 import classes from "./routes/class.route.js";
 import uploads from "./routes/upload.route.js";
+import statistics from "./routes/statistics.route.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -167,6 +168,8 @@ app.get("/settings", (req, res) => {
 app.get("/about", (req, res) => {
   res.sendFile(path.join(pagesPath, "about", "about.html"));
 });
+
+app.use("/stats", statistics);
 
 // Apply API version check only to API routes
 app.use("/api", apiVersionMiddleware);
