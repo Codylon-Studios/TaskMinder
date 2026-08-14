@@ -35,6 +35,7 @@ import {
 export const lastCommaRegex = /,(?!.*,)/;
 export const weekDaysSo = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 export const weekDaysMo = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+export const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 export const isStandalone = globalThis.matchMedia("(display-mode: standalone)").matches;
 export const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
@@ -198,6 +199,10 @@ export function msToTime(ms: number | string): string {
     .padStart(2, "0")}:${((num / 1000 / 60) % 60).toString().padStart(2, "0")}`;
 }
 
+export function secondsToDurationInSeconds(s: number): string {
+  return `${Math.trunc(s / 60).toString()}:${Math.trunc(s % 60).toString().padStart(2, "0")}`;
+}
+
 export function dateDaysDifference(raw1: RawDate, raw2: RawDate): number {
   const date1 = toDate(raw1);
   const date2 = toDate(raw2);
@@ -340,6 +345,10 @@ export function cutString(str: string, maxLength: number): string {
   return str.substring(0, maxLength - 1) + "…";
 }
 
+export function clamp(min: number, val: number, max: number): number {
+  return Math.min(max, Math.max(val, min));
+}
+
 export function toCommaAndAnd(strings: string[]): string {
   return strings.join(", ").replace(/,(?!.*,)/, " und");
 }
@@ -366,7 +375,7 @@ export function autocomplete(element: JQuery<HTMLElement>, val: string | string[
 
 export async function checkTeamInputForSuspicious(this: HTMLElement): Promise<void> {
   const teamId = Number.parseInt(getInputValue($(this)));
-  if (teamId === -1) {
+  if (Number.isNaN(teamId)) {
     $(this).removeClass("is-suspicious");
   }
   else {
@@ -713,7 +722,7 @@ export async function checkReloadEventTypeStyles(): Promise<void> {
   if (eventTypeString !== cache.data || cache.css === undefined || cache.version !== version) {
     cache.data = eventTypeString;
     cache.css = await (await fetch("/api/events/types/styles")).text();
-    cache.version = version
+    cache.version = version;
   }
   $("#event-type-styles").text(cache.css);
   localStorage.setItem("eventTypeDataCache", JSON.stringify(cache));
@@ -1508,6 +1517,11 @@ async function onOnline(): Promise<void> {
   clearRequestQueue();
 }
 
+function toggleScrollFade(el: HTMLElement): void {
+  const toBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+  el.style.setProperty("--fade-progress", Math.min(48, toBottom) + "px");
+}
+
 export async function init(): Promise<void> {
   try {
     const res = await fetch("/csrf-token");
@@ -1720,16 +1734,36 @@ export async function init(): Promise<void> {
     $(this).val("").removeClass("is-autocompleted");
   });
 
-  function toggleScrollFade(el: HTMLElement) {
-    const toBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-    el.style.setProperty("--fade-progress", Math.min(48, toBottom) + "px");
+  function initScrollFade(el: HTMLElement): void {
+    toggleScrollFade(el);
+
+    new ResizeObserver(() => toggleScrollFade(el)).observe(el);
+
+    $(el).on("scroll", () => {
+      toggleScrollFade(el);
+    });
   }
 
   $(".scroll-fade").each(function () {
-    toggleScrollFade(this)
-    new ResizeObserver(() => toggleScrollFade(this)).observe(this);
-    $(this).on("scroll", () => {
-      toggleScrollFade(this)
-    })
-  })
+    initScrollFade(this);
+  });
+
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (!(node instanceof HTMLElement)) return;
+
+        if (node.matches(".scroll-fade")) {
+          initScrollFade(node);
+        }
+
+        node.querySelectorAll?.(".scroll-fade").forEach(el => initScrollFade(el as HTMLElement));
+      });
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
 }

@@ -98,6 +98,7 @@ async function buildDirectory(src, dest) {
         <div class="load-snippet" data-target="colorPicker"></div>
         <div class="load-snippet" data-target="richTextarea"></div>
         <div class="load-snippet" data-target="richInput"></div>
+        <div class="load-snippet" data-target="fileViewer"></div>
       `);
 
       $("#app-scroll").append(`

@@ -97,12 +97,12 @@ export class SearchBox extends RichInput {
   }
   
   get value(): string {
-    return super.value
+    return super.value;
   }
 
   set value(val: string) {
     $(this).toggleClass("search-box-not-empty", val !== "");
-    super.value = val
+    super.value = val;
   }
 }
 

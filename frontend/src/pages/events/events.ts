@@ -82,7 +82,7 @@ async function renderEventList(): Promise<void> {
     else {
       timeSpan.append(startDate);
     }
-    const variant =  `data-variant="event-${eventTypeId}"`
+    const variant =  `data-variant="event-${eventTypeId}"`;
     const buttons = `
       <button class="btn btn-sm btn-semivisible event-edit"
         data-id="${eventId}" aria-label="Bearbeiten">
@@ -109,7 +109,7 @@ async function renderEventList(): Promise<void> {
             <i class="fas fa-trash opacity-75" aria-hidden="true"></i> Löschen
           </button>
         </ul>
-      </div>`
+      </div>`;
     // The template for an event
     const galleryTemplate = $(`
       <div class="col pb-3 px-2">
@@ -177,7 +177,7 @@ async function renderEventList(): Promise<void> {
   $("#event-table-body").empty().append(newTableContent.children());
   $("#event-table").toggleClass("d-none", data.length === 0);
 
-  toggleShownButtons()
+  toggleShownButtons();
 };
 
 async function renderEventTypeList(): Promise<void> {
@@ -259,23 +259,23 @@ function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): voi
   $("#manage-event-name").val(event?.name ?? "");
   $("#manage-event-description").val(event?.description ?? "");
   $("#manage-event-description").trigger("change");
-  $("#manage-event-start-date").val(msToInputDate(event?.startDate ?? ""))
+  $("#manage-event-start-date").val(msToInputDate(event?.startDate ?? ""));
   $("#manage-event-lesson").val(event?.lesson ?? "");
-  $("#manage-event-end-date").val(msToInputDate(event?.endDate ?? ""))
-  const visibility = user.permissionLevel === 0 ? "private" : (event?.accountId ? "private" : (event?.teamId ?? -1) === -1 ? "all" : "team")
-  $("#manage-event-visibility-private").prop("checked", visibility === "private")
-  $("#manage-event-visibility-team").prop("checked", visibility === "team")
-  $("#manage-event-visibility-all").prop("checked", visibility === "all")
-  $("#manage-event-visibility-team-select").val(event?.teamId ?? "-1")
+  $("#manage-event-end-date").val(msToInputDate(event?.endDate ?? ""));
+  const visibility = user.permissionLevel === 0 ? "private" : (event?.accountId ? "private" : (event?.teamId ?? -1) === -1 ? "all" : "team");
+  $("#manage-event-visibility-private").prop("checked", visibility === "private");
+  $("#manage-event-visibility-team").prop("checked", visibility === "team");
+  $("#manage-event-visibility-all").prop("checked", visibility === "all");
+  $("#manage-event-visibility-team-select").val(event?.teamId ?? "-1");
 
-  $(".manage-event-input").removeClass("is-autocompleted is-suspicious is-invalid")
+  $(".manage-event-input").removeClass("is-autocompleted is-suspicious is-invalid");
   $("#manage-event-description").trigger("change");
 
   // Adjust according to the mode
-  $("#manage-event-modal-label").text(mode === "add" ? "Ereignis hinzufügen" : "Ereignis bearbeiten")
-  toggleManageEventDisabled()
-  $("#manage-event-add-button").toggle(mode === "add")
-  $("#manage-event-delete-button, #manage-event-edit-button").toggle(mode === "edit")
+  $("#manage-event-modal-label").text(mode === "add" ? "Ereignis hinzufügen" : "Ereignis bearbeiten");
+  toggleManageEventDisabled();
+  $("#manage-event-add-button").toggle(mode === "add");
+  $("#manage-event-delete-button, #manage-event-edit-button").toggle(mode === "edit");
 
   // Show the manage event modal
   $("#manage-event-modal").modal("show");
@@ -301,7 +301,7 @@ function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): voi
       endDate: dateToMs(endDate) ?? null,
       isPersonal,
       teamId
-    }
+    };
 
     if (mode === "add") {
       await ajax("POST", "/api/events", { body, queueable: true });
@@ -315,8 +315,8 @@ function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): voi
   });
 
   $("#edit-event-delete-button").off("click").on("click", () => {
-    deleteEvent(event?.eventId ?? -1)
-  })
+    deleteEvent(event?.eventId ?? -1);
+  });
 }
 
 async function shareEvent(eventId: number): Promise<void> {
@@ -516,9 +516,11 @@ async function updateFilters(ingoreEventTypes?: boolean): Promise<void> {
 }
 
 function toggleShownButtons(): void {
-  $("#manage-event-only-private").toggle(user.permissionLevel === 0)
-  $("#manage-event-visibility-label, #manage-event-visibility").toggle(user.permissionLevel >= 1)
-  $(".event:not(.event-private)").find(".event-edit, .event-pin, .event-delete, .dropdown-divider:has(~ .event-delete)").toggle(user.permissionLevel >= 1);
+  $("#manage-event-only-private").toggle(user.permissionLevel === 0);
+  $("#manage-event-visibility-label, #manage-event-visibility").toggle(user.permissionLevel >= 1);
+  $("#show-add-event-button").toggle(user.permissionLevel >= 1 || (user.loggedIn ?? false));
+  $(".event:not(.event-private)").find(".event-edit, .event-pin, .event-delete, .dropdown-divider:has(~ .event-delete)")
+    .toggle(user.permissionLevel >= 1);
 }
 
 function toggleView(): void {
@@ -552,7 +554,7 @@ export async function init(): Promise<void> {
       const checked = $(this).is(":checked");
       $("#search-events").toggle(checked);
       if (checked) $("#search-events input").trigger("focus");
-      else $("#search-events").val("");
+      else $("#search-events").val("").trigger("input");
     }).prop("checked", false).trigger("change");
 
     view = localStorage.getItem("eventView") as View ?? View.Gallery;
@@ -572,10 +574,10 @@ export async function init(): Promise<void> {
     $("#search-events").on("input", renderEventList);
 
     const checkEndDateAfterStartDate = (): void => {
-      const start = getInputValue($(`#manage-event-start-date`));
-      const end = getInputValue($(`#manage-event-end-date`));
+      const start = getInputValue($("#manage-event-start-date"));
+      const end = getInputValue($("#manage-event-end-date"));
       if (start === "" || end === "") return;
-      $(`#manage-event-end-date`).toggleClass("is-invalid", new Date(start).getTime() > new Date(end).getTime());
+      $("#manage-event-end-date").toggleClass("is-invalid", new Date(start).getTime() > new Date(end).getTime());
     };
 
     function startDateInputCallback(this: HTMLElement): void {
@@ -604,13 +606,13 @@ export async function init(): Promise<void> {
       endDateInputCallback.call(this);
     });
     $("#manage-event-visibility-team-select").on("input autocomplete", function () {
-      $("#manage-event-visibility-team").prop("checked", true)
+      $("#manage-event-visibility-team").prop("checked", true);
       checkTeamInputForSuspicious.call(this);
     });
 
     // On changing any information in the manage event modal, disable the manage button if any information is empty
     $(".manage-event-input").on("input change", function () {
-      toggleManageEventDisabled()
+      toggleManageEventDisabled();
       if ($(this).is("#manage-event-end-date")) {
         $("#manage-event-lesson").val("");
       }
@@ -620,12 +622,12 @@ export async function init(): Promise<void> {
     });
 
     $("#app").on("click", "#show-add-event-button", () => {
-      manageEvent("add", {})
+      manageEvent("add", {});
     });
 
     // Request editing the event on clicking its edit icon
     $("#app").on("click", ".event-edit", async function () {
-      manageEvent("edit", (await eventData()).find(e => e.eventId === $(this).data("id")) ?? {})
+      manageEvent("edit", (await eventData()).find(e => e.eventId === $(this).data("id")) ?? {});
     });
 
     // Pin the event on clicking its pin icon
@@ -640,7 +642,7 @@ export async function init(): Promise<void> {
 
     // Clone the event on clicking its clone icon
     $("#app").on("click", ".event-clone", async function () {
-      manageEvent("add", (await eventData()).find(e => e.eventId === $(this).data("id")) ?? {})
+      manageEvent("add", (await eventData()).find(e => e.eventId === $(this).data("id")) ?? {});
     });
 
     // Request deleting the event on clicking its delete icon

@@ -449,10 +449,10 @@ const homeworkService = {
     catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
         const err: RequestError = {
-        name: "Not Found",
-        status: 404,
-        message: "Homework not found",
-        expected: true
+          name: "Not Found",
+          status: 404,
+          message: "Homework not found",
+          expected: true
         };
         throw err;
       }

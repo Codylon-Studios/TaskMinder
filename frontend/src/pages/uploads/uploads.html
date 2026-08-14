@@ -145,8 +145,16 @@
 
                 <label for="" class="form-label" id="add-upload-request-visibility-label">Wähle aus, für wen die Datei sichtbar ist</label>
                 <div class="btn-group w-100" id="add-upload-request-visibility">
-                  <input type="radio" class="btn-check btn-check-subtle add-upload-request-input" name="add-upload-request-visibility" id="add-upload-request-visibility-team">
-                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="add-upload-request-visibility-team">
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle add-upload-request-input"
+                    name="add-upload-request-visibility"
+                    id="add-upload-request-visibility-team"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="add-upload-request-visibility-team"
+                  >
                     <i aria-hidden="true" class="fas fa-user-group"></i>
                     <div>
                       <select class="form-select add-upload-request-input" id="add-upload-request-visibility-team-select">
@@ -159,9 +167,18 @@
                     </div>
                   </label>
 
-                  <input type="radio" class="btn-check btn-check-subtle add-upload-request-input" name="add-upload-request-visibility" id="add-upload-request-visibility-all">
-                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="add-upload-request-visibility-all">
-                    <i aria-hidden="true" class="fas fa-users"></i>Alle
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle add-upload-request-input"
+                    name="add-upload-request-visibility"
+                    id="add-upload-request-visibility-all"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="add-upload-request-visibility-all"
+                  >
+                    <i aria-hidden="true" class="fas fa-users"></i>
+                    Alle
                   </label>
                 </div>
               </div>
@@ -213,8 +230,16 @@
 
                 <label for="" class="form-label" id="manage-upload-visibility-label">Wähle aus, für wen die Datei sichtbar ist</label>
                 <div class="btn-group w-100" id="manage-upload-visibility">
-                  <input type="radio" class="btn-check btn-check-subtle manage-upload-input" name="manage-upload-visibility" id="manage-upload-visibility-team">
-                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-upload-visibility-team">
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle manage-upload-input"
+                    name="manage-upload-visibility"
+                    id="manage-upload-visibility-team"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="manage-upload-visibility-team"
+                  >
                     <i aria-hidden="true" class="fas fa-user-group"></i>
                     <div>
                       <select class="form-select manage-upload-input" id="manage-upload-visibility-team-select">
@@ -227,9 +252,18 @@
                     </div>
                   </label>
 
-                  <input type="radio" class="btn-check btn-check-subtle manage-upload-input" name="manage-upload-visibility" id="manage-upload-visibility-all">
-                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-upload-visibility-all">
-                    <i aria-hidden="true" class="fas fa-users"></i>Alle
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle manage-upload-input"
+                    name="manage-upload-visibility"
+                    id="manage-upload-visibility-all"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="manage-upload-visibility-all"
+                  >
+                    <i aria-hidden="true" class="fas fa-users"></i>
+                    Alle
                   </label>
                 </div>
               </div>
@@ -261,7 +295,7 @@
                   </div>
                 </div>
 
-                <object id="view-upload-object" class="ds-block mb-2 w-100 border border-secondary">Ein Fehler ist aufgetreten</object>
+                <file-viewer id="view-upload-viewer" class="ds-block mb-2"></file-viewer>
 
                 <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 m-2" id="view-upload-error">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>

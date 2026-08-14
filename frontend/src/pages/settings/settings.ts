@@ -884,7 +884,7 @@ async function updateUnavailable(): Promise<void> {
 
 export async function init(): Promise<void> {
   return new Promise(res => {
-    updateUnavailable()
+    updateUnavailable();
     
     setInterval(updateTestClassTimeLeft, 1000);
 

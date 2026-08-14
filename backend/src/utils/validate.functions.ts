@@ -1,9 +1,7 @@
 import { RequestError } from "../@types/requestError.js";
-import { CACHE_KEY_PREFIXES, cacheExpiration, generateCacheKey, redisClient } from "../config/redis.js";
 import { prisma } from "../config/prisma.js";
-import logger from "../config/logger.js";
 import { Session, SessionData } from "express-session";
-import { randomInt } from "crypto";
+import { randomInt } from "node:crypto";
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 

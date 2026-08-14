@@ -58,12 +58,12 @@ function compareEvent(a: SortableEvent, b: SortableEvent): number {
   if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
   const startA = Number(a.startDate), startB = Number(b.startDate);
   if (startA !== startB) return startA - startB;
-  const endA = a.endDate == null ? Infinity : Number(a.endDate);
-  const endB = b.endDate == null ? Infinity : Number(b.endDate);
+  const endA = a.endDate === null ? Infinity : Number(a.endDate);
+  const endB = b.endDate === null ? Infinity : Number(b.endDate);
   if (endA !== endB) return endA - endB;
   if (a.name !== b.name) return String(a.name).localeCompare(String(b.name));
-  const descA = a.description == null ? null : String(a.description);
-  const descB = b.description == null ? null : String(b.description);
+  const descA = a.description === null ? null : String(a.description);
+  const descB = b.description === null ? null : String(b.description);
   if (descA === descB) return 0;
   if (descA === null) return 1;
   if (descB === null) return -1;

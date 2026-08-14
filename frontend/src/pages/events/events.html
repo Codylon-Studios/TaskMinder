@@ -134,7 +134,12 @@
 
                 <div class="mb-3">
                   <label for="manage-event-name" class="form-label">Bennene das Ereignis</label>
-                  <input type="text" class="form-control manage-event-input" id="manage-event-name" placeholder='zum Beispiel "Schulaufgabe Latein" ' />
+                  <input
+                    type="text"
+                    class="form-control manage-event-input"
+                    id="manage-event-name"
+                    placeholder='zum Beispiel "Schulaufgabe Latein" '
+                  />
                 </div>
 
                 <div class="mb-3">
@@ -165,13 +170,30 @@
 
                 <label for="" class="form-label" id="manage-event-visibility-label">Wähle aus, für wen das Ereignis sichtbar ist</label>
                 <div class="btn-group w-100" id="manage-event-visibility">
-                  <input type="radio" class="btn-check btn-check-subtle manage-event-input" name="manage-event-visibility" id="manage-event-visibility-private">
-                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-event-visibility-private">
-                    <i aria-hidden="true" class="fas fa-user-lock"></i>Privat
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle manage-event-input"
+                    name="manage-event-visibility"
+                    id="manage-event-visibility-private"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="manage-event-visibility-private"
+                  >
+                    <i aria-hidden="true" class="fas fa-user-lock"></i>
+                    Privat
                   </label>
 
-                  <input type="radio" class="btn-check btn-check-subtle manage-event-input" name="manage-event-visibility" id="manage-event-visibility-team">
-                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-event-visibility-team">
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle manage-event-input"
+                    name="manage-event-visibility"
+                    id="manage-event-visibility-team"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="manage-event-visibility-team"
+                  >
                     <i aria-hidden="true" class="fas fa-user-group"></i>
                     <div>
                       <select class="form-select manage-event-input" id="manage-event-visibility-team-select">
@@ -184,16 +206,26 @@
                     </div>
                   </label>
 
-                  <input type="radio" class="btn-check btn-check-subtle manage-event-input" name="manage-event-visibility" id="manage-event-visibility-all">
-                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-event-visibility-all">
-                    <i aria-hidden="true" class="fas fa-users"></i>Alle
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle manage-event-input"
+                    name="manage-event-visibility"
+                    id="manage-event-visibility-all"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="manage-event-visibility-all"
+                  >
+                    <i aria-hidden="true" class="fas fa-users"></i>
+                    Alle
                   </label>
                 </div>
 
                 <div class="alert alert-primary p-2 ds-flex align-items-center gap-2 mb-0" id="manage-event-only-private">
                   <i aria-hidden="true" class="fas fa-user-lock"></i>
                   <span class="d-block">
-                    Dieses Ereignis wird nur für dich sichtbar sein. Du hast nicht genug Rechte, um ein Ereignis für andere Schüler:innen hinzuzufügen.
+                    Dieses Ereignis wird nur für dich sichtbar sein. Du hast nicht genug Rechte, um ein Ereignis für andere Schüler:innen
+                    hinzuzufügen.
                   </span>
                 </div>
               </div>

@@ -33,7 +33,7 @@ function openIndexedDB(): Promise<IDBDatabase> {
 const CORE_GLOBAL = ["/global/global.js", "/global/global.css"];
 const CORE_PAGES = ["main", "events", "homework", "uploads", "settings"]
   .flatMap(p => ["/" + p, `/pages/${p}/${p}.js`, `/pages/${p}/${p}.css`]);
-const CORE_SNIPPETS = ["navbar", "footer", "bottombar", "loadingBar", "colorPicker", "richTextarea", "richInput"]
+const CORE_SNIPPETS = ["bottombar", "colorPicker", "fileViewer", "footer", "loadingBar", "navbar", "richInput", "richTextarea"]
   .map(s => `/snippets/${s}/${s}.js`);
 const CORE_ASSETS = [
   "/static/manifest.json",
@@ -100,7 +100,7 @@ async function fetchBootstrap(): Promise<Bootstrap> {
     res.online = true;
     db.transaction("meta", "readwrite").objectStore("meta").put(res, "bootstrap");
     await removeOutdatedCaches(res.version);
-    bootstrap = res
+    bootstrap = res;
     return res;
   }
   catch {
@@ -110,7 +110,7 @@ async function fetchBootstrap(): Promise<Bootstrap> {
     }) as Bootstrap;
     res.online = false;
     db.transaction("meta", "readwrite").objectStore("meta").put(res, "bootstrap");
-    bootstrap = res
+    bootstrap = res;
     return res;
   }
 }

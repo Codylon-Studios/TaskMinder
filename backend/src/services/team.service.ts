@@ -4,7 +4,7 @@ import { prisma } from "../config/prisma.js";
 import logger from "../config/logger.js";
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
 import { BigIntreplacer, isValidTeamId } from "../utils/validate.functions.js";
-import { invalidateCache, updateCacheData } from "../config/redis.js"
+import { invalidateCache, updateCacheData } from "../config/redis.js";
 import { setJoinedTeamsTypeBody, setTeamsTypeBody } from "../schemas/team.schema.js";
 import fs from "fs/promises";
 import path from "path";

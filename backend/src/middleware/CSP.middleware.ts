@@ -17,6 +17,7 @@ export const CSPMiddleware = (): RequestHandler => {
         "font-src": ["'self'"],
         "object-src": ["'self'", "blob:"],
         "img-src": ["'self'", "data:", "blob:"],
+        "media-src": ["'self'", "blob:"],
         "frame-src": ["'self'", "blob:"]
       }
     },

@@ -13,7 +13,6 @@ import {
   uploadRequestsData,
   bootstrap,
   user,
-  forceAutocomplete,
   bytesToText,
   getCurrentLesson,
   checkTeamInputForSuspicious,
@@ -21,9 +20,10 @@ import {
   RelativeDirection,
   autocomplete
 } from "../../global/global.js";
-import { AjaxError, SingleUploadData } from "../../global/types";
+import { SingleUploadData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
 import { FileInput, SearchBox } from "../../snippets/richInput/richInput.js";
+import { FileViewer } from "../../snippets/fileViewer/fileViewer.js";
 
 async function renderUploadList(): Promise<void> {
   async function getFilteredData(): Promise<SingleUploadData[]> {
@@ -143,7 +143,7 @@ async function renderUploadList(): Promise<void> {
             <i class="fas fa-trash opacity-75" aria-hidden="true"></i> Löschen
           </button>
         </ul>
-      </div>`
+      </div>`;
 
     const galleryTemplate = $(`
       <div class="col p-2 text-center">
@@ -252,7 +252,7 @@ async function renderUploadList(): Promise<void> {
   $("#upload-table-body").empty().append(newTableContent.children());
   $("#upload-table").toggleClass("d-none", data.length === 0);
 
-  toggleShownButtons()
+  toggleShownButtons();
 
   renderUploadRequests();
 };
@@ -350,7 +350,8 @@ async function renderTeamList(): Promise<void> {
 
   for (const team of (await teamsData())) {
     // Add the template for the select elements
-    $("#manage-upload-visibility-team-select, #add-upload-request-visibility-team-select").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
+    $("#manage-upload-visibility-team-select, #add-upload-request-visibility-team-select")
+      .append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   }
 
   $("#manage-upload-visibility-team-select").val(manageuploadTeamVal);
@@ -381,13 +382,13 @@ async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadDa
   ($("#manage-upload-files")[0] as FileInput).files = files;
   $("#manage-upload-description").val(upload?.uploadDescription ?? "");
   $("#manage-upload-type").val(upload?.uploadType ?? "");
-  const visibility = (upload?.teamId ?? -1) === -1 ? "all" : "team"
-  $("#manage-upload-visibility-team").prop("checked", visibility === "team")
-  $("#manage-upload-visibility-all").prop("checked", visibility === "all")
-  $("#manage-upload-visibility-team-select").val(upload?.teamId ?? "-1")
+  const visibility = (upload?.teamId ?? -1) === -1 ? "all" : "team";
+  $("#manage-upload-visibility-team").prop("checked", visibility === "team");
+  $("#manage-upload-visibility-all").prop("checked", visibility === "all");
+  $("#manage-upload-visibility-team-select").val(upload?.teamId ?? "-1");
 
 
-  $(".manage-upload-input").removeClass("is-autocompleted is-suspicious is-invalid")
+  $(".manage-upload-input").removeClass("is-autocompleted is-suspicious is-invalid");
   $("#manage-upload-description").trigger("change");
 
   if (fromUploadRequest) {
@@ -412,10 +413,10 @@ async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadDa
   }
 
   // Adjust according to the mode
-  $("#manage-upload-modal-label").text(mode === "add" ? "Datei hinzufügen" : "Datei bearbeiten")
-  toggleManageUploadDisabled()
-  $("#manage-upload-add-button").toggle(mode === "add")
-  $("#manage-upload-delete-button, #manage-upload-edit-button").toggle(mode === "edit")
+  $("#manage-upload-modal-label").text(mode === "add" ? "Datei hinzufügen" : "Datei bearbeiten");
+  toggleManageUploadDisabled();
+  $("#manage-upload-add-button").toggle(mode === "add");
+  $("#manage-upload-delete-button, #manage-upload-edit-button").toggle(mode === "edit");
 
   // Show the manage upload modal
   $("#manage-upload-modal").modal("show");
@@ -450,8 +451,8 @@ async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadDa
   });
 
   $("#edit-upload-delete-button").off("click").on("click", () => {
-    deleteUpload(upload?.uploadId ?? -1)
-  })
+    deleteUpload(upload?.uploadId ?? -1);
+  });
 }
 
 function getFilenameFromContentDisposition(header: string): string | null {
@@ -501,7 +502,7 @@ async function viewUpload(uploadId: number): Promise<void> {
     $("#view-upload-open").attr("href", null).addClass("disabled");
 
     $("#view-upload-loading").show();
-    $("#view-upload-object").hide();
+    $("#view-upload-viewer").hide();
     $("#view-upload-error").hide();
     $("#view-upload-unavailable").hide();
 
@@ -513,7 +514,7 @@ async function viewUpload(uploadId: number): Promise<void> {
       $("#view-upload-loading").hide();
       const b = await bootstrap();
       const unavailable = (! b.online) || b.maintenance;
-      $("#view-upload-object").hide();
+      $("#view-upload-viewer").hide();
       $("#view-upload-error").toggle(!unavailable);
       $("#view-upload-unavailable").toggle(unavailable);
     }
@@ -525,10 +526,7 @@ async function viewUpload(uploadId: number): Promise<void> {
       const mime = upload.files[fileNumber].mimeType;
       $("#view-upload-first-page-note").toggle(mime === "application/pdf");
       
-      const $obj = $("#view-upload-object");
-      const $newObj = $obj.clone().attr("data", fileAndUrl.blobUrl).attr("type", mime).toggleClass("ios", isIOS);
-      $obj.replaceWith($newObj);
-      $newObj.show();
+      ($("#view-upload-viewer").show()[0] as FileViewer).file = fileAndUrl.file;
 
       $("#view-upload-unavailable").hide();
 
@@ -568,7 +566,6 @@ async function copyLinkUpload(uploadId: number) : Promise<void> {
   const upload = (await uploadData()).uploads.find(u => u.uploadId === uploadId);
   if (!upload) return;
 
-  const $el = $(`.upload-copy-link[data-id=${uploadId}]`);
   try {
     const url = `${location.protocol}//${location.host}/uploads?view-upload=${uploadId}`;
     const html = `<a href="${url}" class="taskminder-link">${upload.uploadName}</a>`;
@@ -699,7 +696,7 @@ export async function init(): Promise<void> {
       const checked = $(this).is(":checked");
       $("#search-uploads").toggle(checked);
       if (checked) $("#search-uploads input").trigger("focus");
-      else $("#search-uploads").val("");
+      else $("#search-uploads").val("").trigger("input");
     }).prop("checked", false).trigger("change");
 
     view = localStorage.getItem("uploadView") as View ?? View.Gallery;
@@ -719,7 +716,7 @@ export async function init(): Promise<void> {
     $("#search-uploads").on("input", renderUploadList);
 
     $("#manage-upload-visibility-team-select").on("input autocomplete", function () {
-      $("#manage-upload-visibility-team").prop("checked", true)
+      $("#manage-upload-visibility-team").prop("checked", true);
       checkTeamInputForSuspicious.call(this);
     });
 
@@ -732,7 +729,7 @@ export async function init(): Promise<void> {
         
     // Request editing the upload on clicking its edit icon
     $("#app").on("click", ".upload-edit", async function () {
-      manageUpload("edit", (await uploadData()).uploads.find(u => u.uploadId === $(this).data("id")) ?? {})
+      manageUpload("edit", (await uploadData()).uploads.find(u => u.uploadId === $(this).data("id")) ?? {});
     });
 
     // View the upload on clicking it
@@ -747,7 +744,7 @@ export async function init(): Promise<void> {
         
     // Clone the homework on clicking its clone icon
     $("#app").on("click", ".upload-clone", async function () {
-      manageUpload("add", (await uploadData()).uploads.find(u => u.uploadId === $(this).data("id")) ?? {})
+      manageUpload("add", (await uploadData()).uploads.find(u => u.uploadId === $(this).data("id")) ?? {});
     });
 
     // Copy the upload link on clicking its copy link icon
@@ -765,7 +762,7 @@ export async function init(): Promise<void> {
 
     $("#show-add-upload-request-button").on("click", () => {
       $("#add-upload-request-name").val("");
-      $("#add-upload-request-visibility-all").prop("checked", true)
+      $("#add-upload-request-visibility-all").prop("checked", true);
       $("#add-upload-request-visibility-team-select").val("-1").removeClass("is-suspicious");
       $("#add-upload-request-button").prop("disabled", true);
       $("#add-upload-request-modal").modal("show");
@@ -776,8 +773,8 @@ export async function init(): Promise<void> {
     });
 
     $("#add-upload-request-visibility-team-select").on("input autocomplete", function () {
-      $("#add-upload-request-visibility-team").prop("checked", true)
-      checkTeamInputForSuspicious.call(this)
+      $("#add-upload-request-visibility-team").prop("checked", true);
+      checkTeamInputForSuspicious.call(this);
     });
 
     $("#add-upload-request-button").on("click", async () => {
@@ -801,8 +798,8 @@ export async function init(): Promise<void> {
     });
 
     $("#app").on("click", ".upload-request-add", async function () {
-      const uploadRequest = (await uploadRequestsData()).find(u => u.uploadRequestId === $(this).data("id"))
-      if (!uploadRequest) return
+      const uploadRequest = (await uploadRequestsData()).find(u => u.uploadRequestId === $(this).data("id"));
+      if (!uploadRequest) return;
       await manageUpload("add", { uploadName: uploadRequest.uploadRequestName, teamId: uploadRequest.teamId }, true);
     });
 

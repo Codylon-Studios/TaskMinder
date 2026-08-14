@@ -32,7 +32,7 @@ export type socketEvent =
 export const emitSocketToClass = (classId: number, socketEvent: socketEvent): void => {
   const io = getIO();
   io.to(`class:${classId}`).emit(socketEvent);
-}
+};
 
 // Initialize the Socket.IO instance
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
