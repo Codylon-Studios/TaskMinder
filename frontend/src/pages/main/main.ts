@@ -791,7 +791,8 @@ async function updateTimetableFeedback(): Promise<void> {
     }, 0);
 
     if (nextRealLesson) {
-      html = `Noch <b>${getTimeLeftString(timeLeft)}</b> ${lessonToText(currentLesson!, false)}, dann weiter mit ${lessonToText(nextRealLesson, true)}.`;
+      html = `Noch <b>${getTimeLeftString(timeLeft)}</b>
+        ${lessonToText(currentLesson!, false)}, dann weiter mit ${lessonToText(nextRealLesson, true)}.`;
     }
     else {
       html = `Noch <b>${getTimeLeftString(timeLeft)}</b> ${lessonToText(currentLesson!, false)}, danach ist der Unterricht für heute vorbei!`;

@@ -2,10 +2,12 @@ import { ajax, showButtonLoading, socket, user } from "../../global/global.js";
 import { AjaxError } from "../../global/types.js";
 import { resetLoginRegister } from "../../snippets/navbar/navbar.js";
 
-async function changeContentOnLogin(): Promise<void> {
+async function changeContentOnUserChange(): Promise<void> {
   if (user.loggedIn && !justCreatedClass) {
     $("#show-login-register-btn").prop("disabled", true).find("i").removeClass("d-none");
     if (user.classJoined) {
+      socket.disconnect();
+      socket.connect();
       const loadingBarMod = await import("../../snippets/loadingBar/loadingBar.js");
       loadingBarMod.replaceSitePJAX("/main");
     }
@@ -14,6 +16,10 @@ async function changeContentOnLogin(): Promise<void> {
     }
     $(".login-register-element, .login-element, .register-element").addClass("d-none");
     $("#show-create-class-btn").prop("disabled", false).find("~ .form-text").hide();
+  }
+  if (!user.loggedIn) {
+    $("#show-login-register-btn").prop("disabled", false).find("i").addClass("d-none");
+    $("#show-create-class-btn").prop("disabled", true).find("~ .form-text").show();
   }
 }
 
@@ -79,9 +85,9 @@ export async function init(): Promise<void> {
           expectedErrors: [{ status: 404, responseText: "Invalid class code" }]
         });
 
-        showButtonLoading($("#join-class-btn"), ajaxPromise)
+        showButtonLoading($("#join-class-btn"), ajaxPromise);
 
-        const res = await ajaxPromise
+        const res = await ajaxPromise;
 
         if (user.loggedIn) {
           const loadingBarMod = await import("../../snippets/loadingBar/loadingBar.js");
@@ -133,9 +139,9 @@ export async function init(): Promise<void> {
         }
       });
 
-      showButtonLoading($("#create-class-btn"), ajaxPromise)
+      showButtonLoading($("#create-class-btn"), ajaxPromise);
 
-      const res = await ajaxPromise
+      const res = await ajaxPromise;
 
       justCreatedClass = true;
       user.auth();
@@ -183,7 +189,9 @@ export async function init(): Promise<void> {
   });
 }
 
-export const renderAllFn = changeContentOnLogin;
+user.on("change", changeContentOnUserChange);
+
+export const renderAllFn = changeContentOnUserChange;
 
 let justCreatedClass: boolean;
 let urlParams: URLSearchParams;

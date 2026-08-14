@@ -211,25 +211,25 @@ export class DatalistInput extends HTMLElement {
 
     this.$input.on("input focus", () => {
       if ((this.$input.val() ?? "") === "") {
-        $wrapper.dropdown("hide")
-        return
+        $wrapper.dropdown("hide");
+        return;
       }
       
-      const query = this.$input.val()?.toString().toLowerCase() ?? ""
+      const query = this.$input.val()?.toString().toLowerCase() ?? "";
       
       const options = this.options
         .filter(o => o.toLowerCase().includes(query))
         .sort((caseSensitiveA, caseSensitiveB) => {
-          let a = caseSensitiveA.toLowerCase()
-          let b = caseSensitiveB.toLowerCase()
+          const a = caseSensitiveA.toLowerCase();
+          const b = caseSensitiveB.toLowerCase();
           return a.startsWith(query)
-          ? (b.startsWith(query) ? a.localeCompare(b) : -1)
-          : (b.startsWith(query) ? 1 : a.localeCompare(b))
-        })
+            ? (b.startsWith(query) ? a.localeCompare(b) : -1)
+            : (b.startsWith(query) ? 1 : a.localeCompare(b));
+        });
 
       if (options.length === 0) {
-        $wrapper.dropdown("hide")
-        return
+        $wrapper.dropdown("hide");
+        return;
       }
 
       $dropdownMenu.empty().append(
@@ -240,14 +240,14 @@ export class DatalistInput extends HTMLElement {
             </button>
           `).on("pointerdown", () => this.$input.val(o).trigger("input blur"))
         )
-      )
+      );
 
-      $wrapper.dropdown("show")
+      $wrapper.dropdown("show");
     });
 
     this.$input.on("blur", () => {
-      $wrapper.dropdown("hide")
-    })
+      $wrapper.dropdown("hide");
+    });
 
     this.finalInitialized = true;
 

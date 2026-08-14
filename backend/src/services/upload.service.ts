@@ -22,7 +22,7 @@ import {
 import { removeTempFiles } from "../utils/upload.cleanup.js";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis.js";
 import { BigIntreplacer, isValidTeamId } from "../utils/validate.functions.js";
-import { invalidateCache, updateCacheData } from "../config/redis.js"
+import { invalidateCache, updateCacheData } from "../config/redis.js";
 import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 
 type GetUploadFileResult = {

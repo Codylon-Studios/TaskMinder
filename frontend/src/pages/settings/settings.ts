@@ -30,7 +30,6 @@ import {
   showButtonLoading
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel, AjaxError } from "../../global/types";
-import { DatalistInput } from "../../snippets/richInput/richInput.js";
 
 function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
@@ -987,9 +986,9 @@ export async function init(): Promise<void> {
     $("#logout-button").on("click", async () => {
       const ajaxPromise = ajax("POST", "/api/account/logout");
 
-      showButtonLoading($("#logout-button"), ajaxPromise)
+      showButtonLoading($("#logout-button"), ajaxPromise);
     
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#logout-success-toast").toast("show");
       user.auth();
@@ -1058,9 +1057,9 @@ export async function init(): Promise<void> {
           ]
         });
 
-        showButtonLoading($("#change-username-confirm"), ajaxPromise)
+        showButtonLoading($("#change-username-confirm"), ajaxPromise);
 
-        await ajaxPromise
+        await ajaxPromise;
 
         $("#change-username-success-toast").toast("show");
         $("#change-username-button").show();
@@ -1156,9 +1155,9 @@ export async function init(): Promise<void> {
           ]
         });
         
-        showButtonLoading($("#change-password-confirm"), ajaxPromise)
+        showButtonLoading($("#change-password-confirm"), ajaxPromise);
 
-        await ajaxPromise
+        await ajaxPromise;
         
         $("#change-password-success-toast").toast("show");
         $("#change-password-button").show();
@@ -1213,9 +1212,9 @@ export async function init(): Promise<void> {
           ]
         });
 
-        showButtonLoading($("#delete-account-confirm"), ajaxPromise)
+        showButtonLoading($("#delete-account-confirm"), ajaxPromise);
 
-        await ajaxPromise
+        await ajaxPromise;
         
         $("#delete-account-success-toast").toast("show");
         user.auth();
@@ -1251,9 +1250,9 @@ export async function init(): Promise<void> {
           queueable: true
         });
 
-        showButtonLoading($("#team-selection-save"), ajaxPromise)
+        showButtonLoading($("#team-selection-save"), ajaxPromise);
 
-        await ajaxPromise
+        await ajaxPromise;
       }
       else {
         localStorage.setItem("joinedTeamsData", JSON.stringify(newJoinedTeamsData));
@@ -1284,9 +1283,9 @@ export async function init(): Promise<void> {
           ]
         });
 
-        showButtonLoading($("#leave-class-confirm"), ajaxPromise)
+        showButtonLoading($("#leave-class-confirm"), ajaxPromise);
 
-        await ajaxPromise
+        await ajaxPromise;
         
         $("#leave-class-success-toast").toast("show");
         // Force socket to reconnect so it picks up the new session.classId
@@ -1341,9 +1340,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#change-class-name-confirm"), ajaxPromise)
+      showButtonLoading($("#change-class-name-confirm"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#change-class-name-button").show();
       $("#change-class-name").hide();
@@ -1359,9 +1358,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#change-class-code"), ajaxPromise)
+      showButtonLoading($("#change-class-code"), ajaxPromise);
 
-      const res = await ajaxPromise
+      const res = await ajaxPromise;
 
       const classCode = await res.json();
       $("#class-code").val(classCode);
@@ -1375,9 +1374,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#upgrade-test-class"), ajaxPromise)
+      showButtonLoading($("#upgrade-test-class"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#test-class-alert").addClass("d-none");
     });
@@ -1398,9 +1397,9 @@ export async function init(): Promise<void> {
     $("#delete-class-confirm").on("click", async () => {
       const ajaxPromise = ajax("DELETE", `/api/classes/${user.classId}`);
 
-      showButtonLoading($("#delete-class-confirm"), ajaxPromise)
+      showButtonLoading($("#delete-class-confirm"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#delete-class-success-toast").toast("show");
       // Force socket to reconnect so it picks up the new session.classId
@@ -1424,9 +1423,9 @@ export async function init(): Promise<void> {
     $("#kick-logged-out-users-confirm").on("click", async () => {
       const ajaxPromise = ajax("POST", `/api/classes/${user.classId}/members/kick-logged-out`);
 
-      showButtonLoading($("#kick-logged-out-users-confirm"), ajaxPromise)
+      showButtonLoading($("#kick-logged-out-users-confirm"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#kick-logged-out-users-success-toast").toast("show");
       $("#kick-logged-out-users").hide();
@@ -1455,9 +1454,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#set-logged-out-users-role-confirm"), ajaxPromise)
+      showButtonLoading($("#set-logged-out-users-role-confirm"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#set-logged-out-users-role-success-toast").toast("show");
       $("#set-logged-out-users-role").hide();
@@ -1506,11 +1505,11 @@ export async function init(): Promise<void> {
           body: { classMembers: classMembersPermissionsData },
           queueable: true
         })
-      ])
+      ]);
 
-      showButtonLoading($("#class-members-save"), ajaxPromises)
+      showButtonLoading($("#class-members-save"), ajaxPromises);
 
-      await ajaxPromises
+      await ajaxPromises;
 
       $("#class-members-save-confirm-container, #class-members-save-confirm").hide();
       makeButtonShowCheck($("#class-members-save"), 1000);
@@ -1595,9 +1594,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#teams-save"), ajaxPromise)
+      showButtonLoading($("#teams-save"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#teams-save-confirm-container, #teams-save-confirm").hide();
       makeButtonShowCheck($("#teams-save"), 1000);
@@ -1688,9 +1687,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#event-types-save"), ajaxPromise)
+      showButtonLoading($("#event-types-save"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
       makeButtonShowCheck($("#event-types-save"), 1000);
@@ -1710,9 +1709,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#event-types-example"), ajaxPromise)
+      showButtonLoading($("#event-types-example"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
     });
 
     $("#event-types-save").on("click", () => {
@@ -1813,9 +1812,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#subjects-save"), ajaxPromise)
+      showButtonLoading($("#subjects-save"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
       makeButtonShowCheck($("#subjects-save"), 1000);
@@ -1875,9 +1874,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#timetable-save"), ajaxPromise)
+      showButtonLoading($("#timetable-save"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       makeButtonShowCheck($("#timetable-save"), 1000);
     });

@@ -1,61 +1,76 @@
-const stats = [
-  { name: "months", end: 15 },
-  { name: "users", end: 62 },
-  { name: "classes", end: 5 },
-  { name: "content", end: 981 },
-]
-
-function timingFunction(t: number, maxVal: number) {
-  return Math.min((t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)) * maxVal, maxVal)
+function timingFunction(t: number, maxVal: number): number {
+  return Math.min((t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)) * maxVal, maxVal);
 }
 
-function updateStats() {
-  let elapsed = performance.now() - statsStart
-  let t = elapsed / statsDuration
+const statsDuration = 2000;
+
+async function initStats(statsStart: number): Promise<void> {
+  const res = await (await fetch("/stats")).json();
+  const firstDay = new Date("08-01-2026"); // TODO: real date
+
+  const stats = [
+    { name: "months", end: (new Date().getFullYear() - firstDay.getFullYear()) * 12 + (new Date().getMonth() - firstDay.getMonth()) },
+    { name: "users", end: res.registeredUsers },
+    { name: "classes", end: res.registeredClasses },
+    { name: "content", end: res.createdHomeworkAndEvents }
+  ];
+
+  updateStats(stats, statsStart);
+}
+
+function updateStats(stats: {name: string, end: number}[], statsStart: number): void {
+  const elapsed = performance.now() - statsStart;
+  const t = elapsed / statsDuration;
 
   for (const s of stats) {
-    let value = timingFunction(t, s.end)
-    document.getElementById("stat-" + s.name)!.textContent = Math.round(value).toString() + "+"
+    const value = timingFunction(t, s.end);
+    document.getElementById("stat-" + s.name)!.textContent = Math.round(value).toString() + "+";
   }
-  if (elapsed <= statsDuration) requestAnimationFrame(updateStats)
+  if (elapsed <= statsDuration) requestAnimationFrame(() => updateStats(stats, statsStart));
 }
 
-function setupQuotes() {
-  const container = document.getElementById("quotes")!
-  const num = container.children.length
-  const first = container.children[0]
-  const second = container.children[1]
-  const prevlast = container.children[num - 2]
-  const last = container.children[num - 1]
-  const quoteWidth = first.getBoundingClientRect().width
-  container.append(first.cloneNode(true))
-  container.append(second.cloneNode(true))
-  container.prepend(last.cloneNode(true))
-  container.prepend(prevlast.cloneNode(true))
+function setupQuotes(): void {
+  const container = document.getElementById("quotes")!;
+  const num = container.children.length;
+  const first = container.children[0];
+  const second = container.children[1];
+  const prevlast = container.children[num - 2];
+  const last = container.children[num - 1];
+  const quoteWidth = first.getBoundingClientRect().width;
+  container.append(first.cloneNode(true));
+  container.append(second.cloneNode(true));
+  container.prepend(last.cloneNode(true));
+  container.prepend(prevlast.cloneNode(true));
 
-  container.scrollLeft = quoteWidth
+  container.scrollLeft = quoteWidth + 16;
   container.addEventListener("scroll", () => {
     if (Math.abs(container.scrollLeft) < 1) {
-      container.scrollLeft = num * quoteWidth
+      container.scrollLeft = num * (quoteWidth + 16);
     }
     else if (Math.abs(container.scrollLeft - (num + 1) * (quoteWidth + 16)) < 1) {
-      container.scrollLeft = quoteWidth
+      container.scrollLeft = quoteWidth + 16;
     }
-  })
+  });
 
   document.getElementById("quotes-caroussel-left")?.addEventListener("click", () => {
     container.scrollBy({
       left: - quoteWidth - 16,
       behavior: "smooth"
     });
-  })
+  });
 
   document.getElementById("quotes-caroussel-right")?.addEventListener("click", () => {
     container.scrollBy({
       left: quoteWidth + 16,
       behavior: "smooth"
     });
-  })
+  });
+
+  if (window.matchMedia("(hover: hover)").matches) {
+    setInterval(() => {
+      if (!container.matches(":hover")) container.scrollLeft += 1;
+    }, 10);
+  }
 }
 
 function toggleScrollFade(el: HTMLElement): void {
@@ -73,15 +88,10 @@ function initScrollFade(el: HTMLElement): void {
   });
 }
 
-let statsStart = 0;
-const statsDuration = 2000;
-
 window.onload = async () => {
-  setupQuotes()
   const statsObserver = new IntersectionObserver((entries, observer) => {
     if (entries[0].isIntersecting) {
-      statsStart = performance.now()
-      updateStats()
+      initStats(performance.now());
       observer.unobserve(entries[0].target);
     }
   }, {threshold: 0.25});
@@ -116,30 +126,32 @@ window.onload = async () => {
     else {
       [...el.children].forEach(c => (c as HTMLElement).style.height = c.scrollHeight + 16 + "px");
     }
-    el.toggleAttribute("open")
-  }))
+    el.toggleAttribute("open");
+  }));
 
-  const fullscreenContainer = document.getElementById("img-fullscreen-container") as HTMLImageElement
+  const fullscreenContainer = document.getElementById("img-fullscreen-container") as HTMLImageElement;
   document.addEventListener("click", ev => {
-    let src = ""
+    let src = "";
     document.querySelectorAll(".img-fullscreenable").forEach(el => {
-      const imgEl = el as HTMLImageElement
-      if (ev.target === imgEl && fullscreenContainer.src !== imgEl.src) src = imgEl.src
-    })
-    fullscreenContainer.src = src
-  })
+      const imgEl = el as HTMLImageElement;
+      if (ev.target === imgEl && fullscreenContainer.src !== imgEl.src) src = imgEl.src;
+    });
+    fullscreenContainer.src = src;
+  });
 
-  const deviceSize = window.matchMedia('(max-width: 800px)').matches ? "mobile" : "desktop";
-  const colorTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light";
+  const deviceSize = window.matchMedia("(max-width: 800px)").matches ? "mobile" : "desktop";
+  const colorTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 
-  const imgById = (id: string): HTMLImageElement => document.getElementById(id) as HTMLImageElement
-  imgById("head-image").src = `/assets/landing/main-desktop-${colorTheme}.png`
+  const imgById = (id: string): HTMLImageElement => document.getElementById(id) as HTMLImageElement;
+  imgById("head-image").src = `/assets/landing/main-desktop-${colorTheme}.png`;
 
   await Promise.all(["main", "homework", "events", "uploads"].map(f => {
-    const i = imgById(`feature-${f}-img`)
-    i.src = `/assets/landing/${f}-${deviceSize}-${colorTheme}.png`
-    return i.decode()
-  }))
+    const i = imgById(`feature-${f}-img`);
+    i.src = `/assets/landing/${f}-${deviceSize}-${colorTheme}.png`;
+    return i.decode();
+  }));
 
-  document.body.style.display = "block"
-}
+  document.body.style.display = "block";
+
+  setupQuotes();
+};

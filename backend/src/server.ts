@@ -110,8 +110,8 @@ app.get("/bootstrap", authLimiter, async (req, res, next) => {
       envConfig.nodeEnv !== "DEVELOPMENT" ||
       envConfig.cacheEnabled;
 
-    const version = 
-      /* envConfig.nodeEnv !== "DEVELOPMENT" ? */ MAX_VERSION; //: "DEV";
+    const version = MAX_VERSION;
+    // envConfig.nodeEnv !== "DEVELOPMENT" ? MAX_VERSION : "DEV";
     
     res.set("Cache-Control", "no-store");
     res.status(200).json({ maintenance: false, classJoined: auth.classJoined, version, cacheEnabled });
@@ -167,10 +167,6 @@ app.get("/about", (req, res) => {
 });
 
 app.use("/stats", statistics);
-
-app.get("/landing", (req, res) => {
-  res.sendFile(path.join(pagesPath, "landing", "landing.html"));
-});
 
 // Apply API version check only to API routes
 app.use("/api", apiVersionMiddleware);

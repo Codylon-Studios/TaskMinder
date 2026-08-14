@@ -17,9 +17,9 @@ async function registerAccount(username: string, password: string): Promise<void
     }
   });
 
-  showButtonLoading($(".register-button:visible"), ajaxPromise)
+  showButtonLoading($(".register-button:visible"), ajaxPromise);
 
-  await ajaxPromise
+  await ajaxPromise;
 
   $("#register-success-toast .username").text(username);
   $("#register-success-toast").toast("show");
@@ -41,9 +41,9 @@ async function loginAccount(username: string, password: string): Promise<void> {
       ]
     });
 
-    showButtonLoading($(".login-button:visible"), ajaxPromise)
+    showButtonLoading($(".login-button:visible"), ajaxPromise);
 
-    await ajaxPromise
+    await ajaxPromise;
     
     $("#login-success-toast .username").text(username);
     $("#login-success-toast").toast("show");
@@ -87,12 +87,12 @@ function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
 }
 
-$("#nav-logout-button, #offcanvas-account-logout-button").on("click", async (ev) => {
+$("#nav-logout-button, #offcanvas-account-logout-button").on("click", async ev => {
   const ajaxPromise = ajax("POST", "/api/account/logout");
 
-  showButtonLoading($(ev.target), ajaxPromise)
+  showButtonLoading($(ev.target), ajaxPromise);
 
-  await ajaxPromise
+  await ajaxPromise;
 
   $("#logout-success-toast").toast("show");
     
@@ -251,7 +251,7 @@ $(() => {
   user.on("change", (function _() {
     $(".class-joined-content").toggle(user.classJoined ?? false);
     $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/");
-    if (user.classJoined) $(".navbar-home-link").attr("data-pjax", ""); else $(".navbar-home-link").removeAttr("data-pjax")
+    if (user.classJoined) $(".navbar-home-link").attr("data-pjax", ""); else $(".navbar-home-link").removeAttr("data-pjax");
     $("#login-register-button").toggle(!user.loggedIn && !isSite("join"));
     $("#nav-logout-button").toggle(user.loggedIn ?? false);
     $("#offcanvas-account").toggle(user.loggedIn ?? false);

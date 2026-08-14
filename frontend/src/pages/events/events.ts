@@ -274,7 +274,7 @@ function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): voi
 
   // Adjust according to the mode
   $("#manage-event-modal-label").text(mode === "add" ? "Ereignis hinzufügen" : "Ereignis bearbeiten");
-  toggleManageEventDisabled();
+  $(".manage-event-button").prop("disabled", true);
   $("#manage-event-add-button").toggle(mode === "add");
   $("#manage-event-delete-button, #manage-event-edit-button").toggle(mode === "edit");
 
@@ -306,21 +306,15 @@ function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): voi
 
     const ajaxPromise = mode === "add"
       ? ajax("POST", "/api/events", { body, queueable: true })
-      : ajax("PATCH", `/api/events/${event!.eventId}`, { body, queueable: true })
+      : ajax("PATCH", `/api/events/${event!.eventId}`, { body, queueable: true });
 
-    showButtonLoading($(".manage-event-button:visible"), ajaxPromise)
-    await ajaxPromise
+    showButtonLoading($(".manage-event-button:visible"), ajaxPromise);
+    await ajaxPromise;
 
-    if (mode === "add") {
-      $("#add-event-success-toast").toast("show");
-    }
-    else {
-      $("#edit-event-success-toast").toast("show");
-    }
     $("#manage-event-modal").modal("hide");
   });
 
-  $("#edit-event-delete-button").off("click").on("click", () => {
+  $("#manage-event-delete-button").off("click").on("click", () => {
     deleteEvent(event?.eventId ?? -1);
   });
 }
@@ -463,11 +457,6 @@ async function pinEvent(eventId: number): Promise<void> {
     },
     queueable: true
   });
-
-  const actionText = event.isPinned ? "losgelöst" : "angeheftet";
-  $("#pin-event-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
-  $("#pin-event-success-toast .toast-body").text(`Das Ereignis wurde erfolgreich ${actionText}.`);
-  $("#pin-event-success-toast").toast("show");
 }
 
 function deleteEvent(eventId: number): void {
@@ -489,10 +478,10 @@ function deleteEvent(eventId: number): void {
       const ajaxPromise = ajax("DELETE", `/api/events/${eventId}`, {
         queueable: true
       });
-      showButtonLoading($("#delete-event-confirm-toast-button"), ajaxPromise)
-      await ajaxPromise
+      showButtonLoading($("#delete-event-confirm-toast-button"), ajaxPromise);
+      await ajaxPromise;
       
-      $("#edit-event-modal").modal("hide");
+      $("#manage-event-modal").modal("hide");
       $("#delete-event-success-toast").toast("show");
     });
 }

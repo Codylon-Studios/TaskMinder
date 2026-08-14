@@ -213,7 +213,7 @@ async function renderHomeworkList(): Promise<void> {
 };
 
 async function renderHomeworkFeedback(): Promise<void> {
-  const todoHomeworkData = await getFilteredHomeworkData()
+  const todoHomeworkData = await getFilteredHomeworkData();
 
   let todo = 0;
   for (const h of todoHomeworkData) {
@@ -529,7 +529,7 @@ async function manageHomework(mode: "add" | "edit", homework: Partial<SingleHome
 
   // Adjust according to the mode
   $("#manage-homework-modal-label").text(mode === "add" ? "Hausaufgabe hinzufügen" : "Hausaufgabe bearbeiten");
-  toggleManageHomeworkDisabled();
+  $(".manage-homework-button").prop("disabled", true);
   $("#manage-homework-add-button").toggle(mode === "add");
   $("#manage-homework-delete-button, #manage-homework-edit-button").toggle(mode === "edit");
 
@@ -557,21 +557,15 @@ async function manageHomework(mode: "add" | "edit", homework: Partial<SingleHome
 
     const ajaxPromise = mode === "add"
       ? ajax("POST", "/api/homework", { body, queueable: true })
-      : ajax("PATCH", `/api/homework/${homework!.homeworkId}`, { body, queueable: true })
+      : ajax("PATCH", `/api/homework/${homework!.homeworkId}`, { body, queueable: true });
 
-    showButtonLoading($(".manage-homework-button:visible"), ajaxPromise)
-    await ajaxPromise
+    showButtonLoading($(".manage-homework-button:visible"), ajaxPromise);
+    await ajaxPromise;
 
-    if (mode === "add") {
-      $("#add-homework-success-toast").toast("show");
-    }
-    else {
-      $("#edit-homework-success-toast").toast("show");
-    }
     $("#manage-homework-modal").modal("hide");
   });
 
-  $("#edit-homework-delete-button").off("click").on("click", () => {
+  $("#manage-homework-delete-button").off("click").on("click", () => {
     deleteHomework(homework?.homeworkId ?? -1);
   });
 }
@@ -586,11 +580,6 @@ async function pinHomework(homeworkId: number): Promise<void> {
     },
     queueable: true
   });
-
-  const actionText = homework.isPinned ? "losgelöst" : "angeheftet";
-  $("#pin-homework-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
-  $("#pin-homework-success-toast .toast-body").text(`Die Hausaufgabe wurde erfolgreich ${actionText}.`);
-  $("#pin-homework-success-toast").toast("show");
 }
 
 function deleteHomework(homeworkId: number): void {
@@ -612,10 +601,10 @@ function deleteHomework(homeworkId: number): void {
       const ajaxPromise = ajax("DELETE", `/api/homework/${homeworkId}`, {
         queueable: true
       });
-      showButtonLoading($("#delete-homework-confirm-toast-button"), ajaxPromise)
-      await ajaxPromise
+      showButtonLoading($("#delete-homework-confirm-toast-button"), ajaxPromise);
+      await ajaxPromise;
 
-      $("#edit-homework-modal").modal("hide");
+      $("#manage-homework-modal").modal("hide");
       $("#delete-homework-success-toast").toast("show");
     });
 }

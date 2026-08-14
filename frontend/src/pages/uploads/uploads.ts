@@ -412,7 +412,7 @@ async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadDa
 
   // Adjust according to the mode
   $("#manage-upload-modal-label").text(mode === "add" ? "Datei hinzufügen" : "Datei bearbeiten");
-  toggleManageUploadDisabled();
+  $(".manage-upload-button").prop("disabled", true);
   $("#manage-upload-add-button").toggle(mode === "add");
   $("#manage-upload-delete-button, #manage-upload-edit-button").toggle(mode === "edit");
 
@@ -439,21 +439,15 @@ async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadDa
 
     const ajaxPromise = mode === "add"
       ? ajax("POST", "/api/uploads", { body: data, queueable: true })
-      : ajax("PATCH", `/api/uploads/${upload!.uploadId}`, { body: data, queueable: true })
+      : ajax("PATCH", `/api/uploads/${upload!.uploadId}`, { body: data, queueable: true });
 
-    showButtonLoading($(".manage-upload-button:visible"), ajaxPromise)
-    await ajaxPromise
+    showButtonLoading($(".manage-upload-button:visible"), ajaxPromise);
+    await ajaxPromise;
 
-    if (mode === "add") {
-      $("#manage-upload-success-toast").toast("show");
-    }
-    else {
-      $("#edit-upload-success-toast").toast("show");
-    }
     $("#manage-upload-modal").modal("hide");
   });
 
-  $("#edit-upload-delete-button").off("click").on("click", () => {
+  $("#manage-upload-delete-button").off("click").on("click", () => {
     deleteUpload(upload?.uploadId ?? -1);
   });
 }
@@ -593,11 +587,6 @@ async function pinUpload(uploadId: number): Promise<void> {
     },
     queueable: true
   });
-  
-  const actionText = upload.isPinned ? "losgelöst" : "angeheftet";
-  $("#pin-upload-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
-  $("#pin-upload-success-toast .toast-body").text(`Die Datei wurde erfolgreich ${actionText}.`);
-  $("#pin-upload-success-toast").toast("show");
 }
 
 function deleteUpload(uploadId: number, force?: boolean): void {
@@ -608,10 +597,10 @@ function deleteUpload(uploadId: number, force?: boolean): void {
     const ajaxPromise = ajax("DELETE", `/api/uploads/${uploadId}`, {
       queueable: true
     });
-    showButtonLoading($("#delete-upload-confirm-toast-button"), ajaxPromise)
-    await ajaxPromise
+    showButtonLoading($("#delete-upload-confirm-toast-button"), ajaxPromise);
+    await ajaxPromise;
 
-    $("#edit-upload-modal").modal("hide");
+    $("#manage-upload-modal").modal("hide");
     $("#delete-upload-success-toast").toast("show");
   }
 
@@ -793,9 +782,9 @@ export async function init(): Promise<void> {
         queueable: true
       });
 
-      showButtonLoading($("#add-upload-request-button"), ajaxPromise)
+      showButtonLoading($("#add-upload-request-button"), ajaxPromise);
 
-      await ajaxPromise
+      await ajaxPromise;
 
       $("#add-upload-request-modal").modal("hide");
     });

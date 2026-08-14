@@ -48,9 +48,9 @@
           </div>
           <div class="offcanvas-body d-flex flex-column offcanvas-body-grow-75">
             <div class="flex-grow-1 overflow-scroll" id="filter-offcanvas-body"></div>
-            <div class="d-flex">
-              <button class="btn btn-danger fw-bold flex-fill m-1 filter-reset">Zurücksetzen</button>
-              <button class="btn btn-primary fw-bold flex-fill m-1" data-bs-dismiss="offcanvas">Fertig</button>
+            <div class="d-flex flex-nowrap">
+              <button class="btn btn-danger fw-bold w-100 m-1 filter-reset">Zurücksetzen</button>
+              <button class="btn btn-primary fw-bold w-100 m-1" data-bs-dismiss="offcanvas">Fertig</button>
             </div>
           </div>
         </div>
@@ -63,9 +63,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
               </div>
               <div class="modal-body" id="filter-modal-body"></div>
-              <div class="modal-footer">
-                <button class="btn btn-danger fw-bold flex-fill filter-reset">Zurücksetzen</button>
-                <button class="btn btn-primary fw-bold flex-fill" data-bs-dismiss="modal">Fertig</button>
+              <div class="modal-footer flex-nowrap">
+                <button class="btn btn-danger fw-bold w-100 filter-reset">Zurücksetzen</button>
+                <button class="btn btn-primary fw-bold w-100" data-bs-dismiss="modal">Fertig</button>
               </div>
             </div>
           </div>
@@ -221,7 +221,6 @@
               </div>
               <div class="modal-footer flex-nowrap">
                 <button class="btn btn-danger fw-bold w-100" id="manage-homework-delete-button">Löschen</button>
-                <button class="btn btn-secondary fw-bold w-100" data-bs-dismiss="modal">Abbrechen</button>
                 <button class="btn btn-primary fw-bold w-100 manage-homework-button" id="manage-homework-edit-button">Speichern</button>
                 <button class="btn btn-primary fw-bold w-100 manage-homework-button" id="manage-homework-add-button">Hinzufügen</button>
               </div>
@@ -260,30 +259,6 @@
         </div>
 
         <div class="toast-container">
-          <div id="add-homework-success-toast" class="toast">
-            <div class="toast-progress-bar bg-success"></div>
-            <div class="toast-header bg-success text-body-bg">
-              <b class="me-auto">Erfolgreich hinzugefügt</b>
-              <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-            </div>
-            <div class="toast-body">Die Hausaufgabe wurde erfolgreich hinzugefügt.</div>
-          </div>
-          <div id="edit-homework-success-toast" class="toast">
-            <div class="toast-progress-bar bg-success"></div>
-            <div class="toast-header bg-success text-body-bg">
-              <b class="me-auto">Erfolgreich geändert</b>
-              <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-            </div>
-            <div class="toast-body">Die Hausaufgabe wurde erfolgreich geändert.</div>
-          </div>
-          <div id="pin-homework-success-toast" class="toast">
-            <div class="toast-progress-bar bg-success"></div>
-            <div class="toast-header bg-success text-body-bg">
-              <b class="me-auto"></b>
-              <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-            </div>
-            <div class="toast-body"></div>
-          </div>
           <div id="delete-homework-success-toast" class="toast">
             <div class="toast-progress-bar bg-success"></div>
             <div class="toast-header bg-success text-body-bg">

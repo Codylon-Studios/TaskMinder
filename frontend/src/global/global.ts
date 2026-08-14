@@ -71,19 +71,6 @@ export function isValidSite(site: string): boolean {
   ].includes(site);
 }
 
-export function registerSocketListeners(listeners: Record<string, () => unknown>): void {
-  setTimeout(() => { // Somehow necessary as otherwise socket isn't declared (only in uploads somehow)
-    const site = getSite();
-    for (const listener of Object.keys(listeners)) {
-      socket.on(listener, () => {
-        if (isSite(site)) {
-          listeners[listener]();
-        }
-      });
-    }
-  }, 0);
-}
-
 function openIndexedDB(): Promise<IDBDatabase> {
   return new Promise((res, rej) => {
     const request = indexedDB.open("app", 1);
@@ -341,19 +328,19 @@ export function makeButtonShowCheck(btn: JQuery<HTMLElement>, duration: number):
 }
 
 export async function showButtonLoading(btn: JQuery<HTMLElement>, p: Promise<unknown>): Promise<void> {
-  const w = btn.outerWidth() + "px"
-  const h = btn.outerHeight() + "px"
+  const w = btn.outerWidth() + "px";
+  const h = btn.outerHeight() + "px";
   btn[0]?.style.setProperty("width", w, "important");
   btn[0]?.style.setProperty("min-width", w, "important");
   btn[0]?.style.setProperty("height", h, "important");
   btn[0]?.style.setProperty("min-height", h, "important");
 
   const content = btn.contents().detach();
-  btn.html('<span class="spinner-border" aria-hidden="true"></span>')
+  btn.html('<span class="spinner-border" aria-hidden="true"></span>');
   btn.prop("disabled", true);
 
   try {
-    await p
+    await p;
   }
   finally {
     btn.css({ width: "", minWidth: "", height: "", minHeight: "" });

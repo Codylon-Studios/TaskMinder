@@ -113,11 +113,11 @@ a {
 
   --btn-fancy-split: 0%;
   transition: --btn-fancy-split 300ms ease;
-  background: linear-gradient(to right, var(--primary) 0 var(--btn-fancy-split), var(--body-bg) var(--btn-fancy-split) 100%);
+  background: linear-gradient(to right, var(--body-bg) 0 var(--btn-fancy-split), var(--primary) var(--btn-fancy-split) 100%);
   box-shadow: var(--shadow) rgba(var(--primary-rgb), 0.2);
 
   div {
-    background: linear-gradient(to right, var(--body-bg) 0 var(--btn-fancy-split), $primary var(--btn-fancy-split) 100%);
+    background: linear-gradient(to right, var(--primary) 0 var(--btn-fancy-split), var(--body-bg) var(--btn-fancy-split) 100%);
     color: transparent;
     background-clip: text;
     margin: 0 -0.8rem;
@@ -126,11 +126,11 @@ a {
 
   .arrow-right {
     --my-split: calc((var(--btn-fancy-split) - 78%) / 14 * 100);
-    background: linear-gradient(to right, var(--body-bg) 0 var(--my-split), $primary var(--my-split) 100%);
+    background: linear-gradient(to right, var(--primary) 0 var(--my-split), var(--body-bg) var(--my-split) 100%);
     mask: svgs.make-arrow-right();
     display: inline-block;
-    width: 1rem;
-    height: 1rem;
+    width: 1.25rem;
+    height: 1.25rem;
     margin-bottom: -0.15rem;
   }
 }
@@ -192,8 +192,8 @@ a {
   justify-content: center;
   padding: 5rem 2rem;
   position: relative;
-  gap: 1rem;
-  @media (max-width: 800px) {
+  gap: 3rem;
+  @media (max-width: 1000px) {
     flex-direction: column;
   }
 }
@@ -201,6 +201,7 @@ a {
 #head-brand {
   display: flex;
   flex-direction: column;
+  max-width: 30rem;
 }
 
 #head-pattern {
@@ -216,6 +217,9 @@ a {
 
 #brand-name {
   font-size: min(15vw, 5rem);
+  white-space: nowrap;
+  line-height: 1;
+  margin-bottom: 3rem;
 }
 
 #brand-explanation {
@@ -227,6 +231,11 @@ a {
   display: flex;
   gap: 2rem;
   align-items: center;
+
+  .btn-fancy {
+    font-size: 1.5rem;
+    padding: .8rem 1.6rem;
+  }
 }
 
 #head-image {
@@ -257,6 +266,11 @@ a {
 
 h2 {
   margin-top: 0;
+  font-size: min(6vw,2rem)
+}
+
+h3 {
+  font-size: min(4vw,1.5rem)
 }
 
 #features {
@@ -350,9 +364,7 @@ h2 {
   }
 
   @media (hover: hover) {
-    &:hover {
-      --bg: color-mix(in oklab, var(--body-bg), var(--body-color) 10%);
-    }
+    display: none;
   }
 
   &:active {
@@ -363,7 +375,6 @@ h2 {
 #quotes {
   display: flex;
   overflow: scroll;
-  scroll-snap-type: x mandatory;
   scrollbar-width: none;
   max-width: 30rem;
   gap: 1rem;
@@ -373,6 +384,10 @@ h2 {
     --mask: linear-gradient( to right, transparent 0, black 5rem, black calc(100% - 5rem), transparent 100% );
     -webkit-mask-image: var(--mask);
     mask-image: var(--mask);
+  }
+
+  @media (hover: none) {
+    scroll-snap-type: x mandatory;
   }
 }
 
@@ -569,19 +584,29 @@ h2 {
 }
 
 #cta {
-  display: flex;
-  gap: 1rem 2rem;
-  justify-content: center;
-  flex-wrap: wrap;
+  h2 {
+    margin-bottom: 0.5rem;
+  }
 
-  a {
-    background: var(--body-bg);
-    font-weight: bold;
-    font-size: 1.1rem;
-    padding: .8rem 1.6rem;
-    cursor: pointer;
-    border: none;
-    border-radius: 10rem;
-    text-decoration: none;
+  #cta-info {
+    margin-bottom: 1.5rem;
+  }
+
+  #cta-actions {
+    display: flex;
+    gap: 1rem 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    a {
+      background: var(--body-bg);
+      font-weight: bold;
+      font-size: 1.1rem;
+      padding: .8rem 1.6rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 10rem;
+      text-decoration: none;
+    }
   }
 }

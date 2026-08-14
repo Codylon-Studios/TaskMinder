@@ -17,7 +17,7 @@ const QUERY_METHODS = new Set([
   "update",
   "updateManyAndReturn",
   "upsert",
-  "delete",
+  "delete"
 ]);
 
 // Parse each schema dir once per process and memoize.
@@ -58,22 +58,22 @@ export default {
   meta: {
     type: "problem",
     docs: {
-      description: "Disallow `select`/`include` keys that are not fields on the Prisma model",
+      description: "Disallow `select`/`include` keys that are not fields on the Prisma model"
     },
     schema: [
       {
         type: "object",
         properties: {
-          schemaDir: { type: "string" },
+          schemaDir: { type: "string" }
         },
         required: ["schemaDir"],
-        additionalProperties: false,
-      },
+        additionalProperties: false
+      }
     ],
     messages: {
       unknownField:
-        "'{{field}}' is not a field on Prisma model '{{model}}'. Check your Prisma schema.",
-    },
+        "'{{field}}' is not a field on Prisma model '{{model}}'. Check your Prisma schema."
+    }
   },
 
   create(context) {
@@ -100,7 +100,7 @@ export default {
           context.report({
             node: prop.key,
             messageId: "unknownField",
-            data: { field: key, model: modelName },
+            data: { field: key, model: modelName }
           });
           continue;
         }
@@ -142,9 +142,9 @@ export default {
         const include = findObjectProp(arg, "include");
         if (select) validateSelection(select, modelName);
         if (include) validateSelection(include, modelName);
-      },
+      }
     };
-  },
+  }
 };
 
 /**
@@ -160,7 +160,8 @@ function resolveModels(filename, schemaDir) {
     try {
       const models = getModels(candidate);
       if (Object.keys(models).length > 0) return models;
-    } catch {
+    }
+    catch {
       // dir doesn't exist here — keep walking up
     }
     const parent = path.dirname(dir);

@@ -16,7 +16,7 @@ import path from "node:path";
  * are ignored.
  */
 export function parsePrismaSchema(schemaDir) {
-  const files = fs.readdirSync(schemaDir).filter((f) => f.endsWith(".prisma"));
+  const files = fs.readdirSync(schemaDir).filter(f => f.endsWith(".prisma"));
 
   // First pass: collect declared model names so we can classify a field's type
   // as a relation (-> model) vs a scalar/enum (-> null).
