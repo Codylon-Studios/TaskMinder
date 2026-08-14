@@ -171,6 +171,10 @@ app.get("/about", (req, res) => {
 
 app.use("/stats", statistics);
 
+app.get("/landing", (req, res) => {
+  res.sendFile(path.join(pagesPath, "landing", "landing.html"));
+});
+
 // Apply API version check only to API routes
 app.use("/api", apiVersionMiddleware);
 
