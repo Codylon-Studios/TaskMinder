@@ -15,7 +15,8 @@ import {
   user,
   checkTeamInputForSuspicious,
   getInputValue,
-  RelativeDirection
+  RelativeDirection,
+  showButtonLoading
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
@@ -303,12 +304,17 @@ function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): voi
       teamId
     };
 
+    const ajaxPromise = mode === "add"
+      ? ajax("POST", "/api/events", { body, queueable: true })
+      : ajax("PATCH", `/api/events/${event!.eventId}`, { body, queueable: true })
+
+    showButtonLoading($(".manage-event-button:visible"), ajaxPromise)
+    await ajaxPromise
+
     if (mode === "add") {
-      await ajax("POST", "/api/events", { body, queueable: true });
       $("#add-event-success-toast").toast("show");
     }
     else {
-      await ajax("PATCH", `/api/events/${event!.eventId}`, { body, queueable: true });
       $("#edit-event-success-toast").toast("show");
     }
     $("#manage-event-modal").modal("hide");
@@ -480,9 +486,11 @@ function deleteEvent(eventId: number): void {
       // Hide the confirmation toast
       $("#delete-event-confirm-toast").toast("hide");
 
-      await ajax("DELETE", `/api/events/${eventId}`, {
+      const ajaxPromise = ajax("DELETE", `/api/events/${eventId}`, {
         queueable: true
       });
+      showButtonLoading($("#delete-event-confirm-toast-button"), ajaxPromise)
+      await ajaxPromise
       
       $("#edit-event-modal").modal("hide");
       $("#delete-event-success-toast").toast("show");
@@ -587,7 +595,7 @@ export async function init(): Promise<void> {
     function endDateInputCallback(this: HTMLElement): void {
       const val = getInputValue($(this));
       if (val === "") {
-        $(this).removeClass("is-suspicious");
+        $(this).removeClass("is-suspicious is-invalid");
         return;
       }
 

@@ -21,7 +21,8 @@ import {
   getCurrentLesson,
   getNextLessonWithDate,
   checkTeamInputForSuspicious,
-  RelativeDirection
+  RelativeDirection,
+  showButtonLoading
 } from "../../global/global.js";
 import { HomeworkData, SingleHomeworkData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
@@ -212,12 +213,7 @@ async function renderHomeworkList(): Promise<void> {
 };
 
 async function renderHomeworkFeedback(): Promise<void> {
-  const currentJoinedTeamsData = await joinedTeamsData();
-
-  const todoHomeworkData = (await homeworkData()).filter(h =>
-    (currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1)
-    && (Date.now() <= Number.parseInt(h.submissionDate) || isSameDay(new Date(), h.submissionDate))
-  );
+  const todoHomeworkData = await getFilteredHomeworkData()
 
   let todo = 0;
   for (const h of todoHomeworkData) {
@@ -559,12 +555,17 @@ async function manageHomework(mode: "add" | "edit", homework: Partial<SingleHome
       teamId
     };
 
+    const ajaxPromise = mode === "add"
+      ? ajax("POST", "/api/homework", { body, queueable: true })
+      : ajax("PATCH", `/api/homework/${homework!.homeworkId}`, { body, queueable: true })
+
+    showButtonLoading($(".manage-homework-button:visible"), ajaxPromise)
+    await ajaxPromise
+
     if (mode === "add") {
-      await ajax("POST", "/api/homework", { body, queueable: true });
       $("#add-homework-success-toast").toast("show");
     }
     else {
-      await ajax("PATCH", `/api/homework/${homework!.homeworkId}`, { body, queueable: true });
       $("#edit-homework-success-toast").toast("show");
     }
     $("#manage-homework-modal").modal("hide");
@@ -608,9 +609,11 @@ function deleteHomework(homeworkId: number): void {
       // Hide the confirmation toast
       $("#delete-homework-confirm-toast").toast("hide");
 
-      await ajax("DELETE", `/api/homework/${homeworkId}`, {
+      const ajaxPromise = ajax("DELETE", `/api/homework/${homeworkId}`, {
         queueable: true
       });
+      showButtonLoading($("#delete-homework-confirm-toast-button"), ajaxPromise)
+      await ajaxPromise
 
       $("#edit-homework-modal").modal("hide");
       $("#delete-homework-success-toast").toast("show");

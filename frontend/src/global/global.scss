@@ -509,7 +509,7 @@ $unimportant-display-values: (
 }
 
 .form-control, .form-select, .rich-textarea-input {
-  &.is-autocompleted, &.is-suspicious {
+  &.is-autocompleted, &.is-suspicious, &.is-invalid, .is-autocompleted &, .is-suspicious &, .is-invalid & {
     padding-right: calc(1.5em + 0.75rem);
 
     background-repeat: no-repeat;
@@ -517,7 +517,7 @@ $unimportant-display-values: (
     background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
   }
 
-  &.is-autocompleted {
+  &.is-autocompleted, .is-autocompleted & {
     border-color: $input-focus-border-color !important;
     background-color: color-mix(in oklab, $primary, var(--bs-body-bg) 90%);
 
@@ -533,7 +533,7 @@ $unimportant-display-values: (
     }
   }
 
-  &.is-suspicious {
+  &.is-suspicious, .is-suspicious & {
     border-color: $warning !important;
     background-color: color-mix(in oklab, $warning, var(--bs-body-bg) 90%);
 
@@ -553,7 +553,7 @@ $unimportant-display-values: (
     }
   }
 
-  &.is-invalid {
+  &.is-invalid, .is-invalid & {
     border-color: $danger !important;
     background-color: color-mix(in oklab, $danger, var(--bs-body-bg) 90%);
 

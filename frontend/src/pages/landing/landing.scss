@@ -569,16 +569,19 @@ h2 {
 }
 
 #cta {
-  display: block;
-  width: fit-content;
-  margin: auto;
-  background: var(--body-bg);
-  color: var(--primary);
-  font-weight: bold;
-  font-size: 1.1rem;
-  padding: .8rem 1.6rem;
-  cursor: pointer;
-  border: none;
-  border-radius: 10rem;
-  text-decoration: none;
+  display: flex;
+  gap: 1rem 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  a {
+    background: var(--body-bg);
+    font-weight: bold;
+    font-size: 1.1rem;
+    padding: .8rem 1.6rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 10rem;
+    text-decoration: none;
+  }
 }

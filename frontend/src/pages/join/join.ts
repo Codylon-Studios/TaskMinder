@@ -1,4 +1,4 @@
-import { ajax, socket, user } from "../../global/global.js";
+import { ajax, showButtonLoading, socket, user } from "../../global/global.js";
 import { AjaxError } from "../../global/types.js";
 import { resetLoginRegister } from "../../snippets/navbar/navbar.js";
 
@@ -74,10 +74,14 @@ export async function init(): Promise<void> {
       const classCode = $("#join-class-class-code").val();
 
       try {
-        const res = await ajax("POST", "/api/classes/join", {
+        const ajaxPromise = ajax("POST", "/api/classes/join", {
           body: { classCode },
           expectedErrors: [{ status: 404, responseText: "Invalid class code" }]
         });
+
+        showButtonLoading($("#join-class-btn"), ajaxPromise)
+
+        const res = await ajaxPromise
 
         if (user.loggedIn) {
           const loadingBarMod = await import("../../snippets/loadingBar/loadingBar.js");
@@ -122,12 +126,16 @@ export async function init(): Promise<void> {
       const className = $("#create-class-name").val()?.toString() ?? "";
       $("#show-qrcode-modal-title b").text(className);
 
-      const res = await ajax("POST", "/api/classes", {
+      const ajaxPromise = ajax("POST", "/api/classes", {
         body: {
           classDisplayName: className,
           isTestClass: $("#create-class-is-test").prop("checked")
         }
       });
+
+      showButtonLoading($("#create-class-btn"), ajaxPromise)
+
+      const res = await ajaxPromise
 
       justCreatedClass = true;
       user.auth();

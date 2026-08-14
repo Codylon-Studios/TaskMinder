@@ -26,9 +26,11 @@ import {
   isStandalone,
   isIOS,
   makeButtonShowCheck,
-  bootstrap
+  bootstrap,
+  showButtonLoading
 } from "../../global/global.js";
 import { JoinedTeamsData, TeamsData, EventTypeData, SubjectData, LessonData, ClassMemberPermissionLevel, AjaxError } from "../../global/types";
+import { DatalistInput } from "../../snippets/richInput/richInput.js";
 
 function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
@@ -459,7 +461,7 @@ async function renderSubjectList(): Promise<void> {
     t.find(".subject-substitutions").toggle(dsbActivated);
     t.find(".subject-changes").hide();
 
-    t.find(".subject-name-long-input").val(subjectNameLong).attr("placeholder", subjectNameLong);
+    t.find(".subject-name-long-input").attr("value", subjectNameLong).attr("placeholder", subjectNameLong);
     t.find(".subject-name-short-input").val(subjectNameShort).attr("placeholder", subjectNameShort);
     t.find(".subject-teacher-gender-input").val(subject.teacherGender);
     t.find(".subject-teacher-long-input").val(teacherNameLong).attr("placeholder", teacherNameLong);
@@ -983,7 +985,11 @@ export async function init(): Promise<void> {
 
     // Logout
     $("#logout-button").on("click", async () => {
-      await ajax("POST", "/api/account/logout");
+      const ajaxPromise = ajax("POST", "/api/account/logout");
+
+      showButtonLoading($("#logout-button"), ajaxPromise)
+    
+      await ajaxPromise
 
       $("#logout-success-toast").toast("show");
       user.auth();
@@ -1041,7 +1047,7 @@ export async function init(): Promise<void> {
 
     $("#change-username-confirm").on("click", async () => {
       try {
-        await ajax("PATCH", "/api/account/username", {
+        const ajaxPromise = ajax("PATCH", "/api/account/username", {
           body: {
             password: $("#change-username-password").val(),
             newUsername: $("#change-username-new-username").val()
@@ -1051,6 +1057,10 @@ export async function init(): Promise<void> {
             { status: 409, responseText: "Username already exists, please choose another username." }
           ]
         });
+
+        showButtonLoading($("#change-username-confirm"), ajaxPromise)
+
+        await ajaxPromise
 
         $("#change-username-success-toast").toast("show");
         $("#change-username-button").show();
@@ -1136,7 +1146,7 @@ export async function init(): Promise<void> {
 
     $("#change-password-confirm").on("click", async () => {
       try {
-        await ajax("PATCH", "/api/account/password", {
+        const ajaxPromise = ajax("PATCH", "/api/account/password", {
           body: {
             oldPassword: $("#change-password-old").val(),
             newPassword: $("#change-password-new").val()
@@ -1145,6 +1155,10 @@ export async function init(): Promise<void> {
             { status: 401, responseText: "Invalid credentials" }
           ]
         });
+        
+        showButtonLoading($("#change-password-confirm"), ajaxPromise)
+
+        await ajaxPromise
         
         $("#change-password-success-toast").toast("show");
         $("#change-password-button").show();
@@ -1189,7 +1203,7 @@ export async function init(): Promise<void> {
 
     $("#delete-account-confirm").on("click", async () => {
       try {
-        await ajax("DELETE", "/api/account/me", {
+        const ajaxPromise = ajax("DELETE", "/api/account/me", {
           body: {
             password: $("#delete-account-password").val()
           },
@@ -1198,6 +1212,10 @@ export async function init(): Promise<void> {
             { status: 409, responseText: "The account is still an admin in a class, leave the class first" }
           ]
         });
+
+        showButtonLoading($("#delete-account-confirm"), ajaxPromise)
+
+        await ajaxPromise
         
         $("#delete-account-success-toast").toast("show");
         user.auth();
@@ -1226,12 +1244,16 @@ export async function init(): Promise<void> {
       });
 
       if (user.loggedIn) {
-        await ajax("PUT", "/api/teams/joined", {
+        const ajaxPromise = ajax("PUT", "/api/teams/joined", {
           body: {
             teams: newJoinedTeamsData
           },
           queueable: true
         });
+
+        showButtonLoading($("#team-selection-save"), ajaxPromise)
+
+        await ajaxPromise
       }
       else {
         localStorage.setItem("joinedTeamsData", JSON.stringify(newJoinedTeamsData));
@@ -1256,11 +1278,15 @@ export async function init(): Promise<void> {
 
     $("#leave-class-confirm").on("click", async () => {
       try {
-        await ajax("DELETE", `/api/classes/${user.classId}/members/me`, {
+        const ajaxPromise = ajax("DELETE", `/api/classes/${user.classId}/members/me`, {
           expectedErrors: [
             { status: 409, responseText: "You are the only admin. Please promote another member before leaving or delete the class." }
           ]
         });
+
+        showButtonLoading($("#leave-class-confirm"), ajaxPromise)
+
+        await ajaxPromise
         
         $("#leave-class-success-toast").toast("show");
         // Force socket to reconnect so it picks up the new session.classId
@@ -1308,12 +1334,16 @@ export async function init(): Promise<void> {
     $("#change-class-name-confirm").on("click", async () => {
       const className = $("#change-class-name-new-class-name").val()?.toString() ?? "";
       
-      await ajax("PATCH", `/api/classes/${user.classId}/name`, {
+      const ajaxPromise = ajax("PATCH", `/api/classes/${user.classId}/name`, {
         body: {
           classDisplayName: className
         },
         queueable: true
       });
+
+      showButtonLoading($("#change-class-name-confirm"), ajaxPromise)
+
+      await ajaxPromise
 
       $("#change-class-name-button").show();
       $("#change-class-name").hide();
@@ -1325,9 +1355,13 @@ export async function init(): Promise<void> {
 
     // Change classcode
     $("#change-class-code").on("click", async () => {
-      const res = await ajax("PATCH", `/api/classes/${user.classId}/code`, {
+      const ajaxPromise = ajax("PATCH", `/api/classes/${user.classId}/code`, {
         queueable: true
       });
+
+      showButtonLoading($("#change-class-code"), ajaxPromise)
+
+      const res = await ajaxPromise
 
       const classCode = await res.json();
       $("#class-code").val(classCode);
@@ -1337,9 +1371,13 @@ export async function init(): Promise<void> {
 
     // Upgrade test class
     $("#upgrade-test-class").on("click", async () => {
-      await ajax("POST", `/api/classes/${user.classId}/upgrade-test-class`, {
+      const ajaxPromise = ajax("POST", `/api/classes/${user.classId}/upgrade-test-class`, {
         queueable: true
       });
+
+      showButtonLoading($("#upgrade-test-class"), ajaxPromise)
+
+      await ajaxPromise
 
       $("#test-class-alert").addClass("d-none");
     });
@@ -1358,7 +1396,11 @@ export async function init(): Promise<void> {
     });
 
     $("#delete-class-confirm").on("click", async () => {
-      await ajax("DELETE", `/api/classes/${user.classId}`);
+      const ajaxPromise = ajax("DELETE", `/api/classes/${user.classId}`);
+
+      showButtonLoading($("#delete-class-confirm"), ajaxPromise)
+
+      await ajaxPromise
 
       $("#delete-class-success-toast").toast("show");
       // Force socket to reconnect so it picks up the new session.classId
@@ -1380,7 +1422,11 @@ export async function init(): Promise<void> {
     });
 
     $("#kick-logged-out-users-confirm").on("click", async () => {
-      await ajax("POST", `/api/classes/${user.classId}/members/kick-logged-out`);
+      const ajaxPromise = ajax("POST", `/api/classes/${user.classId}/members/kick-logged-out`);
+
+      showButtonLoading($("#kick-logged-out-users-confirm"), ajaxPromise)
+
+      await ajaxPromise
 
       $("#kick-logged-out-users-success-toast").toast("show");
       $("#kick-logged-out-users").hide();
@@ -1404,10 +1450,14 @@ export async function init(): Promise<void> {
     });
 
     $("#set-logged-out-users-role-confirm").on("click", async () => {
-      await ajax("PATCH", "/api/classes/1/default-permission", {
+      const ajaxPromise = ajax("PATCH", "/api/classes/1/default-permission", {
         body: { role: Number.parseInt($("#set-logged-out-users-role-select option:selected").val()?.toString() ?? "0") },
         queueable: true
       });
+
+      showButtonLoading($("#set-logged-out-users-role-confirm"), ajaxPromise)
+
+      await ajaxPromise
 
       $("#set-logged-out-users-role-success-toast").toast("show");
       $("#set-logged-out-users-role").hide();
@@ -1446,15 +1496,21 @@ export async function init(): Promise<void> {
           permissionLevel: Number.parseInt($(this).find(".class-member-role-input").val()?.toString() ?? "") as ClassMemberPermissionLevel
         });
       });
-      
-      await ajax("DELETE", `/api/classes/${user.classId}/members`, {
-        body: { classMembers: classMembersKickData },
-        queueable: true
-      });
-      await ajax("PATCH", `/api/classes/${user.classId}/members/permissions`, {
-        body: { classMembers: classMembersPermissionsData },
-        queueable: true
-      });
+
+      const ajaxPromises = Promise.all([
+        ajax("DELETE", `/api/classes/${user.classId}/members`, {
+          body: { classMembers: classMembersKickData },
+          queueable: true
+        }),
+        ajax("PATCH", `/api/classes/${user.classId}/members/permissions`, {
+          body: { classMembers: classMembersPermissionsData },
+          queueable: true
+        })
+      ])
+
+      showButtonLoading($("#class-members-save"), ajaxPromises)
+
+      await ajaxPromises
 
       $("#class-members-save-confirm-container, #class-members-save-confirm").hide();
       makeButtonShowCheck($("#class-members-save"), 1000);
@@ -1534,10 +1590,14 @@ export async function init(): Promise<void> {
         });
       });
 
-      await ajax("PUT", "/api/teams", {
+      const ajaxPromise = ajax("PUT", "/api/teams", {
         body: { teams: newTeamsData },
         queueable: true
       });
+
+      showButtonLoading($("#teams-save"), ajaxPromise)
+
+      await ajaxPromise
 
       $("#teams-save-confirm-container, #teams-save-confirm").hide();
       makeButtonShowCheck($("#teams-save"), 1000);
@@ -1623,17 +1683,21 @@ export async function init(): Promise<void> {
         });
       });
 
-      await ajax("PUT", "/api/events/types", {
+      const ajaxPromise = ajax("PUT", "/api/events/types", {
         body: { eventTypes: newEventTypesData },
         queueable: true
       });
+
+      showButtonLoading($("#event-types-save"), ajaxPromise)
+
+      await ajaxPromise
 
       $("#event-types-save-confirm-container, #event-types-save-confirm").hide();
       makeButtonShowCheck($("#event-types-save"), 1000);
     }
 
     $("#app").on("click", "#event-types-example", async () => {
-      await ajax("PUT", "/api/events/types", {
+      const ajaxPromise = ajax("PUT", "/api/events/types", {
         body: {
           eventTypes: [
             { name: "Ausflug", color: "#ff9955" },
@@ -1645,6 +1709,10 @@ export async function init(): Promise<void> {
         },
         queueable: true
       });
+
+      showButtonLoading($("#event-types-example"), ajaxPromise)
+
+      await ajaxPromise
     });
 
     $("#event-types-save").on("click", () => {
@@ -1740,10 +1808,14 @@ export async function init(): Promise<void> {
         });
       });
 
-      await ajax("PUT", "/api/subjects", {
+      const ajaxPromise = ajax("PUT", "/api/subjects", {
         body: { subjects: newSubjectData },
         queueable: true
       });
+
+      showButtonLoading($("#subjects-save"), ajaxPromise)
+
+      await ajaxPromise
 
       $("#subjects-save-confirm-container, #subjects-save-confirm").hide();
       makeButtonShowCheck($("#subjects-save"), 1000);
@@ -1798,10 +1870,14 @@ export async function init(): Promise<void> {
           });
       });
 
-      await ajax("PUT", "/api/lessons", {
+      const ajaxPromise = ajax("PUT", "/api/lessons", {
         body: { lessons: newTimetableData },
         queueable: true
       });
+
+      showButtonLoading($("#timetable-save"), ajaxPromise)
+
+      await ajaxPromise
 
       makeButtonShowCheck($("#timetable-save"), 1000);
     });

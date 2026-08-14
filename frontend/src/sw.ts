@@ -132,10 +132,6 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
   }
 
   if (req.method === "GET") {
-    if (path === "/" && req.mode === "navigate") {
-      return Response.redirect(b.classJoined ? "/main" : "/join");
-    }
-
     if (/\/api\/uploads\/\d+/.exec(path)) {
       try {
         return await fetch(req);

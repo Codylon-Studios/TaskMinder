@@ -55,6 +55,7 @@ export const editEvent = async (req: Request<{ id: string }>, res: Response, nex
 export const deleteEvent = async (req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void>  => {
   try {
     await eventService.deleteEvent({ id: Number(req.params.id) }, req.session);
+    await new Promise(res => setTimeout(res, 10000))
     res.sendStatus(200);
   }
   catch (error) {

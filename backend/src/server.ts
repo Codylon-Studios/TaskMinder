@@ -138,10 +138,7 @@ app.use(metricsMiddleware);
 app.use(loggerMiddleware);
 
 app.get("/", (req: Request, res: Response) => {
-  if (req.session.account && req.session.classId) {
-    return res.redirect(302, "/main");
-  }
-  res.redirect(302, "/join");
+  res.sendFile(path.join(pagesPath, "landing", "landing.html"));
 });
 
 const pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages");

@@ -340,6 +340,28 @@ export function makeButtonShowCheck(btn: JQuery<HTMLElement>, duration: number):
   }, duration);
 }
 
+export async function showButtonLoading(btn: JQuery<HTMLElement>, p: Promise<unknown>): Promise<void> {
+  const w = btn.outerWidth() + "px"
+  const h = btn.outerHeight() + "px"
+  btn[0]?.style.setProperty("width", w, "important");
+  btn[0]?.style.setProperty("min-width", w, "important");
+  btn[0]?.style.setProperty("height", h, "important");
+  btn[0]?.style.setProperty("min-height", h, "important");
+
+  const content = btn.contents().detach();
+  btn.html('<span class="spinner-border" aria-hidden="true"></span>')
+  btn.prop("disabled", true);
+
+  try {
+    await p
+  }
+  finally {
+    btn.css({ width: "", minWidth: "", height: "", minHeight: "" });
+    btn.empty().append(content);
+    btn.prop("disabled", false);
+  }
+}
+
 export function cutString(str: string, maxLength: number): string {
   if (str.length < maxLength) return str;
   return str.substring(0, maxLength - 1) + "…";

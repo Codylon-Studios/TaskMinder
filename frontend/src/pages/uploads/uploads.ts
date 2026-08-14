@@ -18,7 +18,8 @@ import {
   checkTeamInputForSuspicious,
   isIOS,
   RelativeDirection,
-  autocomplete
+  autocomplete,
+  showButtonLoading
 } from "../../global/global.js";
 import { SingleUploadData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
@@ -125,9 +126,6 @@ async function renderUploadList(): Promise<void> {
           <i class="fas fa-ellipsis-vertical opacity-75" aria-hidden="true"></i>
         </button>
         <ul class="dropdown-menu">
-          <button class="dropdown-item view-upload" data-id="${uploadId}">
-            <i class="fas fa-eye opacity-75" aria-hidden="true"></i> Ansehen
-          </button>
           <button class="dropdown-item upload-pin" data-id="${uploadId}">
             <i class="fas fa-thumbtack${upload.isPinned ? "-slash" : ""} opacity-75" aria-hidden="true"></i>
             ${upload.isPinned ? "Lösen" : "Anheften"}
@@ -439,12 +437,17 @@ async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadDa
       data.append("files", f);
     }
 
+    const ajaxPromise = mode === "add"
+      ? ajax("POST", "/api/uploads", { body: data, queueable: true })
+      : ajax("PATCH", `/api/uploads/${upload!.uploadId}`, { body: data, queueable: true })
+
+    showButtonLoading($(".manage-upload-button:visible"), ajaxPromise)
+    await ajaxPromise
+
     if (mode === "add") {
-      await ajax("POST", "/api/uploads", { body: data, queueable: true });
       $("#manage-upload-success-toast").toast("show");
     }
     else {
-      await ajax("PATCH", `/api/uploads/${upload!.uploadId}`, { body: data, queueable: true });
       $("#edit-upload-success-toast").toast("show");
     }
     $("#manage-upload-modal").modal("hide");
@@ -602,9 +605,11 @@ function deleteUpload(uploadId: number, force?: boolean): void {
     // Hide the confirmation toast
     $("#delete-upload-confirm-toast").toast("hide");
 
-    await ajax("DELETE", `/api/uploads/${uploadId}`, {
+    const ajaxPromise = ajax("DELETE", `/api/uploads/${uploadId}`, {
       queueable: true
     });
+    showButtonLoading($("#delete-upload-confirm-toast-button"), ajaxPromise)
+    await ajaxPromise
 
     $("#edit-upload-modal").modal("hide");
     $("#delete-upload-success-toast").toast("show");
@@ -780,13 +785,17 @@ export async function init(): Promise<void> {
     $("#add-upload-request-button").on("click", async () => {
       const uploadRequestName = $("#add-upload-request-name").val()?.toString().trim();
       const teamId = $("#add-upload-request-visibility-team").prop("checked") ? $("#add-upload-request-visibility-team-select").val() : -1;
-      await ajax("POST", "/api/uploads/requests", {
+      const ajaxPromise = ajax("POST", "/api/uploads/requests", {
         body: {
           uploadRequestName,
           teamId
         },
         queueable: true
       });
+
+      showButtonLoading($("#add-upload-request-button"), ajaxPromise)
+
+      await ajaxPromise
 
       $("#add-upload-request-modal").modal("hide");
     });
