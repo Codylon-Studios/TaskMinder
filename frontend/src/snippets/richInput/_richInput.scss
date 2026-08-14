@@ -11,21 +11,22 @@ search-box {
 
   .rich-input-element {
     padding-left: 2rem !important;
-    padding-right: 2rem !important;
   }
 
-  &:not(.search-box-not-empty) .search-box-clear {
-    display: none;
+  &.search-box-not-empty {
+    .rich-input-element {
+      padding-right: 2rem !important;
+    }
+  }
+
+  &:not(.search-box-not-empty) {
+    .search-box-clear {
+      display: none;
+    }
   }
 
   &:focus-within, &.search-box-not-empty {
     flex-grow: 1;
-  }
-
-  @include bs.media-breakpoint-down(md) {
-    &:focus-within, &.search-box-not-empty {
-      width: 100%;
-    }
   }
 }
 

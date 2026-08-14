@@ -708,10 +708,12 @@ export async function checkReloadEventTypeStyles(): Promise<void> {
   currentEventTypeData = currentEventTypeData.sort((a, b) => a.eventTypeId - b.eventTypeId);
   const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? '{"data":""}');
   const eventTypeString = JSON.stringify(Object.fromEntries(currentEventTypeData.map(e => [e.eventTypeId, e.color])));
+  const version = (await bootstrap()).version;
 
-  if (eventTypeString !== cache.data || cache.css === undefined) {
+  if (eventTypeString !== cache.data || cache.css === undefined || cache.version !== version) {
     cache.data = eventTypeString;
     cache.css = await (await fetch("/api/events/types/styles")).text();
+    cache.version = version
   }
   $("#event-type-styles").text(cache.css);
   localStorage.setItem("eventTypeDataCache", JSON.stringify(cache));
@@ -809,7 +811,7 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
   case "PATCH /events/:id/pin": {
     await eventData.init();
     const name = (await eventData()).find(e => e.eventId === ids[0])?.name ?? "?";
-    return `Ereignis "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+    return `Ereignis "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "lösen"}`;
   }
   case "POST /homework": {
     return `Hausaufgabe "${getText(jsonBody.content, true)}" hinzufügen`;
@@ -830,7 +832,7 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
   case "PATCH /homework/:id/pin": {
     await homeworkData.init();
     const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
-    return `Hausaufgabe "${getText(content, true)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+    return `Hausaufgabe "${getText(content, true)}" ${jsonBody.pinStatus === true ? "anheften" : "lösen"}`;
   }
   case "POST /uploads": {
     const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
@@ -850,7 +852,7 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
   case "PATCH /uploads/:id/pin": {
     await uploadData.init();
     const name = (await uploadData()).uploads.find(u => u.uploadId === ids[0])?.uploadName ?? "?";
-    return `Datei "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+    return `Datei "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "lösen"}`;
   }
   case "POST /uploads/requests": {
     return `Anfrage für Datei "${getText(jsonBody.uploadRequestName)}" hinzufügen`;
@@ -1459,7 +1461,10 @@ async function onUnavailable(): Promise<void> {
   $("#unavailable-hint").show();
   $("#unavailable-popup").show();
   const b = await bootstrap();
-  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
+  const available = b.online && !b.maintenance;
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && available);
+  $("#login-register-button").toggle(!user.loggedIn && !isSite("join") && available);
+  $("#nav-logout-button").toggle((user.loggedIn ?? false) && available);
   socket.disconnect();
 
   const db = await openIndexedDB();
@@ -1493,7 +1498,10 @@ async function onOnline(): Promise<void> {
 
   $("#unavailable-hint").hide();
   $("#unavailable-popup").hide();
-  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
+  const available = b.online && !b.maintenance;
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && available);
+  $("#login-register-button").toggle(!user.loggedIn && !isSite("join") && available);
+  $("#nav-logout-button").toggle((user.loggedIn ?? false) && available);
   if (! user.classJoined && isSite("main", "events", "homework", "uploads")) {
     document.location.href = document.location.origin + "/join";
   }

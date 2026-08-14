@@ -95,6 +95,15 @@ export class SearchBox extends RichInput {
     }
     return true;
   }
+  
+  get value(): string {
+    return super.value
+  }
+
+  set value(val: string) {
+    $(this).toggleClass("search-box-not-empty", val !== "");
+    super.value = val
+  }
 }
 
 export class PasswordInput extends RichInput {

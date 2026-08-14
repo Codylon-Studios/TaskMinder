@@ -365,6 +365,30 @@ $unimportant-display-values: (
   to   { transform: translateX(-100%); }
 }
 
+.dropdown-menu {
+  --bs-dropdown-padding-x: 0.5rem;
+}
+
+.dropdown-item {
+  font-weight: 500;
+  --bs-dropdown-item-border-radius: 0.5rem;
+  --bs-dropdown-link-active-color: var(--bs-body-color);
+  --bs-dropdown-link-hover-bg: rgba(var(--bs-primary-rgb), 0.1);
+  --bs-dropdown-link-active-bg: rgba(var(--bs-primary-rgb), 0.3);
+}
+
+.dropdown-item-danger {
+  color: var(--bs-danger-text-emphasis);
+  --bs-dropdown-link-hover-bg: rgba(var(--bs-danger-rgb), 0.1);
+  --bs-dropdown-link-hover-color: var(--bs-danger-text-emphasis);
+  --bs-dropdown-link-active-bg: rgba(var(--bs-danger-rgb), 0.3);
+  --bs-dropdown-link-active-color: var(--bs-danger-text-emphasis);
+}
+
+.dropdown-divider {
+  margin: var(--bs-dropdown-divider-margin-y) -0.5rem;
+}
+
 @each $variant in $custom-btn-variants {
   .btn-#{$variant} {
     @include button-variant(white, $primary);
@@ -398,6 +422,63 @@ $unimportant-display-values: (
 
     &:disabled {
       background-color: transparent;
+    }
+  }
+}
+
+[data-variant] {
+  --variant-bg-transparent: color-mix(in oklab, var(--variant-color) 40%, transparent);
+  --variant-color-darker: color-mix(in oklab, var(--variant-color), black 30%);
+  --variant-color-darker: hsl(from var(--variant-color) h s calc(l - 30));
+  --variant-color-lighter: color-mix(in oklab, var(--variant-color), white 50%);
+  --variant-color-lighter: hsl(from var(--variant-color) h s calc(l + 20));
+  --variant-color-more-darker: color-mix(in oklab, var(--variant-color), black 60%);
+  --variant-color-more-lighter: color-mix(in oklab, var(--variant-color), white 80%);
+  --variant-bg-select: color-mix(in oklab, var(--variant-color) 60%, transparent);
+
+  &.card {
+    border-color: var(--variant-color);
+    background-color: var(--variant-bg-transparent);
+  }
+
+  .days-overview-day & {
+    background-color: var(--variant-color);
+  }
+
+  &:is(span, a, i) {
+    color: var(--variant-color-darker);
+  }
+
+  &.color-display {
+    background-color: var(--variant-color);
+  }
+
+  &.dropdown-item {
+    --bs-dropdown-link-hover-bg: color-mix(in oklab, var(--variant-color) 10%, transparent);
+    --bs-dropdown-link-active-bg: color-mix(in oklab, var(--variant-color) 30%, transparent);
+  }
+
+  :not([data-high-contrast="true"]) & {
+    &::selection, & ::selection {
+      background-color: var(--variant-bg-select);
+    }
+  }
+
+  [data-bs-theme="dark"] & {
+    &:is(span, a, i) {
+      color: var(--variant-color-lighter);
+    }
+  }
+
+  [data-high-contrast="true"] & {
+    &:is(span, a, i) {
+      color: var(--variant-color-more-darker);
+    }
+  }
+
+  [data-high-contrast="true"][data-bs-theme="dark"] & {
+    &:is(span, a, i) {
+      color: var(--variant-color-more-lighter);
     }
   }
 }

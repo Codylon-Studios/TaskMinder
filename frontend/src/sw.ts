@@ -85,6 +85,7 @@ async function removeOutdatedCaches(version: string): Promise<void> {
 }
 
 type Bootstrap = { maintenance: boolean, online: boolean, version: string, cacheEnabled: boolean, maintenanceHtml: string, classJoined: boolean }
+let bootstrap: Bootstrap | null = null;
 
 async function fetchBootstrap(): Promise<Bootstrap> {
   const db = await openIndexedDB();
@@ -99,6 +100,7 @@ async function fetchBootstrap(): Promise<Bootstrap> {
     res.online = true;
     db.transaction("meta", "readwrite").objectStore("meta").put(res, "bootstrap");
     await removeOutdatedCaches(res.version);
+    bootstrap = res
     return res;
   }
   catch {
@@ -108,31 +110,22 @@ async function fetchBootstrap(): Promise<Bootstrap> {
     }) as Bootstrap;
     res.online = false;
     db.transaction("meta", "readwrite").objectStore("meta").put(res, "bootstrap");
+    bootstrap = res
     return res;
   }
-}
-
-async function getBootstrap(): Promise<Bootstrap> {
-  const db = await openIndexedDB();
-  const tx = db.transaction("meta", "readwrite").objectStore("meta").get("bootstrap");
-  return await new Promise(res => {
-    tx.onsuccess = () => {
-      res(tx.result ?? fetchBootstrap()); 
-    }; 
-  });
 }
 
 async function handleFetch(ev: FetchEvent): Promise<Response> {
   const req = ev.request;
 
-  const b = req.mode === "navigate" ? await fetchBootstrap() : await getBootstrap();
+  const url = new URL(req.url);
+  const path = url.pathname;
+
+  const b = req.mode === "navigate" ? await fetchBootstrap() : bootstrap ?? await fetchBootstrap();
 
   const CORE_CACHE = "core-v" + b.version;
   const API_CACHE = "api-v" + b.version;
   const CACHE_ENABLED = b.cacheEnabled;
-
-  const url = new URL(req.url);
-  const path = url.pathname;
 
   if (path === "/bootstrap") {
     return new Response(JSON.stringify(b), { status: 200, headers: { "Content-Type": "application/json;charset=utf-8" } });

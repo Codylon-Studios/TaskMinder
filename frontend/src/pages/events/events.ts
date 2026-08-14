@@ -14,7 +14,8 @@ import {
   ajax,
   user,
   checkTeamInputForSuspicious,
-  getInputValue
+  getInputValue,
+  RelativeDirection
 } from "../../global/global.js";
 import { EventData, SingleEventData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
@@ -24,6 +25,10 @@ async function renderEventList(): Promise<void> {
   async function getFilteredData(): Promise<EventData> {
     // Get the event data
     let data = await eventData();
+
+    // Filter by team
+    const currentJoinedTeamsData = await joinedTeamsData();
+    data = data.filter(e => currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1);
     
     const pinned = data.filter(e => e.isPinned);
     data = data.filter(e => ! e.isPinned);
@@ -42,9 +47,6 @@ async function renderEventList(): Promise<void> {
     data = data.filter(e => sb.searchMatches(e.name, richTextToPlainText(e.description ?? "")));
     // Filter by type
     data = data.filter(e => $(`#filter-type-${e.eventTypeId}`).prop("checked"));
-    // Filter by team
-    const currentJoinedTeamsData = await joinedTeamsData();
-    data = data.filter(e => currentJoinedTeamsData.includes(e.teamId) || e.teamId === -1);
 
     data = pinned.concat(data);
     
@@ -53,11 +55,6 @@ async function renderEventList(): Promise<void> {
 
   const newGalleryContent = $("<div></div>");
   const newTableContent = $("<div></div>");
-  let showMoreButtonElements: JQuery<HTMLElement> = $();
-
-  // Check if user is in edit mode
-  const editEnabled = $("#edit-toggle").is(":checked");
-  const editAllowed = user.permissionLevel >= 1;
 
   const data = await getFilteredData();
 
@@ -66,12 +63,12 @@ async function renderEventList(): Promise<void> {
     const eventTypeId = event.eventTypeId;
     const name = event.name;
     const description = event.description;
-    const startDate = getDisplayDate(event.startDate);
+    const startDate = getDisplayDate(event.startDate, {relativeDirection: RelativeDirection.FUTURE});
     const lesson = event.lesson;
 
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
-      const endDate = getDisplayDate(event.endDate);
+      const endDate = getDisplayDate(event.endDate, {relativeDirection: RelativeDirection.FUTURE});
       if (isSameDay(event.startDate, event.endDate)) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
@@ -85,77 +82,71 @@ async function renderEventList(): Promise<void> {
     else {
       timeSpan.append(startDate);
     }
-    // The template for an event with edit options
+    const variant =  `data-variant="event-${eventTypeId}"`
+    const buttons = `
+      <button class="btn btn-sm btn-semivisible event-edit"
+        data-id="${eventId}" aria-label="Bearbeiten">
+        <i class="fas fa-edit opacity-75" ${variant} aria-hidden="true"></i>
+      </button>
+
+      <div class="dropdown">
+        <button class="btn btn-sm btn-semivisible" data-bs-toggle="dropdown" aria-label="Mehr Aktionen">
+          <i class="fas fa-ellipsis-vertical opacity-75" ${variant} aria-hidden="true"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <button class="dropdown-item event-pin" ${variant} data-id="${eventId}">
+            <i class="fas fa-thumbtack${event.isPinned ? "-slash" : ""} opacity-75" ${variant} aria-hidden="true"></i>
+            ${event.isPinned ? "Lösen" : "Anheften"}
+          </button>
+          <button class="dropdown-item event-clone" ${variant} data-id="${eventId}">
+            <i class="fas fa-clone opacity-75" ${variant} aria-hidden="true"></i> Duplizieren
+          </button>
+          <button class="dropdown-item event-share" ${variant} data-id="${eventId}">
+            <i class="fas fa-share-from-square opacity-75" ${variant} aria-hidden="true"></i> Teilen
+          </button>
+          <hr class="dropdown-divider">
+          <button class="dropdown-item dropdown-item-danger event-delete" data-id="${eventId}">
+            <i class="fas fa-trash opacity-75" aria-hidden="true"></i> Löschen
+          </button>
+        </ul>
+      </div>`
+    // The template for an event
     const galleryTemplate = $(`
       <div class="col pb-3 px-2">
-        <div class="card event-${eventTypeId} h-100">
+        <div class="card h-100" ${variant}>
           <div class="card-body p-2">
             <div class="d-flex justify-content-between">
               <div style="min-width: 0;">
-                <span class="fw-bold event-${eventTypeId} event-title">${escapeHTML(name)}</span>
+                <i class="fas fa-thumbtack ${event.isPinned ? "" : "d-none"} opacity-75" ${variant} aria-hidden="true"></i>
+                <span class="fw-bold event-title" ${variant}>${escapeHTML(name)}</span>
                 <br>
                 <span>${timeSpan.html()}</span>
               </div>
-              <div>
-                <div class="d-flex flex-nowrap">
-                  <button class="edit-option btn btn-sm btn-semivisible event-edit"
-                    data-id="${eventId}" aria-label="Bearbeiten">
-                    <i class="fa-solid fa-edit event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-                  </button>
-                  <button class="edit-option btn btn-sm btn-semivisible event-delete"
-                    data-id="${eventId}" aria-label="Löschen">
-                    <i class="fa-solid fa-trash event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-                  </button>
-                </div>
-                <div class="d-flex flex-nowrap justify-content-end">
-                  <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
-                    <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-                  </button>
-                  <button class="btn btn-sm btn-semivisible event-pin" data-id="${eventId}" aria-label="Anheften">
-                    <i class="fa-solid fa-thumbtack${event.isPinned ? "-slash" : ""} event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-                  </button>
-                </div>
-              </div>
+              <div class="d-flex flex-nowrap align-items-start">${buttons}</div>
             </div>
             <div class="event-description"></div>
           </div>
         </div>
       </div>
       `);
-    galleryTemplate.find(".event-pin").toggle(event.isPinned || user.permissionLevel >= 1);
-    galleryTemplate.find(".edit-option").toggle(editEnabled);
 
     const tableTemplate = $(`
       <tr>
-        <td class="text-nowrap"><div class="color-display event-${eventTypeId}"></div></td>
+        <td class="text-nowrap"><div class="color-display" ${variant}></div></td>
         <td class="text-break">
-          <span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span>
+          <i class="fas fa-thumbtack ${event.isPinned ? "" : "d-none"} opacity-75" ${variant} aria-hidden="true"></i>
+          <span class="fw-bold" ${variant}>${escapeHTML(name)}</span>
           <br>
           <span class="badge badge-tertiary rounded-pill border"><i class="far fa-calendar me-1" aria-hidden="true"></i>${timeSpan.html()}</span>
         </td>
         <td class="text-break"><div class="event-description"></div></td>
         <td class="text-nowrap">
-          <div class="d-flex flex-nowrap">
-            <button class="edit-option btn btn-sm btn-semivisible event-edit" data-id="${eventId}" aria-label="Bearbeiten">
-              <i class="fa-solid fa-edit event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-            </button>
-            <button class="edit-option btn btn-sm btn-semivisible event-delete" data-id="${eventId}" aria-label="Löschen">
-              <i class="fa-solid fa-trash event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-            </button>
-            <button class="btn btn-sm btn-semivisible event-share" data-id="${eventId}" aria-label="Teilen">
-              <i class="fa-solid fa-share-from-square event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-            </button>
-            <button class="btn btn-sm btn-semivisible event-pin" data-id="${eventId}" aria-label="Anheften">
-              <i class="fa-solid fa-thumbtack${event.isPinned ? "-slash" : ""} event-${eventTypeId} opacity-75" aria-hidden="true"></i>
-            </button>
+          <div class="d-flex flex-nowrap justify-content-end">
+            ${buttons}
           </div>
         </td>
       </tr>
     `);
-    tableTemplate.find(".event-pin").toggle(event.isPinned || user.permissionLevel >= 1);
-    tableTemplate.find(".edit-option").toggle(editAllowed);
-
-    const templates = galleryTemplate.add(tableTemplate);
 
     // Add this event to the list
     newGalleryContent.append(galleryTemplate);
@@ -174,28 +165,25 @@ async function renderEventList(): Promise<void> {
       parseLinks: true,
       merge: true
     });
-
-    showMoreButtonElements = showMoreButtonElements.add(templates.find(".event-description"));
   }
 
   newTableContent.children().last().find("td").addClass("border-bottom-0");
 
   // If no events match, add an explanation text
-  $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || user.permissionLevel === 0);
   $("#no-events-found").toggle(data.length === 0);
   $("#event-gallery").empty().append(newGalleryContent.children()).toggleClass("d-none", data.length === 0);
   $("#event-table-body").empty().append(newTableContent.children());
   $("#event-table").toggleClass("d-none", data.length === 0);
-  showMoreButtonElements.trigger("addedToDom");
+
+  toggleShownButtons()
 };
 
 async function renderEventTypeList(): Promise<void> {
   const currentEventTypeData = await eventTypeData();
 
-  const addEventTypeVal = $("#add-event-type").val() ?? "";
-  const editEventTypeVal = $("#edit-event-type").val() ?? "";
-  // Clear the select element in the add & edit event modal
-  $("#add-event-type, #edit-event-type").html('<option value="" disabled selected>Art</option>');
+  const manageEventTypeVal = $("#manage-event-type").val() ?? "";
+  // Clear the select element in the manage event modal
+  $("#manage-event-type").html('<option value="" disabled selected>Art</option>');
   // Clear the list for filtering by type
   $("#filter-type-list").empty();
 
@@ -222,15 +210,14 @@ async function renderEventTypeList(): Promise<void> {
     $("#filter-type-list").append(templateFilterType);
 
     // Add the template for the select elements
-    $("#add-event-type, #edit-event-type").append(`<option value="${eventTypeId}">${eventTypeName}</option>`);
+    $("#manage-event-type").append(`<option value="${eventTypeId}">${eventTypeName}</option>`);
   };
 
-  if (addEventTypeVal !== "") $("#add-event-type").val(addEventTypeVal);
-  if (editEventTypeVal !== "") $("#edit-event-type").val(editEventTypeVal);
+  if (manageEventTypeVal !== "") $("#manage-event-type").val(manageEventTypeVal);
 
   localStorage.setItem("eventFilter", JSON.stringify(filterData));
 
-  $("#add-event-no-types").toggleClass("d-none", currentEventTypeData.length !== 0).find("b").text(
+  $("#manage-event-no-types").toggleClass("d-none", currentEventTypeData.length !== 0).find("b").text(
     user.permissionLevel < 3 ?
       "Bitte einen Admin / ein:e Manager:in, welche hinzuzufügen!" :
       "Füge in den Einstellungen unter \"Klasse\" > \"Ereignisarten\" welche hinzu!"
@@ -238,70 +225,77 @@ async function renderEventTypeList(): Promise<void> {
 };
 
 async function renderTeamList(): Promise<void> {
-  const addEventTeamVal = $("#add-event-team").val() ?? "-1";
-  const editEventTeamVal = $("#edit-event-team").val() ?? "-1";
+  const manageEventTeamVal = $("#manage-event-team").val() ?? "-1";
 
-  // Clear the select element in the add & edit event modal
-  $("#add-event-team, #edit-event-team").html('<option value="-1" selected>Alle</option>');
+  // Clear the select element in the manage event modal
+  $("#manage-event-team").html('<option value="-1" selected>Alle</option>');
 
   for (const team of (await teamsData())) {
     // Add the template for the select elements
-    $("#add-event-team, #edit-event-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
+    $("#manage-event-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   }
 
-  $("#add-event-team").val(addEventTeamVal);
-  $("#edit-event-team").val(editEventTeamVal);
+  $("#manage-event-team").val(manageEventTeamVal);
 };
 
-function addEvent(): void {
-  //
-  // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS AN EVENT
-  //
+function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): void {
+  // Reset the data inputs in the manage event modal
+  $("#manage-event-type").val(event?.eventTypeId ?? "");
+  $("#manage-event-name").val(event?.name ?? "");
+  $("#manage-event-description").val(event?.description ?? "");
+  $("#manage-event-description").trigger("change");
+  $("#manage-event-start-date").val(msToInputDate(event?.startDate ?? ""))
+  $("#manage-event-lesson").val(event?.lesson ?? "");
+  $("#manage-event-end-date").val(msToInputDate(event?.endDate ?? ""))
+  $("#manage-event-team").val(event?.teamId ?? "-1")
 
-  // Reset the data inputs in the add event modal
-  $("#add-event-type").val("");
-  $("#add-event-name").val("");
-  $("#add-event-description").val("");
-  $("#add-event-description").trigger("change");
-  $("#add-event-start-date").val("").removeClass("is-suspicious");
-  $("#add-event-lesson").val("");
-  $("#add-event-end-date").val("").removeClass("is-suspicious is-invalid");
-  $("#add-event-team").val("-1").removeClass("is-suspicious");
+  $(".manage-event-input").removeClass("is-autocompleted is-suspicious is-invalid")
+  $("#manage-event-description").trigger("change");
 
-  // Disable the actual "add" button, because not all information is given
-  $("#add-event-button").prop("disabled", true);
+  // Adjust according to the mode
+  $("#manage-event-modal-label").text(mode === "add" ? "Ereignis hinzufügen" : "Ereignis bearbeiten")
+  $(".manage-event-button").prop("disabled", event === null);
+  $("#manage-event-add-button").toggle(mode === "add")
+  $("#manage-event-delete-button, #manage-event-edit-button").toggle(mode === "edit")
 
-  // Show the add event modal
-  $("#add-event-modal").modal("show");
+  // Show the manage event modal
+  $("#manage-event-modal").modal("show");
 
-  // Called when the user clicks the "add" button in the modal
+  // Called when the user clicks the primary button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#add-event-button").off("click").on("click", async () => {
+  $(".manage-event-button").off("click").on("click", async () => {
     // Save the given information in variables
-    const eventTypeId = $("#add-event-type").val();
-    const name = $("#add-event-name").val()?.toString().trim();
-    const description = $("#add-event-description").val()?.toString().trim();
-    const startDate = $("#add-event-start-date").val()?.toString() ?? "";
-    const lesson = $("#add-event-lesson").val()?.toString().trim();
-    const endDate = $("#add-event-end-date").val()?.toString() ?? "";
-    const teamId = $("#add-event-team").val();
+    const eventTypeId = $("#manage-event-type").val();
+    const name = $("#manage-event-name").val()?.toString().trim();
+    const description = $("#manage-event-description").val()?.toString().trim();
+    const startDate = $("#manage-event-start-date").val()?.toString() ?? "";
+    const lesson = $("#manage-event-lesson").val()?.toString().trim();
+    const endDate = $("#manage-event-end-date").val()?.toString() ?? "";
+    const teamId = $("#manage-event-team").val();
+    const body = {
+      eventTypeId,
+      name,
+      description,
+      startDate: dateToMs(startDate),
+      lesson,
+      endDate: dateToMs(endDate) ?? null,
+      teamId
+    }
 
-    await ajax("POST", "/api/events", {
-      body: {
-        eventTypeId,
-        name,
-        description,
-        startDate: dateToMs(startDate),
-        lesson,
-        endDate: dateToMs(endDate) ?? null,
-        teamId
-      },
-      queueable: true
-    });
-
-    $("#add-event-success-toast").toast("show");
-    $("#add-event-modal").modal("hide");
+    if (mode === "add") {
+      await ajax("POST", "/api/events", { body, queueable: true });
+      $("#add-event-success-toast").toast("show");
+    }
+    else {
+      await ajax("PATCH", `/api/events/${event!.eventId}`, { body, queueable: true });
+      $("#edit-event-success-toast").toast("show");
+    }
+    $("#manage-event-modal").modal("hide");
   });
+
+  $("#edit-event-delete-button").off("click").on("click", () => {
+    deleteEvent(event?.eventId ?? -1)
+  })
 }
 
 async function shareEvent(eventId: number): Promise<void> {
@@ -449,63 +443,6 @@ async function pinEvent(eventId: number): Promise<void> {
   $("#pin-event-success-toast").toast("show");
 }
 
-async function editEvent(eventId: number): Promise<void> {
-  //
-  // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY EDITS AN EVENT
-  //
-
-  // Get the data of the event
-  const event = (await eventData()).find(e => e.eventId === eventId);
-  if (!event) return;
-
-  // Set the inputs on the already saved information
-  $("#edit-event-type").val(event.eventTypeId);
-  $("#edit-event-name").val(event.name);
-  $("#edit-event-description").val(event.description ?? "");
-  $("#edit-event-description").trigger("change");
-  $("#edit-event-start-date").val(msToInputDate(event.startDate)).removeClass("is-suspicious");
-  $("#edit-event-lesson").val(event.lesson ?? "");
-  $("#edit-event-end-date").val(msToInputDate(event.endDate ?? "")).removeClass("is-suspicious is-invalid");
-  $("#edit-event-team").val(event.teamId).removeClass("is-suspicious");
-
-  // Enable the actual "edit" button, because all information is given
-  $("#edit-event-button").prop("disabled", false);
-
-  // Show the edit event modal
-  $("#edit-event-modal").modal("show");
-
-  // Called when the user clicks the "edit" button in the modal
-  // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#edit-event-button")
-    .off("click")
-    .on("click", async () => {
-      // Save the given information in variables
-      const eventTypeId = $("#edit-event-type").val();
-      const name = $("#edit-event-name").val();
-      const description = $("#edit-event-description").val();
-      const startDate = $("#edit-event-start-date").val()?.toString() ?? "";
-      const lesson = $("#edit-event-lesson").val()?.toString().trim() ?? null;
-      const endDate = $("#edit-event-end-date").val()?.toString() ?? "";
-      const teamId = $("#edit-event-team").val();
-
-      await ajax("PATCH", `/api/events/${eventId}`, {
-        body: {
-          eventTypeId,
-          name,
-          description,
-          startDate: dateToMs(startDate),
-          lesson,
-          endDate: dateToMs(endDate),
-          teamId
-        },
-        queueable: true
-      });
-
-      $("#edit-event-success-toast").toast("show");
-      $("#edit-event-modal").modal("hide");
-    });
-}
-
 function deleteEvent(eventId: number): void {
   //
   // CALLED WHEN THE USER CLICKS THE "DELETE" OPTION OF AN EVENT, NOT WHEN USER ACTUALLY DELETES AN EVENT
@@ -526,6 +463,7 @@ function deleteEvent(eventId: number): void {
         queueable: true
       });
       
+      $("#edit-event-modal").modal("hide");
       $("#delete-event-success-toast").toast("show");
     });
 }
@@ -557,11 +495,8 @@ async function updateFilters(ingoreEventTypes?: boolean): Promise<void> {
 }
 
 function toggleShownButtons(): void {
-  $("#edit-toggle-label").toggle(user.permissionLevel >= 1);
   $("#show-add-event-button").toggle(user.permissionLevel >= 1);
-  if (user.permissionLevel < 1) {
-    $(".edit-option").addClass("d-none");
-  }
+  $(".event-edit, .event-pin, .event-delete, .dropdown-divider:has(~ .event-delete)").toggle(user.permissionLevel >= 1);
 }
 
 function toggleView(): void {
@@ -580,11 +515,6 @@ function toggleView(): void {
 
 export async function init(): Promise<void> {
   return new Promise(res => {
-    $("#edit-toggle").on("change", function () {
-      $("#event-gallery .edit-option").toggle($(this).is(":checked"));
-    }).prop("checked", false);
-    $("#event-gallery .edit-option").hide();
-
     function appendFilterContent(): void {
       $("#filter-content").appendTo(`#filter-${window.innerWidth >= 768 ? "modal" : "offcanvas"}-body`);
     }
@@ -619,25 +549,25 @@ export async function init(): Promise<void> {
 
     $("#search-events").on("input", renderEventList);
 
-    const checkEndDateAfterStartDate = (addOrEdit: "add" | "edit"): void => {
-      const start = getInputValue($(`#${addOrEdit}-event-start-date`));
-      const end = getInputValue($(`#${addOrEdit}-event-end-date`));
+    const checkEndDateAfterStartDate = (): void => {
+      const start = getInputValue($(`#manage-event-start-date`));
+      const end = getInputValue($(`#manage-event-end-date`));
       if (start === "" || end === "") return;
-      $(`#${addOrEdit}-event-end-date`).toggleClass("is-invalid", new Date(start).getTime() > new Date(end).getTime());
+      $(`#manage-event-end-date`).toggleClass("is-invalid", new Date(start).getTime() > new Date(end).getTime());
     };
 
-    function startDateInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): void {
-      checkEndDateAfterStartDate(addOrEdit);
+    function startDateInputCallback(this: HTMLElement): void {
+      checkEndDateAfterStartDate();
     }
 
-    function endDateInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): void {
+    function endDateInputCallback(this: HTMLElement): void {
       const val = getInputValue($(this));
       if (val === "") {
         $(this).removeClass("is-suspicious");
         return;
       }
 
-      checkEndDateAfterStartDate(addOrEdit);
+      checkEndDateAfterStartDate();
 
       const date = new Date(val);
       const now = new Date();
@@ -645,58 +575,37 @@ export async function init(): Promise<void> {
       $(this).toggleClass("is-suspicious", date.getTime() < now.getTime() && !isSameDay(date, now));
     }
     
-    $("#add-event-start-date").on("input autocomplete", function () {
-      startDateInputCallback.call(this, "add");
+    $("#manage-event-start-date").on("input autocomplete", function () {
+      startDateInputCallback.call(this);
     });
-    $("#add-event-end-date").on("input autocomplete", function () {
-      endDateInputCallback.call(this, "add");
+    $("#manage-event-end-date").on("input autocomplete", function () {
+      endDateInputCallback.call(this);
     });
-    $("#add-event-team").on("input autocomplete", checkTeamInputForSuspicious);
+    $("#manage-event-team").on("input autocomplete", checkTeamInputForSuspicious);
 
-    // On changing any information in the add event modal, disable the add button if any information is empty
-    $(".add-event-input").on("input", function () {
-      console.log("Input");
-      const type = $("#add-event-type").val();
-      const name = $("#add-event-name").val()?.toString().trim();
-      const startDate = $("#add-event-start-date").val();
+    // On changing any information in the manage event modal, disable the manage button if any information is empty
+    $(".manage-event-input").on("input", function () {
+      const type = $("#manage-event-type").val();
+      const name = $("#manage-event-name").val()?.toString().trim();
+      const startDate = $("#manage-event-start-date").val();
 
-      $("#add-event-button").prop("disabled", [name, startDate].includes("") || type === null || $("#add-event-end-date").hasClass("is-invalid"));
+      $(".manage-event-button").prop("disabled", [name, startDate].includes("") || type === null || $("#manage-event-end-date").hasClass("is-invalid"));
 
-      if ($(this).is("#add-event-end-date")) {
-        $("#add-event-lesson").val("");
+      if ($(this).is("#manage-event-end-date")) {
+        $("#manage-event-lesson").val("");
       }
-      if ($(this).is("#add-event-lesson")) {
-        $("#add-event-end-date").val("");
-      }
-    });
-    
-    $("#edit-event-start-date").on("input autocomplete", function () {
-      startDateInputCallback.call(this, "edit");
-    });
-    $("#edit-event-end-date").on("input autocomplete", function () {
-      endDateInputCallback.call(this, "edit");
-    });
-    $("#edit-event-team").on("input autocomplete", checkTeamInputForSuspicious);
-
-    // On changing any information in the edit event modal, disable the edit button if any information is empty
-    $(".edit-event-input").on("input change", function () {
-      const type = $("#edit-event-type").val();
-      const name = $("#edit-event-name").val()?.toString().trim();
-      const startDate = $("#edit-event-start-date").val();
-
-      $("#edit-event-button").prop("disabled", [name, startDate].includes("") || type === null || $("#edit-event-end-date").hasClass("is-invalid"));
-
-      if ($(this).is("#edit-event-end-date")) {
-        $("#edit-event-lesson").val("");
-      }
-      if ($(this).is("#edit-event-lesson")) {
-        $("#edit-event-end-date").val("");
+      if ($(this).is("#manage-event-lesson")) {
+        $("#manage-event-end-date").val("");
       }
     });
 
-    // Share the event on clicking its share icon
-    $("#app").on("click", ".event-share", function () {
-      shareEvent($(this).data("id"));
+    $("#app").on("click", "#show-add-event-button", () => {
+      manageEvent("add", {})
+    });
+
+    // Request editing the event on clicking its edit icon
+    $("#app").on("click", ".event-edit", async function () {
+      manageEvent("edit", (await eventData()).find(e => e.eventId === $(this).data("id")) ?? {})
     });
 
     // Pin the event on clicking its pin icon
@@ -704,14 +613,19 @@ export async function init(): Promise<void> {
       pinEvent($(this).data("id"));
     });
 
+    // Share the event on clicking its share icon
+    $("#app").on("click", ".event-share", function () {
+      shareEvent($(this).data("id"));
+    });
+
+    // Clone the event on clicking its clone icon
+    $("#app").on("click", ".event-clone", async function () {
+      manageEvent("add", (await eventData()).find(e => e.eventId === $(this).data("id")) ?? {})
+    });
+
     // Request deleting the event on clicking its delete icon
     $("#app").on("click", ".event-delete", function () {
       deleteEvent($(this).data("id"));
-    });
-
-    // Request editing the event on clicking its edit icon
-    $("#app").on("click", ".event-edit", function () {
-      editEvent($(this).data("id"));
     });
 
     // On clicking the all types option, check all and update the event list
@@ -807,9 +721,6 @@ export async function init(): Promise<void> {
       }
     });
 
-    $("#app").on("click", "#show-add-event-button", () => {
-      addEvent();
-    });
     res();
   });
 }

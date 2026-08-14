@@ -743,7 +743,7 @@ async function renderTimetable(): Promise<void> {
     t.find(".lesson-subject-select")
       .html("<option value=\"\" disabled>Fach</option><option value=\"-1\">Pause</option>" + subjectOptions);
     t.find(".lesson-team-select")
-      .html("<option value=\"-1\">Alle</option>" + subjectOptions);
+      .html("<option value=\"-1\">Alle</option>" + teamOptions);
 
     const lessonList = $(this).prev();
     lessonList.append(t);
@@ -884,6 +884,8 @@ async function updateUnavailable(): Promise<void> {
 
 export async function init(): Promise<void> {
   return new Promise(res => {
+    updateUnavailable()
+    
     setInterval(updateTestClassTimeLeft, 1000);
 
     $(`#settings-nav-tabs button[data-bs-target="#nav-settings-${location.hash.substring(1)}"]`).tab("show");

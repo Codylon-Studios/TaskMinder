@@ -20,19 +20,11 @@
           </span>
         </div>
 
-        <div class="d-flex flex-wrap justify-content-center justify-content-lg-start mb-n2 me-n2">
+        <div class="d-flex flex-wrap justify-content-center justify-content-md-start mb-n2 me-n2">
           <button type="button" class="btn btn-primary fw-bold me-2 mb-2" id="show-add-upload-button">
             <i class="fa-solid fa-plus" aria-hidden="true"></i>
             Neu
           </button>
-
-          <input type="checkbox" class="btn-check" id="edit-toggle" />
-          <label class="btn btn-outline-secondary fw-bold me-2 mb-2" for="edit-toggle" id="edit-toggle-label">
-            <i class="fa-solid fa-edit" aria-hidden="true"></i>
-            Bearbeiten
-          </label>
-
-          <div class="w-100 d-block d-sm-none"></div>
 
           <button class="btn btn-outline-secondary position-relative fw-bold me-2 mb-2" id="filter-toggle" aria-label="Filtern">
             <i class="fa-solid fa-filter" aria-hidden="true"></i>
@@ -47,7 +39,7 @@
 
           <button class="btn btn-outline-secondary fw-bold me-2 mb-2" id="view-toggle"></button>
 
-          <div class="w-100 d-block d-lg-none"></div>
+          <div class="w-100 d-block d-md-none"></div>
 
           <search-box class="me-2 mb-2" id="search-uploads"></search-box>
         </div>
@@ -75,7 +67,7 @@
                   <th>Art</th>
                   <th>Name & Autor</th>
                   <th>Datum</th>
-                  <th>Aktionen</th>
+                  <th class="text-end">Aktionen</th>
                 </tr>
               </thead>
               <tbody class="table-group-divider" id="upload-table-body"><!--Gets filled--></tbody>
@@ -169,30 +161,25 @@
           </div>
         </div>
 
-        <div class="modal fade" id="add-upload-modal" aria-labelledby="add-upload-modal-label">
+        <div class="modal fade" id="manage-upload-modal" aria-labelledby="manage-upload-modal-label">
           <div class="modal-dialog">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title" id="add-upload-modal-label">Dateien hochladen</h5>
+                <h5 class="modal-title" id="manage-upload-modal-label">Will be replaced</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
               </div>
               <div class="modal-body">
                 <div class="mb-3">
-                  <label for="add-upload-name" class="form-label">Bennene die Dateien</label>
-                  <input type="text" class="form-control add-upload-input" id="add-upload-name" placeholder='zum Beispiel "Mathe vom 30.11"' />
+                  <label for="manage-upload-name" class="form-label">Bennene die Dateien</label>
+                  <input type="text" class="form-control manage-upload-input" id="manage-upload-name" placeholder='zum Beispiel "Mathe vom 30.11"' />
                   <div class="autocompleted-feedback"></div>
                 </div>
 
-                <div class="alert alert-danger p-2 ds-flex align-items-center gap-2 mb-3" id="add-upload-max-files" style="display: none">
-                  <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
-                  <span class="d-block">Es können höchstens 20 Dateien gleichzeitig hochgeladen werden!</span>
-                </div>
-
                 <div class="mb-3">
-                  <label for="add-upload-files" class="form-label">Wähle Dateien zum Hochladen aus</label>
+                  <label for="manage-upload-files" class="form-label">Wähle Dateien zum Hochladen aus</label>
                   <file-input
-                    id="add-upload-files"
-                    class="add-upload-input"
+                    id="manage-upload-files"
+                    class="manage-upload-input"
                     accept="application/pdf, image/jpeg, image/png, text/plain"
                     accept-string="PDF, JPG, PNG, TXT"
                     max-number="20"
@@ -200,20 +187,20 @@
                 </div>
 
                 <div class="mb-3">
-                  <label class="form-label" for="add-upload-description">Füge eine Beschreibung für die Datei hinzu (optional)</label>
-                  <textarea type="text" class="rich-textarea" id="add-upload-description"></textarea>
+                  <label class="form-label" for="manage-upload-description">Füge eine Beschreibung für die Datei hinzu (optional)</label>
+                  <textarea type="text" class="rich-textarea" id="manage-upload-description"></textarea>
                 </div>
 
                 <div class="mb-3">
-                  <label for="add-upload-type" class="form-label">Wähle die Art der Datei aus</label>
-                  <select class="form-select add-upload-input" id="add-upload-type">
+                  <label for="manage-upload-type" class="form-label">Wähle die Art der Datei aus</label>
+                  <select class="form-select manage-upload-input" id="manage-upload-type">
                     <!--Gets filled-->
                   </select>
                   <div class="form-text">Das beeinflusst nur die Darstellung und Filter.</div>
                 </div>
 
-                <label for="add-upload-team" class="form-label">Wähle ein Team für die Datei aus (optional)</label>
-                <select class="form-select add-upload-input" id="add-upload-team">
+                <label for="manage-upload-team" class="form-label">Wähle ein Team für die Datei aus (optional)</label>
+                <select class="form-select manage-upload-input" id="manage-upload-team">
                   <option value="-1" selected>Alle</option>
                   <!-- Gets filled -->
                 </select>
@@ -223,9 +210,11 @@
                 </div>
                 <div class="autocompleted-feedback"></div>
               </div>
-              <div class="modal-footer">
-                <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
-                <button class="btn btn-primary fw-bold" id="add-upload-button">Hochladen</button>
+              <div class="modal-footer flex-nowrap">
+                <button class="btn btn-danger fw-bold w-100" id="manage-upload-delete-button">Löschen</button>
+                <button class="btn btn-secondary fw-bold w-100" data-bs-dismiss="modal">Abbrechen</button>
+                <button class="btn btn-primary fw-bold w-100 manage-upload-button" id="manage-upload-edit-button">Speichern</button>
+                <button class="btn btn-primary fw-bold w-100 manage-upload-button" id="manage-upload-add-button">Hochladen</button>
               </div>
             </div>
           </div>
@@ -278,9 +267,10 @@
                   Bist du dir sicher? Du bist nicht im Team <b></b>!
                 </div>
               </div>
-              <div class="modal-footer">
-                <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
-                <button class="btn btn-primary fw-bold" id="edit-upload-button">Speichern</button>
+              <div class="modal-footer flex-nowrap">
+                <button class="btn btn-danger fw-bold w-100" id="edit-upload-delete-button">Löschen</button>
+                <button class="btn btn-secondary fw-bold w-100" data-bs-dismiss="modal">Abbrechen</button>
+                <button class="btn btn-primary fw-bold w-100" id="edit-upload-button">Speichern</button>
               </div>
             </div>
           </div>

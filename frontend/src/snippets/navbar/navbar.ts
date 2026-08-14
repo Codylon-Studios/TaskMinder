@@ -92,8 +92,9 @@ $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
 
 export async function init(): Promise<void> {
   const b = await bootstrap();
-  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
-  $("#login-register-button").toggle(!user.loggedIn && !isSite("join"));
+  const available = b.online && !b.maintenance;
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && available);
+  $("#login-register-button").toggle(!user.loggedIn && !isSite("join") && available);
 
   //
   //LOGIN -- REGISTER

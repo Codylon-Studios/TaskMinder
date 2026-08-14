@@ -23,7 +23,8 @@ import {
   weekDaysSo,
   weekDaysMo,
   toCommaAndAnd,
-  user
+  user,
+  RelativeDirection
 } from "../../global/global.js";
 import { HomeworkData, MonthDates, TimetableData } from "../../global/types";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -47,20 +48,20 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
         if (isSameDay(event.startDate, date)) {
           if (isSameDay(endDate, date)) {
             multiDayEventsArr[index] =
-              `<div class="event event-single event-${event.eventTypeId}"></div>`;
+              `<div class="event event-single" data-variant="event-${event.eventTypeId}"></div>`;
           }
           else {
             multiDayEventsArr[index] =
-              `<div class="event event-start event-${event.eventTypeId}"></div>`;
+              `<div class="event event-start" data-variant="event-${event.eventTypeId}"></div>`;
           }
         }
         else if (isSameDay(endDate, date)) {
           multiDayEventsArr[index] =
-            `<div class="event event-end event-${event.eventTypeId}"></div>`;
+            `<div class="event event-end" data-variant="event-${event.eventTypeId}"></div>`;
         }
         else if (Number.parseInt(event.startDate) < date.getTime() && Number.parseInt(endDate) > date.getTime()) {
           multiDayEventsArr[index] =
-            `<div class="event event-middle event-${event.eventTypeId}"></div>`;
+            `<div class="event event-middle" data-variant="event-${event.eventTypeId}"></div>`;
         }
 
         // Remove the event from the list
@@ -77,7 +78,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
   
       if (event.endDate === null) {
         if (isSameDay(event.startDate, date)) {
-          singleDayEvents += `<div class="col"><div class="event event-${event.eventTypeId}"></div></div>`;
+          singleDayEvents += `<div class="col"><div class="event" data-variant="event-${event.eventTypeId}"></div></div>`;
         }
       }
       else {
@@ -319,7 +320,6 @@ async function renderHomeworkList(): Promise<void> {
   if (!foundTomorrow) newContent.append("<div class=\"text-secondary\">Keine Hausaufgaben auf den nächsten Tag!</div>");
 
   $("#homework-list").empty().append(newContent.children());
-  addedElements.trigger("addedToDom");
 };
 
 async function renderEventList(): Promise<void> {
@@ -354,11 +354,11 @@ async function renderEventList(): Promise<void> {
     const eventTypeId = event.eventTypeId;
     const name = event.name;
     const description = event.description;
-    const startDate = getDisplayDate(event.startDate);
+    const startDate = getDisplayDate(event.startDate, {relativeDirection: RelativeDirection.FUTURE});
     const lesson = event.lesson;
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
-      const endDate = getDisplayDate(event.endDate);
+      const endDate = getDisplayDate(event.endDate, {relativeDirection: RelativeDirection.FUTURE});
       if (isSameDay(event.startDate, event.endDate)) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
@@ -375,10 +375,10 @@ async function renderEventList(): Promise<void> {
     
     // The template for an event
     const template = $(`<div class="col py-2">
-        <div class="card event-${eventTypeId} h-100">
+        <div class="card h-100" data-variant="event-${eventTypeId}">
           <div class="card-body p-2">
             <div class="d-flex flex-column">
-              <span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span>
+              <span class="fw-bold" data-variant="event-${eventTypeId}">${escapeHTML(name)}</span>
               <span>${timeSpan.html()}</span>
               <span class="event-description"></span>
             </div>
@@ -395,7 +395,6 @@ async function renderEventList(): Promise<void> {
       parseLinks: true,
       merge: true
     });
-    template.find(".event-description").trigger("addedToDom");
   }
 
   // If no events match, add an explanation text
@@ -563,7 +562,7 @@ async function renderTimetable(): Promise<void> {
               /* eslint-enable indent */}
             ${/* eslint-disable indent */
               (multiLesson.events ?? []).map(e => {
-                return `<span class="event-${e.eventTypeId} fw-bold mt-0 d-block text-center">${escapeHTML(e.name)}</span>`;
+                return `<span class="fw-bold mt-0 d-block text-center" data-variant="event-${e.eventTypeId}">${escapeHTML(e.name)}</span>`;
               }).join("").replace("mt-0", "mt-2")
               /* eslint-enable indent */}
           </div>
@@ -671,8 +670,8 @@ async function renderTimetable(): Promise<void> {
             ${/* eslint-disable indent */
               (multiLesson.events ?? []).map(e => {
                 return `
-                  <span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>
-                  <span class="event-${e.eventTypeId} text-centered-block rich-text" data-event-type-id="${e.eventTypeId}"
+                  <span class="fw-bold mt-2 d-block text-center" data-variant="event-${e.eventTypeId}">${escapeHTML(e.name)}</span>
+                  <span class="text-centered-block rich-text" data-variant="event-${e.eventTypeId}" data-event-type-id="${e.eventTypeId}"
                     >${escapeHTML(e.description ?? "")}</span>
                 `;
               }).join("")
@@ -696,7 +695,6 @@ async function renderTimetable(): Promise<void> {
         parseLinks: true,
         merge: true
       });
-      $(this).trigger("addedToDom");
     });
   };
 
@@ -753,7 +751,7 @@ async function updateTimetableFeedback(): Promise<void> {
   function lessonToText(l: TimetableData, showMoreInfo: boolean): string {
     return (
       (l.events
-        ? toCommaAndAnd((l.events).map(e => `<span class="fw-bold event-${e.eventTypeId}">${e.name}</span>`)) + " während "
+        ? toCommaAndAnd((l.events).map(e => `<span class="fw-bold" data-variant="event-${e.eventTypeId}">${e.name}</span>`)) + " während "
         : "")
 
       + (showMoreInfo

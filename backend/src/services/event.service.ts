@@ -618,52 +618,8 @@ export const eventService = {
       );
 
       @each $name, $color in $event-colors {
-        $bg-transparent: color.change($color: $color, $alpha: 0.4);
-        $color-darker: color.adjust($color, $lightness: -30%);
-        $color-lighter: color.adjust($color, $lightness: 20%);
-        $color-more-darker: color.adjust($color, $lightness: -60%);
-        $color-more-lighter: color.adjust($color, $lightness: 40%);
-        $bg-select: color.change($color: $color, $alpha: 0.6);
-
-        .card.event-#{"" + $name} {
-          border-color: $color;
-          background-color: $bg-transparent;
-        }
-
-        .days-overview-day .event-#{"" + $name} {
-          background-color: $color;
-        }
-
-        span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-          color: $color-darker;
-        }
-
-        .color-display.event-#{"" + $name} {
-          background-color: $color;
-        }
-
-        :not([data-high-contrast="true"]) {
-          .event-#{"" + $name}::selection, .event-#{"" + $name} ::selection {
-            background-color: $bg-select;
-          }
-        }
-
-        [data-bs-theme="dark"] {
-          span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-            color: $color-lighter;
-          }
-        }
-
-        [data-high-contrast="true"] {
-          span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-            color: $color-more-darker;
-          }
-
-          &[data-bs-theme="dark"] {
-            span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-              color: $color-more-lighter;
-            }
-          }
+        [data-variant="event-#{"" + $name}"] {
+          --variant-color: #{"" + $color};
         }
       }`;
       const css = (await sass.compileStringAsync(scss, { style: "compressed" })).css;
