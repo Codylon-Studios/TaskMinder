@@ -109,13 +109,13 @@
         </div>
 
         <div class="modal fade" id="manage-event-modal" aria-labelledby="manage-event-modal-label">
-          <div class="modal-dialog">
+          <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="manage-event-modal-label">Will be replaced</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
               </div>
-              <div class="modal-body">
+              <div class="modal-body scroll-fade">
                 <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2 mb-3" id="manage-event-no-types">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                   <span class="d-block">
@@ -163,14 +163,38 @@
                   </div>
                 </div>
 
-                <label for="manage-event-team" class="form-label">Wähle ein Team für das Ereignis aus (optional)</label>
-                <select class="form-select manage-event-input" id="manage-event-team">
-                  <option value="-1" selected>Alle</option>
-                  <!-- Gets filled -->
-                </select>
-                <!--prettier-ignore-->
-                <div class="suspicious-feedback">
-                  Bist du dir sicher? Du bist nicht im Team <b></b>!
+                <label for="" class="form-label" id="manage-event-visibility-label">Wähle aus, für wen das Ereignis sichtbar ist</label>
+                <div class="btn-group w-100" id="manage-event-visibility">
+                  <input type="radio" class="btn-check btn-check-subtle manage-event-input" name="manage-event-visibility" id="manage-event-visibility-private">
+                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-event-visibility-private">
+                    <i aria-hidden="true" class="fas fa-user-lock"></i>Privat
+                  </label>
+
+                  <input type="radio" class="btn-check btn-check-subtle manage-event-input" name="manage-event-visibility" id="manage-event-visibility-team">
+                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-event-visibility-team">
+                    <i aria-hidden="true" class="fas fa-user-group"></i>
+                    <div>
+                      <select class="form-select manage-event-input" id="manage-event-visibility-team-select">
+                        <!-- Gets filled -->
+                      </select>
+                      <!--prettier-ignore-->
+                      <div class="suspicious-feedback fw-normal">
+                        Bist du dir sicher? Du bist nicht im Team <b></b>!
+                      </div>
+                    </div>
+                  </label>
+
+                  <input type="radio" class="btn-check btn-check-subtle manage-event-input" name="manage-event-visibility" id="manage-event-visibility-all">
+                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-event-visibility-all">
+                    <i aria-hidden="true" class="fas fa-users"></i>Alle
+                  </label>
+                </div>
+
+                <div class="alert alert-primary p-2 ds-flex align-items-center gap-2 mb-0" id="manage-event-only-private">
+                  <i aria-hidden="true" class="fas fa-user-lock"></i>
+                  <span class="d-block">
+                    Dieses Ereignis wird nur für dich sichtbar sein. Du hast nicht genug Rechte, um ein Ereignis für andere Schüler:innen hinzuzufügen.
+                  </span>
                 </div>
               </div>
               <div class="modal-footer flex-nowrap">

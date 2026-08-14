@@ -342,20 +342,33 @@ async function renderUploadTypeList(): Promise<void> {
 };
 
 async function renderTeamList(): Promise<void> {
-  const manageUploadTeamVal = $("#manage-homework-team").val() ?? "-1";
-  const addUploadRequestTeamVal = $("#add-upload-request-team").val() ?? "-1";
+  const manageuploadTeamVal = $("#manage-upload-visibility-team-select").val() ?? "-1";
+  const addUploadRequestTeamVal = $("#add-upload-request-visibility-team-select").val() ?? "-1";
 
-  // Clear the select element in the add & edit upload modal
-  $("#manage-upload-team, #add-upload-request-team").html('<option value="-1" selected>Alle</option>');
+  // Clear the select element in the manage upload modal
+  $("#manage-upload-visibility-team-select, #add-upload-request-visibility-team-select").html('<option value="-1" disabled selected>Team</option>');
 
   for (const team of (await teamsData())) {
     // Add the template for the select elements
-    $("#manage-upload-team, #add-upload-request-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
+    $("#manage-upload-visibility-team-select, #add-upload-request-visibility-team-select").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   }
 
-  $("#manage-upload-team").val(manageUploadTeamVal);
-  $("#add-upload-request-team").val(addUploadRequestTeamVal);
+  $("#manage-upload-visibility-team-select").val(manageuploadTeamVal);
+  $("#add-upload-request-visibility-team-select").val(addUploadRequestTeamVal);
 };
+
+function toggleManageUploadDisabled(): void {
+  const name = $("#manage-upload-name").val()?.toString().trim();
+  const type = $("#manage-upload-type").val();
+  const fileInput = $("#manage-upload-files")[0] as FileInput;
+
+  $(".manage-upload-button").prop("disabled",
+    name === ""
+    || type === null
+    || !fileInput.isValid()
+    || ($("#manage-upload-visibility-team").prop("checked") && $("#manage-upload-visibility-team-select").val() === null)
+  );
+}
 
 async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadData>, fromUploadRequest?: boolean): Promise<void> {
   // Reset the data inputs in the manage upload modal
@@ -368,13 +381,18 @@ async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadDa
   ($("#manage-upload-files")[0] as FileInput).files = files;
   $("#manage-upload-description").val(upload?.uploadDescription ?? "");
   $("#manage-upload-type").val(upload?.uploadType ?? "");
-  $("#manage-upload-team").val(upload?.teamId ?? "-1")
+  const visibility = (upload?.teamId ?? -1) === -1 ? "all" : "team"
+  $("#manage-upload-visibility-team").prop("checked", visibility === "team")
+  $("#manage-upload-visibility-all").prop("checked", visibility === "all")
+  $("#manage-upload-visibility-team-select").val(upload?.teamId ?? "-1")
+
 
   $(".manage-upload-input").removeClass("is-autocompleted is-suspicious is-invalid")
   $("#manage-upload-description").trigger("change");
 
   if (fromUploadRequest) {
-    $("#manage-upload-name, #manage-upload-team").addClass("is-autocompleted").find("~ .autocompleted-feedback").text("Automatisch: Aus der Anfrage");
+    $("#manage-upload-name" + (upload.teamId !== -1 ? ", #manage-upload-visibility-team-select" : ""))
+      .addClass("is-autocompleted").find("~ .autocompleted-feedback").text("Automatisch: Aus der Anfrage");
   }
   else {
     const currentLesson = await getCurrentLesson();
@@ -387,17 +405,17 @@ async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadDa
       }
       const teamId = currentLesson.lessons[0].teamId;
       if (teamId !== -1 && ! upload.teamId) {
-        autocomplete($("#manage-upload-team"), teamId, "-1");
-        $("#manage-upload-team ~ .autocompleted-feedback").html(`Automatisch: Das Team, das <b>${escapeHTML(subjectName)}</b> hat`);
+        autocomplete($("#manage-upload-visibility-team-select"), teamId, "-1");
+        $("#manage-upload-visibility-team-select ~ .autocompleted-feedback").html(`Automatisch: Das Team, das <b>${escapeHTML(subjectName)}</b> hat`);
       }
     }
   }
 
   // Adjust according to the mode
   $("#manage-upload-modal-label").text(mode === "add" ? "Datei hinzufügen" : "Datei bearbeiten")
+  toggleManageUploadDisabled()
   $("#manage-upload-add-button").toggle(mode === "add")
   $("#manage-upload-delete-button, #manage-upload-edit-button").toggle(mode === "edit")
-  checkManageInputs()
 
   // Show the manage upload modal
   $("#manage-upload-modal").modal("show");
@@ -410,7 +428,7 @@ async function manageUpload(mode: "add" | "edit", upload: Partial<SingleUploadDa
     const files = ($("#manage-upload-files")[0] as FileInput).files;
     const description = $("#manage-upload-description").val()?.toString().trim() ?? "";
     const type = $("#manage-upload-type").val()?.toString() ?? "";
-    const teamId = $("#manage-upload-team").val()?.toString() ?? "-1";
+    const teamId = ($("#manage-upload-visibility-team").prop("checked") ? $("#manage-upload-visibility-team-select").val() : -1)?.toString() ?? "";
     const data = new FormData();
     data.append("uploadName", name);
     data.append("uploadDescription", description);
@@ -640,14 +658,6 @@ function toggleShownButtons(): void {
   $(".upload-edit, .upload-pin, .upload-delete, .dropdown-divider:has(~ .upload-delete)").toggle(user.permissionLevel >= 1);
 }
 
-function checkManageInputs(): void {
-  const name = $("#manage-upload-name").val()?.toString().trim();
-  const type = $("#manage-upload-type").val();
-  const fileInput = $("#manage-upload-files")[0] as FileInput;
-
-  $(".manage-upload-button").prop("disabled", name === "" || type === null || !fileInput.isValid());
-}
-
 function toggleView(): void {
   if (view === View.Gallery) {
     $("#view-toggle").html("<i class=\"fa-solid fa-table-list\" aria-hidden=\"true\"></i> Tabelle");
@@ -708,10 +718,13 @@ export async function init(): Promise<void> {
 
     $("#search-uploads").on("input", renderUploadList);
 
-    $("#manage-upload-team").on("input autocomplete", checkTeamInputForSuspicious);
+    $("#manage-upload-visibility-team-select").on("input autocomplete", function () {
+      $("#manage-upload-visibility-team").prop("checked", true)
+      checkTeamInputForSuspicious.call(this);
+    });
 
     // On changing any information in the manage upload modal, disable the manage button if any information is empty
-    $(".manage-upload-input").on("input", checkManageInputs);
+    $(".manage-upload-input").on("input", toggleManageUploadDisabled);
 
     $("#app").on("click", "#show-add-upload-button", () => {
       manageUpload("add", {});
@@ -752,7 +765,8 @@ export async function init(): Promise<void> {
 
     $("#show-add-upload-request-button").on("click", () => {
       $("#add-upload-request-name").val("");
-      $("#add-upload-request-team").val("-1").removeClass("is-suspicious");
+      $("#add-upload-request-visibility-all").prop("checked", true)
+      $("#add-upload-request-visibility-team-select").val("-1").removeClass("is-suspicious");
       $("#add-upload-request-button").prop("disabled", true);
       $("#add-upload-request-modal").modal("show");
     });
@@ -761,11 +775,14 @@ export async function init(): Promise<void> {
       $("#add-upload-request-button").prop("disabled", $(this).val()?.toString().trim() === "");
     });
 
-    $("#add-upload-request-team").on("input autocomplete", checkTeamInputForSuspicious);
+    $("#add-upload-request-visibility-team-select").on("input autocomplete", function () {
+      $("#add-upload-request-visibility-team").prop("checked", true)
+      checkTeamInputForSuspicious.call(this)
+    });
 
     $("#add-upload-request-button").on("click", async () => {
       const uploadRequestName = $("#add-upload-request-name").val()?.toString().trim();
-      const teamId = $("#add-upload-request-team").val();
+      const teamId = $("#add-upload-request-visibility-team").prop("checked") ? $("#add-upload-request-visibility-team-select").val() : -1;
       await ajax("POST", "/api/uploads/requests", {
         body: {
           uploadRequestName,

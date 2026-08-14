@@ -508,7 +508,7 @@ $unimportant-display-values: (
 
   &.is-autocompleted {
     border-color: $input-focus-border-color !important;
-    background-color: color.change($color: $primary, $alpha: 0.1);
+    background-color: color-mix(in oklab, $primary, var(--bs-body-bg) 90%);
 
     background-image: svgs.make-sparkling-wand(to-rgb($primary));
     --bs-form-select-bg-icon: #{svgs.make-sparkling-wand(to-rgb($primary))};
@@ -524,7 +524,7 @@ $unimportant-display-values: (
 
   &.is-suspicious {
     border-color: $warning !important;
-    background-color: color.change($color: $warning, $alpha: 0.1);
+    background-color: color-mix(in oklab, $warning, var(--bs-body-bg) 90%);
 
     background-image: svgs.make-circle-question(to-rgb($warning));
     --bs-form-select-bg-icon: #{svgs.make-circle-question(to-rgb($warning))};
@@ -544,7 +544,7 @@ $unimportant-display-values: (
 
   &.is-invalid {
     border-color: $danger !important;
-    background-color: color.change($color: $danger, $alpha: 0.1);
+    background-color: color-mix(in oklab, $danger, var(--bs-body-bg) 90%);
 
     background-image: svgs.make-circle-exclamation(to-rgb($danger));
     --bs-form-select-bg-icon: #{svgs.make-circle-exclamation(to-rgb($danger))};
@@ -604,8 +604,19 @@ $unimportant-display-values: (
   color: var(--bs-body-bg) !important;
 }
 
-.btn-check:checked + .btn-outline-primary {
+.btn-check:checked + .btn.btn-outline-primary {
   color: var(--bs-body-bg) !important;
+  background-color: var(--bs-primary);
+}
+
+.btn-check.btn-check-subtle:checked + .btn.btn-outline-primary {
+  color: var(--bs-primary) !important;
+  background-color: color-mix(in oklab, $primary, var(--bs-body-bg) 75%);
+
+  [data-high-contrast="true"] & {
+    color: var(--bs-body-bg) !important;
+    background-color: var(--bs-primary);
+  }
 }
 
 .btn-sm-square {
@@ -741,4 +752,15 @@ footer a {
       font-size: 1rem !important;
     }
   }
+}
+
+.scroll-fade {
+  --mask: linear-gradient(
+    to bottom,
+    black calc(100% - var(--fade-progress)),
+    transparent 100%
+  );
+  
+  -webkit-mask-image: var(--mask);
+  mask-image: var(--mask);
 }

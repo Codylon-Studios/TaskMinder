@@ -1719,4 +1719,17 @@ export async function init(): Promise<void> {
   $(document).on("focus", 'input[type="text"].is-autocompleted', function () {
     $(this).val("").removeClass("is-autocompleted");
   });
+
+  function toggleScrollFade(el: HTMLElement) {
+    const toBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    el.style.setProperty("--fade-progress", Math.min(48, toBottom) + "px");
+  }
+
+  $(".scroll-fade").each(function () {
+    toggleScrollFade(this)
+    new ResizeObserver(() => toggleScrollFade(this)).observe(this);
+    $(this).on("scroll", () => {
+      toggleScrollFade(this)
+    })
+  })
 }

@@ -111,7 +111,7 @@ app.get("/bootstrap", authLimiter, async (req, res, next) => {
       envConfig.cacheEnabled;
 
     const version = 
-      envConfig.nodeEnv !== "DEVELOPMENT" ? MAX_VERSION : "DEV";
+      /* envConfig.nodeEnv !== "DEVELOPMENT" ? */ MAX_VERSION //: "DEV";
     
     res.set("Cache-Control", "no-store");
     res.status(200).json({ maintenance: false, classJoined: auth.classJoined, version, cacheEnabled });

@@ -79,6 +79,7 @@ type SingleEventData = {
   lesson: string | null;
   teamId: number;
   isPinned: boolean;
+  accountId: number | null;
 };
 type EventData = SingleEventData[];
 
@@ -98,6 +99,7 @@ type SingleHomeworkData = {
   submissionDate: string;
   teamId: number;
   isPinned: boolean;
+  accountId: number | null;
 };
 type HomeworkData = SingleHomeworkData[];
 

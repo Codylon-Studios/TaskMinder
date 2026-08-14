@@ -73,14 +73,14 @@
 
         <div id="filter-content">
           <div class="mb-3">
-            <input type="checkbox" class="btn-check" name="filter-status" id="filter-status-unchecked" checked />
-            <label class="btn btn-sm btn-outline-secondary fw-semibold" for="filter-status-unchecked">
+            <input type="checkbox" class="btn-check btn-check-subtle" name="filter-status" id="filter-status-unchecked" checked />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="filter-status-unchecked">
               <i class="far fa-square" aria-hidden="true"></i>
               Unerledigt
             </label>
 
-            <input type="checkbox" class="btn-check" name="filter-status" id="filter-status-checked" checked />
-            <label class="btn btn-sm btn-outline-secondary fw-semibold" for="filter-status-checked">
+            <input type="checkbox" class="btn-check btn-check-subtle" name="filter-status" id="filter-status-checked" checked />
+            <label class="btn btn-sm btn-outline-primary fw-semibold" for="filter-status-checked">
               <i class="fas fa-square-check" aria-hidden="true"></i>
               Erledigt
             </label>
@@ -111,13 +111,13 @@
         </div>
 
         <div class="modal fade" id="manage-homework-modal" aria-labelledby="manage-homework-modal-label">
-          <div class="modal-dialog">
+          <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
               <div class="modal-header">
                 <h5 class="modal-title" id="manage-homework-modal-label">Will be replaced</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
               </div>
-              <div class="modal-body">
+              <div class="modal-body scroll-fade">
                 <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2 mb-3" id="manage-homework-no-subjects">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                   <span class="d-block">
@@ -158,21 +158,38 @@
                   </div>
                 </div>
 
-                <div class="mb-3">
-                  <label for="manage-homework-team" class="form-label">Wähle ein Team für die Hausaufgabe aus (optional)</label>
-                  <select class="form-select manage-homework-input" id="manage-homework-team">
-                    <option value="" selected>Alle</option>
-                    <!-- Gets filled -->
-                  </select>
-                  <!--prettier-ignore-->
-                  <div class="suspicious-feedback">
-                    Bist du dir sicher? Du bist nicht im Team <b></b>!
-                  </div>
-                  <div class="autocompleted-feedback">
-                    Automatisch: Das Team, das
-                    <b></b>
-                    hat
-                  </div>
+                <label for="" class="form-label" id="manage-homework-visibility-label">Wähle aus, für wen die Hausaufgabe sichtbar ist</label>
+                <div class="btn-group w-100" id="manage-homework-visibility">
+                  <input type="radio" class="btn-check btn-check-subtle manage-homework-input" name="manage-homework-visibility" id="manage-homework-visibility-private">
+                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-homework-visibility-private">
+                    <i aria-hidden="true" class="fas fa-user-lock"></i>Privat
+                  </label>
+
+                  <input type="radio" class="btn-check btn-check-subtle manage-homework-input" name="manage-homework-visibility" id="manage-homework-visibility-team">
+                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-homework-visibility-team">
+                    <i aria-hidden="true" class="fas fa-user-group"></i>
+                    <div>
+                      <select class="form-select manage-homework-input" id="manage-homework-visibility-team-select">
+                        <!-- Gets filled -->
+                      </select>
+                      <!--prettier-ignore-->
+                      <div class="suspicious-feedback fw-normal">
+                        Bist du dir sicher? Du bist nicht im Team <b></b>!
+                      </div>
+                    </div>
+                  </label>
+
+                  <input type="radio" class="btn-check btn-check-subtle manage-homework-input" name="manage-homework-visibility" id="manage-homework-visibility-all">
+                  <label class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2" for="manage-homework-visibility-all">
+                    <i aria-hidden="true" class="fas fa-users"></i>Alle
+                  </label>
+                </div>
+
+                <div class="alert alert-primary p-2 ds-flex align-items-center gap-2 mb-0" id="manage-homework-only-private">
+                  <i aria-hidden="true" class="fas fa-user-lock"></i>
+                  <span class="d-block">
+                    Diese Hausaufgabe wird nur für dich sichtbar sein. Du hast nicht genug Rechte, um eine Hausaufgabe für andere Schüler:innen hinzuzufügen.
+                  </span>
                 </div>
               </div>
               <div class="modal-footer flex-nowrap">

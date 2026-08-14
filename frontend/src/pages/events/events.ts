@@ -113,11 +113,12 @@ async function renderEventList(): Promise<void> {
     // The template for an event
     const galleryTemplate = $(`
       <div class="col pb-3 px-2">
-        <div class="card h-100" ${variant}>
+        <div class="card h-100 event${event.accountId === null ? "" : " event-private"}" ${variant}>
           <div class="card-body p-2">
             <div class="d-flex justify-content-between">
               <div style="min-width: 0;">
-                <i class="fas fa-thumbtack ${event.isPinned ? "" : "d-none"} opacity-75" ${variant} aria-hidden="true"></i>
+                <i class="fas fa-thumbtack ${event.isPinned ? "" : "d-none"} opacity-75" ${variant} aria-hidden="true">
+                </i><i class="fas fa-user-lock ${event.accountId ? "" : "d-none"} opacity-75" ${variant} aria-hidden="true"></i>
                 <span class="fw-bold event-title" ${variant}>${escapeHTML(name)}</span>
                 <br>
                 <span>${timeSpan.html()}</span>
@@ -131,10 +132,11 @@ async function renderEventList(): Promise<void> {
       `);
 
     const tableTemplate = $(`
-      <tr>
+      <tr class="event${event.accountId === null ? "" : " event-private"}">
         <td class="text-nowrap"><div class="color-display" ${variant}></div></td>
         <td class="text-break">
-          <i class="fas fa-thumbtack ${event.isPinned ? "" : "d-none"} opacity-75" ${variant} aria-hidden="true"></i>
+          <i class="fas fa-thumbtack ${event.isPinned ? "" : "d-none"} opacity-75" ${variant} aria-hidden="true">
+          </i><i class="fas fa-user-lock ${event.accountId ? "" : "d-none"} opacity-75" ${variant} aria-hidden="true"></i>
           <span class="fw-bold" ${variant}>${escapeHTML(name)}</span>
           <br>
           <span class="badge badge-tertiary rounded-pill border"><i class="far fa-calendar me-1" aria-hidden="true"></i>${timeSpan.html()}</span>
@@ -225,18 +227,31 @@ async function renderEventTypeList(): Promise<void> {
 };
 
 async function renderTeamList(): Promise<void> {
-  const manageEventTeamVal = $("#manage-event-team").val() ?? "-1";
+  const manageEventTeamVal = $("#manage-event-visibility-team-select").val() ?? "-1";
 
   // Clear the select element in the manage event modal
-  $("#manage-event-team").html('<option value="-1" selected>Alle</option>');
+  $("#manage-event-visibility-team-select").html('<option value="-1" disabled selected>Team</option>');
 
   for (const team of (await teamsData())) {
     // Add the template for the select elements
-    $("#manage-event-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
+    $("#manage-event-visibility-team-select").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
   }
 
-  $("#manage-event-team").val(manageEventTeamVal);
+  $("#manage-event-visibility-team-select").val(manageEventTeamVal);
 };
+
+function toggleManageEventDisabled(): void {
+  const type = $("#manage-event-type").val();
+  const name = $("#manage-event-name").val()?.toString().trim();
+  const startDate = $("#manage-event-start-date").val();
+
+  $(".manage-event-button").prop("disabled",
+    [name, startDate].includes("") ||
+    type === null ||
+    $("#manage-event-end-date").hasClass("is-invalid") ||
+    ($("#manage-event-visibility-team").prop("checked") && $("#manage-event-visibility-team-select").val() === null)
+  );
+}
 
 function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): void {
   // Reset the data inputs in the manage event modal
@@ -247,14 +262,18 @@ function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): voi
   $("#manage-event-start-date").val(msToInputDate(event?.startDate ?? ""))
   $("#manage-event-lesson").val(event?.lesson ?? "");
   $("#manage-event-end-date").val(msToInputDate(event?.endDate ?? ""))
-  $("#manage-event-team").val(event?.teamId ?? "-1")
+  const visibility = user.permissionLevel === 0 ? "private" : (event?.accountId ? "private" : (event?.teamId ?? -1) === -1 ? "all" : "team")
+  $("#manage-event-visibility-private").prop("checked", visibility === "private")
+  $("#manage-event-visibility-team").prop("checked", visibility === "team")
+  $("#manage-event-visibility-all").prop("checked", visibility === "all")
+  $("#manage-event-visibility-team-select").val(event?.teamId ?? "-1")
 
   $(".manage-event-input").removeClass("is-autocompleted is-suspicious is-invalid")
   $("#manage-event-description").trigger("change");
 
   // Adjust according to the mode
   $("#manage-event-modal-label").text(mode === "add" ? "Ereignis hinzufügen" : "Ereignis bearbeiten")
-  $(".manage-event-button").prop("disabled", event === null);
+  toggleManageEventDisabled()
   $("#manage-event-add-button").toggle(mode === "add")
   $("#manage-event-delete-button, #manage-event-edit-button").toggle(mode === "edit")
 
@@ -271,7 +290,8 @@ function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): voi
     const startDate = $("#manage-event-start-date").val()?.toString() ?? "";
     const lesson = $("#manage-event-lesson").val()?.toString().trim();
     const endDate = $("#manage-event-end-date").val()?.toString() ?? "";
-    const teamId = $("#manage-event-team").val();
+    const isPersonal = $("#manage-event-visibility-private").prop("checked");
+    const teamId = $("#manage-event-visibility-team").prop("checked") ? $("#manage-event-visibility-team-select").val() : -1;
     const body = {
       eventTypeId,
       name,
@@ -279,6 +299,7 @@ function manageEvent(mode: "add" | "edit", event: Partial<SingleEventData>): voi
       startDate: dateToMs(startDate),
       lesson,
       endDate: dateToMs(endDate) ?? null,
+      isPersonal,
       teamId
     }
 
@@ -495,8 +516,9 @@ async function updateFilters(ingoreEventTypes?: boolean): Promise<void> {
 }
 
 function toggleShownButtons(): void {
-  $("#show-add-event-button").toggle(user.permissionLevel >= 1);
-  $(".event-edit, .event-pin, .event-delete, .dropdown-divider:has(~ .event-delete)").toggle(user.permissionLevel >= 1);
+  $("#manage-event-only-private").toggle(user.permissionLevel === 0)
+  $("#manage-event-visibility-label, #manage-event-visibility").toggle(user.permissionLevel >= 1)
+  $(".event:not(.event-private)").find(".event-edit, .event-pin, .event-delete, .dropdown-divider:has(~ .event-delete)").toggle(user.permissionLevel >= 1);
 }
 
 function toggleView(): void {
@@ -581,16 +603,14 @@ export async function init(): Promise<void> {
     $("#manage-event-end-date").on("input autocomplete", function () {
       endDateInputCallback.call(this);
     });
-    $("#manage-event-team").on("input autocomplete", checkTeamInputForSuspicious);
+    $("#manage-event-visibility-team-select").on("input autocomplete", function () {
+      $("#manage-event-visibility-team").prop("checked", true)
+      checkTeamInputForSuspicious.call(this);
+    });
 
     // On changing any information in the manage event modal, disable the manage button if any information is empty
-    $(".manage-event-input").on("input", function () {
-      const type = $("#manage-event-type").val();
-      const name = $("#manage-event-name").val()?.toString().trim();
-      const startDate = $("#manage-event-start-date").val();
-
-      $(".manage-event-button").prop("disabled", [name, startDate].includes("") || type === null || $("#manage-event-end-date").hasClass("is-invalid"));
-
+    $(".manage-event-input").on("input change", function () {
+      toggleManageEventDisabled()
       if ($(this).is("#manage-event-end-date")) {
         $("#manage-event-lesson").val("");
       }
