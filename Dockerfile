@@ -15,8 +15,7 @@ RUN bun install --production
 # ==============================================================================
 # ---------- Landing Page ----------
 # ==============================================================================
-# Self-contained static image. Rebuilding it IS the release
-# (no publish step, no host directory and no `current` symlink to maintain)
+# NOTE: Rebuilding it IS the release (no publish step, no host directory and no `current` symlink to maintain)
 FROM nginx:alpine AS landing
 COPY --from=builder /usr/src/app/frontend/dist/pages/landing         /usr/share/nginx/html/pages/landing
 COPY --from=builder /usr/src/app/frontend/dist/assets/landing        /usr/share/nginx/html/assets/landing
