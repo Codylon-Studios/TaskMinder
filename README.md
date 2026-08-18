@@ -7,9 +7,9 @@
 
 ## About TaskMinder
 
-> **Looking for a quick overview?** Visit our landing page at [info.taskminder.de](https://info.taskminder.de).
+> **Looking for a quick overview?** Visit our landing page at [taskminder.de](https://taskminder.de).
 
-[TaskMinder](https://taskminder.de) is an open-source web app for organizing school life in one place—homework, exams, excursions, timetables, substitutions, and shared files.
+[TaskMinder](https://app.taskminder.de) is an open-source web app for organizing school life in one place—homework, exams, excursions, timetables, substitutions, and shared files.
 It’s built for classes: when one student adds or updates an entry (for example homework), the change is synced for everyone, so the whole class stays consistent and up to date.
 
 TaskMinder is currently available in German only. We're considering expanding to more languages based on community interest!
@@ -26,7 +26,7 @@ TaskMinder is currently available in German only. We're considering expanding to
 ## Getting started
 ### Demo
 You can explore TaskMinder using the demo class in two ways:
-1) Open the demo join link: https://taskminder.de/join?class_code=demo  
+1) Open the demo join link: https://app.taskminder.de/join?class_code=demo  
    (No account required. Alternatively: click “Join class” on the main page and enter `demo` as the class code.)
 2) Log in with username `demo` and password `demo` (you’ll be in the demo class automatically).
 
@@ -61,7 +61,7 @@ See [LICENSE](./LICENSE) for details.
 ## Links
 - Contact us! [info@taskminder.de](mailto:info@taskminder.de)
 - Our [Documentation](https://docs.taskminder.de) for developers
-- [Legal Information](https://taskminder.de/about)
+- [Legal Information](https://app.taskminder.de/about)
 
 ## Follow Us
 - [Instagram](https://www.instagram.com/taskminder/)

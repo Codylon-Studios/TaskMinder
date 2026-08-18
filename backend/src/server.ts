@@ -111,7 +111,6 @@ app.get("/bootstrap", authLimiter, async (req, res, next) => {
       envConfig.cacheEnabled;
 
     const version = MAX_VERSION;
-    // envConfig.nodeEnv !== "DEVELOPMENT" ? MAX_VERSION : "DEV";
     
     res.set("Cache-Control", "no-store");
     res.status(200).json({ maintenance: false, classJoined: auth.classJoined, version, cacheEnabled });
@@ -198,6 +197,11 @@ app.get("/events", checkAccess(["CLASS"]), (req, res) => {
 
 app.get("/uploads", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "uploads", "uploads.html"));
+});
+
+// Development only route; in production, the landing page is at taskminder.de
+app.get("/landing", (req, res) => {
+  res.redirect(302, "/");
 });
 
 app.use((req, res) => {

@@ -1,4 +1,18 @@
 services:
+  landing:
+    build:
+      context: .
+      target: landing
+    container_name: taskminder-landing
+    restart: always
+    ports:
+      - "127.0.0.1:3002:80"
+    environment:
+      APP_HOST: app.taskminder.de
+      # Restrict nginx entrypoint's envsubst pass to APP_HOST, so that
+      # nginx variables such as $request_uri are not blanked out
+      NGINX_ENVSUBST_FILTER: "APP_HOST"
+
   app:
     build: .
     container_name: taskminder-app
@@ -6,7 +20,7 @@ services:
     expose:
       - "9100"
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - NODE_ENV=PRODUCTION
     secrets:
@@ -116,7 +130,7 @@ services:
     container_name: grafana
     restart: always
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/

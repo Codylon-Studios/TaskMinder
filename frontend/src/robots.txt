@@ -1,3 +1,16 @@
+Sitemap: https://app.taskminder.de/sitemap.xml
+
 User-agent: *
-Disallow: 
+Disallow: /csrf-token
+Disallow: /bootstrap
+Disallow: /main
+Disallow: /homework
+Disallow: /events
+Disallow: /uploads
+Disallow: /settings
+Disallow: /landing
+Disallow: /pages/landing/
+Disallow: /landing-robots.txt
+Disallow: /landing-sitemap.xml
+Disallow: /sw-retire.js
 Crawl-delay: 60

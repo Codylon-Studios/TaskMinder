@@ -28,7 +28,7 @@ export async function init(): Promise<void> {
     justCreatedClass = false;
 
     const qrCode = new QRCode("show-qrcode-modal-qrcode", {
-      text: location.host,
+      text: location.origin,
       width: 300,
       height: 300
     });
@@ -146,7 +146,7 @@ export async function init(): Promise<void> {
       justCreatedClass = true;
       user.auth();
       const classCode = await res.json();
-      qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
+      qrCode.makeCode(location.origin + `/join?class_code=${classCode}`);
       $("#create-class-credentials-panel").hide();
       // Force socket to reconnect so it picks up the new session.classId
       socket.disconnect();
@@ -154,7 +154,7 @@ export async function init(): Promise<void> {
       $("#invite-panel").show();
       $("#invite-copy-link").on("click", async () => {
         try {
-          await navigator.clipboard.writeText(location.host + `/join?class_code=${classCode}`);
+          await navigator.clipboard.writeText(location.origin + `/join?class_code=${classCode}`);
 
           $("#invite-copy-link").prop("disabled", true)
             .html("<i class=\"fa-solid fa-check-circle\" aria-hidden=\"true\"></i> Einladungslink kopiert");

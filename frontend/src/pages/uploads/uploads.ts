@@ -564,7 +564,7 @@ async function copyLinkUpload(uploadId: number) : Promise<void> {
   if (!upload) return;
 
   try {
-    const url = `${location.protocol}//${location.host}/uploads?view-upload=${uploadId}`;
+    const url = `${location.origin}/uploads?view-upload=${uploadId}`;
     const html = `<a href="${url}" class="taskminder-link">${upload.uploadName}</a>`;
 
     await navigator.clipboard.write([new ClipboardItem({

@@ -779,7 +779,7 @@ export async function updateClassInfo(): Promise<void> {
   $("#class-code").val(classCode);
   $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
 
-  qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
+  qrCode.makeCode(location.origin + `/join?class_code=${classCode}`);
   $("#show-qrcode-modal-title b").text(currentClassInfo.className);
   $("#class-settings-name").text(currentClassInfo.className);
 
@@ -790,7 +790,7 @@ export async function updateClassInfo(): Promise<void> {
 
   $("#invite-copy-link").on("click", async () => {
     try {
-      await navigator.clipboard.writeText(location.host + `/join?class_code=${$("#class-code").val()}`);
+      await navigator.clipboard.writeText(location.origin + `/join?class_code=${$("#class-code").val()}`);
   
       $("#invite-copy-link").prop("disabled", true).html("<i class=\"fa-solid fa-check-circle\" aria-hidden=\"true\"></i> Einladungslink kopiert");
   
@@ -897,7 +897,7 @@ export async function init(): Promise<void> {
     testClassTimeCreated = 0;
 
     qrCode = new QRCode("show-qrcode-modal-qrcode", {
-      text: location.host,
+      text: location.origin,
       width: 300,
       height: 300
     });
@@ -1365,7 +1365,7 @@ export async function init(): Promise<void> {
       const classCode = await res.json();
       $("#class-code").val(classCode);
       $("#invite-copy-link, #invite-qrcode").prop("disabled", false);
-      qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
+      qrCode.makeCode(location.origin + `/join?class_code=${classCode}`);
     });
 
     // Upgrade test class

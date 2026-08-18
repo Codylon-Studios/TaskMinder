@@ -4,11 +4,12 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.3.0] - 2026-08-??
+## \[v2.3.0] - 2026-08-31
 
 ### Breaking Changes
 * chore(codebase): migrate to typescript v7 (use oxlint workaround to satisfy prisma > v7)
 * chore(license): change custom source-available TaskMinder to open source AGPLv3 license
+* chore(app): separate application and landing page into app.taskminder.de and taskminder.de
 
 ### Added
 * chore(dev): add dev mode to /bootstrap to avoid caching issues in development

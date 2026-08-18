@@ -250,7 +250,7 @@ export async function init(): Promise<void> {
 $(() => {
   user.on("change", (function _() {
     $(".class-joined-content").toggle(user.classJoined ?? false);
-    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/");
+    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/landing");
     if (user.classJoined) $(".navbar-home-link").attr("data-pjax", ""); else $(".navbar-home-link").removeAttr("data-pjax");
     $("#login-register-button").toggle(!user.loggedIn && !isSite("join"));
     $("#nav-logout-button").toggle(user.loggedIn ?? false);

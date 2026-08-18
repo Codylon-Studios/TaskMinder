@@ -1,19 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
-  <link rel="manifest" href="/static/manifest.json">
-  <title>TaskMinder</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskMinder – Schule an einem Ort</title>
+  <meta name="description" content="TaskMinder bündelt Stundenplan, Hausaufgaben, Termine und Hefteinträge für ganze Klassen – einfach, schnell und kostenlos.">
+
+  <meta property="og:title" content="TaskMinder – Schule an einem Ort">
+  <meta property="og:description" content="Stundenplan, Hausaufgaben, Termine und Hefteinträge für deine ganze Klasse – einfach, schnell und kostenlos.">
+  <meta property="og:url" content="https://taskminder.de/">
+  <meta property="og:site_name" content="TaskMinder">
+  <meta property="og:image" content="https://taskminder.de/assets/landing/main-desktop-light.png">
+  <meta property="og:image:width" content="1846">
+  <meta property="og:image:height" content="1001">
+  <meta property="og:image:alt" content="Die TaskMinder-Übersicht mit Stundenplan, Hausaufgaben und Terminen">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="canonical" href="https://taskminder.de/">
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
   <link href="/pages/landing/landing.css" rel="stylesheet">
-  <script src="/pages/landing/landing.js"></script>
+  <script src="/pages/landing/landing.js" defer></script>
 </head>
 <body>
   <div id="head">
     <div id="head-pattern"></div>
     <div id="head-brand">
-      <div class="text-primary bold" id="brand-name">Schule an<br>einem Ort</div>
+      <h1 class="text-primary bold" id="brand-name">Schule an<br>einem Ort</h1>
       <div class="text-secondary text-lg" id="brand-explanation">
         TaskMinder bündelt Hausaufgaben, Termine, Stundenplan, Hefteinträge — Alles einfach, schnell und kostenlos. 
       </div>
@@ -22,7 +34,10 @@
       </div>
     </div>
     <div>
-      <img id="head-image">
+      <picture>
+        <source srcset="/assets/landing/main-desktop-dark.png" media="(prefers-color-scheme: dark)">
+        <img id="head-image" src="/assets/landing/main-desktop-light.png" alt="Die TaskMinder-Übersicht mit Stundenplan, Hausaufgaben und Terminen" fetchpriority="high">
+      </picture>
     </div>
   </div>
 
@@ -31,22 +46,50 @@
     <div id="features">
       <div class="text-secondary">
         <h3>Startseite</h3>
-        <img id="feature-main-img" class="img-fullscreenable">
+        <button class="img-fullscreenable" type="button" aria-label="Screenshot der TaskMinder-Startseite vergrößern">
+          <picture>
+            <source srcset="/assets/landing/main-mobile-dark.png" media="(max-width: 800px) and (prefers-color-scheme: dark)">
+            <source srcset="/assets/landing/main-mobile-light.png" media="(max-width: 800px)">
+            <source srcset="/assets/landing/main-desktop-dark.png" media="(prefers-color-scheme: dark)">
+            <img id="feature-main-img" src="/assets/landing/main-desktop-light.png" alt="TaskMinder-Startseite mit Stundenplan, Vertretungen, Hausaufgaben und Ereignissen" loading="lazy">
+          </picture>
+        </button>
         Einen schnellen Überblick für heute und die nächsten Tage: Stundenplan, Vertretungen, Hausaufgaben, Ereignisse
       </div>
       <div class="text-secondary">
         <h3>Hausaufgaben</h3>
-        <img id="feature-homework-img" class="img-fullscreenable">
+        <button class="img-fullscreenable" type="button" aria-label="Screenshot der Hausaufgabenansicht vergrößern">
+          <picture>
+            <source srcset="/assets/landing/homework-mobile-dark.png" media="(max-width: 800px) and (prefers-color-scheme: dark)">
+            <source srcset="/assets/landing/homework-mobile-light.png" media="(max-width: 800px)">
+            <source srcset="/assets/landing/homework-desktop-dark.png" media="(prefers-color-scheme: dark)">
+            <img id="feature-homework-img" src="/assets/landing/homework-desktop-light.png" alt="TaskMinder-Hausaufgabenansicht mit Fach, Datum und Aufgabenbeschreibung" loading="lazy">
+          </picture>
+        </button>
         Hausaufgaben mit Fach, Datum und Beschreibung festhalten und erledigen
       </div>
       <div class="text-secondary">
         <h3>Ereignisse</h3>
-        <img id="feature-events-img" class="img-fullscreenable">
+        <button class="img-fullscreenable" type="button" aria-label="Screenshot der Ereignisansicht vergrößern">
+          <picture>
+            <source srcset="/assets/landing/events-mobile-dark.png" media="(max-width: 800px) and (prefers-color-scheme: dark)">
+            <source srcset="/assets/landing/events-mobile-light.png" media="(max-width: 800px)">
+            <source srcset="/assets/landing/events-desktop-dark.png" media="(prefers-color-scheme: dark)">
+            <img id="feature-events-img" src="/assets/landing/events-desktop-light.png" alt="TaskMinder-Ereignisansicht mit anstehenden Prüfungen, Ferien und Terminen" loading="lazy">
+          </picture>
+        </button>
         Nie wieder die nächste Prüfung, Ferien oder andere Ereignisse vergessen
       </div>
       <div class="text-secondary">
         <h3>Dateien</h3>
-        <img id="feature-uploads-img" class="img-fullscreenable">
+        <button class="img-fullscreenable" type="button" aria-label="Screenshot der Dateienansicht vergrößern">
+          <picture>
+            <source srcset="/assets/landing/uploads-mobile-dark.png" media="(max-width: 800px) and (prefers-color-scheme: dark)">
+            <source srcset="/assets/landing/uploads-mobile-light.png" media="(max-width: 800px)">
+            <source srcset="/assets/landing/uploads-desktop-dark.png" media="(prefers-color-scheme: dark)">
+            <img id="feature-uploads-img" src="/assets/landing/uploads-desktop-light.png" alt="TaskMinder-Dateienansicht mit hochgeladenen Hefteinträgen und Arbeitsblättern" loading="lazy">
+          </picture>
+        </button>
         Kein Problem mehr, einmal krank zu sein: Mit hochgeladenen Hefteinträgen und Arbeitsblättern
       </div>
     </div>
@@ -55,7 +98,7 @@
     </div>
   </div>
 
-  <div class="section section-primary">
+  <div class="section section-primary" id="stats-section">
     <h2>TaskMinder hilft aktiv Schüler:innen</h2>
     <div id="stats">
       <div class="stat">
@@ -80,7 +123,7 @@
   <div class="section">
     <h2 class="text-primary">Das wird über TaskMinder gesagt</h2>
     <div id="quotes-caroussel">
-      <button class="quotes-caroussel-navigation" id="quotes-caroussel-left"></button>
+      <button class="quotes-caroussel-navigation" id="quotes-caroussel-left" type="button" aria-label="Vorheriges Zitat" aria-controls="quotes"></button>
       <div id="quotes">
         <div class="quote">
           <div class="quote-text scroll-fade">
@@ -142,7 +185,7 @@
           <div class="quote-author">— K. Pippow, Oberstufenkoordinatorin</div>
         </div>
       </div>
-      <button class="quotes-caroussel-navigation" id="quotes-caroussel-right"></button>
+      <button class="quotes-caroussel-navigation" id="quotes-caroussel-right" type="button" aria-label="Nächstes Zitat" aria-controls="quotes"></button>
     </div>
     <div class="alert-primary" id="startup-teens">
       Außerdem haben wir den 4. Platz in der nationalen STARTUP TEENS Challenge 2026 gewonnen!
@@ -171,7 +214,7 @@
       <div id="promise-open-source">
         <b class="text-primary">Open Source</b>
         <br>
-        Der Quellcode für TaskMinder ist vollständig öffentlich <a href="https://https://github.com/TaskMinder/TaskMinder" target="_blank">auf GitHub</a>
+        Der Quellcode für TaskMinder ist vollständig öffentlich <a href="https://github.com/TaskMinder/TaskMinder" target="_blank">auf GitHub</a>
         einsehbar.
       </div>
     </div>
@@ -181,41 +224,46 @@
     <h2 class="text-primary">Häufige Fragen</h2>
 
     <div id="faq">
-      <div class="details" summary="Was kostet TaskMinder?">
+      <details class="details">
+        <summary>Was kostet TaskMinder?</summary>
         <div>
           TaskMinder ist komplett kostenlos. Du kannst direkt loslegen. Wenn du möchtest, kannst du uns natürlich gerne
           <a href="https://ko-fi.com/taskminder" target="_blank">unterstützen</a>.
         </div>
-      </div>
+      </details>
 
-      <div class="details" summary="Ist TaskMinder eine App oder eine Webseite?">
+      <details class="details">
+        <summary>Ist TaskMinder eine App oder eine Webseite?</summary>
         <div>
           TaskMinder ist eine Webseite, damit du TaskMinder von allen Geräten aus benutzen kannst. Du kannst die Webseite
           allerdings zum Home-Bildschirm hinzufügen und sie wie eine App benutzen.
         </div>
-      </div>
+      </details>
 
-      <div class="details" summary="Muss meine Schule TaskMinder benutzen?">
+      <details class="details">
+        <summary>Muss meine Schule TaskMinder benutzen?</summary>
         <div>
           Nein, TaskMinder ist speziell für Schüler:innen gedacht, ohne, dass die Schule selbst aktiv werden muss. Du kannst
           eine Klasse auch nur für dich persönlich oder einige Mitschüler:innen nutzen.
         </div>
-      </div>
+      </details>
 
-      <div class="details" summary="Wie werden meine Daten behandelt?">
+      <details class="details">
+        <summary>Wie werden meine Daten behandelt?</summary>
         <div>
           Datenschutz ist für uns sehr wichtig. TaskMinder wird nur auf Servern innerhalb der EU betrieben. Außer euch hat
           niemand Zugriff auf die persönlichen Informationen. Deine Klasse ist durch einen Code vor fremden Personen
           geschützt. Details findest du in unserer <a href="/about#privacy-policy">Datenschutzerklärung</a>.
         </div>
-      </div>
+      </details>
 
-      <div class="details" summary="Von wem wurde TaskMinder entwickelt?">
+      <details class="details">
+        <summary>Von wem wurde TaskMinder entwickelt?</summary>
         <div>
           Hinter TaskMinder stehen Mingqi Li und Fabian Leonardi. Wir sind selbst Schüler und haben bei der Entwicklung unsere
           eigenen Erfahrungen verwenden können.
         </div>
-      </div>
+      </details>
     </div>
 
     <div class="text-secondary">
@@ -264,6 +312,9 @@
     </div>
   </div>
 
-  <img id="img-fullscreen-container">
+  <dialog id="img-fullscreen-dialog" aria-label="Vergrößerte Screenshot-Ansicht">
+    <button id="img-fullscreen-close" type="button" aria-label="Großansicht schließen">&times;</button>
+    <img id="img-fullscreen-container" alt="">
+  </dialog>
 </body>
 </html>
