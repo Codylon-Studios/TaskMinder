@@ -5,8 +5,6 @@ function timingFunction(t: number, maxVal: number): number {
 const statsDuration = 2000;
 
 async function initStats(statsStart: number): Promise<void> {
-  // The landing page stays up while the application is down, so /stats can fail.
-  // Without live numbers the whole section is meaningless, so hide it.
   let res;
   try {
     const response = await fetch("/stats");
@@ -18,7 +16,7 @@ async function initStats(statsStart: number): Promise<void> {
     return;
   }
 
-  const firstDay = new Date(2025, 4, 1); // May 1, 2025
+  const firstDay = new Date(2025, 4, 1);
 
   const stats = [
     { name: "months", end: (new Date().getFullYear() - firstDay.getFullYear()) * 12 + (new Date().getMonth() - firstDay.getMonth()) },
@@ -49,16 +47,10 @@ function setupQuotes(): void {
   const prevlast = container.children[num - 2];
   const last = container.children[num - 1];
   const quoteWidth = first.getBoundingClientRect().width;
-  const cloneQuote = (quote: Element): HTMLElement => {
-    const clone = quote.cloneNode(true) as HTMLElement;
-    clone.setAttribute("aria-hidden", "true");
-    clone.setAttribute("inert", "");
-    return clone;
-  };
-  container.append(cloneQuote(first));
-  container.append(cloneQuote(second));
-  container.prepend(cloneQuote(last));
-  container.prepend(cloneQuote(prevlast));
+  container.append(first.cloneNode(true));
+  container.append(second.cloneNode(true));
+  container.prepend(last.cloneNode(true));
+  container.prepend(prevlast.cloneNode(true));
 
   container.scrollLeft = quoteWidth + 16;
   container.addEventListener("scroll", () => {
@@ -84,17 +76,9 @@ function setupQuotes(): void {
     });
   });
 
-  const carousel = document.getElementById("quotes-caroussel")!;
-  if (
-    window.matchMedia("(hover: hover)").matches
-    && !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  ) {
+  if (window.matchMedia("(hover: hover)").matches && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     setInterval(() => {
-      if (
-        !document.hidden
-        && !carousel.matches(":hover")
-        && !carousel.matches(":focus-within")
-      ) container.scrollLeft += 1;
+      if (!document.hidden && !container.matches(":hover") && !container.matches(":focus-within")) container.scrollLeft += 1;
     }, 10);
   }
 }
@@ -111,35 +95,6 @@ function initScrollFade(el: HTMLElement): void {
 
   el.addEventListener("scroll", () => {
     toggleScrollFade(el);
-  });
-}
-
-function setupFullscreenImages(): void {
-  const dialog = document.getElementById("img-fullscreen-dialog") as HTMLDialogElement;
-  const fullscreenImage = document.getElementById("img-fullscreen-container") as HTMLImageElement;
-  const closeButton = document.getElementById("img-fullscreen-close") as HTMLButtonElement;
-  let activeTrigger: HTMLButtonElement | null = null;
-
-  document.querySelectorAll<HTMLButtonElement>(".img-fullscreenable").forEach(trigger => {
-    trigger.addEventListener("click", () => {
-      const image = trigger.querySelector("img");
-      if (!image) return;
-
-      activeTrigger = trigger;
-      fullscreenImage.src = image.currentSrc || image.src;
-      fullscreenImage.alt = image.alt;
-      dialog.showModal();
-    });
-  });
-
-  closeButton.addEventListener("click", () => dialog.close());
-  fullscreenImage.addEventListener("click", () => dialog.close());
-  dialog.addEventListener("click", event => {
-    if (event.target === dialog) dialog.close();
-  });
-  dialog.addEventListener("close", () => {
-    activeTrigger?.focus();
-    activeTrigger = null;
   });
 }
 
@@ -174,6 +129,27 @@ window.addEventListener("load", () => {
     subtree: true
   });
 
-  setupFullscreenImages();
+  document.querySelectorAll(".details").forEach(el => el.addEventListener("click", () => {
+    if (el.hasAttribute("open")) {
+      [...el.children].forEach(c => (c as HTMLElement).style.height = "0px");
+    }
+    else {
+      [...el.children].forEach(c => (c as HTMLElement).style.height = c.scrollHeight + 16 + "px");
+    }
+    el.toggleAttribute("open");
+  }));
+
+  const fullscreenContainer = document.getElementById("img-fullscreen-container") as HTMLImageElement;
+  document.addEventListener("click", ev => {
+    let src = "";
+    document.querySelectorAll(".img-fullscreenable").forEach(el => {
+      const imgEl = el.querySelector("img") as HTMLImageElement;
+      if (ev.target === imgEl && fullscreenContainer.src !== imgEl.currentSrc) src = imgEl.currentSrc;
+    });
+    fullscreenContainer.src = src;
+  });
+
+  document.body.style.display = "block";
+
   setupQuotes();
 });
