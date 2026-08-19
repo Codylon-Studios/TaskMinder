@@ -1,0 +1,21 @@
+groups:
+  - name: http_request_duration
+    interval: 60s
+    rules:
+      - record: route:http_request_duration_ms_bucket:rate5m
+        expr: sum by (route, le)(rate(http_request_duration_ms_bucket[5m]))
+
+      - record: instance:http_request_duration_ms_bucket:rate5m
+        expr: sum by (le)(rate(http_request_duration_ms_bucket[5m]))
+
+      - record: instance:http_request_duration_ms_count:rate5m
+        expr: sum(rate(http_request_duration_ms_count[5m]))
+
+      - record: instance:http_request_duration_ms_count_5xx:rate5m
+        expr: sum(rate(http_request_duration_ms_count{code=~"5.."}[5m]))
+
+      - record: instance:http_request_error_ratio:rate5m
+        expr: |
+          (instance:http_request_duration_ms_count_5xx:rate5m or vector(0))
+          /
+          instance:http_request_duration_ms_count:rate5m
