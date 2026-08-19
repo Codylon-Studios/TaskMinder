@@ -14,7 +14,8 @@ export const CACHE_KEY_PREFIXES = {
   SUBJECT: "subject_data",
   TEAMS: "teams_data",
   UPLOADMETADATA: "upload_metadata",
-  UPLOADREQUESTS: "upload_requests"
+  UPLOADREQUESTS: "upload_requests",
+  STATISTICS: "site_statistics"
 } as const;
 
 export const QUEUE_KEYS = {
@@ -64,6 +65,13 @@ export async function invalidateCache(
 
 // standard cache expiration (60 min)
 export const cacheExpiration = 3600;
+
+// site-wide statistics cache expiration (5 min); matches the /stats
+// Cache-Control max-age so server and client staleness line up
+export const statisticsCacheExpiration = 300;
+
+// site statistics is a single global key
+export const STATISTICS_CACHE_KEY = `cache:${CACHE_KEY_PREFIXES.STATISTICS}`;
 
 const redisHost = envConfig.nodeEnv === "DEVELOPMENT" ? "localhost" : "redis";
 const redisUrl = `redis://${redisHost}:6379`;
