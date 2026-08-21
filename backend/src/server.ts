@@ -56,6 +56,28 @@ const app = express();
 app.set("trust proxy", Number(proxyHop));
 const server = createServer(app);
 
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+
+  const originalWriteHead = res.writeHead.bind(res);
+
+  res.writeHead = ((...args: Parameters<typeof res.writeHead>) => {
+    if (!res.headersSent) {
+      const durationMs =
+        Number(process.hrtime.bigint() - start) / 1e6;
+
+      res.setHeader(
+        "Server-Timing",
+        `total;dur=${durationMs.toFixed(2)}`
+      );
+    }
+
+    return originalWriteHead(...args);
+  }) as typeof res.writeHead;
+
+  next();
+});
+
 const globalLimiter = rateLimit({
   windowMs: 1000, // 1 second
   limit: 125, // Max 125 requests per IP per second

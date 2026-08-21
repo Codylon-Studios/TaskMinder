@@ -1,3 +1,20 @@
+function setupFeatures(): void {
+  const features = document.getElementById("features")!;
+  [...document.getElementById("feature-selection")!.children].forEach((e, i) => {
+    if (i == 0) e.classList.add("feature-selection-selected");
+    e.addEventListener("click", () => {
+      e.scrollIntoView({
+        behavior: "smooth",
+        inline: "center",
+        block: "nearest"
+      });
+      document.querySelector(".feature-selection-selected")?.classList.remove("feature-selection-selected")
+      e.classList.add("feature-selection-selected");
+      document.getElementById("features")?.scrollTo({ left: i * features.offsetWidth, behavior: "smooth" })
+    })
+  })
+}
+
 function timingFunction(t: number, maxVal: number): number {
   return Math.min((t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)) * maxVal, maxVal);
 }
@@ -99,6 +116,8 @@ function initScrollFade(el: HTMLElement): void {
 }
 
 window.addEventListener("load", () => {
+  setupFeatures()
+
   const statsObserver = new IntersectionObserver((entries, observer) => {
     if (entries[0].isIntersecting) {
       initStats(performance.now());

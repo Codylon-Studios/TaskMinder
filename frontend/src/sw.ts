@@ -116,6 +116,7 @@ async function fetchBootstrap(): Promise<Bootstrap> {
 }
 
 async function handleFetch(ev: FetchEvent): Promise<Response> {
+  const start = performance.now()
   const req = ev.request;
 
   const url = new URL(req.url);
@@ -130,7 +131,6 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
   if (path === "/bootstrap") {
     return new Response(JSON.stringify(b), { status: 200, headers: { "Content-Type": "application/json;charset=utf-8" } });
   }
-
   if (req.method === "GET") {
     if (/\/api\/uploads\/\d+/.exec(path)) {
       try {
@@ -146,12 +146,16 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
       const cached = await cache.match(req);
 
       if (cached && (CACHE_ENABLED || b.maintenance || !b.online)) {
+        const end = performance.now()
+        console.log(`%cGET, CORE_APP, CACHE%c (${url}): ${Math.round(end - start)}ms`, "font-weight: bold", "font-weight: normal")
         return cached;
       }
 
       try {
         const res = await fetch(req);
         if (res.ok) await cache.put(req, res.clone());
+        const end = performance.now()
+        console.log(`%cGET, CORE_APP, UNCACHED%c (${url}): ${Math.round(end - start)}ms`, "font-weight: bold", "font-weight: normal")
         return res;
       }
       catch {
@@ -179,7 +183,10 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
       }
     }
   }
-  return await fetch(req);
+  const res = await fetch(req)
+  const end = performance.now()
+  console.log(`%cELSE%c (${url}): ${Math.round(end - start)}ms`, "font-weight: bold", "font-weight: normal")
+  return res;
 }
 
 sw.addEventListener("fetch", (ev: FetchEvent) => {
