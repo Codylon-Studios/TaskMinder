@@ -1,7 +1,7 @@
 # ==============================================================================
 # ---------- Build Stage ----------
 # ==============================================================================
-FROM oven/bun:1.3-alpine AS builder
+FROM oven/bun:1.4-alpine AS builder
 WORKDIR /usr/src/app
 COPY package.json bun.lock ./
 RUN --mount=type=cache,target=/root/.bun bun install
@@ -32,7 +32,7 @@ COPY frontend/landing.nginx.conf /etc/nginx/templates/default.conf.template
 # ==============================================================================
 # ---------- Production Stage ----------
 # ==============================================================================
-FROM oven/bun:1.3-alpine AS production
+FROM oven/bun:1.4-alpine AS production
 
 # Install only RUNTIME system dependencies
 RUN apk update && apk upgrade --no-cache && \

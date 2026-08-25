@@ -174,14 +174,40 @@ a {
   left: 50%;
   top: 50%;
   translate: -50% -50%;
-  max-width: calc(100dvw - 4rem);
-  max-height: calc(100dvh - 4rem);
-  width: auto;
-  height: auto;
   box-shadow: 0 0 0 100vmax rgba(0,0,0,.5);
   border-radius: 1rem;
+  display: none;
 
-  &:not([src]), &[src=""] {
+  &.visible {
+    display: block;
+  }
+
+  img {
+    display: block;
+    max-width: calc(100dvw - 4rem);
+    max-height: calc(100dvh - 4rem);
+    width: auto;
+    height: auto;
+    border-radius: 1rem;
+  }
+}
+
+#img-fullscreen-description {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 1;
+  width: fit-content;
+  max-width: calc(100% - 2rem);
+  border-radius: 1rem;
+  padding: clamp(1.25rem, 1.25vw, 1rem);
+  background: #3bb9ca;
+  color: white;
+  font-size: clamp(1.1rem, 1vw, 1.25rem);
+  font-weight: bold;
+  line-height: 1.35;
+
+  &:empty {
     display: none;
   }
 }
@@ -279,8 +305,12 @@ h3 {
   width: fit-content;
   max-width: 100%;
   overflow: scroll;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
   margin: auto;
-  background: #fff;
+  background: var(--body-bg);
   padding: 0.5rem;
   border-radius: 10rem;
   margin-bottom: 1rem;
@@ -320,39 +350,51 @@ h3 {
 
     .feature {
       margin: auto;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
+      position: relative;
       height: fit-content;
       scroll-snap-align: center;
       border-radius: 1rem;
 
       @media (max-width: 800px) {
         width: min(393px, 100%);
-        flex-direction: column;
-        background: #3bb9ca;
       }
 
       .feature-description {
+        position: absolute;
+        left: 1rem;
+        bottom: 1rem;
+        z-index: 1;
+        width: fit-content;
+        max-width: calc(100% - 2rem);
         border-radius: 1rem;
-        padding: 1rem;
+        padding: 1.25rem 1.5rem;
         background: #3bb9ca;
         color: white;
+        font-size: clamp(1.1rem, 2vw, 1.35rem);
         font-weight: bold;
+        line-height: 1.35;
 
         @media (max-width: 800px) {
-          padding: 0 1rem 1rem 1rem;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+          line-height: 1.25;
+        }
+
+        body:has(#img-fullscreen-container.visible) & {
+          visibility: hidden;
         }
       }
     }
   }
 
+  picture {
+    display: block;
+  }
+
   img {
+    display: block;
     width: 100%;
     border-radius: 1rem;
-    @media (max-width: 800px) {
-      border-radius: 1rem 1rem 0 0;
-    }
   }
 }
 

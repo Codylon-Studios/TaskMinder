@@ -8,11 +8,11 @@ function setupFeatures(): void {
         inline: "center",
         block: "nearest"
       });
-      document.querySelector(".feature-selection-selected")?.classList.remove("feature-selection-selected")
+      document.querySelector(".feature-selection-selected")?.classList.remove("feature-selection-selected");
       e.classList.add("feature-selection-selected");
-      document.getElementById("features")?.scrollTo({ left: i * features.offsetWidth, behavior: "smooth" })
-    })
-  })
+      document.getElementById("features")?.scrollTo({ left: i * features.offsetWidth, behavior: "smooth" });
+    });
+  });
 }
 
 function timingFunction(t: number, maxVal: number): number {
@@ -116,7 +116,7 @@ function initScrollFade(el: HTMLElement): void {
 }
 
 window.addEventListener("load", () => {
-  setupFeatures()
+  setupFeatures();
 
   const statsObserver = new IntersectionObserver((entries, observer) => {
     if (entries[0].isIntersecting) {
@@ -158,14 +158,22 @@ window.addEventListener("load", () => {
     el.toggleAttribute("open");
   }));
 
-  const fullscreenContainer = document.getElementById("img-fullscreen-container") as HTMLImageElement;
+  const fullscreenContainer = document.getElementById("img-fullscreen-container")!;
+  const fullscreenImage = document.getElementById("img-fullscreen-image") as HTMLImageElement;
+  const fullscreenDescription = document.getElementById("img-fullscreen-description")!;
   document.addEventListener("click", ev => {
     let src = "";
+    let description = "";
     document.querySelectorAll(".img-fullscreenable").forEach(el => {
       const imgEl = el.querySelector("img") as HTMLImageElement;
-      if (ev.target === imgEl && fullscreenContainer.src !== imgEl.currentSrc) src = imgEl.currentSrc;
+      if (ev.target === imgEl && fullscreenImage.src !== imgEl.currentSrc) {
+        src = imgEl.currentSrc;
+        description = el.closest(".feature")?.querySelector(".feature-description")?.textContent?.trim() ?? "";
+      }
     });
-    fullscreenContainer.src = src;
+    fullscreenImage.src = src;
+    fullscreenDescription.textContent = description;
+    fullscreenContainer.classList.toggle("visible", src !== "");
   });
 
   document.body.style.display = "block";
