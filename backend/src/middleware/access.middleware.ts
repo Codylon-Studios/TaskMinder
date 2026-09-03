@@ -80,7 +80,8 @@ async function checkAccountAccess(req: Request): Promise<void> {
 
 async function checkClassAccess(req: Request, res: Response): Promise<void> {
   if (!req.session.classId) {
-    return res.redirect(302, "/join");
+    const legacyOrigin = Object.hasOwn(req.query, "legacy_origin") ? "?legacy_origin" : "";
+    return res.redirect(302, `/join${legacyOrigin}`);
   }
 
   // Verify class exists

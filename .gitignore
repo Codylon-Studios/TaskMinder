@@ -2,6 +2,8 @@
 *.rdb
 # Ignore prisma generated output
 /backend/src/prisma/generated/*
+# Ignore TEMP.md
+TEMP.md
 # Ignore .claude folder
 .claude/**
 # Ignore .env files

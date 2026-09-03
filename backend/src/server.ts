@@ -166,14 +166,15 @@ const pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages");
 
 app.get("/join", (req, res) => {
   const action = req.query.action;
+  const legacyOrigin = Object.hasOwn(req.query, "legacy_origin") ? "legacy_origin" : "";
 
   if (req.session.account && req.session.classId) {
-    return res.redirect(302, "/main");
+    return res.redirect(302, legacyOrigin ? `/main?${legacyOrigin}` : "/main");
   }
 
   if (!req.session.account && req.session.classId) {
     if (action !== "account") {
-      return res.redirect(302, "/join?action=account");
+      return res.redirect(302, `/join?action=account${legacyOrigin ? `&${legacyOrigin}` : ""}`);
     }
   }
   res.sendFile(path.join(pagesPath, "join", "join.html"));
