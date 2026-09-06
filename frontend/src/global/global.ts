@@ -1532,6 +1532,15 @@ function toggleScrollFade(el: HTMLElement): void {
 }
 
 export async function init(): Promise<void> {
+  const searchParams = new URLSearchParams(location.search);
+  if (searchParams.has("legacy_origin")) {
+    $("#legacy-origin-toast").toast("show");
+    searchParams.delete("legacy_origin");
+    const newUrl = new URL(location.href);
+    newUrl.search = searchParams.toString();
+    history.replaceState(null, "", newUrl);
+  }
+  
   try {
     const res = await fetch("/csrf-token");
     if (!res.ok) {

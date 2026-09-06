@@ -162,4 +162,29 @@
       </div>
     </object>
   </div>
+  <div class="toast-container">
+    <div id="file-viewer-unsafe-link" class="toast" data-bs-autohide="false">
+      <div class="toast-header bg-warning text-body-bg">
+        <span class="me-auto w-100 fw-bold">
+          Fremder Link:
+          <b class="word-wrap-break"></b>
+        </span>
+        <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
+      </div>
+      <div class="toast-body">
+        Achtung, dieser Link führt auf eine andere Website:
+        <br />
+        <b></b>
+        <br />
+        <br />
+        Klicke nur auf öffnen, wenn du diese Website kennst.
+        <div class="mt-2 pt-2 border-top d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-secondary btn-sm fw-semibold" data-bs-dismiss="toast">Abbrechen</button>
+          <button type="button" class="btn btn-warning btn-sm fw-semibold" data-bs-dismiss="toast" id="file-viewer-unsafe-link-confirm">
+            Öffnen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>

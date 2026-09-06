@@ -1,4 +1,5 @@
-import { $cloneTemplate, bytesToText, clamp, escapeHTML, randomUUID, secondsToDurationInSeconds } from "../../global/global.js";
+import { $cloneTemplate, bytesToText, clamp, escapeHTML, isStandalone, randomUUID, secondsToDurationInSeconds } from "../../global/global.js";
+import { replaceSitePJAX } from "../loadingBar/loadingBar.js";
 
 function parseCSVLine(line: string, acc: string[], inQuotes: boolean): string[] {
   if (line === "") return acc;
@@ -259,6 +260,33 @@ export class FileViewer extends HTMLElement {
 
       $(this).find(".file-viewer-type-specific").show().find(".file-viewer-type-specific-markdown").show();
       this.$markdown.show().find(".file-viewer-markdown-styled").html(styled).end().find(".file-viewer-markdown-source").text(text);
+
+      console.log(this.$markdown);
+      this.$markdown.find("a").on("click", ev => {
+        ev.preventDefault();
+        const url = ev.target.href;
+        const absUrl = (/^[a-z]+:\/\//i.test(url) ? "" : "https://") + url;
+        try {
+          if ((new URL(absUrl)).host === location.host) {
+            if (isStandalone) {
+              replaceSitePJAX(absUrl);
+            }
+            else {
+              globalThis.open(absUrl, "_blank", "noopener,noreferrer");
+            }
+            return;
+          }
+          else throw new Error("External");
+        }
+        catch {
+          $("#file-viewer-unsafe-link").toast("show").find("b").text(url);
+          $("#file-viewer-unsafe-link-confirm")
+            .off("click")
+            .on("click", () => {
+              globalThis.open(absUrl, "_blank", "noopener,noreferrer");
+            });
+        }
+      });
     }
     else if (mime === "text/csv") {
       const text = await this.file.text();

@@ -1,7 +1,7 @@
 function setupFeatures(): void {
   const features = document.getElementById("features")!;
   [...document.getElementById("feature-selection")!.children].forEach((e, i) => {
-    if (i == 0) e.classList.add("feature-selection-selected");
+    if (i === 0) e.classList.add("feature-selection-selected");
     e.addEventListener("click", () => {
       e.scrollIntoView({
         behavior: "smooth",
