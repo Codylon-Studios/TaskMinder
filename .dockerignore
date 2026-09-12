@@ -21,6 +21,7 @@
 **/charts
 **/docker-compose*
 **/compose.y*ml
+**/compose.override.y*ml
 **/Dockerfile*
 **/node_modules
 **/db-backups
@@ -33,5 +34,8 @@
 LICENSE
 README.md
 **/*.rdb
-**/nginx.config
+**/nginx.config.template
+**/nginx.proxy-headers.conf
 **/useful.md
+**/docker_secrets
+.env

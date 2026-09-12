@@ -1,9 +1,7 @@
 import { RequestError } from "../@types/requestError.js";
-import { CACHE_KEY_PREFIXES, cacheExpiration, generateCacheKey, redisClient } from "../config/redis.js";
 import { prisma } from "../config/prisma.js";
-import logger from "../config/logger.js";
 import { Session, SessionData } from "express-session";
-import { randomInt } from "crypto";
+import { randomInt } from "node:crypto";
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -15,30 +13,7 @@ function generateRandomBase62String(length = 20): string {
   return result;
 }
 
-async function updateCacheData<T>(data: T[], key: string): Promise<void> {
-  try {
-    await redisClient.set(key, JSON.stringify(data, BigIntreplacer),
-      { expiration: { type: "EX", value: cacheExpiration } });
-  }
-  catch (err) {
-    logger.error(`Error updating Redis ${key} cache: ${err}`);
-  }
-}
-
-async function invalidateCache(
-  key: keyof typeof CACHE_KEY_PREFIXES,
-  classId: string
-): Promise<void> {
-  const cacheKey = generateCacheKey(CACHE_KEY_PREFIXES[key], classId);
-  try {
-    await redisClient.del(cacheKey);
-  }
-  catch (err) {
-    logger.error(`Error invalidating cache for ${CACHE_KEY_PREFIXES[key]}: ${err}`);
-  }
-};
-
-export function checkUsername(username: string): boolean {
+function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
 }
 
@@ -160,6 +135,7 @@ function lessonDateEventAtLeastOneNull(endDate: number | null, lesson: string | 
 }
 
 export {
+  checkUsername,
   generateRandomBase62String,
   isValidColor,
   isValidSubjectId,
@@ -167,7 +143,5 @@ export {
   isValidEventTypeId,
   lessonDateEventAtLeastOneNull,
   BigIntreplacer,
-  updateCacheData,
-  invalidateCache,
   dateChecker
 };

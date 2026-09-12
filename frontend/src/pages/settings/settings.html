@@ -733,12 +733,13 @@
                             <b>Fach</b>
                             <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between flex-wrap">
                               Name
-                              <input
-                                class="form-control form-control-sm d-inline subject-name-long-input w-50 w-lg-fit-content flex-grow-lg-1"
-                                type="text"
-                                data-id
-                                disabled
-                              />
+                              <datalist-input
+                                class="form-control-sm d-inline subject-name-long-input w-50 w-lg-fit-content flex-grow-lg-1"
+                                options="Altgriechisch, Biologie, Chemie, Deutsch, Englisch, Ethik, Evangelisch, Französisch, Geographie, Geschichte,
+                                Informatik, Italienisch, Katholisch, Kunst, Latein, Mathe, Musik, Natur und Technik, Physik, Politik und Gesellschaft,
+                                Psychologie Spanisch, Sport, Sport (m), Sport (w), Wirtschaft und Recht"
+                              ></datalist-input>
+
                               <div class="invalid-feedback">Der Name darf nicht leer sein!</div>
                             </label>
                             <label class="d-flex align-items-center gap-1 flex-grow-1 justify-content-between">

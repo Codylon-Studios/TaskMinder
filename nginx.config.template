@@ -1,0 +1,235 @@
+#=======================================================================
+# NGINX EDGE CONFIGURATION (TEMPLATE)
+#=======================================================================
+# DOMAIN LAYOUT:
+#   ${LANDING_HOST}     Project page  -> landing container    127.0.0.1:3002
+#   ${WWW_HOST}         Redirect to the canonical project page
+#   ${APP_HOST}         Application   -> app container        127.0.0.1:3000
+#   ${MONITORING_HOST}  Monitoring    -> grafana container    127.0.0.1:3001
+#
+# HOW TO USE THIS TEMPLATE (more information: https://docs.taskminder.de):
+# Render it with envsubst. Only the variables named on the envsubst
+# command line are replaced!
+#
+# REQUIRES ngx_http_lua_module for the maintenance blocks below
+#-----------------------------------------------------------------------
+# CERTBOT (LET'S ENCRYPT) SETUP NOTES:
+# - To obtain the first certificate, start with only the port 80 server
+#   block so that Certbot's HTTP-01 challenge can succeed.
+# - Enable the HTTPS server blocks after the certificate is available.
+# - ${TLS_INCLUDE} holds the certificate paths for this environment and is
+#   written once by hand; see the deployment guide.
+#-----------------------------------------------------------------------
+# APPLICATION MAINTENANCE MODE:
+# - enable:  sudo touch /etc/nginx/maintenance.flag
+# - disable: sudo rm /etc/nginx/maintenance.flag
+#
+# The project page and the monitoring dashboard remain available while the
+# application is in maintenance mode. An application that is stopped or
+# crashed without the flag set falls back to the same page (see @down).
+#=======================================================================
+
+# Block 1: Redirect all configured HTTP hosts to HTTPS
+#-----------------------------------------------------------------------
+server {
+    listen 80;
+    server_name ${LANDING_HOST} ${WWW_HOST} ${APP_HOST} ${MONITORING_HOST};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+        allow all;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# Block 2: Redirect www to the canonical project-page hostname
+#-----------------------------------------------------------------------
+server {
+    listen 443 ssl http2;
+    server_name ${WWW_HOST};
+
+    include ${TLS_INCLUDE};
+
+    return 301 https://${LANDING_HOST}$request_uri;
+}
+
+# Block 3: Project page
+#-----------------------------------------------------------------------
+server {
+    listen 443 ssl http2;
+    server_name ${LANDING_HOST};
+
+    include ${TLS_INCLUDE};
+
+    server_tokens off;
+
+    # The landing container is static and has no database, so it stays up
+    # while the application is down. If it is itself restarting, serve the
+    # maintenance page rather than a bare 502.
+    #
+    # No proxy_intercept_errors here: nginx generates these codes itself when
+    # the upstream is unreachable, so error_page applies without it. Turning it
+    # on would also swallow error statuses the upstream returns on purpose.
+    error_page 502 503 504 =503 /_down.html;
+
+    location = /_down.html {
+        internal;
+        root /opt/TaskMinder;
+        try_files /maintenance.html =503;
+    }
+
+    # Public statistics displayed on the project page. The page hides the
+    # section when this fails, so an application outage is not fatal here.
+    location = /stats {
+        proxy_pass http://127.0.0.1:3000;
+        include /etc/nginx/taskminder-proxy.conf;
+        proxy_read_timeout 120;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3002;
+        include /etc/nginx/taskminder-proxy.conf;
+    }
+}
+
+# Block 4: Application
+#-----------------------------------------------------------------------
+server {
+    listen 443 ssl http2;
+    server_name ${APP_HOST};
+
+    include ${TLS_INCLUDE};
+
+    server_tokens off;
+    client_max_body_size 20m;
+
+    error_page 413 = @payload_too_large;
+
+    location @payload_too_large {
+        default_type text/plain;
+        return 413 "NGINX request size limit exceeded";
+    }
+
+    # Unplanned outages: a stopped or crashed application container never
+    # reaches the Lua blocks below. nginx generates the 502/504 itself when it
+    # cannot reach the upstream, so error_page covers that on its own.
+    #
+    # Do NOT add proxy_intercept_errors here. It would also intercept the 413
+    # the backend returns for quota and file-count limits, replacing its
+    # message with the @payload_too_large text above, which says something
+    # different and wrong.
+    error_page 502 503 504 =503 /_down.html;
+
+    location = /_down.html {
+        internal;
+        root /opt/TaskMinder;
+        try_files /maintenance.html =503;
+    }
+
+    location = /landing {
+        return 302 https://${LANDING_HOST}/;
+    }
+
+    # Let the backend's /join route choose /join or /main from the session.
+    location = / {
+        return 302 /join;
+    }
+
+    location = /bootstrap {
+        access_by_lua_block {
+            local is_maintenance = false
+            local f = io.open("/etc/nginx/maintenance.flag", "r")
+            if f ~= nil then
+                is_maintenance = true
+                f:close()
+            end
+
+            if is_maintenance then
+                local cjson = require "cjson"
+                ngx.header["X-Maintenance-Mode"] = "1"
+                ngx.header["Cache-Control"]       = "no-store"
+                ngx.header["Retry-After"]         = "600"
+                ngx.status = 503
+
+                local fh = io.open("/opt/TaskMinder/maintenance.html", "r")
+                if fh then
+                    local body = fh:read("*a")
+                    fh:close()
+                    ngx.header["Content-Type"] = "application/json; charset=utf-8"
+                    local data = {
+                        maintenance = true,
+                        maintenanceHtml = body
+                    }
+                    ngx.print(cjson.encode(data))
+                else
+                    ngx.header["Content-Type"] = "text/plain"
+                    ngx.print("Service Unavailable")
+                end
+                ngx.exit(ngx.OK)
+            end
+        }
+
+        proxy_pass http://127.0.0.1:3000;
+        include /etc/nginx/taskminder-proxy.conf;
+        proxy_read_timeout 120;
+    }
+
+    location / {
+        access_by_lua_block {
+            local is_maintenance = false
+            local f = io.open("/etc/nginx/maintenance.flag", "r")
+            if f ~= nil then
+                is_maintenance = true
+                f:close()
+            end
+
+            if is_maintenance then
+                ngx.header["X-Maintenance-Mode"] = "1"
+                ngx.header["Cache-Control"]       = "no-store"
+                ngx.header["Retry-After"]         = "600"
+                ngx.status = 503
+
+                local fh = io.open("/opt/TaskMinder/maintenance.html", "r")
+                if fh then
+                    local body = fh:read("*a")
+                    fh:close()
+                    ngx.header["Content-Type"] = "text/html; charset=utf-8"
+                    ngx.print(body)
+                else
+                    ngx.header["Content-Type"] = "text/plain"
+                    ngx.print("Service Unavailable")
+                end
+                ngx.exit(ngx.OK)
+            end
+        }
+
+        proxy_pass http://127.0.0.1:3000;
+        include /etc/nginx/taskminder-proxy.conf;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400; # Socket.IO/WebSocket connections
+    }
+}
+
+# Block 5: Monitoring dashboard
+#-----------------------------------------------------------------------
+server {
+    listen 443 ssl http2;
+    server_name ${MONITORING_HOST};
+
+    include ${TLS_INCLUDE};
+
+    server_tokens off;
+    client_max_body_size 20m;
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        include /etc/nginx/taskminder-proxy.conf;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400;
+    }
+}

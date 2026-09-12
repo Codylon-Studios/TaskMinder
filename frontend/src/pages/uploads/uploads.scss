@@ -34,31 +34,6 @@
   }
 }
 
-#view-upload-object {
-  width: 100%;
-
-  &:not(.ios)[type="application/pdf"] {
-    min-height: calc(1.4 * (min(500px, 100vw - 1rem) - 7rem)) !important;
-  }
-
-  &[type="text/plain"] {
-    min-height: calc((min(500px, 100vw - 1rem) - 7rem)) !important;
-  }
-
-  &[type="application/pdf"], &[type="text/plain"], &[type="image/jpg"], &[type="image/jpeg"] {
-    background-color: white;
-  }
-
-  &[type="image/png"] {
-    image-rendering: pixelated;
-    background: repeating-conic-gradient(#7f7f7f 0 25%, #bfbfbf 0 50%) 50% / 2rem 2rem;
-
-    [data-bs-theme="dark"] & {
-      background: repeating-conic-gradient(#7f7f7f 0 25%, #3f3f3f 0 50%) 50% / 2rem 2rem;
-    }
-  }
-}
-
 #search-uploads {
   &:focus-within, &.search-box-not-empty {
     width: 0 !important;

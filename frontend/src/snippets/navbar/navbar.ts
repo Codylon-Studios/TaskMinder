@@ -3,18 +3,23 @@ import {
   isSite,
   bootstrap,
   user,
-  checkSecurePassword
+  checkSecurePassword,
+  showButtonLoading
 } from "../../global/global.js";
 import { AjaxError } from "../../global/types.js";
 
 //REGISTER -- REGISTER -- REGISTER -- REGISTER
 async function registerAccount(username: string, password: string): Promise<void> {
-  await ajax("POST", "/api/account/register", {
+  const ajaxPromise = ajax("POST", "/api/account/register", {
     body: {
       username: username,
       password: password
     }
   });
+
+  showButtonLoading($(".register-button:visible"), ajaxPromise);
+
+  await ajaxPromise;
 
   $("#register-success-toast .username").text(username);
   $("#register-success-toast").toast("show");
@@ -26,7 +31,7 @@ async function registerAccount(username: string, password: string): Promise<void
 //LOGIN -- LOGIN -- LOGIN -- LOGIN -- LOGIN
 async function loginAccount(username: string, password: string): Promise<void> {
   try {
-    await ajax("POST", "/api/account/login", {
+    const ajaxPromise = ajax("POST", "/api/account/login", {
       body: {
         username,
         password
@@ -35,6 +40,10 @@ async function loginAccount(username: string, password: string): Promise<void> {
         { status: 401, responseText: "Invalid credentials" }
       ]
     });
+
+    showButtonLoading($(".login-button:visible"), ajaxPromise);
+
+    await ajaxPromise;
     
     $("#login-success-toast .username").text(username);
     $("#login-success-toast").toast("show");
@@ -78,8 +87,12 @@ function checkUsername(username: string): boolean {
   return /^\w{4,20}$/.test(username);
 }
 
-$("#nav-logout-button, #offcanvas-account-logout-button").on("click", async () => {
-  await ajax("POST", "/api/account/logout");
+$("#nav-logout-button, #offcanvas-account-logout-button").on("click", async ev => {
+  const ajaxPromise = ajax("POST", "/api/account/logout");
+
+  showButtonLoading($(ev.target), ajaxPromise);
+
+  await ajaxPromise;
 
   $("#logout-success-toast").toast("show");
     
@@ -92,8 +105,9 @@ $(document).on("click", "#navbar-offcanvas .offcanvas-body a", () => {
 
 export async function init(): Promise<void> {
   const b = await bootstrap();
-  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
-  $("#login-register-button").toggle(!user.loggedIn && !isSite("join"));
+  const available = b.online && !b.maintenance;
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && available);
+  $("#login-register-button").toggle(!user.loggedIn && !isSite("join") && available);
 
   //
   //LOGIN -- REGISTER
@@ -236,7 +250,8 @@ export async function init(): Promise<void> {
 $(() => {
   user.on("change", (function _() {
     $(".class-joined-content").toggle(user.classJoined ?? false);
-    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/join");
+    $(".navbar-home-link").attr("href", user.classJoined ? "/main" : "/landing");
+    if (user.classJoined) $(".navbar-home-link").attr("data-pjax", ""); else $(".navbar-home-link").removeAttr("data-pjax");
     $("#login-register-button").toggle(!user.loggedIn && !isSite("join"));
     $("#nav-logout-button").toggle(user.loggedIn ?? false);
     $("#offcanvas-account").toggle(user.loggedIn ?? false);

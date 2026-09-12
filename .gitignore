@@ -2,9 +2,15 @@
 *.rdb
 # Ignore prisma generated output
 /backend/src/prisma/generated/*
+# Ignore TEMP.md
+TEMP.md
+# Ignore .claude folder
+.claude/**
 # Ignore .env files
 .env.staging
 .env.production
+# Ignore per-deployment compose overrides (e.g. APP_HOST for the landing page)
+compose.override.y*ml
 # Ignore built /site after mkdocs build
 /site
 useful.md

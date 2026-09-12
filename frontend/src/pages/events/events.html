@@ -7,21 +7,15 @@
   <body>
     <div id="app-scroll">
       <div class="container" id="app">
-        <div class="d-flex flex-wrap justify-content-center justify-content-lg-start mb-n2 me-n2">
+        <div class="d-flex flex-wrap justify-content-center justify-content-md-start mb-n2 me-n2">
           <button type="button" class="btn btn-primary fw-bold me-2 mb-2" id="show-add-event-button">
             <i class="fa-solid fa-plus" aria-hidden="true"></i>
             Neu
           </button>
 
-          <input type="checkbox" class="btn-check" id="edit-toggle" />
-          <label class="btn btn-outline-secondary fw-bold me-2 mb-2" for="edit-toggle" id="edit-toggle-label">
-            <i class="fa-solid fa-edit" aria-hidden="true"></i>
-            Bearbeiten
-          </label>
-
           <button class="btn btn-outline-secondary position-relative fw-bold me-2 mb-2" id="filter-toggle" aria-label="Filtern">
             <i class="fa-solid fa-filter" aria-hidden="true"></i>
-            <span class="d-none d-sm-inline">Filtern</span>
+            Filtern
             <span class="filter-info-circle" id="filter-changed"></span>
           </button>
 
@@ -32,7 +26,7 @@
 
           <button class="btn btn-outline-secondary ds-none ds-md-block fw-bold me-2 mb-2" id="view-toggle"></button>
 
-          <div class="w-100 d-block d-lg-none"></div>
+          <div class="w-100 d-block d-md-none"></div>
 
           <search-box class="me-2 mb-2" id="search-events"></search-box>
         </div>
@@ -51,7 +45,7 @@
                   <th>Art</th>
                   <th>Titel & Datum</th>
                   <th>Text</th>
-                  <th>Aktionen</th>
+                  <th class="text-end">Aktionen</th>
                 </tr>
               </thead>
               <tbody class="table-group-divider" id="event-table-body"><!--Gets filled--></tbody>
@@ -66,9 +60,9 @@
           </div>
           <div class="offcanvas-body d-flex flex-column offcanvas-body-grow-75">
             <div class="flex-grow-1 overflow-scroll" id="filter-offcanvas-body"></div>
-            <div class="d-flex">
-              <button class="btn btn-danger fw-bold flex-fill m-1 filter-reset">Zurücksetzen</button>
-              <button class="btn btn-primary fw-bold flex-fill m-1" data-bs-dismiss="offcanvas">Fertig</button>
+            <div class="d-flex flex-nowrap">
+              <button class="btn btn-danger fw-bold w-100 m-1 filter-reset">Zurücksetzen</button>
+              <button class="btn btn-primary fw-bold w-100 m-1" data-bs-dismiss="offcanvas">Fertig</button>
             </div>
           </div>
         </div>
@@ -81,9 +75,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
               </div>
               <div class="modal-body" id="filter-modal-body"></div>
-              <div class="modal-footer">
-                <button class="btn btn-danger fw-bold flex-fill filter-reset">Zurücksetzen</button>
-                <button class="btn btn-primary fw-bold flex-fill" data-bs-dismiss="modal">Fertig</button>
+              <div class="modal-footer flex-nowrap">
+                <button class="btn btn-danger fw-bold w-100 filter-reset">Zurücksetzen</button>
+                <button class="btn btn-primary fw-bold w-100" data-bs-dismiss="modal">Fertig</button>
               </div>
             </div>
           </div>
@@ -114,15 +108,15 @@
           </div>
         </div>
 
-        <div class="modal fade" id="add-event-modal" aria-labelledby="add-event-modal-label">
-          <div class="modal-dialog">
+        <div class="modal fade" id="manage-event-modal" aria-labelledby="manage-event-modal-label">
+          <div class="modal-dialog modal-dialog-scrollable">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title" id="add-event-modal-label">Ereignis hinzufügen</h5>
+                <h5 class="modal-title" id="manage-event-modal-label">Will be replaced</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
               </div>
-              <div class="modal-body">
-                <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2 mb-3" id="add-event-no-types">
+              <div class="modal-body scroll-fade">
+                <div class="alert alert-danger p-2 d-flex d-none align-items-center gap-2 mb-3" id="manage-event-no-types">
                   <i class="fa-solid fa-circle-exclamation mx-1" aria-hidden="true"></i>
                   <span class="d-block">
                     Es gibt in eurer Klasse noch keine Ereignisarten!
@@ -131,157 +125,120 @@
                   </span>
                 </div>
                 <div class="mb-3">
-                  <label for="add-event-type" class="form-label">Wähle die Art des Ereignisses aus</label>
-                  <select class="form-select add-event-input" id="add-event-type">
+                  <label for="manage-event-type" class="form-label">Wähle die Art des Ereignisses aus</label>
+                  <select class="form-select manage-event-input" id="manage-event-type">
                     <option value="" disabled selected>Art</option>
                     <!-- Gets filled -->
                   </select>
                 </div>
 
                 <div class="mb-3">
-                  <label for="add-event-name" class="form-label">Bennene das Ereignis</label>
-                  <input type="text" class="form-control add-event-input" id="add-event-name" placeholder='zum Beispiel "Schulaufgabe Latein" ' />
-                </div>
-
-                <div class="mb-3">
-                  <label class="form-label" for="add-event-description">Füge eine Beschreibung für das Ereignis hinzu (optional)</label>
-                  <textarea type="text" class="rich-textarea add-event-input" id="add-event-description"></textarea>
-                </div>
-
-                <div class="mb-3">
-                  <label for="add-event-start-date" class="form-label">Gib ein, wann das Ereignis stattfindet</label>
-                  <input type="date" class="form-control add-event-input" id="add-event-start-date" />
-                </div>
-
-                <div class="row mb-3">
-                  <div class="col">
-                    <label for="add-event-lesson" class="form-label">Gib eine Unterrichtsstunde an (optional)</label>
-                    <input type="text" class="form-control add-event-input" id="add-event-lesson" placeholder='zum Beispiel "2" oder "1 - 3"' />
-                    <div class="form-text">zum Beispiel für Schulaufgaben</div>
-                  </div>
-
-                  <div class="col">
-                    <label for="add-event-end-date" class="form-label">Gib ein Enddatum an (optional)</label>
-                    <input type="date" class="form-control add-event-input" id="add-event-end-date" />
-                    <div class="invalid-feedback">Das Enddatum muss nach dem Startdatum liegen!</div>
-                    <div class="suspicious-feedback">Bist du dir sicher? Dieses Datum liegt in der Vergangenheit!</div>
-                    <div class="form-text">zum Beispiel für Ferien</div>
-                  </div>
-                </div>
-
-                <label for="add-event-team" class="form-label">Wähle ein Team für das Ereignis aus (optional)</label>
-                <select class="form-select add-event-input" id="add-event-team">
-                  <option value="-1" selected>Alle</option>
-                  <!-- Gets filled -->
-                </select>
-                <!--prettier-ignore-->
-                <div class="suspicious-feedback">
-                  Bist du dir sicher? Du bist nicht im Team <b></b>!
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
-                <button class="btn btn-primary fw-bold" id="add-event-button">Hinzufügen</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal fade" id="edit-event-modal" aria-labelledby="edit-event-modal-label">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="edit-event-modal-label">Ereignis bearbeiten</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
-              </div>
-              <div class="modal-body">
-                <div class="mb-3">
-                  <label for="edit-event-type" class="form-label">Wähle die Art des Ereignisses aus</label>
-                  <select class="form-select edit-event-input" id="edit-event-type">
-                    <option value="" disabled selected>Art</option>
-                    <!-- Gets filled -->
-                  </select>
-                </div>
-
-                <div class="mb-3">
-                  <label for="edit-event-name" class="form-label">Bennene das Ereignis</label>
-                  <input type="text" class="form-control edit-event-input" id="edit-event-name" placeholder='zum Beispiel "Schulaufgabe Latein"' />
-                </div>
-
-                <div class="mb-3">
-                  <label for="edit-event-description" class="form-label">Füge eine Beschreibung für das Ereignis hinzu (optional)</label>
-                  <textarea
+                  <label for="manage-event-name" class="form-label">Bennene das Ereignis</label>
+                  <input
                     type="text"
-                    class="rich-textarea edit-event-input"
-                    id="edit-event-description"
-                    placeholder="zum Beispiel abgefragter Stoff"
-                  ></textarea>
+                    class="form-control manage-event-input"
+                    id="manage-event-name"
+                    placeholder='zum Beispiel "Schulaufgabe Latein" '
+                  />
                 </div>
 
                 <div class="mb-3">
-                  <label for="edit-event-start-date" class="form-label">Gib ein, wann das Ereignis stattfindet</label>
-                  <input type="date" class="form-control edit-event-input" id="edit-event-start-date" />
+                  <label class="form-label" for="manage-event-description">Füge eine Beschreibung für das Ereignis hinzu (optional)</label>
+                  <textarea type="text" class="rich-textarea manage-event-input" id="manage-event-description"></textarea>
+                </div>
+
+                <div class="mb-3">
+                  <label for="manage-event-start-date" class="form-label">Gib ein, wann das Ereignis stattfindet</label>
+                  <input type="date" class="form-control manage-event-input" id="manage-event-start-date" />
                 </div>
 
                 <div class="row mb-3">
                   <div class="col">
-                    <label for="edit-event-lesson" class="form-label">Gib eine Unterrichtsstunde an (optional)</label>
-                    <input type="text" class="form-control edit-event-input" id="edit-event-lesson" placeholder='zum Beispiel "2" oder "1-3"' />
+                    <label for="manage-event-lesson" class="form-label">Gib eine Unterrichtsstunde an (optional)</label>
+                    <input type="text" class="form-control manage-event-input" id="manage-event-lesson" placeholder='zum Beispiel "2" oder "1 - 3"' />
                     <div class="form-text">zum Beispiel für Schulaufgaben</div>
                   </div>
 
                   <div class="col">
-                    <label for="edit-event-end-date" class="form-label">Gib ein Enddatum an (optional)</label>
-                    <input type="date" class="form-control edit-event-input" id="edit-event-end-date" />
+                    <label for="manage-event-end-date" class="form-label">Gib ein Enddatum an (optional)</label>
+                    <input type="date" class="form-control manage-event-input" id="manage-event-end-date" />
                     <div class="invalid-feedback">Das Enddatum muss nach dem Startdatum liegen!</div>
                     <div class="suspicious-feedback">Bist du dir sicher? Dieses Datum liegt in der Vergangenheit!</div>
                     <div class="form-text">zum Beispiel für Ferien</div>
                   </div>
                 </div>
 
-                <label for="edit-event-team" class="form-label">Wähle ein Team für das Ereignis aus (optional)</label>
-                <select class="form-select edit-event-input" id="edit-event-team">
-                  <option value="-1" selected>Alle</option>
-                  <!-- Gets filled -->
-                </select>
-                <!--prettier-ignore-->
-                <div class="suspicious-feedback">
-                  Bist du dir sicher? Du bist nicht im Team <b></b>!
+                <label for="" class="form-label" id="manage-event-visibility-label">Wähle aus, für wen das Ereignis sichtbar ist</label>
+                <div class="btn-group w-100" id="manage-event-visibility">
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle manage-event-input"
+                    name="manage-event-visibility"
+                    id="manage-event-visibility-private"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="manage-event-visibility-private"
+                  >
+                    <i aria-hidden="true" class="fas fa-user-lock"></i>
+                    Privat
+                  </label>
+
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle manage-event-input"
+                    name="manage-event-visibility"
+                    id="manage-event-visibility-team"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="manage-event-visibility-team"
+                  >
+                    <i aria-hidden="true" class="fas fa-user-group"></i>
+                    <div>
+                      <select class="form-select manage-event-input" id="manage-event-visibility-team-select">
+                        <!-- Gets filled -->
+                      </select>
+                      <!--prettier-ignore-->
+                      <div class="suspicious-feedback fw-normal">
+                        Bist du dir sicher? Du bist nicht im Team <b></b>!
+                      </div>
+                    </div>
+                  </label>
+
+                  <input
+                    type="radio"
+                    class="btn-check btn-check-subtle manage-event-input"
+                    name="manage-event-visibility"
+                    id="manage-event-visibility-all"
+                  />
+                  <label
+                    class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center gap-2"
+                    for="manage-event-visibility-all"
+                  >
+                    <i aria-hidden="true" class="fas fa-users"></i>
+                    Alle
+                  </label>
+                </div>
+
+                <div class="alert alert-primary p-2 ds-flex align-items-center gap-2 mb-0" id="manage-event-only-private">
+                  <i aria-hidden="true" class="fas fa-user-lock"></i>
+                  <span class="d-block">
+                    Dieses Ereignis wird nur für dich sichtbar sein. Du hast nicht genug Rechte, um ein Ereignis für andere Schüler:innen
+                    hinzuzufügen.
+                  </span>
                 </div>
               </div>
-              <div class="modal-footer">
-                <button class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Abbrechen</button>
-                <button class="btn btn-primary fw-bold" id="edit-event-button">Speichern</button>
+              <div class="modal-footer flex-nowrap">
+                <button class="btn btn-danger fw-bold w-100" id="manage-event-delete-button">Löschen</button>
+                <button class="btn btn-primary fw-bold w-100 manage-event-button" id="manage-event-edit-button">Speichern</button>
+                <button class="btn btn-primary fw-bold w-100 manage-event-button" id="manage-event-add-button">Hinzufügen</button>
               </div>
             </div>
           </div>
         </div>
 
         <div class="toast-container">
-          <div id="add-event-success-toast" class="toast">
-            <div class="toast-progress-bar bg-success"></div>
-            <div class="toast-header bg-success text-body-bg">
-              <b class="me-auto">Erfolgreich hinzugefügt</b>
-              <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-            </div>
-            <div class="toast-body">Das Ereignis wurde erfolgreich hinzugefügt.</div>
-          </div>
-          <div id="edit-event-success-toast" class="toast">
-            <div class="toast-progress-bar bg-success"></div>
-            <div class="toast-header bg-success text-body-bg">
-              <b class="me-auto">Erfolgreich geändert</b>
-              <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-            </div>
-            <div class="toast-body">Das Ereignis wurde erfolgreich geändert.</div>
-          </div>
-          <div id="pin-event-success-toast" class="toast">
-            <div class="toast-progress-bar bg-success"></div>
-            <div class="toast-header bg-success text-body-bg">
-              <b class="me-auto"></b>
-              <button type="button" class="btn-close btn-close-invert" data-bs-dismiss="toast" aria-label="Schließen"></button>
-            </div>
-            <div class="toast-body"></div>
-          </div>
           <div id="delete-event-success-toast" class="toast">
             <div class="toast-progress-bar bg-success"></div>
             <div class="toast-header bg-success text-body-bg">

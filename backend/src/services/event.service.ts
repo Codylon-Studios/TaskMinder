@@ -1,75 +1,174 @@
 import logger from "../config/logger.js";
 import { redisClient, cacheExpiration, CACHE_KEY_PREFIXES, generateCacheKey } from "../config/redis.js";
-import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 import * as sass from "sass";
 import { prisma } from "../config/prisma.js";
 import {
   isValidColor,
   isValidTeamId,
   lessonDateEventAtLeastOneNull,
-  updateCacheData,
   BigIntreplacer,
-  invalidateCache,
   isValidEventTypeId,
   dateChecker
 } from "../utils/validate.functions.js";
+import { invalidateCache, updateCacheData } from "../config/redis.js";
+import { assertPermissionLevel, ROLES } from "../middleware/access.middleware.js";
 import { Session, SessionData } from "express-session";
 import { RequestError } from "../@types/requestError.js";
-import { 
+import {
   editEventTypeParams,
   deleteEventTypeParams,
   pinEventTypeParams,
   addEventTypeBody,
-  editEventTypeBody, 
-  setEventTypesTypeBody, 
-  pinEventTypeBody 
+  editEventTypeBody,
+  setEventTypesTypeBody,
+  pinEventTypeBody
 } from "../schemas/event.schema.js";
 import { Prisma } from "../prisma/generated/prisma/client.js";
 
 const inFlightStyleBuild = new Map<number, Promise<string>>();
 
-export const eventService = {
-  async getEventData(session: Session & Partial<SessionData>) {
-    // always use classId instead of session.classId
-    // since session.classId can change during concurrent requests
-    const classId = parseInt(session.classId!, 10);
-    // get cache key from class to fetch from cache
-    const getEventDataCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
-    const cachedEventData = await redisClient.get(getEventDataCacheKey);
+// personal (account-scoped) events are not team-scoped; store this sentinel as teamId
+const PERSONAL_TEAM_ID = -1;
 
-    if (cachedEventData) {
-      try {
-        return JSON.parse(cachedEventData);
-      }
-      catch (error) {
-        logger.error(`Error parsing Redis data: ${error}`);
-        // fall through to prevent crashes and rely on DB
-      }
-    }
-    // no cache data available, fetch from database and update cache
-    const eventData = await prisma.event.findMany({
-      where: {
-        classId
-      },
-      orderBy: [
-        { isPinned: "desc" },
-        { startDate: "asc" },
-        { endDate: "asc" },
-        { name: "asc" },
-        { description: "asc" }
-      ]
-    });
+// canonical ordering used for both DB queries and the in-memory merge of the
+// shared and personal cache partitions; compareEvent() must mirror this
+const EVENT_ORDER_BY: Prisma.EventOrderByWithRelationInput[] = [
+  { isPinned: "desc" },
+  { startDate: "asc" },
+  { endDate: "asc" },
+  { name: "asc" },
+  { description: "asc" }
+];
 
+// shape needed to re-sort cached rows after JSON round-trips bigints into strings
+type SortableEvent = {
+  isPinned: boolean;
+  startDate: bigint | string | number;
+  endDate: bigint | string | number | null;
+  name: string;
+  description: string | null;
+  [key: string]: unknown;
+};
+
+// in-memory comparator mirroring EVENT_ORDER_BY, used when merging the shared
+// and personal partitions read from the cache into a single ordered list
+// (nullable endDate/description sort last, matching Postgres NULLS LAST on ASC)
+function compareEvent(a: SortableEvent, b: SortableEvent): number {
+  if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+  const startA = Number(a.startDate), startB = Number(b.startDate);
+  if (startA !== startB) return startA - startB;
+  const endA = a.endDate === null ? Infinity : Number(a.endDate);
+  const endB = b.endDate === null ? Infinity : Number(b.endDate);
+  if (endA !== endB) return endA - endB;
+  if (a.name !== b.name) return String(a.name).localeCompare(String(b.name));
+  const descA = a.description === null ? null : String(a.description);
+  const descB = b.description === null ? null : String(b.description);
+  if (descA === descB) return 0;
+  if (descA === null) return 1;
+  if (descB === null) return -1;
+  return descA.localeCompare(descB);
+}
+
+// read one cache partition (shared or a single account's personal events);
+// on a miss, query the matching subset, refresh the cache and return it
+async function fetchEventPartition(
+  cacheKey: string,
+  where: Prisma.EventWhereInput
+): Promise<SortableEvent[]> {
+  const cached = await redisClient.get(cacheKey);
+  if (cached) {
     try {
-      await updateCacheData(eventData, getEventDataCacheKey);
+      return JSON.parse(cached);
     }
-    catch (err) {
-      logger.error(`Error updating Redis cache: ${err}`);
+    catch (error) {
+      logger.error(`Error parsing Redis data: ${error}`);
       // fall through to prevent crashes and rely on DB
     }
+  }
 
-    const stringified = JSON.stringify(eventData, BigIntreplacer);
-    return JSON.parse(stringified);
+  const data = await prisma.event.findMany({ where, orderBy: EVENT_ORDER_BY });
+  try {
+    await updateCacheData(data, cacheKey);
+  }
+  catch (err) {
+    logger.error(`Error updating Redis cache: ${err}`);
+    // fall through to prevent crashes and rely on DB
+  }
+  return JSON.parse(JSON.stringify(data, BigIntreplacer));
+}
+
+// resolve owner + team scope for a create/edit and authorize accordingly:
+// personal => requires a logged-in account (any member of the class);
+// shared   => requires EDITOR permission and a valid team
+async function resolveEventScope(
+  isPersonal: boolean,
+  teamId: number,
+  session: Session & Partial<SessionData>
+): Promise<{ accountId: number | null; storedTeamId: number }> {
+  if (isPersonal) {
+    if (!session.account) {
+      const err: RequestError = {
+        name: "Unauthorized",
+        status: 401,
+        message: "An account is required to create or modify personal events",
+        expected: true
+      };
+      throw err;
+    }
+    // ensure the account actually belongs to this class (also repairs stale session state)
+    await assertPermissionLevel(session, ROLES.MEMBER);
+    return { accountId: session.account.accountId, storedTeamId: PERSONAL_TEAM_ID };
+  }
+
+  await assertPermissionLevel(session, ROLES.EDITOR);
+  await isValidTeamId(teamId, session);
+  return { accountId: null, storedTeamId: teamId };
+}
+
+// authorize a mutation (edit/delete/pin) on an existing row by its current ownership:
+// personal items may only be touched by their owner; shared items require EDITOR
+async function authorizeEventMutation(
+  ownerAccountId: number | null,
+  session: Session & Partial<SessionData>
+): Promise<void> {
+  if (ownerAccountId !== null) {
+    // 404 (not 403) so the existence of another user's personal item is not revealed
+    if (!session.account || session.account.accountId !== ownerAccountId) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Event not found",
+        expected: true
+      };
+      throw err;
+    }
+    return;
+  }
+  await assertPermissionLevel(session, ROLES.EDITOR);
+}
+
+export const eventService = {
+  async getEventData(session: Session & Partial<SessionData>) {
+    // always use classId instead of session.classId (session.classId can change during concurrent requests)
+    const classId = parseInt(session.classId!, 10);
+    const accountId = session.account?.accountId;
+
+    // shared (team-scoped) events, cached per class
+    const sharedKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!);
+    const shared = await fetchEventPartition(sharedKey, { classId, accountId: null });
+
+    // anonymous / no-account viewers only ever see shared events
+    if (accountId === undefined) {
+      return shared;
+    }
+
+    // this account's personal events, cached per account
+    const personalKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENT, session.classId!, accountId.toString());
+    const personal = await fetchEventPartition(personalKey, { classId, accountId });
+
+    // merge the two partitions and re-sort to preserve canonical order
+    return [...shared, ...personal].sort(compareEvent);
   },
 
   async pinEvent(reqParams: pinEventTypeParams, reqBody: pinEventTypeBody, session: Session & Partial<SessionData>) {
@@ -84,7 +183,8 @@ export const eventService = {
         classId
       },
       select: {
-        teamId: true
+        teamId: true,
+        accountId: true
       }
     });
 
@@ -98,8 +198,11 @@ export const eventService = {
       throw err;
     }
 
-
-    await isValidTeamId(existingEvent.teamId, session);
+    // owner may pin personal items; editor may pin shared items
+    await authorizeEventMutation(existingEvent.accountId, session);
+    if (existingEvent.accountId === null) {
+      await isValidTeamId(existingEvent.teamId, session);
+    }
 
     try {
       await prisma.event.update({
@@ -124,25 +227,25 @@ export const eventService = {
       throw err;
     }
 
-    await invalidateCache("EVENT", classId.toString());
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
+    await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), existingEvent.accountId?.toString());
+    emitSocketToClass(classId, SOCKET_EVENTS.EVENTS);
   },
 
   async addEvent(
     reqBody: addEventTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqBody;
+    const { eventTypeId, name, description, startDate, lesson, endDate, teamId, isPersonal } = reqBody;
     // always use classId instead of session.classId
     // since session.classId can change during concurrent requests
     const classId = parseInt(session.classId!, 10);
-    if (endDate){
+    if (endDate) {
       dateChecker(startDate, endDate);
     }
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    await isValidTeamId(teamId, session);
     await isValidEventTypeId(eventTypeId, session);
+    // authorize + resolve owner/team for shared vs personal
+    const { accountId, storedTeamId } = await resolveEventScope(isPersonal, teamId, session);
     try {
       await prisma.event.create({
         data: {
@@ -154,7 +257,8 @@ export const eventService = {
           startDate: startDate,
           lesson: lesson,
           endDate: endDate,
-          teamId: teamId,
+          teamId: storedTeamId,
+          accountId: accountId,
           createdAt: BigInt(Date.now())
         }
       });
@@ -185,10 +289,9 @@ export const eventService = {
     }
 
     // invalidate cache
-    await invalidateCache("EVENT", classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), accountId?.toString());
     // send socket event
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.EVENTS);
   },
 
   async editEvent(
@@ -196,17 +299,38 @@ export const eventService = {
     reqBody: editEventTypeBody,
     session: Session & Partial<SessionData>
   ) {
-    const { eventTypeId, name, description, startDate, lesson, endDate, teamId } = reqBody;
+    const { eventTypeId, name, description, startDate, lesson, endDate, teamId, isPersonal } = reqBody;
     const { id: eventId } = reqParams;
     // always use classId instead of session.classId
     // since session.classId can change during concurrent requests
     const classId = parseInt(session.classId!, 10);
-    if (endDate){
+    if (endDate) {
       dateChecker(startDate, endDate);
     }
     lessonDateEventAtLeastOneNull(endDate, lesson);
-    await isValidTeamId(teamId, session);
     await isValidEventTypeId(eventTypeId, session);
+
+    // load current ownership to authorize the edit and know which caches to bust
+    const existing = await prisma.event.findFirst({
+      where: { eventId, classId },
+      select: { accountId: true }
+    });
+
+    if (!existing) {
+      const err: RequestError = {
+        name: "Not Found",
+        status: 404,
+        message: "Event not found",
+        expected: true
+      };
+      throw err;
+    }
+
+    // authorize against the CURRENT state (who may touch this row)
+    await authorizeEventMutation(existing.accountId, session);
+    // authorize against the TARGET state and resolve the new owner/team (allows toggling)
+    const { accountId: newAccountId, storedTeamId } = await resolveEventScope(isPersonal, teamId, session);
+
     try {
       const updated = await prisma.event.updateMany({
         where: {
@@ -220,7 +344,8 @@ export const eventService = {
           startDate: startDate,
           lesson: lesson,
           endDate: endDate,
-          teamId: teamId
+          teamId: storedTeamId,
+          accountId: newAccountId
         }
       });
       // if affected rows is 0 -> throw error
@@ -261,11 +386,11 @@ export const eventService = {
       throw err;
     }
 
-    // invalidate cache
-    await invalidateCache("EVENT", classId.toString());
+    // bust every partition this edit could have touched (old owner + new owner/shared)
+    await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), existing.accountId?.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), newAccountId?.toString());
     // send socket event
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.EVENTS);
   },
 
   async deleteEvent(reqParams: deleteEventTypeParams, session: Session & Partial<SessionData>) {
@@ -274,14 +399,12 @@ export const eventService = {
     // since session.classId can change during concurrent requests
     const classId = parseInt(session.classId!, 10);
 
-    const deleted = await prisma.event.deleteMany({
-      where: {
-        eventId: eventId,
-        classId
-      }
+    const existing = await prisma.event.findFirst({
+      where: { eventId, classId },
+      select: { accountId: true }
     });
 
-    if (deleted.count === 0) {
+    if (!existing) {
       const err: RequestError = {
         name: "Not Found",
         status: 404,
@@ -291,11 +414,20 @@ export const eventService = {
       throw err;
     }
 
+    // owner may delete personal; editor may delete shared
+    await authorizeEventMutation(existing.accountId, session);
+
+    await prisma.event.deleteMany({
+      where: {
+        eventId: eventId,
+        classId
+      }
+    });
+
     // invalidate cache
-    await invalidateCache("EVENT", classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString(), existing.accountId?.toString());
     // send socket event
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.EVENTS);
   },
 
   async getEventTypeData(session: Session & Partial<SessionData>) {
@@ -416,8 +548,7 @@ export const eventService = {
 
     try {
       await updateCacheData(eventTypeData, setEventTypeDataCacheKey);
-      const io = socketIO.getIO();
-      io.to(`class:${classId}`).emit(SOCKET_EVENTS.EVENT_TYPES);
+      emitSocketToClass(classId, SOCKET_EVENTS.EVENT_TYPES);
     }
     catch (err) {
       logger.error(`Error updating Redis cache: ${err}`);
@@ -487,55 +618,11 @@ export const eventService = {
       );
 
       @each $name, $color in $event-colors {
-        $bg-transparent: color.change($color: $color, $alpha: 0.4);
-        $color-darker: color.adjust($color, $lightness: -30%);
-        $color-lighter: color.adjust($color, $lightness: 20%);
-        $color-more-darker: color.adjust($color, $lightness: -60%);
-        $color-more-lighter: color.adjust($color, $lightness: 40%);
-        $bg-select: color.change($color: $color, $alpha: 0.6);
-
-        .card.event-#{"" + $name} {
-          border-color: $color;
-          background-color: $bg-transparent;
-        }
-
-        .days-overview-day .event-#{"" + $name} {
-          background-color: $color;
-        }
-
-        span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-          color: $color-darker;
-        }
-
-        .color-display.event-#{"" + $name} {
-          background-color: $color;
-        }
-
-        :not([data-high-contrast="true"]) {
-          .event-#{"" + $name}::selection, .event-#{"" + $name} ::selection {
-            background-color: $bg-select;
-          }
-        }
-
-        [data-bs-theme="dark"] {
-          span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-            color: $color-lighter;
-          }
-        }
-
-        [data-high-contrast="true"] {
-          span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-            color: $color-more-darker;
-          }
-
-          &[data-bs-theme="dark"] {
-            span.event-#{"" + $name}, a.event-#{"" + $name}, i.event-#{"" + $name} {
-              color: $color-more-lighter;
-            }
-          }
+        [data-variant="event-#{"" + $name}"] {
+          --variant-color: #{"" + $color};
         }
       }`;
-      const css = (await sass.compileStringAsync(scss, {style: "compressed"})).css;
+      const css = (await sass.compileStringAsync(scss, { style: "compressed" })).css;
 
       const updateEventTypeStylesCacheKey = generateCacheKey(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, classId.toString());
 

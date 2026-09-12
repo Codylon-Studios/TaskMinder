@@ -21,8 +21,9 @@ import {
 } from "../schemas/upload.schema.js";
 import { removeTempFiles } from "../utils/upload.cleanup.js";
 import { queueJob, QUEUE_KEYS, generateCacheKey, CACHE_KEY_PREFIXES, redisClient } from "../config/redis.js";
-import { invalidateCache, BigIntreplacer, isValidTeamId, updateCacheData } from "../utils/validate.functions.js";
-import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { BigIntreplacer, isValidTeamId } from "../utils/validate.functions.js";
+import { invalidateCache, updateCacheData } from "../config/redis.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 
 type GetUploadFileResult = {
   stream: ReadStream;
@@ -131,10 +132,9 @@ const uploadService = {
     }
 
     // Invalidate cache after queueing new upload
-    await invalidateCache("UPLOADMETADATA", classId.toString());
-
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
+    // send uploads socket event
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
 
     logger.info(`Queued upload ${upload.uploadId} with ${files.length} file(s) for class ${classId}`);
   },
@@ -477,10 +477,9 @@ const uploadService = {
       data: { uploadName, uploadDescription, uploadType, teamId }
     });
 
-    await invalidateCache("UPLOADMETADATA", session.classId!);
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
 
-    const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
     logger.info(`Upload for class ${classId} was edited ${hasFiles ? "with" : "without"} files`);
   },
 
@@ -538,10 +537,9 @@ const uploadService = {
     }
 
     // Invalidate cache after delete
-    await invalidateCache("UPLOADMETADATA", session.classId!);
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, session.classId!);
 
-    const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
     logger.info(`upload deleted for class: ${classId}`);
   },
 
@@ -574,10 +572,9 @@ const uploadService = {
       throw err;
     }
 
-    await invalidateCache("UPLOADMETADATA", classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
 
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
   },
 
   async addUploadRequest(
@@ -597,10 +594,9 @@ const uploadService = {
       }
     });
 
-    await invalidateCache("UPLOADREQUESTS", classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADREQUESTS, classId.toString());
 
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOAD_REQUESTS);
     logger.info(`Upload Request added for class: ${classId}`);
   },
 
@@ -663,10 +659,9 @@ const uploadService = {
 
     await prisma.uploadRequest.delete({ where: { uploadRequestId } });
 
-    await invalidateCache("UPLOADREQUESTS", classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADREQUESTS, classId.toString());
 
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOAD_REQUESTS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOAD_REQUESTS);
   }
 };
 

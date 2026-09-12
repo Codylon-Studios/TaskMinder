@@ -76,11 +76,6 @@ if ! su-exec clamav:clamav clamdscan --version >/dev/null 2>&1; then
 fi
 
 # ======================================================================
-# Flush Redis (as bun) - migration to v2.2.6 - REMOVE THIS after migration finished
-# ======================================================================
-# su-exec bun:bun redis-cli -h redis FLUSHALL || echo "Redis flush failed"
-
-# ======================================================================
 # Flush specific Redis key prefixes (cache:, auth_user:, auth_class:)
 # ======================================================================
 echo "Flushing targeted Redis keys..."

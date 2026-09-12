@@ -1,7 +1,7 @@
 import { $cloneTemplate, bytesToText, escapeHTML, isIOS } from "../../global/global.js";
 
 export class RichInput extends HTMLElement {
-  static readonly observedAttributes = ["placeholder", "type", "value", "readonly"];
+  static readonly observedAttributes = ["placeholder", "disabled", "type", "value", "readonly"];
   static readonly formAssociated = true;
   protected $input!: JQuery<HTMLElement>;
   private initialized = false;
@@ -50,7 +50,7 @@ export class RichInput extends HTMLElement {
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
     if (! this.finalInitialized) return;
 
-    const mirrorAttributes = ["placeholder", "type", "value", "readonly"];
+    const mirrorAttributes = ["placeholder", "disabled", "type", "value", "readonly"];
     for (const a of mirrorAttributes) {
       if (name === a) {
         this.$input.attr(a, newValue);
@@ -94,6 +94,15 @@ export class SearchBox extends RichInput {
       if (! content.some(c => c.toLowerCase().includes(query.toLowerCase()))) return false;
     }
     return true;
+  }
+  
+  get value(): string {
+    return super.value;
+  }
+
+  set value(val: string) {
+    $(this).toggleClass("search-box-not-empty", val !== "");
+    super.value = val;
   }
 }
 
@@ -177,6 +186,98 @@ export class CopyInput extends RichInput {
       handleClick(ev);
       pointerDown = false;
     });
+  }
+}
+
+export class DatalistInput extends HTMLElement {
+  static readonly observedAttributes = ["options", "disabled", "placeholder", "value", "readonly"];
+  static readonly formAssociated = true;
+
+  initialized = false;
+  finalInitialized = false;
+
+  private $input!: JQuery<HTMLElement>;
+
+  private options: string[] = [];
+
+  connectedCallback(): void {
+    if (this.initialized) return;
+    this.initialized = true;
+    $(this).append($cloneTemplate("#datalist-input-template"));
+
+    const $wrapper = $(this);
+    this.$input = $(this).find(".datalist-input-element");
+    const $dropdownMenu = $(this).find(".datalist-input-dropdown-menu");
+
+    this.$input.on("input focus", () => {
+      if ((this.$input.val() ?? "") === "") {
+        $wrapper.dropdown("hide");
+        return;
+      }
+      
+      const query = this.$input.val()?.toString().toLowerCase() ?? "";
+      
+      const options = this.options
+        .filter(o => o.toLowerCase().includes(query))
+        .sort((caseSensitiveA, caseSensitiveB) => {
+          const a = caseSensitiveA.toLowerCase();
+          const b = caseSensitiveB.toLowerCase();
+          return a.startsWith(query)
+            ? (b.startsWith(query) ? a.localeCompare(b) : -1)
+            : (b.startsWith(query) ? 1 : a.localeCompare(b));
+        });
+
+      if (options.length === 0) {
+        $wrapper.dropdown("hide");
+        return;
+      }
+
+      $dropdownMenu.empty().append(
+        options.map(o =>
+          $(`
+            <button class="dropdown-item">
+              ${escapeHTML(o)}
+            </button>
+          `).on("pointerdown", () => this.$input.val(o).trigger("input blur"))
+        )
+      );
+
+      $wrapper.dropdown("show");
+    });
+
+    this.$input.on("blur", () => {
+      $wrapper.dropdown("hide");
+    });
+
+    this.finalInitialized = true;
+
+    for (const a of DatalistInput.observedAttributes) {
+      if (this.hasAttribute(a)) this.attributeChangedCallback(a, null, this.getAttribute(a));
+    }
+  }
+  
+  get value(): string {
+    return this.$input.val()?.toString() ?? "";
+  }
+
+  set value(val: string) {
+    this.$input.val(val);
+  }
+
+  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if (! this.finalInitialized) return;
+
+    if (name === "options") {
+      this.options = newValue === null ? [] : newValue.split(/\s*,\s*/g);
+    }
+
+    const mirrorAttributes = ["placeholder", "disabled", "value", "readonly"];
+    for (const a of mirrorAttributes) {
+      if (name === a) {
+        this.$input.attr(a, newValue);
+        return;
+      }
+    }
   }
 }
 
@@ -407,4 +508,5 @@ export class FileInput extends HTMLElement {
 customElements.define("search-box", SearchBox);
 customElements.define("password-input", PasswordInput);
 customElements.define("copy-input", CopyInput);
+customElements.define("datalist-input", DatalistInput);
 customElements.define("file-input", FileInput);

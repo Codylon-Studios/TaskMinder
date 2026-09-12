@@ -1,5 +1,5 @@
-import { dequeueJob, QUEUE_KEYS } from "../config/redis.js";
-import { invalidateCache } from "./validate.functions.js";
+import { CACHE_KEY_PREFIXES, dequeueJob, QUEUE_KEYS } from "../config/redis.js";
+import { invalidateCache } from "../config/redis.js";
 import logger from "../config/logger.js";
 import { prisma } from "../config/prisma.js";
 import fs from "fs/promises";
@@ -19,7 +19,7 @@ import { execFile, ExecException } from "child_process";
 import { promisify } from "util";
 import sharp from "sharp";
 import { randomUUID } from "crypto";
-import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 import { RequestError } from "../@types/requestError.js";
 import { fileTypeFromFile } from "file-type";
 import { StringDecoder } from "string_decoder";
@@ -399,7 +399,7 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     });
 
     // Invalidate cache when status changes to processing
-    await invalidateCache("UPLOADMETADATA", classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
 
     let totalBytes = 0n;
 
@@ -474,11 +474,10 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
     }
 
     // Invalidate cache when status changes to completed
-    await invalidateCache("UPLOADMETADATA", classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
 
-    // Call socket functions for real time
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    // Call socket functions for client update
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
 
     logger.info(`Successfully processed upload ${uploadId} with ${processedFiles.length} file(s)`);
   }
@@ -534,11 +533,10 @@ const processJob = async (job: FileProcessingJob): Promise<void> => {
       }
     });
 
-    await invalidateCache("UPLOADMETADATA", classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
 
     // Send socket events
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
+    emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
   }
 };
 

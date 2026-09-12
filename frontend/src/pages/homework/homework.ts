@@ -18,12 +18,13 @@ import {
   user,
   getInputValue,
   autocomplete,
-  forceAutocomplete,
   getCurrentLesson,
   getNextLessonWithDate,
-  checkTeamInputForSuspicious
+  checkTeamInputForSuspicious,
+  RelativeDirection,
+  showButtonLoading
 } from "../../global/global.js";
-import { HomeworkData } from "../../global/types";
+import { HomeworkData, SingleHomeworkData } from "../../global/types";
 import { richTextToHtml, richTextToPlainText } from "../../snippets/richTextarea/richTextarea.js";
 import { SearchBox } from "../../snippets/richInput/richInput.js";
 
@@ -35,6 +36,10 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
       checked: await getHomeworkCheckStatus(h.homeworkId)
     }))
   );
+  
+  // Filter by team
+  const currentJoinedTeamsData = await joinedTeamsData();
+  data = data.filter(h => currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1);
     
   const pinned = data.filter(h => h.isPinned);
   data = data.filter(h => ! h.isPinned);
@@ -62,9 +67,6 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
   }
   // Filter by subject
   data = data.filter(h => $(`#filter-subject-${h.subjectId}`).prop("checked") || h.subjectId === -1);
-  // Filter by team
-  const currentJoinedTeamsData = await joinedTeamsData();
-  data = data.filter(h => currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1);
 
   data = pinned.concat(data);
   
@@ -73,10 +75,6 @@ async function getFilteredHomeworkData(): Promise<(HomeworkData[number] & { chec
 
 async function renderHomeworkList(): Promise<void> {
   const newContent = $("<div></div>");
-  let showMoreButtonElements: JQuery<HTMLElement> = $();
-
-  // Check if user is in edit mode
-  const editEnabled = $("#edit-toggle").is(":checked");
 
   const data = await getFilteredHomeworkData();
 
@@ -138,39 +136,53 @@ async function renderHomeworkList(): Promise<void> {
     // Get the information for the homework
     const subject = (await subjectData()).find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
-    const assignmentDate = getDisplayDate(homework.assignmentDate);
-    const submissionDate = getDisplayDate(homework.submissionDate);
+    const assignmentDate = getDisplayDate(homework.assignmentDate, {relativeDirection: RelativeDirection.PAST});
+    const submissionDate = getDisplayDate(homework.submissionDate, {relativeDirection: RelativeDirection.FUTURE});
 
     // The template for a homework with checkbox and edit options
     const template = $(`
       <div class="mb-1 mt-2 d-flex">
-        <div class="form-check flex-grow-1">
+        <div class="form-check flex-grow-1 homework${homework.accountId === null ? "" : " homework-private"}">
           <div class="homework-check-wrapper form-check-input invisible">
             <input type="checkbox" class="form-check-input homework-check visible" id="homework-check-${homeworkId}"
               data-id="${homeworkId}" ${homework.checked ? "checked" : ""}>
           </div>
           <label class="form-check-label" for="homework-check-${homeworkId}">
+            <i class="fas fa-thumbtack ${homework.isPinned ? "" : "d-none"} opacity-75" aria-hidden="true">
+            </i><i class="fas fa-user-lock ${homework.accountId ? "" : "d-none"} opacity-75" aria-hidden="true"></i>
             <b>${escapeHTML(subject)}</b>
           </label>
           <span class="homework-content"></span>
           <span class="ms-4 d-block">Von ${assignmentDate} auf ${submissionDate}</span>
         </div>
 
-        <div class="ms-2 text-nowrap">
-          <button class="edit-option btn btn-sm btn-semivisible homework-edit" data-id="${homeworkId}" aria-label="Bearbeiten">
-            <i class="fa-solid fa-edit opacity-75" aria-hidden="true"></i>
+        <div class="ms-2 d-flex flex-nowrap align-items-start">
+          <button class="btn btn-sm btn-semivisible homework-edit"
+            data-id="${homeworkId}" aria-label="Bearbeiten">
+            <i class="fas fa-edit opacity-75" aria-hidden="true"></i>
           </button>
-          <button class="edit-option btn btn-sm btn-semivisible homework-delete" data-id="${homeworkId}" aria-label="Löschen">
-            <i class="fa-solid fa-trash opacity-75" aria-hidden="true"></i>
-          </button>
-          <button class="btn btn-sm btn-semivisible homework-pin" data-id="${homeworkId}" aria-label="Anheften">
-            <i class="fa-solid fa-thumbtack${homework.isPinned ? "-slash" : ""} opacity-75" aria-hidden="true"></i>
-          </button>
+
+          <div class="dropdown">
+            <button class="btn btn-sm btn-semivisible homework-more" data-bs-toggle="dropdown" aria-label="Mehr Aktionen">
+              <i class="fas fa-ellipsis-vertical opacity-75" aria-hidden="true"></i>
+            </button>
+            <ul class="dropdown-menu">
+              <button class="dropdown-item homework-pin" data-id="${homeworkId}">
+                <i class="fas fa-thumbtack${homework.isPinned ? "-slash" : ""} opacity-75" aria-hidden="true"></i>
+                ${homework.isPinned ? "Lösen" : "Anheften"}
+              </button>
+              <button class="dropdown-item homework-clone" data-id="${homeworkId}">
+                <i class="fas fa-clone opacity-75" aria-hidden="true"></i> Duplizieren
+              </button>
+              <hr class="dropdown-divider">
+              <button class="dropdown-item dropdown-item-danger homework-delete" data-id="${homeworkId}">
+                <i class="fas fa-trash opacity-75" aria-hidden="true"></i> Löschen
+              </button>
+            </ul>
+          </div>
         </div>
       </div>
     `);
-    template.find(".homework-pin").toggle(homework.isPinned || user.permissionLevel >= 1);
-    template.find(".edit-option").toggle(editEnabled);
     
     showCheckAnimation();
 
@@ -183,7 +195,6 @@ async function renderHomeworkList(): Promise<void> {
       displayBlockIfNewline: true,
       merge: true
     });
-    showMoreButtonElements = showMoreButtonElements.add(template.find(".homework-content"));
   }
 
   newContent.find(".section-divider").each(function () {
@@ -193,21 +204,16 @@ async function renderHomeworkList(): Promise<void> {
   });
 
   // If no homeworks match, add an explanation text
-  $("#edit-toggle, #edit-toggle-label").prop("disabled", data.length === 0 || user.permissionLevel === 0);
   $("#no-homework-found").toggle(data.length === 0);
   $("#homework-list").empty().append(newContent.children()).toggleClass("d-none", data.length === 0);
-  showMoreButtonElements.trigger("addedToDom");
+
+  toggleShownButtons();
 
   renderHomeworkFeedback();
 };
 
 async function renderHomeworkFeedback(): Promise<void> {
-  const currentJoinedTeamsData = await joinedTeamsData();
-
-  const todoHomeworkData = (await homeworkData()).filter(h =>
-    (currentJoinedTeamsData.includes(h.teamId) || h.teamId === -1)
-    && (Date.now() <= Number.parseInt(h.submissionDate) || isSameDay(new Date(), h.submissionDate))
-  );
+  const todoHomeworkData = await getFilteredHomeworkData();
 
   let todo = 0;
   for (const h of todoHomeworkData) {
@@ -320,8 +326,8 @@ function chooseRandomHomework(todoHomework: HomeworkData): void {
     const h = todoHomework[full ? 0 : Math.floor((360 - rotation % 360) / 360 * todo)];
     const subject = (await subjectData()).find(s => s.subjectId === h.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = h.content;
-    const assignmentDate = getDisplayDate(h.assignmentDate);
-    const submissionDate = getDisplayDate(h.submissionDate);
+    const assignmentDate = getDisplayDate(h.assignmentDate, {relativeDirection: RelativeDirection.PAST});
+    const submissionDate = getDisplayDate(h.submissionDate, {relativeDirection: RelativeDirection.FUTURE});
     $("#random-homework-result").html(`
       <h5>Ausgewählte Hausaufgabe:</h5>
       <div>
@@ -338,7 +344,6 @@ function chooseRandomHomework(todoHomework: HomeworkData): void {
       displayBlockIfNewline: true,
       merge: true
     });
-    $contentEl.trigger("addedToDom");
 
     $("#random-homework-next").prop("disabled", false).off("click").on("click", async () => {
       checkHomework(h.homeworkId, true);
@@ -357,7 +362,6 @@ function chooseRandomHomework(todoHomework: HomeworkData): void {
 async function prepareRandomHomework(): Promise<void> {
   $("#random-homework-list, #random-homework-list-explanation").show();
   const newContent = $("<div></div>");
-  let showMoreButtonElements: JQuery<HTMLElement> = $();
 
   const data = await getFilteredHomeworkData();
 
@@ -377,8 +381,8 @@ async function prepareRandomHomework(): Promise<void> {
     // Get the information for the homework
     const subject = (await subjectData()).find(s => s.subjectId === homework.subjectId)?.subjectNameLong ?? "Sonstiges";
     const content = homework.content;
-    const assignmentDate = getDisplayDate(homework.assignmentDate);
-    const submissionDate = getDisplayDate(homework.submissionDate);
+    const assignmentDate = getDisplayDate(homework.assignmentDate, {relativeDirection: RelativeDirection.PAST});
+    const submissionDate = getDisplayDate(homework.submissionDate, {relativeDirection: RelativeDirection.FUTURE});
 
     const deactivated = randomHomeworkDeactivated.includes(homeworkId) ? "random-homework-deactivated" : "";
 
@@ -400,11 +404,9 @@ async function prepareRandomHomework(): Promise<void> {
       displayBlockIfNewline: true,
       merge: true
     });
-    showMoreButtonElements = showMoreButtonElements.add(template.find(".homework-content"));
   }
 
   $("#random-homework-list").empty().append(newContent.children());
-  showMoreButtonElements.trigger("addedToDom");
 
   $(".random-homework-deactivate-option").on("click", function () {
     const id = Number.parseInt($(this).attr("data-id") ?? "");
@@ -428,11 +430,10 @@ async function prepareRandomHomework(): Promise<void> {
 }
 
 async function renderSubjectList(): Promise<void> {
-  const addHomeworkSubjectVal = $("#add-homework-subject").val() ?? "";
-  const editHomeworkSubjectVal = $("#edit-homework-subject").val() ?? "";
+  const manageHomeworkSubjectVal = $("#manage-homework-subject").val() ?? "";
 
-  // Clear the select element in the add & edit homework modal
-  $("#add-homework-subject, #edit-homework-subject").html('<option value="" disabled selected>Fach</option>');
+  // Clear the select element in the manage homework modal
+  $("#manage-homework-subject").html('<option value="" disabled selected>Fach</option>');
   // Clear the list for filtering by subject
   $("#filter-subject-list").empty();
 
@@ -459,15 +460,14 @@ async function renderSubjectList(): Promise<void> {
 
     // Add the template for the select elements
     const templateFormSelect = `<option value="${subjectId}">${escapeHTML(subjectName)}</option>`;
-    $("#add-homework-subject, #edit-homework-subject").append(templateFormSelect);
+    $("#manage-homework-subject").append(templateFormSelect);
   };
 
-  if (addHomeworkSubjectVal !== "") $("#add-homework-subject").val(addHomeworkSubjectVal);
-  if (editHomeworkSubjectVal !== "") $("#edit-homework-subject").val(editHomeworkSubjectVal);
+  if (manageHomeworkSubjectVal !== "") $("#manage-homework-subject").val(manageHomeworkSubjectVal);
 
   localStorage.setItem("homeworkFilter", JSON.stringify(filterData));
 
-  $("#add-homework-no-subjects").toggleClass("d-none", (await subjectData()).length !== 0).find("b").text(
+  $("#manage-homework-no-subjects").toggleClass("d-none", (await subjectData()).length !== 0).find("b").text(
     user.permissionLevel < 3 ?
       "Bitte einen Admin / ein:e Manager:in, welche hinzuzufügen!" :
       "Füge in den Einstellungen unter \"Klasse\" > \"Fächer\" welche hinzu!"
@@ -475,74 +475,99 @@ async function renderSubjectList(): Promise<void> {
 };
 
 async function renderTeamList(): Promise<void> {
-  const addHomeworkTeamVal = $("#add-homework-team").val() ?? "-1";
-  const editHomeworkTeamVal = $("#edit-homework-team").val() ?? "-1";
+  const manageHomeworkTeamVal = $("#manage-homework-visibility-team-select").val() ?? "-1";
 
-  // Clear the select element in the add & edit homework modal
-  $("#add-homework-team, #edit-homework-team").empty().append('<option value="-1" selected>Alle</option>');
+  // Clear the select element in the manage homework modal
+  $("#manage-homework-visibility-team-select").html('<option value="-1" disabled selected>Team</option>');
 
   for (const team of (await teamsData())) {
     // Add the template for the select elements
-    $("#add-homework-team, #edit-homework-team").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
-  };
+    $("#manage-homework-visibility-team-select").append(`<option value="${team.teamId}">${escapeHTML(team.name)}</option>`);
+  }
 
-  $("#add-homework-team").val(addHomeworkTeamVal);
-  $("#edit-homework-team").val(editHomeworkTeamVal);
+  $("#manage-homework-visibility-team-select").val(manageHomeworkTeamVal);
 };
 
-async function addHomework(): Promise<void> {
-  //
-  // CALLED WHEN THE USER CLICKS THE "ADD" BUTTON ON THE MAIN VIEW, NOT WHEN USER ACTUALLY ADDS A HOMEWORK
-  //
+function toggleManageHomeworkDisabled(): void {
+  const subject = $("#manage-homework-subject").val();
+  const content = $("#manage-homework-content").val()?.toString().trim();
+  const assignmentDate = $("#manage-homework-date-assignment").val();
+  const submissionDate = $("#manage-homework-date-submission").val();
 
-  // Set the data inputs in the add homework modal
-  $("#add-homework-team").val("-1").removeClass("is-autocompleted is-suspicious");
-  $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious");
+  $(".manage-homework-button").prop("disabled",
+    [content, assignmentDate, submissionDate].includes("")
+    || subject === null
+    || $("#manage-homework-date-submission").hasClass("is-invalid")
+    || ($("#manage-homework-visibility-team").prop("checked") && $("#manage-homework-visibility-team-select").val() === null)
+  );
+}
 
-  const currentLesson = (await getCurrentLesson())?.lessons[0];
+async function manageHomework(mode: "add" | "edit", homework: Partial<SingleHomeworkData>): Promise<void> {
+  // Reset the data inputs in the manage homework modal
+  $("#manage-homework-subject").val(homework?.subjectId ?? "");
+  $("#manage-homework-content").val(homework?.content ?? "");
+  $("#manage-homework-date-assignment").val(msToInputDate(homework?.assignmentDate ?? ""));
+  $("#manage-homework-date-submission").val(msToInputDate(homework?.submissionDate ?? ""));
+  const visibility = user.permissionLevel === 0 ? "private" : (homework?.accountId ? "private" : (homework?.teamId ?? -1) === -1 ? "all" : "team");
+  $("#manage-homework-visibility-private").prop("checked", visibility === "private");
+  $("#manage-homework-visibility-team").prop("checked", visibility === "team");
+  $("#manage-homework-visibility-all").prop("checked", visibility === "all");
+  $("#manage-homework-visibility-team-select").val(homework?.teamId ?? "-1");
 
-  if (currentLesson) {
-    forceAutocomplete($("#add-homework-subject"), currentLesson.substitution?.subjectId ?? currentLesson.subjectId);
+  $(".manage-homework-input").removeClass("is-autocompleted is-suspicious is-invalid");
+  $("#manage-homework-content").trigger("change");
+
+  if (! homework.subjectId) {
+    const currentLesson = (await getCurrentLesson())?.lessons[0];
+    if (currentLesson) {
+      autocomplete($("#manage-homework-subject"), currentLesson.substitution?.subjectId ?? currentLesson.subjectId);
+    }
   }
-  else {
-    $("#add-homework-subject").val("").removeClass("is-autocompleted");
-    $("#add-homework-date-submission").val("").removeClass("is-autocompleted is-suspicious is-invalid");
+  if (! homework.assignmentDate) {
+    autocomplete($("#manage-homework-date-assignment"), msToInputDate(Date.now()));
   }
-  $("#add-homework-content").val("").trigger("change");
-  forceAutocomplete($("#add-homework-date-assignment"), msToInputDate(Date.now()));
 
-  // Disable the actual "add" button, because not all information is given
-  $("#add-homework-button").prop("disabled", true);
+  // Adjust according to the mode
+  $("#manage-homework-modal-label").text(mode === "add" ? "Hausaufgabe hinzufügen" : "Hausaufgabe bearbeiten");
+  $(".manage-homework-button").prop("disabled", true);
+  $("#manage-homework-add-button").toggle(mode === "add");
+  $("#manage-homework-delete-button, #manage-homework-edit-button").toggle(mode === "edit");
 
-  // Show the add homework modal
-  $("#add-homework-modal").modal("show");
+  // Show the manage homework modal
+  $("#manage-homework-modal").modal("show");
 
-  // Called when the user clicks the "add" button in the modal
+  // Called when the user clicks the primary button in the modal
   // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#add-homework-button")
-    .off("click")
-    .on("click", async () => {
-      // Save the given information in variables
-      const subjectId = $("#add-homework-subject").val();
-      const content = $("#add-homework-content").val()?.toString().trim();
-      const assignmentDate = $("#add-homework-date-assignment").val()?.toString() ?? "";
-      const submissionDate = $("#add-homework-date-submission").val()?.toString() ?? "";
-      const teamId = $("#add-homework-team").val();
+  $(".manage-homework-button").off("click").on("click", async () => {
+    // Save the given information in variables
+    const subjectId = $("#manage-homework-subject").val();
+    const content = $("#manage-homework-content").val()?.toString().trim();
+    const assignmentDate = $("#manage-homework-date-assignment").val()?.toString() ?? "";
+    const submissionDate = $("#manage-homework-date-submission").val()?.toString() ?? "";
+    const isPersonal = $("#manage-homework-visibility-private").prop("checked");
+    const teamId = $("#manage-homework-visibility-team").prop("checked") ? $("#manage-homework-visibility-team-select").val() : -1;
+    const body = {
+      subjectId,
+      content,
+      assignmentDate: dateToMs(assignmentDate),
+      submissionDate: dateToMs(submissionDate),
+      isPersonal,
+      teamId
+    };
 
-      await ajax("POST", "/api/homework", {
-        body: {
-          subjectId,
-          content,
-          assignmentDate: dateToMs(assignmentDate),
-          submissionDate: dateToMs(submissionDate),
-          teamId
-        },
-        queueable: true
-      });
+    const ajaxPromise = mode === "add"
+      ? ajax("POST", "/api/homework", { body, queueable: true })
+      : ajax("PATCH", `/api/homework/${homework!.homeworkId}`, { body, queueable: true });
 
-      $("#add-homework-success-toast").toast("show");
-      $("#add-homework-modal").modal("hide");
-    });
+    showButtonLoading($(".manage-homework-button:visible"), ajaxPromise);
+    await ajaxPromise;
+
+    $("#manage-homework-modal").modal("hide");
+  });
+
+  $("#manage-homework-delete-button").off("click").on("click", () => {
+    deleteHomework(homework?.homeworkId ?? -1);
+  });
 }
 
 async function pinHomework(homeworkId: number): Promise<void> {
@@ -555,60 +580,6 @@ async function pinHomework(homeworkId: number): Promise<void> {
     },
     queueable: true
   });
-
-  const actionText = homework.isPinned ? "losgelöst" : "angeheftet";
-  $("#pin-homework-success-toast .toast-header b").text(`Erfolgreich ${actionText}`);
-  $("#pin-homework-success-toast .toast-body").text(`Die Hausaufgabe wurde erfolgreich ${actionText}.`);
-  $("#pin-homework-success-toast").toast("show");
-}
-
-async function editHomework(homeworkId: number): Promise<void> {
-  //
-  // CALLED WHEN THE USER CLICKS THE "EDIT" OPTION OF A HOMEWORK, NOT WHEN USER ACTUALLY EDITS A HOMEWORK
-  //
-
-  const homework = (await homeworkData()).find(h => h.homeworkId === homeworkId);
-  if (!homework) return;
-
-  // Set the inputs on the already saved information
-  $("#edit-homework-subject").val(homework.subjectId);
-  $("#edit-homework-content").val(homework.content).trigger("change");
-  $("#edit-homework-date-assignment").val(msToInputDate(homework.assignmentDate)).removeClass("is-suspicious");
-  $("#edit-homework-date-submission").val(msToInputDate(homework.submissionDate)).removeClass("is-autocompleted is-suspicious is-invalid");
-  $("#edit-homework-team").val(homework.teamId).removeClass("is-autocompleted is-suspicious");
-
-  // Enable the actual "edit" button, because all information is given
-  $("#edit-homework-button").prop("disabled", false);
-
-  // Show the edit homework modal
-  $("#edit-homework-modal").modal("show");
-
-  // Called when the user clicks the "edit" button in the modal
-  // Note: .off("click") removes the existing click event listener from a previous call of this function
-  $("#edit-homework-button")
-    .off("click")
-    .on("click", async () => {
-      // Save the given information in variables
-      const subjectId = $("#edit-homework-subject").val();
-      const content = $("#edit-homework-content").val()?.toString().trim();
-      const assignmentDate = $("#edit-homework-date-assignment").val()?.toString() ?? "";
-      const submissionDate = $("#edit-homework-date-submission").val()?.toString() ?? "";
-      const teamId = $("#edit-homework-team").val();
-
-      await ajax("PATCH", `/api/homework/${homeworkId}`, {
-        body: {
-          subjectId,
-          content,
-          assignmentDate: dateToMs(assignmentDate),
-          submissionDate: dateToMs(submissionDate),
-          teamId
-        },
-        queueable: true
-      });
-
-      $("#edit-homework-success-toast").toast("show");
-      $("#edit-homework-modal").modal("hide");
-    });
 }
 
 function deleteHomework(homeworkId: number): void {
@@ -627,10 +598,13 @@ function deleteHomework(homeworkId: number): void {
       // Hide the confirmation toast
       $("#delete-homework-confirm-toast").toast("hide");
 
-      await ajax("DELETE", `/api/homework/${homeworkId}`, {
+      const ajaxPromise = ajax("DELETE", `/api/homework/${homeworkId}`, {
         queueable: true
       });
+      showButtonLoading($("#delete-homework-confirm-toast-button"), ajaxPromise);
+      await ajaxPromise;
 
+      $("#manage-homework-modal").modal("hide");
       $("#delete-homework-success-toast").toast("show");
     });
 }
@@ -702,11 +676,11 @@ function updateFilters(ignoreSubjects?: boolean): void {
 }
 
 function toggleShownButtons(): void {
-  $("#edit-toggle, #edit-toggle-label").toggle(user.permissionLevel >= 1);
-  $("#show-add-homework-button").toggle(user.permissionLevel >= 1);
-  if (user.permissionLevel < 1) {
-    $(".edit-option").addClass("d-none");
-  }
+  $("#manage-homework-only-private").toggle(user.permissionLevel === 0);
+  $("#manage-homework-visibility-label, #manage-homework-visibility").toggle(user.permissionLevel >= 1);
+  $("#show-add-homework-button").toggle(user.permissionLevel >= 1 || (user.loggedIn ?? false));
+  $(".homework:not(.homework-private)")
+    .find(".homework-edit, .homework-pin, .homework-delete, .dropdown-divider:has(~ .homework-delete)").toggle(user.permissionLevel >= 1);
 }
 
 export async function init(): Promise<void> {
@@ -714,10 +688,6 @@ export async function init(): Promise<void> {
     justCheckedHomeworkId = -1;
     animations = JSON.parse(localStorage.getItem("animations") ?? "true") as boolean;
     homeworkFeedbackLastPercentage = null as null | number;
-
-    $("#edit-toggle").on("click", function () {
-      $(".edit-option").toggle($(this).is(":checked"));
-    }).prop("checked", false);
 
     function appendFilterContent(): void {
       $("#filter-content").appendTo(`#filter-${window.innerWidth >= 768 ? "modal" : "offcanvas"}-body`);
@@ -734,7 +704,7 @@ export async function init(): Promise<void> {
       const checked = $(this).is(":checked");
       $("#search-homework").toggle(checked);
       if (checked) $("#search-homework input").trigger("focus");
-      else $("#search-homework").val("");
+      else $("#search-homework").val("").trigger("input");
     }).prop("checked", false).trigger("change");
 
     updateFilters(true);
@@ -746,7 +716,7 @@ export async function init(): Promise<void> {
 
     $("#search-homework").on("input", renderHomeworkList);
 
-    async function subjectInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): Promise<void> {
+    async function subjectInputCallback(this: HTMLElement): Promise<void> {
       const now = new Date();
 
       const selectedSubjectId = $(this).val()?.toString();
@@ -757,17 +727,17 @@ export async function init(): Promise<void> {
 
       const nextLessonWithDate = await getNextLessonWithDate(Number.parseInt(selectedSubjectId));
 
-      if (nextLessonWithDate === null) { // "Other" or never in timetable
-        $(`#${addOrEdit}-homework-team`).val("-1").removeClass("is-autocompleted is-suspicious");
-        autocomplete($(`#${addOrEdit}-homework-date-submission`), msToInputDate(now.setDate(now.getDate() + 7)));
-        $(`#${addOrEdit}-homework-date-submission`).removeClass("is-suspicious").find("~ .autocompleted-feedback")
+      if (selectedSubjectId === "-1" || nextLessonWithDate === null) { // "Other" or never in timetable
+        $("#manage-homework-visibility-team-select").val("-1").removeClass("is-autocompleted is-suspicious");
+        autocomplete($("#manage-homework-date-submission"), msToInputDate(now.setDate(now.getDate() + 7)));
+        $("#manage-homework-date-submission").removeClass("is-suspicious").find("~ .autocompleted-feedback")
           .html("Automatisch: Eine Woche");
         return;
       }
 
-      $(`#${addOrEdit}-homework-date-submission ~ .autocompleted-feedback`).html("Automatisch: Die nächste Stunde in <b></b>");
+      $("#manage-homework-date-submission ~ .autocompleted-feedback").html("Automatisch: Die nächste Stunde in <b></b>");
 
-      const $submissionDate = $(`#${addOrEdit}-homework-date-submission`);
+      const $submissionDate = $("#manage-homework-date-submission");
       if (autocomplete($submissionDate, msToInputDate(nextLessonWithDate.date.getTime()))) {
         // The user hasn't decided for a specific submission date
         $submissionDate.find("~ .autocompleted-feedback b").text(selectedSubjectName);
@@ -777,28 +747,28 @@ export async function init(): Promise<void> {
       }
 
       const teamId = nextLessonWithDate.lesson.teamId;
-      autocomplete($(`#${addOrEdit}-homework-team`), nextLessonWithDate.lesson.teamId, "-1");
-      $(`#${addOrEdit}-homework-team`).find("~ .autocompleted-feedback b").text(selectedSubjectName);
+      autocomplete($("#manage-homework-visibility-team-select"), teamId, "");
+      $("#manage-homework-visibility-team-select").find("~ .autocompleted-feedback b").text(selectedSubjectName);
       if (teamId === -1) {
-        $(`#${addOrEdit}-homework-team`).removeClass("is-autocompleted");
+        $("#manage-homework-visibility-team-select").removeClass("is-autocompleted");
       }
     }
 
-    const checkSubmissionAfterAssignment = (addOrEdit: "add" | "edit"): void => {
-      const assignment = getInputValue($(`#${addOrEdit}-homework-date-assignment`));
-      const submission = getInputValue($(`#${addOrEdit}-homework-date-submission`));
+    const checkSubmissionAfterAssignment = (): void => {
+      const assignment = getInputValue($("#manage-homework-date-assignment"));
+      const submission = getInputValue($("#manage-homework-date-submission"));
       if (assignment === "" || submission === "") return;
-      $(`#${addOrEdit}-homework-date-submission`).toggleClass("is-invalid", new Date(assignment).getTime() > new Date(submission).getTime());
+      $("#manage-homework-date-submission").toggleClass("is-invalid", new Date(assignment).getTime() > new Date(submission).getTime());
     };
 
-    async function dateAssignmentInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): Promise<void> {
+    async function dateAssignmentInputCallback(this: HTMLElement): Promise<void> {
       const val = getInputValue($(this));
       if (val === "") {
         $(this).removeClass("is-suspicious");
         return;
       }
 
-      checkSubmissionAfterAssignment(addOrEdit);
+      checkSubmissionAfterAssignment();
 
       const date = new Date(val);
       const now = new Date();
@@ -806,14 +776,14 @@ export async function init(): Promise<void> {
       $(this).toggleClass("is-suspicious", date.getTime() > now.getTime() && !isSameDay(date, now));
     }
 
-    async function dateSubmissionInputCallback(this: HTMLElement, addOrEdit: "add" | "edit"): Promise<void> {
+    async function dateSubmissionInputCallback(this: HTMLElement): Promise<void> {
       const val = getInputValue($(this));
       if (val === "") {
         $(this).removeClass("is-suspicious is-invalid");
         return;
       }
 
-      checkSubmissionAfterAssignment(addOrEdit);
+      checkSubmissionAfterAssignment();
       
       const date = new Date(val);
       const now = new Date();
@@ -823,12 +793,12 @@ export async function init(): Promise<void> {
         return;
       }
 
-      const selectedSubjectId = $(`#${addOrEdit}-homework-subject`).val()?.toString() ?? "";
-      const selectedSubjectName = $(`#${addOrEdit}-homework-subject option:selected`).text();
+      const selectedSubjectId = $("#manage-homework-subject").val()?.toString() ?? "";
+      const selectedSubjectName = $("#manage-homework-subject option:selected").text();
 
       const nextLessonWithDate = await getNextLessonWithDate(Number.parseInt(selectedSubjectId));
 
-      if (nextLessonWithDate !== null) {
+      if (selectedSubjectId !== "-1" && nextLessonWithDate !== null) {
         if (!nextLessonWithDate.otherWeekDays.includes(new Date(val).getDay() - 1)) {
           $(this).addClass("is-suspicious").find("~ .suspicious-feedback")
             .html(`Bist du dir sicher? An diesem Tag gibt es im Fach <b>${escapeHTML(selectedSubjectName)}</b> keinen Unterricht!`);
@@ -839,73 +809,47 @@ export async function init(): Promise<void> {
       $(this).removeClass("is-suspicious");
     }
 
-    $("#add-homework-subject").on("input autocomplete", function () {
-      subjectInputCallback.call(this, "add");
+    $("#manage-homework-subject").on("input autocomplete", function () {
+      subjectInputCallback.call(this);
     });
-    $("#add-homework-date-assignment").on("input autocomplete", function () {
-      dateAssignmentInputCallback.call(this, "add");
+    $("#manage-homework-date-assignment").on("input autocomplete", function () {
+      dateAssignmentInputCallback.call(this);
     });
-    $("#add-homework-date-submission").on("input autocomplete", function () {
-      dateSubmissionInputCallback.call(this, "add");
+    $("#manage-homework-date-submission").on("input autocomplete", function () {
+      dateSubmissionInputCallback.call(this);
     });
-    $("#add-homework-team").on("input autocomplete", checkTeamInputForSuspicious);
-
-    // On changing any information in the add homework modal, disable the add button if any information is empty
-    $(".add-homework-input").on("input", () => {
-      const subject = $("#add-homework-subject").val();
-      const content = $("#add-homework-content").val()?.toString().trim();
-      const assignmentDate = $("#add-homework-date-assignment").val();
-      const submissionDate = $("#add-homework-date-submission").val();
-
-      $("#add-homework-button").prop("disabled",
-        [content, assignmentDate, submissionDate].includes("")
-        || subject === null
-        || $("#add-homework-date-submission").hasClass("is-invalid")
-      );
+    $("#manage-homework-visibility-team-select").on("input autocomplete", function () {
+      if ($(this).val() !== null) $("#manage-homework-visibility-team").prop("checked", true);
+      checkTeamInputForSuspicious.call(this);
     });
 
-    $("#edit-homework-subject").on("input autocomplete", function () {
-      subjectInputCallback.call(this, "edit");
-    });
-    $("#edit-homework-date-assignment").on("input autocomplete", function () {
-      dateAssignmentInputCallback.call(this, "edit");
-    });
-    $("#edit-homework-date-submission").on("input autocomplete", function () {
-      dateSubmissionInputCallback.call(this, "edit");
-    });
-    $("#edit-homework-team").on("input autocomplete", checkTeamInputForSuspicious);
-
-    // On changing any information in the edit homework modal, disable the edit button if any information is empty
-    $(".edit-homework-input").on("input", () => {
-      const subject = $("#edit-homework-subject").val();
-      const content = $("#edit-homework-content").val()?.toString().trim();
-      const assignmentDate = $("#edit-homework-date-assignment").val();
-      const submissionDate = $("#edit-homework-date-submission").val();
-
-      $("#edit-homework-button").prop(
-        "disabled", [content, assignmentDate, submissionDate].includes("")
-        || subject === null
-        || $("#edit-homework-date-submission").hasClass("is-invalid")
-      );
-    });
+    // On changing any information in the manage homework modal, disable the manage button if any information is empty
+    $(".manage-homework-input").on("input", toggleManageHomeworkDisabled);
 
     $("#app").on("click", "#homework-feedback-random", prepareRandomHomework);
 
-    $("#show-add-homework-button").on("click", addHomework);
+    $("#show-add-homework-button").on("click", () => {
+      manageHomework("add", {});
+    });
+    
+    // Request editing the homework on clicking its edit icon
+    $("#app").on("click", ".homework-edit", async function () {
+      manageHomework("edit", (await homeworkData()).find(h => h.homeworkId === $(this).data("id")) ?? {});
+    });
 
     // Pin the homework on clicking its pin icon
     $("#app").on("click", ".homework-pin", function () {
       pinHomework($(this).data("id"));
     });
+    
+    // Clone the homework on clicking its clone icon
+    $("#app").on("click", ".homework-clone", async function () {
+      manageHomework("add", (await homeworkData()).find(h => h.homeworkId === $(this).data("id")) ?? {});
+    });
 
     // Request deleting the homework on clicking its delete icon
     $("#app").on("click", ".homework-delete", function () {
       deleteHomework($(this).data("id"));
-    });
-
-    // Request editing the homework on clicking its delete icon
-    $("#app").on("click", ".homework-edit", function () {
-      editHomework($(this).data("id"));
     });
 
     // Request checking the homework on clicking its checkbox

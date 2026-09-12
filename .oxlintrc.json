@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "off"
+  },
+  "plugins": [],
+  "jsPlugins": ["./prisma/index.js"],
+  "rules": {
+    "prisma-local/no-unknown-select-field": [
+      "error",
+      { "schemaDir": "backend/src/prisma" }
+    ]
+  },
+  "ignorePatterns": [
+    "backend/dist/**",
+    "backend/src/prisma/generated/**",
+    "frontend/dist/**",
+    "node_modules/**"
+  ]
+}

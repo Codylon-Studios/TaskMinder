@@ -23,7 +23,9 @@ import {
   weekDaysSo,
   weekDaysMo,
   toCommaAndAnd,
-  user
+  user,
+  RelativeDirection,
+  monthNames
 } from "../../global/global.js";
 import { HomeworkData, MonthDates, TimetableData } from "../../global/types";
 import { richTextToHtml } from "../../snippets/richTextarea/richTextarea.js";
@@ -47,20 +49,20 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
         if (isSameDay(event.startDate, date)) {
           if (isSameDay(endDate, date)) {
             multiDayEventsArr[index] =
-              `<div class="event event-single event-${event.eventTypeId}"></div>`;
+              `<div class="event event-single" data-variant="event-${event.eventTypeId}"></div>`;
           }
           else {
             multiDayEventsArr[index] =
-              `<div class="event event-start event-${event.eventTypeId}"></div>`;
+              `<div class="event event-start" data-variant="event-${event.eventTypeId}"></div>`;
           }
         }
         else if (isSameDay(endDate, date)) {
           multiDayEventsArr[index] =
-            `<div class="event event-end event-${event.eventTypeId}"></div>`;
+            `<div class="event event-end" data-variant="event-${event.eventTypeId}"></div>`;
         }
         else if (Number.parseInt(event.startDate) < date.getTime() && Number.parseInt(endDate) > date.getTime()) {
           multiDayEventsArr[index] =
-            `<div class="event event-middle event-${event.eventTypeId}"></div>`;
+            `<div class="event event-middle" data-variant="event-${event.eventTypeId}"></div>`;
         }
 
         // Remove the event from the list
@@ -77,7 +79,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
   
       if (event.endDate === null) {
         if (isSameDay(event.startDate, date)) {
-          singleDayEvents += `<div class="col"><div class="event event-${event.eventTypeId}"></div></div>`;
+          singleDayEvents += `<div class="col"><div class="event" data-variant="event-${event.eventTypeId}"></div></div>`;
         }
       }
       else {
@@ -127,7 +129,7 @@ async function getCalendarDayHtml(date: Date, week: number, multiEventPositions:
 
   // Append the days (All days will be added into an .calendar element)
   return `
-  <button class="days-overview-day ${specialClasses} cursor-pointer" data-week="${week}" data-day="${date.getDay()}">
+  <button class="days-overview-day ${specialClasses} cursor-pointer" data-week="${week}" data-day="${date.getDay()}"">
     <span class="weekday">${calendarMode === "week" ? weekday : ""}</span>
     <span class="date">${date.getDate()}</span>
     <div class="events ${calendarMode}">
@@ -319,7 +321,6 @@ async function renderHomeworkList(): Promise<void> {
   if (!foundTomorrow) newContent.append("<div class=\"text-secondary\">Keine Hausaufgaben auf den nächsten Tag!</div>");
 
   $("#homework-list").empty().append(newContent.children());
-  addedElements.trigger("addedToDom");
 };
 
 async function renderEventList(): Promise<void> {
@@ -354,11 +355,11 @@ async function renderEventList(): Promise<void> {
     const eventTypeId = event.eventTypeId;
     const name = event.name;
     const description = event.description;
-    const startDate = getDisplayDate(event.startDate);
+    const startDate = getDisplayDate(event.startDate, {relativeDirection: RelativeDirection.FUTURE});
     const lesson = event.lesson;
     const timeSpan = $("<span></span>");
     if (event.endDate !== null) {
-      const endDate = getDisplayDate(event.endDate);
+      const endDate = getDisplayDate(event.endDate, {relativeDirection: RelativeDirection.FUTURE});
       if (isSameDay(event.startDate, event.endDate)) {
         timeSpan.append("<b>Ganztägig</b> ", startDate);
       }
@@ -375,10 +376,10 @@ async function renderEventList(): Promise<void> {
     
     // The template for an event
     const template = $(`<div class="col py-2">
-        <div class="card event-${eventTypeId} h-100">
+        <div class="card h-100" data-variant="event-${eventTypeId}">
           <div class="card-body p-2">
             <div class="d-flex flex-column">
-              <span class="fw-bold event-${eventTypeId}">${escapeHTML(name)}</span>
+              <span class="fw-bold" data-variant="event-${eventTypeId}">${escapeHTML(name)}</span>
               <span>${timeSpan.html()}</span>
               <span class="event-description"></span>
             </div>
@@ -395,7 +396,6 @@ async function renderEventList(): Promise<void> {
       parseLinks: true,
       merge: true
     });
-    template.find(".event-description").trigger("addedToDom");
   }
 
   // If no events match, add an explanation text
@@ -563,7 +563,7 @@ async function renderTimetable(): Promise<void> {
               /* eslint-enable indent */}
             ${/* eslint-disable indent */
               (multiLesson.events ?? []).map(e => {
-                return `<span class="event-${e.eventTypeId} fw-bold mt-0 d-block text-center">${escapeHTML(e.name)}</span>`;
+                return `<span class="fw-bold mt-0 d-block text-center" data-variant="event-${e.eventTypeId}">${escapeHTML(e.name)}</span>`;
               }).join("").replace("mt-0", "mt-2")
               /* eslint-enable indent */}
           </div>
@@ -671,8 +671,8 @@ async function renderTimetable(): Promise<void> {
             ${/* eslint-disable indent */
               (multiLesson.events ?? []).map(e => {
                 return `
-                  <span class="event-${e.eventTypeId} fw-bold mt-2 d-block text-center">${escapeHTML(e.name)}</span>
-                  <span class="event-${e.eventTypeId} text-centered-block rich-text" data-event-type-id="${e.eventTypeId}"
+                  <span class="fw-bold mt-2 d-block text-center" data-variant="event-${e.eventTypeId}">${escapeHTML(e.name)}</span>
+                  <span class="text-centered-block rich-text" data-variant="event-${e.eventTypeId}" data-event-type-id="${e.eventTypeId}"
                     >${escapeHTML(e.description ?? "")}</span>
                 `;
               }).join("")
@@ -696,7 +696,6 @@ async function renderTimetable(): Promise<void> {
         parseLinks: true,
         merge: true
       });
-      $(this).trigger("addedToDom");
     });
   };
 
@@ -730,30 +729,10 @@ function updateShownTimetable(): void {
 }
 
 async function updateTimetableFeedback(): Promise<void> {
-  function getCurrentLessons(): void {
-    for (const l of timetableData) {
-      const isReal = l.lessons.some(l => (l.subjectId !== -1 || l.substitution) && l.substitution?.type !== "Entfall");
-      if (isReal) realLessonsLeft = true;
-      if (l.startTime < now && isReal) hasBegun = true;
-      
-      if (foundNextLesson) return;
-      if (l.endTime > now) {
-        if (l.startTime < now) {
-          currentLesson = l;
-          realLessonsLeft = false;
-          isCurrentLessonReal = isReal;
-        }
-        else {
-          nextLesson = l;
-          foundNextLesson = true;
-        }
-      }
-    };
-  }
   function lessonToText(l: TimetableData, showMoreInfo: boolean): string {
     return (
       (l.events
-        ? toCommaAndAnd((l.events).map(e => `<span class="fw-bold event-${e.eventTypeId}">${e.name}</span>`)) + " während "
+        ? toCommaAndAnd((l.events).map(e => `<span class="fw-bold" data-variant="event-${e.eventTypeId}">${e.name}</span>`)) + " während "
         : "")
 
       + (showMoreInfo
@@ -769,10 +748,10 @@ async function updateTimetableFeedback(): Promise<void> {
           }
           const sameSubject = l.subjectNameSubstitution.includes(l.substitution.subject);
           const sameRoom = l.room === l.substitution.room;
-          return `
-              ${sameSubject ? l.subjectNameLong : `<b class="text-yellow">${l.substitution.subject}</b>`}
-              ${showMoreInfo ? "in " + (sameRoom ? l.room : `<b class="text-yellow">${l.substitution.room}</b>`) : ""}
-            ` + (sameSubject ? "" : `(Eigentlich ${l.subjectNameLong})`);
+          return (
+            sameSubject ? l.subjectNameLong : `<b class="text-yellow">${l.substitution.subject}</b>`)
+            + (showMoreInfo ? " in " + (sameRoom ? l.room : `<b class="text-yellow">${l.substitution.room}</b>`) : "")
+            + (sameSubject ? "" : ` (Eigentlich ${l.subjectNameLong})`);
         }
         else {
           return `<b>${l.subjectNameLong}</b>` + (showMoreInfo && l.subjectId !== -1 ? ` in <b>${l.room}</b>` : "");
@@ -797,65 +776,41 @@ async function updateTimetableFeedback(): Promise<void> {
   }
 
   const timetableData = await loadTimetableData(selectedDate);
-  let currentLesson = null as TimetableData | null;
-  let nextLesson = null as TimetableData | null;
-  let foundNextLesson = false;
-  let hasBegun = false;
-  let realLessonsLeft = false;
-  let isCurrentLessonReal = false;
+  const isReal = (l: TimetableData): boolean => l.lessons.some(l => (l.subjectId !== -1 || l.substitution) && l.substitution?.type !== "Entfall");
+  const currentLesson = timetableData.find(l => l.startTime < now && l.endTime > now);
+  const nextRealLesson = timetableData.filter(l => l.startTime > now && isReal(l)).sort((l1, l2) => l1.startTime - l2.startTime)[0];
+  const hasBegun = timetableData.some(l => l.startTime < now && isReal(l));
 
-  getCurrentLessons();
-  
-  if (!realLessonsLeft) {
-    if (isCurrentLessonReal) {
-      const timeLeft = currentLesson!.lessonTimes.reduce((acc, curr) => {
-        if (curr.endTime < now) return acc;
-        else return acc + curr.endTime - Math.max(curr.startTime, now);
-      }, 0);
-      $("#timetable-feedback-info").show();
-      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(timeLeft)}</b>
-        ${lessonToText(currentLesson!, false)}, danach ist der Unterricht für heute vorbei!`);
+  let html: string;
+  $("#timetable-feedback-info").show();
+  if (currentLesson && isReal(currentLesson)) {
+    // For every timeslot (if merged two lessons of a double lesson): add the time from start (or now) till the end
+    const timeLeft = currentLesson.lessonTimes.reduce((acc, timeslot) => {
+      if (timeslot.endTime < now) return acc;
+      else return acc + timeslot.endTime - Math.max(timeslot.startTime, now);
+    }, 0);
+
+    if (nextRealLesson) {
+      html = `Noch <b>${getTimeLeftString(timeLeft)}</b>
+        ${lessonToText(currentLesson!, false)}, dann weiter mit ${lessonToText(nextRealLesson, true)}.`;
     }
     else {
-      $("#timetable-feedback-happy").show();
-      $("#timetable-feedback span").text("Der Unterricht ist für heute vorbei!");
+      html = `Noch <b>${getTimeLeftString(timeLeft)}</b> ${lessonToText(currentLesson!, false)}, danach ist der Unterricht für heute vorbei!`;
     }
-    return;
   }
-
-  if (currentLesson === null) {
-    if (nextLesson === null) {
-      $("#timetable-feedback-happy").show();
-      $("#timetable-feedback span").text("Der Unterricht ist für heute vorbei!");
-    }
-    else if (hasBegun) {
-      $("#timetable-feedback-info").show();
-      $("#timetable-feedback span").html(`
-        Der Unterricht geht in <b>${getTimeLeftString(nextLesson.startTime - now)}</b> mit ${lessonToText(nextLesson, true)} weiter.
-      `);
-    }
-    else {
-      $("#timetable-feedback-info").show();
-      $("#timetable-feedback span").html(`
-        Der Unterricht beginnt in <b>${getTimeLeftString(nextLesson.startTime - now)}</b> mit ${lessonToText(nextLesson, true)}.
-      `);
-    }
+  else if (!nextRealLesson) {
+    html = "Der Unterricht ist für heute vorbei!";
+    $("#timetable-feedback-info").hide();
+    $("#timetable-feedback-happy").show();
+  }
+  else if (hasBegun) {
+    html = `Der Unterricht geht in <b>${getTimeLeftString(nextRealLesson.startTime - now)}</b> mit ${lessonToText(nextRealLesson, true)} weiter.`;
   }
   else {
-    const timeLeft = currentLesson.lessonTimes.reduce((acc, curr) => {
-      if (curr.endTime < now) return acc;
-      else return acc + curr.endTime - Math.max(curr.startTime, now);
-    }, 0);
-    $("#timetable-feedback-info").show();
-    if (nextLesson === null) {
-      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(timeLeft)}</b>
-        ${lessonToText(currentLesson, false)}, danach ist der Unterricht für heute vorbei!`);
-    }
-    else {
-      $("#timetable-feedback span").html(`Noch <b>${getTimeLeftString(timeLeft)}</b>
-        ${lessonToText(currentLesson, false)}, dann weiter mit ${lessonToText(nextLesson, true)}.`);
-    }
+    html = `Der Unterricht beginnt in <b>${getTimeLeftString(nextRealLesson.startTime - now)}</b> mit ${lessonToText(nextRealLesson, true)}.`;
   }
+
+  $("#timetable-feedback span").html(html);
 }
 
 async function renameCalendarMonthYear(): Promise<void> {
@@ -1122,20 +1077,6 @@ export async function init(): Promise<void> {
     // Set the visible content of the calendar to today's week
     updateCalendarContent("#calendar-old");
 
-    monthNames = [
-      "Januar",
-      "Februar",
-      "März",
-      "April",
-      "Mai",
-      "Juni",
-      "Juli",
-      "August",
-      "September",
-      "Oktober",
-      "November",
-      "Dezember"
-    ];
     renameCalendarMonthYear();
 
     setInterval(updateTimetableFeedback,  30 * 1000); // Update every 30s
@@ -1175,7 +1116,6 @@ let selectedDate: Date = new Date();
 let selectedNewDay: boolean;
 // Save whether the calendar is currently moving (It shouldn't be moved then, as bugs could appear)
 let calendarMoving: boolean;
-let monthNames: string[];
 let calendarMode: string;
 // Is a list of the dates (number of day in the month) of the week which is currently selected
 const monthDates = createDataAccessor<MonthDates>("monthDates", { reload: loadMonthDates });

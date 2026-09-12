@@ -19,7 +19,6 @@ async function buildDirectory(src, dest) {
 
   for (const file of files) {
     async function buildHtmlFile() {
-      const fileName = file.slice(0, -extname(file).length);
       const html = await readFile(srcFile);
       const $ = load(html);
 
@@ -98,6 +97,7 @@ async function buildDirectory(src, dest) {
         <div class="load-snippet" data-target="colorPicker"></div>
         <div class="load-snippet" data-target="richTextarea"></div>
         <div class="load-snippet" data-target="richInput"></div>
+        <div class="load-snippet" data-target="fileViewer"></div>
       `);
 
       $("#app-scroll").append(`
@@ -149,6 +149,8 @@ async function buildDirectory(src, dest) {
     const srcFile = _join(src, file);
     const destFile = _join(dest, file);
 
+    const fileName = file.slice(0, -extname(file).length);
+
     const stat = await _stat(srcFile);
 
     if (stat.isDirectory()) {
@@ -158,7 +160,7 @@ async function buildDirectory(src, dest) {
       const relativePath = relative(sourceDir, srcFile);
       const pathSegments = relativePath.split(sep);
 
-      if (pathSegments[0] === "pages") {
+      if (pathSegments[0] === "pages" && fileName !== "landing") {
         await buildHtmlFile();
       }
       else {

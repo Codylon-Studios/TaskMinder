@@ -33,7 +33,7 @@ function openIndexedDB(): Promise<IDBDatabase> {
 const CORE_GLOBAL = ["/global/global.js", "/global/global.css"];
 const CORE_PAGES = ["main", "events", "homework", "uploads", "settings"]
   .flatMap(p => ["/" + p, `/pages/${p}/${p}.js`, `/pages/${p}/${p}.css`]);
-const CORE_SNIPPETS = ["navbar", "footer", "bottombar", "loadingBar", "colorPicker", "richTextarea", "richInput"]
+const CORE_SNIPPETS = ["bottombar", "colorPicker", "fileViewer", "footer", "loadingBar", "navbar", "richInput", "richTextarea"]
   .map(s => `/snippets/${s}/${s}.js`);
 const CORE_ASSETS = [
   "/static/manifest.json",
@@ -85,6 +85,7 @@ async function removeOutdatedCaches(version: string): Promise<void> {
 }
 
 type Bootstrap = { maintenance: boolean, online: boolean, version: string, cacheEnabled: boolean, maintenanceHtml: string, classJoined: boolean }
+let bootstrap: Bootstrap | null = null;
 
 async function fetchBootstrap(): Promise<Bootstrap> {
   const db = await openIndexedDB();
@@ -99,6 +100,7 @@ async function fetchBootstrap(): Promise<Bootstrap> {
     res.online = true;
     db.transaction("meta", "readwrite").objectStore("meta").put(res, "bootstrap");
     await removeOutdatedCaches(res.version);
+    bootstrap = res;
     return res;
   }
   catch {
@@ -108,41 +110,27 @@ async function fetchBootstrap(): Promise<Bootstrap> {
     }) as Bootstrap;
     res.online = false;
     db.transaction("meta", "readwrite").objectStore("meta").put(res, "bootstrap");
+    bootstrap = res;
     return res;
   }
-}
-
-async function getBootstrap(): Promise<Bootstrap> {
-  const db = await openIndexedDB();
-  const tx = db.transaction("meta", "readwrite").objectStore("meta").get("bootstrap");
-  return await new Promise(res => {
-    tx.onsuccess = () => {
-      res(tx.result ?? fetchBootstrap()); 
-    }; 
-  });
 }
 
 async function handleFetch(ev: FetchEvent): Promise<Response> {
   const req = ev.request;
 
-  const b = req.mode === "navigate" ? await fetchBootstrap() : await getBootstrap();
+  const url = new URL(req.url);
+  const path = url.pathname;
+
+  const b = req.mode === "navigate" ? await fetchBootstrap() : bootstrap ?? await fetchBootstrap();
 
   const CORE_CACHE = "core-v" + b.version;
   const API_CACHE = "api-v" + b.version;
   const CACHE_ENABLED = b.cacheEnabled;
 
-  const url = new URL(req.url);
-  const path = url.pathname;
-
   if (path === "/bootstrap") {
     return new Response(JSON.stringify(b), { status: 200, headers: { "Content-Type": "application/json;charset=utf-8" } });
   }
-
   if (req.method === "GET") {
-    if (path === "/" && req.mode === "navigate") {
-      return Response.redirect(b.classJoined ? "/main" : "/join");
-    }
-
     if (/\/api\/uploads\/\d+/.exec(path)) {
       try {
         return await fetch(req);
@@ -190,7 +178,8 @@ async function handleFetch(ev: FetchEvent): Promise<Response> {
       }
     }
   }
-  return await fetch(req);
+  const res = await fetch(req);
+  return res;
 }
 
 sw.addEventListener("fetch", (ev: FetchEvent) => {

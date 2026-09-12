@@ -1,0 +1,124 @@
+.file-viewer-plaintext {
+  white-space: pre-wrap;
+  max-height: 32rem;
+  overflow: scroll;
+  
+  &.monospace {
+    font-family: var(--bs-font-monospace) !important;
+    white-space: pre;
+  }
+}
+
+.file-viewer-markdown {
+  max-height: 32rem;
+  overflow: scroll;
+  
+  .file-viewer-markdown-styled {
+    code {
+      background: var(--bs-secondary-bg);
+      padding: 0.1rem 0.2rem;
+      border-radius: 0.2rem;
+      margin: 0 0.1rem;
+      color: var(--bs-primary-text-emphasis);
+    }
+
+    pre {
+      background: var(--bs-secondary-bg);
+      padding: .5rem;
+      border-radius: .2rem;
+      color: var(--bs-primary-text-emphasis);
+    }
+    pre:not([lang=""])::before {
+      content: attr(lang);
+      float: right;
+      font-size: 0.75rem;
+      background: var(--bs-tertiary-bg);
+      border-radius: 0.2rem;
+      padding: 0.1rem 0.2rem;
+    }
+
+    blockquote {
+      border-left: 0.15rem solid var(--bs-primary);
+      margin-left: 0.5rem;
+      padding-left: 0.5rem;
+    }
+  }
+  &.source .file-viewer-markdown-styled {
+    display: none;
+  }
+
+  .file-viewer-markdown-source {
+    display: none;
+    font-family: var(--bs-font-monospace) !important;
+    white-space: pre;
+  }
+
+  &.source .file-viewer-markdown-source {
+    display: block;
+  }
+}
+
+.file-viewer-csv {
+  max-height: 32rem;
+  overflow: scroll;
+  display: block;
+  border-radius: 0 0 var(--bs-border-radius) var(--bs-border-radius);
+
+  td {
+    padding: 0.5rem;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+.file-viewer-png {
+  border-radius: 0 0 var(--bs-border-radius) var(--bs-border-radius);
+  &.checkerboard {
+    background: repeating-conic-gradient(rgba(var(--bs-secondary-rgb), 0.2) 0 25%, rgba(var(--bs-secondary-rgb), 0.5) 0 50%) 50% / 2rem 2rem;
+  }
+  &.pixelated {
+    image-rendering: pixelated;
+  }
+}
+
+.file-viewer-mp3 {
+  .file-viewer-mp3-play, .file-viewer-mp3-mute {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .file-viewer-mp3-progress, .file-viewer-mp3-volume {
+    height: 0.5rem;
+  }
+
+  .file-viewer-mp3-progress-bar, .file-viewer-mp3-volume-bar {
+    transition: width 0.1s;
+  }
+}
+
+#view-upload-object {
+  width: 100%;
+
+  &:not(.ios)[type="application/pdf"] {
+    min-height: calc(1.4 * (min(500px, 100vw - 1rem) - 7rem)) !important;
+  }
+
+  &[type="text/plain"] {
+    min-height: calc((min(500px, 100vw - 1rem) - 7rem)) !important;
+  }
+
+  &[type="application/pdf"], &[type="text/plain"], &[type="image/jpg"], &[type="image/jpeg"] {
+    background-color: white;
+  }
+
+  &[type="image/png"] {
+    image-rendering: pixelated;
+    background: repeating-conic-gradient(#7f7f7f 0 25%, #bfbfbf 0 50%) 50% / 2rem 2rem;
+
+    [data-bs-theme="dark"] & {
+      background: repeating-conic-gradient(#7f7f7f 0 25%, #3f3f3f 0 50%) 50% / 2rem 2rem;
+    }
+  }
+}

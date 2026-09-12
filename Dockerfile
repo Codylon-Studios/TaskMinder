@@ -1,22 +1,38 @@
 # ==============================================================================
 # ---------- Build Stage ----------
 # ==============================================================================
-FROM oven/bun:1.3-alpine AS builder
+FROM oven/bun:1.4-alpine AS builder
 WORKDIR /usr/src/app
 COPY package.json bun.lock ./
 RUN --mount=type=cache,target=/root/.bun bun install
 COPY . .
-# Add build-time dummy DATABASE_URL so bunx prisma generate can run during image builds, 
-# CI pass the same dummy build-arg for clarity
+# Add build-time dummy DATABASE_URL so bunx prisma generate can run during image builds
 ARG DATABASE_URL=postgresql://db_user:db_pwd@localhost:5432/db_name?schema=public
 ENV DATABASE_URL=$DATABASE_URL
 RUN bunx prisma generate && bun run build
 RUN bun install --production
 
 # ==============================================================================
+# ---------- Landing Page ----------
+# ==============================================================================
+# NOTE: Rebuilding it IS the release (no publish step, no host directory and no `current` symlink to maintain)
+FROM nginx:alpine AS landing
+COPY --from=builder /usr/src/app/frontend/dist/pages/landing         /usr/share/nginx/html/pages/landing
+COPY --from=builder /usr/src/app/frontend/dist/assets/landing        /usr/share/nginx/html/assets/landing
+COPY --from=builder /usr/src/app/frontend/dist/assets/fonts          /usr/share/nginx/html/assets/fonts
+COPY --from=builder /usr/src/app/frontend/dist/static/favicon.ico    /usr/share/nginx/html/static/favicon.ico
+COPY --from=builder /usr/src/app/frontend/dist/sw-retire.js          /usr/share/nginx/html/sw-retire.js
+# project page owns canonical /robots.txt and /sitemap.xml of root domain
+# application owns its own pair under the same names
+COPY --from=builder /usr/src/app/frontend/dist/landing-robots.txt    /usr/share/nginx/html/robots.txt
+COPY --from=builder /usr/src/app/frontend/dist/landing-sitemap.xml   /usr/share/nginx/html/sitemap.xml
+# Rendered at container start with APP_HOST substituted; see compose.yaml.
+COPY frontend/landing.nginx.conf /etc/nginx/templates/default.conf.template
+
+# ==============================================================================
 # ---------- Production Stage ----------
 # ==============================================================================
-FROM oven/bun:1.3-alpine AS production
+FROM oven/bun:1.4-alpine AS production
 
 # Install only RUNTIME system dependencies
 RUN apk update && apk upgrade --no-cache && \

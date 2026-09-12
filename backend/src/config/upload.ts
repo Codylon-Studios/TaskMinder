@@ -13,7 +13,8 @@ export const EXPECTED_MIMES_BY_EXTENSION: Record<string, string[]> = {
   ".txt": ["text/plain"],
   ".md": ["text/markdown", "text/plain"],
   ".csv": ["text/csv"],
-  ".mp3": ["audio/mpeg", "audio/mp3"]
+  ".mp3": ["audio/mpeg", "audio/mp3"],
+  ".mp4": ["video/mp4"]
 };
 
 export const MIME_CANONICAL_ALIASES: Record<string, string> = {

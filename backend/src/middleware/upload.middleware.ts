@@ -126,7 +126,9 @@ export const preflightEditStorageQuotaCheck = async (
   }
 
   const classIdNum = parseInt(req.session.classId!, 10);
-  const uploadId = Number.parseInt(req.params.id, 10);
+  const uploadId = typeof req.params.id === "string"
+    ? Number.parseInt(req.params.id, 10)
+    : Number.NaN;
 
   if (Number.isNaN(uploadId)) {
     const err: RequestError = {

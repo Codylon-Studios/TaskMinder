@@ -35,6 +35,7 @@ import {
 export const lastCommaRegex = /,(?!.*,)/;
 export const weekDaysSo = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 export const weekDaysMo = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+export const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 export const isStandalone = globalThis.matchMedia("(display-mode: standalone)").matches;
 export const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
@@ -68,19 +69,6 @@ export function isValidSite(site: string): boolean {
     "settings",
     "uploads"
   ].includes(site);
-}
-
-export function registerSocketListeners(listeners: Record<string, () => unknown>): void {
-  setTimeout(() => { // Somehow necessary as otherwise socket isn't declared (only in uploads somehow)
-    const site = getSite();
-    for (const listener of Object.keys(listeners)) {
-      socket.on(listener, () => {
-        if (isSite(site)) {
-          listeners[listener]();
-        }
-      });
-    }
-  }, 0);
 }
 
 function openIndexedDB(): Promise<IDBDatabase> {
@@ -196,6 +184,10 @@ export function msToTime(ms: number | string): string {
   return `${Math.trunc(num / 1000 / 60 / 60)
     .toString()
     .padStart(2, "0")}:${((num / 1000 / 60) % 60).toString().padStart(2, "0")}`;
+}
+
+export function secondsToDurationInSeconds(s: number): string {
+  return `${Math.trunc(s / 60).toString()}:${Math.trunc(s % 60).toString().padStart(2, "0")}`;
 }
 
 export function dateDaysDifference(raw1: RawDate, raw2: RawDate): number {
@@ -335,9 +327,35 @@ export function makeButtonShowCheck(btn: JQuery<HTMLElement>, duration: number):
   }, duration);
 }
 
+export async function showButtonLoading(btn: JQuery<HTMLElement>, p: Promise<unknown>): Promise<void> {
+  const w = btn.outerWidth() + "px";
+  const h = btn.outerHeight() + "px";
+  btn[0]?.style.setProperty("width", w, "important");
+  btn[0]?.style.setProperty("min-width", w, "important");
+  btn[0]?.style.setProperty("height", h, "important");
+  btn[0]?.style.setProperty("min-height", h, "important");
+
+  const content = btn.contents().detach();
+  btn.html('<span class="spinner-border" aria-hidden="true"></span>');
+  btn.prop("disabled", true);
+
+  try {
+    await p;
+  }
+  finally {
+    btn.css({ width: "", minWidth: "", height: "", minHeight: "" });
+    btn.empty().append(content);
+    btn.prop("disabled", false);
+  }
+}
+
 export function cutString(str: string, maxLength: number): string {
   if (str.length < maxLength) return str;
   return str.substring(0, maxLength - 1) + "…";
+}
+
+export function clamp(min: number, val: number, max: number): number {
+  return Math.min(max, Math.max(val, min));
 }
 
 export function toCommaAndAnd(strings: string[]): string {
@@ -366,7 +384,7 @@ export function autocomplete(element: JQuery<HTMLElement>, val: string | string[
 
 export async function checkTeamInputForSuspicious(this: HTMLElement): Promise<void> {
   const teamId = Number.parseInt(getInputValue($(this)));
-  if (teamId === -1) {
+  if (Number.isNaN(teamId)) {
     $(this).removeClass("is-suspicious");
   }
   else {
@@ -708,10 +726,12 @@ export async function checkReloadEventTypeStyles(): Promise<void> {
   currentEventTypeData = currentEventTypeData.sort((a, b) => a.eventTypeId - b.eventTypeId);
   const cache = JSON.parse(localStorage.getItem("eventTypeDataCache") ?? '{"data":""}');
   const eventTypeString = JSON.stringify(Object.fromEntries(currentEventTypeData.map(e => [e.eventTypeId, e.color])));
+  const version = (await bootstrap()).version;
 
-  if (eventTypeString !== cache.data || cache.css === undefined) {
+  if (eventTypeString !== cache.data || cache.css === undefined || cache.version !== version) {
     cache.data = eventTypeString;
     cache.css = await (await fetch("/api/events/types/styles")).text();
+    cache.version = version;
   }
   $("#event-type-styles").text(cache.css);
   localStorage.setItem("eventTypeDataCache", JSON.stringify(cache));
@@ -809,7 +829,7 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
   case "PATCH /events/:id/pin": {
     await eventData.init();
     const name = (await eventData()).find(e => e.eventId === ids[0])?.name ?? "?";
-    return `Ereignis "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+    return `Ereignis "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "lösen"}`;
   }
   case "POST /homework": {
     return `Hausaufgabe "${getText(jsonBody.content, true)}" hinzufügen`;
@@ -830,7 +850,7 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
   case "PATCH /homework/:id/pin": {
     await homeworkData.init();
     const content = (await homeworkData()).find(h => h.homeworkId === ids[0])?.content ?? "?";
-    return `Hausaufgabe "${getText(content, true)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+    return `Hausaufgabe "${getText(content, true)}" ${jsonBody.pinStatus === true ? "anheften" : "lösen"}`;
   }
   case "POST /uploads": {
     const match = /name="uploadName"\r?\n\r?\n([\s\S]*?)\r?\n------/.exec(textBody);
@@ -850,7 +870,7 @@ async function getRequestDescription(req: SerializedRequest): Promise<string> {
   case "PATCH /uploads/:id/pin": {
     await uploadData.init();
     const name = (await uploadData()).uploads.find(u => u.uploadId === ids[0])?.uploadName ?? "?";
-    return `Datei "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "loslösen"}`;
+    return `Datei "${getText(name)}" ${jsonBody.pinStatus === true ? "anheften" : "lösen"}`;
   }
   case "POST /uploads/requests": {
     return `Anfrage für Datei "${getText(jsonBody.uploadRequestName)}" hinzufügen`;
@@ -1459,7 +1479,10 @@ async function onUnavailable(): Promise<void> {
   $("#unavailable-hint").show();
   $("#unavailable-popup").show();
   const b = await bootstrap();
-  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
+  const available = b.online && !b.maintenance;
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && available);
+  $("#login-register-button").toggle(!user.loggedIn && !isSite("join") && available);
+  $("#nav-logout-button").toggle((user.loggedIn ?? false) && available);
   socket.disconnect();
 
   const db = await openIndexedDB();
@@ -1493,11 +1516,19 @@ async function onOnline(): Promise<void> {
 
   $("#unavailable-hint").hide();
   $("#unavailable-popup").hide();
-  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && b.online && !b.maintenance);
+  const available = b.online && !b.maintenance;
+  $("#navbar-reload-button").toggle(isSite("uploads", "homework", "main", "events", "settings") && available);
+  $("#login-register-button").toggle(!user.loggedIn && !isSite("join") && available);
+  $("#nav-logout-button").toggle((user.loggedIn ?? false) && available);
   if (! user.classJoined && isSite("main", "events", "homework", "uploads")) {
-    document.location.href = document.location.origin + "/join";
+    document.location.href = "/join" + document.location.search;
   }
   clearRequestQueue();
+}
+
+function toggleScrollFade(el: HTMLElement): void {
+  const toBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+  el.style.setProperty("--fade-progress", Math.min(48, toBottom) + "px");
 }
 
 export async function init(): Promise<void> {
@@ -1533,15 +1564,24 @@ export async function init(): Promise<void> {
     await user.auth();
     user.on("change", reloadAll);
     if (data.online) {
-      onOnline();
+      await onOnline();
     }
     else {
       renderRequestQueue();
-      onOffline();
+      await onOffline();
     }
   }
   catch (error) {
     console.error("Error fetching bootstrap:", error);
+  }
+
+  const searchParams = new URLSearchParams(location.search);
+  if (searchParams.has("legacy_origin")) {
+    $("#legacy-origin-toast").addClass("show");
+    searchParams.delete("legacy_origin");
+    const newUrl = new URL(location.href);
+    newUrl.search = searchParams.toString();
+    history.replaceState(null, "", newUrl);
   }
 
   eventTypeData.on("change", checkReloadEventTypeStyles);
@@ -1710,5 +1750,38 @@ export async function init(): Promise<void> {
 
   $(document).on("focus", 'input[type="text"].is-autocompleted', function () {
     $(this).val("").removeClass("is-autocompleted");
+  });
+
+  function initScrollFade(el: HTMLElement): void {
+    toggleScrollFade(el);
+
+    new ResizeObserver(() => toggleScrollFade(el)).observe(el);
+
+    $(el).on("scroll", () => {
+      toggleScrollFade(el);
+    });
+  }
+
+  $(".scroll-fade").each(function () {
+    initScrollFade(this);
+  });
+
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (!(node instanceof HTMLElement)) return;
+
+        if (node.matches(".scroll-fade")) {
+          initScrollFade(node);
+        }
+
+        node.querySelectorAll?.(".scroll-fade").forEach(el => initScrollFade(el as HTMLElement));
+      });
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
   });
 }

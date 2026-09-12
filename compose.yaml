@@ -1,4 +1,18 @@
 services:
+  landing:
+    build:
+      context: .
+      target: landing
+    container_name: taskminder-landing
+    restart: always
+    ports:
+      - "127.0.0.1:3002:80"
+    environment:
+      APP_HOST: app.taskminder.de
+      # Restrict nginx entrypoint's envsubst pass to APP_HOST, so that
+      # nginx variables such as $request_uri are not blanked out
+      NGINX_ENVSUBST_FILTER: "APP_HOST"
+
   app:
     build: .
     container_name: taskminder-app
@@ -6,7 +20,7 @@ services:
     expose:
       - "9100"
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - NODE_ENV=PRODUCTION
     secrets:
@@ -70,37 +84,32 @@ services:
       - redis-data:/data
 
   prometheus:
-    image: prom/prometheus:v3.12.0
+    image: prom/prometheus:v3.14.0
     container_name: prometheus
     restart: always
-    ports:
-      - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/recording-rules.yml:/etc/prometheus/recording-rules.yml
       - prometheus-data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--web.console.libraries=/usr/share/prometheus/console_libraries"
       - "--web.console.templates=/usr/share/prometheus/consoles"
-      - "--web.enable-lifecycle"
-      - "--web.enable-remote-write-receiver"
     depends_on:
       - app
 
   loki:
-    image: grafana/loki:3.7.2
+    image: grafana/loki:3.7.7
     container_name: loki
     restart: always
-    ports:
-      - "3100:3100"
     volumes:
       - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml
       - loki-data:/loki
     command: -config.file=/etc/loki/local-config.yaml
   
   alloy:
-    image: grafana/alloy:v1.16.1
+    image: grafana/alloy:v1.19.2
     container_name: alloy
     restart: always
     volumes:
@@ -118,11 +127,11 @@ services:
       - app
 
   grafana:
-    image: grafana/grafana:13.0.1-security-01
+    image: grafana/grafana:13.2.1
     container_name: grafana
     restart: always
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana-provisioning/:/etc/grafana/provisioning/

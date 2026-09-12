@@ -1,11 +1,13 @@
-import { ajax, socket, user } from "../../global/global.js";
+import { ajax, showButtonLoading, socket, user } from "../../global/global.js";
 import { AjaxError } from "../../global/types.js";
 import { resetLoginRegister } from "../../snippets/navbar/navbar.js";
 
-async function changeContentOnLogin(): Promise<void> {
+async function changeContentOnUserChange(): Promise<void> {
   if (user.loggedIn && !justCreatedClass) {
     $("#show-login-register-btn").prop("disabled", true).find("i").removeClass("d-none");
     if (user.classJoined) {
+      socket.disconnect();
+      socket.connect();
       const loadingBarMod = await import("../../snippets/loadingBar/loadingBar.js");
       loadingBarMod.replaceSitePJAX("/main");
     }
@@ -15,6 +17,10 @@ async function changeContentOnLogin(): Promise<void> {
     $(".login-register-element, .login-element, .register-element").addClass("d-none");
     $("#show-create-class-btn").prop("disabled", false).find("~ .form-text").hide();
   }
+  if (!user.loggedIn) {
+    $("#show-login-register-btn").prop("disabled", false).find("i").addClass("d-none");
+    $("#show-create-class-btn").prop("disabled", true).find("~ .form-text").show();
+  }
 }
 
 export async function init(): Promise<void> {
@@ -22,7 +28,7 @@ export async function init(): Promise<void> {
     justCreatedClass = false;
 
     const qrCode = new QRCode("show-qrcode-modal-qrcode", {
-      text: location.host,
+      text: location.origin,
       width: 300,
       height: 300
     });
@@ -74,10 +80,14 @@ export async function init(): Promise<void> {
       const classCode = $("#join-class-class-code").val();
 
       try {
-        const res = await ajax("POST", "/api/classes/join", {
+        const ajaxPromise = ajax("POST", "/api/classes/join", {
           body: { classCode },
           expectedErrors: [{ status: 404, responseText: "Invalid class code" }]
         });
+
+        showButtonLoading($("#join-class-btn"), ajaxPromise);
+
+        const res = await ajaxPromise;
 
         if (user.loggedIn) {
           const loadingBarMod = await import("../../snippets/loadingBar/loadingBar.js");
@@ -122,17 +132,21 @@ export async function init(): Promise<void> {
       const className = $("#create-class-name").val()?.toString() ?? "";
       $("#show-qrcode-modal-title b").text(className);
 
-      const res = await ajax("POST", "/api/classes", {
+      const ajaxPromise = ajax("POST", "/api/classes", {
         body: {
           classDisplayName: className,
           isTestClass: $("#create-class-is-test").prop("checked")
         }
       });
 
+      showButtonLoading($("#create-class-btn"), ajaxPromise);
+
+      const res = await ajaxPromise;
+
       justCreatedClass = true;
       user.auth();
       const classCode = await res.json();
-      qrCode.makeCode(location.host + `/join?class_code=${classCode}`);
+      qrCode.makeCode(location.origin + `/join?class_code=${classCode}`);
       $("#create-class-credentials-panel").hide();
       // Force socket to reconnect so it picks up the new session.classId
       socket.disconnect();
@@ -140,7 +154,7 @@ export async function init(): Promise<void> {
       $("#invite-panel").show();
       $("#invite-copy-link").on("click", async () => {
         try {
-          await navigator.clipboard.writeText(location.host + `/join?class_code=${classCode}`);
+          await navigator.clipboard.writeText(location.origin + `/join?class_code=${classCode}`);
 
           $("#invite-copy-link").prop("disabled", true)
             .html("<i class=\"fa-solid fa-check-circle\" aria-hidden=\"true\"></i> Einladungslink kopiert");
@@ -175,7 +189,9 @@ export async function init(): Promise<void> {
   });
 }
 
-export const renderAllFn = changeContentOnLogin;
+user.on("change", changeContentOnUserChange);
+
+export const renderAllFn = changeContentOnUserChange;
 
 let justCreatedClass: boolean;
 let urlParams: URLSearchParams;

@@ -16,7 +16,7 @@ This guide outlines the steps necessary to set up your development environment f
 
 ### Installing Redis and PostgreSQL
 
-**Recommended versions:** PostgreSQL 18.1+ and Redis v8.6+ (Redis Open Source).
+**Recommended versions:** PostgreSQL 18.6+ and Redis v8.8+ (Redis Open Source).
 
 <details open>
 <summary><strong>Linux (Ubuntu / Debian)</strong></summary>
@@ -87,7 +87,7 @@ To check if it's already installed, run:
 bun --version
 ```
 
-You should see at least Bun 1.3.14 (last checked: May 26th, 2026).
+You should see at least Bun 1.4 (last checked: August 24th, 2026).
 
 If not installed, retrieve the download instructions from the [Bun Download Page]. For Github Codespaces, follow the `npm` instructions under the Mac/Linux Tab.
 
@@ -147,8 +147,6 @@ sudo apt install ghostscript -y
 gs --version
 ```
 
-Ghostscript should at least return version 10.02.1 (last checked: November 7th, 2025).
-
 </details> <details> <summary><strong>macOS</strong></summary>
 
 **Install ClamAV via Homebrew**
@@ -161,7 +159,7 @@ brew install clamav
 brew list clamav
 clamscan --version
 ```
-You should see binaries like `clamd`, `clamdscan`, `clamscan`, and configuration files in `/opt/homebrew/etc/clamav/`. The version of ClamAV should at least be 1.5.1 (last checked: January 5th, 2026).
+You should see binaries like `clamd`, `clamdscan`, `clamscan`, and configuration files in `/opt/homebrew/etc/clamav/`.
     
 **Copy sample configuration files**
     
@@ -245,8 +243,6 @@ brew services start clamav
 brew install ghostscript
 gs --version
 ```
-
-Ghostscript should at least return version 10.06.0 (last checked: January 5th, 2026).
 
 </details>
 

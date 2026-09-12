@@ -3,8 +3,13 @@
   &copy; 2024-2026 Mingqi Li and Fabian Leonardi
 </p>
 
+![TaskMinder Banner](./.github/assets/taskminder_banner.png)
+
 ## About TaskMinder
-[TaskMinder](https://taskminder.de) is a web app for organizing school life in one place—homework, exams, excursions, timetables, substitutions, and shared files.
+
+> **Looking for a quick overview?** Visit our landing page at [taskminder.de](https://taskminder.de).
+
+[TaskMinder](https://app.taskminder.de) is an open-source web app for organizing school life in one place—homework, exams, excursions, timetables, substitutions, and shared files.
 It’s built for classes: when one student adds or updates an entry (for example homework), the change is synced for everyone, so the whole class stays consistent and up to date.
 
 TaskMinder is currently available in German only. We're considering expanding to more languages based on community interest!
@@ -12,14 +17,16 @@ TaskMinder is currently available in German only. We're considering expanding to
 [Join our Discord](https://discord.gg/kZGs92aMae) for active discussions, announcements, feedback and more!
 
 ### Key features
-- Central overview for homework, exams, events, file uploads, timetable, and substitutions (DSBMobile with Untis)
-- Real-time class syncing (one entry updates everyone)
+- Track homework, lessons, exams, events, timetable and substitutions (DSBMobile) in a central overview
+- Collaborate with classmates through shared class and team workflows.
+- Upload and manage files (e.g. class notes) relevant to your school tasks.
+- Keep important information synchronized (real-time class syncing) and accessible across your school setup.
 - Demo and test classes to try features without commitment
 
 ## Getting started
 ### Demo
 You can explore TaskMinder using the demo class in two ways:
-1) Open the demo join link: https://taskminder.de/join?class_code=demo  
+1) Open the demo join link: https://app.taskminder.de/join?class_code=demo  
    (No account required. Alternatively: click “Join class” on the main page and enter `demo` as the class code.)
 2) Log in with username `demo` and password `demo` (you’ll be in the demo class automatically).
 
@@ -46,12 +53,18 @@ You're all set - **Have fun!**
 - **Bootstrap** - Responsive UI component framework
 - **Sass** - CSS preprocessor for maintainable stylesheets
 
-## Source-Available
-TaskMinder is **source-available** for transparency and learning purposes. You can view, modify, and use the code for **non-commercial purposes only** (personal, educational, or research use). **Commercial use requires permission.** This includes selling the software, running ads, offering paid services, or deploying it in enterprise environments.<br>
-For commercial licensing inquiries: [info@taskminder.de](mailto:info@taskminder.de) <br>
-This project is licensed under the [TaskMinder License](https://github.com/TaskMinder/TaskMinder/blob/main/LICENSE).
+## License
+TaskMinder is licensed under the GNU Affero General Public License v3.0 only (AGPL-3.0-only).
+Copyright © 2024–2026 Mingqi Li and Fabian Leonardi.
+See [LICENSE](./LICENSE) for details.
 
 ## Links
 - Contact us! [info@taskminder.de](mailto:info@taskminder.de)
 - Our [Documentation](https://docs.taskminder.de) for developers
-- [Legal Information](https://taskminder.de/about)
+- [Legal Information](https://app.taskminder.de/about)
+
+## Follow Us
+- [Instagram](https://www.instagram.com/taskminder/)
+- [Discord](https://discord.gg/kZGs92aMae)
+- [WhatsApp](https://whatsapp.com/channel/0029VbAtPJCDOQIS6Ge1ph3I)
+- [Mastodon](https://social.tchncs.de/@TaskMinder)

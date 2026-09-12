@@ -44,6 +44,7 @@ import subjects from "./routes/subject.route.js";
 import teams from "./routes/team.route.js";
 import classes from "./routes/class.route.js";
 import uploads from "./routes/upload.route.js";
+import statistics from "./routes/statistics.route.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,6 +55,28 @@ const proxyHop = envConfig.proxyHop;
 const app = express();
 app.set("trust proxy", Number(proxyHop));
 const server = createServer(app);
+
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+
+  const originalWriteHead = res.writeHead.bind(res);
+
+  res.writeHead = ((...args: Parameters<typeof res.writeHead>) => {
+    if (!res.headersSent) {
+      const durationMs =
+        Number(process.hrtime.bigint() - start) / 1e6;
+
+      res.setHeader(
+        "Server-Timing",
+        `total;dur=${durationMs.toFixed(2)}`
+      );
+    }
+
+    return originalWriteHead(...args);
+  }) as typeof res.writeHead;
+
+  next();
+});
 
 const globalLimiter = rateLimit({
   windowMs: 1000, // 1 second
@@ -108,9 +131,11 @@ app.get("/bootstrap", authLimiter, async (req, res, next) => {
     const cacheEnabled =
       envConfig.nodeEnv !== "DEVELOPMENT" ||
       envConfig.cacheEnabled;
+
+    const version = MAX_VERSION;
     
     res.set("Cache-Control", "no-store");
-    res.status(200).json({ maintenance: false, classJoined: auth.classJoined, version: MAX_VERSION, cacheEnabled });
+    res.status(200).json({ maintenance: false, classJoined: auth.classJoined, version, cacheEnabled });
   }
   catch (error) {
     next(error);
@@ -134,24 +159,22 @@ app.use(metricsMiddleware);
 app.use(loggerMiddleware);
 
 app.get("/", (req: Request, res: Response) => {
-  if (req.session.account && req.session.classId) {
-    return res.redirect(302, "/main");
-  }
-  res.redirect(302, "/join");
+  res.sendFile(path.join(pagesPath, "landing", "landing.html"));
 });
 
 const pagesPath = path.join(__dirname, "..", "..", "frontend", "dist", "pages");
 
 app.get("/join", (req, res) => {
   const action = req.query.action;
+  const legacyOrigin = Object.hasOwn(req.query, "legacy_origin") ? "legacy_origin" : "";
 
   if (req.session.account && req.session.classId) {
-    return res.redirect(302, "/main");
+    return res.redirect(302, legacyOrigin ? `/main?${legacyOrigin}` : "/main");
   }
 
   if (!req.session.account && req.session.classId) {
     if (action !== "account") {
-      return res.redirect(302, "/join?action=account");
+      return res.redirect(302, `/join?action=account${legacyOrigin ? `&${legacyOrigin}` : ""}`);
     }
   }
   res.sendFile(path.join(pagesPath, "join", "join.html"));
@@ -164,6 +187,8 @@ app.get("/settings", (req, res) => {
 app.get("/about", (req, res) => {
   res.sendFile(path.join(pagesPath, "about", "about.html"));
 });
+
+app.use("/stats", statistics);
 
 // Apply API version check only to API routes
 app.use("/api", apiVersionMiddleware);
@@ -195,6 +220,11 @@ app.get("/events", checkAccess(["CLASS"]), (req, res) => {
 
 app.get("/uploads", checkAccess(["CLASS"]), (req, res) => {
   res.sendFile(path.join(pagesPath, "uploads", "uploads.html"));
+});
+
+// Development only route; in production, the landing page is at taskminder.de
+app.get("/landing", (req, res) => {
+  res.redirect(302, "/");
 });
 
 app.use((req, res) => {

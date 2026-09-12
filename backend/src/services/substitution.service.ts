@@ -89,7 +89,7 @@ export async function loadSubstitutionData(
         const data: { [key: string]: string } = {};
         $(substitutionEntry).find("td").each((j, substitutionEntryData) => {
           const val = $(substitutionEntryData).text().trim();
-          data[substitutionEntryKeys[j]] = ["---", " ", ""].includes(val) ? "-" : val;
+          data[substitutionEntryKeys[j]] = ["---", " ", ""].includes(val) ? "" : val;
         });
         planData.push(data);
       });

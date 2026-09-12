@@ -1,10 +1,11 @@
 import { CACHE_KEY_PREFIXES, generateCacheKey, redisClient } from "../config/redis.js";
 import { prisma } from "../config/prisma.js";
 import logger from "../config/logger.js";
-import { BigIntreplacer, updateCacheData, invalidateCache, isValidTeamId, isValidSubjectId, dateChecker } from "../utils/validate.functions.js";
+import { BigIntreplacer, isValidTeamId, isValidSubjectId, dateChecker } from "../utils/validate.functions.js";
+import { updateCacheData, invalidateCache } from "../config/redis.js";
 import { Session, SessionData } from "express-session";
 import { setLessonDataTypeBody } from "../schemas/lesson.schema.js";
-import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 
 const lessonService = {
   async setLessonData(
@@ -65,9 +66,8 @@ const lessonService = {
     });
 
     if (dataChanged) {
-      await invalidateCache("LESSON", classId.toString());
-      const io = socketIO.getIO();
-      io.to(`class:${classId}`).emit(SOCKET_EVENTS.TIMETABLES);
+      await invalidateCache(CACHE_KEY_PREFIXES.LESSON, classId.toString());
+      emitSocketToClass(classId, SOCKET_EVENTS.TIMETABLES);
       logger.info(`Lesson data changed for class: ${classId}`);
     }
   },

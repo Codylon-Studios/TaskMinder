@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from "express";
+import { Session, SessionData } from "express-session";
 import { prisma } from "../config/prisma.js";
 import { RequestError } from "../@types/requestError.js";
 import { redisClient } from "../config/redis.js";
 
-const ROLES = {
+export const ROLES = {
   MEMBER: 0,
   EDITOR: 1,
   MANAGER: 2,
@@ -79,9 +80,11 @@ async function checkAccountAccess(req: Request): Promise<void> {
 
 async function checkClassAccess(req: Request, res: Response): Promise<void> {
   if (!req.session.classId) {
-    return res.redirect(302, "/join");
+    const legacyOrigin = Object.hasOwn(req.query, "legacy_origin") ? "?legacy_origin" : "";
+    return res.redirect(302, `/join${legacyOrigin}`);
   }
 
+  // Verify class exists
   const authClassRedis = await redisClient.get(`auth_class:${req.session.classId}`);
   if (!authClassRedis) {
     const aClass = await prisma.class.findUnique({
@@ -100,44 +103,68 @@ async function checkClassAccess(req: Request, res: Response): Promise<void> {
       expiration: {type: "EX", value: 15 * 60} // 15min
     });
   }
+
+  // If user is logged in, verify active membership
+  if (req.session.account) {
+    try {
+      await assertPermissionLevel(req.session, ROLES.MEMBER);
+    }
+    catch (err) {
+      // Membership check failed — session is stale or kicked
+      delete req.session.classId;
+      throw err;
+    }
+  }
 }
 
 async function checkPermissionLevel(
   req: Request,
   requiredPermission: number
 ): Promise<void> {
+  await assertPermissionLevel(req.session, requiredPermission);
+}
+
+// Session-based permission check, extracted so services can reuse the exact same
+// logic (e.g. to gate shared vs. personal homework/events without a route-level role).
+// Resolves the effective permission from the account's class membership, or the class
+// default for anonymous users, repairs/clears stale session state, and throws when
+// the level is insufficient.
+export async function assertPermissionLevel(
+  session: Session & Partial<SessionData>,
+  requiredPermission: number
+): Promise<void> {
   let effectivePermission = 0;
 
-  if (req.session.account) {
+  if (session.account) {
     const joined = await prisma.joinedClass.findUnique({
-      where: { accountId: req.session.account.accountId },
+      where: { accountId: session.account.accountId },
       select: { permissionLevel: true, classId: true }
     });
 
     if (!joined) {
       // session is stale or tampered
-      delete req.session.account;
-      delete req.session.classId;
+      delete session.account;
+      delete session.classId;
       throwError("Unauthorized", 401, "Account is not linked to any class");
     }
 
-    if (req.session.classId) {
-      const sessionClassId = parseInt(req.session.classId, 10);
+    if (session.classId) {
+      const sessionClassId = parseInt(session.classId, 10);
       if (sessionClassId !== joined.classId) {
         // prevent cross-class access via forged/stale session.classId
-        delete req.session.classId;
+        delete session.classId;
         throwError("Forbidden", 403, "Selected class does not match account membership");
       }
     }
     else {
       // keep session consistent
-      req.session.classId = joined.classId.toString();
+      session.classId = joined.classId.toString();
     }
     effectivePermission = joined.permissionLevel;
-  } 
-  else if (req.session.classId) {
+  }
+  else if (session.classId) {
     const aClass = await prisma.class.findUnique({
-      where: { classId: parseInt(req.session.classId, 10) },
+      where: { classId: parseInt(session.classId, 10) },
       select: { defaultPermissionLevel: true }
     });
     effectivePermission = aClass?.defaultPermissionLevel ?? 0;

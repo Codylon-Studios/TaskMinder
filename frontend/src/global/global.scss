@@ -365,6 +365,31 @@ $unimportant-display-values: (
   to   { transform: translateX(-100%); }
 }
 
+.dropdown-menu {
+  --bs-dropdown-padding-x: 0.25rem;
+  --bs-dropdown-padding-y: 0.25rem;
+}
+
+.dropdown-item {
+  font-weight: 500;
+  --bs-dropdown-item-border-radius: 0.25rem;
+  --bs-dropdown-link-active-color: var(--bs-body-color);
+  --bs-dropdown-link-hover-bg: rgba(var(--bs-primary-rgb), 0.2);
+  --bs-dropdown-link-active-bg: rgba(var(--bs-primary-rgb), 0.3);
+}
+
+.dropdown-item-danger {
+  color: var(--bs-danger-text-emphasis);
+  --bs-dropdown-link-hover-bg: rgba(var(--bs-danger-rgb), 0.2);
+  --bs-dropdown-link-hover-color: var(--bs-danger-text-emphasis);
+  --bs-dropdown-link-active-bg: rgba(var(--bs-danger-rgb), 0.3);
+  --bs-dropdown-link-active-color: var(--bs-danger-text-emphasis);
+}
+
+.dropdown-divider {
+  margin: 0.25rem -0.25rem;
+}
+
 @each $variant in $custom-btn-variants {
   .btn-#{$variant} {
     @include button-variant(white, $primary);
@@ -402,6 +427,73 @@ $unimportant-display-values: (
   }
 }
 
+.btn-group > .btn:nth-child(n+3), .btn-group > :not(.btn-check) + .btn, .btn-group > .btn-group:not(:first-child) > .btn {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.btn-group > .btn:not(:last-child):not(.dropdown-toggle), .btn-group > .btn.dropdown-toggle-split:first-child, .btn-group > .btn-group:not(:last-child) > .btn {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+[data-variant] {
+  --variant-bg-transparent: color-mix(in oklab, var(--variant-color) 40%, transparent);
+  --variant-color-darker: color-mix(in oklab, var(--variant-color), black 30%);
+  --variant-color-darker: hsl(from var(--variant-color) h s calc(l - 30));
+  --variant-color-lighter: color-mix(in oklab, var(--variant-color), white 50%);
+  --variant-color-lighter: hsl(from var(--variant-color) h s calc(l + 20));
+  --variant-color-more-darker: color-mix(in oklab, var(--variant-color), black 60%);
+  --variant-color-more-lighter: color-mix(in oklab, var(--variant-color), white 80%);
+  --variant-bg-select: color-mix(in oklab, var(--variant-color) 60%, transparent);
+
+  &.card {
+    border-color: var(--variant-color);
+    background-color: var(--variant-bg-transparent);
+  }
+
+  .days-overview-day & {
+    background-color: var(--variant-color);
+  }
+
+  &:is(span, a, i) {
+    color: var(--variant-color-darker);
+  }
+
+  &.color-display {
+    background-color: var(--variant-color);
+  }
+
+  &.dropdown-item {
+    --bs-dropdown-link-hover-bg: color-mix(in oklab, var(--variant-color) 10%, transparent);
+    --bs-dropdown-link-active-bg: color-mix(in oklab, var(--variant-color) 30%, transparent);
+  }
+
+  :not([data-high-contrast="true"]) & {
+    &::selection, & ::selection {
+      background-color: var(--variant-bg-select);
+    }
+  }
+
+  [data-bs-theme="dark"] & {
+    &:is(span, a, i) {
+      color: var(--variant-color-lighter);
+    }
+  }
+
+  [data-high-contrast="true"] & {
+    &:is(span, a, i) {
+      color: var(--variant-color-more-darker);
+    }
+  }
+
+  [data-high-contrast="true"][data-bs-theme="dark"] & {
+    &:is(span, a, i) {
+      color: var(--variant-color-more-lighter);
+    }
+  }
+}
+
 .autocompleted-feedback, .suspicious-feedback {
   display: none;
   margin-top: 0.25rem;
@@ -417,7 +509,7 @@ $unimportant-display-values: (
 }
 
 .form-control, .form-select, .rich-textarea-input {
-  &.is-autocompleted, &.is-suspicious {
+  &.is-autocompleted, &.is-suspicious, &.is-invalid, .is-autocompleted &, .is-suspicious &, .is-invalid & {
     padding-right: calc(1.5em + 0.75rem);
 
     background-repeat: no-repeat;
@@ -425,9 +517,9 @@ $unimportant-display-values: (
     background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
   }
 
-  &.is-autocompleted {
+  &.is-autocompleted, .is-autocompleted & {
     border-color: $input-focus-border-color !important;
-    background-color: color.change($color: $primary, $alpha: 0.1);
+    background-color: color-mix(in oklab, $primary, var(--bs-body-bg) 90%);
 
     background-image: svgs.make-sparkling-wand(to-rgb($primary));
     --bs-form-select-bg-icon: #{svgs.make-sparkling-wand(to-rgb($primary))};
@@ -441,9 +533,9 @@ $unimportant-display-values: (
     }
   }
 
-  &.is-suspicious {
+  &.is-suspicious, .is-suspicious & {
     border-color: $warning !important;
-    background-color: color.change($color: $warning, $alpha: 0.1);
+    background-color: color-mix(in oklab, $warning, var(--bs-body-bg) 90%);
 
     background-image: svgs.make-circle-question(to-rgb($warning));
     --bs-form-select-bg-icon: #{svgs.make-circle-question(to-rgb($warning))};
@@ -461,9 +553,9 @@ $unimportant-display-values: (
     }
   }
 
-  &.is-invalid {
+  &.is-invalid, .is-invalid & {
     border-color: $danger !important;
-    background-color: color.change($color: $danger, $alpha: 0.1);
+    background-color: color-mix(in oklab, $danger, var(--bs-body-bg) 90%);
 
     background-image: svgs.make-circle-exclamation(to-rgb($danger));
     --bs-form-select-bg-icon: #{svgs.make-circle-exclamation(to-rgb($danger))};
@@ -523,8 +615,19 @@ $unimportant-display-values: (
   color: var(--bs-body-bg) !important;
 }
 
-.btn-check:checked + .btn-outline-primary {
+.btn-check:checked + .btn.btn-outline-primary {
   color: var(--bs-body-bg) !important;
+  background-color: var(--bs-primary);
+}
+
+.btn-check.btn-check-subtle:checked + .btn.btn-outline-primary {
+  color: var(--bs-primary) !important;
+  background-color: color-mix(in oklab, $primary, var(--bs-body-bg) 75%);
+
+  [data-high-contrast="true"] & {
+    color: var(--bs-body-bg) !important;
+    background-color: var(--bs-primary);
+  }
 }
 
 .btn-sm-square {
@@ -660,4 +763,15 @@ footer a {
       font-size: 1rem !important;
     }
   }
+}
+
+.scroll-fade {
+  --mask: linear-gradient(
+    to bottom,
+    black calc(100% - var(--fade-progress)),
+    transparent 100%
+  );
+  
+  -webkit-mask-image: var(--mask);
+  mask-image: var(--mask);
 }

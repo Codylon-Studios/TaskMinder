@@ -14,7 +14,7 @@ export async function ErrorHandler(err: RequestError, req: Request, res: Respons
       res.locals.errorMessage = err.message;
     }
     else {
-      logger.error("Unhandled error", {
+      logger.error("Unhandled error: " + err, {
         requestId: res.locals.requestId,
         method: req.method,
         path: req.originalUrl || req.url,

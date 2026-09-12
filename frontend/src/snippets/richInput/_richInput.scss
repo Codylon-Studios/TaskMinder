@@ -1,8 +1,31 @@
 @use "../../../../node_modules/bootstrap/scss/bootstrap" as bs;
 
-search-box, password-input, copy-input {
+search-box, password-input, copy-input, datalist-input {
   position: relative;
   display: block;
+
+  &.form-control-sm {
+    padding: 0;
+
+    input {
+      min-height: calc(1.5em + 0.5rem + calc(var(--bs-border-width) * 2));
+      padding: .25rem .5rem;
+      font-size: 0.875rem;
+      border-radius: var(--bs-border-radius-sm);
+
+      @media (hover: none) and (pointer: coarse) {
+        font-size: 1rem !important;
+      }
+    }
+
+    .dropdown-item {
+      font-size: .875rem;
+
+      @media (hover: none) and (pointer: coarse) {
+        font-size: 1rem !important;
+      }
+    }
+  }
 }
 
 search-box {
@@ -11,21 +34,22 @@ search-box {
 
   .rich-input-element {
     padding-left: 2rem !important;
-    padding-right: 2rem !important;
   }
 
-  &:not(.search-box-not-empty) .search-box-clear {
-    display: none;
+  &.search-box-not-empty {
+    .rich-input-element {
+      padding-right: 2rem !important;
+    }
+  }
+
+  &:not(.search-box-not-empty) {
+    .search-box-clear {
+      display: none;
+    }
   }
 
   &:focus-within, &.search-box-not-empty {
     flex-grow: 1;
-  }
-
-  @include bs.media-breakpoint-down(md) {
-    &:focus-within, &.search-box-not-empty {
-      width: 100%;
-    }
   }
 }
 
@@ -38,6 +62,17 @@ password-input {
 copy-input {
   .rich-input-element {
     padding-right: 2rem !important;
+  }
+}
+
+datalist-input {
+  .dropdown-menu {
+    width: 100%;
+    min-width: 0;
+
+    .dropdown-item {
+      text-wrap: wrap;
+    }
   }
 }
 

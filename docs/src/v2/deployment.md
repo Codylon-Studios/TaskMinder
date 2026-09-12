@@ -32,6 +32,7 @@ Go to your domain registrar’s DNS management page (e.g., Namecheap, GoDaddy, C
 | -------- | -------- | -------------- | ---------------- |
 | A        | @        | `203.0.113.42` | Automatic / 3600 |
 | A        | www      | `203.0.113.42` | Automatic / 3600 |
+| A        | app      | `203.0.113.42` | Automatic / 3600 |
 
 > This assumes you're using `example.com` and want `www.example.com` to also work.
 
@@ -61,11 +62,11 @@ Once your domain resolves to your server’s IP, proceed to the next step.
 
 ### Update and install dependencies:
 
-This installs (if not already installed) Git, curl, NGINX, libnginx-mod-http-lua (for Lua in NGINX), lua-cjson (for NGINX), UFW, and Fail2Ban:
+This installs (if not already installed) Git, curl, NGINX, libnginx-mod-http-lua (for Lua in NGINX), lua-cjson (for NGINX), gettext-base (provides `envsubst`, used to render the NGINX template), UFW, and Fail2Ban:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl nginx ufw fail2ban libnginx-mod-http-lua lua-cjson
+sudo apt install -y git curl nginx ufw fail2ban libnginx-mod-http-lua lua-cjson gettext-base
 ```
 
 ### Verify lua was installed and is enabled:
@@ -126,13 +127,9 @@ cd TaskMinder
 
 ## 4. Configure NGINX
 
-First, modify the `nginx.config` file to replace `taskminder.de` with your actual domain name.
+NGINX terminates TLS and routes the four hostnames to their containers. It does not serve static files or set cache rules and security headers, as the containers already do that themselves.
 
-```bash
-vi nginx.config
-# or
-nano nginx.config
-```
+The repository contains `nginx.config.template` instead of a finished config. You render it with your own hostnames, as shown below.
 
 ### Install Certbot and Obtain SSL Certificates
 
@@ -145,14 +142,25 @@ sudo apt install -y certbot python3-certbot-nginx
 Run Certbot to obtain SSL certificates (replace `example.com` and subdomains with your actual domains):
 
 ```bash
-sudo certbot -d example.com -d www.example.com -d monitoring.example.com
+sudo certbot -d example.com -d app.example.com -d www.example.com -d monitoring.example.com
 ```
 
 Certbot will automatically update the configuration file at `/etc/nginx/sites-available/default`. Delete this file, as you’ll be using your custom config instead. Also, delete the symlink: `sudo rm /etc/nginx/sites-enabled/default`
 
-Now that you know the location and filenames of the generated certificates, update your original `nginx.config` at `/opt/TaskMinder/nginx.config`. Replace the certificate paths with the correct ones provided by Certbot.
+### Store the certificate paths in one file
 
-### Add Gzip and Lua settings in general nginx.config
+Every server block uses the same TLS settings. Put them in one file instead of repeating them (replace `example.com` with the certificate name Certbot reported):
+
+```bash
+sudo tee /etc/nginx/taskminder-tls.conf > /dev/null <<'EOF'
+ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+include /etc/letsencrypt/options-ssl-nginx.conf;
+ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+EOF
+```
+
+### Add Gzip and Lua settings in the main `/etc/nginx/nginx.conf`
 
 Open the main nginx configuration file:
 
@@ -172,9 +180,21 @@ lua_shared_dict maintenance_flag 1m;
 
 ### Deploy Your Final NGINX Configuration
 
+Install the shared proxy headers, then render the template with your hostnames:
+
 ```bash
-# Copy your updated configuration
-sudo cp /opt/TaskMinder/nginx.config /etc/nginx/sites-available/taskminder
+# Proxy headers, the same in every environment
+sudo cp /opt/TaskMinder/nginx.proxy-headers.conf /etc/nginx/taskminder-proxy.conf
+
+# Render the site config (replace example.com with your base domain)
+LANDING_HOST=example.com \
+WWW_HOST=www.example.com \
+APP_HOST=app.example.com \
+MONITORING_HOST=monitoring.example.com \
+TLS_INCLUDE=/etc/nginx/taskminder-tls.conf \
+envsubst '${LANDING_HOST} ${WWW_HOST} ${APP_HOST} ${MONITORING_HOST} ${TLS_INCLUDE}' \
+  < /opt/TaskMinder/nginx.config.template \
+  | sudo tee /etc/nginx/sites-available/taskminder > /dev/null
 
 # Enable and test the configuration
 sudo ln -s /etc/nginx/sites-available/taskminder /etc/nginx/sites-enabled/
@@ -182,6 +202,32 @@ sudo nginx -t
 
 # Restart NGINX to apply changes
 sudo systemctl restart nginx
+```
+
+The variable list after `envsubst` is required. Without it, `envsubst` also replaces NGINX’s own `$host` and `$request_uri` with empty strings.
+
+Re-run the same command after pulling a new version of the template.
+
+### Point the project page at your application hostname
+
+The project page redirects unknown paths and its own `/join` and `/about` links to the application. `compose.yaml` ships `APP_HOST: app.taskminder.de`, which is only correct for the official deployment.
+
+Do not edit `compose.yaml` itself — it is tracked, so the next `git pull` will either conflict with your edit or revert it. Create a `compose.override.yaml` next to it instead. Docker Compose merges that file automatically, and because it is untracked it survives every pull:
+
+```bash
+cat > /opt/TaskMinder/compose.override.yaml <<'EOF'
+services:
+  landing:
+    environment:
+      APP_HOST: app.example.com
+EOF
+```
+
+Verify the value actually reached the container once the stack is up:
+
+```bash
+curl -sI http://127.0.0.1:3002/main | grep -i "^location"
+# must print your own application host, not app.taskminder.de
 ```
 
 ---
@@ -323,6 +369,7 @@ docker compose up -d --build
 Your TaskMinder server should now be running at:
 
 - **[https://example.com](https://example.com)**
+- **[https://app.example.com](https://app.example.com)**
 - **[https://www.example.com](https://www.example.com)**
 - **[https://monitoring.example.com](https://monitoring.example.com)**
 
@@ -345,11 +392,13 @@ Before upgrading, enable maintenance mode by adding a file flag with:
 touch /etc/nginx/maintenance.flag
 ```
 
-1. Navigate to the root folder of the project and stop the Docker Compose process:
+1. Navigate to the root folder of the project and stop the `app` service. The project page runs in its own container, so it keeps serving while the application is down:
 
    ```bash
-   docker compose down
+   docker compose stop app
    ```
+
+   Do not use `docker compose down` here, as it would stop the project page as well.
 
 2. Pull the latest changes from the `main` branch on GitHub:
 
@@ -357,15 +406,20 @@ touch /etc/nginx/maintenance.flag
    git pull origin main
    ```
 
-3. Rebuild and restart the Docker containers:
+3. Rebuild and restart the Docker containers. The project page image is rebuilt too, as it comes from the same frontend build:
 
    ```bash
    docker compose up -d --build
    ```
+
+   If the frontend changed, the project page image changes with it and Compose recreates that container as well. The project page is therefore unreachable for the second or two the new container needs to start, and NGINX serves `maintenance.html` for that window rather than a `502`. Only the application is covered by the maintenance flag; the project page relies on this fallback.
 
 4. Disable maintenance mode:
 
    ```bash
    rm /etc/nginx/maintenance.flag
    ```
+
+> If the application stops or crashes without the flag set, NGINX still serves `maintenance.html` instead of a `502`.
+
 ---

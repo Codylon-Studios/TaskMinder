@@ -82,6 +82,7 @@ This documentation describes all database tables defined in the current Prisma s
 | Event.startDate/endDate | BigInt    | Event scheduling                           | Reveals attendance/activity patterns                                       |
 | Event.lesson            | String    | Specific lesson block reference            | -                                                                          |
 | Event.teamId            | Integer   | Links event to a specific team             | Reveals group-specific activities                                          |
+| Event.accountId         | Integer?  | Owner account for private events; `null` for shared events | Links private event data to a specific user; may enable activity profiling |
 | Event.createdAt         | BigInt    | Record creation timestamp                  | -                                                                          |
 | EventType.eventTypeId   | Integer   | Unique event type identifier               | -                                                                          |
 | EventType.classId       | Integer   | Links type to a specific class             | -                                                                          |
@@ -93,6 +94,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 - Free-text fields (`name`, `description`) are high-risk for unintentional storage of personal data.
 - The combination of event data, when linked to a `Class`, can reveal detailed schedules and activities for a specific group of students.
+- For private events, `accountId` links the event and its contents to the owning account and restricts visibility to that user.
 
 **Solutions**:
 
@@ -115,6 +117,7 @@ This documentation describes all database tables defined in the current Prisma s
 | Homework.assignmentDate  | BigInt    | Assignment date        | Reveals grading/teaching pacing                                      |
 | Homework.submissionDate  | BigInt    | Deadline management    | Reveals individual work patterns                                     |
 | Homework.teamId          | Integer   | Links homework to a specific team  | Reveals team-based assignments                           |
+| Homework.accountId       | Integer?  | Owner account for private homework; `null` for shared homework | Links private homework to a specific user; may enable activity profiling |
 | Homework.createdAt       | BigInt    | Record creation timestamp | -                                                                 |
 | HomeworkCheck.checkId    | Integer   | Unique check identifier| -                                                                    |
 | HomeworkCheck.accountId  | Integer   | Student identifier     | Direct link to student performance                                   |
@@ -125,6 +128,7 @@ This documentation describes all database tables defined in the current Prisma s
 
 - The `HomeworkCheck` table creates a direct, persistent record of individual student performance and behavior (completion status).
 - This data is highly valuable for academic analytics but is privacy-sensitive and can be used for student profiling.
+- For private homework, `accountId` links the assignment and its contents to the owning account and restricts visibility to that user.
 
 ---
 
@@ -297,8 +301,8 @@ To maintain and improve our service quality, we collect certain telemetry data, 
 
 ---
 
-- **Document Version:** 2.5
-- **Stable Version Alignment:** v2.2.6
-- **Last Updated:** May 26th, 2026
-- **Next Scheduled Review:** Quarterly – July 1st, 2026
+- **Document Version:** 2.6
+- **Stable Version Alignment:** v2.3.0
+- **Last Updated:** July 22nd, 2026
+- **Next Scheduled Review:** Quarterly – September 1st, 2026
 - **Technical Contact:** [info@taskminder.de](mailto:info@taskminder.de)

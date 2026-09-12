@@ -19,6 +19,19 @@ export const SOCKET_EVENTS = {
   EVENT_TYPES: "updateEventTypes",
   TIMETABLES: "updateTimetables",
   CLASS_INFO: "updateClassInfo"
+} as const;
+
+export type socketEvent =
+  (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
+
+
+// TODO: currently personal changes are emitted to the whole class room
+// -> other members get redundant refetch
+// Solution: per-account socket room emitting personal updates only
+// to owner would be more efficient (atm intentionally deferred)
+export const emitSocketToClass = (classId: number, socketEvent: socketEvent): void => {
+  const io = getIO();
+  io.to(`class:${classId}`).emit(socketEvent);
 };
 
 // Initialize the Socket.IO instance

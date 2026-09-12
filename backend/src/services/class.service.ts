@@ -2,7 +2,8 @@ import { RequestError } from "../@types/requestError.js";
 import { Prisma } from "../prisma/generated/prisma/client.js";
 import { Session, SessionData } from "express-session";
 import { prisma } from "../config/prisma.js";
-import { BigIntreplacer, generateRandomBase62String, invalidateCache } from "../utils/validate.functions.js";
+import { BigIntreplacer, generateRandomBase62String } from "../utils/validate.functions.js";
+import { CACHE_KEY_PREFIXES, invalidateCache } from "../config/redis.js";
 import logger from "../config/logger.js";
 import { redisClient } from "../config/redis.js";
 import { redisStore } from "../config/redis.js";
@@ -29,7 +30,7 @@ import {
   setClassMembersPermissionsTypeParams,
   upgradeTestClassTypeParams
 } from "../schemas/class.schema.js";
-import socketIO, { SOCKET_EVENTS } from "../config/socket.js";
+import socketIO, { emitSocketToClass, SOCKET_EVENTS } from "../config/socket.js";
 
 const classService = {
   /*
@@ -277,8 +278,7 @@ const classService = {
       logger.info(`User (logged in): ${accountId} joined class ${targetClass.classId}`);
     }
     session.classId = targetClass.classId.toString();
-    const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.MEMBERS);
+    emitSocketToClass(targetClass.classId, SOCKET_EVENTS.MEMBERS);
     return targetClass.className;
   },
   /*
@@ -377,7 +377,7 @@ const classService = {
           throw err;
         }
         // delete cache of upload metadata as author may not be in class anymore
-        await invalidateCache("UPLOADMETADATA", classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
         // delete joinedTeams, homeworkCheck and set relevant upload author to null
         await tx.joinedTeams.deleteMany({
           where: {
@@ -409,13 +409,11 @@ const classService = {
           }
         });
         logger.info(`User ${session.account} left class: ${classId}`);
-        const io = socketIO.getIO();
-        io.to(`class:${classId}`).emit(SOCKET_EVENTS.UPLOADS);
+        emitSocketToClass(classId, SOCKET_EVENTS.UPLOADS);
       });
     };
     delete session.classId;
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.MEMBERS);
+    emitSocketToClass(classId, SOCKET_EVENTS.MEMBERS);
   },
   /*
   deleteClass(
@@ -458,15 +456,15 @@ const classService = {
     });
 
     // invalidate redis caches
-    await invalidateCache("UPLOADMETADATA", classId.toString());
-    await invalidateCache("UPLOADREQUESTS", classId.toString());
-    await invalidateCache("HOMEWORK", classId.toString());
-    await invalidateCache("EVENT", classId.toString());
-    await invalidateCache("LESSON", classId.toString());
-    await invalidateCache("EVENTTYPESTYLE", classId.toString());
-    await invalidateCache("SUBJECT", classId.toString());
-    await invalidateCache("EVENTTYPE", classId.toString());
-    await invalidateCache("TEAMS", classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.UPLOADREQUESTS, classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.HOMEWORK, classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.EVENT, classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.LESSON, classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.EVENTTYPESTYLE, classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.SUBJECT, classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.EVENTTYPE, classId.toString());
+    await invalidateCache(CACHE_KEY_PREFIXES.TEAMS, classId.toString());
     await redisClient.del(`auth_class:${classId}`);
 
     // delete session classId
@@ -545,8 +543,7 @@ const classService = {
         throw err;
       }
     });
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.MEMBERS);
+    emitSocketToClass(classId, SOCKET_EVENTS.MEMBERS);
     logger.info(`class member permissions were updated for class ${classId}`);
   },
   /*
@@ -594,7 +591,8 @@ const classService = {
   },
   /*
   kickClassMember(
-    reqData: kickClassMembersTypeBody,
+    reqParams: kickClassMembersTypeParams,
+    reqBody: kickClassMembersTypeBody,
     session: Session & Partial<SessionData>
   )
   BULK EDIT: remove listed class members in class
@@ -616,6 +614,8 @@ const classService = {
       };
       throw err;
     }
+    const kickedAccountIds = new Set(classMembers.map(m => m.accountId));
+
     await prisma.$transaction(async tx => {
       for (const classMember of classMembers) {
         const removedMembership = await tx.joinedClass.deleteMany({
@@ -634,7 +634,7 @@ const classService = {
           throw err;
         }
         // delete cache of upload metadata to avoid null authors
-        await invalidateCache("UPLOADMETADATA", classId.toString());
+        await invalidateCache(CACHE_KEY_PREFIXES.UPLOADMETADATA, classId.toString());
         await tx.joinedTeams.deleteMany({
           where: {
             accountId: classMember.accountId,
@@ -683,8 +683,37 @@ const classService = {
         throw err;
       }
     });
-    const io = socketIO.getIO();
-    io.to(`class:${session.classId}`).emit(SOCKET_EVENTS.MEMBERS);
+
+    // Destroy sessions of kicked members
+    try {
+      const sessionKeys = await redisStore.getClassSessionKeys(classId);
+      for (const sessionKey of sessionKeys) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const raw = await (redisClient as any).get(sessionKey);
+        if (!raw) {
+          await redisStore.removeClassSessionKey(classId, sessionKey);
+          continue;
+        }
+        const sess = JSON.parse(raw) as SessionData;
+        if (sess.account && kickedAccountIds.has(sess.account.accountId)) {
+          await redisStore.destroyBySessionKey(sessionKey);
+        }
+      }
+
+      // Clear class auth cache
+      await redisClient.del(`auth_class:${classId}`);
+
+      // Clear auth_user caches for kicked accounts
+      for (const accountId of kickedAccountIds) {
+        await redisClient.del(`auth_user:${accountId}`);
+      }
+    }
+    catch (err) {
+      logger.error(`Error destroying kicked member sessions for class ${classId}: ${err}`);
+      // Log error but continue — DB transaction already succeeded
+    }
+
+    emitSocketToClass(classId, SOCKET_EVENTS.MEMBERS);
     logger.info(`class members were kicked in class: ${classId}`);
   },
   /*
@@ -720,14 +749,13 @@ const classService = {
         defaultPermissionLevel: role
       }
     });
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.CLASS_INFO);
+    emitSocketToClass(classId, SOCKET_EVENTS.CLASS_INFO);
     logger.info(`class ${classId} default permission was changed to: ${role}`);
   },
   /*
   kickLoggedOutUsers(
     reqParams: kickLoggedOutUsersTypeParams,
-    session: Session & Partial<Sessio
+    session: Session & Partial<SessionData>
   )
   BULK EDIT: remove all not logged in users from class
   */
@@ -810,8 +838,7 @@ const classService = {
         className: classDisplayName
       }
     });
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.CLASS_INFO);
+    emitSocketToClass(classId, SOCKET_EVENTS.CLASS_INFO);
     logger.info(`class name was changed in class: ${classId}`);
   },
   /*
@@ -859,8 +886,7 @@ const classService = {
             classCodeHash: classCodeHash
           }
         });
-        const io = socketIO.getIO();
-        io.to(`class:${classId}`).emit(SOCKET_EVENTS.CLASS_INFO);
+        emitSocketToClass(classId, SOCKET_EVENTS.CLASS_INFO);
         logger.info(`class code was changed for class: ${classId}`);
         return code;
       }
@@ -904,8 +930,7 @@ const classService = {
         isTestClass: false
       }
     });
-    const io = socketIO.getIO();
-    io.to(`class:${classId}`).emit(SOCKET_EVENTS.CLASS_INFO);
+    emitSocketToClass(classId, SOCKET_EVENTS.CLASS_INFO);
     logger.info(`class: ${classId} was upgraded to normal class`);
   }
 };
