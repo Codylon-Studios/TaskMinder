@@ -4,7 +4,7 @@ All changes are grouped by type and the latest version appears first.
 
 ---
 
-## \[v2.3.0] - 2026-09-10
+## \[v2.3.0] - 2026-09-12
 
 ### Breaking Changes
 * chore(codebase): migrate to typescript v6 (use oxlint workaround to satisfy prisma > v6)

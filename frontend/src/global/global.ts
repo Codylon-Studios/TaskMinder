@@ -1521,7 +1521,7 @@ async function onOnline(): Promise<void> {
   $("#login-register-button").toggle(!user.loggedIn && !isSite("join") && available);
   $("#nav-logout-button").toggle((user.loggedIn ?? false) && available);
   if (! user.classJoined && isSite("main", "events", "homework", "uploads")) {
-    document.location.href = document.location.origin + "/join";
+    document.location.href = "/join" + document.location.search;
   }
   clearRequestQueue();
 }
@@ -1532,15 +1532,6 @@ function toggleScrollFade(el: HTMLElement): void {
 }
 
 export async function init(): Promise<void> {
-  const searchParams = new URLSearchParams(location.search);
-  if (searchParams.has("legacy_origin")) {
-    $("#legacy-origin-toast").toast("show");
-    searchParams.delete("legacy_origin");
-    const newUrl = new URL(location.href);
-    newUrl.search = searchParams.toString();
-    history.replaceState(null, "", newUrl);
-  }
-  
   try {
     const res = await fetch("/csrf-token");
     if (!res.ok) {
@@ -1573,15 +1564,24 @@ export async function init(): Promise<void> {
     await user.auth();
     user.on("change", reloadAll);
     if (data.online) {
-      onOnline();
+      await onOnline();
     }
     else {
       renderRequestQueue();
-      onOffline();
+      await onOffline();
     }
   }
   catch (error) {
     console.error("Error fetching bootstrap:", error);
+  }
+
+  const searchParams = new URLSearchParams(location.search);
+  if (searchParams.has("legacy_origin")) {
+    $("#legacy-origin-toast").addClass("show");
+    searchParams.delete("legacy_origin");
+    const newUrl = new URL(location.href);
+    newUrl.search = searchParams.toString();
+    history.replaceState(null, "", newUrl);
   }
 
   eventTypeData.on("change", checkReloadEventTypeStyles);
